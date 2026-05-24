@@ -248,45 +248,6 @@ Quant-Nanggroe-AI/
 
 ---
 
-## 🤝 Contributing
-
-We welcome contributors from around the world! 🌎 Quant Nanggroe AI is an ambitious project that sits at the intersection of quantitative finance, artificial intelligence, and systems engineering. Whether you're a seasoned quant developer, a React/TypeScript specialist, a machine learning researcher, or simply someone passionate about building intelligent trading systems — there's a place for you here.
-
-### How to Contribute
-
-1. **Fork** the repository at [https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
-2. **Create** a feature branch: `git checkout -b feature/your-feature-name`
-3. **Commit** your changes with clear, descriptive messages
-4. **Push** to your fork: `git push origin feature/your-feature-name`
-5. **Open** a Pull Request with a detailed description of your changes
-
-### Areas We Need Help With
-
-- 🧪 **Testing** — Unit tests, integration tests, and end-to-end testing for all engines
-- 📊 **Indicators** — Additional technical indicators for the MathEngine (Ichimoku, Fibonacci, Elliott Wave)
-- 🔌 **Data Providers** — New API integrations (Yahoo Finance, CoinGecko, TradingView)
-- 🎨 **UI/UX** — Component improvements, accessibility, mobile responsiveness
-- 📖 **Documentation** — API docs, tutorials, and examples
-- 🌐 **Internationalization** — Translations and localization support
-- 🏗️ **Cloud Deployment** — Docker, Kubernetes, and cloud-native deployment configurations
-
-### Development Guidelines
-
-- All TypeScript code must pass strict type checking (`strict: true`)
-- Follow the existing project structure and naming conventions
-- Every new service must include audit logging via `AuditLogger`
-- All financial calculations must be deterministic and testable
-- UI components must support both light and dark themes
-
-### Contact
-
-For questions, suggestions, or collaboration inquiries, reach out to:
-
-[![Email](https://img.shields.io/badge/Email-mulkymalikuldhaher@email.com-EA4335?style=flat-square&logo=gmail&logoColor=white)](mailto:mulkymalikuldhaher@email.com)
-[![GitHub](https://img.shields.io/badge/GitHub-mulkymalikuldhrs-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/mulkymalikuldhrs)
-
----
-
 ## 🔗 Related Projects
 
 | Project | Description | Link |
@@ -310,3 +271,45 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
   Built with 💎 by <a href="https://github.com/mulkymalikuldhrs">Mulky Malikul Dhaher</a><br/>
   <em>Waiting for Contributors from Around the World 🌎</em>
 </p>
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! We encourage the community to help improve this project.
+
+1. **Fork** the repository
+2. Create a **feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. Open a **Pull Request**
+
+Please make sure to update tests as appropriate and follow the existing code style.
+
+---
+
+## 📬 Contact
+
+**Mulky Malikul Dhaher** — [mulkymalikuldhaher@email.com](mailto:mulkymalikuldhaher@email.com)
+
+GitHub: [https://github.com/mulkymalikuldhrs](https://github.com/mulkymalikuldhrs)
+
+---
+
+## ⚠️ Disclaimer
+
+**This project is for Education Purpose only.**
+
+All content, code, and documentation provided in this repository are intended solely for educational and research purposes. Nothing in this repository constitutes financial, investment, legal, or professional advice.
+
+**Risiko apapun tidak kita tanggung.** (We are not responsible for any risks or damages.)
+
+Use at your own risk. The authors and contributors assume no liability for any losses, damages, or consequences arising from the use of this software or information provided herein.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+Copyright © Mulky Malikul Dhaher. All rights reserved.
+
