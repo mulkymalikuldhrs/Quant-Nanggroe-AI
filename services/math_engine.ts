@@ -210,16 +210,15 @@ export const MathEngine = {
     },
 
     calculateADX: (candles: CandleData[], period: number = 14): number => {
-        // Simplified ADX (Requires fuller history for accuracy, this is an approximation)
-        // Returns trend strength 0-100
-        if (candles.length < period * 2) return 25; 
-        // Placeholder for full Wilders Smoothing implementation
-        // For now, we estimate trend strength via Slope of SMA20
-        const closes = candles.map(c=>c.close);
+        // TODO: Implement full Wilders Smoothing ADX algorithm
+        // Current implementation is a simplified approximation using SMA slope as trend proxy
+        // For production accuracy, implement: +DI, -DI, DX, then ADX via Wilders smoothing
+        if (candles.length < period * 2) return 25;
+        const closes = candles.map(c => c.close);
         const sma20 = MathEngine.calculateSMA(closes, 20);
-        const sma20Prev = MathEngine.calculateSMA(closes.slice(0, closes.length-5), 20);
+        const sma20Prev = MathEngine.calculateSMA(closes.slice(0, closes.length - 5), 20);
         const diff = Math.abs(sma20 - sma20Prev) / sma20Prev;
-        return Math.min(diff * 1000, 100); // Scale factor
+        return Math.min(diff * 1000, 100); // Scale factor approximation
     },
 
     // MASTER FUNCTION: Generate Institutional Technical Sheet

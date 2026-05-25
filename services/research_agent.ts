@@ -10,8 +10,6 @@ const RESEARCH_SOURCES: ResearchSource[] = [
     { id: 'src-sentiment', name: 'Social Sentiment', url: 'https://cryptopanic.com/api/v1/posts/', type: 'sentiment' },
     { id: 'src-institutional', name: 'Institutional Tracker', url: 'https://api.whale-alert.io/v1/transaction', type: 'institutional' },
     { id: 'src-ai', name: 'AI Models Update', url: 'https://huggingface.co/api/models', type: 'ai' },
-    { id: 'src-features', name: 'Platform Features', url: '/system/features', type: 'market' }, // Mock internal
-    { id: 'src-updates', name: 'System Updates', url: '/system/updates', type: 'news' },
 ];
 
 export const ResearchAgent = {
@@ -21,7 +19,7 @@ export const ResearchAgent = {
 
     getLogs: () => ResearchAgent.logs,
 
-    startAutonomousResearch: (intervalMs: number = 60000) => { // Faster for demo: 1 min
+    startAutonomousResearch: (intervalMs: number = 60000) => {
         if (ResearchAgent.isAutonomouslyRunning) return;
         ResearchAgent.isAutonomouslyRunning = true;
         ResearchAgent.addLog("Autonomous Research Agent v11.4 started.");
@@ -68,53 +66,69 @@ export const ResearchAgent = {
         let path = `C:/${source.type.toUpperCase()}/${source.name.replace(/\s+/g, '_')}`;
 
         switch (source.type) {
-            case 'news':
+            case 'news': {
                 const news = await MarketService.getNews();
                 if (news && news.length > 0) {
                     content = `TOP HEADLINES (${new Date().toLocaleDateString()}):\n` + 
                               news.slice(0, 5).map(n => `- ${n.headline} (${n.source})`).join('\n');
                     path += `/NEWS_${Date.now()}.txt`;
                 } else {
-                    // Fallback to mock if API key missing
-                    content = `Global News Summary: Markets await FED decision. Tech sector rallies on AI growth expectations. Oil prices stabilize.`;
-                    path += `/SUMMARY_${Date.now()}.txt`;
+                    // No API key configured — skip rather than fabricate data
+                    ResearchAgent.addLog(`Skipped ${source.name}: Finnhub API key not configured`);
+                    return;
                 }
                 break;
-            case 'market':
+            }
+            case 'market': {
                 const btc = await MarketService.getPrice('BTC');
                 const eth = await MarketService.getPrice('ETH');
-                content = `MARKET SNAPSHOT:\nBTC: $${btc?.current_price || 'N/A'} (${btc?.price_change_percentage_24h || 0}%)\nETH: $${eth?.current_price || 'N/A'} (${eth?.price_change_percentage_24h || 0}%)`;
-                path += `/SNAPSHOT_${Date.now()}.txt`;
+                if (btc || eth) {
+                    content = `MARKET SNAPSHOT:\nBTC: $${btc?.current_price || 'N/A'} (${btc?.price_change_percentage_24h || 0}%)\nETH: $${eth?.current_price || 'N/A'} (${eth?.price_change_percentage_24h || 0}%)`;
+                    path += `/SNAPSHOT_${Date.now()}.txt`;
+                } else {
+                    ResearchAgent.addLog(`Skipped ${source.name}: Market data unavailable`);
+                    return;
+                }
                 break;
-            case 'geo':
+            }
+            case 'geo': {
                 // Free public API: RestCountries
                 try {
                     const res = await fetch('https://restcountries.com/v3.1/region/southeast%20asia');
                     const data = await res.json();
-                    content = `REGIONAL INTEL (SEA):\n` + data.slice(0, 5).map((c:any) => `- ${c.name.common}: GDP Growth estimated at 5.2%`).join('\n');
+                    content = `REGIONAL INTEL (SEA):\n` + data.slice(0, 5).map((c: any) => `- ${c.name.common}: Population ${c.population?.toLocaleString() || 'N/A'}`).join('\n');
                     path += `/GEO_REPORT_${Date.now()}.txt`;
-                } catch(e) {
-                    content = `Geopolitical Intel: Increased maritime trade activity in Malacca Strait. Regional currency volatility remains low.`;
-                    path += `/GEO_INTEL_${Date.now()}.txt`;
+                } catch (e) {
+                    ResearchAgent.addLog(`Skipped ${source.name}: Geo API unavailable`);
+                    return;
                 }
                 break;
-            case 'sentiment':
-                // Intelligent simulation based on market trends
-                const m = Math.random();
-                const sentiment = m > 0.6 ? "BULLISH" : m < 0.4 ? "BEARISH" : "NEUTRAL";
-                content = `SOCIAL SENTIMENT INDEX: ${sentiment}\n- X/Twitter Volume: High\n- Discord Sentiment: ${sentiment}\n- Fear & Greed Index: ${Math.floor(m * 100)}`;
-                path += `/SENTIMENT_${Date.now()}.txt`;
+            }
+            case 'sentiment': {
+                // TODO: Integrate with CryptoPanic API or similar sentiment provider
+                // Requires API key for real social sentiment data
+                ResearchAgent.addLog(`Skipped ${source.name}: Sentiment API not configured (requires CryptoPanic API key)`);
+                return;
+            }
+            case 'institutional': {
+                // TODO: Integrate with WhaleAlert API for real institutional flow data
+                // Requires API key — see https://whale-alert.io/
+                ResearchAgent.addLog(`Skipped ${source.name}: Institutional API not configured (requires WhaleAlert API key)`);
+                return;
+            }
+            case 'ai': {
+                // Fetch real AI model data from HuggingFace
+                try {
+                    const res = await fetch('https://huggingface.co/api/models?sort=downloads&direction=-1&limit=5');
+                    const data = await res.json();
+                    content = `AI ECOSYSTEM UPDATE:\n` + data.map((m: any) => `- ${m.id} (Downloads: ${m.downloads?.toLocaleString() || 'N/A'})`).join('\n');
+                    path += `/AI_CORE_${Date.now()}.txt`;
+                } catch (e) {
+                    ResearchAgent.addLog(`Skipped ${source.name}: HuggingFace API unavailable`);
+                    return;
+                }
                 break;
-            case 'institutional':
-                // Whale movement simulation
-                content = `INSTITUTIONAL FLOWS:\n- Inflow: $250M (Blackrock Proxy)\n- Outflow: $120M (Grayscale Proxy)\n- Activity: Significant accumulation in Layer 1 assets detected.`;
-                path += `/INSTITUTIONAL_${Date.now()}.txt`;
-                break;
-            case 'ai':
-                // Huggingface/AI news simulation
-                content = `AI ECOSYSTEM UPDATE:\n- New Model: Quant-LLM-V4 optimized for financial time series.\n- Trend: Multi-modal agents becoming standard for alpha generation.`;
-                path += `/AI_CORE_${Date.now()}.txt`;
-                break;
+            }
             default:
                 content = `Data collected from ${source.name} at ${new Date().toISOString()}`;
                 path += `/DATA_${Date.now()}.txt`;
@@ -127,7 +141,7 @@ export const ResearchAgent = {
                 content,
                 sourceAgentId: 'ResearchAgent',
                 timestamp: Date.now(),
-                confidence: 0.98,
+                confidence: source.type === 'news' || source.type === 'market' ? 0.9 : 0.7,
                 tags: [source.type, 'autonomous-intel'],
                 path
             };

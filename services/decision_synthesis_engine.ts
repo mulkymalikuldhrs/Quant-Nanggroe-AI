@@ -75,7 +75,8 @@ export const DecisionSynthesisEngine = {
         AuditLogger.log('DECISION', 'Confluence Status', confluence);
 
         // 3. Risk Clearance (The "Law")
-        const riskClearance = RiskManagement.validateTrade(dailyPnL, 0.5, false); // Correlation/Macro mock for now
+        // TODO: Replace hardcoded correlation score (0.5) with real correlation monitor data
+        const riskClearance = RiskManagement.validateTrade(dailyPnL, 0.5, false);
         AuditLogger.log('RISK', 'Risk Clearance Result', { riskClearance });
 
         // 4. Action Determination
