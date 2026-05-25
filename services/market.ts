@@ -358,19 +358,10 @@ export const MarketService = {
             } catch (e) {}
         }
 
-        const now = Date.now();
-        const mockData = [];
-        let price = type === 'crypto' ? (id === 'bitcoin' ? 95000 : 2500) : 150;
-        for(let i=0; i<100; i++) {
-            const change = (Math.random() - 0.5) * (price * 0.01);
-            const open = price;
-            const close = price + change;
-            mockData.push({ 
-                timestamp: now - (100-i)*15*60*1000, open, high: Math.max(open, close) + (Math.abs(change)*0.5), low: Math.min(open, close) - (Math.abs(change)*0.5), close, volume: 100 + Math.random()*1000
-            });
-            price = close;
-        }
-        return mockData;
+        // Fallback: return empty dataset when no API is configured
+        // Real data requires Binance, Polygon, or AlphaVantage API keys
+        console.warn(`No market data API available for ${ticker}. Configure API keys for real data.`);
+        return [];
     },
 
     getNews: async (): Promise<NewsItem[]> => {
@@ -529,14 +520,11 @@ export const MarketService = {
 
     // --- BLUEPRINT FINAL: FLOW / COT / WHALE AGENT ---
     getFlowWhaleOutput: (): FlowWhaleOutput => {
-        // Mocking flow data for now as real APIs for this are paid/complex
-        // In a real scenario, this would fetch from Coinglass, WhaleAlert, etc.
-        const flows = [0.2, 0.5, 0.8, -0.3, -0.6];
-        const randomFlow = flows[Math.floor(Math.random() * flows.length)];
-        
+        // Flow/whale data requires paid API integration (Coinglass, WhaleAlert, etc.)
+        // Returns neutral state when not configured
         return {
-            positioningBias: randomFlow > 0.5 ? 'LONG' : randomFlow < -0.5 ? 'SHORT' : 'NEUTRAL',
-            flowImbalance: Math.abs(randomFlow)
+            positioningBias: 'NEUTRAL',
+            flowImbalance: 0
         };
     }
 };

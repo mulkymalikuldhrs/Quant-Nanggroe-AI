@@ -273,9 +273,9 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 </p>
 ---
 
-## 🤝 Contributing
+## 🤝 Contributors Welcome
 
-Contributions are welcome! We encourage the community to help improve this project.
+We welcome contributions from developers, quantitative analysts, risk engineers, and AI researchers!
 
 1. **Fork** the repository
 2. Create a **feature branch** (`git checkout -b feature/amazing-feature`)
@@ -284,6 +284,10 @@ Contributions are welcome! We encourage the community to help improve this proje
 5. Open a **Pull Request**
 
 Please make sure to update tests as appropriate and follow the existing code style.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+
+**Contact:** mulkymalikuldhaher@email.com | Mulky Malikul Dhaher
 
 ---
 
@@ -297,32 +301,13 @@ GitHub: [https://github.com/mulkymalikuldhrs](https://github.com/mulkymalikuldhr
 
 ## ⚠️ Disclaimer
 
-**For Education Purpose Only**
+**EN (English):** For Education Purpose Only. This project is provided strictly for educational and research purposes. The authors and contributors assume no responsibility or liability for any damages, losses, or risks arising from the use of this software. We do not bear any responsibility or risk for how this software is used.
 
-This project is provided strictly for educational and research purposes. The authors and contributors assume **no responsibility or liability** for any damages, losses, or risks arising from the use of this software. **We do not bear any responsibility or risk** for how this software is used.
+**ID (Bahasa Indonesia):** Untuk Tujuan Pendidikan Saja. Proyek ini disediakan secara ketat untuk tujuan pendidikan dan penelitian. Penulis dan kontributor tidak menanggung tanggung jawab atau risiko atas kerusakan, kerugian, atau risiko yang timbul dari penggunaan perangkat lunak ini. Kami tidak menanggung tanggung jawab atau risiko atas bagaimana perangkat lunak ini digunakan.
+
+**CN (中文):** 仅供教育目的。本项目严格用于教育和研究目的。作者和贡献者对因使用本软件而产生的任何损害、损失或风险不承担任何责任。我们不对本软件的使用方式承担任何责任或风险。
 
 **Contact:** Mulky Malikul Dhaher | mulkymalikuldhaher@email.com
-
----
-
-### 🇮🇩 Disclaimer (Bahasa Indonesia)
-
-**Hanya untuk Tujuan Pendidikan**
-
-Proyek ini disediakan secara ketat untuk tujuan pendidikan dan penelitian. Penulis dan kontributor tidak menanggung **tanggung jawab atau risiko** atas kerusakan, kerugian, atau risiko yang timbul dari penggunaan perangkat lunak ini. **Kami tidak menanggung tanggung jawab atau risiko** atas bagaimana perangkat lunak ini digunakan.
-
-**Kontak:** Mulky Malikul Dhaher | mulkymalikuldhaher@email.com
-
----
-
-### 🇨🇳 免责声明 (中文)
-
-**仅供教育目的**
-
-本项目严格仅供教育和研究目的。作者和贡献者对因使用本软件而产生的任何损害、损失或风险**不承担任何责任**。**我们不承担任何责任或风险**对于本软件的使用方式。
-
-**联系方式:** Mulky Malikul Dhaher | mulkymalikuldhaher@email.com
-
 
 ---
 

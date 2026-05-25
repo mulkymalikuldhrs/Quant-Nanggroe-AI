@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Environment & Secrets
+.env
+.env.local
+.env.production
+.env*.local
+
+# Sensitive
+*.db
+*.key
+*.sqlite
+*.sqlite3
+credentials.db
+master.key
+salt.key
+cred
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

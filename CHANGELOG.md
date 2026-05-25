@@ -1,6 +1,19 @@
 # CHANGELOG - QUANT NANGGROE AI
 
-## [v15.1.0] - 2026-01-06 (ADVANCED INTELLIGENCE & REALITY PATCH)
+## [v15.3.0] - 2026-03-05
+
+### Fixed
+- Replaced mock chart data with empty fallback in `market.ts` — no more fake OHLCV when APIs unavailable
+- Replaced random mock flow/whale data with neutral state in `market.ts`
+- Updated `.gitignore` to cover `.env.local`, sensitive files, and `cred`
+- Removed `.env.local` and empty `cred` file from version control
+- Fixed broken contact links in README
+- Updated README with consolidated trilingual disclaimer (EN/ID/CN)
+- Added contributor welcome section with specific roles
+
+---
+
+## [v15.2.0] - Previous Release
 ### Added
 - **Contextual Neural Grounding**: Implementasi pemanenan data real-time sebelum penalaran agent untuk eliminasi halusinasi.
 - **Latency & Performance Tracking**: Pelacakan timing presisi tinggi pada siklus Neural Swarm untuk kebutuhan audit institusional.
