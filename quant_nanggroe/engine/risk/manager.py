@@ -344,6 +344,177 @@ class RiskManager:
                 self.state.trade_count_week = 0
             self.state.last_reset_date = today
 
+    # ── Stress Testing (from ai-hedge-fund) ────────────────────────────
+
+    def stress_test(
+        self,
+        returns: pd.Series,
+        scenarios: Optional[Dict[str, tuple]] = None,
+    ) -> Dict[str, Dict[str, float]]:
+        """Run stress tests on portfolio.
+
+        Applies historical-like scenarios to the current return distribution
+        to estimate VaR and CVaR under stressed conditions.
+
+        Args:
+            returns: Historical returns series.
+            scenarios: Dict of {scenario_name: (return_change, vol_change)}.
+                return_change is a multiplier on annualized return.
+                vol_change is a multiplier on annualized volatility.
+
+        Returns:
+            Dict of scenario results with stressed VaR, CVaR, and Sharpe.
+        """
+        if scenarios is None:
+            scenarios = {
+                "2008_Crisis": (-0.40, 2.0),
+                "COVID_Crash": (-0.30, 1.5),
+                "Rate_Hike": (-0.15, 1.2),
+                "Tech_Crash": (-0.25, 1.5),
+                "Recovery": (0.20, 0.8),
+                "Bull_Market": (0.30, 0.9),
+            }
+
+        results: Dict[str, Dict[str, float]] = {}
+        base_return = returns.mean() * 252
+        base_vol = returns.std() * np.sqrt(252)
+        risk_free_rate = 0.02
+
+        for scenario, (ret_change, vol_change) in scenarios.items():
+            stressed_return = base_return * ret_change
+            stressed_vol = base_vol * vol_change
+
+            # Parametric VaR and CVaR under stressed conditions
+            from scipy import stats as sp_stats
+
+            var_95 = stressed_return - 1.645 * stressed_vol
+            cvar_95 = stressed_return - stressed_vol * sp_stats.norm.pdf(1.645) / 0.05
+
+            results[scenario] = {
+                "expected_return": stressed_return,
+                "volatility": stressed_vol,
+                "var_95": var_95,
+                "cvar_95": cvar_95,
+                "sharpe_ratio": (
+                    (stressed_return - risk_free_rate) / stressed_vol
+                    if stressed_vol > 0
+                    else 0.0
+                ),
+            }
+
+        return results
+
+    # ── Advanced Position Sizing (from ai-hedge-fund) ────────────────
+
+    def optimal_f_position_size(
+        self,
+        returns: pd.Series,
+        target_volatility: float = 0.10,
+        lookback: int = 252,
+    ) -> float:
+        """Calculate position size to target volatility.
+
+        Uses volatility targeting approach: scales position up or down
+        so that the resulting portfolio has the desired volatility level.
+
+        Args:
+            returns: Historical returns series.
+            target_volatility: Target annual volatility.
+            lookback: Lookback period in days.
+
+        Returns:
+            Position size as fraction of portfolio (0.1 to 3.0).
+        """
+        recent_returns = returns.tail(lookback)
+        current_vol = recent_returns.std() * np.sqrt(252)
+
+        if current_vol == 0:
+            return 1.0
+
+        # Scale position to target volatility
+        position_size = target_volatility / current_vol
+
+        # Bound position
+        position_size = max(0.1, min(position_size, 3.0))
+
+        return position_size
+
+    def atr_position_size(
+        self,
+        entry_price: float,
+        atr: float,
+        account_balance: float,
+        risk_per_trade: float = 0.02,
+        max_risk_per_trade: float = 0.05,
+    ) -> Dict[str, Any]:
+        """Calculate position size using ATR (Average True Range).
+
+        Uses a 2-ATR stop distance and scales the position so that
+        the dollar risk equals the specified risk_per_trade fraction.
+
+        Args:
+            entry_price: Entry price.
+            atr: Average True Range value.
+            account_balance: Account balance.
+            risk_per_trade: Fraction of account to risk per trade.
+            max_risk_per_trade: Maximum risk per trade.
+
+        Returns:
+            Dict with position_size, stop_loss, and risk_amount.
+        """
+        # Calculate risk amount (capped at constitutional limit)
+        effective_risk = min(risk_per_trade, max_risk_per_trade, MAX_RISK_PER_TRADE)
+        risk_amount = account_balance * effective_risk
+
+        # Calculate stop loss distance (2 ATR)
+        stop_distance = 2 * atr
+
+        if stop_distance <= 0:
+            return {"position_size": 0, "stop_loss": 0, "risk_amount": 0}
+
+        position_size = risk_amount / stop_distance
+        stop_loss = entry_price - stop_distance
+
+        return {
+            "position_size": position_size,
+            "stop_loss": stop_loss,
+            "risk_amount": risk_amount,
+            "effective_risk_pct": effective_risk,
+        }
+
+    def calculate_position_size_with_var(
+        self,
+        returns: np.ndarray,
+        portfolio_value: float,
+        max_var_pct: float = 0.02,
+        confidence: float = 0.95,
+    ) -> float:
+        """Calculate position size based on VaR limit.
+
+        Scales the position so that the VaR at the given confidence level
+        does not exceed max_var_pct of the portfolio value.
+
+        Args:
+            returns: Historical returns array.
+            portfolio_value: Current portfolio value.
+            max_var_pct: Maximum VaR as percentage of portfolio.
+            confidence: VaR confidence level.
+
+        Returns:
+            Position size as fraction of portfolio (0.0 to 1.0).
+        """
+        var_result = self.var_calculator.calculate(
+            returns, confidence_level=confidence, portfolio_value=portfolio_value
+        )
+
+        if var_result.var_value <= 0:
+            return 1.0
+
+        var_pct = var_result.var_value / portfolio_value
+        position_size = min(1.0, max_var_pct / var_pct)
+
+        return position_size
+
     def _auto_check_kill_switch(self) -> None:
         """Auto-check if kill switch should activate based on risk limits."""
         daily_loss_pct = abs(min(0, self.state.daily_pnl)) / self.state.peak_equity if self.state.peak_equity > 0 else 0

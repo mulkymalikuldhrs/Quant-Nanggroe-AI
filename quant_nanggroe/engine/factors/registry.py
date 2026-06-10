@@ -4,27 +4,31 @@ The registry provides a centralized catalog of all available factors,
 supporting discovery by theme, zoo, or universe. It also provides
 lazy instantiation and output validation.
 
-Enhanced features:
-    - Auto-discovery of all registered factors across modules
-    - Factor metadata with category, description, and lookback
-    - Factor grouping (technical, fundamental, alternative, risk)
-    - Factor screening and filtering
-    - Factor correlation matrix computation
-    - Factor dependency analysis
+Supports two factor patterns:
+1. Class-based: AlphaFactor subclasses with name/meta/compute properties
+2. Function-based: __alpha_meta__ dict + compute(panel) function pairs
+   (ported from Vibe-Trading zoo modules)
 
 Design contract:
     FactorRegistry.list(zoo=None, theme=None, universe=None) -> list[str]
-    FactorRegistry.get(factor_id) -> AlphaFactor
-    FactorRegistry.compute(factor_id, df) -> pd.Series
+    FactorRegistry.get(factor_id) -> FactorHandle
+    FactorRegistry.compute(factor_id, panel) -> pd.DataFrame
     FactorRegistry.health() -> dict
-    FactorRegistry.correlation_matrix(df, factor_ids) -> pd.DataFrame
+    FactorRegistry.export_manifest() -> dict
+    FactorRegistry.load_alpha_meta_from_module(module_path) -> dict  # AST, no import
 """
 
 from __future__ import annotations
 
+import ast
+import importlib
+import inspect
 import logging
-from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
+import re
+import threading
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
 import pandas as pd
@@ -33,75 +37,313 @@ from quant_nanggroe.engine.factors.base import AlphaFactor, FactorMeta
 
 logger = logging.getLogger(__name__)
 
-
-class FactorCategory(str, Enum):
-    """Broad factor category for grouping and filtering."""
-
-    TECHNICAL = "technical"
-    FUNDAMENTAL = "fundamental"
-    ALTERNATIVE = "alternative"
-    RISK = "risk"
+_ID_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+_MAX_PY_BYTES = 200_000
 
 
-# Map from zoo -> category
-_ZOO_CATEGORY_MAP: Dict[str, FactorCategory] = {
-    "alpha101": FactorCategory.ALTERNATIVE,
-    "gtja191": FactorCategory.ALTERNATIVE,
-    "technical": FactorCategory.TECHNICAL,
-    "fundamental": FactorCategory.FUNDAMENTAL,
-    "barra": FactorCategory.RISK,
-}
+@dataclass(frozen=True, slots=True)
+class _LoadError:
+    factor_id: str
+    reason: str
+
+
+class FactorHandle:
+    """Unified handle for both class-based and function-based factors.
+
+    Provides a common interface regardless of the underlying factor pattern.
+    """
+
+    def __init__(
+        self,
+        factor_id: str,
+        zoo: str,
+        meta_dict: dict,
+        compute_fn=None,
+        class_instance: Optional[AlphaFactor] = None,
+    ):
+        self._id = factor_id
+        self._zoo = zoo
+        self._meta_dict = meta_dict
+        self._compute_fn = compute_fn
+        self._class_instance = class_instance
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def zoo(self) -> str:
+        return self._zoo
+
+    @property
+    def meta_dict(self) -> dict:
+        return self._meta_dict
+
+    @property
+    def theme(self) -> list[str]:
+        return self._meta_dict.get("theme", [])
+
+    @property
+    def universe(self) -> list[str]:
+        return self._meta_dict.get("universe", [])
+
+    @property
+    def columns_required(self) -> list[str]:
+        return self._meta_dict.get("columns_required", [])
+
+    @property
+    def formula_latex(self) -> str:
+        return self._meta_dict.get("formula_latex", "")
+
+    @property
+    def decay_horizon(self) -> int:
+        return self._meta_dict.get("decay_horizon", 0)
+
+    @property
+    def min_warmup_bars(self) -> int:
+        return self._meta_dict.get("min_warmup_bars", 0)
+
+    def compute(self, panel: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        """Compute the factor on the given OHLCV+ panel.
+
+        Args:
+            panel: Dict mapping column names (open, high, low, close, volume, etc.)
+                   to wide DataFrames (index=dates, columns=instruments).
+
+        Returns:
+            pd.DataFrame of factor values (same shape as panel columns).
+        """
+        if self._compute_fn is not None:
+            return self._compute_fn(panel)
+        elif self._class_instance is not None:
+            # Class-based factors take a DataFrame, not a panel dict
+            # We need to adapt the interface
+            return self._adapt_class_compute(panel)
+        raise RuntimeError(f"Factor {self._id} has no compute function")
+
+    def _adapt_class_compute(self, panel: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        """Adapt class-based compute(df) to function-based compute(panel)."""
+        factor = self._class_instance
+        # Create a combined DataFrame from the panel
+        # Class-based factors expect a single df with OHLCV columns
+        # We need to handle wide (multi-instrument) DataFrames
+        close = panel.get("close")
+        if close is None:
+            raise ValueError(f"Factor {self._id}: panel missing 'close' column")
+
+        # For wide DataFrames, compute per-column
+        if isinstance(close, pd.DataFrame) and close.ndim == 2:
+            # Use the first available data column to compute
+            # This is a simplification - class-based factors may need
+            # adaptation for wide panel support
+            result_parts = {}
+            for col in close.columns:
+                col_panel = {k: v[col] if isinstance(v, pd.DataFrame) else v for k, v in panel.items()}
+                # Convert to single-instrument DataFrame
+                single_df = pd.DataFrame(col_panel)
+                try:
+                    result = factor.compute(single_df)
+                    result_parts[col] = result
+                except Exception:
+                    result_parts[col] = pd.Series(np.nan, index=close.index)
+            return pd.DataFrame(result_parts)
+        else:
+            # Single instrument
+            single_df = pd.DataFrame(panel)
+            result = factor.compute(single_df)
+            return result
+
+
+def load_alpha_meta_from_module(module_path: str, meta_var_name: str = "__alpha_meta__") -> dict:
+    """AST-extract a metadata dict from a Python module without importing it.
+
+    Searches for an assignment to the variable named by ``meta_var_name`` and
+    evaluates it as a literal. No import is performed — purely static parsing.
+
+    Args:
+        module_path: Path to the .py file.
+        meta_var_name: Name of the metadata variable to extract.
+
+    Returns:
+        The metadata dict.
+
+    Raises:
+        ValueError: On malformed metadata or missing variable.
+    """
+    path = Path(module_path)
+    size = path.stat().st_size
+    if size > _MAX_PY_BYTES:
+        raise ValueError(f"{path.name}: {size}B exceeds {_MAX_PY_BYTES}B cap")
+
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+
+    meta_node: ast.expr | None = None
+    for stmt in tree.body:
+        if not isinstance(stmt, ast.Assign):
+            continue
+        targets = [t for t in stmt.targets if isinstance(t, ast.Name)]
+        if any(t.id == meta_var_name for t in targets):
+            meta_node = stmt.value
+            break
+
+    if meta_node is None:
+        raise ValueError(f"{path.name}: {meta_var_name} assignment not found")
+
+    try:
+        raw = ast.literal_eval(meta_node)
+    except (ValueError, SyntaxError) as exc:
+        raise ValueError(f"{path.name}: {meta_var_name} not a literal: {exc}") from exc
+
+    if not isinstance(raw, dict):
+        raise ValueError(f"{path.name}: {meta_var_name} must be dict, got {type(raw).__name__}")
+
+    return raw
 
 
 class FactorRegistry:
     """In-memory registry of all discoverable alpha factors.
 
-    Supports registration, discovery, and lazy instantiation of factors.
-    All registered factors must inherit from AlphaFactor.
-
-    Enhanced with:
-    - Category-based grouping
-    - Factor screening by multiple criteria
-    - Correlation matrix computation
-    - Dependency analysis
-    - Detailed factor metadata access
+    Supports both class-based (AlphaFactor subclasses) and function-based
+    (__alpha_meta__ + compute(panel)) factor patterns. Provides discovery,
+    lazy instantiation, and output validation.
     """
 
     def __init__(self) -> None:
-        self._factors: Dict[str, AlphaFactor] = {}
+        self._handles: Dict[str, FactorHandle] = {}
         self._meta: Dict[str, FactorMeta] = {}
-        self._load_errors: List[Dict[str, str]] = []
+        self._load_errors: List[_LoadError] = []
         self._register_builtin_factors()
 
     def _register_builtin_factors(self) -> None:
         """Register all built-in factors from the factor modules."""
-        from quant_nanggroe.engine.factors.alpha101 import get_all_alpha101_factors
-        from quant_nanggroe.engine.factors.gtja191 import get_all_gtja191_factors
+        # Register class-based factors (existing pattern)
         from quant_nanggroe.engine.factors.technical import get_all_technical_factors
         from quant_nanggroe.engine.factors.fundamental import get_all_fundamental_factors
-        from quant_nanggroe.engine.factors.barra import get_all_barra_factors
 
-        all_factor_lists = [
-            get_all_alpha101_factors(),
-            get_all_gtja191_factors(),
+        class_factor_lists = [
             get_all_technical_factors(),
             get_all_fundamental_factors(),
-            get_all_barra_factors(),
         ]
 
-        for factor_list in all_factor_lists:
+        for factor_list in class_factor_lists:
             for factor in factor_list:
                 try:
-                    self.register(factor)
+                    self._register_class_factor(factor)
                 except Exception as exc:
-                    self._load_errors.append({
-                        "factor_id": factor.name,
-                        "reason": str(exc),
-                    })
+                    self._load_errors.append(_LoadError(factor_id=factor.name, reason=str(exc)))
                     logger.warning("Failed to register factor %s: %s", factor.name, exc)
 
+        # Register function-based factors (Vibe-Trading pattern)
+        function_modules = [
+            ("alpha101", "quant_nanggroe.engine.factors.alpha101"),
+            ("gtja191", "quant_nanggroe.engine.factors.gtja191"),
+            ("qlib158", "quant_nanggroe.engine.factors.qlib158"),
+            ("academic", "quant_nanggroe.engine.factors.academic"),
+        ]
+
+        for zoo_name, module_path in function_modules:
+            try:
+                self._register_function_factors(zoo_name, module_path)
+            except Exception as exc:
+                self._load_errors.append(_LoadError(factor_id=module_path, reason=str(exc)))
+                logger.warning("Failed to load module %s: %s", module_path, exc)
+
+    def _register_class_factor(self, factor: AlphaFactor) -> None:
+        """Register a class-based AlphaFactor instance."""
+        if factor.name in self._handles:
+            raise ValueError(f"Factor {factor.name!r} is already registered")
+
+        # Validate lookahead-free
+        if not factor.validate_lookahead():
+            raise ValueError(f"Factor {factor.name!r} contains lookahead bias")
+
+        meta = factor.meta
+        handle = FactorHandle(
+            factor_id=factor.name,
+            zoo=meta.zoo,
+            meta_dict={
+                "id": meta.id,
+                "zoo": meta.zoo,
+                "theme": meta.theme,
+                "formula_latex": meta.formula_latex,
+                "columns_required": meta.columns_required,
+                "universe": meta.universe,
+                "frequency": meta.frequency,
+                "decay_horizon": meta.decay_horizon,
+                "min_warmup_bars": meta.min_warmup_bars,
+                "notes": meta.notes,
+            },
+            class_instance=factor,
+        )
+
+        self._handles[factor.name] = handle
+        self._meta[factor.name] = meta
+
+    def _register_function_factors(self, zoo_name: str, module_path: str) -> None:
+        """Register all function-based factors from a module.
+
+        Each factor in the module follows the pattern:
+        - __alpha_meta_{stem} = { ... }
+        - def compute_{stem}(panel) -> pd.DataFrame
+
+        This is the Vibe-Trading zoo pattern adapted for our codebase.
+        """
+        try:
+            module = importlib.import_module(module_path)
+        except ImportError as exc:
+            raise ValueError(f"Cannot import {module_path}: {exc}") from exc
+
+        # Get the list of (meta, compute) tuples
+        get_all_fn_name = f"get_all_{zoo_name}_factors"
+        get_all_fn = getattr(module, get_all_fn_name, None)
+        if get_all_fn is None:
+            logger.warning("Module %s has no %s function", module_path, get_all_fn_name)
+            return
+
+        factor_list = get_all_fn()
+        for meta_dict, compute_fn in factor_list:
+            try:
+                factor_id = meta_dict.get("id", "")
+                if not factor_id:
+                    raise ValueError("meta dict missing 'id' field")
+
+                if factor_id in self._handles:
+                    raise ValueError(f"Factor {factor_id!r} is already registered")
+
+                handle = FactorHandle(
+                    factor_id=factor_id,
+                    zoo=zoo_name,
+                    meta_dict=meta_dict,
+                    compute_fn=compute_fn,
+                )
+
+                # Create a FactorMeta for backward compatibility
+                factor_meta = FactorMeta(
+                    id=factor_id,
+                    zoo=zoo_name,
+                    theme=meta_dict.get("theme", []),
+                    formula_latex=meta_dict.get("formula_latex", ""),
+                    columns_required=meta_dict.get("columns_required", []),
+                    universe=meta_dict.get("universe", []),
+                    frequency=meta_dict.get("frequency", ["1D"]),
+                    decay_horizon=meta_dict.get("decay_horizon", 0),
+                    min_warmup_bars=meta_dict.get("min_warmup_bars", 0),
+                    notes=meta_dict.get("notes", ""),
+                )
+
+                self._handles[factor_id] = handle
+                self._meta[factor_id] = factor_meta
+
+            except Exception as exc:
+                self._load_errors.append(_LoadError(
+                    factor_id=meta_dict.get("id", "unknown"),
+                    reason=str(exc),
+                ))
+                logger.warning("Failed to register factor %s: %s", meta_dict.get("id", "?"), exc)
+
     def register(self, factor: AlphaFactor) -> None:
-        """Register an alpha factor.
+        """Register an alpha factor (class-based).
 
         Args:
             factor: An AlphaFactor instance to register.
@@ -109,81 +351,94 @@ class FactorRegistry:
         Raises:
             ValueError: If a factor with the same name is already registered.
         """
-        if factor.name in self._factors:
-            raise ValueError(f"Factor {factor.name!r} is already registered")
+        self._register_class_factor(factor)
 
-        # Validate lookahead-free
-        if not factor.validate_lookahead():
-            raise ValueError(f"Factor {factor.name!r} contains lookahead bias")
-
-        self._factors[factor.name] = factor
-        self._meta[factor.name] = factor.meta
-
-    def unregister(self, factor_id: str) -> None:
-        """Remove a factor from the registry.
+    def register_function_factor(
+        self,
+        factor_id: str,
+        zoo: str,
+        meta_dict: dict,
+        compute_fn,
+    ) -> None:
+        """Register a function-based alpha factor.
 
         Args:
-            factor_id: The unique factor identifier.
+            factor_id: Unique factor identifier.
+            zoo: Factor zoo name.
+            meta_dict: Metadata dictionary.
+            compute_fn: Callable(panel: dict) -> pd.DataFrame.
+
+        Raises:
+            ValueError: If a factor with the same ID is already registered.
         """
-        self._factors.pop(factor_id, None)
-        self._meta.pop(factor_id, None)
+        if factor_id in self._handles:
+            raise ValueError(f"Factor {factor_id!r} is already registered")
+
+        handle = FactorHandle(
+            factor_id=factor_id,
+            zoo=zoo,
+            meta_dict=meta_dict,
+            compute_fn=compute_fn,
+        )
+
+        factor_meta = FactorMeta(
+            id=factor_id,
+            zoo=zoo,
+            theme=meta_dict.get("theme", []),
+            formula_latex=meta_dict.get("formula_latex", ""),
+            columns_required=meta_dict.get("columns_required", []),
+            universe=meta_dict.get("universe", []),
+            frequency=meta_dict.get("frequency", ["1D"]),
+            decay_horizon=meta_dict.get("decay_horizon", 0),
+            min_warmup_bars=meta_dict.get("min_warmup_bars", 0),
+            notes=meta_dict.get("notes", ""),
+        )
+
+        self._handles[factor_id] = handle
+        self._meta[factor_id] = factor_meta
 
     def list(
         self,
         zoo: Optional[str] = None,
         theme: Optional[str] = None,
         universe: Optional[str] = None,
-        category: Optional[FactorCategory] = None,
-        min_warmup: Optional[int] = None,
-        max_warmup: Optional[int] = None,
     ) -> List[str]:
         """Return factor IDs matching the optional filters.
 
         Args:
-            zoo: Filter by zoo (alpha101, gtja191, technical, fundamental, barra).
-            theme: Filter by theme (momentum, reversal, volume, etc.).
+            zoo: Filter by zoo (alpha101, gtja191, qlib158, academic, technical, fundamental).
+            theme: Filter by theme (momentum, reversal, volume, volatility, etc.).
             universe: Filter by universe (equity_us, equity_cn, crypto, etc.).
-            category: Filter by broad category (technical, fundamental, alternative, risk).
-            min_warmup: Minimum warmup bars required.
-            max_warmup: Maximum warmup bars required.
 
         Returns:
             Sorted list of matching factor IDs.
         """
         result: List[str] = []
-        for name, meta in self._meta.items():
-            if zoo is not None and meta.zoo != zoo:
+        for name, handle in self._handles.items():
+            if zoo is not None and handle.zoo != zoo:
                 continue
-            if theme is not None and theme not in meta.theme:
+            if theme is not None and theme not in handle.theme:
                 continue
-            if universe is not None and universe not in meta.universe:
-                continue
-            if category is not None:
-                factor_cat = _ZOO_CATEGORY_MAP.get(meta.zoo)
-                if factor_cat != category:
-                    continue
-            if min_warmup is not None and meta.min_warmup_bars < min_warmup:
-                continue
-            if max_warmup is not None and meta.min_warmup_bars > max_warmup:
+            if universe is not None and universe not in handle.universe:
                 continue
             result.append(name)
         return sorted(result)
 
-    def get(self, factor_id: str) -> AlphaFactor:
-        """Get a registered factor by ID.
+    def get(self, factor_id: str) -> FactorHandle:
+        """Get a registered factor handle by ID.
 
         Args:
             factor_id: The unique factor identifier.
 
         Returns:
-            The AlphaFactor instance.
+            The FactorHandle instance.
 
         Raises:
             KeyError: If factor_id is not registered.
         """
-        if factor_id not in self._factors:
+        if factor_id not in self._handles:
             raise KeyError(f"Factor {factor_id!r} not found in registry")
-        return self._factors[factor_id]
+        return self._handles[factor_id]
 
     def get_meta(self, factor_id: str) -> FactorMeta:
         """Get metadata for a registered factor.
@@ -198,260 +453,55 @@ class FactorRegistry:
             raise KeyError(f"Factor {factor_id!r} not found in registry")
         return self._meta[factor_id]
 
-    def get_category(self, factor_id: str) -> FactorCategory:
-        """Get the broad category for a factor.
+    def compute(self, factor_id: str, panel: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        """Compute a factor on the given panel.
 
         Args:
             factor_id: The unique factor identifier.
+            panel: Dict mapping column names to wide DataFrames.
 
         Returns:
-            The FactorCategory for this factor.
-        """
-        meta = self.get_meta(factor_id)
-        return _ZOO_CATEGORY_MAP.get(meta.zoo, FactorCategory.TECHNICAL)
-
-    def compute(self, factor_id: str, df: pd.DataFrame) -> pd.Series:
-        """Compute a factor on the given DataFrame.
-
-        Args:
-            factor_id: The unique factor identifier.
-            df: Input DataFrame with OHLCV data.
-
-        Returns:
-            pd.Series of computed factor values.
+            pd.DataFrame of computed factor values.
 
         Raises:
             KeyError: If factor_id is not registered.
             ValueError: If required columns are missing.
         """
-        factor = self.get(factor_id)
-        meta = self.get_meta(factor_id)
+        handle = self.get(factor_id)
 
         # Check required columns
-        missing = [c for c in meta.columns_required if c not in df.columns]
+        missing = [c for c in handle.columns_required if c not in panel]
         if missing:
             raise ValueError(
-                f"Factor {factor_id} requires columns {missing} not present in DataFrame"
+                f"Factor {factor_id} requires columns {missing} not present in panel"
             )
 
-        # Compute and validate
-        result = factor.compute(df)
-        return factor.validate_output(result)
+        # Compute
+        result = handle.compute(panel)
 
-    def compute_batch(
-        self,
-        factor_ids: List[str],
-        df: pd.DataFrame,
-        skip_errors: bool = True,
-    ) -> Dict[str, pd.Series]:
-        """Compute multiple factors on the same DataFrame.
+        # Validate output
+        return self._validate_output(factor_id, result, panel)
 
-        Args:
-            factor_ids: List of factor IDs to compute.
-            df: Input DataFrame with OHLCV data.
-            skip_errors: If True, skip factors that fail; if False, raise.
-
-        Returns:
-            Dict mapping factor_id -> pd.Series of computed values.
-        """
-        results: Dict[str, pd.Series] = {}
-        for fid in factor_ids:
-            try:
-                results[fid] = self.compute(fid, df)
-            except Exception as exc:
-                if skip_errors:
-                    logger.warning("Skipping factor %s: %s", fid, exc)
-                else:
-                    raise
-        return results
-
-    def correlation_matrix(
-        self,
-        df: pd.DataFrame,
-        factor_ids: Optional[List[str]] = None,
-        method: str = "pearson",
+    @staticmethod
+    def _validate_output(
+        factor_id: str,
+        result: Any,
+        panel: dict[str, pd.DataFrame],
     ) -> pd.DataFrame:
-        """Compute pairwise correlation matrix for factor values.
-
-        Args:
-            df: Input DataFrame with OHLCV data.
-            factor_ids: List of factor IDs. If None, uses all registered.
-            method: Correlation method ('pearson' or 'spearman').
-
-        Returns:
-            DataFrame of pairwise correlations between factors.
-        """
-        if factor_ids is None:
-            factor_ids = self.list()
-
-        # Compute all factors
-        results = self.compute_batch(factor_ids, df, skip_errors=True)
-
-        if not results:
-            return pd.DataFrame()
-
-        factor_df = pd.DataFrame(results, index=df.index)
-        factor_df = factor_df.replace([np.inf, -np.inf], np.nan)
-
-        if method == "spearman":
-            factor_df = factor_df.rank()
-
-        corr = factor_df.corr()
-        return corr
-
-    def screen(
-        self,
-        df: pd.DataFrame,
-        factor_ids: Optional[List[str]] = None,
-        min_ic: float = 0.02,
-        forward_returns: Optional[pd.Series] = None,
-    ) -> List[Tuple[str, float]]:
-        """Screen factors by information coefficient (IC) against forward returns.
-
-        Args:
-            df: Input DataFrame with OHLCV data.
-            factor_ids: List of factor IDs. If None, uses all registered.
-            min_ic: Minimum absolute IC to include.
-            forward_returns: Forward returns for IC computation.
-                If None, uses 1-day forward returns from close.
-
-        Returns:
-            List of (factor_id, IC) tuples sorted by absolute IC descending.
-        """
-        if factor_ids is None:
-            factor_ids = self.list()
-
-        results = self.compute_batch(factor_ids, df, skip_errors=True)
-
-        if forward_returns is None:
-            forward_returns = df["close"].pct_change().shift(-1)
-
-        scored: List[Tuple[str, float]] = []
-        for fid, values in results.items():
-            aligned = pd.DataFrame({"factor": values, "forward": forward_returns}).dropna()
-            if len(aligned) < 20:
-                continue
-            ic = aligned["factor"].corr(aligned["forward"])
-            if not np.isnan(ic) and abs(ic) >= min_ic:
-                scored.append((fid, float(ic)))
-
-        scored.sort(key=lambda x: abs(x[1]), reverse=True)
-        return scored
-
-    def get_dependencies(self, factor_id: str) -> List[str]:
-        """Get the column dependencies for a factor.
-
-        Args:
-            factor_id: The unique factor identifier.
-
-        Returns:
-            List of required column names.
-        """
-        meta = self.get_meta(factor_id)
-        return list(meta.columns_required)
-
-    def group_by_category(self) -> Dict[FactorCategory, List[str]]:
-        """Group all registered factors by category.
-
-        Returns:
-            Dict mapping FactorCategory -> list of factor IDs.
-        """
-        groups: Dict[FactorCategory, List[str]] = {}
-        for name, meta in self._meta.items():
-            cat = _ZOO_CATEGORY_MAP.get(meta.zoo, FactorCategory.TECHNICAL)
-            if cat not in groups:
-                groups[cat] = []
-            groups[cat].append(name)
-        for cat in groups:
-            groups[cat].sort()
-        return groups
-
-    def group_by_zoo(self) -> Dict[str, List[str]]:
-        """Group all registered factors by zoo.
-
-        Returns:
-            Dict mapping zoo name -> list of factor IDs.
-        """
-        groups: Dict[str, List[str]] = {}
-        for name, meta in self._meta.items():
-            if meta.zoo not in groups:
-                groups[meta.zoo] = []
-            groups[meta.zoo].append(name)
-        for zoo in groups:
-            groups[zoo].sort()
-        return groups
-
-    def group_by_theme(self) -> Dict[str, List[str]]:
-        """Group all registered factors by theme.
-
-        Returns:
-            Dict mapping theme name -> list of factor IDs.
-        """
-        groups: Dict[str, List[str]] = {}
-        for name, meta in self._meta.items():
-            for theme in meta.theme:
-                if theme not in groups:
-                    groups[theme] = []
-                groups[theme].append(name)
-        for theme in groups:
-            groups[theme].sort()
-        return groups
-
-    def find_low_correlation_subset(
-        self,
-        df: pd.DataFrame,
-        factor_ids: Optional[List[str]] = None,
-        max_corr: float = 0.7,
-        prefer_high_ic: bool = True,
-        forward_returns: Optional[pd.Series] = None,
-    ) -> List[str]:
-        """Find a subset of low-correlation factors using greedy selection.
-
-        Args:
-            df: Input DataFrame with OHLCV data.
-            factor_ids: Candidate factor IDs. If None, uses all registered.
-            max_corr: Maximum pairwise correlation allowed.
-            prefer_high_ic: If True, prioritize factors with higher |IC|.
-            forward_returns: Forward returns for IC computation.
-
-        Returns:
-            List of factor IDs forming a low-correlation subset.
-        """
-        if factor_ids is None:
-            factor_ids = self.list()
-
-        # Compute correlation matrix
-        corr_matrix = self.correlation_matrix(df, factor_ids)
-        if corr_matrix.empty:
-            return []
-
-        # Optionally sort by IC
-        if prefer_high_ic and forward_returns is not None:
-            scored = self.screen(df, factor_ids, min_ic=0.0, forward_returns=forward_returns)
-            order = [fid for fid, _ in scored if fid in corr_matrix.columns]
-            # Add remaining factors not scored
-            for fid in corr_matrix.columns:
-                if fid not in order:
-                    order.append(fid)
-        else:
-            order = list(corr_matrix.columns)
-
-        selected: List[str] = []
-        for fid in order:
-            if fid not in corr_matrix.columns:
-                continue
-            # Check correlation with all already-selected factors
-            is_ok = True
-            for sel_fid in selected:
-                if sel_fid in corr_matrix.columns and fid in corr_matrix.index:
-                    c = abs(corr_matrix.loc[fid, sel_fid])
-                    if not np.isnan(c) and c > max_corr:
-                        is_ok = False
-                        break
-            if is_ok:
-                selected.append(fid)
-
-        return selected
+        """Validate factor output quality."""
+        if not isinstance(result, pd.DataFrame):
+            raise ValueError(
+                f"{factor_id}: compute() returned {type(result).__name__}, expected DataFrame"
+            )
+        arr = result.to_numpy(dtype=np.float64, na_value=np.nan)
+        if np.isinf(arr).any():
+            raise ValueError(f"{factor_id}: output contains +/- inf")
+        nan_ratio = float(np.isnan(arr).mean()) if arr.size > 0 else 1.0
+        if nan_ratio > 0.95:
+            raise ValueError(
+                f"{factor_id}: output >95% NaN (nan_ratio={nan_ratio:.3f})"
+            )
+        return result
 
     def health(self) -> Dict:
         """Return registry health status.
@@ -460,12 +510,19 @@ class FactorRegistry:
             Dict with counts and any load errors.
         """
         return {
-            "loaded": len(self._factors),
+            "loaded": len(self._handles),
             "failed": len(self._load_errors),
-            "errors": self._load_errors,
-            "by_zoo": self.group_by_zoo(),
-            "by_category": {cat.value: factors for cat, factors in self.group_by_category().items()},
-            "by_theme": self.group_by_theme(),
+            "errors": [
+                {"factor_id": e.factor_id, "reason": e.reason} for e in self._load_errors
+            ],
+            "by_zoo": {
+                zoo: len([1 for h in self._handles.values() if h.zoo == zoo])
+                for zoo in set(h.zoo for h in self._handles.values())
+            },
+            "by_theme": {
+                theme: len([1 for h in self._handles.values() if theme in h.theme])
+                for theme in set(t for h in self._handles.values() for t in h.theme)
+            },
         }
 
     def summary(self) -> Dict:
@@ -476,46 +533,51 @@ class FactorRegistry:
         """
         return {
             name: {
-                "zoo": meta.zoo,
-                "theme": meta.theme,
-                "formula": meta.formula_latex,
-                "columns_required": meta.columns_required,
-                "universe": meta.universe,
-                "min_warmup_bars": meta.min_warmup_bars,
-                "decay_horizon": meta.decay_horizon,
-                "category": _ZOO_CATEGORY_MAP.get(meta.zoo, "technical").value,
+                "zoo": handle.zoo,
+                "theme": handle.theme,
+                "formula": handle.formula_latex,
+                "columns_required": handle.columns_required,
+                "universe": handle.universe,
+                "min_warmup_bars": handle.min_warmup_bars,
             }
-            for name, meta in self._meta.items()
+            for name, handle in self._handles.items()
         }
 
-    def describe(self, factor_id: str) -> Dict:
-        """Return detailed description of a single factor.
+    def export_manifest(self) -> Dict[str, Any]:
+        """Return a JSON-serialisable snapshot for external consumers.
 
-        Args:
-            factor_id: The unique factor identifier.
-
-        Returns:
-            Dict with factor metadata and category info.
+        Includes all factor metadata grouped by zoo, plus health stats.
         """
-        meta = self.get_meta(factor_id)
+        from datetime import datetime, timezone
+
+        zoos: Dict[str, list[dict]] = {}
+        for handle in self._handles.values():
+            zoos.setdefault(handle.zoo, []).append(
+                {
+                    "id": handle.id,
+                    "theme": handle.theme,
+                    "formula_latex": handle.formula_latex,
+                    "columns_required": handle.columns_required,
+                    "universe": handle.universe,
+                    "decay_horizon": handle.decay_horizon,
+                    "min_warmup_bars": handle.min_warmup_bars,
+                }
+            )
+
         return {
-            "id": meta.id,
-            "name": factor_id,
-            "zoo": meta.zoo,
-            "category": _ZOO_CATEGORY_MAP.get(meta.zoo, "technical").value,
-            "theme": meta.theme,
-            "formula": meta.formula_latex,
-            "columns_required": meta.columns_required,
-            "universe": meta.universe,
-            "frequency": meta.frequency,
-            "decay_horizon": meta.decay_horizon,
-            "min_warmup_bars": meta.min_warmup_bars,
-            "notes": meta.notes,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "total_factors": len(self._handles),
+            "zoos": {
+                zoo_id: sorted(items, key=lambda x: x["id"])
+                for zoo_id, items in sorted(zoos.items())
+            },
+            "health": self.health(),
         }
 
 
 # Process-wide singleton for hot paths
 _registry_cache: Optional[FactorRegistry] = None
+_registry_cache_lock = threading.Lock()
 
 
 def get_default_registry() -> FactorRegistry:
@@ -524,12 +586,14 @@ def get_default_registry() -> FactorRegistry:
     Thread-safe. First call builds and caches; subsequent calls return the same instance.
     """
     global _registry_cache
-    if _registry_cache is None:
-        _registry_cache = FactorRegistry()
-    return _registry_cache
+    with _registry_cache_lock:
+        if _registry_cache is None:
+            _registry_cache = FactorRegistry()
+        return _registry_cache
 
 
 def reset_default_registry() -> None:
     """Drop the cached registry (test hook)."""
     global _registry_cache
-    _registry_cache = None
+    with _registry_cache_lock:
+        _registry_cache = None

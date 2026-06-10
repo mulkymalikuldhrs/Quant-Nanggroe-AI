@@ -29,6 +29,17 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+# ══════════════════════════════════════════════════════════════════════
+# VaR Confidence Level Lookup Table
+# ══════════════════════════════════════════════════════════════════════
+
+VAR_Z_SCORES: Dict[float, float] = {
+    0.90: 1.282,
+    0.95: 1.645,
+    0.99: 2.326,
+}
+
+
 @dataclass
 class VaRResult:
     """VaR calculation result."""
@@ -108,6 +119,29 @@ class VaRCalculator:
         else:
             return "parametric"
 
+    @staticmethod
+    def _get_z_score(confidence_level: float) -> float:
+        """Get z-score for a given confidence level.
+
+        Uses the standard lookup table for common levels, falls back
+        to scipy for others.
+
+        Args:
+            confidence_level: Confidence level (e.g. 0.90, 0.95, 0.99).
+
+        Returns:
+            Z-score (positive value).
+        """
+        if confidence_level in VAR_Z_SCORES:
+            return VAR_Z_SCORES[confidence_level]
+        # Fallback to scipy for non-standard confidence levels
+        try:
+            from scipy import stats
+            return stats.norm.ppf(confidence_level)
+        except ImportError:
+            # Rough approximation if scipy unavailable
+            return 1.645  # Default to 95%
+
     def _parametric_var(
         self,
         returns: np.ndarray,
@@ -117,10 +151,19 @@ class VaRCalculator:
         """Parametric VaR (Variance-Covariance method).
 
         Assumes returns are normally distributed.
-        Formula: VaR = z_α * σ * V
-        CVaR = σ * φ(z_α) / (1 - α) * V
 
-        Where φ is the standard normal PDF.
+        Formulas:
+            VaR = -μ + z_α * σ  (loss perspective)
+            CVaR = -μ + σ * φ(z_α) / (1-α)
+
+        Where:
+            z_α = z-score at confidence level α
+            φ = standard normal PDF
+            μ = mean return
+            σ = standard deviation of returns
+
+        The CVaR formula correctly accounts for the mean return
+        and uses the well-known parametric result for normal distributions.
         """
         from scipy import stats
 
@@ -130,11 +173,14 @@ class VaRCalculator:
         if std <= 0:
             return VaRResult("parametric", confidence_level, 0.0, 0.0, (0.0, 0.0))
 
-        z_alpha = stats.norm.ppf(1 - confidence_level)
-        var_value = abs(z_alpha * std * portfolio_value)
+        z_alpha = self._get_z_score(confidence_level)
 
-        # CVaR for normal distribution
-        cvar_value = std * stats.norm.pdf(z_alpha) / (1 - confidence_level) * portfolio_value
+        # VaR: threshold loss at confidence level (positive number = loss)
+        var_value = abs((-mean + z_alpha * std) * portfolio_value)
+
+        # CVaR for normal distribution: -μ + σ * φ(z_α) / (1-α)
+        # This is the correct parametric formula per Rockafellar & Uryasev (2000)
+        cvar_value = abs((-mean + std * stats.norm.pdf(z_alpha) / (1 - confidence_level)) * portfolio_value)
 
         # Confidence interval for the mean
         z_95 = 1.96
@@ -155,6 +201,11 @@ class VaRCalculator:
         """Historical VaR using empirical distribution.
 
         Simply takes the percentile of the empirical return distribution.
+
+        VaR: the (1-α) percentile of losses
+        CVaR: the MEAN of losses beyond VaR (not VaR * sqrt(n/n) or similar).
+              This is the correct historical CVaR formula — average of the
+              tail losses beyond the VaR threshold.
         """
         alpha = 1 - confidence_level
 
@@ -162,9 +213,14 @@ class VaRCalculator:
         var_threshold = np.percentile(returns, alpha * 100)
         var_value = abs(var_threshold * portfolio_value)
 
-        # CVaR: mean of losses beyond VaR
+        # CVaR: MEAN of losses beyond VaR threshold
+        # This is the correct formula: E[X | X <= VaR_α]
         tail_returns = returns[returns <= var_threshold]
-        cvar_value = abs(np.mean(tail_returns) * portfolio_value) if len(tail_returns) > 0 else var_value
+        if len(tail_returns) > 0:
+            cvar_value = abs(np.mean(tail_returns) * portfolio_value)
+        else:
+            # Fallback if no returns below threshold (edge case)
+            cvar_value = var_value
 
         # Bootstrap confidence interval
         ci = self._bootstrap_ci(returns, alpha, portfolio_value)
@@ -199,12 +255,17 @@ class VaRCalculator:
         var_threshold = np.percentile(simulated, alpha * 100)
         var_value = abs(var_threshold * portfolio_value)
 
+        # CVaR: MEAN of simulated losses beyond VaR
         tail_sim = simulated[simulated <= var_threshold]
-        cvar_value = abs(np.mean(tail_sim) * portfolio_value) if len(tail_sim) > 0 else var_value
+        if len(tail_sim) > 0:
+            cvar_value = abs(np.mean(tail_sim) * portfolio_value)
+        else:
+            cvar_value = var_value
 
+        # Confidence interval using percentiles of the simulated distribution
         ci = (
-            np.percentile(simulated, alpha * 100 - 1.96) * portfolio_value,
-            np.percentile(simulated, alpha * 100 + 1.96) * portfolio_value,
+            abs(np.percentile(simulated, alpha * 100 + 1.96) * portfolio_value),
+            abs(np.percentile(simulated, alpha * 100 - 1.96) * portfolio_value),
         )
 
         return VaRResult("monte_carlo", confidence_level, var_value, cvar_value, ci)

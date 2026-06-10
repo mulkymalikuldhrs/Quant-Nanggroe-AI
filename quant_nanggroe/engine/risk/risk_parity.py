@@ -9,16 +9,25 @@ Methods:
 3. Equal Risk Contribution: Gradient descent optimization
 4. Hierarchical Risk Parity: Clustering-based approach
 
+Enhanced with ai-hedge-fund's risk parity module additions:
+- Risk contribution analysis with deviation from target
+- Portfolio summary with concentration metrics
+- Risk budgeting analysis
+
 Extracted from ai-hedge-fund's risk parity module.
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class RiskParityMethod(Enum):
@@ -28,6 +37,27 @@ class RiskParityMethod(Enum):
     COVARIANCE_BASED = "COVARIANCE_BASED"
     EQUAL_RISK_CONTRIBUTION = "EQUAL_RISK_CONTRIBUTION"
     HIERARCHICAL = "HIERARCHICAL"
+
+
+@dataclass
+class RiskContribution:
+    """Risk contribution of an asset.
+
+    Attributes:
+        asset: Asset name.
+        weight: Portfolio weight.
+        marginal_risk: Marginal risk contribution.
+        risk_contribution: Proportional risk contribution.
+        risk_budget: Target risk budget.
+        deviation: Deviation from target risk budget.
+    """
+
+    asset: str
+    weight: float
+    marginal_risk: float
+    risk_contribution: float
+    risk_budget: float
+    deviation: float
 
 
 @dataclass
@@ -51,6 +81,8 @@ class RiskParityOptimizer:
     portfolio risk, rather than allocating equal capital.
 
     Formula: RC_i = w_i * (Σw)_i / (w'Σw) = 1/N for all i
+
+    Enhanced with risk budget analysis and portfolio summary from ai-hedge-fund.
     """
 
     def __init__(
@@ -66,6 +98,7 @@ class RiskParityOptimizer:
         self.min_weight = min_weight
         self.max_weight = max_weight
         self.risk_free_rate = risk_free_rate
+        self._history: List[Dict] = []
 
     def optimize(
         self,
@@ -118,7 +151,7 @@ class RiskParityOptimizer:
         error = float(np.mean(np.abs(rc - target)))
         converged = error < self.tolerance
 
-        return RiskParityResult(
+        result = RiskParityResult(
             weights={name: float(w) for name, w in zip(asset_names, weights)},
             risk_contributions={name: float(r) for name, r in zip(asset_names, rc)},
             portfolio_volatility=float(port_vol),
@@ -129,10 +162,93 @@ class RiskParityOptimizer:
             convergence=converged,
         )
 
+        # Store in history
+        self._history.append({
+            "timestamp": datetime.now(),
+            "method": method,
+            "result": result,
+        })
+
+        return result
+
+    def get_risk_budget_analysis(
+        self,
+        weights: np.ndarray,
+        cov_matrix: np.ndarray,
+        asset_names: List[str],
+    ) -> List[RiskContribution]:
+        """Analyze risk budget for each asset.
+
+        Provides a detailed breakdown of each asset's risk contribution
+        and its deviation from the equal-risk target.
+
+        Args:
+            weights: Portfolio weights.
+            cov_matrix: Covariance matrix.
+            asset_names: Asset names.
+
+        Returns:
+            List of RiskContribution objects with detailed analysis.
+        """
+        n_assets = len(weights)
+        risk_contributions = self._risk_contributions(weights, cov_matrix)
+        target_risk = 1.0 / n_assets
+
+        analysis = []
+        for i, name in enumerate(asset_names):
+            port_vol = np.sqrt(weights.T @ cov_matrix @ weights)
+            marginal_risk = (cov_matrix[i, :] @ weights) / port_vol if port_vol > 0 else 0.0
+            risk_contrib = risk_contributions[i]
+
+            rc = RiskContribution(
+                asset=name,
+                weight=float(weights[i]),
+                marginal_risk=float(marginal_risk),
+                risk_contribution=float(risk_contrib),
+                risk_budget=float(target_risk),
+                deviation=float(risk_contrib - target_risk),
+            )
+            analysis.append(rc)
+
+        return analysis
+
+    def get_portfolio_summary(self, result: RiskParityResult) -> Dict:
+        """Get summary of risk parity portfolio.
+
+        Includes concentration metrics (HHI), weight distribution,
+        and convergence status.
+
+        Args:
+            result: RiskParityResult from optimization.
+
+        Returns:
+            Dict with portfolio summary metrics.
+        """
+        n_assets = len(result.weights)
+        weights_array = np.array(list(result.weights.values()))
+        herfindahl = np.sum(weights_array ** 2)
+        max_weight = np.max(weights_array)
+        min_weight = np.min(weights_array)
+
+        return {
+            "method": result.method.value,
+            "num_assets": n_assets,
+            "portfolio_volatility": round(result.portfolio_volatility, 4),
+            "expected_return": round(result.expected_return, 4),
+            "sharpe_ratio": round(result.sharpe_ratio, 4),
+            "risk_parity_error": round(result.risk_parity_error, 4),
+            "concentration_hhi": round(herfindahl, 4),
+            "max_weight": round(max_weight, 4),
+            "min_weight": round(min_weight, 4),
+            "converged": result.convergence,
+        }
+
     @staticmethod
     def _inverse_volatility(returns: np.ndarray) -> np.ndarray:
         """Inverse volatility weighting: w_i = σ_i^(-1) / Σ(σ_j^(-1))."""
         vols = np.std(returns, axis=1)
+        # Guard against zero volatility
+        vols = np.maximum(vols, 1e-10)
         inv_vol = 1.0 / vols
         return inv_vol / inv_vol.sum()
 
@@ -145,7 +261,8 @@ class RiskParityOptimizer:
         for _ in range(self.max_iterations):
             rc = self._risk_contributions(weights, cov)
             target = 1.0 / n
-            scaling = target / rc
+            # Avoid division by zero in scaling
+            scaling = np.where(rc > 0, target / rc, 1.0)
             new_weights = weights * scaling
             new_weights /= new_weights.sum()
 
@@ -166,6 +283,8 @@ class RiskParityOptimizer:
             target = 1.0 / n
 
             port_var = weights.T @ cov @ weights
+            if port_var <= 0:
+                break
             marginal = (cov @ weights) / np.sqrt(port_var)
             gradient = marginal * (rc - target)
 
@@ -183,6 +302,8 @@ class RiskParityOptimizer:
         """Hierarchical risk parity using clustering."""
         cov = np.cov(returns)
         vols = np.sqrt(np.diag(cov))
+        # Guard against zero volatility
+        vols = np.maximum(vols, 1e-10)
         corr = cov / np.outer(vols, vols)
         dist = 1 - np.abs(corr)
 

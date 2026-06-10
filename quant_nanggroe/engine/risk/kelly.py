@@ -1,23 +1,32 @@
-"""Kelly Criterion — 4 Variants for Position Sizing.
+"""Kelly Criterion — 5 Variants for Position Sizing.
 
-Implements the Kelly Criterion for optimal position sizing with four variants:
+Implements the Kelly Criterion for optimal position sizing with five variants:
 1. Basic Kelly: f* = (bp - q) / b
 2. Fractional Kelly: f* / k (where k is fraction, typically 0.5)
 3. Continuous Kelly: f* = (μ - r) / σ² (for continuous-time approximation)
 4. Multi-Asset Kelly: f = Σ^(-1) * μ (with covariance matrix)
+5. Adaptive Kelly: Adjusts fraction based on recent performance history
 
-Extracted from ai-hedge-fund's Kelly module with enhancements.
+Enhanced with ai-hedge-fund's Kelly module additions:
+- Adaptive Kelly with performance-based fraction adjustment
+- Multi-bet Kelly with correlation scaling
+- Position size calculation in monetary terms
+- Summary statistics across calculation history
 
 Reference: Kelly, J. L. (1956), "A New Interpretation of Information Rate"
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, replace
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class KellyMethod(Enum):
@@ -80,11 +89,19 @@ class KellyCriterion:
     The Kelly Criterion determines the optimal bet size to maximize
     long-term growth while minimizing risk of ruin.
 
-    Supports 4 variants:
+    Supports 5 variants:
     - Basic Kelly: Standard discrete formula
     - Fractional Kelly: Reduced fraction for conservative approach
     - Continuous Kelly: Continuous-time approximation using mean/variance
     - Multi-Asset Kelly: Portfolio-level with covariance matrix
+    - Adaptive Kelly: Adjusts based on recent performance history
+
+    Config parameters:
+    - max_position: Maximum position size (default: 0.20)
+    - min_position: Minimum position size (default: 0.01)
+    - ruin_threshold: Maximum acceptable ruin probability (default: 0.05)
+    - volatility_penalty: Penalty for high volatility (default: 0.5)
+    - confidence_weight: Weight for confidence adjustment (default: 0.3)
     """
 
     def __init__(
@@ -141,7 +158,7 @@ class KellyCriterion:
             constrained, expected_growth, risk_of_ruin, method
         )
 
-        return KellyResult(
+        result = KellyResult(
             optimal_fraction=kelly_fraction,
             expected_growth=expected_growth,
             expected_value=expected_value,
@@ -150,6 +167,16 @@ class KellyCriterion:
             recommendation=recommendation,
             confidence=min(params.confidence, 1.0),
         )
+
+        # Store in history for adaptive kelly
+        self._history.append({
+            "timestamp": datetime.now(),
+            "params": params,
+            "result": result,
+            "method": method,
+        })
+
+        return result
 
     def calculate_continuous_kelly(
         self,
@@ -203,6 +230,91 @@ class KellyCriterion:
         except np.linalg.LinAlgError:
             return np.zeros(len(expected_returns))
 
+    def calculate_multi_bet_kelly(
+        self,
+        params_list: List[KellyParameters],
+        method: Optional[KellyMethod] = None,
+    ) -> List[KellyResult]:
+        """Calculate Kelly Criterion for multiple simultaneous bets.
+
+        For multiple bets, the optimal allocation is given by:
+            f = C^(-1) * m
+        Where C is the covariance matrix and m is the expected return vector.
+
+        In this simplified implementation, individual Kelly fractions are
+        calculated and then scaled to respect the max position constraint.
+
+        Args:
+            params_list: List of Kelly parameters for each bet.
+            method: Kelly method to use.
+
+        Returns:
+            List of Kelly results, scaled for correlation.
+        """
+        if not params_list:
+            return []
+
+        results = []
+        for params in params_list:
+            result = self.calculate_kelly(params, method)
+            results.append(result)
+
+        # Adjust for correlation (simplified scaling)
+        if len(results) > 1:
+            total_fraction = sum(r.adjusted_fraction for r in results)
+            if total_fraction > self.max_position:
+                scale_factor = self.max_position / total_fraction
+                for result in results:
+                    result.adjusted_fraction *= scale_factor
+
+        return results
+
+    def get_optimal_position_size(
+        self,
+        account_value: float,
+        params: KellyParameters,
+        method: Optional[KellyMethod] = None,
+    ) -> float:
+        """Get optimal position size in monetary terms.
+
+        Args:
+            account_value: Total account value.
+            params: Kelly parameters.
+            method: Kelly method.
+
+        Returns:
+            Position size in currency.
+        """
+        result = self.calculate_kelly(params, method)
+        return account_value * result.adjusted_fraction
+
+    def get_summary_statistics(self) -> Dict:
+        """Get summary statistics of Kelly calculations.
+
+        Returns:
+            Dict with aggregate statistics across all calculations.
+        """
+        if not self._history:
+            return {"total_calculations": 0}
+
+        total = len(self._history)
+        avg_fraction = np.mean([h["result"].adjusted_fraction for h in self._history])
+        avg_growth = np.mean([h["result"].expected_growth for h in self._history])
+        avg_risk = np.mean([h["result"].risk_of_ruin for h in self._history])
+
+        positive_growth = sum(
+            1 for h in self._history if h["result"].expected_growth > 0
+        )
+
+        return {
+            "total_calculations": total,
+            "average_fraction": round(avg_fraction, 4),
+            "average_expected_growth": round(avg_growth, 6),
+            "average_risk_of_ruin": round(avg_risk, 4),
+            "positive_growth_rate": round(positive_growth / total, 4),
+            "total_capital_at_risk": round(avg_fraction * 100, 2),
+        }
+
     @staticmethod
     def _calculate_basic_kelly(params: KellyParameters) -> float:
         """Calculate basic Kelly fraction: f* = (bp - q) / b."""
@@ -216,8 +328,7 @@ class KellyCriterion:
         kelly_fraction = (b * p - q) / b if b > 0 else 0.0
         return max(0.0, kelly_fraction)
 
-    @staticmethod
-    def _adjust_for_method(fraction: float, method: KellyMethod) -> float:
+    def _adjust_for_method(self, fraction: float, method: KellyMethod) -> float:
         """Adjust fraction based on Kelly method."""
         if method == KellyMethod.FULL_KELLY:
             return fraction
@@ -227,8 +338,34 @@ class KellyCriterion:
             return fraction * 0.25
         elif method == KellyMethod.FRACTIONAL_KELLY:
             return fraction * 0.5
+        elif method == KellyMethod.ADAPTIVE_KELLY:
+            return self._calculate_adaptive_kelly(fraction)
         else:
             return fraction * 0.5
+
+    def _calculate_adaptive_kelly(self, fraction: float) -> float:
+        """Calculate adaptive Kelly based on historical performance.
+
+        Starts with half Kelly, then adjusts based on recent win rate:
+        - Recent win rate > 60%: Use 75% of full Kelly
+        - Recent win rate > 50%: Use 50% of full Kelly
+        - Recent win rate <= 50%: Use 25% of full Kelly
+        """
+        if len(self._history) < 10:
+            return fraction * 0.5
+
+        # Calculate recent win rate from history
+        recent_results = self._history[-20:]
+        win_count = sum(1 for h in recent_results if h["result"].expected_value > 0)
+        recent_win_rate = win_count / len(recent_results)
+
+        # Adjust fraction based on recent performance
+        if recent_win_rate > 0.6:
+            return fraction * 0.75  # Increase to 75% Kelly
+        elif recent_win_rate > 0.5:
+            return fraction * 0.5  # Maintain 50% Kelly
+        else:
+            return fraction * 0.25  # Decrease to 25% Kelly
 
     def _adjust_for_confidence(self, fraction: float, confidence: float) -> float:
         """Adjust fraction based on confidence level."""
@@ -265,7 +402,10 @@ class KellyCriterion:
 
     @staticmethod
     def _calculate_risk_of_ruin(fraction: float, params: KellyParameters) -> float:
-        """Calculate approximate probability of ruin."""
+        """Calculate approximate probability of ruin.
+
+        Risk of Ruin ≈ ((1 - f) / (1 + bf))^(p/q)
+        """
         if params.avg_loss <= 0 or fraction <= 0:
             return 0.0
 

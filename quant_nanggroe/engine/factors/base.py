@@ -494,6 +494,33 @@ def safe_div(
     return result.replace([np.inf, -np.inf], np.nan)
 
 
+def ts_sum(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
+    """Rolling sum per column, warmup → NaN."""
+    if n < 1:
+        raise ValueError(f"ts_sum window must be >= 1, got {n}")
+    return df.rolling(window=n, min_periods=n).sum()
+
+
+def ts_product(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
+    """Rolling product per column, warmup → NaN."""
+    if n < 1:
+        raise ValueError(f"ts_product window must be >= 1, got {n}")
+    return df.rolling(window=n, min_periods=n).apply(np.prod, raw=True)
+
+
+def cross_sectional_zscore(df: pd.DataFrame) -> pd.DataFrame:
+    """Per-row z-score: (x - row_mean) / row_std; zero/NaN std rows → NaN.
+
+    This is a cross-sectional operator (operates across columns per row),
+    useful for creating long-short rankings of factor values.
+    """
+    mean = df.mean(axis=1, skipna=True)
+    std = df.std(axis=1, ddof=1, skipna=True)
+    centered = df.sub(mean, axis=0)
+    result = centered.div(std.where(std > 0), axis=0)
+    return result.replace([np.inf, -np.inf], np.nan)
+
+
 def vwap(panel: Dict[str, pd.DataFrame], market: Market = Market.EQUITY_US) -> pd.DataFrame:
     """Market-aware VWAP-equivalent reference price.
 

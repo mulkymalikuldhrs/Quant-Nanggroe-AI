@@ -1,93 +1,94 @@
 """Alpha Factor Library for Quant-Nanggroe-AI.
 
-Provides a comprehensive set of alpha factors extracted from Vibe-Trading (452 factors),
-including WorldQuant 101 Alphas, GTJA 191 Alphas, Barra Risk Model factors,
-technical factors, and fundamental factors.
+Provides a comprehensive set of alpha factors ported from Vibe-Trading (452 factors),
+including:
+- WorldQuant 101 Alphas (alpha101) — 101 factors
+- Guotai Junan 191 Alphas (gtja191) — 191 factors
+- Qlib 158 Alpha Factors (qlib158) — 154 factors
+- Academic Alpha Factors (academic) — 6 factors (Fama-French, Carhart)
+- Technical Factors — 9 factors
+- Fundamental Factors — 8 factors
 
-Each factor inherits from AlphaFactor base class and implements a pure compute() method
-with AST-pure semantics (no external API calls, no randomness, no lookahead bias).
+Each factor follows the __alpha_meta__ + compute(panel) pattern from Vibe-Trading,
+adapted to use Quant-Nanggroe-AI base.py operators. Factors are AST-pure
+(no external API calls, no randomness, no lookahead bias).
 
-Factor categories:
-    - alpha101: WorldQuant 101 Formulaic Alphas (Kakushadze 2015)
-    - gtja191: Guotai Junan 191 Alphas (Chinese A-share market)
-    - barra: MSCI Barra Risk Model factors
-    - technical: Standard technical analysis factors
-    - fundamental: Fundamental analysis factors
+Usage:
+    from quant_nanggroe.engine.factors import FactorRegistry, get_default_registry
+
+    registry = get_default_registry()
+    print(registry.health())  # Show loaded factors by zoo/theme
+
+    # List factors by category
+    alpha101_ids = registry.list(zoo="alpha101")
+
+    # Compute a factor
+    panel = {"close": close_df, "open": open_df, ...}
+    result = registry.compute("alpha101_001", panel)
 """
 
 from quant_nanggroe.engine.factors.base import (
     AlphaFactor,
     FactorMeta,
     Market,
-    decay_linear,
-    delay,
-    delta,
+    cross_sectional_zscore,
     rank,
-    safe_div,
     scale,
-    signed_power,
-    ts_argmax,
-    ts_argmin,
+    ts_rank,
     ts_corr,
     ts_cov,
-    ts_kurtosis,
-    ts_max,
     ts_mean,
-    ts_median,
-    ts_min,
-    ts_product,
-    ts_rank,
-    ts_skewness,
     ts_std,
+    ts_max,
+    ts_min,
+    ts_argmax,
+    ts_argmin,
+    ts_product,
     ts_sum,
+    delta,
+    decay_linear,
+    signed_power,
+    safe_div,
     vwap,
 )
-from quant_nanggroe.engine.factors.registry import FactorRegistry, FactorCategory, get_default_registry, reset_default_registry
-from quant_nanggroe.engine.factors.pipeline import (
-    CombineMethod,
-    FactorPipeline,
-    MissingDataMethod,
-    NeutralizationMethod,
-    OutlierMethod,
+from quant_nanggroe.engine.factors.registry import (
+    FactorHandle,
+    FactorRegistry,
+    get_default_registry,
+    reset_default_registry,
 )
+from quant_nanggroe.engine.factors.pipeline import FactorPipeline
 
 __all__ = [
-    # Base
+    # Base classes and types
     "AlphaFactor",
     "FactorMeta",
+    "FactorHandle",
     "Market",
+    # Registry
+    "FactorRegistry",
+    "get_default_registry",
+    "reset_default_registry",
+    # Pipeline
+    "FactorPipeline",
     # Operators
+    "cross_sectional_zscore",
     "rank",
     "scale",
     "ts_rank",
     "ts_corr",
     "ts_cov",
     "ts_mean",
-    "ts_median",
     "ts_std",
-    "ts_sum",
-    "ts_product",
-    "ts_skewness",
-    "ts_kurtosis",
     "ts_max",
     "ts_min",
     "ts_argmax",
     "ts_argmin",
+    "ts_product",
+    "ts_sum",
     "delta",
-    "delay",
     "decay_linear",
     "signed_power",
     "safe_div",
     "vwap",
-    # Registry
-    "FactorRegistry",
-    "FactorCategory",
-    "get_default_registry",
-    "reset_default_registry",
-    # Pipeline
-    "FactorPipeline",
-    "CombineMethod",
-    "OutlierMethod",
-    "MissingDataMethod",
-    "NeutralizationMethod",
 ]
