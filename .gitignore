@@ -1,66 +1,62 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Dependencies
-node_modules/
-
-# Build output
-dist/
-dist-ssr/
-*.local
-.next/
-.vercel/
-
-# Python
-venv/
+# Byte-compiled
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
 
 # IDE
-.vscode/*
-!.vscode/extensions.json
+.vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.swp
+*.swo
 
-# OS Files
+# Environment
+.env
+.env.local
+.env.production
+
+# Data
+*.db
+*.sqlite3
+data/cache/
+*.csv.gz
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# Node
+node_modules/
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Environment & Secrets
-.env
-.env.local
-.env.development
-.env.production
-.env*.local
-.env.example
+# Logs
+*.log
+logs/
 
-# Sensitive Files
-*.db
-*.key
-*.crt
-*.p12
-*.sqlite
-*.sqlite3
-credentials.db
-master.key
-salt.key
-cred
+# Docker
+docker/data/
 
-# Test Coverage
-coverage/
-.nyc_output/
-
-# TypeScript
-*.tsbuildinfo
-
-# Orchids config
-.orchids/
+# Secrets
+*_api_key*
+*_secret*
+credentials/

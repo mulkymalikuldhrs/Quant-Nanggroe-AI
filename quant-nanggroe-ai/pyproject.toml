@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "quant-nanggroe-ai"
+version = "0.1.0"
+description = "Agentic Trading Intelligence OS — Cluster 1 Foundation"
+authors = ["Mulky Malikul Dhaher <mulky@nanggroe.ai>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "quant_nanggroe"}]
+
+[tool.poetry.scripts]
+quant-nanggroe = "quant_nanggroe.cli:main"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = ">=2.0"
+pydantic-settings = ">=2.0"
+yfinance = ">=0.2.31"
+ccxt = ">=4.0"
+pandas = ">=2.0"
+numpy = ">=1.24"
+scipy = ">=1.11"
+scikit-learn = ">=1.3"
+langchain-core = ">=0.1"
+langgraph = ">=0.0.20"
+httpx = ">=0.25"
+redis = ">=5.0"
+sqlalchemy = ">=2.0"
+alembic = ">=1.12"
+python-dotenv = ">=1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.4"
+pytest-asyncio = ">=0.21"
+pytest-cov = ">=4.1"
+ruff = ">=0.1"
+mypy = ">=1.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["quant_nanggroe", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["quant_nanggroe"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks integration tests",
+]
