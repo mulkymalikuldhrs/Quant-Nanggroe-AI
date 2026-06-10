@@ -16,6 +16,11 @@ Built-in MCP tools wrap the existing agent tool layer:
   - BacktestMCPTool     → BacktestTool (backtests, results)
   - ResearchMCPTool     → SentimentTool + memory (research, search)
 
+Finance skills (ported from mnemosyne MCP server):
+  - StockAnalysisSkill     → Stock analysis with technical + sentiment
+  - MarketResearchSkill    → Market research with persistent memory
+  - DecisionTrackerSkill   → Investment decision tracking + pattern analysis
+
 All tools return structured dicts that conform to the MCP response
 specification: ``{"status": "success"|"error", "data": ..., "error": ...}``.
 """
@@ -1167,19 +1172,38 @@ class MCPServer:
 
     # ── Convenience: register all built-in tools ─────────────────────
 
-    def register_default_tools(self) -> None:
+    def register_default_tools(self, include_finance_skills: bool = True) -> None:
         """
         Register all built-in MCP tools: market_data, trading, risk,
-        backtest, and research.
+        backtest, research, and optionally finance skills.
 
         This is a convenience method for quick setup. Individual tools
         can still be registered or unregistered afterwards.
+
+        Args:
+            include_finance_skills: If True (default), also register
+                finance skills ported from mnemosyne (stock_analysis,
+                market_research, decision_tracker).
         """
         self.register_tool(MarketDataMCPTool())
         self.register_tool(TradingMCPTool())
         self.register_tool(RiskMCPTool())
         self.register_tool(BacktestMCPTool())
         self.register_tool(ResearchMCPTool())
+
+        if include_finance_skills:
+            try:
+                from quant_nanggroe_ai.agents.skills.stock_analysis import StockAnalysisSkill
+                from quant_nanggroe_ai.agents.skills.market_research import MarketResearchSkill
+                from quant_nanggroe_ai.agents.skills.decision_tracker import DecisionTrackerSkill
+
+                self.register_tool(StockAnalysisSkill())
+                self.register_tool(MarketResearchSkill())
+                self.register_tool(DecisionTrackerSkill())
+                logger.info("Finance skills registered (from mnemosyne)")
+            except ImportError:
+                logger.warning("Finance skills not available — skills package not installed")
+
         logger.info("All default MCP tools registered")
 
 
