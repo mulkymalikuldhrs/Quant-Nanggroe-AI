@@ -80,6 +80,7 @@ from quant_nanggroe.agents.execution.agent import ExecutionAgent
 from quant_nanggroe.agents.macro.agent import MacroAgent
 from quant_nanggroe.agents.crypto.agent import CryptoAgent
 from quant_nanggroe.agents.forex.agent import ForexAgent
+from quant_nanggroe.agents.prediction_market.agent import PredictionMarketAgent
 
 # Council components
 from quant_nanggroe.agents.council.debate import CouncilDebate
@@ -153,6 +154,7 @@ __all__ = [
     "MacroAgent",
     "CryptoAgent",
     "ForexAgent",
+    "PredictionMarketAgent",
     # Council
     "CouncilDebate",
     "CouncilVoting",

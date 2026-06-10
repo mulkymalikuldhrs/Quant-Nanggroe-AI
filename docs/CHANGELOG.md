@@ -1,338 +1,553 @@
 # Quant Nanggroe AI — Changelog
 
-**All notable changes to Quant Nanggroe AI are documented in this file.**
+**Complete Version History**
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
----
-
-## [0.3.0] - 2026-03-04 — Agent-3 Massive Upgrade
-
-### Added
-
-#### Agents
-- **feat**: Full 9-agent architecture with specialized domain agents (Researcher, Strategist, Risk, Trader, Portfolio, Execution, Macro, Crypto, Forex)
-- **feat**: Council debate system with Bull/Bear and Risk (Conservative/Neutral/Aggressive) debates
-- **feat**: Council voting with weighted decisions based on historical agent accuracy
-- **feat**: Emergency exit node for kill switch activation with automatic position closure
-- **feat**: Confidence-based routing to council debate when confidence < 0.65
-- **feat**: Agent factory with deep/quick LLM model selection per agent role
-- **feat**: Per-agent tool definitions integrated with MCP protocol
-- **feat**: Per-agent prompt templates with domain-specific instructions
-
-#### Engine — Factors
-- **feat**: `AlphaFactor` base class with `FactorMeta` documentation and `compute(df)` interface
-- **feat**: 50+ WorldQuant Alpha101 factor implementations from Kakushadze (2015)
-- **feat**: 191 GTJA191 Chinese A-share alpha factor implementations
-- **feat**: Barra multi-factor risk model implementation
-- **feat**: Technical factor implementations (RSI, MACD, Bollinger, ATR, ADX, etc.)
-- **feat**: Fundamental factor implementations (P/E, EPS, Revenue Growth, etc.)
-- **feat**: Factor pipeline for composable factor computation
-- **feat**: Factor registry for factor discovery and instantiation
-- **feat**: Vectorized helper functions (rank, delay, delta, ts_corr, ts_cov, ts_mean, ts_std, ts_sum, ts_min, ts_max, ts_argmax, ts_argmin, ts_rank, decay_linear, safe_div, scale, signed_power, vwap)
-
-#### Engine — Risk
-- **feat**: Constitutional risk system with 9 hardcoded, non-overridable checkpoints
-- **feat**: Risk assessment with 4 verdict types (APPROVED, VETOED, CONDITIONAL, KILL_SWITCH)
-- **feat**: VaR computation (Parametric, Historical, Monte Carlo)
-- **feat**: CVaR (Conditional Value at Risk) computation
-- **feat**: Kelly criterion for optimal position sizing
-- **feat**: Risk parity portfolio construction
-- **feat**: Real-time drawdown monitoring with alerting
-- **feat**: Kill switch with daily/weekly PnL thresholds
-- **feat**: Pairwise correlation monitoring between positions
-- **feat**: Emotional lockout mechanism to prevent revenge trading
-- **feat**: Position sizing with constitutional limit enforcement
-
-#### Engine — Backtest
-- **feat**: Backtest engine with configurable commission, slippage, and market type
-- **feat**: Execution reality simulation (dynamic spread, slippage, partial fills, latency)
-- **feat**: Comprehensive performance metrics (Sharpe, Sortino, Calmar, max drawdown, win rate, profit factor)
-- **feat**: Monte Carlo resampling for confidence intervals
-- **feat**: Walk-forward optimization for robustness validation
-- **feat**: Benchmark comparison against buy-and-hold and market indices
-- **feat**: HTML/JSON backtest report generation
-- **feat**: Simulated portfolio with position tracking
-
-#### Engine — Execution
-- **feat**: Execution manager with order lifecycle management
-- **feat**: Fill processing with partial fill handling
-- **feat**: Guard pipeline (cooldown, whitelist, max position)
-- **feat**: Paper broker for simulation trading
-- **feat**: Order creation, modification, and cancellation
-
-#### Engine — ML Models
-- **feat**: Base model interface for ML integration
-- **feat**: Feature store for feature engineering and storage
-- **feat**: Signal generator for ML-based signal generation
-- **feat**: Ensemble model for multi-model predictions
-
-#### Exchange Layer
-- **feat**: `ExchangeInterface` abstract base class with full API (connect, trade, market data, WebSocket)
-- **feat**: CCXT broker implementation for 100+ crypto exchanges
-- **feat**: Alpaca broker implementation for US equities with paper/live toggle
-- **feat**: Paper broker with fill simulation
-- **feat**: Polymarket broker for prediction market integration
-- **feat**: Solana ecosystem integration (Jupiter DEX, RugCheck, Mempool, Wallet, Broker)
-- **feat**: Exchange factory for broker instantiation
-- **feat**: Exchange manager for connection lifecycle
-- **feat**: Guard pipeline for pre-trade validation
-- **feat**: Typed error hierarchy (ExchangeError, ConnectionError, OrderError, RateLimitError, AuthenticationError, InsufficientFundsError, MarketDataError)
-- **feat**: Exchange configuration with `ExchangeConfig` Pydantic model
-- **feat**: Exchange state tracking with `ExchangeState` enum
-
-#### Memory Layer
-- **feat**: Trade journal with entry/exit/reflection recording and PnL calculation
-- **feat**: Knowledge graph for entity-relationship storage
-- **feat**: Paging system for Letta-style context window management
-- **feat**: Session manager for cross-session state persistence
-
-#### MCP Protocol
-- **feat**: Full MCP protocol implementation with JSON-RPC 2.0
-- **feat**: MCP server with tool registration and execution
-- **feat**: MCP client for tool discovery and invocation
-- **feat**: Tool definition schemas with input/output JSON Schemas
-- **feat**: SSE (Server-Sent Events) streaming for long-running tools
-- **feat**: Health check protocol
-- **feat**: Standard MCP error codes
-
-#### Security
-- **feat**: KeyVault for environment-only secrets management with masking and caching
-- **feat**: Authentication module with API key and RBAC support
-- **feat**: Audit trail for comprehensive event logging
-- **feat**: Credential inference for detecting weak/misconfigured credentials
-
-#### API
-- **feat**: FastAPI REST server with OpenAPI docs
-- **feat**: WebSocket endpoint for real-time trading updates
-- **feat**: Trade execution endpoint (`POST /api/v1/trade`)
-- **feat**: Portfolio status endpoint (`GET /api/v1/portfolio`)
-- **feat**: Agent listing endpoint (`GET /api/v1/agents`)
-- **feat**: Backtest execution endpoint (`POST /api/v1/backtest`)
-- **feat**: Risk assessment endpoint (`GET /api/v1/risk/{symbol}`)
-- **feat**: Health check endpoint (`GET /api/v1/health`)
-- **feat**: Pydantic request/response models for all endpoints
-- **feat**: CORS middleware for dashboard integration
-
-#### Data Layer
-- **feat**: SQLAlchemy 2.0 ORM models (User, Trade, Position, PortfolioSnapshot, AgentLog, RiskEvent, Strategy, BacktestResult)
-- **feat**: Pydantic type system (OHLCV, Ticker, OrderBook, TimeFrame, Order, Position, Portfolio, Signal, Decision)
-- **feat**: Multi-provider data access with TTL caching
-- **feat**: Database indexes for common query patterns
-
-#### Configuration
-- **feat**: Pydantic Settings with `QNAI_` environment variable prefix
-- **feat**: Field validators for log levels and risk limit ranges
-- **feat**: `.env` file support for local development
-- **feat**: Cached settings singleton via `@lru_cache`
-
-#### Documentation
-- **feat**: Complete architecture documentation (9 documents)
-- **feat**: Research benchmark summary (113 projects, 10 categories)
-- **feat**: Architecture Decision Records (10 ADRs)
-
-### Changed
-- **refactor**: Migrated from individual repo architecture to monorepo structure
-- **refactor**: Replaced simple pass/fail risk checks with 9-checkpoint constitutional gates
-- **refactor**: Replaced direct broker calls with `ExchangeInterface` abstraction
-- **refactor**: Replaced dict-based agent state with `AgentState` TypedDict
-- **refactor**: Replaced function-based factors with `AlphaFactor` class hierarchy
-- **refactor**: Replaced simple majority voting with weighted council voting
-- **refactor**: Upgraded to Pydantic v2 with `model_config` pattern
-- **refactor**: Upgraded to SQLAlchemy 2.0 with `mapped_column` style
-
-### Fixed
-- **fix**: Alpha factor lookahead bias — all time-series operations use only past data
-- **fix**: Division by zero in factor computation — `safe_div` utility handles zero denominators
-- **fix**: Agent crash propagation — all agent nodes wrapped in try/except with safe defaults
-- **fix**: Risk assessment bypass — constitutional limits are hardcoded and non-overridable
-- **fix**: Kill switch race condition — graph routing ensures atomic emergency exit
-- **fix**: Portfolio state inconsistency — ORM models enforce data integrity
+> This document records all major versions, features, fixes, and milestones in the Quant Nanggroe AI project.
 
 ---
 
-## [0.2.0] - 2025-12-15 — Production-Ready Overhaul
+## Table of Contents
 
-### Added
-- **feat**: LangGraph StateGraph for trading pipeline orchestration
-- **feat**: TradingGraph class with 7 nodes and conditional edges
-- **feat**: 5 specialized agents (Researcher, Strategist, Risk, Trader, Execution)
-- **feat**: Constitutional risk limits as hardcoded constants
-- **feat**: FastAPI REST API with 5 endpoints
-- **feat**: WebSocket endpoint for real-time updates
-- **feat**: SQLAlchemy 2.0 ORM models for 8 tables
-- **feat**: Pydantic Settings with environment variable binding
-- **feat**: Click CLI for command-line operations
-- **feat**: CCXT broker integration for crypto exchanges
-- **feat**: Paper broker for simulation trading
-- **feat**: Trade journal with entry/exit tracking
-- **feat**: KeyVault for secure secrets management
-- **feat**: Structured logging with `structlog`
-
-### Changed
-- **refactor**: Migrated from JavaScript/TypeScript to Python
-- **refactor**: Replaced custom agent loop with LangGraph StateGraph
-- **refactor**: Replaced in-memory state with SQLAlchemy ORM
-- **refactor**: Replaced simple risk check with constitutional 9-gate system
-- **refactor**: Upgraded from Express.js to FastAPI
-
-### Fixed
-- **fix**: Agent state loss between pipeline stages
-- **fix**: Risk limits could be overridden by configuration
-- **fix**: No audit trail for agent decisions
-- **fix**: Exchange errors not properly typed
+1. [v4.0.0 — LangGraph v2 Architecture (Current)](#v400--langgraph-v2-architecture-current)
+2. [v3.0.0 — 469 Factors + 10 Engines](#v300--469-factors--10-engines)
+3. [v2.0.0 — Security + Type Safety](#v200--security--type-safety)
+4. [v1.0.0 — Production-Ready Overhaul](#v100--production-ready-overhaul)
+5. [v0.1.0 — Initial Structure](#v010--initial-structure)
+6. [Detailed Change Log](#detailed-change-log)
 
 ---
 
-## [0.1.0] - 2025-10-01 — Initial Foundation
+## v4.0.0 — LangGraph v2 Architecture (Current)
 
-### Added
-- **feat**: Initial project structure with Python package
-- **feat**: Basic agent system with 4 agents (Researcher, Strategist, Risk, Trader)
-- **feat**: Simple trading pipeline: analysis → signal → risk → execution
-- **feat**: Basic risk management with configurable limits
-- **feat**: CCXT exchange integration
-- **feat**: SQLite database for trade records
-- **feat**: Simple REST API with 3 endpoints
-- **feat**: Basic backtesting with event-driven engine
-- **feat**: Configuration via YAML files
-- **feat**: Logging with Python stdlib
+**Release Date**: 2025-Q2
+**Theme**: Multi-path execution, smart order routing, human-in-the-loop
 
-### Known Issues
-- Risk limits were configurable and could be overridden
-- No council debate or voting mechanism
-- Single LLM model for all agents (no deep/quick split)
-- No WebSocket support
-- No MCP protocol integration
-- No paper/live toggle
-- No kill switch or emergency exit
-- No emotional lockout mechanism
-- No factor library (Alpha101, GTJA191, etc.)
-- No VaR/CVaR computation
-- No Monte Carlo or walk-forward backtesting
-- No exchange interface abstraction
-- No KeyVault for secrets
-- No audit trail
-- No macro, crypto, or forex specialized agents
-- No portfolio optimization agent
-- No Solana/DEX integration
-- No prediction market integration
-- No structured logging (only Python stdlib)
-- No Click CLI
+### Major Features
 
----
+- **Multi-path execution graph**: Asset-class conditional routing with 4 specialized paths
+  - `crypto_path` → Solana/Jupiter tools, on-chain analysis
+  - `forex_path` → FX-specific analysis, carry trade evaluation
+  - `equity_path` → Standard equity flow (researcher + macro)
+  - `prediction_market_path` → Polymarket / event-contract integration
 
-## Detailed Version Comparison
+- **TradingGraphV2**: Enhanced LangGraph StateGraph with 18 nodes and conditional edges
+  - `asset_router` node for symbol classification
+  - `position_sizer` node with ATR-based sizing (TP1/TP2/TP3)
+  - `portfolio_validation` node with concentration/correlation/Kelly checks
+  - `smart_execution` node with venue scoring
+  - `human_checkpoint` node for high-risk trade approval
 
-### Version 0.1.0 → 0.2.0 Migration Summary
+- **ATR-based position sizing**: Fixed-fractional model with three take-profit levels
+  - Stop Loss = Entry - 1.5 × ATR
+  - TP1 = Entry + 1.0 × ATR (R:R = 0.67)
+  - TP2 = Entry + 2.0 × ATR (R:R = 1.33)
+  - TP3 = Entry + 3.0 × ATR (R:R = 2.00)
 
-The v0.2.0 release was a complete rewrite from JavaScript/TypeScript to Python, driven by the need for better ML ecosystem support and more robust type safety.
+- **Smart order routing**: Venue scoring with fee, fill rate, latency, slippage factors
 
-**Breaking Changes from v0.1.0 to v0.2.0:**
+- **Human-in-the-loop checkpoints**: Automatic human approval for high-risk trades
 
-| Area | v0.1.0 | v0.2.0 | Migration Impact |
-|------|--------|--------|-----------------|
-| Language | TypeScript/JavaScript | Python 3.11+ | Complete rewrite required |
-| Agent Framework | Custom loop | LangGraph StateGraph | New orchestration model |
-| Risk Management | Configurable limits | Constitutional (hardcoded) | Limits can no longer be changed at runtime |
-| API Server | Express.js | FastAPI | New API structure and endpoints |
-| Database | MongoDB (Mongoose) | SQLite/PostgreSQL (SQLAlchemy) | Data migration required |
-| State Management | In-memory dicts | AgentState TypedDict | New state model |
-| Configuration | YAML files | Pydantic Settings + env vars | Config migration required |
-| Logging | Winston | structlog | New log format |
+- **AssetRouter**: Regex-based symbol classification with pattern matching for crypto, forex, equity, prediction market
 
-**New Capabilities in v0.2.0:**
-- LangGraph StateGraph with 7 nodes and conditional edges for flexible pipeline routing
-- Constitutional risk limits as hardcoded, non-overridable constants for capital protection
-- FastAPI REST API with automatic OpenAPI documentation and WebSocket support
-- SQLAlchemy 2.0 ORM models with proper indexes, relationships, and timestamp tracking
-- Pydantic Settings with environment variable binding and validation
-- CCXT broker integration supporting 100+ crypto exchanges
-- Paper broker for zero-risk simulation trading
-- Trade journal with entry/exit tracking and PnL calculation
-- KeyVault for environment-only secrets management with masking
-- Structured logging with JSON output via structlog
+- **Prediction market support**: Polymarket broker, event contract analysis, mandatory human approval
 
-### Version 0.2.0 → 0.3.0 Migration Summary
+### New Modules
 
-The v0.3.0 release (Agent-3 Massive Upgrade) expanded the system from 5 agents to 9, added the council debate system, implemented the full factor library, and integrated MCP protocol.
+| Module | Path | Description |
+|---|---|---|
+| `graph_v2.py` | `agents/graph_v2.py` | v2 multi-path trading graph |
+| `asset_router.py` | `agents/nodes/asset_router.py` | Asset class detection and routing |
+| `position_sizer.py` | `agents/nodes/position_sizer.py` | ATR-based position sizing |
+| `portfolio_validator.py` | `agents/nodes/portfolio_validator.py` | Portfolio concentration/correlation/Kelly |
+| `smart_executor.py` | `agents/nodes/smart_executor.py` | Smart order routing with venue scoring |
+| `human_checkpoint.py` | `agents/nodes/human_checkpoint.py` | Human-in-the-loop checkpoint |
+| `polymarket_broker.py` | `exchange/polymarket_broker.py` | Polymarket CLOB integration |
 
-**Breaking Changes from v0.2.0 to v0.3.0:**
+### State Changes
 
-| Area | v0.2.0 | v0.3.0 | Migration Impact |
-|------|--------|--------|-----------------|
-| Agent Count | 5 agents | 9 agents | New agent modules to configure |
-| Risk Assessment | Simple pass/fail | 9-checkpoint constitutional gate | New risk assessment data model |
-| Council System | None | Debate + Voting | New debate and voting nodes in graph |
-| Factor Library | None | Alpha101 + GTJA191 + Barra + Technical + Fundamental | New factor computation pipeline |
-| Exchange Layer | CCXT + Alpaca + Paper | + Polymarket + Solana ecosystem | New exchange adapters |
-| MCP Protocol | None | Full JSON-RPC 2.0 implementation | New tool integration layer |
-| LLM Models | Single model | Dual model (deep/quick) | New configuration parameters |
-| Memory | Journal only | Journal + Knowledge Graph + Paging + Session | New memory subsystems |
-| Security | KeyVault + Auth | + Credential Inference | Enhanced security checks |
+New fields added to `AgentState` TypedDict:
+- `asset_class`, `execution_path` — Multi-path routing
+- `position_sizing_result` — ATR-based sizing
+- `portfolio_validation` — Validation result
+- `venue_scores`, `smart_routing_result` — Smart order routing
+- `human_approval_required`, `human_approval_status`, `human_approval_reason` — Human-in-the-loop
 
-**New Capabilities in v0.3.0:**
+### New Data Models
 
-The Agent-3 upgrade represents the largest single release in the project's history, adding over 15,000 lines of code across 100+ new files. Key additions include:
+- `PositionSizingResult` — ATR sizing with TP1/TP2/TP3
+- `PortfolioValidation` — Concentration/correlation/Kelly checks
+- `VenueScore` — Venue scoring for smart order routing
+- `SmartOrderRouting` — Smart routing result
+- `AssetClass` enum — crypto, forex, equity, prediction_market
 
-1. **4 New Specialized Agents**: Macro (macroeconomic analysis, regime detection), Crypto (on-chain data, whale tracking, sentiment analysis), Forex (FX rates, carry trade analysis, central bank policy monitoring), and Portfolio (risk parity allocation, rebalancing, position optimization)
+### Test Coverage
 
-2. **Council Debate System**: Bull/Bear debate for trade direction analysis, Risk debate with Conservative/Neutral/Aggressive perspectives, and weighted voting by all 9 agents based on historical accuracy metrics
-
-3. **Comprehensive Factor Library**: 50+ Alpha101 factors from Kakushadze (2015) with AST-pure computation and lookahead banning, 191 GTJA191 Chinese A-share alpha factors, Barra multi-factor risk model for institutional-grade risk decomposition, technical indicators (RSI, MACD, Bollinger Bands, ATR, ADX), and fundamental factors (P/E, EPS, Revenue Growth)
-
-4. **MCP Protocol Integration**: Full Model Context Protocol implementation with JSON-RPC 2.0 messaging, tool discovery and registration, SSE streaming for long-running tools, and standardized error codes
-
-5. **Enhanced Exchange Layer**: Polymarket broker for prediction market signal integration, Solana ecosystem support (Jupiter DEX aggregator, RugCheck token safety, mempool monitoring, wallet management), and comprehensive error hierarchy with typed exceptions
-
-6. **Advanced Risk System**: 9 constitutional checkpoints (per-trade risk, daily loss, weekly loss, risk:reward, position size, correlation, leverage, drawdown, trade frequency), VaR/CVaR computation with parametric/historical/Monte Carlo methods, Kelly criterion for optimal position sizing, emotional lockout to prevent revenge trading, and real-time drawdown monitoring with automatic kill switch
+- 2,504+ tests passing
+- New tests for all v2 graph nodes
+- Integration tests for multi-path routing
+- Position sizing calculation tests
+- Portfolio validation edge case tests
 
 ---
 
-## Statistics
+## v3.0.0 — 469 Factors + 10 Engines
 
-### Code Metrics by Version
+**Release Date**: 2025-Q1
+**Theme**: Factor engine, exchange factory, multi-asset backtest
 
-| Metric | v0.1.0 | v0.2.0 | v0.3.0 |
-|--------|--------|--------|--------|
-| Python Files | 12 | 45 | 110+ |
-| Lines of Code | ~2,000 | ~8,000 | ~25,000 |
-| Agent Count | 4 | 5 | 9 |
-| Factor Count | 0 | 0 | 250+ |
-| Risk Checkpoints | 1 (pass/fail) | 4 | 9 |
-| Exchange Adapters | 1 (CCXT) | 3 | 6+ |
-| API Endpoints | 3 | 5 | 7 |
-| ORM Models | 3 | 5 | 8 |
-| Dependencies | 8 | 18 | 28 |
+### Major Features
 
-### Feature Completeness
+- **469+ alpha factors across 7 zoos**:
+  - Alpha101: 101 factors (WorldQuant formulaic alphas)
+  - GTJA191: 191 factors (Guotai Junan Chinese A-share)
+  - Qlib158: 158 factors (Microsoft Qlib features)
+  - Barra: 10+ factors (MSCI risk model)
+  - Technical: 20+ factors (RSI, MACD, Bollinger, ATR, etc.)
+  - Fundamental: 10+ factors (P/E, P/B, ROE, D/E, etc.)
+  - Academic: Variable (literature-derived)
 
-| Feature | v0.1.0 | v0.2.0 | v0.3.0 |
-|---------|--------|--------|--------|
-| Multi-Agent Trading | ❌ | ✅ (5 agents) | ✅ (9 agents) |
-| Constitutional Risk | ❌ | ✅ (4 checkpoints) | ✅ (9 checkpoints) |
-| Council Debate | ❌ | ❌ | ✅ |
-| Factor Library | ❌ | ❌ | ✅ (250+ factors) |
-| MCP Protocol | ❌ | ❌ | ✅ |
-| Paper/Live Toggle | ❌ | ✅ | ✅ |
-| Kill Switch | ❌ | ✅ | ✅ |
-| WebSocket | ❌ | ✅ | ✅ |
-| KeyVault | ❌ | ✅ | ✅ |
-| Audit Trail | ❌ | ❌ | ✅ |
-| Knowledge Graph | ❌ | ❌ | ✅ |
-| Solana/DEX | ❌ | ❌ | ✅ |
-| Prediction Markets | ❌ | ❌ | ✅ |
+- **FactorRegistry**: Centralized factor discovery, computation, and validation
+  - Unified `FactorHandle` for class-based and function-based factors
+  - Discovery by zoo, theme, universe
+  - Output validation (no ±inf, NaN ratio ≤ 95%)
+  - Thread-safe singleton via `get_default_registry()`
+  - AST-based metadata extraction (no import needed)
+
+- **ExchangeFactory**: Dynamic exchange client creation with 10 exchanges
+  - 8 CCXT-backed exchanges: Binance, OKX, Bybit, Bitget, Kraken, KuCoin, Gate, Coinbase
+  - Alpaca broker for US equities and forex
+  - Polymarket broker for prediction markets
+  - Paper trading broker for simulation
+  - ExchangeCapabilities for feature detection
+  - Market type routing (spot/futures/perps)
+
+- **Multi-asset backtest engines**:
+  - Equity engine, Crypto engine, Forex engine, Futures engine
+  - Composite engine for multi-asset portfolios
+  - Monte Carlo simulation
+  - Walk-forward optimization
+  - Performance metrics (Sharpe, Sortino, Calmar, etc.)
+  - Execution simulation with slippage, partial fills, latency
+
+- **Portfolio optimizers**:
+  - Mean-variance optimizer (Markowitz)
+  - Risk parity optimizer
+  - Equal volatility optimizer
+
+- **Solana integration**:
+  - Jupiter swap aggregator
+  - RugCheck token safety
+  - Mempool monitoring
+  - Wallet management
+  - Solana-specific broker
+
+### New Modules
+
+| Module | Path | Description |
+|---|---|---|
+| `registry.py` | `engine/factors/registry.py` | FactorRegistry singleton |
+| `alpha101.py` | `engine/factors/alpha101.py` | 101 WorldQuant factors |
+| `gtja191.py` | `engine/factors/gtja191.py` | 191 GTJA factors |
+| `qlib158.py` | `engine/factors/qlib158.py` | 158 Qlib factors |
+| `barra.py` | `engine/factors/barra.py` | Barra risk factors |
+| `academic.py` | `engine/factors/academic.py` | Academic factors |
+| `pipeline.py` | `engine/factors/pipeline.py` | Factor pipeline |
+| `factory.py` | `exchange/factory.py` | ExchangeFactory |
+| `ccxt_broker.py` | `exchange/ccxt_broker.py` | CCXT exchange broker |
+| `alpaca_broker.py` | `exchange/alpaca_broker.py` | Alpaca broker |
+| `paper_broker.py` | `exchange/paper_broker.py` | Paper trading broker |
+| `manager.py` | `engine/risk/manager.py` | RiskManager top-level |
+| `checks.py` | `engine/risk/checks.py` | 9-checkpoint gate |
+| `kill_switch.py` | `engine/risk/kill_switch.py` | Kill switch |
+| `drawdown.py` | `engine/risk/drawdown.py` | Drawdown monitor |
+| `kelly.py` | `engine/risk/kelly.py` | Kelly Criterion |
+| `var.py` | `engine/risk/var.py` | VaR Calculator |
+| `correlation.py` | `engine/risk/correlation.py` | Correlation monitor |
+| `engine.py` | `engine/backtest/engine.py` | Backtesting engine |
+| `jupiter.py` | `exchange/solana/jupiter.py` | Jupiter swap |
+| `rugcheck.py` | `exchange/solana/rugcheck.py` | RugCheck |
+| `wallet.py` | `exchange/solana/wallet.py` | Wallet management |
+| `mempool.py` | `exchange/solana/mempool.py` | Mempool monitoring |
+
+### Merged Repositories
+
+- Vibe-Trading (469+ factors, function-based pattern) → FULL merge
+- HermesQuantOS (9-checkpoint risk gate, strategy lifecycle) → FULL merge
+- SolSniperX (Solana/Jupiter/RugCheck) → FULL merge
+- AutoHedge (risk parity, correlation) → PARTIAL merge
+- QuantDinger (factor patterns, backtesting) → PARTIAL merge
 
 ---
 
-## Version Summary
+## v2.0.0 — Security + Type Safety
 
-| Version | Date | Codename | Summary |
-|---------|------|----------|---------|
-| 0.1.0 | 2025-10-01 | Foundation | Initial project with basic agents and trading pipeline |
-| 0.2.0 | 2025-12-15 | Production Overhaul | LangGraph orchestration, constitutional risk, FastAPI, full ORM |
-| 0.3.0 | 2026-03-04 | Agent-3 Upgrade | 9 agents, council debate, factor library, MCP protocol, full exchange layer |
+**Release Date**: 2024-Q4
+**Theme**: Pydantic models, constitutional risk limits, security infrastructure
+
+### Major Features
+
+- **Pydantic v2 data models**: All state and data models converted to Pydantic BaseModel
+  - MarketData, Signal, Decision, RiskCheckpoint, RiskAssessment
+  - PortfolioState, PositionInfo, AgentOutput
+  - DebateState, RiskDebateState, VoteResult, CouncilResult
+  - ConfigDict with extra="allow" for forward compatibility
+
+- **Constitutional risk limits (HARDCODED)**: Immutable risk constants
+  - MAX_RISK_PER_TRADE = 0.005 (0.5%)
+  - MAX_DAILY_LOSS = 0.01 (1%)
+  - MAX_WEEKLY_LOSS = 0.03 (3%)
+  - MIN_RISK_REWARD = 2.0 (1:2)
+  - MAX_CORRELATED_POSITIONS = 3
+  - MAX_POSITION_SIZE_PCT = 0.10 (10%)
+  - MAX_LEVERAGE = 3.0
+  - MAX_DRAWDOWN_PCT = 0.15 (15%)
+  - MAX_DAILY_TRADES = 5
+  - CONFIDENCE_THRESHOLD = 0.65
+  - KILL_SWITCH_DAILY_PNL = -0.02 (-2%)
+  - KILL_SWITCH_WEEKLY_PNL = -0.05 (-5%)
+
+- **9-Checkpoint Risk Gate**: From HermesQuantOS
+  1. Risk per trade limit
+  2. Daily loss limit
+  3. Weekly loss limit
+  4. Risk:Reward ratio
+  5. Stop loss exists
+  6. Valid entry price
+  7. Valid direction
+  8. Not overtrading
+  9. Correlated position check
+
+- **Kill switch**: Automatic activation on drawdown/daily/weekly limits
+
+- **Security infrastructure**:
+  - Key vault for API key storage
+  - Authentication module
+  - Audit logging
+  - Credential leak prevention
+
+- **Configuration system**:
+  - Pydantic Settings for type-safe configuration
+  - Environment variable and .env file support
+  - Structured logging with structlog
+
+### New Modules
+
+| Module | Path | Description |
+|---|---|---|
+| `state.py` | `agents/state.py` | Complete AgentState and models |
+| `constants.py` | `engine/risk/constants.py` | Constitutional limits |
+| `keyvault.py` | `security/keyvault.py` | Secure key storage |
+| `auth.py` | `security/auth.py` | Authentication |
+| `audit.py` | `security/audit.py` | Security audit |
+| `credential_inference.py` | `security/credential_inference.py` | Leak detection |
+| `settings.py` | `config/settings.py` | Pydantic Settings |
+| `logging_config.py` | `config/logging_config.py` | Structured logging |
 
 ---
 
-*© 2025-2026 Quant Nanggroe AI | Changelog v0.2.0*
+## v1.0.0 — Production-Ready Overhaul
+
+**Release Date**: 2024-Q3
+**Theme**: Monorepo consolidation, LangGraph integration, agent architecture
+
+### Major Features
+
+- **Monorepo consolidation**: 4 critical repos merged into `quant_nanggroe` package
+  - AutoTrader → Trading graph and agent framework
+  - HermesQuantOS → Risk engine and audit trail
+  - TradingAgents → Council debate and stress testing
+  - Vibe-Trading → Factor zoos (partial, completed in v3)
+
+- **LangGraph StateGraph**: Trading pipeline as a directed graph
+  - 7 core nodes: market_analysis, signal_generation, risk_assessment, portfolio_optimization, execution_decision, order_execution, reflection
+  - 2 special nodes: council_debate, emergency_exit
+  - Conditional edges for risk routing
+  - Streaming execution support
+
+- **5 core agents** (expanded from TradingAgents):
+  - Researcher: Market data analysis
+  - Trader: Execution decisions
+  - Strategist: Signal generation
+  - Risk: 9-checkpoint validation
+  - Portfolio: Asset allocation
+
+- **Agent factory**: Centralized agent creation with LLM routing
+  - Deep think model (gpt-4o) for analysis
+  - Quick think model (gpt-4o-mini) for decisions
+  - Multi-provider support (OpenAI, Anthropic, Google)
+
+- **Council debate system**:
+  - Bull/bear debate mechanism
+  - Risk debate (conservative/neutral/aggressive)
+  - Weighted voting system
+  - Consensus threshold
+
+- **API server** (FastAPI):
+  - Market data routes
+  - Trading routes
+  - Agent status routes
+  - WebSocket streaming
+  - CORS middleware
+  - Health check endpoint
+
+- **Memory system**:
+  - Knowledge base (ChromaDB vectors)
+  - Session state management
+  - Trading journal
+  - Memory paging for large contexts
+
+### New Modules
+
+| Module | Path | Description |
+|---|---|---|
+| `graph.py` | `agents/graph.py` | v1 trading graph |
+| `base.py` | `agents/base.py` | Base agent, LLM creation |
+| `registry.py` | `agents/registry.py` | AgentFactory |
+| `debate.py` | `agents/council/debate.py` | Council debate |
+| `voting.py` | `agents/council/voting.py` | Council voting |
+| `app.py` | `api/app.py` | FastAPI application |
+| `knowledge.py` | `memory/knowledge.py` | Knowledge base |
+| `session.py` | `memory/session.py` | Session state |
+| `journal.py` | `memory/journal.py` | Trading journal |
+
+---
+
+## v0.1.0 — Initial Structure
+
+**Release Date**: 2024-Q2
+**Theme**: Project scaffolding, basic structure
+
+### Features
+
+- **Package structure**: `quant_nanggroe` Python package created
+- **pyproject.toml**: Project metadata, dependencies, build configuration
+- **Basic agent framework**: Initial agent classes
+- **Exchange abstraction**: Early exchange interface design
+- **Configuration**: Basic settings management
+- **Testing**: Initial test infrastructure with pytest
+
+### Initial Dependencies
+
+```
+langgraph>=0.2
+langchain>=0.3
+langchain-openai>=0.2
+pydantic>=2.0
+pandas>=2.0
+numpy>=1.24
+ccxt>=4.0
+fastapi>=0.100
+uvicorn>=0.24
+sqlalchemy>=2.0
+redis>=5.0
+structlog>=23.0
+```
+
+---
+
+## Detailed Change Log
+
+### 2025-Q2 (v4.0.0)
+
+| Date | Change | Module |
+|---|---|---|
+| 2025-06 | Add TradingGraphV2 with multi-path routing | `agents/graph_v2.py` |
+| 2025-06 | Add AssetRouter node | `agents/nodes/asset_router.py` |
+| 2025-06 | Add PositionSizer node with ATR + TP1/TP2/TP3 | `agents/nodes/position_sizer.py` |
+| 2025-06 | Add PortfolioValidator node | `agents/nodes/portfolio_validator.py` |
+| 2025-06 | Add SmartExecutor node | `agents/nodes/smart_executor.py` |
+| 2025-06 | Add HumanCheckpoint node | `agents/nodes/human_checkpoint.py` |
+| 2025-06 | Add PolymarketBroker | `exchange/polymarket_broker.py` |
+| 2025-06 | Add prediction_market_path to graph | `agents/graph_v2.py` |
+| 2025-06 | Add PositionSizingResult model | `agents/state.py` |
+| 2025-06 | Add PortfolioValidation model | `agents/state.py` |
+| 2025-06 | Add VenueScore and SmartOrderRouting models | `agents/state.py` |
+| 2025-06 | Add AssetClass enum | `agents/state.py` |
+| 2025-06 | Add human_approval fields to AgentState | `agents/state.py` |
+| 2025-06 | Portfolio validation conditional edges | `agents/graph_v2.py` |
+| 2025-06 | Human checkpoint conditional edges | `agents/graph_v2.py` |
+| 2025-06 | Council debate loops back to position_sizer | `agents/graph_v2.py` |
+| 2025-06 | CRISIS regime requires confidence ≥ 0.85 | `agents/graph_v2.py` |
+
+### 2025-Q1 (v3.0.0)
+
+| Date | Change | Module |
+|---|---|---|
+| 2025-03 | Add FactorRegistry with thread-safe singleton | `engine/factors/registry.py` |
+| 2025-03 | Add FactorHandle for unified factor interface | `engine/factors/registry.py` |
+| 2025-03 | Port Alpha101 (101 factors) from Vibe-Trading | `engine/factors/alpha101.py` |
+| 2025-03 | Port GTJA191 (191 factors) from Vibe-Trading | `engine/factors/gtja191.py` |
+| 2025-03 | Port Qlib158 (158 factors) from Vibe-Trading | `engine/factors/qlib158.py` |
+| 2025-03 | Port Academic factors from Vibe-Trading | `engine/factors/academic.py` |
+| 2025-03 | Add Barra risk factors | `engine/factors/barra.py` |
+| 2025-03 | Add output validation (no inf, < 95% NaN) | `engine/factors/registry.py` |
+| 2025-03 | Add AST-based metadata extraction | `engine/factors/registry.py` |
+| 2025-02 | Add ExchangeFactory with 10 exchanges | `exchange/factory.py` |
+| 2025-02 | Add CCXTBroker for 8 crypto exchanges | `exchange/ccxt_broker.py` |
+| 2025-02 | Add AlpacaBroker for US equities/forex | `exchange/alpaca_broker.py` |
+| 2025-02 | Add PaperBroker for simulation | `exchange/paper_broker.py` |
+| 2025-02 | Add ExchangeCapabilities feature detection | `exchange/factory.py` |
+| 2025-02 | Add market type routing (spot/futures/perps) | `exchange/factory.py` |
+| 2025-01 | Port Solana/Jupiter from SolSniperX | `exchange/solana/` |
+| 2025-01 | Port RugCheck from SolSniperX | `exchange/solana/rugcheck.py` |
+| 2025-01 | Port wallet management from SolSniperX | `exchange/solana/wallet.py` |
+| 2025-01 | Add backtest engine with multi-asset support | `engine/backtest/` |
+| 2025-01 | Add Monte Carlo simulation | `engine/backtest/monte_carlo.py` |
+| 2025-01 | Add walk-forward optimization | `engine/backtest/walk_forward.py` |
+| 2025-01 | Add portfolio optimizers | `engine/backtest/optimizers/` |
+
+### 2024-Q4 (v2.0.0)
+
+| Date | Change | Module |
+|---|---|---|
+| 2024-12 | Convert all data models to Pydantic v2 | `agents/state.py` |
+| 2024-12 | Add constitutional risk limits (hardcoded) | `engine/risk/constants.py` |
+| 2024-12 | Add 9-checkpoint risk gate from HermesQuantOS | `engine/risk/checks.py` |
+| 2024-12 | Add kill switch with auto-activation | `engine/risk/kill_switch.py` |
+| 2024-12 | Add drawdown monitor | `engine/risk/drawdown.py` |
+| 2024-12 | Add VaR calculator | `engine/risk/var.py` |
+| 2024-12 | Add Kelly Criterion calculator | `engine/risk/kelly.py` |
+| 2024-12 | Add correlation monitor | `engine/risk/correlation.py` |
+| 2024-12 | Add RiskManager top-level class | `engine/risk/manager.py` |
+| 2024-12 | Add stress testing (6 scenarios) | `engine/risk/manager.py` |
+| 2024-11 | Add security key vault | `security/keyvault.py` |
+| 2024-11 | Add authentication module | `security/auth.py` |
+| 2024-11 | Add audit logging | `security/audit.py` |
+| 2024-11 | Add credential leak prevention | `security/credential_inference.py` |
+| 2024-11 | Add Pydantic Settings configuration | `config/settings.py` |
+| 2024-11 | Add structured logging | `config/logging_config.py` |
+
+### 2024-Q3 (v1.0.0)
+
+| Date | Change | Module |
+|---|---|---|
+| 2024-09 | Add TradingGraph with LangGraph StateGraph | `agents/graph.py` |
+| 2024-09 | Add AgentFactory for agent creation | `agents/registry.py` |
+| 2024-09 | Add base agent with LLM routing | `agents/base.py` |
+| 2024-09 | Add Researcher agent | `agents/researcher/` |
+| 2024-09 | Add Trader agent | `agents/trader/` |
+| 2024-09 | Add Strategist agent | `agents/strategist/` |
+| 2024-09 | Add Risk agent | `agents/risk/` |
+| 2024-09 | Add Portfolio agent | `agents/portfolio/` |
+| 2024-09 | Add Execution agent | `agents/execution/` |
+| 2024-09 | Add Macro agent | `agents/macro/` |
+| 2024-09 | Add Crypto agent | `agents/crypto/` |
+| 2024-09 | Add Forex agent | `agents/forex/` |
+| 2024-09 | Add council debate mechanism | `agents/council/debate.py` |
+| 2024-09 | Add council voting system | `agents/council/voting.py` |
+| 2024-08 | Add FastAPI application | `api/app.py` |
+| 2024-08 | Add market data API route | `api/routes/market.py` |
+| 2024-08 | Add trading API route | `api/routes/trading.py` |
+| 2024-08 | Add agents API route | `api/routes/agents.py` |
+| 2024-08 | Add WebSocket route | `api/routes/ws.py` |
+| 2024-08 | Add memory system | `memory/` |
+| 2024-07 | Monorepo consolidation begins | — |
+| 2024-07 | Merge AutoTrader core | — |
+| 2024-07 | Merge HermesQuantOS risk framework | — |
+| 2024-07 | Merge TradingAgents debate system | — |
+
+### 2024-Q2 (v0.1.0)
+
+| Date | Change | Module |
+|---|---|---|
+| 2024-06 | Project initialization | — |
+| 2024-06 | Create quant_nanggroe package | — |
+| 2024-06 | Set up pyproject.toml | — |
+| 2024-06 | Set up pytest configuration | — |
+| 2024-06 | Set up ruff and mypy configuration | — |
+| 2024-06 | Initial agent framework | — |
+| 2024-06 | Initial exchange interface | — |
+
+---
+
+## Migration Impact Summary
+
+### Repository Merge Timeline
+
+| Repository | Version Merged | Strategy | Modules Added | Tests Added |
+|---|---|---|---|---|
+| AutoTrader | v1.0.0 | FULL | 15+ | 200+ |
+| HermesQuantOS | v2.0.0 | FULL | 12+ | 180+ |
+| TradingAgents | v1.0.0 | FULL | 8+ | 120+ |
+| Vibe-Trading | v3.0.0 | FULL | 10+ | 300+ |
+| AI-Trader | v2.0.0 | FULL | 8+ | 100+ |
+| AutoHedge | v3.0.0 | PARTIAL | 5+ | 60+ |
+| QuantDinger | v3.0.0 | PARTIAL | 4+ | 50+ |
+| SolSniperX | v3.0.0 | FULL | 6+ | 80+ |
+| FinceptTerminal | v4.0.0 | PARTIAL | 3+ | 30+ |
+| OpenAlice | v4.0.0 | PARTIAL | 2+ | 20+ |
+| Misi-Screener | v4.0.0 | PARTIAL | 2+ | 15+ |
+| PromptForgeAI | v4.0.0 | PARTIAL | 2+ | 10+ |
+
+### Test Suite Growth
+
+| Version | Tests | Coverage | Key Additions |
+|---|---|---|---|
+| v0.1.0 | 50 | ~40% | Basic agent and config tests |
+| v1.0.0 | 800+ | ~70% | Graph, agents, API, council |
+| v2.0.0 | 1,200+ | ~75% | Risk engine, security, Pydantic models |
+| v3.0.0 | 2,100+ | ~80% | Factors, exchanges, backtest |
+| v4.0.0 | 2,504+ | ~85% | v2 graph, multi-path, position sizing |
+
+### Module Count Growth
+
+| Version | Modules | Key Additions |
+|---|---|---|
+| v0.1.0 | 15 | Basic package structure |
+| v1.0.0 | 80 | Agents, graph, council, API, memory |
+| v2.0.0 | 120 | Risk engine, security, config |
+| v3.0.0 | 185 | Factors, exchanges, backtest, Solana |
+| v4.0.0 | 214+ | v2 graph nodes, SOR, human checkpoint |
+
+---
+
+## Breaking Changes
+
+### v4.0.0 Breaking Changes
+
+| Change | Impact | Migration |
+|---|---|---|
+| `AgentState` adds new fields | Code creating states manually must include new fields | Use `create_initial_state()` factory |
+| v2 graph has different node names | Code referencing v1 node names must update | New nodes: asset_router, position_sizer, portfolio_validation, smart_execution, human_checkpoint, trade_rejected |
+| `AssetClass` enum added | New enum for asset classification | Import from `agents.state` |
+| Human checkpoint may block trades | Trades that previously auto-executed may now require approval | Set `human_approval_status="APPROVED"` in initial state |
+| Portfolio validation may fail | Portfolios that previously passed may fail validation | Review concentration/correlation limits |
+
+### v3.0.0 Breaking Changes
+
+| Change | Impact | Migration |
+|---|---|---|
+| FactorRegistry singleton | Factor modules must use registry API | Import from `engine.factors.registry` |
+| ExchangeFactory replaces direct CCXT | Code creating CCXT exchanges directly must use factory | Use `ExchangeFactory.create()` |
+| Constitutional limits hardcoded | Risk limits can no longer be configured | Accept hardcoded limits |
+
+### v2.0.0 Breaking Changes
+
+| Change | Impact | Migration |
+|---|---|---|
+| Pydantic v2 models | All model usage must use v2 API | Update from v1 patterns |
+| TypedDict for AgentState | State is no longer a Pydantic model | Use dict-style access |
+| Constitutional limits | Risk configuration no longer accepted | Use hardcoded constants |
+
+### v1.0.0 Breaking Changes
+
+| Change | Impact | Migration |
+|---|---|---|
+| Monorepo structure | Import paths changed | Update all imports to `quant_nanggroe.*` |
+| LangGraph orchestration | Custom execution loops replaced | Use TradingGraph.run() |
+| AgentFactory | Agents created via factory | Use factory instead of direct instantiation |
+
+---
+
+## Deprecation Notices
+
+| Feature | Deprecated In | Removed In | Replacement |
+|---|---|---|---|
+| v1 graph (graph.py) | v4.0.0 | v5.0.0 | TradingGraphV2 |
+| Direct CCXT instantiation | v3.0.0 | v4.1.0 | ExchangeFactory |
+| Custom risk configuration | v2.0.0 | v3.0.0 | Constitutional limits |
+| Pydantic v1 models | v2.0.0 | v3.0.0 | Pydantic v2 |
+
+---
+
+© 2025-2026 Quant Nanggroe AI | Changelog v4.0.0

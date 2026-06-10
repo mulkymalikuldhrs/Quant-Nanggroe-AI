@@ -1,710 +1,1028 @@
 # Quant Nanggroe AI — System Design Document
 
-**Version 0.2.0 | Agentic Trading Intelligence OS**
+**Version 4.0.0 | Detailed Technical Design**
 
-> This document describes the detailed system design of Quant Nanggroe AI, covering design principles, component interactions, data flows, state management, error handling, configuration, security, performance, and scalability.
+> This document provides the detailed technical design of the Quant Nanggroe AI system, including component diagrams, data flow, state management, risk limits, routing logic, position sizing, smart order routing, and human-in-the-loop checkpoints.
 
 ---
 
 ## Table of Contents
 
-1. [Design Principles and Philosophy](#1-design-principles-and-philosophy)
-2. [Component Interaction Diagrams](#2-component-interaction-diagrams)
-3. [Data Flow Diagrams](#3-data-flow-diagrams)
-4. [State Management Design](#4-state-management-design)
-5. [Error Handling Strategy](#5-error-handling-strategy)
-6. [Configuration Management](#6-configuration-management)
-7. [Security Design](#7-security-design)
-8. [Performance Considerations](#8-performance-considerations)
-9. [Scalability Design](#9-scalability-design)
+1. [Component Architecture](#1-component-architecture)
+2. [Data Flow Diagrams](#2-data-flow-diagrams)
+3. [State Management (AgentState)](#3-state-management-agentstate)
+4. [Constitutional Risk Limits](#4-constitutional-risk-limits)
+5. [Multi-Path Routing Logic](#5-multi-path-routing-logic)
+6. [Position Sizing (ATR-Based with TP1/TP2/TP3)](#6-position-sizing-atr-based-with-tp1tp2tp3)
+7. [Smart Order Routing](#7-smart-order-routing)
+8. [Human-in-the-Loop Checkpoints](#8-human-in-the-loop-checkpoints)
+9. [Council Debate System](#9-council-debate-system)
+10. [Factor Pipeline Design](#10-factor-pipeline-design)
+11. [Backtest Engine Design](#11-backtest-engine-design)
+12. [Memory System Design](#12-memory-system-design)
+13. [Security Design](#13-security-design)
+14. [Error Handling & Recovery](#14-error-handling--recovery)
+15. [Performance Considerations](#15-performance-considerations)
 
 ---
 
-## 1. Design Principles and Philosophy
+## 1. Component Architecture
 
-### 1.1 Deterministic Reasoning Over Subjective AI
+### High-Level Component Diagram
 
-The fundamental design premise of Quant Nanggroe AI is that LLMs are treated as **Logical Reasoning Engines** operating under strict contracts, not as advisors producing qualitative analysis. This principle manifests in three absolute rules:
+```mermaid
+graph TB
+    subgraph "Presentation Layer"
+        CLI[CLI<br/>click]
+        API[FastAPI Server<br/>uvicorn]
+        WS[WebSocket<br/>/api/ws]
+    end
 
-1. **No Subjective Opinions**: Agents are forbidden from producing "vibes-based" analysis, sentiment narratives, or qualitative assessments. Every output must be grounded in observable, numerical data.
-2. **Mandatory Data Grounding**: All reasoning must originate from Layer 0 data. An agent cannot reason about market conditions without first receiving contextual data. This eliminates hallucination at the architectural level.
-3. **Constitutional Immutability**: Risk limits are hardcoded and cannot be overridden by any agent, LLM reasoning, or configuration change. This is an architectural guarantee of capital protection.
+    subgraph "Orchestration Layer"
+        GV2[TradingGraphV2<br/>LangGraph StateGraph]
+        AF[AgentFactory]
+        AR[AssetRouter]
+        PS[PositionSizer]
+        PV[PortfolioValidator]
+        SE[SmartExecutor]
+        HC[HumanCheckpoint]
+    end
 
-### 1.2 Principle of Least Privilege for Agents
+    subgraph "Agent Layer"
+        RES[Researcher]
+        MAC[Macro]
+        CRY[Crypto]
+        FOR[Forex]
+        STR[Strategist]
+        RSK[Risk]
+        POR[Portfolio]
+        TRD[Trader]
+        EXE[Execution]
+        COU[Council]
+        PM[Prediction Market]
+    end
 
-Each agent operates within a strictly bounded domain:
+    subgraph "Engine Layer"
+        FR[FactorRegistry<br/>469 factors]
+        RM[RiskManager]
+        KS[KillSwitch]
+        BE[BacktestEngine]
+        DM[DrawdownMonitor]
+        VC[VaRCalculator]
+        KC[KellyCriterion]
+        CM[CorrelationMonitor]
+    end
 
-- **Researcher** can only observe and report — it cannot generate trading signals
-- **Strategist** can generate signals but cannot execute trades
-- **Risk** can veto trades but cannot create them
-- **Trader** can propose decisions but cannot bypass risk checks
-- **Execution** can place orders but only within risk-approved parameters
+    subgraph "Exchange Layer"
+        EF[ExchangeFactory]
+        CCXT[CCXTBroker]
+        ALP[AlpacaBroker]
+        POLY[PolymarketBroker]
+        PAP[PaperBroker]
+    end
 
-This separation ensures that no single agent failure can lead to uncontrolled capital deployment.
+    subgraph "Data Layer"
+        MDS[MarketDataService]
+        ASW[AutoSwitch]
+        MEM[Memory System]
+        DB[(PostgreSQL)]
+        RED[(Redis)]
+        CHR[(ChromaDB)]
+    end
 
-### 1.3 Fail-Safe Defaults
+    CLI --> GV2
+    API --> GV2
+    WS --> GV2
+    GV2 --> AF
+    GV2 --> AR
+    GV2 --> PS
+    GV2 --> PV
+    GV2 --> SE
+    GV2 --> HC
+    AF --> RES & MAC & CRY & FOR & STR & RSK & POR & TRD & EXE & COU & PM
+    RSK --> RM
+    RM --> KS & DM & VC & KC & CM
+    STR --> FR
+    EXE --> EF
+    EF --> CCXT & ALP & POLY & PAP
+    RES --> MDS
+    MDS --> ASW
+    GV2 --> MEM
+    MEM --> DB & RED & CHR
+```
 
-Every system component defaults to the safest possible state:
+### Component Dependency Matrix
 
-- If risk assessment fails → trade is VETOED
-- If an agent crashes → its output is replaced with a safe default
-- If data is unavailable → no trade signal is generated
-- If confidence is below threshold → council debate is triggered
-- If kill switch activates → all positions are closed immediately
-
-### 1.4 Separation of Concerns
-
-The system maintains strict separation between:
-
-- **Analysis** (agents observing market conditions)
-- **Decision** (agents proposing trade actions)
-- **Validation** (risk engine checking constitutional compliance)
-- **Execution** (exchange layer implementing approved actions)
-- **Reflection** (post-trade analysis and learning)
-
-No concern can bypass or subsume another. The pipeline is linear and unidirectional.
-
-### 1.5 Auditability
-
-Every decision must be fully traceable:
-
-- Agent outputs are recorded with confidence scores and reasoning
-- Risk assessments include all 9 checkpoint values and limits
-- Trade decisions carry the full chain from signal → risk → execution
-- The audit trail supports full reconstruction of any trading decision
+| Component | Depends On | Used By |
+|---|---|---|
+| TradingGraphV2 | AgentFactory, AssetRouter, PositionSizer, PortfolioValidator, SmartExecutor, HumanCheckpoint | API, CLI, Worker |
+| AgentFactory | base.create_llm, agent modules | TradingGraphV2 |
+| AssetRouter | state.AssetClass | TradingGraphV2 |
+| PositionSizer | state.PositionSizingResult | TradingGraphV2 |
+| RiskManager | RiskCheckGate, KillSwitch, DrawdownMonitor, KellyCriterion, VaRCalculator | Risk Agent |
+| FactorRegistry | AlphaFactor, FactorMeta, factor modules | Strategist Agent |
+| ExchangeFactory | ExchangeConfig, CCXTBroker, AlpacaBroker, PolymarketBroker, PaperBroker | Execution Agent |
 
 ---
 
-## 2. Component Interaction Diagrams
+## 2. Data Flow Diagrams
 
-### 2.1 Trading Pipeline Component Interactions
+### Complete Trading Pipeline Data Flow
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Trading Pipeline Run                          │
-│                                                                     │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
-│  │ Researcher│───►│Strategist│───►│   Risk   │───►│ Portfolio│     │
-│  │          │    │          │    │          │    │          │     │
-│  │ • Web    │    │ • Alpha  │    │ • 9-Gate │    │ • Risk   │     │
-│  │   Search │    │   Factors│    │   Check  │    │   Parity │     │
-│  │ • Fin.   │    │ • Signal │    │ • VaR    │    │ • Rebal. │     │
-│  │   Data   │    │   Gen.   │    │ • Kelly  │    │ • Alloc. │     │
-│  │ • News   │    │ • Conf.  │    │ • Drawdn │    │          │     │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────┘     │
-│       │               │               │               │            │
-│       ▼               ▼               ▼               ▼            │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
-│  │  Macro   │    │  Trader  │    │ Council  │    │Execution │     │
-│  │          │    │          │    │  Debate  │    │          │     │
-│  │ • Regime │    │ • Decisions│   │ • Bull   │    │ • Orders │     │
-│  │ • Econ   │    │ • Position│    │ • Bear   │    │ • Fills  │     │
-│  │   Cal.   │    │   Sizing │    │ • Judge  │    │ • Guards │     │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────┘     │
-│       │                                               │            │
-│       ▼                                               ▼            │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
-│  │  Crypto  │    │  Forex   │    │Reflection│    │ Journal  │     │
-│  │          │    │          │    │          │    │          │     │
-│  │ • On-chain│   │ • FX Rate│    │ • Post   │    │ • Record │     │
-│  │ • Whale  │    │ • Carry  │    │   Trade  │    │ • Learn  │     │
-│  │ • Sentim.│    │ • CB Pol.│    │ • Review │    │ • PnL    │     │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────┘     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant Graph as TradingGraphV2
+    participant MA as Market Analysis
+    participant AR as Asset Router
+    participant Path as Asset Path
+    participant SG as Signal Generation
+    participant PS as Position Sizer
+    participant RA as Risk Assessment
+    participant PV as Portfolio Validation
+    participant PO as Portfolio Optimization
+    participant ED as Execution Decision
+    participant HC as Human Checkpoint
+    participant SE as Smart Executor
+    participant EX as Exchange
 
-### 2.2 Agent-Engine Interaction Map
-
-```
-Agent Layer                    Engine Layer
-─────────────                  ────────────
-Researcher  ──────────────────► Data Providers (yfinance, Alpaca, Binance)
-Strategist  ──────────────────► Factor Library (Alpha101, GTJA191, Barra)
-Strategist  ──────────────────► ML Models (Signal Generator, Ensemble)
-Risk        ──────────────────► Risk Engine (VaR, Kelly, Drawdown, KillSwitch)
-Trader      ──────────────────► Execution Engine (Order Management, Guards)
-Portfolio   ──────────────────► Risk Engine (Risk Parity, Position Sizing)
-Execution   ──────────────────► Exchange Layer (CCXT, Alpaca, Paper)
-Macro       ──────────────────► Data Providers (FRED, Economic Calendar)
-Crypto      ──────────────────► Exchange Layer (Binance, CoinGecko)
-Forex       ──────────────────► Data Providers (AlphaVantage, FX Rates)
-```
-
-### 2.3 MCP Component Interaction
-
-```
-┌─────────────────┐
-│  Agent (LLM)    │
-│  "Call tool     │
-│   market_data   │
-│   .get_ohlcv"   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐     JSON-RPC 2.0     ┌─────────────────┐
-│   MCP Client    │ ◄──────────────────► │   MCP Server    │
-│                 │    tools/call         │                 │
-│ • Serialize     │    request            │ • Route to      │
-│   request       │                       │   handler       │
-│ • Handle        │ ◄──────────────────► │ • Execute       │
-│   response      │    tool result        │   tool          │
-│ • Stream SSE    │                       │ • Return result │
-└─────────────────┘                       └─────────────────┘
-                                                  │
-                                                  ▼
-                                          ┌─────────────────┐
-                                          │  Tool Handler   │
-                                          │  (market_data   │
-                                          │   .get_ohlcv)   │
-                                          │                 │
-                                          │ • Validate args │
-                                          │ • Fetch data    │
-                                          │ • Format result │
-                                          └─────────────────┘
+    User->>API: POST /api/trading/run
+    API->>Graph: run(symbols, trade_date)
+    Graph->>MA: invoke(state)
+    MA->>MA: Run Researcher + Macro agents
+    MA-->>Graph: research_output, macro_output
+    
+    Graph->>AR: invoke(state)
+    AR->>AR: detect_asset_class(symbols)
+    AR-->>Graph: asset_class, execution_path
+    
+    Graph->>Path: invoke(state) [crypto/forex/equity/prediction_market]
+    Path->>Path: Run specialized agent
+    Path-->>Graph: path-specific output
+    
+    Graph->>SG: invoke(state)
+    SG->>SG: Run Strategist agent
+    SG-->>Graph: signals, confidence
+    
+    Graph->>PS: invoke(state)
+    PS->>PS: ATR-based sizing with TP1/TP2/TP3
+    PS-->>Graph: position_sizing_result
+    
+    Graph->>RA: invoke(state)
+    RA->>RA: 9-checkpoint risk gate
+    RA-->>Graph: risk_verdict, kill_switch_active
+    
+    alt Risk VETOED
+        Graph-->>API: Pipeline halted (VETOED)
+    else Kill Switch Active
+        Graph->>Graph: Emergency exit
+        Graph-->>API: Emergency exit executed
+    else Low Confidence
+        Graph->>Graph: Council debate
+    else Risk APPROVED
+        Graph->>PV: invoke(state)
+        PV->>PV: Concentration/correlation/Kelly checks
+        PV-->>Graph: portfolio_validation
+        
+        Graph->>PO: invoke(state)
+        PO-->>Graph: portfolio_output
+        
+        Graph->>ED: invoke(state)
+        ED-->>Graph: decisions
+        
+        Graph->>HC: invoke(state)
+        HC->>HC: Check if human approval needed
+        alt Human Approved or Auto-approved
+            Graph->>SE: invoke(state)
+            SE->>EX: Place orders
+            SE-->>Graph: orders_placed
+        else Human Rejected
+            Graph-->>API: Trade rejected
+        end
+    end
+    
+    Graph-->>API: Final state
+    API-->>User: Response
 ```
 
-### 2.4 Memory Layer Interactions
+### Data Flow Through AgentState
 
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Trade       │     │  Knowledge   │     │   Paging     │
-│  Journal     │     │  Graph       │     │   System     │
-│              │     │              │     │              │
-│ • Record     │────►│ • Symbol→    │     │ • Context    │
-│   entries    │     │   Sector     │     │   window     │
-│ • Record     │────►│ • Strategy→  │     │   mgmt       │
-│   exits      │     │   Perf       │     │              │
-│ • Calculate  │     │ • Correlation│     │ • Priority   │
-│   PnL        │     │   patterns   │     │   eviction   │
-│ • Summarize  │────►│ • Regime→    │     │              │
-│   perform.   │     │   Behavior   │     │ • Recall     │
-│              │     │              │     │   mechanism  │
-└──────┬───────┘     └──────────────┘     └──────────────┘
-       │
-       ▼
-┌──────────────┐
-│   Session    │
-│   Manager    │
-│              │
-│ • Session    │
-│   lifecycle  │
-│ • Cross-     │
-│   session    │
-│   state      │
-│ • Pipeline   │
-│   run IDs    │
-└──────────────┘
-```
+The `AgentState` TypedDict flows through the entire graph, with each node reading and writing specific fields:
+
+| Node | Reads | Writes |
+|---|---|---|
+| `market_analysis` | symbols, trade_date, market_data | research_output, macro_output, agent_outputs |
+| `asset_router` | symbols | asset_class, execution_path |
+| `crypto_path` | symbols, market_data, research_output | crypto_output |
+| `forex_path` | symbols, market_data, research_output | forex_output |
+| `equity_path` | research_output, macro_output | (metadata enrichment) |
+| `prediction_market_path` | symbols | prediction_market_output |
+| `signal_generation` | All agent outputs, market_data | signals, strategist_output, confidence |
+| `position_sizer` | signals, portfolio_state | position_sizing_result |
+| `risk_assessment` | signals, position_sizing_result, portfolio_state | risk_assessment, risk_verdict, kill_switch_active |
+| `council_debate` | signals, agent_outputs, confidence | debate_state, council_result, decisions |
+| `portfolio_validation` | position_sizing_result, portfolio_state | portfolio_validation |
+| `portfolio_optimization` | signals, risk_assessment, portfolio_state | portfolio_output |
+| `execution_decision` | signals, risk_assessment, portfolio_output | decisions, trader_output |
+| `human_checkpoint` | decisions, risk_assessment | human_approval_status |
+| `smart_execution` | decisions, venue_scores, smart_routing_result | execution_output, orders_placed |
+| `reflection` | All outputs | debate_state |
 
 ---
 
-## 3. Data Flow Diagrams
+## 3. State Management (AgentState)
 
-### 3.1 Complete Trading Pipeline Data Flow
+The `AgentState` TypedDict is the central state object that flows through the LangGraph graph. It is defined in `quant_nanggroe/agents/state.py`.
 
-```
-[Market Data Providers]        [Economic Data]       [On-Chain Data]
-   yfinance, Alpaca,             FRED,                Binance,
-   Binance, Polygon              AlphaVantage         CoinGecko
-         │                           │                     │
-         ▼                           ▼                     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Data Normalization & Enrichment                │
-│  • Provider health scoring  • Trust score tagging                │
-│  • Auto-failover            • Latency estimation                  │
-│  • TTL caching              • Domain type classification          │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Market Analysis Phase                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│  │Researcher│  │  Macro   │  │  Crypto  │  │  Forex   │       │
-│  │  Agent   │  │  Agent   │  │  Agent   │  │  Agent   │       │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
-│       │              │              │              │              │
-│       ▼              ▼              ▼              ▼              │
-│   research_output  macro_output  crypto_output  forex_output    │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Signal Generation Phase                        │
-│  Strategist Agent:                                               │
-│  • Synthesizes all analysis outputs                              │
-│  • Computes alpha factors (Alpha101, GTJA191, Technical)        │
-│  • Generates signals with direction, confidence, entry/exit     │
-│  • Output: signals[], strategist_output, confidence              │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Risk Assessment Phase                          │
-│  Risk Agent:                                                     │
-│  • 9-checkpoint constitutional gate                              │
-│  • VaR/CVaR computation                                          │
-│  • Kelly criterion sizing                                        │
-│  • Drawdown monitoring                                           │
-│  • Output: risk_assessment, risk_verdict, kill_switch_active     │
-│                                                                   │
-│  ┌─────────────── Conditional Routing ──────────────┐           │
-│  │ VETOED → HALT (END)                               │           │
-│  │ KILL_SWITCH → Emergency Exit                      │           │
-│  │ confidence < 0.65 → Council Debate                │           │
-│  │ APPROVED → Continue to Portfolio Optimization     │           │
-│  └───────────────────────────────────────────────────┘           │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Portfolio Optimization Phase                   │
-│  Portfolio Agent:                                                │
-│  • Risk parity allocation                                        │
-│  • Position sizing within constitutional limits                  │
-│  • Rebalancing recommendations                                   │
-│  • Output: portfolio_output                                      │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Execution Decision Phase                       │
-│  Trader Agent:                                                   │
-│  • Final BUY/SELL/HOLD decisions                                 │
-│  • Position sizing and stop-loss/take-profit levels              │
-│  • Output: decisions[], trader_output, confidence                │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Order Execution Phase                          │
-│  Execution Agent:                                                │
-│  • Order routing to appropriate exchange                         │
-│  • Guard pipeline (cooldown, whitelist, max position)            │
-│  • Fill tracking and slippage monitoring                         │
-│  • Output: execution_output, orders_placed                       │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Reflection Phase                               │
-│  Council Debate:                                                 │
-│  • Post-trade analysis by all agents                             │
-│  • Bull/Bear debate on trade quality                             │
-│  • Risk debate (conservative/neutral/aggressive)                 │
-│  • Journal recording with reflections                            │
-│  • Output: debate_state                                          │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 3.2 Risk Assessment Data Flow
-
-```
-[Proposed Trade]
-      │
-      ▼
-┌──────────────────────────────────┐
-│ Checkpoint 1: Per-Trade Risk     │──► risk_amount / portfolio ≤ 0.5%
-├──────────────────────────────────┤
-│ Checkpoint 2: Daily Loss         │──► daily_pnl_pct ≤ 1.0%
-├──────────────────────────────────┤
-│ Checkpoint 3: Weekly Loss        │──► weekly_pnl_pct ≤ 3.0%
-├──────────────────────────────────┤
-│ Checkpoint 4: Risk:Reward        │──► R:R ≥ 1:2
-├──────────────────────────────────┤
-│ Checkpoint 5: Position Size      │──► position_size ≤ 10% portfolio
-├──────────────────────────────────┤
-│ Checkpoint 6: Correlation        │──► correlated_positions ≤ 3
-├──────────────────────────────────┤
-│ Checkpoint 7: Leverage           │──► leverage ≤ 3x
-├──────────────────────────────────┤
-│ Checkpoint 8: Drawdown           │──► drawdown ≤ 15%
-├──────────────────────────────────┤
-│ Checkpoint 9: Trade Frequency    │──► trades_today ≤ 5
-└──────────────┬───────────────────┘
-               │
-      ┌────────┼────────┐
-      │        │        │
-  All Pass  Any Fail  Critical
-      │        │        │
-      ▼        ▼        ▼
-  APPROVED   VETOED  KILL_SWITCH
-```
-
-### 3.3 Data Provider Failover Flow
-
-```
-[Data Request]
-      │
-      ▼
-[Primary Provider] ──► Success? ──► Yes ──► Return Data
-      │
-      No (Error/Timeout)
-      │
-      ▼
-[Retry with Backoff] ──► Retry 1 (1s) ──► Retry 2 (2s) ──► Retry 3 (4s)
-      │
-      All Retries Failed
-      │
-      ▼
-[Fallback Provider] ──► Success? ──► Yes ──► Return Data
-      │
-      No
-      │
-      ▼
-[Mark Primary as Unhealthy] ──► Cooldown Period
-      │
-      ▼
-[Return Error / Use Cached Data (if available)]
-```
-
----
-
-## 4. State Management Design
-
-### 4.1 LangGraph AgentState
-
-The `AgentState` TypedDict is the central state object that flows through the LangGraph trading pipeline. It is defined in `quant_nanggroe/agents/state.py` and carries all information between nodes.
-
-**State Lifecycle**:
-
-```
-create_initial_state()
-       │
-       ▼
-┌──────────────────────────────────────────────┐
-│ Initial State:                               │
-│   symbols: [...]                             │
-│   trade_date: "2026-03-04"                   │
-│   market_data: {}                            │
-│   risk_verdict: "VETOED" (safe default)      │
-│   confidence: 0.0                            │
-│   kill_switch_active: False                  │
-│   should_halt: False                         │
-│   metadata.constitutional_limits: {...}      │
-└──────────────────────────────────────────────┘
-       │
-       ▼  (Each node adds/updates fields)
-┌──────────────────────────────────────────────┐
-│ After Market Analysis:                       │
-│   research_output: "..."                     │
-│   macro_output: "..."                        │
-│   crypto_output: "..."                       │
-│   forex_output: "..."                        │
-│   agent_outputs.researcher: {...}            │
-│   agent_outputs.macro: {...}                 │
-│   iteration: 1                               │
-└──────────────────────────────────────────────┘
-       │
-       ▼  (Signal generation adds)
-┌──────────────────────────────────────────────┐
-│ After Signal Generation:                     │
-│   signals: [{symbol, direction, action,      │
-│             confidence, entry, SL, TP}]      │
-│   strategist_output: "..."                   │
-│   confidence: 0.72                           │
-└──────────────────────────────────────────────┘
-       │
-       ▼  (Risk assessment adds)
-┌──────────────────────────────────────────────┐
-│ After Risk Assessment:                       │
-│   risk_assessment: {verdict, checkpoints,    │
-│     var_95, cvar_95, kelly_fraction, ...}    │
-│   risk_verdict: "APPROVED"                   │
-│   kill_switch_active: False                  │
-└──────────────────────────────────────────────┘
-```
-
-### 4.2 State Immutability Guarantees
-
-- Each graph node returns a **partial state update** (dictionary), not a mutation of the existing state
-- LangGraph merges partial updates into the full state automatically
-- The `sender` field tracks which node last modified the state
-- The `iteration` field increments with each pipeline pass
-
-### 4.3 Sub-States
-
-The system uses specialized sub-states for different mechanisms:
-
-**DebateState**: Bull/Bear debate with `bull_history`, `bear_history`, `judge_decision`, `count`
-
-**RiskDebateState**: Three-way risk debate with `conservative_history`, `neutral_history`, `aggressive_history`, `judge_decision`, `count`
-
-**CouncilResult**: Vote aggregation with `final_decision`, `votes[]`, `weighted_score`, `consensus_level`, `requires_human_review`
-
-### 4.4 Persistent State
-
-- **Database State**: SQLAlchemy ORM models for trades, positions, portfolio snapshots, agent logs, risk events, strategies, backtest results
-- **Journal State**: TradeJournal with in-memory trades list and open positions dict, persisted to JSON
-- **Session State**: Session manager for cross-request state continuity
-- **Knowledge Graph**: Entity-relationship storage for market knowledge
-
----
-
-## 5. Error Handling Strategy
-
-### 5.1 Agent-Level Error Handling
-
-Each agent node in the LangGraph graph wraps its execution in a try/except block:
+### Complete AgentState Schema
 
 ```python
-def _market_analysis_node(self, state: AgentState) -> Dict[str, Any]:
-    updates = {}
-    try:
-        researcher = self._factory.create_agent("researcher")
-        result = researcher(state)
-        updates["research_output"] = result.get("research_output", "")
-    except Exception as e:
-        logger.error(f"Researcher agent failed: {e}")
-        updates["research_output"] = f"Research failed: {e}"
-    return updates
+class AgentState(TypedDict):
+    # ── Core Identification ────────────────────────────
+    symbols: Annotated[List[str], "List of trading symbols"]
+    trade_date: Annotated[str, "Current trading date (YYYY-MM-DD)"]
+
+    # ── Market Data ─────────────────────────────────────
+    market_data: Annotated[Dict[str, Any], "Market data by symbol"]
+
+    # ── Agent Outputs (Analysis Phase) ──────────────────
+    research_output: Annotated[str, "Research agent output"]
+    macro_output: Annotated[str, "Macro agent output"]
+    crypto_output: Annotated[str, "Crypto agent output"]
+    forex_output: Annotated[str, "Forex agent output"]
+    prediction_market_output: Annotated[str, "Prediction market agent output"]
+
+    # ── V2 Multi-Path Routing ──────────────────────────
+    asset_class: Annotated[str, "Detected asset class"]
+    execution_path: Annotated[str, "Selected execution path"]
+
+    # ── Signal Generation ───────────────────────────────
+    signals: Annotated[List[Dict[str, Any]], "Generated trading signals"]
+    strategist_output: Annotated[str, "Strategist agent output"]
+
+    # ── Risk Assessment ─────────────────────────────────
+    risk_assessment: Annotated[Dict[str, Any], "Risk assessment results"]
+    risk_verdict: Annotated[str, "APPROVED/VETOED/KILL_SWITCH"]
+
+    # ── V2 Position Sizing ─────────────────────────────
+    position_sizing_result: Annotated[Dict[str, Any], "ATR-based sizing"]
+
+    # ── V2 Portfolio Validation ─────────────────────────
+    portfolio_validation: Annotated[Dict[str, Any], "Validation result"]
+
+    # ── Portfolio ───────────────────────────────────────
+    portfolio_state: Annotated[Dict[str, Any], "Current portfolio state"]
+    portfolio_output: Annotated[str, "Portfolio agent output"]
+
+    # ── Trading Decision ────────────────────────────────
+    decisions: Annotated[List[Dict[str, Any]], "Final trading decisions"]
+    trader_output: Annotated[str, "Trader agent output"]
+
+    # ── Execution ───────────────────────────────────────
+    execution_output: Annotated[str, "Execution agent output"]
+    orders_placed: Annotated[List[Dict[str, Any]], "Orders placed"]
+
+    # ── V2 Smart Order Routing ─────────────────────────
+    venue_scores: Annotated[List[Dict[str, Any]], "Venue scores"]
+    smart_routing_result: Annotated[Dict[str, Any], "SOR result"]
+
+    # ── V2 Human-in-the-Loop ───────────────────────────
+    human_approval_required: Annotated[bool, "Whether human approval needed"]
+    human_approval_status: Annotated[str, "PENDING/APPROVED/REJECTED/TIMEOUT"]
+    human_approval_reason: Annotated[str, "Reason for requiring approval"]
+
+    # ── Council / Debate ────────────────────────────────
+    debate_state: Annotated[Dict[str, Any], "Current debate state"]
+    council_result: Annotated[Dict[str, Any], "Council voting result"]
+
+    # ── All Agent Outputs ───────────────────────────────
+    agent_outputs: Annotated[Dict[str, Any], "All outputs by name"]
+
+    # ── Control Flow ────────────────────────────────────
+    iteration: Annotated[int, "Current iteration count"]
+    confidence: Annotated[float, "Overall confidence"]
+    kill_switch_active: Annotated[bool, "Kill switch state"]
+    should_halt: Annotated[bool, "Whether to halt"]
+
+    # ── Metadata ────────────────────────────────────────
+    metadata: Annotated[Dict[str, Any], "Additional metadata"]
+    sender: Annotated[str, "Last sender agent"]
 ```
 
-**Design principle**: Agent failures never crash the pipeline. They produce degraded but safe outputs.
-
-### 5.2 Exchange Error Hierarchy
-
-```
-ExchangeError (base)
-├── ConnectionError          # Network/connection issues
-├── OrderError               # Order submission/cancellation failures
-│   └── .order_id           # Associated order ID
-├── RateLimitError           # Exchange rate limits
-│   └── .retry_after        # Seconds until retry allowed
-├── AuthenticationError      # Invalid API keys
-├── InsufficientFundsError   # Not enough balance
-└── MarketDataError          # Data retrieval failures
-```
-
-Each error type carries contextual information (exchange name, order ID, retry delay) to enable intelligent recovery.
-
-### 5.3 Risk Engine Fallback
-
-When the risk engine is unavailable, the system defaults to the safest behavior:
+### Initial State Factory
 
 ```python
-except Exception as risk_err:
-    return RiskCheckResponse(
-        verdict="CONDITIONAL",
-        approved=False,
-        veto_reason="Risk engine unavailable - conditional hold",
-    )
-```
-
-No trade is ever approved when risk assessment cannot be performed.
-
-### 5.4 Graph-Level Error Handling
-
-The top-level `TradingGraph.run()` method catches all exceptions:
-
-```python
-try:
-    final_state = self._graph.invoke(initial_state)
-except Exception as e:
+def create_initial_state(symbols: List[str], trade_date: str) -> Dict[str, Any]:
     return {
-        **initial_state,
-        "error": str(e),
-        "should_halt": True,
+        "symbols": symbols,
+        "trade_date": trade_date,
+        "market_data": {},
+        "research_output": "",
+        "macro_output": "",
+        "crypto_output": "",
+        "forex_output": "",
+        "prediction_market_output": "",
+        "asset_class": AssetClass.UNKNOWN.value,
+        "execution_path": "equity_path",
+        "signals": [],
+        "strategist_output": "",
+        "risk_assessment": {},
+        "risk_verdict": RiskVerdict.VETOED.value,
+        "position_sizing_result": {},
+        "portfolio_validation": {},
+        "portfolio_state": {},
+        "portfolio_output": "",
+        "decisions": [],
+        "trader_output": "",
+        "execution_output": "",
+        "orders_placed": [],
+        "venue_scores": [],
+        "smart_routing_result": {},
+        "human_approval_required": False,
+        "human_approval_status": "NOT_REQUIRED",
+        "human_approval_reason": "",
+        "debate_state": {
+            "bull_history": "",
+            "bear_history": "",
+            "history": "",
+            "current_response": "",
+            "judge_decision": "",
+            "count": 0,
+        },
+        "council_result": {},
+        "agent_outputs": {},
+        "iteration": 0,
+        "confidence": 0.0,
+        "kill_switch_active": False,
+        "should_halt": False,
+        "metadata": {
+            "created_at": datetime.now().isoformat(),
+            "constitutional_limits": {
+                "max_risk_per_trade": 0.005,
+                "max_daily_loss": 0.01,
+                "max_weekly_loss": 0.03,
+                "min_risk_reward": 2.0,
+                "max_correlated_positions": 3,
+                "max_position_size_pct": 0.10,
+                "max_leverage": 3.0,
+                "max_drawdown_pct": 0.15,
+                "max_trades_per_day": 5,
+                "override_possible": False,
+            },
+        },
+        "sender": "system",
     }
 ```
 
-### 5.5 Data Provider Error Handling
+### Supporting Data Models
 
-- **Exponential backoff**: 1s → 2s → 4s → 8s → max threshold
-- **Provider cooldown**: Failed providers enter cooldown period
-- **Health-based prioritization**: Providers ranked by success rate and latency
-- **Cache fallback**: Stale cached data used when all providers fail
+The state references several Pydantic models for structured data:
 
-### 5.6 MCP Error Handling
+| Model | Fields | Purpose |
+|---|---|---|
+| `MarketData` | symbol, price, open, high, low, close, volume, bid, ask, vwap | Market data for a single symbol |
+| `Signal` | symbol, direction, action, confidence, entry_price, stop_loss, take_profit, timeframe, source_agents, reasoning, indicators | Trading signal from Strategist |
+| `Decision` | symbol, action, quantity, entry_price, stop_loss, take_profit, confidence, risk_reward_ratio, reasoning, position_size_pct | Final trading decision |
+| `RiskCheckpoint` | name, value, limit, passed, details | Single risk checkpoint result |
+| `RiskAssessment` | verdict, checkpoints (9), var_95, var_99, cvar_95, max_drawdown, kelly_fraction, position_sizing_approved, correlation_risk, kill_switch_active | Complete risk assessment |
+| `PortfolioState` | total_value, cash, positions, unrealized_pnl, realized_pnl, daily_pnl, weekly_pnl, allocation, risk_budget_used | Current portfolio snapshot |
+| `PositionInfo` | symbol, quantity, entry_price, current_price, unrealized_pnl, direction, stop_loss, take_profit | Single position details |
+| `PositionSizingResult` | symbol, position_size_units, position_size_usd, position_size_pct, atr_value, stop_loss, tp1, tp2, tp3, tp1_rr, tp2_rr, tp3_rr | ATR-based sizing with TP levels |
+| `PortfolioValidation` | is_valid, concentration_check, correlation_check, kelly_check, total_risk_budget_used, warnings, errors | Portfolio validation result |
+| `VenueScore` | venue_id, venue_name, score, latency_ms, fee_bps, fill_rate, slippage_bps, supports_asset_class, recommended | Venue scoring for SOR |
+| `SmartOrderRouting` | symbol, primary_venue, venue_scores, routing_decision, estimated_slippage_bps, estimated_latency_ms | Smart order routing result |
+| `CouncilResult` | final_decision, debate_summary, votes, weighted_score, consensus_level, requires_human_review | Council voting result |
+| `VoteResult` | voter, vote, weight, reasoning, confidence | Individual council vote |
+| `AgentOutput` | agent_name, agent_role, content, data, confidence, success, error, tool_calls | Single agent output |
 
-Standardized error codes (MCP-specific and JSON-RPC standard):
+### Enumerations
 
-- `-32700` to `-32603`: JSON-RPC standard errors
-- `-32000` to `-32099`: MCP-specific errors (unknown tool, execution failed, rate limit exceeded)
-
-Tool execution errors return `ToolCallResult.error_result()` with structured error information.
+| Enum | Values | Usage |
+|---|---|---|
+| `TradeAction` | BUY, SELL, HOLD, CLOSE, EMERGENCY_EXIT | Trade actions |
+| `SignalDirection` | BULLISH, BEARISH, NEUTRAL | Signal directions |
+| `RiskVerdict` | APPROVED, VETOED, CONDITIONAL, KILL_SWITCH | Risk verdicts |
+| `MarketRegime` | RISK_ON, RISK_OFF, TRANSITIONING, CRISIS, RECOVERY | Market regimes |
+| `AssetClass` | crypto, forex, equity, prediction_market, unknown | Asset classes |
+| `AgentRole` | researcher, trader, strategist, risk, portfolio, execution, macro, crypto, forex, council, prediction_market | Agent roles |
 
 ---
 
-## 6. Configuration Management
+## 4. Constitutional Risk Limits
 
-### 6.1 Pydantic Settings Architecture
+### Design Philosophy
 
-All configuration is managed through the `Settings` class in `quant_nanggroe/config/settings.py`:
+The constitutional risk limits are **hardcoded constants** that cannot be overridden at runtime. This is an architectural guarantee, not a configuration option. The limits exist in two locations:
+
+1. `quant_nanggroe/agents/state.py` — Used by the agent layer
+2. `quant_nanggroe/engine/risk/constants.py` — Used by the risk engine
+
+Both files must remain in sync. The constants are the **single source of truth** for risk limits.
+
+### Complete Limit Table
+
+| Constant | Value | Rationale |
+|---|---|---|
+| `MAX_RISK_PER_TRADE = 0.005` | 0.5% | Professional risk management standard; limits single-trade impact |
+| `MAX_DAILY_LOSS = 0.01` | 1% | Prevents catastrophic daily drawdowns |
+| `MAX_WEEKLY_LOSS = 0.03` | 3% | Allows recovery while preventing cascading losses |
+| `MIN_RISK_REWARD = 2.0` | 1:2 | Ensures positive expectancy over time |
+| `MAX_CORRELATED_POSITIONS = 3` | 3 | Prevents concentration risk from correlated assets |
+| `MAX_POSITION_SIZE_PCT = 0.10` | 10% | Diversification enforcement |
+| `MAX_LEVERAGE = 3.0` | 3x | Conservative leverage cap for all asset classes |
+| `MAX_DRAWDOWN_PCT = 0.15` | 15% | Kill switch trigger for maximum drawdown |
+| `MAX_DAILY_TRADES = 5` | 5 | Anti-overtrading; prevents emotional/revenge trading |
+| `CONFIDENCE_THRESHOLD = 0.65` | 65% | Below this, council debate is triggered |
+| `KILL_SWITCH_DAILY_PNL = -0.02` | -2% | Automatic kill switch at -2% daily PnL |
+| `KILL_SWITCH_WEEKLY_PNL = -0.05` | -5% | Automatic kill switch at -5% weekly PnL |
+
+### Immutability Guarantee
+
+The immutability is enforced at multiple levels:
+
+1. **Python constants**: Module-level variables, not class attributes. No setter methods exist.
+2. **RiskManager**: All methods that use these constants do `min(input, CONSTANT)` — they cap, never exceed.
+3. **RiskCheckGate**: Checks are direct comparisons against constants, not configurable thresholds.
+4. **AgentState**: The `override_possible` field is hardcoded to `False`.
+5. **KillSwitch**: Activation is automatic when limits are breached. Deactivation requires manual reset.
+
+### Kill Switch State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Inactive: System Start
+    Inactive --> Active: Daily PnL ≤ -2%
+    Inactive --> Active: Weekly PnL ≤ -5%
+    Inactive --> Active: Drawdown ≥ 15%
+    Active --> AllPositionsClosed: Emergency Exit
+    AllPositionsClosed --> Cooldown: All positions liquidated
+    Cooldown --> ManualReview: Operator reviews
+    ManualReview --> Inactive: Manual reset approved
+    ManualReview --> PermanentHalt: Systemic issue found
+```
+
+---
+
+## 5. Multi-Path Routing Logic
+
+### Asset Class Detection Algorithm
+
+The `AssetRouter` uses a priority-based regex pattern matching algorithm:
+
+```
+FOR each symbol in symbols:
+    IF matches PREDICTION_MARKET patterns → classify as PREDICTION_MARKET
+    ELSE IF matches CRYPTO patterns → classify as CRYPTO
+    ELSE IF matches FOREX patterns → classify as FOREX
+    ELSE → classify as EQUITY (default)
+
+IF all symbols same class → use that class
+ELSE → use dominant class (most symbols)
+    Tie-breaking: PREDICTION_MARKET > CRYPTO > FOREX > EQUITY
+```
+
+### Pattern Match Details
+
+#### Crypto Detection
+
+| Pattern | Examples |
+|---|---|
+| `.*USDT$` | BTCUSDT, ETHUSDT |
+| `.*BUSD$` | BTCEBUSD |
+| `.*USDC$` | BTCUSDC |
+| `.*BTC$` | ETHBTC |
+| `.*ETH$` | BTCETH |
+| `.*SOL$` | JUPSOL |
+| `.*BNB$` | BTCBNB |
+| Exact coin names | BTC, ETH, SOL, BONK, PEPE, etc. |
+
+#### Forex Detection
+
+| Pattern | Examples |
+|---|---|
+| `^[A-Z]{3}[A-Z]{3}$` | EURUSD, GBPJPY |
+| `^[A-Z]{3}\/[A-Z]{3}$` | EUR/USD, GBP/JPY |
+| Precious metals | XAUUSD (Gold), XAGUSD (Silver) |
+| Exotic pairs | USDMXN, USDBRL, USDZAR |
+
+#### Prediction Market Detection
+
+| Pattern | Examples |
+|---|---|
+| `^POLY:` | POLY:0xabc123... |
+| `^PM_` | PM_ELECTION_2024 |
+| `^EVENT:` | EVENT:SUPER_BOWL |
+| `\.(YES|NO)$` | TRUMP_WIN.YES, TRUMP_WIN.NO |
+| `\.(DEM|REP)$` | SENATE.DEM |
+| `^KALSHI:` | KALSHI:FED_RATE |
+| `^META:` | META:CLIMATE_TARGET |
+
+### Path-Specific Tool Sets
+
+| Path | Tools | Data Sources |
+|---|---|---|
+| `crypto_path` | solana_rpc, jupiter_swap, on_chain_analytics, rugcheck | Binance, OKX, Bybit, on-chain |
+| `forex_path` | fx_rates, carry_trade_calc, cb_policy_tracker | Alpaca FX, TwelveData, FRED |
+| `equity_path` | sec_filings, earnings_calendar, insider_trades | Alpaca, Polygon, SEC EDGAR |
+| `prediction_market_path` | polymarket_api, kalshi_api, probability_estimator | Polymarket CLOB |
+
+---
+
+## 6. Position Sizing (ATR-Based with TP1/TP2/TP3)
+
+### Design Overview
+
+The `PositionSizer` node (`quant_nanggroe/agents/nodes/position_sizer.py`) implements a fixed-fractional ATR-based position sizing model with three take-profit levels.
+
+### Algorithm
+
+```
+INPUT: entry_price, atr, account_balance, fractional_risk_pct, atr_sl_multiplier, atr_tp_multipliers
+
+1. Calculate risk amount:
+   risk_amount = account_balance × min(fractional_risk_pct, MAX_RISK_PER_TRADE)
+   
+2. Calculate stop loss distance:
+   stop_distance = atr × atr_sl_multiplier (default: 1.5)
+   stop_loss = entry_price - stop_distance
+
+3. Calculate position size:
+   position_size_units = risk_amount / stop_distance
+   position_size_usd = position_size_units × entry_price
+   position_size_pct = position_size_usd / account_balance × 100
+
+4. Calculate take-profit levels:
+   TP1 = entry_price + atr × atr_tp1_multiplier (default: 1.0)
+   TP2 = entry_price + atr × atr_tp2_multiplier (default: 2.0)
+   TP3 = entry_price + atr × atr_tp3_multiplier (default: 3.0)
+
+5. Calculate risk:reward ratios:
+   TP1_RR = (TP1 - entry_price) / stop_distance = 1.0/1.5 = 0.67
+   TP2_RR = (TP2 - entry_price) / stop_distance = 2.0/1.5 = 1.33
+   TP3_RR = (TP3 - entry_price) / stop_distance = 3.0/1.5 = 2.00
+
+6. Enforce constitutional limits:
+   IF position_size_pct > MAX_POSITION_SIZE_PCT (10%):
+       position_size_pct = MAX_POSITION_SIZE_PCT
+       Recalculate units and USD
+
+OUTPUT: PositionSizingResult
+```
+
+### PositionSizingResult Model
 
 ```python
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix="QNAI_",
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore",
-    )
+class PositionSizingResult(BaseModel):
+    symbol: str
+    position_size_units: float     # Number of shares/contracts
+    position_size_usd: float       # Dollar value of position
+    position_size_pct: float       # Percentage of portfolio
+    risk_per_unit: float           # Risk amount per unit in USD
+    atr_value: float               # Current ATR value
+    stop_loss: float               # Entry - 1.5×ATR
+    tp1: float                     # Entry + 1.0×ATR
+    tp2: float                     # Entry + 2.0×ATR
+    tp3: float                     # Entry + 3.0×ATR
+    tp1_rr: float                  # R:R at TP1 (~0.67)
+    tp2_rr: float                  # R:R at TP2 (~1.33)
+    tp3_rr: float                  # R:R at TP3 (~2.00)
+    fractional_risk_pct: float     # Risk % used
+    model: str                     # "fixed_fractional_atr"
 ```
 
-### 6.2 Configuration Categories
+### Example Calculation
 
-| Category | Fields | Environment Prefix |
-|----------|--------|-------------------|
-| **Application** | `app_name`, `version`, `debug` | `QNAI_APP_NAME`, etc. |
-| **Database** | `database_url`, `redis_url` | `QNAI_DATABASE_URL`, etc. |
-| **LLM API Keys** | `openai_api_key`, `anthropic_api_key`, `google_api_key` | Direct env var names |
-| **Trading API Keys** | `alpaca_api_key`, `binance_api_key`, etc. | Direct env var names |
-| **LLM Defaults** | `default_llm_provider`, `default_llm_model`, `default_llm_temperature` | `QNAI_DEFAULT_LLM_PROVIDER`, etc. |
-| **Logging** | `log_level`, `log_format` | `QNAI_LOG_LEVEL`, etc. |
-| **Constitutional Risk** | `risk_max_per_trade`, `risk_max_daily_loss`, etc. | `QNAI_RISK_MAX_PER_TRADE`, etc. |
-| **Backtesting** | `backtest_default_commission`, `backtest_default_slippage`, `backtest_default_initial_capital` | `QNAI_BACKTEST_DEFAULT_COMMISSION`, etc. |
-| **Data** | `data_cache_ttl`, `data_provider_timeout` | `QNAI_DATA_CACHE_TTL`, etc. |
-
-### 6.3 Validation Rules
-
-- **Log level**: Must be one of {DEBUG, INFO, WARNING, ERROR, CRITICAL}
-- **Risk limits**: Ranged with `ge`/`le` constraints (e.g., `risk_max_per_trade` between 0.1 and 2.0)
-- **Secrets**: Required for live trading, optional for development
-- **API keys**: Validated at runtime when needed, not at startup
-
-### 6.4 Configuration Hierarchy
+Given:
+- Entry price: $150.00
+- ATR(14): $3.50
+- Account balance: $100,000
+- Fractional risk: 0.5%
 
 ```
-1. Environment variables (highest priority)
-2. .env file
-3. Default values in Settings class (lowest priority)
-4. Constitutional limits are HARDCODED and ignore all of the above
+risk_amount = $100,000 × 0.005 = $500
+stop_distance = $3.50 × 1.5 = $5.25
+stop_loss = $150.00 - $5.25 = $144.75
+
+position_size_units = $500 / $5.25 = 95.24 shares
+position_size_usd = 95.24 × $150.00 = $14,285.71
+position_size_pct = $14,285.71 / $100,000 × 100 = 14.29%
+
+→ CAPPED at 10% (MAX_POSITION_SIZE_PCT)
+→ Recalculated: 66.67 shares, $10,000, 10%
+
+TP1 = $150.00 + $3.50 = $153.50 (R:R = 0.67)
+TP2 = $150.00 + $7.00 = $157.00 (R:R = 1.33)
+TP3 = $150.00 + $10.50 = $160.50 (R:R = 2.00)
 ```
 
 ---
 
-## 7. Security Design
+## 7. Smart Order Routing
 
-### 7.1 KeyVault Architecture
+### Architecture
 
-The `KeyVault` class provides the single entry point for all secrets:
+The `SmartExecutor` node (`quant_nanggroe/agents/nodes/smart_executor.py`) implements venue scoring and smart order routing to select the best execution venue.
 
-- **Source**: Environment variables ONLY — no files, no .env parsing, no hardcoded defaults
-- **Caching**: In-memory cache for performance with `clear_cache()` for forced re-reads
-- **Masking**: `mask_value()` produces safe display strings (e.g., `sk-a1****`)
-- **Fail-fast**: `SecretNotFoundError` raised immediately for missing required secrets
-- **Never logs values**: Secret values never appear in logs at any level
+### Venue Scoring Algorithm
 
-### 7.2 Authentication and Authorization
+```
+FOR each venue:
+    score = 0
+    
+    # Fee component (lower is better)
+    fee_score = (MAX_FEE - venue.fee_bps) / MAX_FEE × 30
+    
+    # Fill rate component (higher is better)
+    fill_score = venue.fill_rate × 30
+    
+    # Latency component (lower is better)
+    latency_score = (MAX_LATENCY - venue.latency_ms) / MAX_LATENCY × 20
+    
+    # Slippage component (lower is better)
+    slippage_score = (MAX_SLIPPAGE - venue.slippage_bps) / MAX_SLIPPAGE × 20
+    
+    score = fee_score + fill_score + latency_score + slippage_score
+    
+    # Asset class compatibility
+    IF NOT venue.supports_asset_class:
+        score = 0
 
-- **User model**: Role-based access control with 4 roles:
-  - `admin`: Full system access
-  - `trader`: Trading operations
-  - `analyst`: Read-only analysis
-  - `viewer`: Dashboard viewing only
-- **API keys**: Per-user API keys for programmatic access
-- **Session tracking**: `last_login_at` timestamp per user
+RECOMMENDED = venue with highest score > 0
+```
 
-### 7.3 Audit Trail
+### VenueScore Model
 
-The `AuditLogger` (`security/audit.py`) provides comprehensive event logging:
+```python
+class VenueScore(BaseModel):
+    venue_id: str
+    venue_name: str
+    score: float                # 0-100 overall score
+    latency_ms: float           # Estimated latency
+    fee_bps: float              # Execution fee in bps
+    fill_rate: float            # Historical fill rate (0-1)
+    slippage_bps: float         # Expected slippage in bps
+    supports_asset_class: bool  # Compatibility
+    recommended: bool           # Top-scored venue
+```
 
-| Layer | Events Logged |
-|-------|---------------|
-| Market | Data provider status, price updates, regime changes |
-| Agent | Agent outputs, confidence scores, tool calls |
-| Decision | Decision table evaluations, confluence checks |
-| Risk | Constitutional rule checks, violations, kill switch |
-| Execution | Order placement, fill confirmation, slippage |
+### SmartOrderRouting Model
 
-Each audit entry includes: timestamp, layer, severity, event type, payload, source.
+```python
+class SmartOrderRouting(BaseModel):
+    symbol: str
+    primary_venue: str               # Selected venue
+    venue_scores: List[VenueScore]   # All scored venues
+    routing_decision: str            # Explanation
+    estimated_slippage_bps: float    # Expected slippage
+    estimated_latency_ms: float      # Expected latency
+```
 
-### 7.4 Credential Inference
+### Routing by Asset Class
 
-The `credential_inference.py` module automatically detects:
-- Weak or misconfigured API keys
-- Expired credentials
-- Insecure configurations (e.g., production debug mode)
-
-### 7.5 Constitutional Security
-
-The constitutional risk limits are a security feature:
-
-- **Immutable**: Hardcoded in `agents/state.py` as module-level constants
-- **Non-overridable**: `override_possible: False` in every `RiskAssessment`
-- **Enforced at architecture level**: The graph conditional routing cannot be bypassed
-- **Kill switch**: Independent of any agent or LLM — triggered by raw P&L thresholds
-
----
-
-## 8. Performance Considerations
-
-### 8.1 LLM Call Optimization
-
-- **Dual-model architecture**: Deep-think (gpt-4o) for Strategist/Risk, Quick-think (gpt-4o-mini) for others
-- **Temperature 0.0**: Deterministic outputs for reproducibility
-- **Parallel agent execution**: Researcher, Macro, Crypto, Forex run in parallel in the market analysis phase
-
-### 8.2 Data Caching
-
-- **TTL-based caching**: 5-minute default for market data (`data_cache_ttl = 300`)
-- **Provider timeout**: 30-second default (`data_provider_timeout = 30`)
-- **LRU cache on settings**: `@lru_cache` on `get_settings()` avoids re-parsing
-
-### 8.3 Factor Computation Performance
-
-The factor library is designed for vectorized computation:
-
-- All factors operate on Pandas DataFrames with numpy operations
-- Cross-sectional `rank()` uses vectorized pandas ranking
-- Time-series operations use rolling windows with optimized implementations
-- Safe division (`safe_div`) handles zero denominators without exceptions
-
-### 8.4 Backtesting Performance
-
-- **Vectorized backtesting**: VectorBT-compatible approach for 10-100x speedup over event-driven
-- **Execution reality simulation**: Configurable overhead for realism (typically 15-30% return reduction)
-- **Monte Carlo resampling**: Bootstrap confidence intervals without full re-computation
-
-### 8.5 Database Performance
-
-- **Indexed queries**: Composite indexes on frequently queried columns (symbol+created_at, status+created_at)
-- **Eager loading**: `lazy="selectin"` on relationships to avoid N+1 queries
-- **JSON columns**: Flexible metadata storage without schema migrations
+| Asset Class | Candidate Venues | Primary Considerations |
+|---|---|---|
+| Crypto | Binance, OKX, Bybit, Bitget, Kraken, KuCoin, Gate, Coinbase | Liquidity, fee tiers |
+| Forex | Alpaca (FX) | Spread, execution quality |
+| Equity | Alpaca | Commission-free, order types |
+| Prediction Market | Polymarket | Only venue available |
 
 ---
 
-## 9. Scalability Design
+## 8. Human-in-the-Loop Checkpoints
 
-### 9.1 Horizontal Scaling
+### Design
 
-- **Stateless API pods**: FastAPI instances share no in-memory state
-- **Redis pub/sub**: Cross-pod communication for trade events and risk alerts
-- **Worker processes**: Independent background workers for long-running tasks (backtests, analysis)
+The `HumanCheckpoint` node (`quant_nanggroe/agents/nodes/human_checkpoint.py`) provides a mechanism for human oversight on high-risk or ambiguous trades.
 
-### 9.2 Exchange Connection Pooling
+### Activation Conditions
 
-- **Connection reuse**: CCXT exchange instances are reused across requests
-- **Rate limiting**: Built-in rate limit management per exchange
-- **Health monitoring**: Connection health checks with automatic reconnection
+Human approval is required when:
 
-### 9.3 Agent Scalability
+| Condition | Threshold | Reason |
+|---|---|---|
+| Position size > 5% of portfolio | `MAX_POSITION_SIZE_PCT / 2` | Large concentration |
+| Kill switch recently deactivated | Within 24h | Post-emergency caution |
+| Prediction market trade | Always | Novel asset class |
+| Council debate with low consensus | < 0.50 | No clear agent agreement |
+| New symbol (not in history) | First trade | Unknown risk profile |
+| Leverage > 1.5x | Above conservative threshold | Amplified risk |
 
-- **On-demand creation**: `AgentFactory` creates agents per pipeline run, not persistent
-- **LLM provider flexibility**: Supports OpenAI, Anthropic, Google, Ollama, OpenRouter
-- **Parallel execution**: Market analysis phase runs 4 agents in parallel
+### Approval Flow
 
-### 9.4 Memory Scalability
+```mermaid
+stateDiagram-v2
+    [*] --> CheckRequired: Human Checkpoint Node
+    CheckRequired --> AutoApprove: No conditions met
+    CheckRequired --> WaitApproval: Conditions met
+    AutoApprove --> Execute: status=NOT_REQUIRED
+    WaitApproval --> Approved: Human approves
+    WaitApproval --> Rejected: Human rejects
+    WaitApproval --> Timeout: No response (configurable)
+    Timeout --> Rejected: Default to rejection
+    Approved --> Execute: status=APPROVED
+    Rejected --> TradeRejected: status=REJECTED
+    Execute --> SmartExecution: Continue pipeline
+    TradeRejected --> END: Log and halt
+```
 
-- **Paging system**: Letta-style context management prevents unbounded memory growth
-- **Automatic summarization**: Long histories compressed before reaching context limits
-- **Knowledge graph**: Offloads detailed knowledge from agent context to structured storage
+### State Fields
 
-### 9.5 Database Scalability
-
-- **SQLite for development**: Zero-configuration local database
-- **PostgreSQL for production**: Full ACID compliance with connection pooling
-- **Redis for caching**: High-performance key-value store for market data cache
-- **Alembic migrations**: Schema evolution without data loss
-
-### 9.6 Deployment Scaling
-
-- **Docker-first**: All components containerized
-- **Docker Compose**: Development and staging environments
-- **Kubernetes-ready**: Stateless pods with health checks and readiness probes
-- **Environment-based configuration**: No code changes for different deployment targets
+| Field | Type | Values |
+|---|---|---|
+| `human_approval_required` | bool | True if any condition met |
+| `human_approval_status` | str | NOT_REQUIRED, PENDING, APPROVED, REJECTED, TIMEOUT |
+| `human_approval_reason` | str | Human-readable reason for the checkpoint |
 
 ---
 
-*© 2025-2026 Quant Nanggroe AI | System Design Reference v0.2.0*
+## 9. Council Debate System
+
+### Debate Mechanisms
+
+#### Bull/Bear Debate (`DebateState`)
+
+```python
+class DebateState(TypedDict):
+    bull_history: Annotated[str, "Bull argument history"]
+    bear_history: Annotated[str, "Bear argument history"]
+    history: Annotated[str, "Full conversation history"]
+    current_response: Annotated[str, "Latest response"]
+    judge_decision: Annotated[str, "Final judge decision"]
+    count: Annotated[int, "Number of debate rounds"]
+```
+
+Flow:
+1. Bull agent argues for the trade
+2. Bear agent argues against the trade
+3. Each can respond to the other's arguments
+4. After N rounds (default: 2), a Judge evaluates
+5. Judge renders a final decision
+
+#### Risk Debate (`RiskDebateState`)
+
+```python
+class RiskDebateState(TypedDict):
+    conservative_history: Annotated[str, "Conservative debater"]
+    neutral_history: Annotated[str, "Neutral debater"]
+    aggressive_history: Annotated[str, "Aggressive debater"]
+    history: Annotated[str, "Full conversation history"]
+    latest_speaker: Annotated[str, "Last debater"]
+    current_conservative_response: Annotated[str]
+    current_neutral_response: Annotated[str]
+    current_aggressive_response: Annotated[str]
+    judge_decision: Annotated[str, "Risk judge decision"]
+    count: Annotated[int, "Number of rounds"]
+```
+
+### Voting Mechanism
+
+After debate, the council votes:
+
+```python
+class VoteResult(BaseModel):
+    voter: str              # Agent name
+    vote: TradeAction       # BUY, SELL, HOLD, CLOSE
+    weight: float           # Historical accuracy weight
+    reasoning: str          # Why they voted this way
+    confidence: float       # Their confidence
+
+class CouncilResult(BaseModel):
+    final_decision: TradeAction     # Weighted majority
+    debate_summary: str             # Key points from debate
+    votes: List[VoteResult]         # All individual votes
+    weighted_score: Dict[str, float] # Per-action scores
+    consensus_level: float          # 0-1 agreement level
+    requires_human_review: bool     # If consensus < threshold
+```
+
+### Weight Calculation
+
+Each council member's voting weight is based on their historical accuracy:
+
+```
+weight = (correct_predictions / total_predictions) × confidence_factor
+
+Where confidence_factor scales from 0.5 (poor) to 1.5 (excellent)
+based on the agent's recent prediction performance.
+```
+
+---
+
+## 10. Factor Pipeline Design
+
+### Pipeline Architecture
+
+```mermaid
+graph LR
+    DATA[OHLCV Panel] --> REG[FactorRegistry]
+    REG --> COMPUTE[Factor Computation]
+    COMPUTE --> VALID[Output Validation]
+    VALID --> STORE[Feature Store]
+    
+    REG --> |list| DISC[Discovery<br/>zoo/theme/universe]
+    REG --> |get| HANDLE[FactorHandle]
+    REG --> |health| DIAG[Health Check]
+    REG --> |export_manifest| EXPORT[JSON Export]
+```
+
+### Factor Computation Flow
+
+```
+1. User requests factor computation:
+   result = registry.compute("alpha_001", panel)
+
+2. Registry looks up FactorHandle:
+   handle = self._handles["alpha_001"]
+
+3. Column requirements checked:
+   missing = [c for c in handle.columns_required if c not in panel]
+   IF missing: raise ValueError
+
+4. Computation dispatched:
+   IF function-based: handle._compute_fn(panel)
+   IF class-based: handle._class_instance.compute(df)
+
+5. Output validation:
+   - Must be pd.DataFrame
+   - No ±inf values
+   - NaN ratio ≤ 95%
+
+6. Return validated DataFrame
+```
+
+### Thread-Safe Singleton
+
+```python
+_registry_cache: Optional[FactorRegistry] = None
+_registry_cache_lock = threading.Lock()
+
+def get_default_registry() -> FactorRegistry:
+    global _registry_cache
+    with _registry_cache_lock:
+        if _registry_cache is None:
+            _registry_cache = FactorRegistry()
+        return _registry_cache
+```
+
+---
+
+## 11. Backtest Engine Design
+
+### Multi-Asset Backtest Architecture
+
+```mermaid
+graph TB
+    BE[BacktestEngine] --> CE[CompositeEngine]
+    CE --> EE[EquityEngine]
+    CE --> CR[CryptoEngine]
+    CE --> FE[ForexEngine]
+    CE --> FU[FuturesEngine]
+    CE --> MD[MarketDetection]
+    
+    BE --> MC[MonteCarlo Simulation]
+    BE --> WF[WalkForward Optimization]
+    BE --> MET[Metrics Calculation]
+    BE --> RPT[Report Generation]
+    
+    EE --> YFL[yfinance Loader]
+    CR --> CCL[ccxt Loader]
+```
+
+### Execution Simulation Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| Dynamic spread | Volatility-adjusted | Widens during high vol |
+| Slippage | Random within vol bounds | Market impact simulation |
+| Partial fill | 2-15% probability | Size-dependent |
+| Order rejection | Volatility-based | Extreme conditions |
+| Latency | 100-500ms random | Decision-to-execution delay |
+
+---
+
+## 12. Memory System Design
+
+### Storage Backends
+
+| Backend | Purpose | Capacity | Query Type |
+|---|---|---|---|
+| ChromaDB | Vector embeddings for knowledge | Large | Similarity search |
+| SQLAlchemy | Structured data (trades, signals) | Large | SQL queries |
+| Redis | Session state, caching, pub/sub | Medium | Key-value |
+| In-memory | Fast LRU cache | Small | Direct access |
+
+### Knowledge Graph
+
+The `knowledge_graph.py` module maintains entity-relationship graphs:
+- **Nodes**: Assets, agents, strategies, signals
+- **Edges**: Dependencies, correlations, causal links
+- **Queries**: "What factors influenced the AAPL signal?" → Graph traversal
+
+---
+
+## 13. Security Design
+
+### Security Layers
+
+| Layer | Component | Protection |
+|---|---|---|
+| Transport | HTTPS, WSS | Encryption in transit |
+| Authentication | API keys, JWT | Identity verification |
+| Authorization | Role-based access | Permission enforcement |
+| Key Management | KeyVault | Secure secret storage |
+| Credential Safety | credential_inference.py | Leak prevention |
+| Audit | audit.py | Full action logging |
+
+### KeyVault Design
+
+```python
+# Keys are never stored in plaintext
+# Environment variables → KeyVault → Encrypted storage
+# Access via get_secret(key_name) → decrypted value
+```
+
+---
+
+## 14. Error Handling & Recovery
+
+### Graph-Level Error Handling
+
+Each node in the graph wraps its execution in try/except:
+
+```python
+def _risk_assessment_node(self, state):
+    try:
+        risk = self._factory.create_agent("risk")
+        result = risk(state)
+        return {...}  # Success path
+    except Exception as e:
+        logger.error(f"Risk agent failed: {e}")
+        return {
+            "risk_assessment": {"error": str(e)},
+            "risk_verdict": RiskVerdict.VETOED.value,  # Fail-safe: VETO
+            "kill_switch_active": False,
+            "should_halt": True,
+            "sender": "risk_assessment",
+        }
+```
+
+### Fail-Safe Defaults
+
+| Component | Failure Mode | Default Behavior |
+|---|---|---|
+| Risk Assessment | Exception | VETOED, should_halt=True |
+| Signal Generation | Exception | Empty signals, confidence=0.0 |
+| Exchange Execution | Exception | No orders placed, error logged |
+| Data Provider | Timeout | AutoSwitch to backup provider |
+| Kill Switch | Triggered | All positions closed, system halted |
+| Human Checkpoint | Timeout | Default to REJECTED |
+
+### Recovery Procedures
+
+1. **Agent failure**: Skip agent, continue with available data
+2. **Exchange failure**: Smart executor routes to alternative venue
+3. **Data provider failure**: AutoSwitch to backup provider
+4. **Kill switch**: Manual reset required after review
+5. **Graph execution failure**: Return initial state with error flag
+
+---
+
+## 15. Performance Considerations
+
+### Caching Strategy
+
+| Component | Cache Type | TTL | Invalidation |
+|---|---|---|---|
+| FactorRegistry | Process-wide singleton | Permanent | reset_default_registry() |
+| Market Data | Redis | 60s | On new candle |
+| Agent Outputs | In-memory | Per-session | On new iteration |
+| Exchange Capabilities | Factory-level dict | Permanent | On factory recreation |
+
+### Async Considerations
+
+- All API endpoints are async (FastAPI)
+- Exchange operations use async HTTP (httpx, aiohttp)
+- WebSocket streaming for real-time updates
+- Graph execution is synchronous (LangGraph limitation)
+
+### Memory Management
+
+- Factor computation uses numpy/pandas arrays (efficient)
+- Large factor results paginated via memory paging
+- Knowledge base vectors stored in ChromaDB (off-heap)
+- Session state compressed before Redis storage
+
+### Scalability Limits
+
+| Dimension | Current Limit | Scaling Path |
+|---|---|---|
+| Concurrent symbols | ~50 | Parallel graph execution |
+| Factor computation | 469 factors | Lazy evaluation, per-symbol |
+| Exchange connections | 10 | Factory pooling |
+| WebSocket clients | ~1000 | Redis pub/sub |
+| API throughput | ~1000 req/s | Horizontal scaling |
+
+---
+
+© 2025-2026 Quant Nanggroe AI | System Design Reference v4.0.0

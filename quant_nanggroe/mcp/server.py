@@ -299,6 +299,8 @@ class MCPServer:
         self._description = description
         self._capabilities = capabilities or ServerCapabilities()
         self._tools: Dict[str, ToolHandler] = {}
+        self._resources: Dict[str, Dict[str, Any]] = {}
+        self._resource_handlers: Dict[str, Callable[..., Any]] = {}
         self._start_time: float = time.monotonic()
         self._active_connections: int = 0
         self._request_count: int = 0
@@ -418,6 +420,65 @@ class MCPServer:
         """
         return self._tools.get(name)
 
+    # ─── Resource Registration ────────────────────────────────────────────
+
+    def register_resource(
+        self,
+        uri: str,
+        name: str,
+        description: str,
+        mime_type: str = "application/json",
+        handler: Optional[Callable[..., Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Register a resource that can be read by clients.
+
+        Args:
+            uri: Resource URI (e.g., "quant://portfolio/state").
+            name: Human-readable resource name.
+            description: Resource description.
+            mime_type: MIME type of the resource content.
+            handler: Optional callable to dynamically generate content.
+            metadata: Optional additional metadata.
+        """
+        self._resources[uri] = {
+            "uri": uri,
+            "name": name,
+            "description": description,
+            "mime_type": mime_type,
+            "metadata": metadata or {},
+        }
+        if handler:
+            self._resource_handlers[uri] = handler
+        logger.info("Registered resource: %s (%s)", name, uri)
+
+    def unregister_resource(self, uri: str) -> bool:
+        """Unregister a resource by URI.
+
+        Args:
+            uri: Resource URI.
+
+        Returns:
+            True if found and removed, False otherwise.
+        """
+        if uri in self._resources:
+            del self._resources[uri]
+            self._resource_handlers.pop(uri, None)
+            logger.info("Unregistered resource: %s", uri)
+            return True
+        return False
+
+    def get_resource(self, uri: str) -> Optional[Dict[str, Any]]:
+        """Get a registered resource by URI.
+
+        Args:
+            uri: Resource URI.
+
+        Returns:
+            Resource definition dict if found, None otherwise.
+        """
+        return self._resources.get(uri)
+
     # ─── Request Handling ─────────────────────────────────────────────────
 
     def handle_request(self, request: JSONRPCRequest) -> JSONRPCResponse:
@@ -447,6 +508,12 @@ class MCPServer:
                 result = self._handle_list_tools(request)
             elif method == "tools/call":
                 result = self._handle_call_tool(request)
+            elif method == "resources/list":
+                result = self._handle_list_resources(request)
+            elif method == "resources/read":
+                result = self._handle_read_resource(request)
+            elif method == "resources/templates/list":
+                result = self._handle_list_resource_templates(request)
             elif method == "health":
                 result = self._handle_health(request)
             elif method == "notifications/initialized":
@@ -495,6 +562,12 @@ class MCPServer:
                 result = self._handle_list_tools(request)
             elif method == "tools/call":
                 result = await self._handle_call_tool_async(request)
+            elif method == "resources/list":
+                result = self._handle_list_resources(request)
+            elif method == "resources/read":
+                result = self._handle_read_resource(request)
+            elif method == "resources/templates/list":
+                result = self._handle_list_resource_templates(request)
             elif method == "health":
                 result = self._handle_health(request)
             elif method == "notifications/initialized":
@@ -565,6 +638,106 @@ class MCPServer:
         ]
         result = ListToolsResult(tools=tools)
         return result.model_dump()
+
+    # ─── Resource Handlers ────────────────────────────────────────────────
+
+    def _handle_list_resources(
+        self, request: JSONRPCRequest
+    ) -> Dict[str, Any]:
+        """Handle the resources/list method.
+
+        Returns all registered resources with their metadata.
+
+        Args:
+            request: List resources request.
+
+        Returns:
+            Dict with list of resource definitions.
+        """
+        resources = list(self._resources.values())
+        return {"resources": resources}
+
+    def _handle_read_resource(
+        self, request: JSONRPCRequest
+    ) -> Dict[str, Any]:
+        """Handle the resources/read method.
+
+        Reads the content of a specific resource by URI.
+
+        Args:
+            request: Read resource request with uri in params.
+
+        Returns:
+            Dict with resource content or error.
+        """
+        params = request.params or {}
+        uri = params.get("uri", "")
+
+        if not uri:
+            return {
+                "contents": [],
+                "error": "Missing required parameter: uri",
+            }
+
+        resource = self._resources.get(uri)
+        if resource is None:
+            return {
+                "contents": [],
+                "error": f"Resource not found: {uri}",
+            }
+
+        # Check for dynamic handler
+        handler = self._resource_handlers.get(uri)
+        if handler:
+            try:
+                content = handler(uri)
+                if isinstance(content, str):
+                    text_content = content
+                else:
+                    import json as _json
+                    text_content = _json.dumps(content, default=str, indent=2)
+            except Exception as exc:
+                logger.exception("Resource handler failed for %s", uri)
+                text_content = f"Error reading resource: {exc}"
+        else:
+            # Return static metadata as content
+            text_content = json.dumps(resource, default=str, indent=2)
+
+        return {
+            "contents": [
+                {
+                    "uri": uri,
+                    "mimeType": resource.get("mime_type", "application/json"),
+                    "text": text_content,
+                }
+            ]
+        }
+
+    def _handle_list_resource_templates(
+        self, request: JSONRPCRequest
+    ) -> Dict[str, Any]:
+        """Handle the resources/templates/list method.
+
+        Returns resource URI templates for parameterized resources.
+
+        Args:
+            request: List resource templates request.
+
+        Returns:
+            Dict with list of resource template definitions.
+        """
+        templates = []
+        for uri, resource in self._resources.items():
+            # Resources with curly braces in URI are templates
+            if "{" in uri:
+                templates.append({
+                    "uriTemplate": uri,
+                    "name": resource.get("name", ""),
+                    "description": resource.get("description", ""),
+                    "mimeType": resource.get("mime_type", "application/json"),
+                })
+
+        return {"resourceTemplates": templates}
 
     def _handle_call_tool(
         self, request: JSONRPCRequest

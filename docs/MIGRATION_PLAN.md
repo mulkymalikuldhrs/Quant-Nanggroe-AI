@@ -1,618 +1,626 @@
 # Quant Nanggroe AI — Migration Plan
 
-**Version 0.2.0 | From Individual Repos to Monorepo**
+**Version 4.0.0 | Step-by-Step Migration Guide**
 
-> This document provides the comprehensive migration guide for transitioning from individual repositories to the Quant Nanggroe AI monorepo. It covers breaking changes, configuration migration, data migration, API changes, deployment migration, and rollback procedures.
+> This document provides a detailed step-by-step migration plan for consolidating 20+ repositories into the Quant Nanggroe AI monorepo, covering each phase, rollback procedures, and testing requirements.
 
 ---
 
 ## Table of Contents
 
 1. [Migration Overview](#1-migration-overview)
-2. [From Individual Repos to Monorepo](#2-from-individual-repos-to-monorepo)
-3. [Breaking Changes](#3-breaking-changes)
-4. [Configuration Migration](#4-configuration-migration)
-5. [Data Migration](#5-data-migration)
-6. [API Changes](#6-api-changes)
-7. [Deployment Migration](#7-deployment-migration)
-8. [Rollback Procedures](#8-rollback-procedures)
+2. [Phase 1: Foundation (Complete)](#2-phase-1-foundation-complete)
+3. [Phase 2: Core Engines (Complete)](#3-phase-2-core-engines-complete)
+4. [Phase 3: Agent Implementations (In Progress)](#4-phase-3-agent-implementations-in-progress)
+5. [Phase 4: Exchange Integration (Planned)](#5-phase-4-exchange-integration-planned)
+6. [Phase 5: Production Hardening (Planned)](#6-phase-5-production-hardening-planned)
+7. [Rollback Procedures](#7-rollback-procedures)
+8. [Testing Requirements per Phase](#8-testing-requirements-per-phase)
+9. [Migration Checklist](#9-migration-checklist)
+10. [Risk Mitigation During Migration](#10-risk-mitigation-during-migration)
 
 ---
 
 ## 1. Migration Overview
 
-### 1.1 Migration Scope
+### Migration Philosophy
 
-The migration consolidates 20+ individual trading/quant repositories into a single Python monorepo (`quant-nanggroe-ai`). This affects:
+1. **Never break the build** — Every phase must leave the system in a working state
+2. **Tests are the safety net** — All 2504+ tests must pass at every step
+3. **Incremental migration** — Small, reviewable changes
+4. **Rollback always possible** — Every change can be reverted
+5. **Constitutional limits never compromised** — Risk engine integrity at all times
 
-- **Source code**: All Python modules, configuration files, and scripts
-- **Dependencies**: Unified dependency tree replacing per-repo requirements
-- **Configuration**: Centralized Pydantic Settings replacing scattered config files
-- **Database**: Unified SQLAlchemy schema replacing per-repo data stores
-- **API**: Single FastAPI server replacing multiple microservices
-- **Deployment**: Single Docker image replacing per-repo containers
+### Migration Statistics
 
-### 1.2 Migration Phases
-
-| Phase | Description | Duration | Risk Level |
-|-------|-------------|----------|------------|
-| **Phase 1** | Foundation migration (core framework, agents, config) | 2 weeks | Low |
-| **Phase 2** | Engine migration (factors, risk, backtest, execution) | 3 weeks | Medium |
-| **Phase 3** | Integration migration (exchanges, memory, MCP) | 2 weeks | Medium |
-| **Phase 4** | Data migration (database, cache, journal) | 1 week | High |
-| **Phase 5** | Deployment migration (Docker, CI/CD, monitoring) | 1 week | Medium |
-
-### 1.3 Pre-Migration Checklist
-
-- [ ] Back up all existing databases and configuration files
-- [ ] Document current API endpoints and their consumers
-- [ ] Verify all API keys are available as environment variables
-- [ ] Create migration test environment
-- [ ] Establish rollback criteria and procedures
-- [ ] Notify all downstream consumers of API changes
+| Phase | Status | Repos | Modules | Tests | Duration |
+|---|---|---|---|---|---|
+| Phase 1: Foundation | ✅ Complete | 4 | 60+ | 800+ | 4 weeks |
+| Phase 2: Core Engines | ✅ Complete | 4 | 50+ | 700+ | 3 weeks |
+| Phase 3: Agent Implementations | 🔄 In Progress | 4 | 40+ | 500+ | 3 weeks |
+| Phase 4: Exchange Integration | 📋 Planned | 4 | 30+ | 300+ | 2 weeks |
+| Phase 5: Production Hardening | 📋 Planned | 5 | 34+ | 204+ | 2 weeks |
 
 ---
 
-## 2. From Individual Repos to Monorepo
+## 2. Phase 1: Foundation (Complete)
 
-### 2.1 Repository Mapping
+**Timeline**: Weeks 1-4
+**Status**: ✅ Complete
+**Repositories**: AutoTrader, HermesQuantOS, TradingAgents, Vibe-Trading
 
-| Source Repo | Source Structure | Target Module | Target Structure |
-|-------------|-----------------|---------------|-----------------|
-| `ai-hedge-fund/` | Single `main.py` with all agents | `quant_nanggroe/agents/` | 9 agent modules with `agent.py`, `prompts.py`, `tools.py` |
-| `alpha101/` | `factors.py` with all 101 alphas | `quant_nanggroe/engine/factors/alpha101.py` | 50+ `AlphaFactor` subclasses |
-| `gtja191/` | `factors.py` with all 191 factors | `quant_nanggroe/engine/factors/gtja191.py` | 191 factor implementations |
-| `trading-agents/` | `agents/` with debate logic | `quant_nanggroe/agents/council/` | `debate.py`, `voting.py` |
-| `ccxt-trading/` | `exchange.py` with CCXT wrapper | `quant_nanggroe/exchange/` | Full exchange layer with base, CCXT, Alpaca, paper brokers |
-| `risk-manager/` | `risk.py` with VaR/Kelly | `quant_nanggroe/engine/risk/` | 10 risk modules (var, kelly, drawdown, etc.) |
-| `backtest-engine/` | `backtest.py` with engine | `quant_nanggroe/engine/backtest/` | 8 backtest modules |
-| `portfolio-opt/` | `optimizer.py` | `quant_nanggroe/engine/risk/position_sizing.py`, `risk_parity.py` | Modular optimization |
-| `data-providers/` | `providers.py` with multi-source | `quant_nanggroe/exchange/` + Settings | Unified via ExchangeInterface |
-| `trade-journal/` | `journal.py` | `quant_nanggroe/memory/journal.py` | Enhanced journal with reflection |
+### Step 1.1: Monorepo Structure Setup
 
-### 2.2 Import Path Migration
+**Objective**: Create the `quant_nanggroe` package structure.
 
-| Old Import | New Import | Notes |
-|-----------|-----------|-------|
-| `from agents import ResearcherAgent` | `from quant_nanggroe.agents.researcher.agent import ResearcherAgent` | Full module path |
-| `from factors import Alpha101` | `from quant_nanggroe.engine.factors.alpha101 import Alpha101_001` | Per-factor import |
-| `from risk import RiskManager` | `from quant_nanggroe.engine.risk.manager import RiskManager` | Same class name |
-| `from exchange import CCXTBroker` | `from quant_nanggroe.exchange.ccxt_broker import CCXTBroker` | Same class name |
-| `from backtest import BacktestEngine` | `from quant_nanggroe.engine.backtest.engine import BacktestEngine` | Same class name |
-| `from config import Settings` | `from quant_nanggroe.config.settings import get_settings` | Singleton pattern |
-| `from journal import TradeJournal` | `from quant_nanggroe.memory.journal import TradeJournal` | Same class name |
-| `from models import Trade` | `from quant_nanggroe.data.models import Trade` | ORM models |
-| `from mcp import MCPServer` | `from quant_nanggroe.mcp.server import MCPServer` | Same class name |
+**Tasks**:
+- [x] Create package directory structure
+- [x] Set up `pyproject.toml` with dependencies
+- [x] Configure ruff, mypy, pytest
+- [x] Set up CI pipeline
+- [x] Create initial `__init__.py` files
 
-### 2.3 Package Structure Migration
-
-**Before (individual repos):**
-```
-ai-hedge-fund/
-├── main.py
-├── agents.py
-└── requirements.txt
-
-alpha101/
-├── factors.py
-└── requirements.txt
-
-risk-manager/
-├── risk.py
-└── requirements.txt
-```
-
-**After (monorepo):**
-```
-quant-nanggroe-ai/
-├── pyproject.toml
-├── quant_nanggroe/
-│   ├── __init__.py
-│   ├── agents/
-│   │   ├── graph.py
-│   │   ├── state.py
-│   │   ├── registry.py
-│   │   ├── council/
-│   │   ├── researcher/
-│   │   ├── strategist/
-│   │   ├── risk/
-│   │   ├── trader/
-│   │   ├── portfolio/
-│   │   ├── execution/
-│   │   ├── macro/
-│   │   ├── crypto/
-│   │   └── forex/
-│   ├── engine/
-│   │   ├── factors/
-│   │   ├── risk/
-│   │   ├── backtest/
-│   │   ├── execution/
-│   │   └── models/
-│   ├── exchange/
-│   ├── memory/
-│   ├── mcp/
-│   ├── security/
-│   ├── config/
-│   ├── data/
-│   └── types/
-└── docs/
-```
-
----
-
-## 3. Breaking Changes
-
-### 3.1 API Breaking Changes
-
-| Change | Before | After | Impact |
-|--------|--------|-------|--------|
-| **Agent creation** | `ResearcherAgent()` | `AgentFactory.create_agent("researcher")` | All agent instantiation code |
-| **Settings access** | `Settings()` | `get_settings()` | All configuration access |
-| **Exchange interface** | Broker-specific methods | `ExchangeInterface` abstract methods | All exchange interactions |
-| **Risk assessment** | Simple pass/fail | 9-checkpoint `RiskAssessment` with verdicts | All risk checks |
-| **Trade execution** | Direct broker calls | `ExecutionManager` with guard pipeline | All order placement |
-| **Factor computation** | Function-based | `AlphaFactor.compute(df)` class-based | All factor usage |
-| **State management** | Dict-based | `AgentState` TypedDict | All pipeline state |
-
-### 3.2 Configuration Breaking Changes
-
-| Setting | Before | After | Migration |
-|---------|--------|-------|-----------|
-| API keys in config files | `config.yaml` | Environment variables with `QNAI_` prefix | Move to `.env` or environment |
-| Risk limits configurable | `risk.max_per_trade = 0.02` | Hardcoded constitutional limits | Accept hardcoded values |
-| Exchange selection | `exchange = "binance"` | `ExchangeFactory.create("binance")` | Use factory pattern |
-| LLM model selection | `model = "gpt-4"` | `deep_think_model` / `quick_think_model` | Separate deep/quick models |
-| Paper trading flag | `paper = true` | `QNAI_ALPACA_PAPER=true` | Environment variable |
-
-### 3.3 Data Model Breaking Changes
-
-| Model | Before | After | Migration Action |
-|-------|--------|-------|-----------------|
-| Trade record | Dict with custom keys | `Trade` ORM model with typed columns | Rebuild from JSON exports |
-| Position | Dict with float values | `Position` ORM model with P&L tracking | Rebuild from trade history |
-| Portfolio | In-memory dict | `PortfolioSnapshot` ORM model with time series | Initialize from positions |
-| Risk assessment | Simple boolean | `RiskAssessment` with 9 checkpoints, VaR, CVaR | Re-run assessments |
-| Agent output | String | `AgentOutput` with confidence, tool calls, timing | Richer logging |
-
----
-
-## 4. Configuration Migration
-
-### 4.1 Environment Variable Mapping
-
-| Old Config File | Old Key | New Environment Variable | Default |
-|----------------|---------|-------------------------|---------|
-| `config.yaml` | `openai_api_key` | `QNAI_OPENAI_API_KEY` | None (required) |
-| `config.yaml` | `anthropic_api_key` | `QNAI_ANTHROPIC_API_KEY` | None |
-| `config.yaml` | `binance_api_key` | `QNAI_BINANCE_API_KEY` | None |
-| `config.yaml` | `binance_api_secret` | `QNAI_BINANCE_API_SECRET` | None |
-| `config.yaml` | `alpaca_api_key` | `QNAI_ALPACA_API_KEY` | None |
-| `config.yaml` | `alpaca_api_secret` | `QNAI_ALPACA_API_SECRET` | None |
-| `config.yaml` | `database_url` | `QNAI_DATABASE_URL` | `sqlite:///quant_nanggroe.db` |
-| `config.yaml` | `redis_url` | `QNAI_REDIS_URL` | None |
-| `config.yaml` | `log_level` | `QNAI_LOG_LEVEL` | `INFO` |
-| `config.yaml` | `paper_trading` | `QNAI_ALPACA_PAPER` | `true` |
-| `config.yaml` | `default_model` | `QNAI_DEFAULT_LLM_MODEL` | `gpt-4o` |
-| `secrets.env` | All API keys | Same variable names | None |
-
-### 4.2 Configuration Migration Script
-
+**Validation**:
 ```bash
-#!/bin/bash
-# migrate_config.sh — Migrate from individual repo configs to monorepo
-
-# 1. Create .env file from existing configs
-cat > .env << EOF
-# Quant Nanggroe AI Configuration
-# Migrated from individual repo configs on $(date)
-
-# LLM API Keys
-QNAI_OPENAI_API_KEY=${OPENAI_API_KEY:-}
-QNAI_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-QNAI_GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-
-# Trading API Keys
-QNAI_ALPACA_API_KEY=${ALPACA_API_KEY:-}
-QNAI_ALPACA_API_SECRET=${ALPACA_API_SECRET:-}
-QNAI_ALPACA_PAPER=true
-QNAI_BINANCE_API_KEY=${BINANCE_API_KEY:-}
-QNAI_BINANCE_API_SECRET=${BINANCE_API_SECRET:-}
-
-# Data API Keys
-QNAI_ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
-QNAI_POLYGON_API_KEY=${POLYGON_API_KEY:-}
-QNAI_FRED_API_KEY=${FRED_API_KEY:-}
-QNAI_COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
-
-# Database
-QNAI_DATABASE_URL=sqlite:///quant_nanggroe.db
-
-# Logging
-QNAI_LOG_LEVEL=INFO
-QNAI_LOG_FORMAT=json
-EOF
-
-echo "Configuration migrated to .env file"
+pip install -e ".[dev]"
+pytest tests/  # Should find and run initial tests
+ruff check quant_nanggroe/
+mypy quant_nanggroe/
 ```
 
-### 4.3 Validation
+### Step 1.2: State and Type System
 
-After migration, verify configuration:
+**Objective**: Define `AgentState` TypedDict and all supporting models.
 
+**Tasks**:
+- [x] Define `AgentState` TypedDict in `agents/state.py`
+- [x] Define all Pydantic models (Signal, Decision, RiskAssessment, etc.)
+- [x] Define all enumerations (TradeAction, RiskVerdict, AssetClass, etc.)
+- [x] Define constitutional risk limits as hardcoded constants
+- [x] Implement `create_initial_state()` factory
+
+**Source Files**:
+- `quant_nanggroe/agents/state.py` — All state definitions
+- `quant_nanggroe/engine/risk/constants.py` — Risk constants
+
+**Validation**:
 ```python
-from quant_nanggroe.config.settings import get_settings
-
-settings = get_settings()
-print(f"App: {settings.app_name} v{settings.version}")
-print(f"LLM: {settings.default_llm_provider}/{settings.default_llm_model}")
-print(f"Paper trading: {settings.alpaca_paper}")
-print(f"Risk limits: {settings.risk_max_per_trade}% per trade, {settings.risk_max_daily_loss}% daily")
+from quant_nanggroe.agents.state import AgentState, create_initial_state
+state = create_initial_state(["AAPL"], "2025-01-01")
+assert state["symbols"] == ["AAPL"]
+assert state["risk_verdict"] == "VETOED"
+assert state["metadata"]["constitutional_limits"]["override_possible"] is False
 ```
 
----
+### Step 1.3: LangGraph Graph (v1)
 
-## 5. Data Migration
+**Objective**: Implement the v1 trading graph.
 
-### 5.1 Database Schema Migration
+**Tasks**:
+- [x] Create `TradingGraph` class with StateGraph
+- [x] Implement market_analysis node
+- [x] Implement signal_generation node
+- [x] Implement risk_assessment node
+- [x] Implement portfolio_optimization node
+- [x] Implement execution_decision node
+- [x] Implement order_execution node
+- [x] Implement reflection node
+- [x] Implement council_debate node
+- [x] Implement emergency_exit node
+- [x] Add conditional edges for risk routing
+- [x] Add `run()` and `run_stream()` methods
 
-The monorepo uses SQLAlchemy ORM with Alembic for schema migrations. The migration from individual repo databases follows this process:
+**Source Files**:
+- `quant_nanggroe/agents/graph.py` — v1 trading graph
 
-**Step 1: Export existing data**
-
-```bash
-# From each source database
-sqlite3 old_trading.db ".dump trades" > trades_export.sql
-sqlite3 old_risk.db ".dump risk_events" > risk_export.sql
-sqlite3 old_portfolio.db ".dump positions" > positions_export.sql
-```
-
-**Step 2: Create new database schema**
-
-```bash
-cd quant-nanggroe-ai
-bun run db:push  # Push Prisma schema (if using)
-# OR
-alembic upgrade head  # Push SQLAlchemy schema
-```
-
-**Step 3: Transform and import data**
-
+**Validation**:
 ```python
-# migrate_data.py
-import json
-from quant_nanggroe.data.models import Trade, Position, RiskEvent
-from quant_nanggroe.config.settings import get_settings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
-
-engine = create_engine(get_settings().database_url)
-
-# Transform old trade records to new Trade model
-with Session(engine) as session:
-    for old_trade in old_trades:
-        new_trade = Trade(
-            symbol=old_trade["symbol"],
-            side=old_trade["side"],
-            order_type=old_trade.get("order_type", "market"),
-            quantity=old_trade["quantity"],
-            price=old_trade["price"],
-            status=old_trade.get("status", "closed"),
-            risk_verdict=old_trade.get("risk_verdict"),
-        )
-        session.add(new_trade)
-    session.commit()
+from quant_nanggroe.agents.graph import TradingGraph
+graph = TradingGraph(llm_provider="openai", deep_think_model="gpt-4o")
+# Note: Requires API key for full test
+# Unit tests verify graph structure without LLM calls
 ```
 
-### 5.2 Journal Migration
+### Step 1.4: Risk Engine Foundation
 
+**Objective**: Port HermesQuantOS risk framework.
+
+**Tasks**:
+- [x] Implement `RiskCheckGate` with 9 checkpoints
+- [x] Implement `KillSwitch` with auto-activation
+- [x] Implement `DrawdownMonitor`
+- [x] Implement `CorrelationMonitor`
+- [x] Implement `VaRCalculator`
+- [x] Implement `KellyCriterion`
+- [x] Implement `RiskManager` top-level class
+- [x] Port constitutional constants
+
+**Source Files**:
+- `quant_nanggroe/engine/risk/constants.py`
+- `quant_nanggroe/engine/risk/checks.py`
+- `quant_nanggroe/engine/risk/kill_switch.py`
+- `quant_nanggroe/engine/risk/drawdown.py`
+- `quant_nanggroe/engine/risk/correlation.py`
+- `quant_nanggroe/engine/risk/var.py`
+- `quant_nanggroe/engine/risk/kelly.py`
+- `quant_nanggroe/engine/risk/manager.py`
+
+**Validation**:
 ```python
-# migrate_journal.py
-from quant_nanggroe.memory.journal import TradeJournal
-
-# Load old journal
-old_journal = json.load(open("old_trades.json"))
-
-# Create new journal
-journal = TradeJournal(persist_path="data/journal.json")
-
-for trade in old_journal["trades"]:
-    trade_id = journal.record_entry(
-        symbol=trade["symbol"],
-        side=trade["side"],
-        price=trade["entry_price"],
-        quantity=trade["quantity"],
-        agent_name=trade.get("agent_name"),
-        strategy=trade.get("strategy"),
-        reasoning=trade.get("reasoning"),
-    )
-    
-    if trade.get("exit_price"):
-        journal.record_exit(
-            symbol=trade["symbol"],
-            price=trade["exit_price"],
-            pnl=trade.get("pnl"),
-        )
-    
-    if trade.get("reflection"):
-        journal.add_reflection(
-            symbol=trade["symbol"],
-            notes=trade["reflection"]["notes"],
-            rating=trade["reflection"].get("rating"),
-        )
-
-journal.save()
-```
-
-### 5.3 Data Integrity Verification
-
-After migration, verify:
-
-```python
-# Verify record counts
-from sqlalchemy import func, Session
-from quant_nanggroe.data.models import Trade, Position, RiskEvent
-
-with Session(engine) as session:
-    trade_count = session.query(func.count(Trade.id)).scalar()
-    position_count = session.query(func.count(Position.id)).scalar()
-    risk_count = session.query(func.count(RiskEvent.id)).scalar()
-    
-    print(f"Trades: {trade_count}")
-    print(f"Positions: {position_count}")
-    print(f"Risk Events: {risk_count}")
-    
-    # Verify PnL totals match
-    total_pnl = session.query(func.sum(Trade.commission)).scalar()
-    print(f"Total commission: {total_pnl}")
-```
-
----
-
-## 6. API Changes
-
-### 6.1 Endpoint Migration
-
-| Old Endpoint | New Endpoint | Method | Changes |
-|-------------|-------------|--------|---------|
-| `POST /trade` | `POST /api/v1/trade` | POST | New request/response models |
-| `GET /portfolio` | `GET /api/v1/portfolio` | GET | Enhanced position tracking |
-| `GET /agents` | `GET /api/v1/agents` | GET | 9 agents instead of 4 |
-| `POST /backtest` | `POST /api/v1/backtest` | POST | New strategy types, metrics |
-| `GET /risk/{symbol}` | `GET /api/v1/risk/{symbol}` | GET | 9-checkpoint assessment |
-| `GET /health` | `GET /api/v1/health` | GET | Component-level health |
-| — | `WS /ws/trading` | WS | New WebSocket endpoint |
-
-### 6.2 Request/Response Model Changes
-
-**Trade Request:**
-
-| Field | Before | After | Notes |
-|-------|--------|-------|-------|
-| `symbols` | Array of strings | Array of strings | Same |
-| `model` | Single model name | `deep_model` + `quick_model` | Dual-model architecture |
-| `provider` | Not supported | LLM provider name | Multi-provider support |
-| `paper` | Not supported | Boolean (default: true) | Paper/live toggle |
-| `metadata` | Not supported | Optional dict | Pipeline metadata |
-
-**Trade Response:**
-
-| Field | Before | After | Notes |
-|-------|--------|-------|-------|
-| `decision` | Single string | Array of `decisions` | Multi-symbol decisions |
-| `confidence` | Single float | Per-decision confidence | Granular confidence |
-| `risk_verdict` | Not included | APPROVED/VETOED/KILL_SWITCH | Constitutional risk |
-| `signals` | Not included | Array of signals | Pre-risk signals |
-| `agent_outputs` | Not included | Dict of agent outputs | Full auditability |
-
-### 6.3 WebSocket Protocol Changes
-
-| Message Type | Before | After | Notes |
-|-------------|--------|-------|-------|
-| `trade_update` | Not supported | Full pipeline events | Real-time tracking |
-| `risk_alert` | Not supported | Constitutional violations | Risk monitoring |
-| `position_change` | Not supported | Real-time position updates | Portfolio tracking |
-| `heartbeat` | Not supported | 30-second interval | Connection keep-alive |
-
----
-
-## 7. Deployment Migration
-
-### 7.1 Docker Migration
-
-**Before (individual containers):**
-```yaml
-# docker-compose.old.yml
-services:
-  trading:
-    build: ./ai-hedge-fund
-    ports: ["8000:8000"]
-  
-  backtest:
-    build: ./backtest-engine
-    ports: ["8001:8000"]
-  
-  risk:
-    build: ./risk-manager
-    ports: ["8002:8000"]
-```
-
-**After (single monorepo container):**
-```yaml
-# docker-compose.yml
-services:
-  api:
-    build: .
-    ports: ["8000:8000"]
-    environment:
-      - QNAI_DATABASE_URL=sqlite:///quant_nanggroe.db
-      - QNAI_OPENAI_API_KEY=${OPENAI_API_KEY}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  worker:
-    build: .
-    command: qnai worker
-    environment:
-      - QNAI_DATABASE_URL=sqlite:///quant_nanggroe.db
-    depends_on:
-      api:
-        condition: service_healthy
-```
-
-### 7.2 CI/CD Migration
-
-**Before**: Per-repo CI/CD pipelines with independent build/test/deploy cycles.
-
-**After**: Unified CI/CD pipeline:
-
-```yaml
-# .github/workflows/ci.yml
-name: Quant Nanggroe AI CI
-on: [push, pull_request]
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pip install ruff mypy
-      - run: ruff check quant_nanggroe/
-      - run: mypy quant_nanggroe/ --ignore-missing-imports
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pip install -e ".[dev]"
-      - run: pytest tests/ -v --tb=short
-
-  build:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker build -t quant-nanggroe-ai .
-```
-
-### 7.3 Monitoring Migration
-
-**Before**: Per-repo monitoring with fragmented logs.
-
-**After**: Unified monitoring with structured JSON logging:
-
-```python
-# All components use structured logging
-import structlog
-logger = structlog.get_logger()
-
-logger.info("trade_executed",
-    symbol="BTC/USDT",
-    action="BUY",
-    quantity=0.1,
-    confidence=0.85,
-    risk_verdict="APPROVED",
-    agent="trader",
-    pipeline_run_id="run-123",
+from quant_nanggroe.engine.risk.manager import RiskManager
+rm = RiskManager()
+result = rm.check_trade(
+    symbol="AAPL", direction="BUY", lot_size=0.1,
+    entry=150.0, stop_loss=148.0, account_balance=1_000_000
 )
+assert result["verdict"] in ("APPROVED", "VETOED")
+# VETOED if any checkpoint fails (e.g., risk:reward < 1:2)
+```
+
+### Step 1.5: Factor Engine Foundation
+
+**Objective**: Port Vibe-Trading factor zoos.
+
+**Tasks**:
+- [x] Implement `AlphaFactor` base class
+- [x] Implement `FactorMeta` metadata class
+- [x] Implement `FactorHandle` unified wrapper
+- [x] Implement `FactorRegistry` with discovery
+- [x] Port Alpha101 (101 factors)
+- [x] Port GTJA191 (191 factors)
+- [x] Port Qlib158 (158 factors)
+- [x] Port Academic factors
+- [x] Implement technical factors (class-based)
+- [x] Implement fundamental factors (class-based)
+- [x] Implement Barra factors
+- [x] Add output validation (no inf, < 95% NaN)
+- [x] Add thread-safe singleton
+
+**Source Files**:
+- `quant_nanggroe/engine/factors/base.py`
+- `quant_nanggroe/engine/factors/registry.py`
+- `quant_nanggroe/engine/factors/alpha101.py`
+- `quant_nanggroe/engine/factors/gtja191.py`
+- `quant_nanggroe/engine/factors/qlib158.py`
+- `quant_nanggroe/engine/factors/academic.py`
+- `quant_nanggroe/engine/factors/technical.py`
+- `quant_nanggroe/engine/factors/fundamental.py`
+- `quant_nanggroe/engine/factors/barra.py`
+- `quant_nanggroe/engine/factors/pipeline.py`
+
+**Validation**:
+```python
+from quant_nanggroe.engine.factors.registry import get_default_registry
+registry = get_default_registry()
+health = registry.health()
+assert health["loaded"] >= 469
+assert health["failed"] == 0
 ```
 
 ---
 
-## 8. Rollback Procedures
+## 3. Phase 2: Core Engines (Complete)
 
-### 8.1 Rollback Criteria
+**Timeline**: Weeks 5-7
+**Status**: ✅ Complete
+**Repositories**: AI-Trader, AutoHedge, QuantDinger, SolSniperX
 
-Initiate rollback if any of the following occur within 48 hours of migration:
+### Step 2.1: Agent Factory and Base Agent
 
-| Criterion | Threshold | Action |
-|-----------|-----------|--------|
-| API error rate | > 5% | Rollback to previous API |
-| Trade execution failures | > 1% | Switch to paper trading |
-| Data inconsistency | Any detected | Stop pipeline, investigate |
-| Performance degradation | > 2x latency increase | Scale up or rollback |
-| Constitutional risk bypass | Any detected | Immediate rollback + audit |
+**Tasks**:
+- [x] Implement `create_llm()` with multi-provider support
+- [x] Implement `AgentFactory` with agent creation
+- [x] Implement base agent class with tool binding
+- [x] Add agent role registration
 
-### 8.2 Rollback Steps
+### Step 2.2: Researcher Agent
 
-**Step 1: Stop the monorepo pipeline**
-```bash
-# Stop all services
-docker-compose down
+**Tasks**:
+- [x] Port market data analysis from AI-Trader
+- [x] Implement researcher-specific tools
+- [x] Write researcher system prompt
+- [x] Add market data and sentiment tools
 
-# Or if running directly
-pkill -f "uvicorn quant_nanggroe.api"
-```
+### Step 2.3: Solana Module
 
-**Step 2: Restore previous database**
-```bash
-# Restore from backup
-cp backup/quant_nanggroe.db.bak quant_nanggroe.db
+**Tasks**:
+- [x] Port Jupiter swap aggregator from SolSniperX
+- [x] Port RugCheck token safety from SolSniperX
+- [x] Port wallet management from SolSniperX
+- [x] Port mempool monitoring from SolSniperX
+- [x] Create Solana broker
 
-# Or from SQL dump
-sqlite3 quant_nanggroe.db < backup/quant_nanggroe_dump.sql
-```
+### Step 2.4: Risk Parity and Hedging
 
-**Step 3: Restore previous configuration**
-```bash
-# Restore environment variables
-cp backup/.env.bak .env
+**Tasks**:
+- [x] Port risk parity from AutoHedge
+- [x] Port correlation algorithms from AutoHedge
+- [x] Implement risk parity optimizer
+- [x] Implement mean-variance optimizer
+- [x] Implement equal volatility optimizer
 
-# Restore old docker-compose
-cp backup/docker-compose.old.yml docker-compose.yml
-```
+### Step 2.5: Backtest Engine
 
-**Step 4: Restart previous services**
-```bash
-# Start old services
-docker-compose -f docker-compose.old.yml up -d
-
-# Verify health
-curl http://localhost:8000/health
-```
-
-**Step 5: Verify data integrity**
-```bash
-# Check trade records match
-python verify_migration.py --compare-backup backup/pre_migration/
-
-# Check portfolio values match
-python verify_portfolio.py --expected backup/portfolio_snapshot.json
-```
-
-### 8.3 Partial Rollback
-
-If only specific components need rollback:
-
-| Component | Rollback Method |
-|-----------|----------------|
-| **Agent pipeline** | Switch to previous TradingGraph version via code rollback |
-| **Risk engine** | Disable new 9-checkpoint gate; use simple pass/fail |
-| **Exchange layer** | Switch to previous broker adapter |
-| **Factor library** | Disable new factors; use only technical indicators |
-| **API server** | Route traffic to previous API version via load balancer |
-
-### 8.4 Data Recovery
-
-If data is lost or corrupted during migration:
-
-1. **Database backup**: Pre-migration database dump stored in `backup/`
-2. **Journal backup**: Trade journal JSON files backed up before migration
-3. **Configuration backup**: All config files and `.env` stored in `backup/`
-4. **Exchange state**: Positions can be re-synced from exchange APIs
-5. **Audit trail**: All migration actions logged with timestamps
-
-### 8.5 Post-Rollback Actions
-
-After a successful rollback:
-
-1. Document the root cause of the rollback
-2. Create a fix in a feature branch
-3. Test the fix in the migration test environment
-4. Re-attempt migration with the fix applied
-5. Increase monitoring frequency for 72 hours post-migration
+**Tasks**:
+- [x] Implement core backtesting engine
+- [x] Implement Monte Carlo simulation
+- [x] Implement walk-forward optimization
+- [x] Implement multi-asset engines (equity, crypto, forex, futures)
+- [x] Implement execution simulation (slippage, partial fills)
+- [x] Implement data loaders (yfinance, CCXT)
+- [x] Implement portfolio optimizers
 
 ---
 
-*© 2025-2026 Quant Nanggroe AI | Migration Plan v0.2.0*
+## 4. Phase 3: Agent Implementations (In Progress)
+
+**Timeline**: Weeks 8-10
+**Status**: 🔄 In Progress
+**Repositories**: FinceptTerminal, OpenAlice, Misi-Screener, PromptForgeAI
+
+### Step 3.1: v2 Graph Architecture
+
+**Tasks**:
+- [x] Implement `TradingGraphV2` with multi-path routing
+- [x] Implement `AssetRouter` node
+- [x] Implement 4 execution paths (crypto, forex, equity, prediction_market)
+- [x] Implement `PositionSizer` node with ATR + TP1/TP2/TP3
+- [x] Implement `PortfolioValidator` node
+- [x] Implement `SmartExecutor` node
+- [x] Implement `HumanCheckpoint` node
+- [x] Add portfolio validation conditional edges
+- [x] Add human checkpoint conditional edges
+
+### Step 3.2: Crypto Agent
+
+**Tasks**:
+- [x] Implement crypto agent with Solana tools
+- [x] Write crypto-specific system prompt
+- [x] Add on-chain analysis tools
+- [x] Add DEX monitoring capabilities
+
+### Step 3.3: Forex Agent
+
+**Tasks**:
+- [x] Implement forex agent with FX-specific tools
+- [x] Write forex-specific system prompt
+- [x] Add carry trade calculator
+- [x] Add central bank policy tracker
+
+### Step 3.4: Macro Agent
+
+**Tasks**:
+- [x] Implement macro agent for regime detection
+- [x] Write macro-specific system prompt
+- [x] Add FRED economic data tools
+- [x] Add market regime classification
+
+### Step 3.5: Council Debate Enhancement
+
+**Tasks**:
+- [x] Port bull/bear debate from TradingAgents
+- [x] Port risk debate (conservative/neutral/aggressive)
+- [x] Implement council voting with weighted scores
+- [x] Add consensus threshold and human review trigger
+
+### Step 3.6: API Layer (from FinceptTerminal)
+
+**Tasks**:
+- [x] Implement FastAPI application
+- [x] Add CORS middleware
+- [x] Implement market data route
+- [x] Implement trading route
+- [x] Implement agents route
+- [x] Implement backtest route
+- [x] Implement portfolio route
+- [x] Implement WebSocket route
+- [x] Add health check endpoint
+- [x] Add global exception handler
+
+### Step 3.7: Remaining Agent Prompts (from PromptForgeAI)
+
+**Tasks**:
+- [ ] Optimize researcher prompts
+- [ ] Optimize strategist prompts
+- [ ] Optimize risk agent prompts
+- [ ] Add chain-of-thought patterns
+- [ ] A/B test prompt variations
+
+---
+
+## 5. Phase 4: Exchange Integration (Planned)
+
+**Timeline**: Weeks 11-12
+**Status**: 📋 Planned
+**Repositories**: Clipper-AI, Kronos, Pentaract, ZeroInject
+
+### Step 4.1: Exchange Factory Enhancement
+
+**Tasks**:
+- [ ] Add remaining exchange configurations
+- [ ] Implement exchange health monitoring
+- [ ] Add automatic failover between exchanges
+- [ ] Implement rate limit management per exchange
+- [ ] Add exchange-specific error handling
+
+### Step 4.2: Smart Order Routing Enhancement
+
+**Tasks**:
+- [ ] Implement real-time venue scoring with live data
+- [ ] Add liquidity-based routing
+- [ ] Implement TWAP/VWAP order splitting
+- [ ] Add dark pool routing (where available)
+- [ ] Implement cross-exchange arbitrage detection
+
+### Step 4.3: Paper Trading Enhancement
+
+**Tasks**:
+- [ ] Add realistic slippage model
+- [ ] Add partial fill simulation
+- [ ] Add order rejection simulation
+- [ ] Add latency simulation
+- [ ] Implement paper trading dashboard
+
+### Step 4.4: Exchange Testing
+
+**Tasks**:
+- [ ] Integration tests for each exchange
+- [ ] Rate limit testing
+- [ ] Error handling testing
+- [ ] WebSocket reconnection testing
+- [ ] Order lifecycle testing
+
+---
+
+## 6. Phase 5: Production Hardening (Planned)
+
+**Timeline**: Weeks 13-14
+**Status**: 📋 Planned
+**Repositories**: Crucix, QuantMuse, Dhaher-Corporation, MoneyPrinterTurbo, Trading-Plan-AI-Interactive
+
+### Step 5.1: Security Hardening
+
+**Tasks**:
+- [ ] Implement API key authentication
+- [ ] Add JWT token management
+- [ ] Implement role-based access control
+- [ ] Add credential leak prevention
+- [ ] Implement audit logging
+- [ ] Add rate limiting per user
+
+### Step 5.2: Monitoring and Observability
+
+**Tasks**:
+- [ ] Add Prometheus metrics export
+- [ ] Add structured logging (JSON format)
+- [ ] Implement health check endpoints
+- [ ] Add performance profiling
+- [ ] Implement alert rules for risk limits
+
+### Step 5.3: Performance Optimization
+
+**Tasks**:
+- [ ] Profile and optimize factor computation
+- [ ] Add caching for frequently computed factors
+- [ ] Optimize database queries
+- [ ] Add connection pooling for exchanges
+- [ ] Implement async exchange operations
+
+### Step 5.4: Documentation
+
+**Tasks**:
+- [ ] Complete API documentation (OpenAPI)
+- [ ] Write deployment guide
+- [ ] Write operations runbook
+- [ ] Write incident response procedures
+- [ ] Add inline code documentation
+
+### Step 5.5: Deployment Preparation
+
+**Tasks**:
+- [ ] Create Docker images
+- [ ] Set up Kubernetes manifests
+- [ ] Configure CI/CD pipeline
+- [ ] Set up staging environment
+- [ ] Create production deployment playbook
+
+---
+
+## 7. Rollback Procedures
+
+### Rollback Principles
+
+1. **Every merge is a git commit** — Can always `git revert`
+2. **Tests are the safety net** — If tests fail, don't merge
+3. **Feature flags for risky changes** — Can disable without revert
+4. **Database migrations are reversible** — Always provide down migration
+
+### Rollback Procedures by Phase
+
+| Phase | Rollback Trigger | Procedure |
+|---|---|---|
+| Phase 1 | Core state/types broken | `git revert` to last working commit |
+| Phase 2 | Factor/risk engine broken | Disable new factors, fall back to v1 |
+| Phase 3 | Agent outputs invalid | Disable failing agent, use fallback |
+| Phase 4 | Exchange connection broken | Route to paper broker, log error |
+| Phase 5 | Security vulnerability | Disable affected endpoint, patch |
+
+### Emergency Rollback
+
+```bash
+# Find the last working commit
+git log --oneline -10
+
+# Revert to that commit
+git revert <commit-hash>
+
+# Or, hard reset (destructive)
+git reset --hard <commit-hash>
+
+# Re-run tests to verify
+pytest tests/ -x
+```
+
+### Kill Switch Rollback
+
+If the kill switch triggers incorrectly:
+1. Review the trigger reason in logs
+2. Verify the PnL/drawdown calculations
+3. If false positive, manual reset via `kill_switch.deactivate()`
+4. Adjust thresholds only via code change (constitutional)
+
+---
+
+## 8. Testing Requirements per Phase
+
+### Test Categories
+
+| Category | Description | Coverage Target |
+|---|---|---|
+| **Unit tests** | Individual function/class testing | 90%+ |
+| **Integration tests** | Multi-component testing | 80%+ |
+| **End-to-end tests** | Full pipeline testing | Key scenarios |
+| **Performance tests** | Latency/throughput testing | Benchmarks |
+| **Security tests** | Vulnerability scanning | Critical paths |
+
+### Phase-Specific Test Requirements
+
+#### Phase 1 Tests
+
+| Test | Count | Description |
+|---|---|---|
+| State model tests | 50+ | AgentState, all Pydantic models |
+| Risk engine tests | 100+ | 9 checkpoints, kill switch, VaR, Kelly |
+| Factor tests | 200+ | All 469+ factors compute correctly |
+| Graph structure tests | 30+ | Nodes, edges, conditional routing |
+
+#### Phase 2 Tests
+
+| Test | Count | Description |
+|---|---|---|
+| Agent factory tests | 20+ | Agent creation, LLM routing |
+| Researcher agent tests | 30+ | Market analysis, tool usage |
+| Solana module tests | 40+ | Jupiter, RugCheck, wallet |
+| Backtest engine tests | 100+ | Multi-asset, execution simulation |
+
+#### Phase 3 Tests
+
+| Test | Count | Description |
+|---|---|---|
+| v2 graph tests | 50+ | Multi-path routing, position sizing |
+| Crypto/Forex agent tests | 40+ | Asset-specific analysis |
+| Council debate tests | 30+ | Bull/bear, risk debate, voting |
+| API endpoint tests | 50+ | All routes, WebSocket |
+
+#### Phase 4 Tests
+
+| Test | Count | Description |
+|---|---|---|
+| Exchange integration tests | 60+ | All 10 exchanges |
+| Smart routing tests | 30+ | Venue scoring, order routing |
+| Paper trading tests | 20+ | Realistic simulation |
+| Failover tests | 20+ | Exchange failover scenarios |
+
+#### Phase 5 Tests
+
+| Test | Count | Description |
+|---|---|---|
+| Security tests | 40+ | Auth, key vault, audit |
+| Performance tests | 30+ | Factor computation, API latency |
+| Deployment tests | 20+ | Docker, Kubernetes |
+| End-to-end tests | 20+ | Full production scenarios |
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific category
+pytest tests/ -m "not slow" -v
+pytest tests/ -m integration -v
+
+# Run with coverage
+pytest tests/ --cov=quant_nanggroe --cov-report=html
+
+# Run specific module
+pytest tests/test_risk.py -v
+pytest tests/test_factors.py -v
+
+# Type checking
+mypy quant_nanggroe/
+
+# Linting
+ruff check quant_nanggroe/
+```
+
+---
+
+## 9. Migration Checklist
+
+### Pre-Migration
+
+- [ ] Backup all source repositories
+- [ ] Create migration branch
+- [ ] Set up CI pipeline
+- [ ] Review all dependencies
+- [ ] Create test plan
+
+### During Migration
+
+- [ ] All tests pass at every step
+- [ ] No circular imports introduced
+- [ ] Constitutional limits verified
+- [ ] Documentation updated
+- [ ] Code reviewed
+
+### Post-Migration
+
+- [ ] Full test suite passes (2504+)
+- [ ] Type checking passes (mypy)
+- [ ] Linting passes (ruff)
+- [ ] Performance benchmarks met
+- [ ] Security scan clean
+- [ ] API backward compatible
+- [ ] Documentation complete
+
+---
+
+## 10. Risk Mitigation During Migration
+
+### Migration Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| **Breaking existing tests** | Medium | High | Run full test suite after every change |
+| **Circular imports** | Medium | Medium | Check imports with every module addition |
+| **Data model conflicts** | High | High | Unified AgentState TypedDict |
+| **Dependency version conflicts** | Medium | Medium | Pin all versions in pyproject.toml |
+| **Performance regression** | Low | High | Benchmark after every phase |
+| **Security vulnerability** | Low | Critical | Security scan after every phase |
+| **Risk engine bypass** | Very Low | Critical | Constitutional limits are hardcoded |
+
+### Continuous Validation
+
+Every commit must pass:
+
+```bash
+# 1. Lint
+ruff check quant_nanggroe/
+
+# 2. Type check
+mypy quant_nanggroe/
+
+# 3. Test
+pytest tests/ -x --tb=short
+
+# 4. Security
+python -m quant_nanggroe.security.credential_inference
+
+# 5. Factor health
+python -c "from quant_nanggroe.engine.factors.registry import get_default_registry; print(get_default_registry().health())"
+```
+
+---
+
+© 2025-2026 Quant Nanggroe AI | Migration Plan v4.0.0

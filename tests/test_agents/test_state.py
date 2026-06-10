@@ -98,7 +98,7 @@ class TestAgentRole:
         assert AgentRole.COUNCIL.value == "council"
 
     def test_all_members(self):
-        assert len(AgentRole) == 10
+        assert len(AgentRole) == 11  # Added PREDICTION_MARKET role
 
 
 # ═══════════════════════════════════════════════════════════════════════════

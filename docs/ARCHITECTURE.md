@@ -1,817 +1,958 @@
 # Quant Nanggroe AI — Complete System Architecture
 
-**Version 0.2.0 | Agentic Trading Intelligence OS**
+**Version 4.0.0 | Agentic Trading Intelligence OS**
 
-> This document provides the comprehensive technical architecture reference for Quant Nanggroe AI, covering every layer, component, data flow, and integration point in the system.
+> This document provides a comprehensive technical reference for the complete system architecture of Quant Nanggroe AI, covering the LangGraph-style graph orchestration, 11-agent council system, multi-path execution, factor engines, risk infrastructure, exchange layer, data providers, memory system, and API layer.
 
 ---
 
 ## Table of Contents
 
-1. [High-Level Architecture Overview](#1-high-level-architecture-overview)
-2. [Agent Layer](#2-agent-layer)
-3. [Engine Layer](#3-engine-layer)
-4. [Memory Layer](#4-memory-layer)
-5. [Data Layer](#5-data-layer)
-6. [API Layer](#6-api-layer)
-7. [MCP Protocol Integration](#7-mcp-protocol-integration)
-8. [LangGraph Graph Structure and Flow](#8-langgraph-graph-structure-and-flow)
-9. [Constitutional Risk System](#9-constitutional-risk-system)
-10. [Deployment Architecture](#10-deployment-architecture)
-11. [Security Architecture](#11-security-architecture)
-12. [Cross-Cutting Concerns](#12-cross-cutting-concerns)
+1. [System Overview](#1-system-overview)
+2. [LangGraph Graph Architecture](#2-langgraph-graph-architecture)
+3. [11-Agent Council System](#3-11-agent-council-system)
+4. [Multi-Path Execution](#4-multi-path-execution)
+5. [Factor Engine](#5-factor-engine)
+6. [Risk Engine](#6-risk-engine)
+7. [Exchange Layer](#7-exchange-layer)
+8. [Data Providers](#8-data-providers)
+9. [Memory System](#9-memory-system)
+10. [API Layer](#10-api-layer)
+11. [Security & Key Management](#11-security--key-management)
+12. [Backtest Infrastructure](#12-backtest-infrastructure)
+13. [Configuration System](#13-configuration-system)
+14. [Deployment Architecture](#14-deployment-architecture)
 
 ---
 
-## 1. High-Level Architecture Overview
+## 1. System Overview
 
-Quant Nanggroe AI implements a **6-Layer Deterministic Execution Stack** with clear separation of concerns. Each layer acts as a strict boundary — data flows downward through the stack, and each layer either passes data forward or blocks it entirely. No layer can be bypassed, and no agent can override constraints imposed by layers above it.
+Quant Nanggroe AI is a production-grade **Agentic Trading Intelligence OS** built on a LangGraph-style graph architecture that orchestrates 11 specialized AI agents through a deterministic trading pipeline. The system merges the intellectual heritage of 20+ trading and quant repositories into a unified monorepo with constitutional risk limits that cannot be overridden.
 
-### Architecture Diagram (Mermaid)
+### Key Statistics
+
+| Metric | Value |
+|---|---|
+| Python Modules | 214+ |
+| Test Suite | 2,504+ tests passing |
+| Alpha Factors | 469 (across 7 zoos) |
+| Exchange Integrations | 10 (8 CCXT + Alpaca + Polymarket) |
+| Agent Roles | 11 (researcher, trader, strategist, risk, portfolio, execution, macro, crypto, forex, council, prediction_market) |
+| Risk Checkpoints | 9 (constitutional, hardcoded) |
+| Execution Paths | 4 (crypto, forex, equity, prediction_market) |
+| Data Providers | 7+ (alpaca, polygon, binance, fred, sec_edgar, twelvedata, yahoo) |
+
+### Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "API/CLI Layer"
-        API[FastAPI REST API]
-        WS[WebSocket Server]
-        CLI[Click CLI]
-    end
-
-    subgraph "Agent Layer — LangGraph StateGraph"
-        MA[Market Analysis Node]
-        SG[Signal Generation Node]
-        RA[Risk Assessment Node]
-        PO[Portfolio Optimization Node]
-        ED[Execution Decision Node]
-        OE[Order Execution Node]
-        RF[Reflection Node]
-        CD[Council Debate Node]
-        EE[Emergency Exit Node]
-    end
-
-    subgraph "9 Specialized Agents"
-        RES[Researcher Agent]
-        STR[Strategist Agent]
-        RSK[Risk Agent]
-        TRD[Trader Agent]
-        PRT[Portfolio Agent]
-        EXE[Execution Agent]
-        MAC[Macro Agent]
-        CRY[Crypto Agent]
-        FOR[Forex Agent]
-    end
-
-    subgraph "Engine Layer"
-        BT[Backtest Engine]
-        EXE_E[Execution Engine]
-        FAC[Factor Library]
-        RSK_E[Risk Engine]
-        MOD[ML Models]
-    end
-
-    subgraph "Memory Layer"
-        JRNL[Trade Journal]
-        KG[Knowledge Graph]
-        PG[Paging System]
-        SES[Session Manager]
-    end
-
     subgraph "Data Layer"
         DP[Data Providers]
-        CCXT[CCXT Exchange]
-        CACHE[Caching Layer]
-        DB[SQLAlchemy Database]
+        ALPACA[Alpaca]
+        POLYGON[Polygon]
+        BINANCE[Binance]
+        FRED[FRED]
+        SEC[SEC EDGAR]
+        TD[TwelveData]
+        YH[Yahoo Finance]
     end
 
-    subgraph "MCP Layer"
-        MCPS[MCP Server]
-        MCPC[MCP Client]
-        MCPT[MCP Tools]
+    subgraph "Agent Orchestration (LangGraph)"
+        START([START]) --> MA[Market Analysis]
+        MA --> AR[Asset Router]
+        AR -->|crypto| CP[Crypto Path]
+        AR -->|forex| FP[Forex Path]
+        AR -->|equity| EP[Equity Path]
+        AR -->|prediction_market| PMP[Prediction Market Path]
+        CP --> SG[Signal Generation]
+        FP --> SG
+        EP --> SG
+        PMP --> SG
+        SG --> PS[Position Sizer]
+        PS --> RA[Risk Assessment]
+        RA -->|continue| PV[Portfolio Validation]
+        RA -->|halt| END1([END - Halted])
+        RA -->|council| CD[Council Debate]
+        RA -->|emergency| EE[Emergency Exit]
+        CD --> PS
+        PV --> PO[Portfolio Optimization]
+        PO --> ED[Execution Decision]
+        ED --> HC[Human Checkpoint]
+        HC -->|execute| SE[Smart Executor]
+        HC -->|reject| TR[Trade Rejected]
+        SE --> REF[Reflection]
+        REF --> END2([END])
+        EE --> END3([END])
+        TR --> END4([END])
     end
 
-    API --> MA
-    CLI --> MA
-    WS --> MA
+    subgraph "Factor Engine"
+        FE[Factor Registry]
+        A101[Alpha101 - 101 factors]
+        GTJA[GTJA191 - 191 factors]
+        BARRA[Barra]
+        QLIB[Qlib158 - 158 factors]
+        TECH[Technical]
+        FUND[Fundamental]
+        ACAD[Academic]
+    end
 
-    MA --> RES
-    MA --> MAC
-    MA --> CRY
-    MA --> FOR
-    SG --> STR
-    RA --> RSK
-    ED --> TRD
-    PO --> PRT
-    OE --> EXE
+    subgraph "Risk Engine"
+        RM[Risk Manager]
+        RCG[9-Checkpoint Gate]
+        KS[Kill Switch]
+        DD[Drawdown Monitor]
+        KC[Kelly Criterion]
+        VAR[VaR Calculator]
+        CM[Correlation Monitor]
+    end
 
-    TRD --> BT
-    EXE --> EXE_E
-    STR --> FAC
-    RSK --> RSK_E
-    STR --> MOD
+    subgraph "Exchange Layer"
+        EF[Exchange Factory]
+        BNB[Binance]
+        OKX[OKX]
+        BYB[Bybit]
+        BTG[Bitget]
+        KRK[Kraken]
+        KUC[KuCoin]
+        GTE[Gate]
+        CB[Coinbase]
+        ALP[Alpaca]
+        PM[Polymarket]
+    end
 
-    MA --> JRNL
-    RF --> KG
-    MA --> PG
-    MA --> SES
-
-    RES --> DP
-    EXE --> CCXT
-    DP --> CACHE
-    API --> DB
-
-    RES --> MCPC
-    MCPS --> MCPT
-```
-
-### ASCII Architecture Diagram
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    API / CLI / WebSocket Layer                    │
-│  FastAPI REST • Click CLI • WebSocket Streaming • OpenAPI Docs  │
-├──────────────────────────────────────────────────────────────────┤
-│                      Agent Layer (LangGraph)                      │
-│  ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐ ┌────────┐ │
-│  │Researcher│ │Strategist│ │  Risk   │ │  Trader  │ │Portfolio│ │
-│  └────┬────┘ └────┬─────┘ └────┬────┘ └────┬─────┘ └───┬────┘ │
-│  ┌────┴────┐ ┌────┴─────┐ ┌────┴────┐                    │      │
-│  │  Macro  │ │  Crypto  │ │  Forex  │ │Execution │ Council│      │
-│  └─────────┘ └──────────┘ └─────────┘ └──────────┘ Debate │      │
-├──────────────────────────────────────────────────────────────────┤
-│                        Engine Layer                               │
-│  Backtest • Execution • Factors (Alpha101/GTJA191/Barra)        │
-│  Risk (VaR/CVaR/Kelly/Drawdown/KillSwitch) • ML Models          │
-├──────────────────────────────────────────────────────────────────┤
-│                       Memory Layer                                │
-│  Trade Journal • Knowledge Graph • Paging • Session Manager      │
-├──────────────────────────────────────────────────────────────────┤
-│                        Data Layer                                 │
-│  Multi-Provider (yfinance/Alpaca/Binance/Polygon/FRED)          │
-│  CCXT Exchange Abstraction • Caching • SQLAlchemy ORM            │
-├──────────────────────────────────────────────────────────────────┤
-│                     MCP Protocol Layer                             │
-│  MCP Server • MCP Client • Tool Registry • JSON-RPC 2.0         │
-├──────────────────────────────────────────────────────────────────┤
-│                    Security Layer (Cross-Cutting)                  │
-│  KeyVault • Authentication • Audit Trail • Credential Inference  │
-└──────────────────────────────────────────────────────────────────┘
+    DP --> MA
+    FE --> SG
+    RM --> RA
+    EF --> SE
 ```
 
 ---
 
-## 2. Agent Layer
+## 2. LangGraph Graph Architecture
 
-The Agent Layer is the heart of Quant Nanggroe AI. It consists of 9 specialized agents orchestrated by a LangGraph StateGraph, plus a Council Debate mechanism for low-confidence decisions and an Emergency Exit path for critical risk situations.
+The core orchestration engine uses **LangGraph StateGraph** to define a deterministic trading pipeline with nodes, edges, and conditional routing. The graph is defined in `quant_nanggroe/agents/graph.py` (v1) and `quant_nanggroe/agents/graph_v2.py` (v2, current).
 
-### 2.1 Agent Inventory
+### v1 Graph (Simple Pipeline)
 
-| Agent | Role | LLM Model | Responsibility | Tools |
-|-------|------|-----------|----------------|-------|
-| **Researcher** | `researcher` | Quick | Market research, data gathering, news analysis | `web_search`, `financial_data`, `news` |
-| **Strategist** | `strategist` | Deep | Signal generation, strategy formulation, alpha factor computation | `technical_analysis`, `factor_library`, `signal_generator` |
-| **Risk** | `risk` | Deep | 9-checkpoint risk assessment, VaR/CVaR computation, constitutional enforcement | `var_calculator`, `kelly_criterion`, `drawdown_monitor` |
-| **Trader** | `trader` | Quick | Trade execution decisions, order management, position sizing | `order_manager`, `position_tracker` |
-| **Portfolio** | `portfolio` | Quick | Portfolio optimization, asset allocation, rebalancing | `risk_parity`, `rebalance`, `allocation_optimizer` |
-| **Execution** | `execution` | Quick | Order execution, fill tracking, guard rails | `broker_adapter`, `fill_simulator`, `guard_rails` |
-| **Macro** | `macro` | Quick | Macroeconomic analysis, regime detection, economic calendar | `economic_calendar`, `regime_detector` |
-| **Crypto** | `crypto` | Quick | Cryptocurrency market analysis, on-chain data, whale tracking | `on_chain_data`, `sentiment`, `whale_tracker` |
-| **Forex** | `forex` | Quick | Forex market analysis, currency pair evaluation, central bank policy | `fx_rates`, `carry_trade`, `central_bank` |
+The original graph implements a linear 7-node pipeline:
 
-### 2.2 Agent Architecture
-
-Each agent follows a consistent internal architecture:
-
-```
-Agent Module (e.g., quant_nanggroe/agents/researcher/)
-├── __init__.py          # Public exports
-├── agent.py             # Agent class with LLM binding and tool integration
-├── prompts.py           # System prompts and templates
-└── tools.py             # Agent-specific MCP tools
+```mermaid
+graph LR
+    START --> MA[market_analysis]
+    MA --> SG[signal_generation]
+    SG --> RA[risk_assessment]
+    RA -->|continue| PO[portfolio_optimization]
+    RA -->|halt| END1[END]
+    RA -->|council| CD[council_debate]
+    RA -->|emergency| EE[emergency_exit]
+    PO --> ED[execution_decision]
+    ED --> OE[order_execution]
+    OE --> REF[reflection]
+    REF --> END2[END]
+    CD --> ED
+    EE --> END3[END]
 ```
 
-The `AgentFactory` (in `quant_nanggroe/agents/registry.py`) creates agents on demand with the appropriate LLM configuration:
+### v2 Graph (Multi-Path Architecture)
 
-- **Deep-think model** (e.g., `gpt-4o`): Used for Strategist and Risk agents where thorough analysis is critical
-- **Quick-think model** (e.g., `gpt-4o-mini`): Used for Researcher, Trader, Portfolio, Execution, Macro, Crypto, and Forex agents where speed matters
+The v2 graph introduces asset-class conditional routing, position sizing, portfolio validation, smart order routing, and human-in-the-loop checkpoints:
 
-### 2.3 Council Debate System
+```mermaid
+graph TB
+    START([START]) --> MA[market_analysis]
+    MA --> AR[asset_router]
+    
+    AR -->|crypto_path| CP[crypto_path]
+    AR -->|forex_path| FP[forex_path]
+    AR -->|equity_path| EP[equity_path]
+    AR -->|prediction_market_path| PMP[prediction_market_path]
+    
+    CP --> SG[signal_generation]
+    FP --> SG
+    EP --> SG
+    PMP --> SG
+    
+    SG --> PS[position_sizer<br/>ATR + TP1/TP2/TP3]
+    PS --> RA[risk_assessment<br/>9-checkpoint gate]
+    
+    RA -->|continue| PV[portfolio_validation]
+    RA -->|halt| END1([END])
+    RA -->|council_debate| CD[council_debate]
+    RA -->|emergency_exit| EE[emergency_exit]
+    
+    CD --> PS
+    PV -->|pass| PO[portfolio_optimization]
+    PV -->|fail| END2([END])
+    PO --> ED[execution_decision]
+    ED --> HC[human_checkpoint]
+    HC -->|execute| SE[smart_execution<br/>venue scoring]
+    HC -->|reject| TR[trade_rejected]
+    SE --> REF[reflection]
+    REF --> END3([END])
+    EE --> END4([END])
+    TR --> END5([END])
+```
 
-When confidence falls below the threshold (default: 0.65), the system triggers a **Council Debate**:
+### Graph Nodes (v2)
 
-1. **Bull/Bear Debate**: A structured debate between optimistic and pessimistic perspectives, with a judge evaluating arguments
-2. **Risk Debate**: Three-way debate between Conservative, Neutral, and Aggressive risk positions
-3. **Council Vote**: Weighted voting by all 9 agents based on historical accuracy, producing a final `CouncilResult` with consensus level
+| Node | Agent/Component | Purpose | LLM |
+|---|---|---|---|
+| `market_analysis` | Researcher + Macro | Gather market data, macro regime | Deep |
+| `asset_router` | AssetRouter | Classify symbols → asset class | None |
+| `crypto_path` | Crypto Agent | On-chain analysis, DEX monitoring | Deep |
+| `forex_path` | Forex Agent | FX rates, carry trades, CB policy | Deep |
+| `equity_path` | (uses researcher+macro) | Standard equity analysis | — |
+| `prediction_market_path` | Prediction Market Agent | Event contracts, probability | Deep |
+| `signal_generation` | Strategist | Combine analysis → trading signals | Deep |
+| `position_sizer` | PositionSizer | ATR-based sizing with TP1/TP2/TP3 | None |
+| `risk_assessment` | Risk Agent | 9-checkpoint constitutional gate | Deep |
+| `council_debate` | CouncilDebate + Voting | Low-confidence fallback | Deep |
+| `portfolio_validation` | PortfolioValidator | Concentration/correlation/Kelly | None |
+| `portfolio_optimization` | Portfolio Agent | Asset allocation optimization | Deep |
+| `execution_decision` | Trader Agent | Final buy/sell/hold decision | Quick |
+| `human_checkpoint` | HumanCheckpoint | Human approval for high-risk | None |
+| `smart_execution` | SmartExecutor | Venue scoring, order routing | None |
+| `trade_rejected` | — | Record rejection, halt | None |
+| `reflection` | CouncilDebate | Post-trade analysis | Deep |
+| `emergency_exit` | — | Close all positions immediately | None |
 
-The debate system uses `CouncilDebate` and `CouncilVoting` classes (in `quant_nanggroe/agents/council/`) with configurable maximum rounds.
+### Conditional Edges
 
-### 2.4 Emergency Exit Path
-
-When the kill switch activates (daily PnL < -2% or weekly PnL < -5%), the system routes to the Emergency Exit node which:
-- Closes all open positions immediately
-- Sets `kill_switch_active = True`
-- Sets `should_halt = True`
-- Prevents any further trading until manual reset
+| Edge Source | Condition | Target | Logic |
+|---|---|---|---|
+| `asset_router` | `crypto_path` | crypto_path | Symbol matches crypto patterns |
+| `asset_router` | `forex_path` | forex_path | Symbol matches forex patterns |
+| `asset_router` | `equity_path` | equity_path | Default / stock symbols |
+| `asset_router` | `prediction_market_path` | prediction_market_path | Event contract patterns |
+| `risk_assessment` | `continue` | portfolio_validation | All 9 checkpoints pass, confidence ≥ 0.65 |
+| `risk_assessment` | `halt` | END | Any checkpoint fails |
+| `risk_assessment` | `council_debate` | council_debate | Confidence < 0.65 OR CRISIS regime with confidence < 0.85 |
+| `risk_assessment` | `emergency_exit` | emergency_exit | Kill switch active or triggered |
+| `portfolio_validation` | `pass` | portfolio_optimization | No blocking errors |
+| `portfolio_validation` | `fail` | END | Blocking errors found |
+| `human_checkpoint` | `execute` | smart_execution | Human approved or auto-approved |
+| `human_checkpoint` | `reject` | trade_rejected | Human rejected |
 
 ---
 
-## 3. Engine Layer
+## 3. 11-Agent Council System
 
-The Engine Layer provides the computational backbone for trading operations. It is organized into five sub-modules.
+The system employs 11 specialized agents, each with distinct roles, tools, and LLM configurations.
 
-### 3.1 Backtest Engine (`engine/backtest/`)
+### Agent Roles
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| **BacktestEngine** | `engine.py` | Core backtesting engine with configurable commission, slippage, and market type |
-| **Portfolio Sim** | `portfolio.py` | Simulated portfolio for backtesting with position tracking |
-| **Execution Sim** | `execution.py` | Execution reality simulation: dynamic spread, slippage, partial fills, latency |
-| **Metrics** | `metrics.py` | Performance metrics: Sharpe, Sortino, max drawdown, win rate, profit factor |
-| **Monte Carlo** | `monte_carlo.py` | Bootstrap resampling for confidence intervals on backtest results |
-| **Walk-Forward** | `walk_forward.py` | Rolling window optimization for robustness validation |
-| **Benchmarks** | `benchmarks.py` | Benchmark comparison against buy-and-hold, S&P 500, etc. |
-| **Report** | `report.py` | HTML/JSON backtest report generation |
+| Agent | Role Enum | Purpose | LLM Model | Key Tools |
+|---|---|---|---|---|
+| **Researcher** | `researcher` | Market data analysis, fundamental research | Deep (gpt-4o) | market_data, sentiment |
+| **Macro** | `macro` | Macro regime detection, economic indicators | Deep (gpt-4o) | economic_data, fred |
+| **Crypto** | `crypto` | On-chain analysis, DEX monitoring, Solana/Jupiter | Deep (gpt-4o) | solana_rpc, jupiter_swap, rugcheck |
+| **Forex** | `forex` | Currency analysis, carry trades, CB policy | Deep (gpt-4o) | fx_rates, carry_trade_calc |
+| **Strategist** | `strategist` | Signal generation from agent outputs | Deep (gpt-4o) | technical, backtest |
+| **Risk** | `risk` | 9-checkpoint risk validation | Deep (gpt-4o) | risk_checks, var, kelly |
+| **Portfolio** | `portfolio` | Asset allocation, risk budgeting | Deep (gpt-4o) | optimization, correlation |
+| **Trader** | `trader` | Final execution decisions | Quick (gpt-4o-mini) | execution, order_types |
+| **Execution** | `execution` | Smart order routing, venue scoring | Quick (gpt-4o-mini) | ccxt, exchange |
+| **Council** | `council` | Debate and voting on low-confidence decisions | Deep (gpt-4o) | debate, voting |
+| **Prediction Market** | `prediction_market` | Event contracts, probability estimation | Deep (gpt-4o) | polymarket_api |
 
-**Execution Reality Simulation**: The backtest engine simulates real-world trading conditions including:
-- Dynamic spread widening during high volatility
-- Random slippage within volatility-adjusted bounds
-- Partial fill probability (2-15% depending on volatility)
-- Order rejection simulation
-- 100-500ms random latency
+### Agent Factory
 
-This typically reduces backtested returns by 15-30% compared to idealized backtesting.
+All agents are created through `AgentFactory` (in `quant_nanggroe/agents/registry.py`), which manages:
 
-### 3.2 Execution Engine (`engine/execution/`)
+- **LLM creation** via `create_llm()` with provider routing (OpenAI, Anthropic, Google)
+- **Tool injection** based on agent role
+- **Prompt configuration** from per-agent prompt modules
+- **Deep vs Quick LLM selection** based on task complexity
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| **ExecutionManager** | `manager.py` | Order lifecycle management, routing, and tracking |
-| **Base Broker** | `base.py` | Abstract broker interface for all exchange implementations |
-| **Paper Broker** | `brokers/paper.py` | Paper trading broker with simulation |
-| **Order Management** | `order.py` | Order creation, modification, cancellation |
-| **Fill Processing** | `fill.py` | Fill tracking, partial fill handling, P&L computation |
-| **Cooldown Guard** | `guards/cooldown.py` | Prevents overtrading with configurable cooldown periods |
-| **Whitelist Guard** | `guards/whitelist.py` | Restricts trading to approved symbols only |
-| **Max Position Guard** | `guards/max_position.py` | Enforces maximum position size limits |
+```python
+# Agent creation pattern
+factory = AgentFactory(
+    llm_provider="openai",
+    deep_think_model="gpt-4o",
+    quick_think_model="gpt-4o-mini",
+    base_url=None,
+    api_key=None,
+)
+researcher = factory.create_agent("researcher")
+trader = factory.create_agent("trader")  # Uses quick_llm by default
+strategist = factory.create_agent("strategist", use_deep_llm=True)
+```
 
-### 3.3 Factor Library (`engine/factors/`)
+### Council Debate System
 
-The factor library implements production-grade alpha factors from major quantitative research:
+The council debate mechanism activates when agent confidence falls below the constitutional threshold (0.65). It consists of two components:
 
-| Component | File | Source | Factor Count |
-|-----------|------|--------|-------------|
-| **Alpha101** | `alpha101.py` | Kakushadze (2015), arXiv:1601.00991 | 50+ factors |
-| **GTJA191** | `gtja191.py` | Guotai Junan 191 Chinese A-share alphas | 191 factors |
-| **Barra** | `barra.py` | MSCI Barra multi-factor risk model | Risk factors |
-| **Technical** | `technical.py` | Standard technical indicators | RSI, MACD, etc. |
-| **Fundamental** | `fundamental.py` | Fundamental analysis factors | P/E, EPS, etc. |
-| **Pipeline** | `pipeline.py` | Factor computation pipeline | Orchestration |
-| **Registry** | `registry.py` | Factor discovery and registration | Management |
-| **Base** | `base.py` | `AlphaFactor` base class, `FactorMeta`, helper functions | Foundation |
+#### Debate (`quant_nanggroe/agents/council/debate.py`)
 
-Each alpha factor inherits from `AlphaFactor` and provides:
-- `name` property: Unique factor identifier
-- `meta` property: `FactorMeta` with formula LaTeX, theme tags, universe, warmup requirements
-- `compute(df)` method: Pandas-based factor computation
+- **Bull/Bear Debate**: Classic adversarial debate between bullish and bearish arguments
+- **Risk Debate**: Three-way debate between conservative, neutral, and aggressive risk perspectives
+- **Configurable rounds**: Default 2 rounds, configurable up to N
+- **Judge decision**: A final arbiter evaluates all arguments and renders a decision
 
-Helper functions include: `rank`, `delay`, `delta`, `ts_corr`, `ts_cov`, `ts_mean`, `ts_std`, `ts_sum`, `ts_min`, `ts_max`, `ts_argmax`, `ts_argmin`, `ts_rank`, `decay_linear`, `safe_div`, `scale`, `signed_power`, `vwap`.
+#### Voting (`quant_nanggroe/agents/council/voting.py`)
 
-### 3.4 Risk Engine (`engine/risk/`)
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **RiskManager** | `manager.py` | Central risk management orchestrator |
-| **9-Checkpoint Checks** | `checks.py` | Constitutional risk checkpoint implementations |
-| **VaR Computation** | `var.py` | Parametric, Historical, and Monte Carlo VaR/CVaR |
-| **Drawdown Monitor** | `drawdown.py` | Real-time drawdown tracking and alerting |
-| **Position Sizing** | `position_sizing.py` | Kelly criterion, fixed-fractional, risk-parity sizing |
-| **Kelly Criterion** | `kelly.py` | Optimal position sizing based on edge |
-| **Risk Parity** | `risk_parity.py` | Equal risk contribution portfolio construction |
-| **Correlation Monitor** | `correlation.py` | Pairwise correlation tracking between positions |
-| **Kill Switch** | `kill_switch.py` | Emergency circuit breaker for extreme losses |
-| **Emotional Lockout** | `emotional_lockout.py` | Prevents revenge trading after losses |
-| **Constants** | `constants.py` | Constitutional risk limit constants |
-
-### 3.5 ML Models (`engine/models/`)
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **Base Model** | `base.py` | Abstract model interface |
-| **Feature Store** | `feature_store.py` | Feature engineering and storage |
-| **Signal Generator** | `signal_generator.py` | ML-based signal generation |
-| **Ensemble** | `ensemble.py` | Multi-model ensemble for robust predictions |
+- **Weighted voting**: Each council member's vote is weighted by historical accuracy
+- **VoteResult**: Captures voter, vote, weight, reasoning, and confidence
+- **CouncilResult**: Aggregates votes into a final decision with consensus level
+- **Consensus threshold**: If consensus_level < threshold, requires human review
 
 ---
 
-## 4. Memory Layer
+## 4. Multi-Path Execution
 
-The Memory Layer provides persistent storage for trade history, learned knowledge, and session context. It is inspired by the Letta-style paging architecture.
+### Asset Class Detection
 
-### 4.1 Trade Journal (`memory/journal.py`)
+The `AssetRouter` (in `quant_nanggroe/agents/nodes/asset_router.py`) classifies trading symbols using regex pattern matching:
 
-The `TradeJournal` provides structured trade logging:
+| Asset Class | Detection Patterns | Example Symbols |
+|---|---|---|
+| **CRYPTO** | `.*USDT$`, `.*BTC$`, known coin names | BTCUSDT, ETHUSDT, SOL, BONK |
+| **FOREX** | 6-char pairs `^[A-Z]{3}[A-Z]{3}$`, metals | EURUSD, GBPJPY, XAUUSD |
+| **EQUITY** | Default (negative matching) | AAPL, MSFT, SPY |
+| **PREDICTION_MARKET** | `^POLY:`, `^PM_`, `.YES/.NO` suffixes | POLY:0x123..., TRUMP_WIN.YES |
 
-- **Entry recording**: Symbol, side, price, quantity, agent name, strategy, reasoning, metadata
-- **Exit recording**: Symbol, exit price, PnL calculation, notes
-- **Reflection**: Post-trade analysis notes and rating
-- **Performance summary**: Win rate, total PnL, avg win/loss, profit factor, best/worst trade
-- **Persistence**: JSON file-based storage with load/save methods
+### Routing Priority
 
-### 4.2 Knowledge Graph (`memory/knowledge_graph.py`)
+For mixed symbol lists, the dominant class is determined by count with tie-breaking priority:
+1. PREDICTION_MARKET (most specific)
+2. CRYPTO
+3. FOREX
+4. EQUITY (default)
 
-The knowledge graph stores structured relationships between market entities:
+### Path-Specific Processing
 
-- Symbol → Sector → Industry relationships
-- Correlation patterns between assets
-- Strategy → Performance mappings
-- Market regime → Asset behavior associations
+#### Crypto Path
+- **Solana integration**: Jupiter swap aggregator, RugCheck token safety, mempool monitoring
+- **On-chain analytics**: Wallet tracking, DEX volume analysis
+- **Exchange routing**: Binance, OKX, Bybit, Bitget, Kraken, KuCoin, Gate
 
-### 4.3 Paging System (`memory/paging.py`)
+#### Forex Path
+- **Central bank policy tracking**: Fed, ECB, BOJ, BOE rate decisions
+- **Carry trade calculator**: Interest rate differentials
+- **Cross-currency dynamics**: Correlation-adjusted position sizing
+- **Exchange routing**: Alpaca (forex), OANDA-compatible feeds
 
-The paging system implements Letta-style context management:
+#### Equity Path
+- **SEC EDGAR filings**: 10-K, 10-Q, 8-K analysis
+- **Earnings calendar**: Upcoming earnings dates and estimates
+- **Insider trades**: Form 4 filings, insider buying/selling
+- **Exchange routing**: Alpaca (US equities)
 
-- **Context window management**: Keeps only the most relevant information in the active context
-- **Priority-based eviction**: Less relevant data is paged out to persistent storage
-- **Recall mechanism**: Paged-out information can be retrieved when needed
-- **Automatic summarization**: Long histories are compressed into summaries
-
-### 4.4 Session Manager (`memory/session.py`)
-
-Manages trading session state:
-
-- Session creation and lifecycle
-- Cross-session state persistence
-- Session-specific configuration
-- Pipeline run ID tracking
-
----
-
-## 5. Data Layer
-
-### 5.1 Multi-Provider Architecture
-
-The data layer abstracts multiple data providers behind a unified interface:
-
-| Provider | Asset Classes | Key Features |
-|----------|--------------|-------------|
-| **yfinance** | US Equities, ETFs | Free, no API key required, backtesting fallback |
-| **Alpaca** | US Equities | Trading + data + paper trading, WebSocket streaming |
-| **Binance** | Crypto | Primary crypto exchange, testnet, order book data |
-| **Polygon.io** | US Equities, Options | Institutional-grade tick data, WebSocket |
-| **Alpha Vantage** | Equities, Forex | Free tier, sentiment API, technical indicators |
-| **FRED** | Macroeconomic | 800K+ economic series, central bank data |
-| **CoinGecko** | Crypto | 10K+ crypto assets, market overview, metadata |
-
-### 5.2 CCXT Exchange Abstraction (`exchange/`)
-
-The exchange layer provides a unified interface across all brokers through the `ExchangeInterface` abstract base class:
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **ExchangeInterface** | `base.py` | Abstract interface for all exchanges (connect, trade, market data, WebSocket) |
-| **CCXT Broker** | `ccxt_broker.py` | CCXT-based implementation for 100+ crypto exchanges |
-| **Alpaca Broker** | `alpaca_broker.py` | Alpaca implementation for US equities |
-| **Paper Broker** | `paper_broker.py` | Paper trading with simulation |
-| **Polymarket Broker** | `polymarket_broker.py` | Prediction market integration |
-| **Exchange Manager** | `manager.py` | Broker lifecycle and connection management |
-| **Exchange Factory** | `factory.py` | Factory pattern for broker instantiation |
-| **Guard Pipeline** | `guards.py` | Pre-trade validation guards |
-| **Order Types** | `order_types.py` | Order type definitions |
-| **Solana/Jupiter** | `solana/jupiter.py` | Jupiter DEX aggregator on Solana |
-| **Solana/Wallet** | `solana/wallet.py` | Solana wallet management |
-| **Solana/RugCheck** | `solana/rugcheck.py` | Token safety verification |
-| **Solana/Mempool** | `solana/mempool.py` | Solana mempool monitoring |
-| **Solana/Broker** | `solana/broker.py` | Solana trading broker |
-
-### 5.3 Exchange Interface Contract
-
-The `ExchangeInterface` defines the canonical API that every broker must implement:
-
-**Connection Lifecycle**: `connect()`, `disconnect()`, `is_connected`, `state`, `name`, `health_check()`
-**Account**: `get_balance()`, `get_positions()`, `get_portfolio()`
-**Trading**: `place_order()`, `cancel_order()`, `get_order()`
-**Market Data**: `get_ohlcv()`, `get_ticker()`, `get_orderbook()`, `get_trades()`
-**WebSocket**: `subscribe_ticker()`, `subscribe_orderbook()`, `subscribe_trades()`, `unsubscribe()`
-**Utility**: `get_markets()`
-
-Error hierarchy: `ExchangeError` → `ConnectionError`, `OrderError`, `RateLimitError`, `AuthenticationError`, `InsufficientFundsError`, `MarketDataError`
-
-### 5.4 Caching Layer
-
-- **TTL-based caching**: 5-minute default TTL for market data
-- **Provider failover**: Automatic retry with exponential backoff
-- **Health-based prioritization**: Providers ranked by success rate and latency
-
-### 5.5 Database Layer (`data/models.py`)
-
-SQLAlchemy 2.0 ORM models with the following schema:
-
-| Model | Table | Purpose |
-|-------|-------|---------|
-| **User** | `users` | API users with RBAC (admin, trader, analyst, viewer) |
-| **Trade** | `trades` | Full trade lifecycle with risk metadata |
-| **Position** | `positions` | Open position tracking with P&L |
-| **PortfolioSnapshot** | `portfolio_snapshots` | Time-series portfolio state |
-| **AgentLog** | `agent_logs` | Agent decision audit trail |
-| **RiskEvent** | `risk_events` | Risk violations and constitutional breaches |
-| **Strategy** | `strategies` | Strategy definitions and performance metrics |
-| **BacktestResult** | `backtest_results` | Backtest runs with full metrics |
+#### Prediction Market Path
+- **Polymarket integration**: CLOB API, condition token trading
+- **Probability estimation**: Bayesian probability models
+- **Event contract pricing**: Binary outcome token valuation
+- **Mandatory human approval**: All prediction market trades require human checkpoint
 
 ---
 
-## 6. API Layer
+## 5. Factor Engine
 
-### 6.1 FastAPI REST Endpoints
+The factor engine provides 469+ alpha factors across 7 zoos, managed by a centralized `FactorRegistry`.
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `GET` | `/` | API info and status |
-| `GET` | `/api/v1/health` | Health check with component status |
-| `POST` | `/api/v1/trade` | Execute full trading pipeline |
-| `GET` | `/api/v1/portfolio` | Get portfolio status |
-| `GET` | `/api/v1/agents` | List all 9 agents and their tools |
-| `POST` | `/api/v1/backtest` | Run backtest with specified strategy |
-| `GET` | `/api/v1/risk/{symbol}` | Risk assessment for a symbol |
+### Factor Registry Architecture
 
-### 6.2 WebSocket Endpoint
-
-`WS /ws/trading` — Real-time trading updates with:
-- Trade execution events
-- Risk alert notifications
-- Position change updates
-- Heartbeat mechanism (30s interval)
-
-### 6.3 CLI Interface
-
-The Click-based CLI (`quant_nanggroe/cli.py`) provides command-line access to all features:
-
-```bash
-qnai trade --symbols BTC/USDT,AAPL --provider openai
-qnai backtest --strategy momentum --period 1Y
-qnai risk --symbol BTC/USDT
-qnai portfolio
+```mermaid
+graph TB
+    FR[FactorRegistry<br/>Singleton]
+    FR --> FH1[FactorHandle - Class-based]
+    FR --> FH2[FactorHandle - Function-based]
+    
+    FH1 --> TECH[Technical Factors]
+    FH1 --> FUND[Fundamental Factors]
+    
+    FH2 --> A101[Alpha101 - 101 factors]
+    FH2 --> GTJA[GTJA191 - 191 factors]
+    FH2 --> QLIB[Qlib158 - 158 factors]
+    FH2 --> ACAD[Academic Factors]
+    FH2 --> BARRA[Barra Factors]
 ```
 
-### 6.4 Request/Response Models
+### Factor Zoos
 
-All API models use Pydantic v2 with strict validation:
-- `TradeRequest` / `TradeResponse`
-- `PortfolioResponse` / `PositionInfoResponse`
-- `AgentListResponse` / `AgentInfoResponse`
-- `BacktestRequest` / `BacktestResponse`
-- `RiskCheckResponse`
-- `HealthResponse` / `ErrorResponse`
+| Zoo | Source | Factor Count | Pattern | Theme Examples |
+|---|---|---|---|---|
+| **Alpha101** | 101 Formulaic Alphas (WorldQuant) | 101 | Function-based | Momentum, reversal, volume |
+| **GTJA191** | Guotai Junan 191 Alphas | 191 | Function-based | Chinese A-share specific |
+| **Barra** | MSCI Barra Risk Model | 10+ | Function-based | Risk factors, style factors |
+| **Qlib158** | Microsoft Qlib 158 Alphas | 158 | Function-based | Cross-sectional, time-series |
+| **Technical** | Built-in | 20+ | Class-based | RSI, MACD, Bollinger, ATR |
+| **Fundamental** | Built-in | 10+ | Class-based | P/E, P/B, ROE, D/E |
+| **Academic** | Literature-derived | Variable | Function-based | Published research alphas |
 
----
+### Factor Registration Pattern
 
-## 7. MCP Protocol Integration
-
-The Model Context Protocol (MCP) layer enables tool discovery, listing, and execution through a standardized JSON-RPC 2.0 interface.
-
-### 7.1 MCP Architecture
-
-```
-┌──────────────────┐     JSON-RPC 2.0     ┌──────────────────┐
-│   MCP Client     │ ◄──────────────────► │   MCP Server     │
-│ (Agent Tools)    │                       │ (Tool Registry)  │
-├──────────────────┤                       ├──────────────────┤
-│ Tool Discovery   │                       │ Tool Definitions │
-│ Tool Execution   │                       │ Tool Handlers    │
-│ Health Check     │                       │ Health Monitor   │
-│ SSE Streaming    │                       │ SSE Transport    │
-└──────────────────┘                       └──────────────────┘
+**Class-based factors** (Technical, Fundamental):
+```python
+class MyFactor(AlphaFactor):
+    name = "my_factor"
+    meta = FactorMeta(id="my_factor", zoo="technical", ...)
+    def compute(self, df: pd.DataFrame) -> pd.DataFrame: ...
 ```
 
-### 7.2 MCP Components
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **Protocol** | `mcp/protocol.py` | JSON-RPC 2.0 messages, tool schemas, health check, SSE events |
-| **Server** | `mcp/server.py` | MCP server implementation with tool registration |
-| **Client** | `mcp/client.py` | MCP client for tool discovery and invocation |
-| **Tools** | `mcp/tools.py` | Built-in tool implementations |
-
-### 7.3 MCP Message Types
-
-- **Request**: `JSONRPCRequest` with method, params, and correlation ID
-- **Notification**: `JSONRPCNotification` (no response expected)
-- **Success Response**: `JSONRPCSuccessResponse` with result
-- **Error Response**: `JSONRPCErrorResponse` with structured error codes
-- **SSE Event**: Progress, result, error, and ping event types
-- **Tool Definition**: `ToolDefinition` with input/output JSON Schemas
-- **Tool Result**: `ToolCallResult` with content, timing, and metadata
-
-### 7.4 MCP Error Codes
-
-| Code | Name | Description |
-|------|------|-------------|
-| -32700 | PARSE_ERROR | Invalid JSON |
-| -32600 | INVALID_REQUEST | Invalid request structure |
-| -32601 | METHOD_NOT_FOUND | Unknown method |
-| -32602 | INVALID_PARAMS | Invalid parameters |
-| -32603 | INTERNAL_ERROR | Internal server error |
-| -32001 | UNKNOWN_TOOL | Tool not found |
-| -32002 | SERVER_NOT_INITIALIZED | Server not ready |
-| -32003 | TOOL_EXECUTION_FAILED | Tool execution error |
-| -32004 | RESOURCE_NOT_FOUND | Resource unavailable |
-| -32005 | RATE_LIMIT_EXCEEDED | Rate limit hit |
-| -32006 | CAPABILITY_NOT_SUPPORTED | Unsupported operation |
-
----
-
-## 8. LangGraph Graph Structure and Flow
-
-### 8.1 Graph Definition
-
-The `TradingGraph` class (in `quant_nanggroe/agents/graph.py`) defines the complete trading pipeline as a LangGraph `StateGraph` with `AgentState` as the shared state type.
-
-### 8.2 Node Architecture
-
-```
-                    ┌─────────┐
-                    │  START  │
-                    └────┬────┘
-                         │
-                    ┌────▼────┐
-                    │ Market  │ ← Researcher + Macro + Crypto + Forex
-                    │Analysis │
-                    └────┬────┘
-                         │
-                    ┌────▼────┐
-                    │ Signal  │ ← Strategist Agent
-                    │Generation│
-                    └────┬────┘
-                         │
-                    ┌────▼────┐
-              ┌─────│  Risk   │─────┐
-              │     │Assessment│     │
-              │     └────┬────┘     │
-              │          │          │
-     ┌────────▼───┐  ┌──▼───┐  ┌──▼──────────┐
-     │   HALT     │  │continue│  │council_debate│
-     │  (END)     │  └──┬───┘  └──┬──────────┘
-     └────────────┘     │         │
-                   ┌────▼────┐    │
-                   │Portfolio │    │
-                   │Optimization│  │
-                   └────┬────┘    │
-                        │         │
-                   ┌────▼────┐    │
-                   │Execution│◄───┘
-                   │Decision │
-                   └────┬────┘
-                        │
-                   ┌────▼────┐
-                   │  Order  │
-                   │Execution│
-                   └────┬────┘
-                        │
-                   ┌────▼────┐
-                   │Reflection│
-                   └────┬────┘
-                        │
-                   ┌────▼────┐
-                   │   END   │
-                   └─────────┘
-
-         Emergency Exit Path:
-         ┌──────────────────┐
-         │emergency_exit(END)│ ← Kill Switch
-         └──────────────────┘
-```
-
-### 8.3 Conditional Edge Logic
-
-After risk assessment, the `_risk_conditional` function routes based on:
-
-| Condition | Route | Description |
-|-----------|-------|-------------|
-| `kill_switch_active == True` | `emergency_exit` | Kill switch triggered |
-| `risk_verdict == VETOED` | `halt` (END) | Risk assessment vetoed |
-| `risk_verdict == KILL_SWITCH` | `emergency_exit` | Risk triggered kill switch |
-| `confidence < threshold` | `council_debate` | Low confidence triggers debate |
-| Otherwise | `continue` → `portfolio_optimization` | Proceed with trade |
-
-### 8.4 State Flow
-
-The `AgentState` TypedDict carries all information through the pipeline:
-
-```
-AgentState {
-    symbols, trade_date, market_data,
-    research_output, macro_output, crypto_output, forex_output,
-    signals, strategist_output,
-    risk_assessment, risk_verdict,
-    portfolio_state, portfolio_output,
-    decisions, trader_output,
-    execution_output, orders_placed,
-    debate_state, council_result,
-    agent_outputs, iteration, confidence,
-    kill_switch_active, should_halt,
-    metadata, sender
+**Function-based factors** (Alpha101, GTJA191, etc.):
+```python
+__alpha_meta_my_factor = {
+    "id": "my_factor",
+    "zoo": "alpha101",
+    "theme": ["momentum"],
+    "columns_required": ["close", "volume"],
+    ...
 }
+
+def compute_my_factor(panel: dict) -> pd.DataFrame: ...
 ```
+
+### Factor Discovery API
+
+```python
+registry = get_default_registry()
+
+# List all factors
+all_factors = registry.list()  # 469+
+
+# Filter by zoo
+alpha101_factors = registry.list(zoo="alpha101")  # 101
+
+# Filter by theme
+momentum_factors = registry.list(theme="momentum")
+
+# Compute a factor
+result = registry.compute("alpha_001", panel)
+
+# Health check
+health = registry.health()
+# {"loaded": 469, "failed": 0, "by_zoo": {"alpha101": 101, ...}}
+```
+
+### Output Validation
+
+Every factor computation goes through strict output validation:
+- Must return `pd.DataFrame` (not Series, not scalar)
+- No `±inf` values allowed
+- NaN ratio must be ≤ 95% (otherwise factor is considered broken)
+- Lookahead bias validation on class-based factors
 
 ---
 
-## 9. Constitutional Risk System
+## 6. Risk Engine
 
-### 9.1 Constitutional Limits (HARDCODED — No Override)
+The risk engine is the **constitutional backbone** of the system. All limits are hardcoded and cannot be overridden by any agent, configuration, or runtime modification.
 
-These values are defined in `quant_nanggroe/agents/state.py` and `quant_nanggroe/engine/risk/constants.py`. They CANNOT be changed at runtime.
+### Constitutional Risk Limits (HARDCODED)
 
-| Limit | Value | Description |
-|-------|-------|-------------|
-| `MAX_RISK_PER_TRADE` | 0.5% | Maximum risk per individual trade |
-| `MAX_DAILY_LOSS` | 1.0% | Maximum daily loss percentage |
-| `MAX_WEEKLY_LOSS` | 3.0% | Maximum weekly loss percentage |
+These values are defined in `quant_nanggroe/engine/risk/constants.py` and `quant_nanggroe/agents/state.py`:
+
+| Constant | Value | Description |
+|---|---|---|
+| `MAX_RISK_PER_TRADE` | 0.005 (0.5%) | Maximum risk per individual trade |
+| `MAX_DAILY_LOSS` | 0.01 (1%) | Maximum daily loss before halt |
+| `MAX_WEEKLY_LOSS` | 0.03 (3%) | Maximum weekly loss before halt |
 | `MIN_RISK_REWARD` | 2.0 | Minimum 1:2 risk:reward ratio |
 | `MAX_CORRELATED_POSITIONS` | 3 | Maximum correlated positions |
-| `MAX_POSITION_SIZE_PCT` | 10% | Maximum position size as % of portfolio |
-| `MAX_LEVERAGE` | 3x | Maximum leverage allowed |
-| `MAX_DRAWDOWN_PCT` | 15% | Maximum drawdown before kill switch |
-| `MAX_TRADES_PER_DAY` | 5 | Maximum trades per day (anti-overtrading) |
+| `MAX_POSITION_SIZE_PCT` | 0.10 (10%) | Maximum single position as % of portfolio |
+| `MAX_LEVERAGE` | 3.0 | Maximum leverage allowed |
+| `MAX_DRAWDOWN_PCT` | 0.15 (15%) | Maximum drawdown before kill switch |
+| `MAX_DAILY_TRADES` | 5 | Maximum trades per day (anti-overtrading) |
+| `CONFIDENCE_THRESHOLD` | 0.65 | Below this → council debate |
+| `KILL_SWITCH_DAILY_PNL` | -0.02 (-2%) | Kill switch daily PnL trigger |
+| `KILL_SWITCH_WEEKLY_PNL` | -0.05 (-5%) | Kill switch weekly PnL trigger |
 
-### 9.2 Kill Switch Thresholds
+### 9-Checkpoint Risk Gate
 
-| Trigger | Threshold | Action |
-|---------|-----------|--------|
-| Daily PnL | -2% | Kill switch activation |
-| Weekly PnL | -5% | Kill switch activation |
-| Max Drawdown | 15% | Emergency exit all positions |
+Every trade must pass through all 9 checkpoints (in `quant_nanggroe/engine/risk/checks.py`):
 
-### 9.3 9-Checkpoint Risk Gate
+| # | Checkpoint | Limit | Failure Action |
+|---|---|---|---|
+| 1 | Risk per trade | ≤ 0.5% | VETO |
+| 2 | Daily loss | ≤ 1% | VETO + kill switch check |
+| 3 | Weekly loss | ≤ 3% | VETO + kill switch check |
+| 4 | Risk:Reward ratio | ≥ 1:2 | VETO |
+| 5 | Stop loss exists | Required | VETO |
+| 6 | Valid entry price | > 0 | VETO |
+| 7 | Valid direction | BUY/SELL/LONG/SHORT | VETO |
+| 8 | Not overtrading | < 5 trades/day | VETO |
+| 9 | Correlated positions | < 3 correlated | VETO |
 
-The Risk Agent evaluates each proposed trade through 9 constitutional checkpoints:
+**If ANY checkpoint fails, the trade is VETOED. No override is possible.**
 
-1. **Per-Trade Risk Check**: Is risk per trade ≤ 0.5%?
-2. **Daily Loss Check**: Is daily loss ≤ 1.0%?
-3. **Weekly Loss Check**: Is weekly loss ≤ 3.0%?
-4. **Risk:Reward Check**: Is R:R ratio ≥ 1:2?
-5. **Position Size Check**: Is position ≤ 10% of portfolio?
-6. **Correlation Check**: Are correlated positions ≤ 3?
-7. **Leverage Check**: Is leverage ≤ 3x?
-8. **Drawdown Check**: Is drawdown ≤ 15%?
-9. **Trade Frequency Check**: Are daily trades ≤ 5?
+### Risk Subsystems
 
-### 9.4 Risk Verdict Types
+```mermaid
+graph TB
+    RM[RiskManager] --> RCG[RiskCheckGate<br/>9 checkpoints]
+    RM --> KS[KillSwitch]
+    RM --> DD[DrawdownMonitor]
+    RM --> KC[KellyCriterion]
+    RM --> VAR[VaRCalculator]
+    RM --> CM[CorrelationMonitor]
+    
+    KS -->|activate| AUTO1[AUTO_DAILY_LIMIT]
+    KS -->|activate| AUTO2[AUTO_WEEKLY_LIMIT]
+    KS -->|activate| AUTO3[AUTO_MAX_DRAWDOWN]
+    
+    DD -->|breach| KS
+    RCG -->|VETO| HALT[Pipeline Halted]
+```
 
-| Verdict | Meaning | System Response |
-|---------|---------|-----------------|
-| `APPROVED` | All checkpoints passed | Proceed to portfolio optimization |
-| `VETOED` | At least one checkpoint failed | Halt pipeline, no trade |
-| `CONDITIONAL` | Borderline — requires human review | Route to council debate |
-| `KILL_SWITCH` | Critical threshold breached | Emergency exit all positions |
+#### Kill Switch (`engine/risk/kill_switch.py`)
+
+Automatic activation triggers:
+- Daily PnL ≤ -2%
+- Weekly PnL ≤ -5%
+- Drawdown ≥ 15%
+
+When activated:
+- All positions closed immediately
+- System enters cooldown
+- Manual reset required after review
+- Emergency exit node triggered in graph
+
+#### Drawdown Monitor (`engine/risk/drawdown.py`)
+
+- Tracks peak equity and current equity
+- Calculates real-time drawdown percentage
+- Triggers kill switch when drawdown ≥ 15%
+
+#### Kelly Criterion (`engine/risk/kelly.py`)
+
+Three methods available:
+- **FULL_KELLY**: Optimal Kelly fraction (aggressive)
+- **HALF_KELLY**: 50% of optimal (recommended)
+- **QUARTER_KELLY**: 25% of optimal (conservative)
+
+All methods are capped at the constitutional `MAX_RISK_PER_TRADE` (0.5%).
+
+#### VaR Calculator (`engine/risk/var.py`)
+
+- Parametric VaR (95% and 99% confidence)
+- Historical VaR simulation
+- CVaR (Expected Shortfall) calculation
+- Used for position sizing and portfolio validation
+
+#### Correlation Monitor (`engine/risk/correlation.py`)
+
+- Rolling pairwise correlation between positions
+- Blocks new entries when correlation exceeds threshold
+- Maximum 3 correlated positions allowed
+
+### Stress Testing
+
+The `RiskManager.stress_test()` method applies historical-like scenarios:
+
+| Scenario | Return Change | Vol Change | Description |
+|---|---|---|---|
+| 2008_Crisis | -40% | 2.0x | Global Financial Crisis |
+| COVID_Crash | -30% | 1.5x | COVID-19 market crash |
+| Rate_Hike | -15% | 1.2x | Aggressive rate hiking |
+| Tech_Crash | -25% | 1.5x | Tech sector correction |
+| Recovery | +20% | 0.8x | Post-crisis recovery |
+| Bull_Market | +30% | 0.9x | Sustained bull market |
+
+### Position Sizing Models
+
+| Model | Description | Parameters |
+|---|---|---|
+| **Fixed-Fractional ATR** | Risk % of account per trade, ATR-based SL | fractional_risk_pct=0.005, atr_sl_multiplier=1.5 |
+| **Kelly Criterion** | Based on win rate and payoff ratio | method=HALF_KELLY, capped at 0.5% |
+| **Volatility Targeting** | Scale to target annual volatility | target_volatility=0.10 |
+| **VaR-Based** | Scale to VaR limit | max_var_pct=0.02, confidence=0.95 |
+
+### ATR Position Sizing with TP1/TP2/TP3
+
+The v2 position sizer computes three take-profit levels based on ATR:
+
+| Level | Calculation | Risk:Reward |
+|---|---|---|
+| **Stop Loss** | Entry - 1.5 × ATR | — |
+| **TP1** | Entry + 1.0 × ATR | 1:0.67 |
+| **TP2** | Entry + 2.0 × ATR | 1:1.33 |
+| **TP3** | Entry + 3.0 × ATR | 1:2.00 |
+
+Multipliers are configurable at graph initialization.
 
 ---
 
-## 10. Deployment Architecture
+## 7. Exchange Layer
 
-### 10.1 Docker Deployment
+The exchange layer provides a unified interface to 10 exchanges via the `ExchangeFactory` pattern.
 
-```yaml
-# docker-compose.yml
-services:
-  api:
-    build: .
-    ports: ["8000:8000"]
-    environment:
-      - QNAI_DATABASE_URL=postgresql://...
-      - QNAI_OPENAI_API_KEY=${OPENAI_API_KEY}
-    depends_on: [db, redis]
+### Architecture
 
-  db:
-    image: postgres:16
-    volumes: ["pgdata:/var/lib/postgresql/data"]
-
-  redis:
-    image: redis:7-alpine
-
-  worker:
-    build: .
-    command: qnai worker
-    depends_on: [api, redis]
+```mermaid
+graph TB
+    EF[ExchangeFactory] --> CB[CCXTBroker<br/>8 exchanges]
+    EF --> AB[AlpacaBroker<br/>US Equities]
+    EF --> PB[PolymarketBroker<br/>Event Contracts]
+    EF --> PAB[PaperExchangeBroker<br/>Simulation]
+    
+    CB --> BNB[Binance]
+    CB --> OKX[OKX]
+    CB --> BYB[Bybit]
+    CB --> BTG[Bitget]
+    CB --> KRK[Kraken]
+    CB --> KUC[KuCoin]
+    CB --> GTE[Gate]
+    CB --> CB2[Coinbase]
+    
+    AB --> ALP[Alpaca API]
+    PB --> PM[Polymarket CLOB]
 ```
 
-### 10.2 Scaling Architecture
+### Exchange Capabilities
 
+| Exchange | Spot | Futures | Perps | Margin | WebSocket | Max Leverage | Passphrase |
+|---|---|---|---|---|---|---|---|
+| **Binance** | ✅ | ✅ | ✅ | ✅ | ✅ | 125x | No |
+| **OKX** | ✅ | ✅ | ✅ | ✅ | ✅ | 125x | Yes |
+| **Bybit** | ✅ | ✅ | ✅ | ✅ | ✅ | 100x | No |
+| **Bitget** | ✅ | ✅ | ✅ | ✅ | ✅ | 125x | Yes |
+| **Kraken** | ✅ | ✅ | ❌ | ✅ | ✅ | 50x | No |
+| **KuCoin** | ✅ | ✅ | ✅ | ✅ | ✅ | 100x | Yes |
+| **Gate** | ✅ | ✅ | ✅ | ✅ | ✅ | 100x | No |
+| **Coinbase** | ✅ | ✅ | ❌ | ❌ | ✅ | 3x | Yes |
+| **Alpaca** | ✅ | ❌ | ❌ | ✅ | ✅ | 4x | No |
+| **Polymarket** | ❌ | ❌ | ❌ | ❌ | ✅ | 1x | No |
+
+### Exchange Configuration
+
+```python
+factory = ExchangeFactory()
+
+# Create a Binance spot exchange
+broker = factory.create("binance", api_key="...", api_secret="...", market_type="spot")
+
+# Create an OKX futures exchange
+broker = factory.create("okx", api_key="...", api_secret="...", passphrase="...", market_type="futures")
+
+# Create a paper trading broker
+broker = factory.create("paper", initial_capital=100_000)
+
+# Create an Alpaca broker (defaults to paper trading)
+broker = factory.create("alpaca", api_key="...", api_secret="...")
+
+# Create a Polymarket broker
+broker = factory.create("polymarket", api_key="eth_private_key", api_secret="clob_key")
 ```
-                    ┌──────────────┐
-                    │ Load Balancer │
-                    └──────┬───────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-        ┌─────▼────┐ ┌────▼─────┐ ┌────▼─────┐
-        │ API Pod 1│ │ API Pod 2│ │ API Pod N│
-        └─────┬────┘ └────┬─────┘ └────┬─────┘
-              │            │            │
-              └────────────┼────────────┘
-                           │
-                    ┌──────▼───────┐
-                    │ Redis (Pub/Sub)│
-                    └──────┬───────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-        ┌─────▼────┐ ┌────▼─────┐ ┌────▼─────┐
-        │Worker 1  │ │Worker 2  │ │Worker N  │
-        └─────┬────┘ └────┬─────┘ └────┬─────┘
-              │            │            │
-              └────────────┼────────────┘
-                           │
-                    ┌──────▼───────┐
-                    │  PostgreSQL  │
-                    └──────────────┘
-```
 
-### 10.3 Environment Configuration
+### Solana Integration
 
-All configuration uses the `QNAI_` prefix with Pydantic Settings:
+Specialized Solana tools in `quant_nanggroe/exchange/solana/`:
+- **Jupiter**: DEX swap aggregator for Solana tokens
+- **RugCheck**: Token safety analysis (honeypot detection)
+- **Mempool**: Transaction monitoring for MEV protection
+- **Wallet**: Solana wallet management and signing
+- **Broker**: Solana-specific order execution
 
-```bash
-# Required for live trading
-QNAI_OPENAI_API_KEY=sk-...
-QNAI_ALPACA_API_KEY=...
-QNAI_ALPACA_API_SECRET=...
+---
 
-# Optional
-QNAI_DATABASE_URL=sqlite:///quant_nanggroe.db
-QNAI_REDIS_URL=redis://localhost:6379
-QNAI_LOG_LEVEL=INFO
-QNAI_LOG_FORMAT=json
+## 8. Data Providers
 
-# Constitutional limits (informational — cannot override hardcoded values)
-QNAI_RISK_MAX_PER_TRADE=0.5
-QNAI_RISK_MAX_DAILY_LOSS=1.0
+### Provider Matrix
+
+| Provider | Asset Classes | Data Types | Access Method |
+|---|---|---|---|
+| **Alpaca** | US Equities, Forex | OHLCV, fundamentals, news | alpaca-py SDK |
+| **Polygon** | US Equities, Options | Tick-level, aggregates | polygon-api-client |
+| **Binance** | Crypto | L1/L2, order book, trades | ccxt |
+| **FRED** | Macro | Economic indicators, rates | API |
+| **SEC EDGAR** | US Equities | 10-K, 10-Q, 8-K filings | HTTP scraping |
+| **TwelveData** | Multi-asset | OHLCV, fundamentals, forex | twelvedata SDK |
+| **Yahoo Finance** | Multi-asset | OHLCV, fundamentals | yfinance |
+
+### AutoSwitch Engine
+
+The `AutoSwitch` service (`quant_nanggroe/engine/autoswitch.py`) provides:
+- **Exponential backoff retry**: 1s → 2s → 4s → 8s → max
+- **Health-based prioritization**: Rank providers by success rate and latency
+- **Cooldown mechanisms**: Failed providers enter cooldown
+- **Real-time health reporting**: Continuous monitoring
+
+---
+
+## 9. Memory System
+
+The memory system (`quant_nanggroe/memory/`) provides persistent storage for agent knowledge, session state, and trading journals.
+
+### Components
+
+| Module | Purpose | Backend |
+|---|---|---|
+| `knowledge.py` | Knowledge base for agent learning | ChromaDB (vector) |
+| `knowledge_graph.py` | Entity-relationship graph for market knowledge | In-memory |
+| `session.py` | Per-session state management | Redis / in-memory |
+| `paging.py` | Memory paging for large contexts | LRU cache |
+| `journal.py` | Trading journal and decision log | SQLAlchemy / file |
+
+### Memory Flow
+
+```mermaid
+graph LR
+    AGENT[Agent] -->|write| KB[Knowledge Base<br/>ChromaDB]
+    AGENT -->|write| KG[Knowledge Graph]
+    AGENT -->|write| JNL[Trading Journal]
+    AGENT -->|read| KB
+    AGENT -->|read| KG
+    SESSION[Session] -->|persist| REDIS[Redis]
+    SESSION -->|restore| REDIS
 ```
 
 ---
 
-## 11. Security Architecture
+## 10. API Layer
 
-### 11.1 KeyVault (`security/keyvault.py`)
+The API layer is built on **FastAPI** with async support, CORS, and WebSocket streaming.
 
-- **Environment-variable-only**: No config files, no .env parsing, no hardcoded keys
-- **Fail-fast**: Raises `SecretNotFoundError` immediately for missing required secrets
-- **Never logs values**: Secret values are never exposed even at DEBUG level
-- **Masking**: `mask_value()` provides safe display (e.g., `sk-a1****`)
-- **Cache**: In-memory cache with `clear_cache()` for forced re-reads
+### Architecture (`quant_nanggroe/api/app.py`)
 
-### 11.2 Authentication (`security/auth.py`)
+```python
+app = FastAPI(
+    title="Quant Nanggroe AI",
+    description="Agentic Trading Intelligence OS",
+    version="1.0.0",
+)
+```
 
-- API key-based authentication for programmatic access
-- Role-based access control (admin, trader, analyst, viewer)
-- Session management with JWT tokens
+### API Routes
 
-### 11.3 Audit Trail (`security/audit.py`)
+| Route | Prefix | Purpose |
+|---|---|---|
+| Market | `/api/market` | Market data, prices, indicators |
+| Trading | `/api/trading` | Trade execution, orders, positions |
+| Agents | `/api/agents` | Agent status, control, outputs |
+| Backtest | `/api/backtest` | Backtest runs, results, benchmarks |
+| Portfolio | `/api/portfolio` | Portfolio state, allocation, PnL |
+| WebSocket | `/api/ws` | Real-time streaming updates |
 
-- Comprehensive logging across all execution layers
-- Structured audit events with timestamp, layer, severity, event type, and payload
-- Designed for institutional compliance requirements
+### Health Check
 
-### 11.4 Credential Inference (`security/credential_inference.py`)
+```
+GET /health → {"status": "healthy", "service": "quant-nanggroe-ai"}
+```
 
-- Automatic detection of misconfigured or weak credentials
-- Validation of API key formats
-- Warning system for insecure configurations
+### Middleware Stack
 
----
+- **CORS**: Allow all origins (configurable for production)
+- **Global Exception Handler**: Catches unhandled exceptions, returns 500 with error type
+- **Request Logging**: Structured logging via structlog
 
-## 12. Cross-Cutting Concerns
+### Service Initialization
 
-### 12.1 Logging
-
-- **Structured logging** via `structlog` with JSON output
-- **Configurable levels**: DEBUG, INFO, WARNING, ERROR, CRITICAL
-- **Agent-specific loggers**: Each agent has its own named logger
-
-### 12.2 Configuration Management
-
-- **Pydantic Settings** with environment variable binding (`QNAI_` prefix)
-- **`.env` file support** for local development
-- **Validation**: Field validators for log levels, numeric ranges
-- **Caching**: `@lru_cache` on `get_settings()` for performance
-
-### 12.3 Type System
-
-The `quant_nanggroe/types/` module provides a complete type system:
-
-| Module | Types |
-|--------|-------|
-| `market.py` | `OHLCV`, `Ticker`, `OrderBook`, `TimeFrame` |
-| `orders.py` | `Order`, `OrderSide`, `OrderType`, `OrderStatus` |
-| `positions.py` | `Position`, `PositionSide`, `Portfolio` |
-| `signals.py` | Signal-related types |
-| `risk.py` | Risk assessment types |
-| `decisions.py` | Decision-related types |
-
-### 12.4 Error Handling Strategy
-
-- **Agent failures**: Caught gracefully, logged, and produce default/empty outputs
-- **Exchange errors**: Typed exception hierarchy with retry logic
-- **Risk failures**: Conservative default (VETOED) when risk engine unavailable
-- **Graph failures**: Full pipeline error caught with `should_halt = True`
+The `lifespan` event handler initializes all services at startup:
+- Engine singletons (FactorRegistry, RiskManager)
+- Exchange connections
+- Database connections (SQLAlchemy)
+- Redis cache
+- WebSocket manager
 
 ---
 
-*© 2025-2026 Quant Nanggroe AI | Architecture Reference v0.2.0*
+## 11. Security & Key Management
+
+### Security Modules (`quant_nanggroe/security/`)
+
+| Module | Purpose |
+|---|---|
+| `auth.py` | Authentication and authorization |
+| `keyvault.py` | Secure key storage and retrieval |
+| `audit.py` | Security audit logging |
+| `credential_inference.py` | Detect and prevent credential leaks |
+
+### Key Principles
+
+1. **No hardcoded secrets**: All API keys loaded from environment variables or KeyVault
+2. **Credential inference prevention**: Scans for accidentally committed secrets
+3. **Audit trail**: All security events logged with timestamps and context
+4. **Kill switch**: Independent of any security mechanism, operates at risk layer
+
+---
+
+## 12. Backtest Infrastructure
+
+### Components (`quant_nanggroe/engine/backtest/`)
+
+| Component | Purpose |
+|---|---|
+| `engine.py` | Core backtesting engine |
+| `monte_carlo.py` | Monte Carlo simulation |
+| `walk_forward.py` | Walk-forward optimization |
+| `metrics.py` | Performance metrics (Sharpe, Sortino, etc.) |
+| `report.py` | Report generation |
+| `execution.py` | Execution simulation with slippage/fills |
+| `portfolio.py` | Portfolio tracking during backtest |
+| `benchmarks.py` | Benchmark comparison |
+
+### Multi-Asset Backtest Engines
+
+| Engine | Asset Class |
+|---|---|
+| `equity_engine.py` | US/International equities |
+| `crypto_engine.py` | Cryptocurrency |
+| `forex_engine.py` | Foreign exchange |
+| `futures_engine.py` | Futures contracts |
+| `composite_engine.py` | Multi-asset portfolios |
+| `market_detection.py` | Regime detection for backtests |
+
+### Data Loaders
+
+| Loader | Source |
+|---|---|
+| `yfinance_loader.py` | Yahoo Finance |
+| `ccxt_loader.py` | CCXT-compatible exchanges |
+| `base_loader.py` | Abstract base for custom loaders |
+
+### Portfolio Optimizers
+
+| Optimizer | Strategy |
+|---|---|
+| `mean_variance_optimizer.py` | Markowitz mean-variance |
+| `risk_parity_optimizer.py` | Risk parity / equal risk contribution |
+| `equal_volatility_optimizer.py` | Equal volatility weighting |
+
+---
+
+## 13. Configuration System
+
+### Settings (`quant_nanggroe/config/settings.py`)
+
+Uses **Pydantic Settings** for type-safe configuration:
+
+```python
+from quant_nanggroe.config import get_settings
+
+settings = get_settings()
+# settings.app_name
+# settings.database_url
+# settings.redis_url
+# etc.
+```
+
+### Configuration Sources (Priority Order)
+
+1. Environment variables
+2. `.env` file
+3. Default values in Settings class
+
+### Key Configuration Files
+
+| File | Purpose |
+|---|---|
+| `config/settings.py` | Application settings |
+| `config/logging_config.py` | Structured logging setup |
+| `pyproject.toml` | Project metadata, dependencies, tools |
+
+---
+
+## 14. Deployment Architecture
+
+### Process Model
+
+```
+┌──────────────────────────────────────────────┐
+│  API Server (uvicorn)                         │
+│  ├── FastAPI Application                       │
+│  ├── WebSocket Manager                         │
+│  └── Service Initialization                    │
+├──────────────────────────────────────────────┤
+│  Worker (quant_nanggroe/worker.py)             │
+│  ├── Trading Graph Execution                   │
+│  ├── Agent Orchestration                       │
+│  └── Risk Management                           │
+├──────────────────────────────────────────────┤
+│  CLI (quant_nanggroe/cli.py)                   │
+│  └── Click-based command interface             │
+└──────────────────────────────────────────────┘
+```
+
+### External Dependencies
+
+| Service | Purpose | Optional |
+|---|---|---|
+| PostgreSQL | Primary database | Yes (SQLite fallback) |
+| Redis | Caching, sessions, pub/sub | Yes (in-memory fallback) |
+| ChromaDB | Vector storage for memory | Yes |
+
+### Monitoring & Observability
+
+- **Structured logging**: Via structlog with JSON output
+- **Health endpoints**: `/health` for load balancers
+- **WebSocket streaming**: Real-time agent state updates
+- **Audit trail**: Complete decision traceability
+
+---
+
+## Appendix A: Package Structure
+
+```
+quant_nanggroe/
+├── agents/           # 11-agent system
+│   ├── base.py       # LLM creation, base agent
+│   ├── graph.py      # v1 trading graph
+│   ├── graph_v2.py   # v2 multi-path graph
+│   ├── state.py      # AgentState TypedDict
+│   ├── registry.py   # AgentFactory
+│   ├── council/      # Debate & voting
+│   ├── nodes/        # v2 graph nodes
+│   ├── researcher/   # Researcher agent
+│   ├── trader/       # Trader agent
+│   ├── strategist/   # Strategist agent
+│   ├── risk/         # Risk agent
+│   ├── portfolio/    # Portfolio agent
+│   ├── execution/    # Execution agent
+│   ├── macro/        # Macro agent
+│   ├── crypto/       # Crypto agent
+│   └── forex/        # Forex agent
+├── engine/           # Core engines
+│   ├── factors/      # 469+ alpha factors
+│   ├── risk/         # Risk management
+│   ├── backtest/     # Backtesting infrastructure
+│   ├── execution/    # Execution management
+│   ├── models/       # ML models & ensemble
+│   ├── strategy/     # Strategy lifecycle
+│   ├── autoswitch.py # Data provider failover
+│   ├── decision.py   # Decision synthesis
+│   ├── market_state.py # Regime detection
+│   └── pressure.py   # Pressure normalization
+├── exchange/         # 10 exchange integrations
+│   ├── factory.py    # ExchangeFactory
+│   ├── ccxt_broker.py # CCXT-backed exchanges
+│   ├── alpaca_broker.py # Alpaca integration
+│   ├── polymarket_broker.py # Polymarket integration
+│   ├── paper_broker.py # Paper trading
+│   └── solana/       # Solana/Jupiter tools
+├── memory/           # Memory system
+├── api/              # FastAPI application
+├── security/         # Auth, key vault, audit
+├── config/           # Settings & logging
+├── mcp/              # Model Context Protocol
+├── types/            # Shared type definitions
+├── utils/            # Utilities
+├── services.py       # Service initialization
+├── cli.py            # CLI entry point
+└── worker.py         # Background worker
+```
+
+---
+
+## Appendix B: Constitutional Limits Quick Reference
+
+```python
+# These values are IMMUTABLE — no override possible
+MAX_RISK_PER_TRADE      = 0.005   # 0.5%
+MAX_DAILY_LOSS          = 0.01    # 1%
+MAX_WEEKLY_LOSS         = 0.03    # 3%
+MIN_RISK_REWARD         = 2.0     # 1:2
+MAX_CORRELATED_POSITIONS = 3
+MAX_POSITION_SIZE_PCT   = 0.10    # 10%
+MAX_LEVERAGE            = 3.0
+MAX_DRAWDOWN_PCT        = 0.15    # 15%
+MAX_DAILY_TRADES        = 5
+CONFIDENCE_THRESHOLD    = 0.65
+KILL_SWITCH_DAILY_PNL   = -0.02   # -2%
+KILL_SWITCH_WEEKLY_PNL  = -0.05   # -5%
+```
+
+---
+
+© 2025-2026 Quant Nanggroe AI | Architecture Reference v4.0.0

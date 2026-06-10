@@ -27,6 +27,13 @@ from quant_nanggroe.exchange.factory import (
 from quant_nanggroe.exchange.base import ExchangeInterface
 from quant_nanggroe.exchange.ccxt_broker import CCXTBroker
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
+from quant_nanggroe.exchange.alpaca_broker import AlpacaBroker
+from quant_nanggroe.exchange.polymarket_broker import PolymarketBroker
+
+# Exchanges that use CCXT as backend
+_CCXT_EXCHANGES = {name for name, cap in _CAPABILITY_REGISTRY.items() if cap.ccxt_id}
+# Non-CCXT exchanges with custom broker implementations
+_NON_CCXT_EXCHANGES = {name for name, cap in _CAPABILITY_REGISTRY.items() if not cap.ccxt_id}
 
 
 # ======================================================================
@@ -298,7 +305,7 @@ class TestListingAndDiscovery:
         assert "binance" in exchanges
         assert "okx" in exchanges
         assert "kraken" in exchanges
-        assert len(exchanges) == 8
+        assert len(exchanges) == len(_CAPABILITY_REGISTRY)  # 10: 8 CCXT + alpaca + polymarket
 
     def test_list_by_capability_futures(self):
         exchanges = ExchangeFactory.list_exchanges_by_capability("supports_futures")
@@ -320,7 +327,7 @@ class TestListingAndDiscovery:
 
     def test_supported_exchanges_frozenset(self):
         assert isinstance(SUPPORTED_EXCHANGES, frozenset)
-        assert len(SUPPORTED_EXCHANGES) >= 8
+        assert len(SUPPORTED_EXCHANGES) >= 10  # 8 CCXT + alpaca + polymarket
 
 
 # ======================================================================
@@ -361,11 +368,16 @@ class TestFactoryState:
 
 class TestEdgeCases:
 
-    def test_all_8_exchanges_creatable(self, factory: ExchangeFactory):
-        """All 8 supported exchanges should be creatable."""
+    def test_all_exchanges_creatable(self, factory: ExchangeFactory):
+        """All supported exchanges should be creatable as correct broker types."""
         for name in SUPPORTED_EXCHANGES:
             broker = factory.create(name, api_key="test", api_secret="test")
-            assert isinstance(broker, CCXTBroker), f"Failed for {name}"
+            if name == "alpaca":
+                assert isinstance(broker, AlpacaBroker), f"Alpaca should be AlpacaBroker"
+            elif name == "polymarket":
+                assert isinstance(broker, PolymarketBroker), f"Polymarket should be PolymarketBroker"
+            else:
+                assert isinstance(broker, CCXTBroker), f"Failed for {name}"
 
     def test_multiple_creations_same_exchange(self, factory: ExchangeFactory):
         """Creating the same exchange twice should work (overwrites in tracking)."""
@@ -376,9 +388,9 @@ class TestEdgeCases:
         # The second creation overwrites in tracking
         assert factory.created_exchanges["binance"] is broker2
 
-    def test_market_type_spot_for_all(self, factory: ExchangeFactory):
-        """All exchanges should support spot."""
-        for name in SUPPORTED_EXCHANGES:
+    def test_market_type_spot_for_ccxt_exchanges(self, factory: ExchangeFactory):
+        """All CCXT exchanges should support spot."""
+        for name in _CCXT_EXCHANGES:
             broker = factory.create(
                 name, api_key="test", api_secret="test", market_type="spot",
             )

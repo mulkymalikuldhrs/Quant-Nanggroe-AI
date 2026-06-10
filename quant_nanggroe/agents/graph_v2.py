@@ -596,26 +596,39 @@ class TradingGraphV2:
 
         Analyzes event contracts, probability estimates, and
         outcome token pricing for prediction market trading.
+        Invokes the PredictionMarketAgent for full analysis.
         """
         logger.info("=== Prediction Market Path ===")
 
-        # In a full implementation, this would invoke a PredictionMarketAgent.
-        # For now, we set state flags and produce a basic analysis.
-        symbols = state.get("symbols", [])
-
-        return {
-            "prediction_market_output": (
-                f"Prediction market analysis for {', '.join(symbols)}. "
-                f"Event contract pricing and probability estimation completed. "
-                f"Note: Prediction market trades require human approval."
-            ),
-            "metadata": {
-                **state.get("metadata", {}),
-                "prediction_market_path_executed": True,
-                "prediction_market_tools": ["polymarket_api", "kalshi_api", "probability_estimator"],
-            },
-            "sender": "prediction_market_path",
-        }
+        try:
+            prediction_market = self._factory.create_agent("prediction_market")
+            result = prediction_market(state)
+            return {
+                "prediction_market_output": result.get("prediction_market_output", ""),
+                "human_approval_required": True,
+                "agent_outputs": {
+                    **state.get("agent_outputs", {}),
+                    **result.get("agent_outputs", {}),
+                },
+                "metadata": {
+                    **state.get("metadata", {}),
+                    "prediction_market_path_executed": True,
+                    "prediction_market_tools": [
+                        "polymarket_api",
+                        "kalshi_api",
+                        "probability_estimator",
+                        "kelly_sizing",
+                    ],
+                },
+                "sender": "prediction_market_path",
+            }
+        except Exception as e:
+            logger.error(f"Prediction market path failed: {e}")
+            return {
+                "prediction_market_output": f"Prediction market path failed: {e}",
+                "human_approval_required": True,
+                "sender": "prediction_market_path",
+            }
 
     # ── Signal Generation + Position Sizing ───────────────────────────
 
