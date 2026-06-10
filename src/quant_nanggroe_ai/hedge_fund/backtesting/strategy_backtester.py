@@ -35,12 +35,12 @@ class JSONEncoder(json.JSONEncoder):
 
 
 sys.path.insert(0, str(Path("/home/mulky/ai-hedge-fund")))
-from src.unified_system import UnifiedTradingSystem, StandaloneAgentSystem, MarketDataGenerator, TradingPlanAnalyzer, SignalDirection
-from src.agents.standalone_agents import WarrenBuffettAgent, BenjaminGrahamAgent, TechnicalAnalysisAgent, FundamentalsAgent, AgentCoordinator, MarketData, Fundamentals
-from src.strategies.quantitative_strategies import QuantitativeStrategy, JimSimonsStrategy, QuantitativeMomentumStrategy, MeanReversionStrategy, FactorInvestingStrategy, TechnicalAnalysisStrategy
-from src.strategies.legendary_investors import InvestorStyle, LegendaryConsensus
-from src.integrations.quant_strategies_analysis import QuantStrategiesAnalysis
-from src.integrations.retail_strategies import RetailStrategies
+from quant_nanggroe_ai.unified_system import UnifiedTradingSystem, StandaloneAgentSystem, MarketDataGenerator, TradingPlanAnalyzer, SignalDirection
+from quant_nanggroe_ai.hedge_fund.agents.standalone_agents import WarrenBuffettAgent, BenjaminGrahamAgent, TechnicalAnalysisAgent, FundamentalsAgent, AgentCoordinator, MarketData, Fundamentals
+from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import QuantitativeStrategy, JimSimonsStrategy, QuantitativeMomentumStrategy, MeanReversionStrategy, FactorInvestingStrategy, TechnicalAnalysisStrategy
+from quant_nanggroe_ai.hedge_fund.strategies.legendary_investors import InvestorStyle, LegendaryConsensus
+from quant_nanggroe_ai.hedge_fund.integrations.quant_strategies_analysis import QuantStrategiesAnalysis
+from quant_nanggroe_ai.hedge_fund.integrations.retail_strategies import RetailStrategies
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)

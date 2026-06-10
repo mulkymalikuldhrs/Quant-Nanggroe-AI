@@ -11,9 +11,9 @@ import numpy as np
 from datetime import datetime, timedelta
 
 try:
-    from src.monitoring.portfolio_models import Portfolio, Position, Trade, OrderSide
-    from src.modes.mode_manager import TradingMode, ModeManager
-    from src.execution.mt5_broker import MT5Broker
+    from quant_nanggroe_ai.hedge_fund.monitoring.portfolio_models import Portfolio, Position, Trade, OrderSide
+    from quant_nanggroe_ai.hedge_fund.modes.mode_manager import TradingMode, ModeManager
+    from quant_nanggroe_ai.hedge_fund.execution.mt5_broker import MT5Broker
     HAS_CORE = True
 except ImportError:
     HAS_CORE = False

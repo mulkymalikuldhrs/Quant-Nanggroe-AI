@@ -17,7 +17,7 @@ from typing import Dict, List
 
 import pandas as pd
 
-from backtest.models import Position
+from quant_nanggroe_ai.backtest.models import Position
 
 
 # ── Symbol -> market classification (shared by runner.py + composite.py) ──

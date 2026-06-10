@@ -3,15 +3,47 @@ import json
 import re
 import logging
 import httpx
-from langchain_anthropic import ChatAnthropic
-from langchain_deepseek import ChatDeepSeek
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_groq import ChatGroq
-from langchain_xai import ChatXAI
-from langchain_openai import ChatOpenAI, AzureChatOpenAI
-from langchain_openai import ChatOpenAI
-from langchain_gigachat import GigaChat
-from langchain_ollama import ChatOllama
+
+try:
+    from langchain_anthropic import ChatAnthropic
+except ImportError:
+    ChatAnthropic = None
+
+try:
+    from langchain_deepseek import ChatDeepSeek
+except ImportError:
+    ChatDeepSeek = None
+
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None
+
+try:
+    from langchain_groq import ChatGroq
+except ImportError:
+    ChatGroq = None
+
+try:
+    from langchain_xai import ChatXAI
+except ImportError:
+    ChatXAI = None
+
+try:
+    from langchain_openai import ChatOpenAI, AzureChatOpenAI
+except ImportError:
+    ChatOpenAI = None
+    AzureChatOpenAI = None
+
+try:
+    from langchain_gigachat import GigaChat
+except ImportError:
+    GigaChat = None
+
+try:
+    from langchain_ollama import ChatOllama
+except ImportError:
+    ChatOllama = None
 from enum import Enum
 from pydantic import BaseModel
 from typing import Tuple, List, Any, Optional
@@ -658,8 +690,10 @@ class PuterChatModel:
                         yield line
 
 
-def get_model(model_name: str, model_provider: ModelProvider, api_keys: dict = None) -> ChatOpenAI | ChatGroq | ChatOllama | GigaChat | PuterChatModel | OpenCodeChatModel | None:
+def get_model(model_name: str, model_provider: ModelProvider, api_keys: dict = None):
     if model_provider == ModelProvider.GROQ:
+        if ChatGroq is None:
+            raise ImportError("langchain_groq is not installed. Install it with: pip install langchain-groq")
         api_key = (api_keys or {}).get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
         if not api_key:
             # Print error to console

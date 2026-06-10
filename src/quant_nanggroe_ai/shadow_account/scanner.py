@@ -11,8 +11,8 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from src.shadow_account.backtester import _LIQUID_BASKETS, SUPPORTED_MARKETS
-from src.shadow_account.models import ShadowProfile, ShadowRule
+from quant_nanggroe_ai.shadow_account.backtester import _LIQUID_BASKETS, SUPPORTED_MARKETS
+from quant_nanggroe_ai.shadow_account.models import ShadowProfile, ShadowRule
 
 PriceFetcher = Callable[..., pd.DataFrame | None]
 

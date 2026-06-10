@@ -1,5 +1,75 @@
 # CHANGELOG - QUANT NANGGROE AI
 
+## [v2.0.0] - 2026-03-06 — C1 MONOREPO CONSOLIDATION
+
+### Overview
+Konsolidasi seluruh Cluster 1 ke dalam monorepo terpadu. 25+ repositori digabungkan, semua import path diperbaiki, dan dokumentasi dikonsolidasikan.
+
+### Added — Repository Merges
+- **SolSniperX v3.3.0** → `solana_scanner/` + `execution/solsniperx_service.py` + React components
+  - v3.3.0 "Ultimate Intelligence Upgrade" dari 9 remote branches
+  - Service watchdog, advanced mempool filtering, RugCheck retry, social metadata
+  - Limit orders, trailing stop-loss, multiple take-profit tiers
+  - SQLite database schema (trades, positions, limit_orders, system_stats)
+  - 7 existing files updated, 7 new files created (~1,115 lines)
+- **ai-manus (feat/auth + feature/agent-file-oprate + tmp)** → `api/auth.py` + `agents/tools/file_ops.py` + `agents/mcp_config.py`
+  - JWT authentication with PBKDF2-SHA256 (100K rounds)
+  - Role-based access control (ADMIN, TRADER, VIEWER)
+  - File operations with Local + MongoDB GridFS storage
+  - MCP configuration with 5 default servers
+  - ~1,280 lines merged and adapted
+- **Trading-Plan-AI-Interactive v11.1.4** → `api/client.py` + `agents/tools/trading_plan.py` + `integrations/whatsapp_bot.py` + `integrations/__init__.py`
+  - Trading Plan API client with API key auth
+  - CFTC commitment-of-traders data, trade journal, emotional lockout
+  - WhatsApp bot with command handlers
+  - ~1,235 lines of Python ported from TypeScript/Node.js/GAS
+- **sim (Kalshi + Polymarket tools)** → `execution/kalshi.py` (new) + `execution/polymarket.py` (enhanced)
+  - Kalshi broker: 12 Pydantic models, 17 async methods, RSA-PSS auth (~1,272 lines)
+  - Polymarket broker: 9 new models, 15 new async methods, Gamma + CLOB + Data APIs (+789 lines)
+  - ~2,067 net new lines from 38 TypeScript source files
+
+### Fixed — Import Path Corrections
+- **73+ files** had broken `from src.*` imports (241+ import lines)
+- All imports refactored from `from src.X` → `from quant_nanggroe_ai.X`
+- 50+ string literal class_path references fixed in `hedge_fund/strategies/comprehensive_registry.py`
+- 6 modules given graceful ImportError guards for optional dependencies
+- `CompiledGraph → CompiledStateGraph` langgraph API compatibility fix
+- Full import verification: `import quant_nanggroe_ai` → OK
+
+### Fixed — Core Engine Bugs (from Task 1)
+- Enum comparisons in `agents/graph.py` (MarketRegime, RiskClearance)
+- Pydantic `.get()` → attribute access
+- Broken expectancy calculation in `strategy_lifecycle.py`
+- `alpha020` missing low parameter, `alpha003` wrong parameter
+- Floating point precision in R:R ratio in `risk_guard.py`
+
+### Added — New Infrastructure (from Task 1)
+- Data layer: `database.py` (SQLAlchemy 2.0 async), `cache.py` (Redis), `models.py` (7 ORM), `worker.py` (5-async-loop)
+- Shared singletons: KillSwitch, RiskGuard, MarketEngine, DecisionEngine
+- All 6 API route modules using shared singletons
+- Alembic infrastructure (alembic.ini, env.py, versions/)
+- Docker configs fixed (Dockerfile, docker-compose.yml, setup_dev.sh)
+
+### Documentation
+- **README.md** — Rewritten to reflect monorepo structure, 9-agent council, 456+ factors, 5 brokers
+- **ARCHITECTURE.md** — Updated with 4-layer agent stack, LangGraph graph, MCP+A2A, storage layer
+- **CONTRIBUTING.md** — Updated with monorepo contribution guidelines
+- **CLUSTER1_CONSOLIDATION_REPORT.md** — New comprehensive report documenting all C1 merges
+- **CONVENTIONS.md** — Updated with monorepo coding conventions
+- Merge logs: SOLSNIPERX_MERGE_LOG.md, AI_MANUS_MERGE_LOG.md, TRADING_PLAN_MERGE_LOG.md, SIM_MERGE_LOG.md, IMPORT_FIX_LOG.md
+- Audit reports: MONOREPO_STATUS.md, C2_AUDIT_STATUS.md, BRANCH_AUDIT_COMPLETE.md
+
+### Statistics
+- **17,203+ lines** added across 71+ files (Task 1 core overhaul)
+- **5,697+ lines** added from branch merges (SolSniperX, ai-manus, Trading-Plan, sim)
+- **73+ files** fixed with correct import paths (241+ import lines)
+- **5 execution brokers** registered (paper, alpaca, jupiter, polymarket, kalshi)
+- **456+ alpha factors** (101 alpha101 + 154 qlib158 + 7 academic + 192 GTJA191)
+- **9 agent nodes** in LangGraph graph
+- **175+ tests** passing
+
+---
+
 ## [v15.3.1] - 2026-03-06
 
 ### Security Fixes

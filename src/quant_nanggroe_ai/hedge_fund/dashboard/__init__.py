@@ -6,13 +6,13 @@ Features:
 - Telegram Bot Integration
 """
 
-from src.dashboard.streamlit_app import (
+from quant_nanggroe_ai.hedge_fund.dashboard.streamlit_app import (
     get_dashboard_state,
     DashboardState,
     main as run_dashboard,
 )
 
-from src.dashboard.telegram_bot import (
+from quant_nanggroe_ai.hedge_fund.dashboard.telegram_bot import (
     get_notification_manager,
     NotificationManager,
     TelegramConfig,
@@ -21,7 +21,7 @@ from src.dashboard.telegram_bot import (
     SignalMessage,
 )
 
-from src.dashboard.cli_terminal import (
+from quant_nanggroe_ai.hedge_fund.dashboard.cli_terminal import (
     CLITerminal,
 )
 

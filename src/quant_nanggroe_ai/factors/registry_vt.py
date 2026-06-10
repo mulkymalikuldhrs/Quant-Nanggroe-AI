@@ -14,7 +14,7 @@ Source of truth = ``__alpha_meta__`` dict literal in each ``zoo/<zoo>/<id>.py``.
 (wiki) — not the load path. If we ever load a YAML, we use ``yaml.safe_load``
 with a 5 MB size cap.
 
-Module path derivation: ``f"src.factors.zoo.{zoo_id}.{alpha_id_short}"``. Both
+Module path derivation: ``f"quant_nanggroe_ai.factors.zoo.{zoo_id}.{alpha_id_short}"``. Both
 ``zoo_id`` and ``alpha_id_short`` must match ``^[a-z][a-z0-9_]{0,31}$``. We never
 honour a ``py_module`` field from any data file.
 """
@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from src.factors.base import Alpha
+from quant_nanggroe_ai.factors.base import Alpha
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,7 @@ class Registry:
 
         # Cross-check: filename matches alpha id (defence vs typos)
         # id is "<zoo>_<short>" by convention; not strictly required but flagged.
-        module_path = f"src.factors.zoo.{zoo_id}.{short_id}"
+        module_path = f"quant_nanggroe_ai.factors.zoo.{zoo_id}.{short_id}"
         alpha = Alpha(id=meta.id, zoo=zoo_id, module_path=module_path, meta=meta.model_dump())
         if alpha.id in self._alphas:
             self._load_errors.append(_LoadError(alpha.id, "duplicate alpha id"))

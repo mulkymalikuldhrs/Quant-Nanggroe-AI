@@ -6,6 +6,8 @@ a ``dict[str, Any]`` that updates the shared state.
 
 Flow:  Researcher → Macro → Analyst → Strategist → RiskManager → Trader → Portfolio
 
+Specialist nodes (crypto, forex) enrich the state with domain-specific context.
+
 All nodes are importable from this package for graph construction.
 """
 
@@ -16,6 +18,8 @@ from quant_nanggroe_ai.agents.nodes.strategist import strategist_node
 from quant_nanggroe_ai.agents.nodes.risk_manager import risk_manager_node
 from quant_nanggroe_ai.agents.nodes.trader import trader_node
 from quant_nanggroe_ai.agents.nodes.portfolio import portfolio_node
+from quant_nanggroe_ai.agents.nodes.crypto import crypto_node
+from quant_nanggroe_ai.agents.nodes.forex import forex_node
 
 __all__ = [
     "researcher_node",
@@ -25,4 +29,6 @@ __all__ = [
     "risk_manager_node",
     "trader_node",
     "portfolio_node",
+    "crypto_node",
+    "forex_node",
 ]

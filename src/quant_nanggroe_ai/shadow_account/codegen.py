@@ -19,7 +19,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from src.shadow_account.models import ShadowProfile, ShadowRule
+from quant_nanggroe_ai.shadow_account.models import ShadowProfile, ShadowRule
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 _SIGNAL_ENGINE_TEMPLATE = "signal_engine.py.j2"

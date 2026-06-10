@@ -527,7 +527,7 @@ def create_execution_controller(
     Returns:
         ExecutionController instance
     """
-    from src.modes.mode_manager import create_mode_manager, ModeManager
+    from quant_nanggroe_ai.hedge_fund.modes.mode_manager import create_mode_manager, ModeManager
     
     if isinstance(mode, ModeManager):
         mode_manager = mode

@@ -555,7 +555,7 @@ class UnifiedBacktester:
 if __name__ == "__main__":
     import pandas as pd
     import numpy as np
-    from src.strategies.wyckoff.wyckoff_strategy import WyckoffStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.wyckoff.wyckoff_strategy import WyckoffStrategy
 
     np.random.seed(42)
 

@@ -24,9 +24,9 @@ try:
 except ImportError:
     console = None
 
-from src.agents.enhanced_agents import run_enhanced_multi_agent_analysis
-from src.strategies.quantitative_strategies import analyze_with_all_strategies
-from src.tools.advanced_data_provider import data_provider
+from quant_nanggroe_ai.hedge_fund.agents.enhanced_agents import run_enhanced_multi_agent_analysis
+from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import analyze_with_all_strategies
+from quant_nanggroe_ai.hedge_fund.tools.advanced_data_provider import data_provider
 
 
 @dataclass

@@ -1,5 +1,9 @@
 
-"""Portfolio Data Manager Module
+"""
+
+import logging
+
+logger = logging.getLogger(__name__)Portfolio Data Manager Module
 ===============================
 
 Portfolio data management and processing
@@ -51,11 +55,13 @@ class DataProvider(ABC):
 
     @abstractmethod
     def get_price_data(self, symbols: List[str], start_date: str, end_date: str) -> pd.DataFrame:
-        pass
+        logger.debug("Stub: get_price_data returning None")
+        return None
 
     @abstractmethod
     def get_economic_data(self, indicators: List[str], start_date: str, end_date: str) -> pd.DataFrame:
-        pass
+        logger.debug("Stub: get_economic_data returning None")
+        return None
 
 
 class ManualDataProvider(DataProvider):
@@ -292,7 +298,8 @@ class DataCache:
                 if datetime.now() - cache_time < timedelta(hours=24):
                     return cached_data
             except:
-                pass
+                logger.debug("Stub: get returning None")
+                return None
         return None
 
     def set(self, key: str, data: Any) -> None:

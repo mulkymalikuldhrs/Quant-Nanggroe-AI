@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.indicators.technical_indicators import TechnicalIndicators
+from quant_nanggroe_ai.hedge_fund.indicators.technical_indicators import TechnicalIndicators
 
 @dataclass
 class RetailSignal:

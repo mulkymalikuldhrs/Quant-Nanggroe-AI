@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 Backtesting.py Provider Implementation
 
 Lightweight, fast backtesting using the backtesting.py library.
@@ -409,14 +413,16 @@ class BacktestingPyProvider(BacktestingProviderBase):
                             start_ts = pd.Timestamp(start_date)
                             data = data[data.index >= start_ts]
                         except:
-                            pass
+                            logger.debug("Stub: _load_data returning None")
+                            return None
 
                     if end_date and end_date != "":
                         try:
                             end_ts = pd.Timestamp(end_date)
                             data = data[data.index <= end_ts]
                         except:
-                            pass
+                            logger.debug("Stub: _load_data returning None")
+                            return None
 
                     self._log(f"Loaded {len(data)} bars of GOOG test data (from {data.index[0]} to {data.index[-1]})")
                     return data if len(data) > 0 else None

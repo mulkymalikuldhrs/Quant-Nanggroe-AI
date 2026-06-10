@@ -20,16 +20,16 @@ from typing import Any, Callable, Dict, List, Optional
 
 import pandas as pd
 
-from backtest.loaders.tushare_fundamentals import (
+from quant_nanggroe_ai.backtest.loaders.tushare_fundamentals import (
     TushareFundamentalProvider,
     enrich_price_frames_with_fundamentals,
 )
-from backtest.metrics import (
+from quant_nanggroe_ai.backtest.metrics import (
     by_exit_reason_stats,
     by_symbol_stats,
     calc_metrics,
 )
-from backtest.models import EquitySnapshot, Position, TradeRecord
+from quant_nanggroe_ai.backtest.models import EquitySnapshot, Position, TradeRecord
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +144,7 @@ def _load_optimizer(config: Dict[str, Any]) -> Optional[Callable]:
         return None
     opt_params = config.get("optimizer_params") or {}
     try:
-        mod = importlib.import_module(f"backtest.optimizers.{opt_name}")
+        mod = importlib.import_module(f"quant_nanggroe_ai.backtest.optimizers.{opt_name}")
         return lambda ret, pos, dates: mod.optimize(ret, pos, dates, **opt_params)
     except (ImportError, AttributeError) as e:
         print(f"[WARN] Failed to load optimizer '{opt_name}': {e}, falling back to equal weight")
@@ -379,7 +379,7 @@ class BaseEngine(ABC):
         # ── External benchmark fetch ──────────────────────────────────────────
         bench_ticker = config.get("benchmark")
         if bench_ticker and bench_ticker != "auto":
-            from backtest.benchmark import resolve_benchmark
+            from quant_nanggroe_ai.backtest.benchmark import resolve_benchmark
             bench_result = resolve_benchmark(
                 strategy_codes=codes,
                 source=config.get("source", "yfinance"),
@@ -406,7 +406,7 @@ class BaseEngine(ABC):
 
         # 7. Validation (optional — triggered by config["validation"])
         if config.get("validation"):
-            from backtest.validation import run_validation
+            from quant_nanggroe_ai.backtest.validation import run_validation
             v_results = run_validation(
                 config, equity_series, self.trades, self.initial_capital, bars_per_year,
             )
@@ -422,7 +422,7 @@ class BaseEngine(ABC):
         )
 
         # 9. Trust Layer run card
-        from backtest.run_card import write_run_card
+        from quant_nanggroe_ai.backtest.run_card import write_run_card
         write_run_card(
             run_dir,
             config,

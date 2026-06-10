@@ -20,7 +20,7 @@ Configuration:
 - Max Tokens: 2000
 
 Usage:
-    from src.llm.llm7_client import LLM7Client
+    from quant_nanggroe_ai.hedge_fund.llm.llm7_client import LLM7Client
 
     client = LLM7Client()
 

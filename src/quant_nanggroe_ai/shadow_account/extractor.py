@@ -25,10 +25,15 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.shadow_account.models import ShadowProfile, ShadowRule
-from src.shadow_account.storage import hash_journal, new_shadow_id, now_iso
-from src.tools.trade_journal_parsers import parse_file, records_to_dataframe
-from src.tools.trade_journal_tool import pair_trades_fifo
+from quant_nanggroe_ai.shadow_account.models import ShadowProfile, ShadowRule
+from quant_nanggroe_ai.shadow_account.storage import hash_journal, new_shadow_id, now_iso
+try:
+    from quant_nanggroe_ai.tools.trade_journal_parsers import parse_file, records_to_dataframe
+    from quant_nanggroe_ai.tools.trade_journal_tool import pair_trades_fifo
+except ImportError:
+    parse_file = None
+    records_to_dataframe = None
+    pair_trades_fifo = None
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +70,8 @@ def extract_shadow_profile(
         ValueError: Fewer than MIN_PROFITABLE_ROUNDTRIPS profitable roundtrips.
     """
     path = Path(journal_path)
+    if parse_file is None or records_to_dataframe is None or pair_trades_fifo is None:
+        raise ValueError("Trade journal tools not available — install trade_journal_parsers and trade_journal_tool packages")
     fmt, records = parse_file(path)
     if not records:
         raise ValueError(f"No trade records parsed from {path} (format={fmt})")

@@ -54,7 +54,7 @@ class RisetStrategyRegistry:
 
         # RISET v2.2.2 Strategies
         try:
-            from src.strategies.graham_value import GrahamValueStrategy
+            from quant_nanggroe_ai.hedge_fund.strategies.graham_value import GrahamValueStrategy
 
             self.strategies["graham_value"] = StrategyInfo(
                 name="Graham Value Investing",
@@ -68,7 +68,7 @@ class RisetStrategyRegistry:
             logger.error(f"  ✗ Failed to load Graham Value: {e}")
 
         try:
-            from src.strategies.turtle_trading import TurtleTradingStrategy
+            from quant_nanggroe_ai.hedge_fund.strategies.turtle_trading import TurtleTradingStrategy
 
             self.strategies["turtle_trading"] = StrategyInfo(
                 name="Turtle Trading",
@@ -82,7 +82,7 @@ class RisetStrategyRegistry:
             logger.error(f"  ✗ Failed to load Turtle Trading: {e}")
 
         try:
-            from src.strategies.sepa import SEPAStrategy
+            from quant_nanggroe_ai.hedge_fund.strategies.sepa import SEPAStrategy
 
             self.strategies["sepa"] = StrategyInfo(
                 name="SEPA (Super Performance)",
@@ -100,14 +100,14 @@ class RisetStrategyRegistry:
             available_strategies = []
 
             try:
-                from src.strategies.legendary_investors import WarrenBuffettStrategy
+                from quant_nanggroe_ai.hedge_fund.strategies.legendary_investors import WarrenBuffettStrategy
 
                 available_strategies.append(("warren_buffett", WarrenBuffettStrategy))
             except ImportError:
                 pass
 
             try:
-                from src.strategies.legendary_investors import BenjaminGrahamStrategy
+                from quant_nanggroe_ai.hedge_fund.strategies.legendary_investors import BenjaminGrahamStrategy
 
                 available_strategies.append(("benjamin_graham", BenjaminGrahamStrategy))
             except ImportError:
@@ -165,7 +165,7 @@ class RisetStrategyRegistry:
 
         try:
             if strategy_name == "graham_value":
-                from src.strategies.graham_value import analyze_stock_graham
+                from quant_nanggroe_ai.hedge_fund.strategies.graham_value import analyze_stock_graham
 
                 result = analyze_stock_graham(
                     symbol=symbol,
@@ -178,7 +178,7 @@ class RisetStrategyRegistry:
                 return {"strategy": "Graham Value", **result}
 
             elif strategy_name == "turtle_trading":
-                from src.strategies.turtle_trading import generate_turtle_signals
+                from quant_nanggroe_ai.hedge_fund.strategies.turtle_trading import generate_turtle_signals
 
                 signals = generate_turtle_signals(
                     symbol=symbol,
@@ -195,7 +195,7 @@ class RisetStrategyRegistry:
                 }
 
             elif strategy_name == "sepa":
-                from src.strategies.sepa import analyze_stock_sepa
+                from quant_nanggroe_ai.hedge_fund.strategies.sepa import analyze_stock_sepa
 
                 result = analyze_stock_sepa(
                     symbol=symbol,

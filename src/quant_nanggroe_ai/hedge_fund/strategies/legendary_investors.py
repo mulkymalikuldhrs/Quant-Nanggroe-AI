@@ -14,7 +14,7 @@ Strategies inspired by legendary investors:
 - William O'Neil (CAN SLIM)
 
 Usage:
-    from src.strategies.legendary_investors import analyze_with_all_legendary
+    from quant_nanggroe_ai.hedge_fund.strategies.legendary_investors import analyze_with_all_legendary
 """
 
 import logging

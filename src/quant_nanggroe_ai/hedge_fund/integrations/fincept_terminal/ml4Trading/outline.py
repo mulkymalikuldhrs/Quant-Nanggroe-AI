@@ -413,11 +413,13 @@ class BaseMLModel(ABC):
 
     @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'BaseMLModel':
-        pass
+        logger.debug("Stub: fit returning None")
+        return None
 
     @abstractmethod
     def predict(self, X: pd.DataFrame) -> np.ndarray:
-        pass
+        logger.debug("Stub: predict returning None")
+        return None
 
     def evaluate(self, X_test: pd.DataFrame, y_test: pd.Series) -> Dict:
         """Evaluate model performance"""
@@ -889,7 +891,8 @@ class TradingStrategy(ABC):
     @abstractmethod
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         """Generate trading signals"""
-        pass
+        logger.debug("Stub: generate_signals returning None")
+        return None
 
     def set_model(self, model: BaseMLModel):
         """Set the ML model for the strategy"""

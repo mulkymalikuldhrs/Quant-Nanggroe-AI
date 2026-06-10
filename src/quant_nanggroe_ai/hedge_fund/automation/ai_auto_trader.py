@@ -21,11 +21,11 @@ from enum import Enum
 from collections import defaultdict
 import numpy as np
 import pandas as pd
-from src.brokers.free_broker_api import FreeBrokerGateway, BrokerAPI, BrokerType, OrderRequest, OrderSide, OrderType, TimeInForce, Account, Position, MarketData
-from src.strategies.wyckoff.wyckoff_strategy import WyckoffAnalyzer, WyckoffPhase, WyckoffSignal
-from src.analysis.timeframe.multi_timeframe import MultiTimeframeAnalyzer, TrendDirection, TimeframeSignal, MultiTimeframeAnalysis
-from src.ml.ml_signal_generator import MLSignalGenerator
-from src.risk.risk_management import RiskManagementFramework, RiskLimit, RiskMetric
+from quant_nanggroe_ai.hedge_fund.brokers.free_broker_api import FreeBrokerGateway, BrokerAPI, BrokerType, OrderRequest, OrderSide, OrderType, TimeInForce, Account, Position, MarketData
+from quant_nanggroe_ai.hedge_fund.strategies.wyckoff.wyckoff_strategy import WyckoffAnalyzer, WyckoffPhase, WyckoffSignal
+from quant_nanggroe_ai.hedge_fund.analysis.timeframe.multi_timeframe import MultiTimeframeAnalyzer, TrendDirection, TimeframeSignal, MultiTimeframeAnalysis
+from quant_nanggroe_ai.hedge_fund.ml.ml_signal_generator import MLSignalGenerator
+from quant_nanggroe_ai.hedge_fund.risk.risk_management import RiskManagementFramework, RiskLimit, RiskMetric
 
 logger = logging.getLogger(__name__)
 

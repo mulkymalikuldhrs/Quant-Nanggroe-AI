@@ -9,6 +9,8 @@ Tools:
     SentimentTool         — News sentiment, event classification
     ExecutionTool         — Order routing, paper/live trading
     BacktestTool          — Strategy backtesting and results
+    FileOpsTool           — File upload, download, delete, list (from ai-manus)
+    TradingPlanTool       — Trade planning, journaling, discipline (from Trading-Plan-AI)
 
 Example::
 
@@ -18,6 +20,8 @@ Example::
         SentimentTool,
         ExecutionTool,
         BacktestTool,
+        FileOpsTool,
+        TradingPlanTool,
     )
 
     # Initialize with shared market data source
@@ -26,6 +30,8 @@ Example::
     st  = SentimentTool()
     et  = ExecutionTool(market_data_tool=mdt)
     bt  = BacktestTool(market_data_tool=mdt)
+    fot = FileOpsTool()
+    tpt = TradingPlanTool()  # from Trading-Plan-AI-Interactive
 """
 
 from quant_nanggroe_ai.agents.tools.market_data import MarketDataTool
@@ -39,10 +45,18 @@ try:
 except ImportError:
     BacktestTool = None  # type: ignore[assignment,misc]
 
+# FileOpsTool — merged from ai-manus feature/agent-file-oprate branch
+from quant_nanggroe_ai.agents.tools.file_ops import FileOpsTool
+
+# TradingPlanTool — merged from Trading-Plan-AI-Interactive v11.1.4
+from quant_nanggroe_ai.agents.tools.trading_plan import TradingPlanTool
+
 __all__ = [
     "MarketDataTool",
     "TechnicalAnalysisTool",
     "SentimentTool",
     "ExecutionTool",
     "BacktestTool",
+    "FileOpsTool",
+    "TradingPlanTool",
 ]

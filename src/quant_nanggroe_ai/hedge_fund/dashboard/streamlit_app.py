@@ -34,9 +34,9 @@ from plotly.subplots import make_subplots
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.memory.enhanced_memory_system import get_memory_system, AssetType, TradeStatus
-from src.trading_plan.trading_plan import get_trading_plan_manager, TradingMode
-from src.execution.metatrader_bridge import get_metatrader_bridge
+from quant_nanggroe_ai.memory.enhanced_memory_system import get_memory_system, AssetType, TradeStatus
+from quant_nanggroe_ai.trading_plan.trading_plan import get_trading_plan_manager, TradingMode
+from quant_nanggroe_ai.hedge_fund.execution.metatrader_bridge import get_metatrader_bridge
 
 
 st.set_page_config(

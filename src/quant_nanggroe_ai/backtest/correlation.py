@@ -128,7 +128,7 @@ def compute_correlation_matrix(
     start_date = (datetime.now() - timedelta(days=days + 60)).strftime("%Y-%m-%d")
 
     # Import here to avoid circular
-    from backtest.loaders.registry import resolve_loader
+    from quant_nanggroe_ai.backtest.loaders.registry import resolve_loader
 
     price_series: Dict[str, pd.DataFrame] = {}
 
@@ -139,7 +139,7 @@ def compute_correlation_matrix(
         except Exception:
             # Fall back to yfinance for us_equity / hk_equity
             try:
-                from backtest.loaders.registry import LOADER_REGISTRY
+                from quant_nanggroe_ai.backtest.loaders.registry import LOADER_REGISTRY
                 if "yfinance" in LOADER_REGISTRY:
                     loader = LOADER_REGISTRY["yfinance"]()
                 else:

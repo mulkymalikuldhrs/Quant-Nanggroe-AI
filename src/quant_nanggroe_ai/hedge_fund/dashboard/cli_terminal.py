@@ -66,7 +66,7 @@ class CLITerminal:
     def initialize(self):
         """Initialize all components"""
         try:
-            from src.memory.enhanced_memory_system import get_memory_system
+            from quant_nanggroe_ai.memory.enhanced_memory_system import get_memory_system
 
             self.memory = get_memory_system()
             print(f"{Fore.GREEN}✓ Memory system initialized{Style.RESET_ALL}")
@@ -74,7 +74,7 @@ class CLITerminal:
             print(f"{Fore.RED}✗ Memory system error: {e}{Style.RESET_ALL}")
 
         try:
-            from src.trading_plan.trading_plan import get_trading_plan_manager
+            from quant_nanggroe_ai.trading_plan.trading_plan import get_trading_plan_manager
 
             self.trading_plan = get_trading_plan_manager()
             print(f"{Fore.GREEN}✓ Trading plan loaded: {self.trading_plan.plan.name}{Style.RESET_ALL}")
@@ -82,7 +82,7 @@ class CLITerminal:
             print(f"{Fore.RED}✗ Trading plan error: {e}{Style.RESET_ALL}")
 
         try:
-            from src.data.free_data_provider import get_free_data_provider
+            from quant_nanggroe_ai.hedge_fund.data.free_data_provider import get_free_data_provider
 
             self.data_provider = get_free_data_provider()
             print(f"{Fore.GREEN}✓ Data provider initialized{Style.RESET_ALL}")
@@ -90,7 +90,7 @@ class CLITerminal:
             print(f"{Fore.RED}✗ Data provider error: {e}{Style.RESET_ALL}")
 
         try:
-            from src.execution.metatrader_bridge import get_metatrader_bridge
+            from quant_nanggroe_ai.hedge_fund.execution.metatrader_bridge import get_metatrader_bridge
 
             self.mt_bridge = get_metatrader_bridge(simulate=True)
             print(f"{Fore.GREEN}✓ MetaTrader bridge ready (simulator mode){Style.RESET_ALL}")

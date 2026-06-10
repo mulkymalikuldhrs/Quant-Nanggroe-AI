@@ -26,9 +26,9 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from src.shadow_account.fonts import apply_matplotlib_cjk_font, cjk_css_font_face
-from src.shadow_account.models import ShadowBacktestResult, ShadowProfile
-from src.shadow_account.storage import reports_dir
+from quant_nanggroe_ai.shadow_account.fonts import apply_matplotlib_cjk_font, cjk_css_font_face
+from quant_nanggroe_ai.shadow_account.models import ShadowBacktestResult, ShadowProfile
+from quant_nanggroe_ai.shadow_account.storage import reports_dir
 
 logger = logging.getLogger(__name__)
 

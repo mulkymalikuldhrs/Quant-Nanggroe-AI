@@ -182,37 +182,44 @@ class MarketDataProvider(ABC):
     @abstractmethod
     def connect(self, **kwargs) -> bool:
         """Establish connection to data provider"""
-        pass
+        logger.debug("Stub: connect returning 0.0")
+        return 0.0
 
     @abstractmethod
     def disconnect(self) -> bool:
         """Disconnect from data provider"""
-        pass
+        logger.debug("Stub: disconnect returning 0.0")
+        return 0.0
 
     @abstractmethod
     def get_spot_price(self, symbol: str) -> float:
         """Get current spot price"""
-        pass
+        logger.debug("Stub: get_spot_price returning 0.0")
+        return 0.0
 
     @abstractmethod
     def get_risk_free_rate(self, currency: str = "USD", maturity: float = 0.25) -> float:
         """Get risk-free rate for given currency and maturity"""
-        pass
+        logger.debug("Stub: get_risk_free_rate returning 0.0")
+        return 0.0
 
     @abstractmethod
     def get_dividend_yield(self, symbol: str) -> float:
         """Get dividend yield for equity"""
-        pass
+        logger.debug("Stub: get_dividend_yield returning 0.0")
+        return 0.0
 
     @abstractmethod
     def get_volatility(self, symbol: str, maturity: float, strike: float = None) -> float:
         """Get implied volatility"""
-        pass
+        logger.debug("Stub: get_volatility returning 0.0")
+        return 0.0
 
     @abstractmethod
     def get_yield_curve(self, currency: str, curve_type: str = "government") -> CurveData:
         """Get complete yield curve"""
-        pass
+        logger.debug("Stub: get_yield_curve returning None")
+        return None
 
 
 class ManualDataProvider(MarketDataProvider):

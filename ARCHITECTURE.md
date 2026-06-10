@@ -1,341 +1,289 @@
 # Architecture: Quant Nanggroe AI
 
-**Version 1.0.0 | Multi-Agent Decision Intelligence Operating System**
+**Version 2.0.0 | Multi-Agent Decision Intelligence Operating System**
 
-This document provides a comprehensive technical reference for the architecture of Quant Nanggroe AI. It covers the system's layered execution model, data flow pathways, service interactions, component relationships, and the deterministic reasoning framework that governs all decision-making processes.
+Dokumen ini menyediakan referensi teknis komprehensif untuk arsitektur Quant Nanggroe AI. Mencakup model eksekusi berlapis, alur data, interaksi layanan, hubungan komponen, dan framework penalaran deterministik yang mengatur semua proses pengambilan keputusan.
 
-> Part of the [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) Unified Project.
-
----
-
-## 1. Design Philosophy
-
-### Deterministic Reasoning over Subjective AI
-
-Quant Nanggroe AI is built on a fundamentally different premise from conventional AI-assisted trading tools. Rather than treating Large Language Models as advisors that produce qualitative analysis, the system treats them as **Logical Reasoning Engines** operating under strict contracts. These contracts enforce three absolute rules:
-
-1. **No Subjective Opinions** — Agents are forbidden from producing "vibes-based" analysis, sentiment narratives, or qualitative assessments. Every output must be grounded in observable, numerical data.
-2. **Mandatory Data Grounding** — All reasoning must originate from Layer 0 data. An agent cannot reason about market conditions without first receiving contextual data from the MarketService. This eliminates hallucination at the architectural level.
-3. **Pressure-Based Output** — Agents never produce direct trade signals (BUY/SELL). Instead, they emit normalized pressure values (0.0–1.0) that flow into the Pressure Normalization Engine. Trade decisions are the exclusive domain of the Decision Synthesis Engine.
-
-### Why Determinism Matters
-
-In institutional quantitative trading, every decision must be traceable to its inputs, reproducible under the same conditions, and defensible under audit. Probabilistic AI outputs that vary between runs are unacceptable. The deterministic stack ensures that given identical market data and the same agent configurations, the system will produce identical outputs — a property that is essential for backtesting integrity, compliance, and risk management.
+> Bagian dari [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) Unified Project.
 
 ---
 
-## 2. The 5-Layer Execution Stack
+## 1. Filosofi Desain
 
-The core of Quant Nanggroe AI is a **5-Layer Deterministic Execution Stack**, where each layer acts as a strict filter. Data flows downward through the stack, and each layer either passes data forward or blocks it entirely. No layer can be bypassed, and no agent can override the constraints imposed by layers above it.
+### Penalaran Deterministik di Atas AI Subjektif
+
+Quant Nanggroe AI dibangun di atas premis yang berbeda secara fundamental dari alat bantu trading berbasis AI konvensional. Sistem memperlakukan Large Language Model sebagai **Logical Reasoning Engines** yang beroperasi di bawah kontrak ketat:
+
+1. **Tidak Ada Opini Subjektif** — Agent dilarang menghasilkan analisis "berbasis perasaan", narasi sentimen, atau penilaian kualitatif. Setiap output harus berdasar pada data numerik yang dapat diamati.
+2. **Grounding Data Wajib** — Semua penalaran harus berasal dari data Layer 0. Agent tidak dapat menalar tentang kondisi pasar tanpa menerima data kontekstual terlebih dahulu.
+3. **Output Berbasis Tekanan** — Agent tidak pernah menghasilkan sinyal trade langsung (BUY/SELL). Mereka menghasilkan nilai tekanan ternormalisasi (0.0–1.0) yang mengalir ke Pressure Normalization Engine.
+
+---
+
+## 2. Arsitektur Sistem Utama
+
+### 2.1 4-Layer Agent Stack
+
+Sistem menggunakan 4 framework agent yang berlapis, masing-masing dengan tanggung jawab spesifik:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Layer 0: Contextual Neural Grounding           │
-│  (Data Foundation — MarketService, AutoSwitch)   │
+│  Layer 1: LangGraph (Orchestration)             │
+│  State graph, conditional routing, council       │
+│  debates, 9 agent nodes                          │
 ├─────────────────────────────────────────────────┤
-│  Layer 1: Market Regime Engine                   │
-│  (Gatekeeper — MarketStateEngine)                │
+│  Layer 2: CrewAI (Team Coordination)             │
+│  Multi-agent collaboration, task delegation,      │
+│  role-based agent assignment                      │
 ├─────────────────────────────────────────────────┤
-│  Layer 2: Multi-Agent Sensors                    │
-│  (Eyes — QuantScanner, SMCAgent, NewsSentinel,   │
-│   FlowAgent)                                     │
+│  Layer 3: PydanticAI (Validation)                │
+│  Schema validation, structured output,            │
+│  type-safe agent responses                        │
 ├─────────────────────────────────────────────────┤
-│  Layer 3: Pressure Normalization Engine          │
-│  (Compiler — PressureNormalizationEngine)         │
-├─────────────────────────────────────────────────┤
-│  Layer 4: Decision Synthesis Engine              │
-│  (Judge — DecisionSynthesisEngine,               │
-│   EntryRiskEngine, RiskManagement)               │
+│  Layer 4: DSPy (Optimization)                    │
+│  Prompt optimization, performance tuning,          │
+│  automatic prompt engineering                      │
 └─────────────────────────────────────────────────┘
 ```
 
-### Layer 0: Contextual Neural Grounding (Data Foundation)
+### 2.2 LangGraph Agent Graph (9 Nodes)
 
-The bedrock of the entire system. This layer is responsible for harvesting, normalizing, and distributing real-time market data from multiple providers.
+```
+                    ┌─────────────┐
+                    │  Researcher │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │   Analyst   │
+                    └──────┬──────┘
+                           │
+               ┌───────────┼───────────┐
+               │           │           │
+        ┌──────▼──────┐    │    ┌──────▼──────┐
+        │  Strategist │    │    │    Macro    │
+        └──────┬──────┘    │    └─────────────┘
+               │           │
+        ┌──────▼──────┐    │
+        │ Risk Manager│◄───┘
+        │   (VETO)    │
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │   Trader    │
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │  Portfolio  │
+        │  (Final Gate)│
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │   Crypto    │
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │    Forex    │
+        └─────────────┘
+```
 
-**Data Providers:**
-- **Binance** — Cryptocurrency L1/L2 data (order book, trades, candles)
-- **CoinCap** — Alternative cryptocurrency market data
-- **AlphaVantage** — Stock and forex technical data, fundamental indicators
-- **Polygon** — US equities and options market data
-- **Finnhub** — Real-time forex, crypto, and news data
+**Council Debates (Adversarial):**
+- **Bull/Bear Debate** — Argumen opposing untuk validasi sinyal
+- **Risk Debate** — Tantangan terhadap analisis risk manager
 
-**Key Service: AutoSwitch Engine**
+**Protocols:**
+- **MCP (Model Context Protocol)** — Standar komunikasi agent-ke-tools dengan transport configuration dan server definitions
+- **A2A (Agent-to-Agent)** — Standar komunikasi antar-agent dengan message passing dan capability discovery
 
-The `AutoSwitch` service (`services/autoswitch.ts`) provides automatic provider failover with the following capabilities:
-- **Exponential backoff retry logic** — When a provider fails, retry intervals increase exponentially (1s, 2s, 4s, 8s, ...) up to a maximum threshold
-- **Health-based provider prioritization** — Providers are ranked by their recent success rate and average response latency
-- **Cooldown mechanisms** — Providers that fail consecutively enter a cooldown period during which they are not queried, reducing wasted API calls
-- **Real-time health reporting** — The system continuously monitors and reports the health status of each data provider
+### 2.3 Engine Layer (Deterministic — Tidak Ada AI)
 
-**Key Service: MarketService**
+Engine layer adalah **100% deterministik** — tidak ada panggilan LLM, tidak ada AI, tidak ada randomness (kecuali seeded Monte Carlo):
 
-The `MarketService` (`services/market.ts`) orchestrates all data access, providing a unified API that abstracts away the complexity of multiple data providers. It exposes:
-- Price tickers and 24-hour statistics
-- OHLCV candle data across multiple timeframes
-- Real-time news aggregation
-- Technical indicator computation via the MathEngine
-- Market metadata including trust scores, latency estimates, and update frequencies
+| Engine | File | Fungsi |
+|--------|------|--------|
+| **ConstitutionalRiskGuard** | `engine/risk_guard.py` | 9-checkpoint VETO system dengan limit hardcoded |
+| **DecisionEngine** | `engine/decision.py` | Decision table: regime + pressure + confidence → ALLOW/NO_TRADE/WATCH |
+| **PressureEngine** | `engine/pressure.py` | BUY/SELL pressure normalization (0.0-1.0) |
+| **MarketStateEngine** | `engine/market_state.py` | Regime: TRENDING/RANGE/MEAN_REVERT/RISK_OFF/PANIC/NO_TRADE |
+| **KillSwitch** | `engine/kill_switch.py` | Emergency halt, auto-trigger on limit breach |
+| **MathLib** | `engine/math_lib.py` | RSI, SMA, EMA, MACD, Bollinger, VWAP, ADX, ATR, CCI, Stochastic |
+| **StrategyLifecycle** | `engine/strategy_lifecycle.py` | Darwinian evolution — auto-KILL negative expectancy |
+| **NautilusAdapter** | `engine/nautilus_adapter.py` | NautilusTrader backtesting integration |
+| **AutoSwitch** | `engine/autoswitch.py` | LLM/data provider failover |
 
-**Data Enrichment:**
-
-Every piece of data entering the system is tagged with metadata:
-| Field | Type | Description |
-|---|---|---|
-| `source` | string | Data provider identifier |
-| `trustScore` | 0.0–1.0 | Confidence in data accuracy based on provider reliability |
-| `latencyEstimate` | ms | Estimated round-trip time to data source |
-| `updateFrequency` | string | Expected data refresh rate (e.g., "1s", "1m", "5m") |
-| `domainType` | enum | Data category: CRYPTO, EQUITY, FOREX, MACRO, NEWS |
-
----
-
-### Layer 1: Market Regime Engine (The Gatekeeper)
-
-The `MarketStateEngine` (`services/market_state_engine.ts`) sits above all agents and serves as the system's gatekeeper. It determines the global market condition, which constrains all downstream processing.
-
-**Market States:**
-
-| State | Condition | Effect on System |
-|---|---|---|
-| `TRENDING` | ADX > 25, directional momentum | Normal operation; trend-following strategies active |
-| `RANGE` | ADX < 20, price bounded | Range-trading strategies prioritized; reduced position sizing |
-| `MEAN_REVERT` | RSI at extremes, price deviation from mean | Mean-reversion strategies activated |
-| `RISK_OFF` | Elevated volatility, deteriorating breadth | Reduced position sizing; defensive positioning |
-| `PANIC` | Rapid price decline, extreme volatility | All agents forced to idle; existing positions managed defensively |
-| `NO_TRADE` | Insufficient liquidity or data quality | No new entries; system enters monitoring mode |
-
-**Detection Methods:**
-- **ADX Trend Strength** — Average Directional Index measures the strength of a trend regardless of direction
-- **RSI Extremes** — Relative Strength Index identifies overbought (>70) and oversold (<30) conditions
-- **Rapid Price Change Detection** — Monitors for price moves exceeding N standard deviations within a short timeframe
-
-**Hard Constraint:** If the regime is `NO_TRADE` or `PANIC`, all downstream agents are forced into idle mode. This constraint cannot be overridden by any agent, any LLM reasoning, or any configuration change. It is an architectural guarantee of capital protection.
-
----
-
-### Layer 2: Multi-Agent Sensors (The Eyes)
-
-Four specialized agents operate in parallel as numerical sensors. They do not produce subjective analysis — they produce structured, typed output that feeds into the Pressure Normalization Engine.
-
-#### QuantScanner (`services/quant_scanner.ts`)
-
-The quantitative momentum scanner. It analyzes price and volume data to produce:
-
-| Output | Type | Range | Description |
-|---|---|---|---|
-| `momentum` | number | -1.0 to 1.0 | Directional momentum strength |
-| `adxStrength` | number | 0.0 to 100.0 | ADX trend strength reading |
-| `volatilityExpansion` | number | 0.0 to 1.0 | Current volatility relative to historical norm |
-| `structureState` | enum | BULL/BEAR/NEUTRAL | Market structure classification |
-
-#### SMCAgent (`services/smc_agent.ts`)
-
-The Smart Money Concepts sensor. It detects institutional footprints in price action:
-
-| Output | Type | Description |
-|---|---|---|
-| `liquiditySweep` | boolean | Whether a liquidity pool has been swept |
-| `displacementStrength` | number | Strength of momentum displacement (0.0–1.0) |
-| `poiValidity` | enum | VALID/INVALID/EXPIRED — Point of Interest validity |
-| `orderBlockType` | enum | BULL_OB/BEAR_OB/NONE — Detected order block type |
-| `marketStructure` | enum | BOS/CHoCH/RANGE — Break of Structure or Change of Character |
-
-#### NewsSentinel (`services/news_sentinel.ts`)
-
-The macroeconomic and news event classifier. It processes news items and economic events:
-
-| Output | Type | Description |
-|---|---|---|
-| `eventClassification` | enum | MACRO/SCHEDULED/SHOCK/NOISE — Event category |
-| `directionalBias` | number | -1.0 to 1.0 — Estimated directional impact |
-| `uncertaintyScore` | number | 0.0 to 1.0 — Uncertainty in directional assessment |
-| `timeDecay` | function | Logarithmic decay function for event impact over time |
-| `affectedAssets` | string[] | List of assets likely affected by the event |
-
-The logarithmic time decay model ensures that recent events carry exponentially more weight than older events, while still preserving a non-zero influence for significant historical events.
-
-#### FlowAgent (`services/flow_agent.ts`)
-
-The institutional flow tracking sensor. It monitors large-order activity and positioning:
-
-| Output | Type | Description |
-|---|---|---|
-| `whaleFlowDirection` | enum | ACCUMULATING/DISTRIBUTING/NEUTRAL — Large trader behavior |
-| `cotBias` | enum | LONG/SHORT/NEUTRAL — Commitment of Traders positioning bias |
-| `flowImbalance` | number | -1.0 to 1.0 — Buy/sell flow imbalance ratio |
-| `institutionalActivity` | number | 0.0 to 1.0 — Estimated institutional participation level |
+**Konstitusi Risk (NON-NEGOTIABLE):**
+```python
+MAX_RISK_PER_TRADE = 0.005   # 0.5%
+MAX_DAILY_LOSS = 0.01        # 1.0%
+MAX_WEEKLY_LOSS = 0.03       # 3.0%
+MIN_RISK_REWARD = 2.0        # 1:2 minimum
+```
 
 ---
 
-### Layer 3: Pressure Normalization Engine (The Compiler)
+## 3. Execution Layer — 5 Brokers
 
-The `PressureNormalizationEngine` (`services/pressure_normalization_engine.ts`) is the central aggregation point for all sensor outputs. It compiles heterogeneous sensor data into a unified pressure field.
+| Broker | Pasar | Auth | Fitur Utama |
+|--------|-------|------|-------------|
+| **Paper** | Universal | N/A | In-memory order book, SL/TP, partial fills |
+| **Alpaca** | US Equities | API Key | REST API, rate limiting, position management |
+| **Jupiter** | Solana DEX | Private Key | V6 swap API, JITO tips, transaction signing |
+| **Polymarket** | Prediction Markets | API Key | Gamma + CLOB + Data API, order management |
+| **Kalshi** | Event Contracts | RSA-PSS | Full order lifecycle, market data, account queries |
 
-**Input:** Structured outputs from all four sensor agents
-**Output:** Normalized pressure vector
+### Broker Registry Pattern
 
-| Output | Type | Range | Description |
-|---|---|---|---|
-| `buyPressure` | number | 0.0–1.0 | Aggregated buying pressure |
-| `sellPressure` | number | 0.0–1.0 | Aggregated selling pressure |
-| `volatilityRisk` | enum | LOW/MEDIUM/HIGH/EXTREME | Volatility classification |
-| `liquidityCondition` | enum | THIN/NORMAL/DEEP | Market liquidity assessment |
-| `confidence` | number | 0.0–1.0 | Overall confidence in the pressure reading |
-
-**Weight Allocation (Blueprint Final Specification):**
-
-Each sensor contributes a weighted portion to the pressure calculation. The weights are derived from backtested performance and are calibrated to maximize the predictive power of the aggregate signal:
-
-| Sensor | Buy Pressure Weight | Sell Pressure Weight | Domain |
-|---|---|---|---|
-| QuantScanner | 25% | 25% | Technical momentum |
-| SMCAgent | 30% | 30% | Institutional structure |
-| NewsSentinel | 20% | 20% | Macro/sentiment |
-| FlowAgent | 25% | 25% | Institutional flow |
-
-The Pressure Normalization Engine eliminates the problem of conflicting agent signals by reducing everything to a single, normalized pressure field. An agent producing a strong buy signal does not directly cause a trade — it contributes to the `buyPressure` value, which must then be evaluated by Layer 4.
+```python
+BROKER_REGISTRY: dict[str, type[BaseBroker]] = {
+    "paper": PaperBroker,
+    "alpaca": AlpacaBroker,
+    "jupiter": JupiterBroker,
+    "polymarket": PolymarketBroker,
+    "kalshi": KalshiBroker,
+}
+BrokerType = type[PaperBroker | AlpacaBroker | JupiterBroker | PolymarketBroker | KalshiBroker]
+```
 
 ---
 
-### Layer 4: Decision Synthesis Engine (The Judge)
+## 4. Factor Library — 456+ Alpha Factors
 
-The `DecisionSynthesisEngine` (`services/decision_synthesis_engine.ts`) is the final authority on all trading decisions. It uses a **Decision Table** — a machine-readable set of rules — to evaluate whether the current state meets the criteria for entry.
+### Struktur
 
-**Decision Table Logic:**
+```
+factors/
+├── zoo/
+│   ├── alpha101/     # 101 WorldQuant Alpha101 factors
+│   ├── qlib158/      # 154 Microsoft Qlib factors
+│   └── academic/     # 7 Fama-French + Carhart factors
+├── registry.py       # Factor registry & auto-discovery
+├── registry_vt.py    # Virtual trading registry
+├── factor_analysis_core.py  # IC/IR analysis engine
+├── fama_french.py    # Fama-French model
+└── technical.py      # Technical indicator factors
+```
 
-The Decision Table evaluates the following conditions simultaneously:
+### Factor Metadata
 
-1. **Pressure Confluence** — Is there a meaningful gap between `buyPressure` and `sellPressure`? A minimum threshold (typically 0.15) must be exceeded to indicate genuine directional conviction.
-2. **Regime Compatibility** — Does the pressure direction align with the current market regime? Trending buy pressure in a `RANGE` market is discounted.
-3. **Volatility Clearance** — Is the volatility risk level acceptable for entry? `EXTREME` volatility blocks all entries regardless of pressure.
-4. **Confidence Threshold** — Is the overall confidence score above the minimum threshold (typically 0.60)?
+Setiap factor memiliki `__alpha_meta__` dengan:
+- Nama formula dan deskripsi
+- Parameters yang dibutuhkan
+- Category dan domain
+- Reference paper
 
-If all four conditions are satisfied, the system proceeds to entry geometry calculation.
+### Infrastructure
 
-**EntryRiskEngine (`services/entry_risk_engine.ts`)**
-
-Once confluence is achieved, the EntryRiskEngine calculates precise entry parameters:
-
-| Parameter | Calculation Method |
-|---|---|
-| **Entry Price** | Current market price at the time of decision |
-| **Stop Loss** | Structural invalidation level — the price point that would invalidate the trade thesis (NOT a percentage-based stop) |
-| **TP1** | Nearest significant liquidity level in the direction of the trade |
-| **TP2** | Volatility extension (1x ATR-based distance from entry) |
-| **TP3** | Volatility extension x2 (2x ATR-based distance from entry) |
-
-**RiskManagement (`services/risk_management.ts`)**
-
-Risk clearance is independently verified by the RiskManagement module, which enforces the Trading Constitution (see Section 3). The RiskManagement module operates as an independent check — it receives the proposed entry parameters and can veto any trade that violates constitutional rules, regardless of what the Decision Synthesis Engine has determined.
-
----
-
-## 3. Risk Guardian Constitution
-
-The Risk Guardian is a hard-coded, independent risk enforcement layer that is immune to AI reasoning. No agent, no matter how sophisticated its analysis, can override the constitutional rules.
-
-### Constitutional Rules
-
-| Rule | Threshold | Action on Violation |
-|---|---|---|
-| **Maximum Daily Drawdown** | 4% of account equity | Automatic kill-switch: all positions closed, system enters cooldown for the remainder of the day |
-| **Maximum Position Correlation** | 0.70 between any two active positions | New position blocked; warning issued to audit trail |
-| **Maximum Exposure Per Asset** | Configurable (default: 10% of portfolio) | Position size reduced to comply |
-| **Structural Stop Loss** | Required on every position | No position may be opened without a structural stop loss; percentage-based stops are rejected |
-| **Minimum Risk-Reward Ratio** | 1:1.5 (configurable) | Trade rejected if potential reward does not justify risk |
-
-### Correlation Monitor (`services/correlation_monitor.ts`)
-
-The Correlation Monitor continuously tracks the pairwise correlation between all active positions using a rolling window of returns. If the correlation between any two positions exceeds 0.70, the system blocks new entries in correlated assets and issues a warning to the audit trail. This prevents concentration risk that could amplify drawdowns during correlated market moves.
+- **Registry** — Central factor registry dengan auto-discovery
+- **Analysis Engine** — IC (Information Coefficient), IR (Information Ratio), turnover analysis
+- **Bench Runner** — Factor benchmarking terhadap dataset historis
 
 ---
 
-## 4. Darwinian Strategy Lifecycle
+## 5. Backtest System — 9 Engines
 
-The `StrategyLifecycleManager` (`services/strategy_lifecycle.ts`) implements a natural selection mechanism for trading strategies.
+### Engine Hierarchy
 
-### Strategy States
+```
+BaseEngine (Abstract)
+├── ChinaAEngine       # A-share: T+1, no short, 10%/20% price limits
+├── GlobalEquityEngine # US/HK standard equity
+├── CryptoEngine       # 24/7, funding fees, liquidation
+├── ForexEngine        # Spread, swap, high leverage
+├── ChinaFuturesEngine # CFFEX/SHFE/DCE/ZCE/INE
+├── GlobalFuturesEngine # CME/ICE/Eurex
+├── CompositeEngine    # Cross-market shared capital pool
+└── OptionsPortfolio   # Black-Scholes, IV smile
+```
 
-| State | Condition | Behavior |
-|---|---|---|
-| `ACTIVE` | Positive expectancy, drawdown < 10% | Fully operational; allocates capital |
-| `HIBERNATING` | Drawdown > 15% OR expectancy approaching zero | Suspended from live trading; continues monitoring |
-| `KILLED` | Negative expectancy over >= 20 trades | Permanently deactivated; resources reallocated |
-| `INCUBATING` | New strategy under evaluation | Paper trading only; no live capital allocation |
+### NautilusTrader Integration
 
-### Evolution Mechanism
+`nautilus_adapter.py` menyediakan adapter ke NautilusTrader backtesting framework untuk institutional-grade backtesting:
 
-1. Every strategy is tracked from its first trade
-2. After a minimum of 20 trades, statistical significance is assessed
-3. If the **expectancy** (average profit per trade) is negative, the strategy is marked `KILLED`
-4. If the drawdown exceeds 15%, the strategy is placed in `HIBERNATING` status
-5. Resources (capital allocation, agent attention) shift to `ACTIVE` strategies
-6. The `EvolutionMonitor` (`services/evolution_monitor.ts`) tracks the historical performance of all strategies, including killed ones, to identify patterns that may inform future strategy development
+- Bar-by-bar execution simulation
+- Realistic fill modeling
+- Multi-asset portfolio backtesting
+- Walk-forward optimization support
 
----
+### Portfolio Optimizers (4)
 
-## 5. Execution Reality Engine
+| Optimizer | Metode |
+|-----------|--------|
+| Mean Variance | Markowitz efficient frontier |
+| Risk Parity | Equal risk contribution |
+| Max Diversification | Diversification ratio maximization |
+| Equal Volatility | Inverse volatility weighting |
 
-The `BacktestEngine` (`services/backtest_engine.ts`) implements execution reality simulation to ensure that backtested results reflect real-world trading conditions.
+### Data Loaders (8)
 
-### Simulation Parameters
-
-| Parameter | Simulation | Rationale |
-|---|---|---|
-| **Dynamic Spread** | Volatility-adjusted spread widening | Spread widens during high volatility, just as in live markets |
-| **Slippage** | Random slippage within volatility-adjusted bounds | Market orders do not always fill at the displayed price |
-| **Partial Fill Probability** | 2–15% depending on volatility regime | Large orders may not fill completely in thin markets |
-| **Order Rejection** | Simulated with probability based on market conditions | Exchange rejections occur during extreme volatility or connectivity issues |
-| **Latency** | 100–500ms random delay applied to all orders | Decision-to-execution latency in live trading is never zero |
-
-### Impact on Performance Metrics
-
-The Execution Reality Engine typically reduces backtested returns by 15–30% compared to idealized backtesting. This is by design — it prevents the common pitfall of over-optimistic backtests that fail in production. Strategies that remain profitable under execution reality conditions have a significantly higher probability of success in live trading.
-
----
-
-## 6. Audit Trail System
-
-The `AuditLogger` (`services/audit_logger.ts`) provides comprehensive event logging across all layers of the execution stack.
-
-### Audit Layers
-
-| Layer | Events Logged |
-|---|---|
-| **Market** | Data provider status, price updates, regime changes, data quality alerts |
-| **Sensor** | Agent outputs, sensor readings, anomaly detection, confidence scores |
-| **Pressure** | Pressure calculations, weight adjustments, normalization events |
-| **Decision** | Decision table evaluations, confluence checks, entry/exit decisions |
-| **Risk** | Constitutional rule checks, violations, position sizing, correlation alerts |
-| **Execution** | Order placement, fill confirmation, slippage, rejection events |
-
-### Log Structure
-
-Each audit entry contains:
-- **Timestamp** — High-precision UTC timestamp
-- **Layer** — Which execution layer generated the event
-- **Severity** — INFO, WARNING, ERROR, CRITICAL
-- **EventType** — Categorized event type for filtering
-- **Payload** — Structured data specific to the event type
-- **Source** — The service or agent that generated the event
-
-The audit trail is designed to meet institutional compliance requirements, enabling full reconstruction of any trading decision from raw data through to execution.
+| Loader | Sumber Data |
+|--------|-------------|
+| YFinance | Global equities (Yahoo Finance) |
+| CCXT | Crypto exchanges (100+ via CCXT) |
+| OKX | OKX exchange |
+| Futu | Futu OpenD (HK/CN) |
+| Tushare | Chinese A-share |
+| Tushare Fundamentals | Financial statements |
+| AKShare | Chinese market data |
+| Registry | Auto-loader selection |
 
 ---
 
-## 7. Hybrid Storage Architecture
+## 6. API Layer — FastAPI + WebSocket
 
-The `StorageManager` (`services/storage_manager.ts`) uses an **Adapter Pattern** to manage data across multiple storage backends.
+### Route Modules
 
-### Storage Backends
+| Router | Endpoints | Deskripsi |
+|--------|-----------|-----------|
+| `/api/agents` | Agent graph execution | Run agent pipeline, get status |
+| `/api/market` | Market data | Prices, candles, news |
+| `/api/portfolio` | Portfolio management | Positions, equity, PnL |
+| `/api/trading` | Order execution | Place, cancel, modify orders |
+| `/api/backtest` | Backtesting | Run backtests, get results |
+| `/api/auth` | Authentication | JWT login, register, RBAC |
+| `/ws` | WebSocket | Real-time streaming |
 
-| Backend | Purpose | Characteristics |
-|---|---|---|
-| **IndexedDB** | Primary storage for knowledge bases, market history, research items | High capacity (hundreds of MB), structured queries, persistent across sessions |
-| **LocalStorage** | UI preferences, session state, theme configuration | Fast synchronous access, limited capacity (~5MB), key-value pairs |
-| **BrowserFS** | Virtual file system for backup/restore operations | Full file system API, supports directories and file operations |
-| **Cloud (Ready)** | Prepared for Supabase/PostgreSQL integration | Schema defined, adapter interface ready, not yet connected |
+### Authentication (JWT + RBAC)
+
+- **JWTManager** — Token generation, validation, refresh
+- **AuthService** — User management, password hashing (PBKDF2-SHA256, 100K rounds)
+- **AuthMiddleware** — Request-level auth enforcement
+- **Roles** — ADMIN, TRADER, VIEWER (hierarchical permissions)
+
+### Shared Singletons
+
+Semua route modules menggunakan shared singleton instances:
+```python
+# services.py
+kill_switch = KillSwitch()
+risk_guard = RiskGuard()
+market_engine = MarketEngine()
+decision_engine = DecisionEngine()
+```
+
+---
+
+## 7. Storage Layer
+
+### Database Schema (7 Tables)
+
+| Table | Purpose |
+|-------|---------|
+| `users` | User accounts with auth fields |
+| `strategies` | Strategy lifecycle with performance metrics |
+| `trades` | Full trade records with risk context |
+| `positions` | Open position tracking |
+| `portfolio_snapshots` | Time-series portfolio state |
+| `risk_events` | Risk veto/warning audit log |
+| `agent_logs` | Agent execution trace with LLM token tracking |
+
+### Storage Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Relational | PostgreSQL 16+ | Users, trades, positions, strategies |
+| Time-Series | QuestDB | Portfolio snapshots, market data ticks |
+| Cache | Redis 7+ | Session data, rate limiting, API cache |
+| ORM | SQLAlchemy 2.0 (async) | Database access layer |
+| Migrations | Alembic | Schema version management |
 
 ### Data Flow
 
@@ -343,63 +291,71 @@ The `StorageManager` (`services/storage_manager.ts`) uses an **Adapter Pattern**
 Application Code
        │
        ▼
-StorageManager (Orchestrator)
+SQLAlchemy 2.0 (async sessions)
        │
-       ├──► StorageAdapter (Interface)
-       │        │
-       │        ├──► IndexedDB Adapter
-       │        ├──► LocalStorage Adapter
-       │        └──► FileSystem Adapter
-       │
-       └──► BackupService (Export/Import)
-                │
-                └──► .json file generation
+       ├──► PostgreSQL (relational data)
+       ├──► QuestDB (time-series data)
+       └──► Redis (cache layer)
+              │
+              ▼
+       Alembic (migrations)
 ```
 
-The `StorageAdapter` (`services/storage_adapter.ts`) defines a common interface that all storage backends implement, allowing the StorageManager to transparently route data to the appropriate backend without the application code needing to know the details.
+---
+
+## 8. Memory & Knowledge System
+
+| Module | File | Deskripsi |
+|--------|------|-----------|
+| **Vector Memory** | `memory/vector.py` | TF-IDF embeddings, cosine similarity, metadata filtering |
+| **Conversation** | `memory/conversation.py` | Chat history management, context windowing |
+| **Research** | `memory/research.py` | Research note storage and retrieval |
+| **Persistent** | `memory_persistent/persistent.py` | Cross-session persistent storage |
 
 ---
 
-## 8. Multi-LLM Routing
+## 9. Integrations
 
-The `LLMRouter` (`services/llm_router.ts`) manages communication with large language models, routing requests to the appropriate model based on the task type and agent requirements.
+### WhatsApp Bot
+`integrations/whatsapp_bot.py` — Command parsing, message formatting, notification sending via WhatsApp Business API.
 
-### Current Integration
+### Trading Plan Tool
+`agents/tools/trading_plan.py` — CFTC commitment-of-traders data, trade journal with validation, emotional lockout periods, weekly analysis generation.
 
-- **Google Gemini** (`services/gemini.ts`) — Primary LLM for agent swarm intelligence, research analysis, and conversational AI
+### File Operations
+`agents/tools/file_ops.py` — Local file storage + MongoDB GridFS, attachment service, file operation factory pattern.
 
-### Routing Strategy
+### MCP Configuration
+`agents/mcp_config.py` — 5 default MCP servers for trading platform, transport configuration, tool event definitions.
 
-The LLM Router selects models based on:
-1. **Task Type** — Different tasks (analysis, synthesis, research) may benefit from different model capabilities
-2. **Cost Optimization** — Simpler tasks are routed to lighter models when available
-3. **Rate Limit Management** — Requests are throttled and queued to stay within API rate limits
-4. **Failover** — If the primary model is unavailable, the router can fall back to alternative providers
+### Solana Scanner
+`solana_scanner/` — Mempool monitoring, RugCheck integration, auto-sniper with new-token callbacks, SQLite database for trades/positions/limit_orders.
 
 ---
 
-## 9. Frontend Architecture
+## 10. Risk Module
 
-The frontend is built as a desktop-OS-inspired interface using React 19 and TypeScript, designed to be a complete research and decision-support workstation.
+| Module | Metode | Deskripsi |
+|--------|--------|-----------|
+| **VaR** | Parametric, Historical, Monte Carlo | Value at Risk calculation |
+| **CVaR** | Conditional VaR | Expected Shortfall beyond VaR threshold |
+| **Drawdown** | Maximum drawdown, recovery time | Peak-to-trough analysis |
+| **Position Sizing** | Kelly criterion, fixed-fractional | Optimal position size calculation |
+| **Portfolio Risk** | Correlation, beta, tracking error | Portfolio-level risk metrics |
 
-### Component Hierarchy
+Plus the engine-level `ConstitutionalRiskGuard` with 9-checkpoint VETO system yang TIDAK DAPAT di-override oleh agent manapun.
+
+---
+
+## 11. Frontend Architecture
+
+Frontend dibangun sebagai antarmuka desktop-OS menggunakan React 19 dan TypeScript:
 
 ```
 App.tsx (Root)
  ├── Taskbar (Dock)
- │    ├── App Icons
- │    └── System Status Indicators
- │
  ├── OmniBar (Spotlight Search)
- │    ├── Command Parser
- │    └── AI-Powered Search
- │
  ├── ControlCenter (System Panel)
- │    ├── Security Matrix
- │    ├── Risk Guardian Dashboard
- │    ├── Theme Toggle
- │    └── Configuration
- │
  └── WindowFrame (Container) × N
       ├── TradingTerminalWindow
       ├── MarketWindow
@@ -410,127 +366,113 @@ App.tsx (Root)
       ├── NexusWindow
       ├── SwarmConfigModal
       ├── SystemArchitecture
-      └── AgentHud
+      ├── AgentHud
+      └── SolSniperX (Sidebar + TradingPage)
 ```
 
-### Key Design Principles
-
-- **Draggable Windows** — All content panels are draggable, resizable, and support z-index management through the `WindowFrame` component
-- **Desktop OS Metaphor** — The interface replicates the desktop OS experience with a dock, spotlight search, and window management, reducing the learning curve for users familiar with desktop applications
-- **Real-Time Updates** — All market data, agent states, and system metrics update in real-time without requiring page refreshes
-- **Theme System** — Every component supports both light and dark themes, with the theme toggle accessible from the ControlCenter
+> **Status:** Frontend saat ini DISCONNECTED dari Python backend. 33 TypeScript service stubs belum memiliki API client.
 
 ---
 
-## 10. Data Flow Summary
-
-The complete data flow from market data ingestion to trade execution:
+## 12. Data Flow Summary
 
 ```
 [Market Data Providers]
         │
         ▼
-[AutoSwitch Engine] ──► Provider Health Monitoring
+[AutoSwitch Engine] ──► Provider Failover & Health
         │
         ▼
-[MarketService] ──► Data Normalization & Enrichment
-        │
-        ▼
-[MarketStateEngine] ──► Regime Detection (Layer 1)
+[MarketStateEngine] ──► Regime Detection
         │
         ├── If NO_TRADE/PANIC ──► System Idle
         │
         ▼ (Regime Compatible)
-[Sensor Agents] (Parallel Execution)
-   │     │     │     │
-   │     │     │     └── FlowAgent ──► Institutional Flow Data
-   │     │     └──────── NewsSentinel ──► News/Macro Classification
-   │     └────────────── SMCAgent ──► Smart Money Structure Data
-   └──────────────────── QuantScanner ──► Technical Momentum Data
+[9 Agent Nodes via LangGraph]
+   │     │     │     │     │     │     │     │     │
+   │     │     │     │     │     │     │     │     └── Crypto
+   │     │     │     │     │     │     │     └── Forex
+   │     │     │     │     │     │     └── Portfolio (Final Gate)
+   │     │     │     │     │     └── Trader
+   │     │     │     │     └── Risk Manager (VETO)
+   │     │     │     └── Macro
+   │     │     └── Strategist
+   │     └── Analyst
+   └── Researcher
         │
         ▼
-[PressureNormalizationEngine] ──► BUY/SELL Pressure Vectors
+[Pressure Engine] ──► BUY/SELL Pressure Vectors
         │
         ▼
-[DecisionSynthesisEngine] ──► Decision Table Evaluation
-        │
-        ├── If No Confluence ──► No Action
-        │
-        ▼ (Confluence Achieved)
-[EntryRiskEngine] ──► Entry Geometry Calculation
+[Decision Engine] ──► Decision Table Evaluation
         │
         ▼
-[RiskManagement] ──► Constitutional Rule Verification
+[Risk Guard] ──► Constitutional Rule Verification
         │
-        ├── If Violation ──► Trade Vetoed
+        ├── If Violation ──► Trade VETOED
         │
         ▼ (Risk Cleared)
-[Execution Parameters] ──► Entry Price, Stop Loss, TP1, TP2, TP3
+[Execution Layer] ──► Paper | Alpaca | Jupiter | Polymarket | Kalshi
         │
         ▼
-[AuditLogger] ──► Full Decision Trail Recorded
+[Audit Logger] ──► Full Decision Trail Recorded
 ```
 
 ---
 
-## 11. Service Dependency Graph
-
-The following diagram illustrates the primary dependencies between services:
+## 13. Service Dependency Graph
 
 ```
-MarketService
-    ├── AutoSwitch
-    ├── MathEngine
-    └── Data Providers (Binance, CoinCap, AlphaVantage, Polygon, Finnhub)
+FastAPI App
+    ├── Auth Middleware (JWT)
+    ├── WebSocket Handler
+    └── Route Modules (6)
+         ├── agents → LangGraph Graph → 9 Nodes
+         ├── market → MarketService → AutoSwitch
+         ├── portfolio → RiskGuard → DecisionEngine
+         ├── trading → ExecutionBroker → 5 Brokers
+         ├── backtest → BacktestEngine → 9 Market Engines
+         └── auth → AuthService → JWTManager
 
-MarketStateEngine
-    └── MarketService
+LangGraph Graph
+    ├── 9 Agent Nodes
+    ├── 7 Agent Tools
+    ├── 2 Council Debates
+    ├── MCP Protocol
+    └── A2A Protocol
 
-QuantScanner ─── MarketService + MathEngine
-SMCAgent ─────── MarketService
-NewsSentinel ─── MarketService
-FlowAgent ────── MarketService
+Engine Layer (Deterministic)
+    ├── RiskGuard ←── StrategyLifecycle
+    ├── DecisionEngine ←── PressureEngine
+    ├── PressureEngine ←── MarketStateEngine
+    └── MarketStateEngine ←── MathLib
 
-PressureNormalizationEngine
-    ├── QuantScanner
-    ├── SMCAgent
-    ├── NewsSentinel
-    └── FlowAgent
+Execution Layer
+    ├── PaperBroker (in-memory)
+    ├── AlpacaBroker (REST API)
+    ├── JupiterBroker (Solana V6)
+    ├── PolymarketBroker (CLOB + Gamma + Data)
+    └── KalshiBroker (RSA-PSS Auth)
 
-DecisionSynthesisEngine
-    ├── PressureNormalizationEngine
-    └── MarketStateEngine
+Factor Library
+    ├── 101 Alpha101 factors
+    ├── 154 Qlib158 factors
+    ├── 7 Academic factors
+    └── Registry + Analysis Engine
 
-EntryRiskEngine
-    ├── DecisionSynthesisEngine
-    └── MathEngine
-
-RiskManagement
-    ├── EntryRiskEngine
-    ├── CorrelationMonitor
-    └── StrategyLifecycle
-
-AuditLogger
-    └── (All services emit events to AuditLogger)
-
-ResearchAgent
-    ├── MarketService
-    └── KnowledgeBase
-
-StorageManager
-    ├── StorageAdapter
-    ├── FileSystem
-    └── Drive
+Storage Layer
+    ├── PostgreSQL (SQLAlchemy 2.0 async)
+    ├── QuestDB (time-series)
+    ├── Redis (cache)
+    └── Alembic (migrations)
 ```
 
 ---
 
-## 12. Related Projects
+## 14. Monorepo Consolidation
 
-| Project | Description | Link |
-|---|---|---|
-| **HermesQuantOS** | Unified Quantitative Intelligence Ecosystem — the parent project integrating Quant Nanggroe AI with backend services, databases, and deployment infrastructure | [https://github.com/mulkymalikuldhrs/HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) |
+Sistem ini adalah hasil konsolidasi dari **25+ repositori** ke dalam satu monorepo. Lihat [CLUSTER1_CONSOLIDATION_REPORT.md](./CLUSTER1_CONSOLIDATION_REPORT.md) untuk detail lengkap tentang repo mana yang digabungkan, kode apa yang diekstrak, dan apa yang dibuang.
 
 ---
 
-© 2025-2026 Quant Nanggroe AI | Technical Architecture Reference v1.0.0
+© 2025-2026 Quant Nanggroe AI | Technical Architecture Reference v2.0.0

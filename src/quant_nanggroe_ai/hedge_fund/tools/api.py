@@ -4,8 +4,8 @@ import pandas as pd
 import requests
 import time
 
-from src.data.cache import get_cache
-from src.data.models import (
+from quant_nanggroe_ai.hedge_fund.data.cache import get_cache
+from quant_nanggroe_ai.hedge_fund.data.models import (
     CompanyNews,
     CompanyNewsResponse,
     FinancialMetrics,

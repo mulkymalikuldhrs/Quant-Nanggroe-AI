@@ -2,10 +2,10 @@ import sys
 
 from colorama import Fore, Style
 
-from src.main import run_hedge_fund
-from src.backtesting.engine import BacktestEngine
-from src.backtesting.types import PerformanceMetrics
-from src.cli.input import (
+from quant_nanggroe_ai.hedge_fund.main import run_hedge_fund
+from quant_nanggroe_ai.hedge_fund.backtesting.engine import BacktestEngine
+from quant_nanggroe_ai.hedge_fund.backtesting.types import PerformanceMetrics
+from quant_nanggroe_ai.hedge_fund.cli.input import (
     parse_cli_inputs,
 )
 

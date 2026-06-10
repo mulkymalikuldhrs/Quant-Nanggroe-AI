@@ -20,14 +20,18 @@ import math
 import time
 from typing import Any, Callable
 
-from src.factors.factor_analysis_core import compute_ic_series
-from src.factors.registry import (
+from quant_nanggroe_ai.factors.factor_analysis_core import compute_ic_series
+from quant_nanggroe_ai.factors.registry import (
     Registry,
     RegistryError,
     SkipAlpha,
     get_default_registry,
 )
-from src.tools.alpha_bench_tool import _compute_forward_returns, _load_universe_panel
+try:
+    from quant_nanggroe_ai.tools.alpha_bench_tool import _compute_forward_returns, _load_universe_panel
+except ImportError:
+    _compute_forward_returns = None
+    _load_universe_panel = None
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +119,8 @@ def run_bench(
         return entry
 
     try:
+        if _load_universe_panel is None:
+            raise NotImplementedError("alpha_bench_tool not available")
         panel = _load_universe_panel(universe, period)
     except (ValueError, NotImplementedError, RuntimeError) as exc:
         entry["status"] = "error"
@@ -123,6 +129,8 @@ def run_bench(
         return entry
 
     try:
+        if _compute_forward_returns is None:
+            raise NotImplementedError("alpha_bench_tool not available")
         return_df = _compute_forward_returns(panel)
     except Exception as exc:  # noqa: BLE001
         entry["status"] = "error"

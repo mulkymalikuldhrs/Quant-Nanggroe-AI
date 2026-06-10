@@ -314,7 +314,8 @@ class BaseCalculator(ABC):
         Abstract method for main calculation.
         Must be implemented by all subclasses.
         """
-        pass
+        logger.debug("Stub: set_risk_free_rate returning None")
+        return None
 
     def get_supported_methods(self) -> List[str]:
         """

@@ -5,9 +5,9 @@ import argparse
 import questionary
 from colorama import Fore, Style
 
-from src.utils.analysts import ANALYST_ORDER
-from src.llm.models import LLM_ORDER, OLLAMA_LLM_ORDER, get_model_info, ModelProvider, find_model_by_name
-from src.utils.ollama import ensure_ollama_and_model
+from quant_nanggroe_ai.hedge_fund.utils.analysts import ANALYST_ORDER
+from quant_nanggroe_ai.hedge_fund.llm.models import LLM_ORDER, OLLAMA_LLM_ORDER, get_model_info, ModelProvider, find_model_by_name
+from quant_nanggroe_ai.hedge_fund.utils.ollama import ensure_ollama_and_model
 
 from dataclasses import dataclass
 from typing import Optional

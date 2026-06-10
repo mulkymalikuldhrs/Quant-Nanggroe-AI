@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from backtest.models import TradeRecord
+from quant_nanggroe_ai.backtest.models import TradeRecord
 
 # ─── Annualisation factor mapping ───
 

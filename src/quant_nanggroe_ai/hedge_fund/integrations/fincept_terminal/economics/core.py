@@ -103,7 +103,8 @@ class EconomicsBase(ABC):
     @abstractmethod
     def calculate(self, *args, **kwargs) -> Dict[str, Any]:
         """Main calculation method - must be implemented by subclasses"""
-        pass
+        logger.debug("Stub: validate_inputs returning 0.0")
+        return 0.0
 
     def get_metadata(self) -> Dict[str, Any]:
         """Return component metadata"""

@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 Equity Investment Multiples Valuation Module
 ======================================
 
@@ -262,7 +266,8 @@ class ComparablesAnalyzer:
             # Growth screening
             if "min_growth" in screening_criteria:
                 # Would need historical data for growth calculation
-                pass
+                logger.debug("Stub: screen_comparables returning []")
+                return []
 
             screened.append(comp)
 

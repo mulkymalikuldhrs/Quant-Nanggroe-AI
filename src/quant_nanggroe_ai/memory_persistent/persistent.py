@@ -16,7 +16,23 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.agent.frontmatter import parse_frontmatter as _parse_frontmatter
+try:
+    from quant_nanggroe_ai.agent.frontmatter import parse_frontmatter as _parse_frontmatter
+except ImportError:
+    def _parse_frontmatter(text: str):
+        """Fallback frontmatter parser when agent module is unavailable."""
+        meta: dict = {}
+        body = text
+        if text.startswith("---"):
+            parts = text.split("---", 2)
+            if len(parts) >= 3:
+                import yaml
+                try:
+                    meta = yaml.safe_load(parts[1]) or {}
+                except Exception:
+                    meta = {}
+                body = parts[2].strip()
+        return meta, body
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)

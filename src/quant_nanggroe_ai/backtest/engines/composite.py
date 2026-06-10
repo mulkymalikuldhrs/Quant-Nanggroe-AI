@@ -12,8 +12,8 @@ from typing import Dict, List
 
 import pandas as pd
 
-from backtest.engines.base import BaseEngine
-from backtest.engines._market_hooks import (
+from quant_nanggroe_ai.backtest.engines.base import BaseEngine
+from quant_nanggroe_ai.backtest.engines._market_hooks import (
     _detect_market,
     _is_china_futures,
     calc_crypto_funding_fee,
@@ -29,29 +29,29 @@ def _build_rule_engines(config: dict, codes: List[str]) -> Dict[str, BaseEngine]
 
     for market in markets:
         if market == "a_share":
-            from backtest.engines.china_a import ChinaAEngine
+            from quant_nanggroe_ai.backtest.engines.china_a import ChinaAEngine
             engines["a_share"] = ChinaAEngine(config)
         elif market == "us_equity":
-            from backtest.engines.global_equity import GlobalEquityEngine
+            from quant_nanggroe_ai.backtest.engines.global_equity import GlobalEquityEngine
             engines["us_equity"] = GlobalEquityEngine(config, market="us")
         elif market == "hk_equity":
-            from backtest.engines.global_equity import GlobalEquityEngine
+            from quant_nanggroe_ai.backtest.engines.global_equity import GlobalEquityEngine
             engines["hk_equity"] = GlobalEquityEngine(config, market="hk")
         elif market == "crypto":
-            from backtest.engines.crypto import CryptoEngine
+            from quant_nanggroe_ai.backtest.engines.crypto import CryptoEngine
             engines["crypto"] = CryptoEngine(config)
         elif market == "forex":
-            from backtest.engines.forex import ForexEngine
+            from quant_nanggroe_ai.backtest.engines.forex import ForexEngine
             engines["forex"] = ForexEngine(config)
         elif market == "futures":
             china = any(
                 _is_china_futures(c) for c in codes if _detect_market(c) == "futures"
             )
             if china:
-                from backtest.engines.china_futures import ChinaFuturesEngine
+                from quant_nanggroe_ai.backtest.engines.china_futures import ChinaFuturesEngine
                 engines["futures"] = ChinaFuturesEngine(config)
             else:
-                from backtest.engines.global_futures import GlobalFuturesEngine
+                from quant_nanggroe_ai.backtest.engines.global_futures import GlobalFuturesEngine
                 engines["futures"] = GlobalFuturesEngine(config)
 
     return engines

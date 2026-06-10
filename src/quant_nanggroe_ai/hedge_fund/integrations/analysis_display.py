@@ -23,9 +23,9 @@ try:
 except ImportError:
     console = None
 
-from src.integrations.retail_strategies import retail_strategies, RetailSignal
-from src.agents.enhanced_agents import run_enhanced_multi_agent_analysis
-from src.strategies.quantitative_strategies import analyze_with_all_strategies
+from quant_nanggroe_ai.hedge_fund.integrations.retail_strategies import retail_strategies, RetailSignal
+from quant_nanggroe_ai.hedge_fund.agents.enhanced_agents import run_enhanced_multi_agent_analysis
+from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import analyze_with_all_strategies
 
 logger = logging.getLogger(__name__)
 

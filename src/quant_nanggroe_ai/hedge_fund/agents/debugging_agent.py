@@ -7,7 +7,7 @@ import sqlite3
 from datetime import datetime
 from typing import Any, Dict
 
-from src.agents.base_agent import BaseAgent, PlanExecutionResult, StepResult
+from quant_nanggroe_ai.hedge_fund.agents.base_agent import BaseAgent, PlanExecutionResult, StepResult
 
 logger = logging.getLogger(__name__)
 

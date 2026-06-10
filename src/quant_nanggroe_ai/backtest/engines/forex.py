@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import pandas as pd
 
-from backtest.engines.base import BaseEngine
+from quant_nanggroe_ai.backtest.engines.base import BaseEngine
 # ``_normalize_symbol`` lives in ``_market_hooks`` (single source of truth);
 # re-imported here so external callers (tests) keep their existing import path.
-from backtest.engines._market_hooks import _normalize_symbol, calc_forex_swap
+from quant_nanggroe_ai.backtest.engines._market_hooks import _normalize_symbol, calc_forex_swap
 
 
 # ── Typical spreads in pips (1 pip = 0.0001 for most pairs, 0.01 for JPY) ──

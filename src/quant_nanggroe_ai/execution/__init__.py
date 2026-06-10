@@ -20,6 +20,7 @@ from quant_nanggroe_ai.execution.paper import PaperTradingBroker
 from quant_nanggroe_ai.execution.alpaca_broker import AlpacaBroker
 from quant_nanggroe_ai.execution.jupiter import JupiterBroker
 from quant_nanggroe_ai.execution.polymarket import PolymarketBroker
+from quant_nanggroe_ai.execution.kalshi import KalshiBroker
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,11 @@ __all__ = [
     "AlpacaBroker",
     "JupiterBroker",
     "PolymarketBroker",
+    "KalshiBroker",
 ]
 
 # Type alias for any broker instance
-BrokerType = PaperTradingBroker | AlpacaBroker | JupiterBroker | PolymarketBroker
+BrokerType = PaperTradingBroker | AlpacaBroker | JupiterBroker | PolymarketBroker | KalshiBroker
 
 
 class BrokerFactory:
@@ -44,6 +46,7 @@ class BrokerFactory:
     - "alpaca": Alpaca API broker for equities/crypto
     - "jupiter": Jupiter V6 DEX broker for Solana swaps
     - "polymarket": Polymarket broker for prediction markets
+    - "kalshi": Kalshi broker for prediction markets
 
     Example:
         broker = BrokerFactory.create("paper", initial_capital=50_000)
@@ -55,6 +58,7 @@ class BrokerFactory:
         "alpaca": AlpacaBroker,
         "jupiter": JupiterBroker,
         "polymarket": PolymarketBroker,
+        "kalshi": KalshiBroker,
     }
 
     @classmethod

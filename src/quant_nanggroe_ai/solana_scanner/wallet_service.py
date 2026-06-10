@@ -10,7 +10,7 @@ import asyncio
 from datetime import datetime
 import httpx
 
-from config import SOLANA_PRIVATE_KEY, SOLANA_RPC_URL
+from quant_nanggroe_ai.solana_scanner.config import SOLANA_PRIVATE_KEY, SOLANA_RPC_URL
 
 logger = logging.getLogger(__name__)
 

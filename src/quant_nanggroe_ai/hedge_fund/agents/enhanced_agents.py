@@ -13,15 +13,15 @@ import sys
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.tools.advanced_data_provider import data_provider
-from src.strategies.quantitative_strategies import StrategyOrchestrator, analyze_with_all_strategies, StrategyType
-from src.utils.analysts import ANALYST_ORDER
+from quant_nanggroe_ai.hedge_fund.tools.advanced_data_provider import data_provider
+from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import StrategyOrchestrator, analyze_with_all_strategies, StrategyType
+from quant_nanggroe_ai.hedge_fund.utils.analysts import ANALYST_ORDER
 
 # Integrated components
 try:
-    from src.integrations.enhanced_sentiment_agent import enhanced_sentiment_agent
-    from src.integrations.enhanced_autonomous_trader import enhanced_autonomous_trader
-    from src.integrations.enhanced_risk_analyzer import enhanced_risk_analyzer
+    from quant_nanggroe_ai.hedge_fund.integrations.enhanced_sentiment_agent import enhanced_sentiment_agent
+    from quant_nanggroe_ai.hedge_fund.integrations.enhanced_autonomous_trader import enhanced_autonomous_trader
+    from quant_nanggroe_ai.hedge_fund.integrations.enhanced_risk_analyzer import enhanced_risk_analyzer
 
     INTEGRATIONS_AVAILABLE = True
 except ImportError:
@@ -121,7 +121,7 @@ def jim_simmons_agent(ticker: str, prices: List, fundamentals: Dict = None, mark
     Jim Simons-inspired quantitative analyst
     Uses statistical models and pattern recognition
     """
-    from src.strategies.quantitative_strategies import JimSimonsStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import JimSimonsStrategy
 
     strategy = JimSimonsStrategy()
     signal = strategy.calculate(prices, fundamentals, market_data)
@@ -157,7 +157,7 @@ def quantitative_analyst_agent(ticker: str, prices: List, fundamentals: Dict = N
     Quantitative Momentum Analyst
     Analyzes price momentum across multiple timeframes
     """
-    from src.strategies.quantitative_strategies import QuantitativeMomentumStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import QuantitativeMomentumStrategy
 
     strategy = QuantitativeMomentumStrategy()
     signal = strategy.calculate(prices, fundamentals, market_data)
@@ -191,7 +191,7 @@ def technical_analyst_agent(ticker: str, prices: List, fundamentals: Dict = None
     Technical Analysis Agent
     Uses RSI, MACD, Bollinger Bands, Moving Averages
     """
-    from src.strategies.quantitative_strategies import TechnicalAnalysisStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import TechnicalAnalysisStrategy
 
     strategy = TechnicalAnalysisStrategy()
     signal = strategy.calculate(prices, fundamentals, market_data)
@@ -234,7 +234,7 @@ def factor_investor_agent(ticker: str, prices: List, fundamentals: Dict = None, 
     Factor Investing Agent
     Analyzes value, momentum, quality, volatility factors
     """
-    from src.strategies.quantitative_strategies import FactorInvestingStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import FactorInvestingStrategy
 
     strategy = FactorInvestingStrategy()
     signal = strategy.calculate(prices, fundamentals, market_data)
@@ -267,7 +267,7 @@ def earnings_momentum_agent(ticker: str, prices: List, fundamentals: Dict = None
     Earnings Momentum Agent
     Analyzes earnings acceleration and trends
     """
-    from src.strategies.quantitative_strategies import EarningsMomentumStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import EarningsMomentumStrategy
 
     strategy = EarningsMomentumStrategy()
     signal = strategy.calculate(prices, fundamentals, market_data)
@@ -297,7 +297,7 @@ def mean_reversion_agent(ticker: str, prices: List, fundamentals: Dict = None, m
     Mean Reversion Agent
     Identifies oversold/overbought conditions
     """
-    from src.strategies.quantitative_strategies import MeanReversionStrategy
+    from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import MeanReversionStrategy
 
     strategy = MeanReversionStrategy()
     signal = strategy.calculate(prices, fundamentals, market_data)

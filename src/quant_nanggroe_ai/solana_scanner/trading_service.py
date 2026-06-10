@@ -13,9 +13,9 @@ from solders.transaction import VersionedTransaction
 from solders.signature import Signature
 from solders.message import Message
 
-from config import SOLANA_RPC_URL, JUPITER_API_BASE_URL
-from services.wallet_service import wallet_service
-from utils.db import record_trade, save_limit_order, get_pending_limit_orders, update_limit_order_status
+from quant_nanggroe_ai.solana_scanner.config import SOLANA_RPC_URL, JUPITER_API_BASE_URL
+from quant_nanggroe_ai.solana_scanner.wallet_service import wallet_service
+from quant_nanggroe_ai.solana_scanner.db import record_trade, save_limit_order, get_pending_limit_orders, update_limit_order_status
 
 logger = logging.getLogger(__name__)
 
@@ -333,10 +333,12 @@ class TradingService:
                 if response.value and response.value[0]:
                     status = response.value[0]
                     if status.err:
-                        logger.error(f"Transaction failed: {status.err}")
+                        logger.error(f"Transaction failed for {signature}: {status.err}")
+                        # If it's a specific RPC error, log it for debugging
+                        if hasattr(status.err, '__dict__'):
+                            logger.error(f"Detailed RPC error: {status.err.__dict__}")
                         return False
-                    if status.confirmation_status in ['confirmed', 'finalized']:
-                        return True
+                    logger.info(f"Transaction confirmed: {signature} ({status.confirmation_status})")
             except Exception as e:
                 logger.debug(f"Error polling signature status: {e}")
 

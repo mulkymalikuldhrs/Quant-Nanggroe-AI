@@ -1,12 +1,13 @@
 # Contributing to Quant Nanggroe AI
 
-First of all, thank you for considering contributing to **Quant Nanggroe AI**! We appreciate the time and effort you are willing to invest in improving this project. This document provides a comprehensive set of guidelines for contributing to the repository. By participating in this project, you agree to abide by the terms outlined below.
+Terima kasih atas minat Anda untuk berkontribusi ke **Quant Nanggroe AI**! Dokumen ini menyediakan panduan komprehensif untuk berkontribusi ke monorepo ini.
 
 ---
 
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
+- [Monorepo Structure](#monorepo-structure)
 - [Getting Started](#getting-started)
 - [How to Contribute](#how-to-contribute)
 - [Development Setup](#development-setup)
@@ -21,38 +22,101 @@ First of all, thank you for considering contributing to **Quant Nanggroe AI**! W
 
 ## Code of Conduct
 
-This project is committed to providing a welcoming and respectful experience for everyone. We expect all contributors to:
+Kami berkomitmen untuk menyediakan pengalaman yang ramah dan hormat untuk semua kontributor. Harap:
 
-- Be respectful and constructive in all interactions
-- Focus on what is best for the community and the project
-- Show empathy toward other community members
-- Gracefully accept constructive criticism
-- Refrain from any form of harassment, discrimination, or personal attacks
+- Bersikap hormat dan konstruktif dalam semua interaksi
+- Fokus pada apa yang terbaik untuk komunitas dan proyek
+- Menunjukkan empati terhadap anggota komunitas lainnya
+- Menerima kritik konstruktif dengan anggun
+- Menahan diri dari segala bentuk pelecehan, diskriminasi, atau serangan pribadi
 
-Violations of these principles may result in removal from the project community.
+---
+
+## Monorepo Structure
+
+Quant Nanggroe AI adalah **monorepo** yang mengkonsolidasikan 25+ repositori ke dalam satu kodebase terpadu:
+
+```
+Quant-Nanggroe-AI/
+├── src/quant_nanggroe_ai/       # Python backend (21 packages)
+│   ├── agents/                  # 9-node LangGraph agent system
+│   ├── api/                     # FastAPI server + JWT auth
+│   ├── backtest/                # 9 backtest engines + NautilusTrader
+│   ├── data/                    # Database + Cache (PostgreSQL, Redis)
+│   ├── engine/                  # Deterministic engine layer
+│   ├── execution/               # 5 execution brokers
+│   ├── factors/                 # 456+ alpha factors
+│   ├── hedge_fund/              # AI Hedge Fund subsystem
+│   ├── integrations/            # WhatsApp bot + external integrations
+│   ├── memory/                  # Vector + conversation + research
+│   ├── ml_models/               # Kronos model + finetune
+│   ├── risk/                    # VaR, CVaR, drawdown, position sizing
+│   ├── solana_scanner/          # Solana on-chain scanner
+│   └── tools/                   # 22 engine tools
+├── components/                  # React 19 UI (25 components)
+├── services/                    # TypeScript services (33 files)
+├── tests/                       # 30+ test files (175+ tests)
+├── alembic/                     # Database migrations
+├── docs/                        # Documentation
+├── repos/                       # 59 cloned source repos (reference only)
+└── scripts/                     # Dev setup scripts
+```
+
+### Key Packages
+
+| Package | Fungsi | Status |
+|---------|--------|--------|
+| `agents/` | LangGraph agent system, 9 nodes, MCP/A2A | ✅ Production |
+| `api/` | FastAPI + JWT auth, 6 routers | ✅ Production |
+| `backtest/` | 9 engines, 4 optimizers, 8 loaders | ✅ Production |
+| `engine/` | Deterministic engine (no AI) | ✅ Production |
+| `execution/` | 5 brokers (paper, alpaca, jupiter, polymarket, kalshi) | ✅ Production |
+| `factors/` | 456+ alpha factors | ✅ Production |
+| `risk/` | VaR, CVaR, drawdown, sizing | ✅ Production |
+| `hedge_fund/` | AI hedge fund agents | ⚠️ Partial |
+| `integrations/` | WhatsApp + Trading Plan | ✅ New |
+| `solana_scanner/` | Solana scanner | ⚠️ Partial |
 
 ---
 
 ## Getting Started
 
-1. **Fork** the repository on GitHub: [https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
-2. **Clone** your fork locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/Quant-Nanggroe-AI.git
-   cd Quant-Nanggroe-AI
-   ```
-3. **Add the upstream remote** to keep your fork in sync:
-   ```bash
-   git remote add upstream https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI.git
-   ```
-4. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-5. **Start the development server** to verify everything works:
-   ```bash
-   npm run dev
-   ```
+### 1. Fork dan Clone
+
+```bash
+git clone https://github.com/YOUR_USERNAME/Quant-Nanggroe-AI.git
+cd Quant-Nanggroe-AI
+git checkout Julecl1
+```
+
+### 2. Add Upstream
+
+```bash
+git remote add upstream https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI.git
+```
+
+### 3. Install Dependencies
+
+```bash
+# Python backend
+poetry install
+
+# Node.js frontend
+npm install
+```
+
+### 4. Verify Setup
+
+```bash
+# Run tests
+poetry run pytest
+
+# Check import integrity
+PYTHONPATH=src python -c "import quant_nanggroe_ai; print('OK')"
+
+# Start dev server
+poetry run uvicorn quant_nanggroe_ai.main:app --reload
+```
 
 ---
 
@@ -60,30 +124,26 @@ Violations of these principles may result in removal from the project community.
 
 ### Bug Fixes and Feature Development
 
-1. **Check existing issues** to avoid duplicating work. If an issue does not exist, create one first.
-2. **Create a feature branch** from `main`:
+1. **Check existing issues** untuk menghindari duplikasi
+2. **Create a feature branch** dari `Julecl1`:
    ```bash
-   git checkout main
-   git pull upstream main
+   git checkout Julecl1
+   git pull upstream Julecl1
    git checkout -b feature/your-feature-name
    ```
-   Use descriptive branch names:
-   - `feature/add-ichimoku-indicator` for new features
-   - `fix/backtest-slippage-calculation` for bug fixes
-   - `docs/update-api-reference` for documentation changes
-   - `refactor/pressure-engine-weights` for code refactoring
-3. **Make your changes** following the coding standards below.
-4. **Test your changes** thoroughly before submitting.
-5. **Commit** with clear, descriptive messages.
-6. **Push** to your fork:
+3. **Gunakan descriptive branch names:**
+   - `feature/add-kalshi-broker` untuk fitur baru
+   - `fix/backtest-slippage-calculation` untuk bug fix
+   - `docs/update-api-reference` untuk dokumentasi
+   - `refactor/pressure-engine-weights` untuk refactoring
+4. **Make your changes** mengikuti coding standards
+5. **Test your changes** sebelum submit
+6. **Commit** dengan pesan yang jelas
+7. **Push** ke fork Anda:
    ```bash
    git push origin feature/your-feature-name
    ```
-7. **Open a Pull Request** against the `main` branch of the upstream repository.
-
-### Documentation Improvements
-
-Documentation is just as important as code. If you find a typo, unclear explanation, or missing documentation, please submit a fix. Documentation contributions follow the same PR process as code contributions.
+8. **Open a Pull Request** terhadap `Julecl1` branch
 
 ---
 
@@ -91,65 +151,119 @@ Documentation is just as important as code. If you find a typo, unclear explanat
 
 ### Prerequisites
 
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0 (or yarn/pnpm)
-- A modern code editor with TypeScript support (VS Code recommended)
-
-### Optional API Keys (for full functionality)
-
-- **Google Gemini API Key** — Required for LLM-powered agent swarm intelligence
-- **Finnhub API Key** — For real-time market data feeds
-- **AlphaVantage API Key** — For stock and forex technical indicators
+| Stack | Requirement |
+|-------|-------------|
+| **Python Backend** | Python >= 3.12, Poetry >= 1.8 |
+| **Node.js Frontend** | Node.js >= 18.0.0, npm >= 9.0.0 |
+| **Database** | PostgreSQL 16+, Redis 7+ |
+| **Optional** | QuestDB (time-series), Docker |
 
 ### Build Commands
 
 | Command | Description |
-|---|---|
-| `npm run dev` | Start the development server with hot module replacement |
-| `npm run build` | Create an optimized production build |
-| `npm run preview` | Preview the production build locally |
-| `npx tsc --noEmit` | Run TypeScript type checking without emitting files |
+|---------|-------------|
+| `poetry install` | Install Python dependencies |
+| `poetry run pytest` | Run all tests |
+| `poetry run pytest --cov` | Run tests with coverage |
+| `poetry run uvicorn quant_nanggroe_ai.main:app --reload` | Start FastAPI dev server |
+| `npm run dev` | Start frontend dev server |
+| `npm run build` | Build frontend for production |
+| `docker-compose up -d` | Start all services |
+| `poetry run alembic upgrade head` | Run database migrations |
+| `poetry run ruff check src/` | Lint Python code |
+| `poetry run mypy src/` | Type check Python code |
+
+### Environment Variables
+
+Copy `.env.example` ke `.env` dan isi:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `REDIS_URL` | Yes | Redis connection string |
+| `ALPACA_API_KEY` | No | Alpaca broker |
+| `SOLANA_PRIVATE_KEY` | No | Jupiter/Solana broker |
+| `POLYMARKET_API_KEY` | No | Polymarket broker |
+| `KALSHI_API_KEY` | No | Kalshi broker |
 
 ---
 
 ## Coding Standards
 
-### TypeScript
+### Python
 
-- All code must pass strict type checking (`strict: true` in `tsconfig.json`)
-- Avoid the use of `any` type. Use `unknown` if the type is truly unknown and narrow it with type guards
-- Use explicit return types for public functions and methods
-- Prefer `interface` for object shapes and `type` for unions, intersections, and mapped types
-- Use `readonly` modifiers for immutable data structures, especially in financial calculations
+- **Python 3.12+** dengan type annotations lengkap
+- **Ruff** untuk formatting dan linting (line length: 100)
+- **Pydantic v2** untuk semua data models dan settings
+- **async/await** untuk semua I/O-bound operations
+- **No `Any` type** — gunakan proper types atau `object`
+- **Structured logging** via `structlog`
+
+### Import Rules (KRITIS)
+
+> **ATURAN PENTING:** Semua import harus menggunakan package path `quant_nanggroe_ai.*`, BUKAN `src.*`
+
+```python
+# ✅ CORRECT
+from quant_nanggroe_ai.engine.risk_guard import ConstitutionalRiskGuard
+from quant_nanggroe_ai.agents.tools.market_data import MarketDataTool
+
+# ❌ WRONG (will break at runtime)
+from src.engine.risk_guard import ConstitutionalRiskGuard
+from src.agents.tools.market_data import MarketDataTool
+```
+
+### Module Organization
+
+```
+src/quant_nanggroe_ai/
+├── engine/     # Deterministic — no AI, no external calls
+├── agents/     # AI agents — LangGraph / CrewAI / PydanticAI / DSPy
+├── data/       # Data connectors and models
+├── risk/       # Risk calculations (VaR, CVaR, etc.)
+├── execution/  # Order execution brokers
+├── backtest/   # Backtesting engine
+├── factors/    # Alpha factors
+├── memory/     # Knowledge and memory
+├── api/        # FastAPI endpoints
+└── integrations/ # External integrations
+```
+
+### Engine Layer Rules (NON-NEGOTIABLE)
+
+- **NO** external API calls
+- **NO** LLM/AI inference
+- **NO** randomness (use deterministic seeds jika diperlukan)
+- **ALL** functions must be independently testable
+- Return typed dicts atau Pydantic models, **NEVER** raw JSON strings
+
+### Agent Layer Rules
+
+- Gunakan LangGraph untuk state machines
+- Setiap agent adalah node dalam graph
+- Agent berkomunikasi melalui shared `AgentState`
+- Risk Manager memiliki **VETO** authority
+- Portfolio Manager adalah **final gate**
 
 ### React Components
 
-- Use functional components with hooks (no class components)
-- Follow the existing component naming convention: `PascalCase` for components, `camelCase` for utilities
-- Each component should reside in its own file under `components/`
-- All UI components must support both light and dark themes via the existing theme system
-- Use the `WindowFrame` wrapper for any new window components to maintain the desktop OS experience
+- Functional components with hooks (no class components)
+- PascalCase untuk components, camelCase untuk utilities
+- Setiap component dalam file sendiri di `components/`
+- Semua UI components harus mendukung light dan dark themes
+- Gunakan `WindowFrame` wrapper untuk window components baru
 
-### Services and Engines
+### TypeScript Services
 
-- Follow the existing service architecture pattern in `services/`
-- Every new service must integrate with the `AuditLogger` for full traceability
-- All financial calculations must be deterministic, testable, and free of floating-point precision issues where possible
-- Sensor agents (Layer 2) must produce structured output types, never subjective analysis
-- Any new data provider must be integrated through the `AutoSwitch` engine for failover support
-
-### File Organization
-
-- Keep components in `components/` and business logic in `services/`
-- Type definitions shared across the project belong in `types.ts`
-- Each service should have a single responsibility and a clear public API
-- Documentation for services goes in `docs/`
+- Follow existing service architecture pattern di `services/`
+- Setiap service harus integrate dengan audit logging
+- Gunakan typed interfaces untuk semua data structures
 
 ---
 
 ## Commit Guidelines
 
-We follow a structured commit message format to maintain a clean and readable git history:
+Kami mengikuti format Conventional Commits:
 
 ```
 type(scope): description
@@ -162,57 +276,66 @@ type(scope): description
 ### Types
 
 | Type | Description |
-|---|---|
-| `feat` | A new feature |
-| `fix` | A bug fix |
-| `docs` | Documentation changes |
-| `style` | Code style changes (formatting, no logic change) |
-| `refactor` | Code refactoring (no feature or fix) |
-| `test` | Adding or updating tests |
-| `chore` | Build process, dependencies, or tooling changes |
+|------|-------------|
+| `feat` | Fitur baru |
+| `fix` | Bug fix |
+| `docs` | Perubahan dokumentasi |
+| `style` | Perubahan format (tanpa logic change) |
+| `refactor` | Refactoring (tanpa fitur atau fix) |
+| `test` | Menambah atau update test |
+| `chore` | Build, dependencies, atau tooling |
 
 ### Scopes
 
-Common scopes include: `engine`, `agent`, `ui`, `market`, `risk`, `backtest`, `audit`, `config`
+Common scopes: `engine`, `agents`, `api`, `execution`, `factors`, `backtest`, `risk`, `memory`, `ui`, `market`, `solana`, `integrations`, `docs`
 
 ### Examples
 
 ```
-feat(agent): add Ichimoku Cloud indicator to MathEngine
-fix(backtest): correct slippage calculation for high-volatility regimes
-docs(api): update MarketService API reference with new endpoints
-refactor(pressure): simplify weight calculation in PressureNormalizationEngine
+feat(execution): add Kalshi broker with RSA-PSS authentication
+fix(factors): correct alpha020 missing low parameter
+docs(api): update FastAPI route documentation
+refactor(agents): simplify LangGraph conditional routing
+test(risk): add Monte Carlo VaR test cases
+chore(deps): add cryptography>=41.0.0 for Kalshi broker
 ```
 
 ---
 
 ## Pull Request Process
 
-1. **Ensure your branch is up to date** with `main`:
+1. **Ensure branch is up to date** dengan `Julecl1`:
    ```bash
    git fetch upstream
-   git rebase upstream/main
+   git rebase upstream/Julecl1
    ```
-2. **Verify your changes** pass TypeScript type checking:
+2. **Verify changes:**
    ```bash
-   npx tsc --noEmit
+   # Python type check
+   poetry run mypy src/
+   # Python lint
+   poetry run ruff check src/
+   # Run tests
+   poetry run pytest
+   # Import verification
+   PYTHONPATH=src python -c "import quant_nanggroe_ai"
    ```
-3. **Write a clear PR description** that includes:
-   - What changes were made and why
-   - Which issue(s) the PR addresses (if applicable)
-   - Any breaking changes or migration steps
-   - Screenshots or recordings for UI changes
-4. **Keep PRs focused** — one feature or fix per PR. Large, multi-feature PRs are harder to review and may be asked to be split.
-5. **Respond to code review feedback** promptly and constructively.
-6. **Do not force-push** to your PR branch after review has started, unless specifically requested.
+3. **Write a clear PR description** yang mencakup:
+   - Perubahan apa dan mengapa
+   - Issue yang di-address (jika ada)
+   - Breaking changes atau migration steps
+   - Screenshots untuk UI changes
+4. **Keep PRs focused** — satu fitur atau fix per PR
+5. **Respond to review feedback** dengan segera dan konstruktif
+6. **Do not force-push** setelah review dimulai
 
 ### PR Review Criteria
 
-A PR will be merged when it:
-- Passes TypeScript strict type checking
-- Follows the coding standards outlined in this document
-- Includes appropriate audit logging for new services
-- Does not introduce regressions in existing functionality
+PR akan di-merge ketika:
+- Passes Python type checking dan linting
+- Passes semua existing tests
+- Follows coding standards di dokumen ini
+- Includes appropriate test coverage untuk kode baru
 - Has clear, descriptive commit messages
 - Is approved by at least one maintainer
 
@@ -220,71 +343,64 @@ A PR will be merged when it:
 
 ## Reporting Issues
 
-When reporting bugs or requesting features, please use the GitHub Issues page and include:
-
 ### Bug Reports
 
-- **Summary**: A clear, concise description of the bug
-- **Steps to Reproduce**: Numbered steps that reliably trigger the issue
-- **Expected Behavior**: What you expected to happen
-- **Actual Behavior**: What actually happened
-- **Environment**: Browser, Node.js version, OS
-- **Screenshots/Logs**: If applicable, attach screenshots or console output
+- **Summary**: Deskripsi jelas dan ringkas
+- **Steps to Reproduce**: Langkah-langkah yang reliably trigger issue
+- **Expected Behavior**: Apa yang diharapkan
+- **Actual Behavior**: Apa yang sebenarnya terjadi
+- **Environment**: Python version, OS, database
+- **Logs/Screenshots**: Jika berlaku
 
 ### Feature Requests
 
-- **Problem Statement**: What problem does this feature solve?
-- **Proposed Solution**: How should the feature work?
-- **Alternatives Considered**: What other approaches have you considered?
-- **Additional Context**: Any relevant links, references, or mockups
+- **Problem Statement**: Masalah apa yang dipecahkan fitur ini?
+- **Proposed Solution**: Bagaimana fitur ini seharusnya bekerja?
+- **Alternatives Considered**: Pendekatan lain yang dipertimbangkan
+- **Additional Context**: Link, referensi, atau mockups
 
 ---
 
 ## Areas of Contribution
 
-We are actively seeking contributions in the following areas:
+### 🔴 High Priority
 
-### High Priority
+- **Test Coverage** — Unit tests, integration tests untuk execution brokers, hedge_fund, memory, solana_scanner
+- **Frontend-Backend Integration** — TypeScript API client untuk FastAPI backend
+- **Authentication Wiring** — Connect JWT middleware ke semua API routes
 
-- **Testing** — Unit tests, integration tests, and end-to-end testing for all engines and services. The project currently lacks comprehensive test coverage, and this is our most critical need.
-- **Indicators** — Additional technical indicators for the MathEngine, including Ichimoku Cloud, Fibonacci retracements and extensions, Elliott Wave pattern detection, and Volume-Weighted Average Price (VWAP) improvements.
+### 🟠 Medium Priority
 
-### Medium Priority
+- **fincept_terminal Stubs** — Implement atau remove ~50 NotImplementedError stubs
+- **CI Pipeline** — GitHub Actions config untuk automated testing dan deployment
+- **Rate Limiting** — API rate limiting middleware
+- **Data Providers** — Yahoo Finance, CoinGecko, TradingView WebSocket integrations
 
-- **Data Providers** — New API integrations to expand market data coverage, including Yahoo Finance, CoinGecko, TradingView WebSocket feeds, and other institutional data sources.
-- **UI/UX** — Component improvements, accessibility enhancements (ARIA compliance), mobile responsiveness, and new visualization components for agent activity and market data.
+### 🟡 Ongoing Needs
 
-### Ongoing Needs
-
-- **Documentation** — API documentation, step-by-step tutorials, architecture deep-dives, and example configurations for common trading scenarios.
-- **Internationalization** — Translations of the UI and documentation into additional languages. We currently support English, Bahasa Indonesia, and Chinese, and welcome contributions in any language.
-- **Cloud Deployment** — Docker containerization, Kubernetes orchestration, CI/CD pipeline configuration, and cloud-native deployment guides.
+- **Documentation** — API docs, tutorials, architecture deep-dives
+- **Internationalization** — UI dan docs translations (saat ini EN, ID, CN)
+- **Monitoring** — Prometheus metrics, OpenTelemetry tracing
+- **New Factors** — Additional alpha factors untuk factor library
+- **New Brokers** — Interactive Brokers, Binance, OKX direct integrations
 
 ---
 
 ## License
 
-By contributing to Quant Nanggroe AI, you agree that your contributions will be licensed under the **MIT License**, the same license that covers the project. This means that your code will be freely available for others to use, modify, and distribute under the terms of the MIT License.
+Dengan berkontribusi ke Quant Nanggroe AI, Anda menyetujui bahwa kontribusi Anda akan dilisensikan di bawah **MIT License**.
 
 ---
 
 ## Contact
-
-For questions, suggestions, or collaboration inquiries:
 
 - **Owner**: Mulky Malikul Dhaher
 - **Email**: [mulkymalikuldhaher@email.com](mailto:mulkymalikuldhaher@email.com)
 - **GitHub**: [https://github.com/mulkymalikuldhrs](https://github.com/mulkymalikuldhrs)
 - **Repository**: [https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
 
-> Part of the [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) Unified Project.
+> Bagian dari [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) Unified Project.
 
 ---
 
-Thank you for contributing to Quant Nanggroe AI. Your efforts help build a more transparent, deterministic, and intelligent future for quantitative trading.
-
----
-
-> ⚠️ **For Education Purpose Only** — This project is provided strictly for educational and research purposes. The authors and contributors assume **no responsibility or liability** for any damages, losses, or risks arising from the use of this software. **We do not bear any responsibility or risk** for how this software is used.
-
-**Contact:** Mulky Malikul Dhaher | mulkymalikuldhaher@email.com
+> ⚠️ **For Education Purpose Only** — Proyek ini disediakan secara ketat untuk tujuan pendidikan dan penelitian. Penulis dan kontributor tidak menanggung tanggung jawab atas kerugian atau risiko yang timbul dari penggunaan perangkat lunak ini.

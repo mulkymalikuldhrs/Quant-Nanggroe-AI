@@ -488,17 +488,20 @@ class AlternativeInvestmentBase(ABC):
     @abstractmethod
     def calculate_nav(self) -> Decimal:
         """Calculate Net Asset Value - must be implemented by subclasses"""
-        pass
+        logger.debug("Stub: calculate_nav returning 0.0")
+        return 0.0
 
     @abstractmethod
     def calculate_key_metrics(self) -> Dict[str, Any]:
         """Calculate key performance metrics - must be implemented by subclasses"""
-        pass
+        logger.debug("Stub: calculate_nav returning 0.0")
+        return 0.0
 
     @abstractmethod
     def valuation_summary(self) -> Dict[str, Any]:
         """Provide valuation summary - must be implemented by subclasses"""
-        pass
+        logger.debug("Stub: calculate_nav returning 0.0")
+        return 0.0
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get comprehensive performance summary"""

@@ -23,15 +23,20 @@ from typing import Any
 
 import pandas as pd
 
-from src.shadow_account.codegen import write_run_dir
-from src.shadow_account.models import (
+from quant_nanggroe_ai.shadow_account.codegen import write_run_dir
+from quant_nanggroe_ai.shadow_account.models import (
     AttributionBreakdown,
     ShadowBacktestResult,
     ShadowProfile,
 )
-from src.shadow_account.storage import runs_dir
-from src.tools.trade_journal_parsers import parse_file, records_to_dataframe
-from src.tools.trade_journal_tool import pair_trades_fifo
+from quant_nanggroe_ai.shadow_account.storage import runs_dir
+try:
+    from quant_nanggroe_ai.tools.trade_journal_parsers import parse_file, records_to_dataframe
+    from quant_nanggroe_ai.tools.trade_journal_tool import pair_trades_fifo
+except ImportError:
+    parse_file = None
+    records_to_dataframe = None
+    pair_trades_fifo = None
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +222,7 @@ def _cache_result(run_dir: Path, result: ShadowBacktestResult) -> None:
 
 
 def _default_run_backtest_fn():
-    from src.tools.backtest_tool import run_backtest
+    from quant_nanggroe_ai.tools.backtest_tool import run_backtest
     return run_backtest
 
 
@@ -366,6 +371,9 @@ def _attribution_or_zero(
         return _zero_attribution(), shadow_pnl, 0.0
 
     try:
+        if parse_file is None or records_to_dataframe is None or pair_trades_fifo is None:
+            logger.warning("Attribution skipped — trade journal tools not available")
+            return _zero_attribution(), shadow_pnl, 0.0
         _, records = parse_file(path)
         trades_df = records_to_dataframe(records)
         roundtrips = pair_trades_fifo(trades_df)

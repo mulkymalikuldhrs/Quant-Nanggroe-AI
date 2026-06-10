@@ -522,7 +522,7 @@ def run_options_backtest(
     pd.DataFrame(greeks_records).to_csv(out / "greeks.csv", index=False)
     pd.DataFrame([metrics]).to_csv(out / "metrics.csv", index=False)
 
-    from backtest.run_card import write_run_card
+    from quant_nanggroe_ai.backtest.run_card import write_run_card
     write_run_card(
         run_dir,
         config,

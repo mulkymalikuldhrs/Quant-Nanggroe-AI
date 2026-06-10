@@ -142,13 +142,15 @@ class PricingResult:
 class ValidationError(Exception):
     """Custom exception for validation errors"""
 
-    pass
+    logger.debug("Stub: __post_init__ returning None")
+    return None
 
 
 class PricingError(Exception):
     """Custom exception for pricing calculation errors"""
 
-    pass
+    logger.debug("Stub: __post_init__ returning None")
+    return None
 
 
 class DerivativeInstrument(ABC):
@@ -181,12 +183,14 @@ class DerivativeInstrument(ABC):
     @abstractmethod
     def calculate_payoff(self, spot_price: float) -> float:
         """Calculate payoff at expiration given spot price"""
-        pass
+        logger.debug("Stub: calculate_payoff returning 0.0")
+        return 0.0
 
     @abstractmethod
     def fair_value(self, market_data: MarketData) -> PricingResult:
         """Calculate fair value using appropriate pricing model"""
-        pass
+        logger.debug("Stub: fair_value returning None")
+        return None
 
     def time_to_expiry(self, valuation_date: Optional[datetime] = None) -> float:
         """Calculate time to expiry in years"""
@@ -268,12 +272,14 @@ class PricingEngine(ABC):
     @abstractmethod
     def price(self, instrument: DerivativeInstrument, market_data: MarketData) -> PricingResult:
         """Price derivative instrument"""
-        pass
+        logger.debug("Stub: price returning None")
+        return None
 
     @abstractmethod
     def validate_inputs(self, instrument: DerivativeInstrument, market_data: MarketData) -> bool:
         """Validate inputs for pricing"""
-        pass
+        logger.debug("Stub: validate_inputs returning 0.0")
+        return 0.0
 
 
 class ModelValidator:

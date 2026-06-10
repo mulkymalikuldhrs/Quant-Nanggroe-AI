@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.agents.base_agent import BaseAgent, PlanExecutionResult, StepResult
+from quant_nanggroe_ai.hedge_fund.agents.base_agent import BaseAgent, PlanExecutionResult, StepResult
 
 logger = logging.getLogger(__name__)
 

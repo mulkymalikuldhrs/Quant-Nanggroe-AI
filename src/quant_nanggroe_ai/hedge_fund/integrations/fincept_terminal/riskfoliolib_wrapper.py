@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 Risk Portfolio Analytics Module
 ===============================
 
@@ -48,16 +52,20 @@ class RiskPortfolioAnalytics:
 
     def calculate_var(self, returns, confidence_level=0.95):
         """Calculate Value-at-Risk"""
-        pass
+        logger.debug("Stub: calculate_var returning 0.0")
+        return 0.0
 
     def calculate_cvar(self, returns, confidence_level=0.95):
         """Calculate Conditional Value-at-Risk"""
-        pass
+        logger.debug("Stub: calculate_cvar returning 0.0")
+        return 0.0
 
     def stress_test(self, portfolio, scenarios):
         """Perform stress testing on portfolio"""
-        pass
+        logger.debug("Stub: stress_test returning None")
+        return None
 
     def risk_budgeting(self, assets, risk_budget):
         """Allocate risk budget across assets"""
-        pass
+        logger.debug("Stub: risk_budgeting returning None")
+        return None

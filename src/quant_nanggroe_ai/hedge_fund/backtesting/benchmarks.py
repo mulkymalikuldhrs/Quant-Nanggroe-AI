@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from src.tools.api import get_price_data
+from quant_nanggroe_ai.hedge_fund.tools.api import get_price_data
 
 
 class BenchmarkCalculator:

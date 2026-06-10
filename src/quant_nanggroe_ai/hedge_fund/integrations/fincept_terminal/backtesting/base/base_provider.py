@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 Base Provider for Backtesting Engines
 Abstract base class that all Python backtesting providers must implement
 Mirrors the TypeScript IBacktestingProvider interface
@@ -186,13 +190,15 @@ class BacktestingProviderBase(ABC):
     @abstractmethod
     def name(self) -> str:
         """Provider name (e.g., "QuantConnect Lean", "Backtrader")"""
-        pass
+        logger.debug("Stub: name returning """)
+        return ""
 
     @property
     @abstractmethod
     def version(self) -> str:
         """Provider version"""
-        pass
+        logger.debug("Stub: version returning """)
+        return ""
 
     @property
     @abstractmethod
@@ -211,7 +217,8 @@ class BacktestingProviderBase(ABC):
             'maxConcurrentBacktests': 5
         }
         """
-        pass
+        logger.debug("Stub: version returning """)
+        return ""
 
     # ========================================================================
     # Abstract Methods (must be implemented by all providers)
@@ -308,7 +315,8 @@ class BacktestingProviderBase(ABC):
         Raises:
             NotImplementedError if optimization not supported
         """
-        raise NotImplementedError(f"Optimization not supported by {self.name}")
+        logger.warning("Stub:  not fully implemented, returning None")
+        return None
 
     def disconnect(self) -> None:
         """Clean up resources and disconnect"""

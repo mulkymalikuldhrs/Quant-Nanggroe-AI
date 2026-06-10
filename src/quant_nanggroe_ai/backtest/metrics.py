@@ -526,6 +526,136 @@ class BacktestMetrics:
 # ======================================================================
 
 
+def by_symbol_stats(trades: list[Any]) -> dict[str, dict[str, Any]]:
+    """Compute per-symbol performance summary from a list of TradeRecord objects.
+
+    Args:
+        trades: List of TradeRecord (or dict-like) objects.
+
+    Returns:
+        Dict mapping symbol -> {count, win_rate, total_pnl, avg_pnl}.
+    """
+    from collections import defaultdict
+
+    buckets: dict[str, list[float]] = defaultdict(list)
+    for t in trades:
+        symbol = getattr(t, "symbol", t.get("symbol", "UNKNOWN") if isinstance(t, dict) else "UNKNOWN")
+        pnl = getattr(t, "pnl", t.get("pnl", 0.0) if isinstance(t, dict) else 0.0)
+        buckets[symbol].append(float(pnl))
+
+    result: dict[str, dict[str, Any]] = {}
+    for sym, pnls in sorted(buckets.items()):
+        wins = sum(1 for p in pnls if p > 0)
+        result[sym] = {
+            "count": len(pnls),
+            "win_rate": round(wins / len(pnls), 4) if pnls else 0.0,
+            "total_pnl": round(sum(pnls), 4),
+            "avg_pnl": round(float(np.mean(pnls)), 4) if pnls else 0.0,
+        }
+    return result
+
+
+def by_exit_reason_stats(trades: list[Any]) -> dict[str, dict[str, Any]]:
+    """Compute performance summary grouped by exit reason.
+
+    Args:
+        trades: List of TradeRecord (or dict-like) objects.
+
+    Returns:
+        Dict mapping exit_reason -> {count, win_rate, total_pnl, avg_pnl}.
+    """
+    from collections import defaultdict
+
+    buckets: dict[str, list[float]] = defaultdict(list)
+    for t in trades:
+        reason = getattr(t, "exit_reason", t.get("exit_reason", "unknown") if isinstance(t, dict) else "unknown")
+        pnl = getattr(t, "pnl", t.get("pnl", 0.0) if isinstance(t, dict) else 0.0)
+        buckets[reason].append(float(pnl))
+
+    result: dict[str, dict[str, Any]] = {}
+    for reason, pnls in sorted(buckets.items()):
+        wins = sum(1 for p in pnls if p > 0)
+        result[reason] = {
+            "count": len(pnls),
+            "win_rate": round(wins / len(pnls), 4) if pnls else 0.0,
+            "total_pnl": round(sum(pnls), 4),
+            "avg_pnl": round(float(np.mean(pnls)), 4) if pnls else 0.0,
+        }
+    return result
+
+
+def calc_metrics(
+    equity_series: Any,
+    trades: list[Any],
+    initial_capital: float = 1_000_000,
+    bars_per_year: int = 252,
+    bench_ret: Any = None,
+) -> dict[str, Any]:
+    """Calculate comprehensive backtest metrics from equity curve and trades.
+
+    This is the primary metrics function used by the advanced engine framework
+    (backtest.engines.base.BaseEngine). It accepts a pandas Series equity curve
+    and a list of TradeRecord objects.
+
+    Args:
+        equity_series: pd.Series of equity values indexed by timestamp.
+        trades: List of TradeRecord objects.
+        initial_capital: Starting capital.
+        bars_per_year: Bars per year for annualization (252 for daily).
+        bench_ret: Optional pd.Series of benchmark returns.
+
+    Returns:
+        Dict with all standard backtest metrics.
+    """
+    import pandas as pd
+
+    calc = BacktestMetrics()
+
+    if equity_series is None or len(equity_series) < 2:
+        return {"total_return": 0.0, "sharpe_ratio": 0.0, "max_drawdown_pct": 0.0}
+
+    # Compute returns from equity series
+    returns = equity_series.pct_change().dropna().values.tolist()
+
+    # Core metrics
+    result = calc.calculate_all(
+        returns=returns,
+        equity_curve=equity_series.tolist(),
+        trades=None,  # We'll add trade metrics separately
+        periods_per_year=bars_per_year,
+    )
+
+    # Total return from equity curve
+    total_return = (float(equity_series.iloc[-1]) / initial_capital - 1.0) if initial_capital > 0 else 0.0
+    result["total_return"] = round(total_return, 6)
+    result["initial_capital"] = initial_capital
+    result["final_equity"] = round(float(equity_series.iloc[-1]), 4)
+
+    # Trade-based metrics
+    if trades:
+        pnls = []
+        for t in trades:
+            pnl = getattr(t, "pnl", t.get("pnl", 0.0) if isinstance(t, dict) else 0.0)
+            pnls.append(float(pnl))
+        result["total_trades"] = len(pnls)
+        result["win_rate"] = calc.win_rate(trades)
+        result["profit_factor"] = calc.profit_factor(trades)
+        if pnls:
+            result["avg_trade_pnl"] = round(float(np.mean(pnls)), 4)
+            result["total_pnl"] = round(sum(pnls), 4)
+    else:
+        result["total_trades"] = 0
+
+    # Benchmark comparison
+    if bench_ret is not None and len(bench_ret) > 1:
+        bench_returns = bench_ret.pct_change().dropna().values.tolist() if hasattr(bench_ret, "pct_change") else list(bench_ret)
+        bench_metrics = calc.calculate_all(returns=bench_returns, periods_per_year=bars_per_year)
+        result["benchmark_sharpe"] = bench_metrics.get("sharpe_ratio", 0.0)
+        result["benchmark_total_return"] = bench_metrics.get("total_return", 0.0)
+
+    return result
+
+
 def calculate_metrics(
     returns: list[float] | np.ndarray,
     benchmark: list[float] | np.ndarray | None = None,

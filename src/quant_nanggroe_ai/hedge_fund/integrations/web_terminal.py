@@ -24,10 +24,10 @@ except ImportError:
     Table = None
     Panel = None
 
-from src.integrations.analysis_display import analysis_display
-from src.integrations.retail_strategies import retail_strategies
-from src.integrations.quant_strategies_analysis import quant_strategies_analysis
-from src.integrations.metatrader_bridge import mt4_bridge, mt5_bridge
+from quant_nanggroe_ai.hedge_fund.integrations.analysis_display import analysis_display
+from quant_nanggroe_ai.hedge_fund.integrations.retail_strategies import retail_strategies
+from quant_nanggroe_ai.hedge_fund.integrations.quant_strategies_analysis import quant_strategies_analysis
+from quant_nanggroe_ai.hedge_fund.integrations.metatrader_bridge import mt4_bridge, mt5_bridge
 
 class WebTerminal:
     """MetaTrader-style web terminal interface"""

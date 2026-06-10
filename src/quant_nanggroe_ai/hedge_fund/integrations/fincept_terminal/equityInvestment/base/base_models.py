@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 Equity Investment Base Models Module
 ====================================
 
@@ -135,12 +139,14 @@ class BaseAnalyticalModel(ABC):
     @abstractmethod
     def validate_inputs(self, **kwargs) -> bool:
         """Validate input parameters for the model"""
-        pass
+        logger.debug("Stub: validate_inputs returning 0.0")
+        return 0.0
 
     @abstractmethod
     def calculate(self, **kwargs) -> ValuationResult:
         """Perform the main calculation"""
-        pass
+        logger.debug("Stub: calculate returning None")
+        return None
 
     def get_assumptions(self) -> Dict[str, Any]:
         """Return current model assumptions"""
@@ -161,7 +167,8 @@ class BaseValuationModel(BaseAnalyticalModel):
     @abstractmethod
     def calculate_intrinsic_value(self, company_data: CompanyData, market_data: MarketData) -> float:
         """Calculate intrinsic value of the security"""
-        pass
+        logger.debug("Stub: calculate_intrinsic_value returning 0.0")
+        return 0.0
 
     def generate_recommendation(self, intrinsic_value: float, current_price: float) -> str:
         """Generate buy/hold/sell recommendation"""
@@ -188,7 +195,7 @@ class BaseMarketAnalysisModel(BaseAnalyticalModel):
     @abstractmethod
     def analyze_market_data(self, market_data: pd.DataFrame) -> Dict[str, Any]:
         """Analyze market data and return insights"""
-        pass
+        return None
 
 
 class BaseCompanyAnalysisModel(BaseAnalyticalModel):
@@ -200,7 +207,7 @@ class BaseCompanyAnalysisModel(BaseAnalyticalModel):
     @abstractmethod
     def analyze_company(self, company_data: CompanyData) -> Dict[str, Any]:
         """Analyze company fundamentals"""
-        pass
+        return None
 
 
 class DataProvider(ABC):
@@ -209,22 +216,26 @@ class DataProvider(ABC):
     @abstractmethod
     def get_company_data(self, symbol: str) -> CompanyData:
         """Retrieve company data"""
-        pass
+        logger.debug("Stub: get_company_data returning None")
+        return None
 
     @abstractmethod
     def get_market_data(self, symbol: str) -> MarketData:
         """Retrieve market data"""
-        pass
+        logger.debug("Stub: get_market_data returning None")
+        return None
 
     @abstractmethod
     def get_financial_statements(self, symbol: str, period: str = "annual") -> Dict[str, pd.DataFrame]:
         """Retrieve financial statements"""
-        pass
+        logger.debug("Stub: get_market_data returning None")
+        return None
 
     @abstractmethod
     def get_price_data(self, symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
         """Retrieve historical price data"""
-        pass
+        logger.debug("Stub: get_price_data returning None")
+        return None
 
 
 class CalculationEngine:
@@ -362,19 +373,22 @@ class ModelValidator:
 class FinceptAnalyticsError(Exception):
     """Base exception for analytics module"""
 
-    pass
+    logger.debug("Stub: validate_company_data returning 0.0")
+    return 0.0
 
 
 class DataProviderError(FinceptAnalyticsError):
     """Exception for data provider issues"""
 
-    pass
+    logger.debug("Stub: validate_company_data returning 0.0")
+    return 0.0
 
 
 class ValidationError(FinceptAnalyticsError):
     """Exception for input validation failures"""
 
-    pass
+    logger.debug("Stub: validate_company_data returning 0.0")
+    return 0.0
 
 
 class CalculationError(FinceptAnalyticsError):

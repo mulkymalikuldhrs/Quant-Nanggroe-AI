@@ -114,9 +114,29 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # ── Include Routers ─────────────────────────────────────────────
-    from quant_nanggroe_ai.api.routes import market, trading, agents, backtest, portfolio, ws
+    # ── Auth Middleware ─────────────────────────────────────────────
+    from quant_nanggroe_ai.api.auth import AuthMiddleware
 
+    auth_excluded_paths = [
+        "/api/auth/login",
+        "/api/auth/register",
+        "/api/auth/refresh",
+        "/api/auth/status",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+        "/health",
+    ]
+    app.add_middleware(
+        AuthMiddleware,
+        excluded_paths=auth_excluded_paths,
+        auth_provider=getattr(settings, "auth_provider", "local"),
+    )
+
+    # ── Include Routers ─────────────────────────────────────────────
+    from quant_nanggroe_ai.api.routes import market, trading, agents, backtest, portfolio, ws, auth
+
+    app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
     app.include_router(agents.router, prefix="/api/agents", tags=["Agents"])

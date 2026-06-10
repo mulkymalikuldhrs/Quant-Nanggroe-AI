@@ -14,15 +14,15 @@ from typing import Any, Dict, Optional
 # Dedicated thread pool limited to four concurrent agents to avoid exhausting the default executor.
 _AGENT_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="agent")
 
-from src.session.events import EventBus
-from src.session.models import (
+from quant_nanggroe_ai.session.events import EventBus
+from quant_nanggroe_ai.session.models import (
     Attempt,
     AttemptStatus,
     Message,
     Session,
 )
-from src.session.search import get_shared_index
-from src.session.store import SessionStore
+from quant_nanggroe_ai.session.search import get_shared_index
+from quant_nanggroe_ai.session.store import SessionStore
 
 
 class SessionService:
@@ -213,11 +213,23 @@ class SessionService:
         Returns:
             Result dictionary containing status, run_dir, run_id, metrics, and related fields.
         """
-        from src.tools import build_registry
-        from src.providers.chat import ChatLLM
-        from src.agent.loop import AgentLoop
-        from src.memory.persistent import PersistentMemory
-        from src.config.loader import load_runtime_agent_config, sanitize_session_overrides
+        from quant_nanggroe_ai.tools import build_registry
+        try:
+            from quant_nanggroe_ai.providers.chat import ChatLLM
+        except ImportError:
+            raise ImportError("quant_nanggroe_ai.providers.chat is not available — ensure the providers module is installed")
+        try:
+            from quant_nanggroe_ai.agent.loop import AgentLoop
+        except ImportError:
+            raise ImportError("quant_nanggroe_ai.agent.loop is not available — ensure the agent module is installed")
+        try:
+            from quant_nanggroe_ai.memory.persistent import PersistentMemory
+        except ImportError:
+            from quant_nanggroe_ai.memory_persistent.persistent import PersistentMemory
+        try:
+            from quant_nanggroe_ai.config.loader import load_runtime_agent_config, sanitize_session_overrides
+        except ImportError:
+            raise ImportError("quant_nanggroe_ai.config.loader is not available — ensure the config module is installed")
 
         llm = ChatLLM()
         pm = PersistentMemory()

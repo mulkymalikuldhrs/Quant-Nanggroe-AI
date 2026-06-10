@@ -9,8 +9,8 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from backtest.loaders.base import validate_date_range
-from backtest.loaders.registry import register
+from quant_nanggroe_ai.backtest.loaders.base import validate_date_range
+from quant_nanggroe_ai.backtest.loaders.registry import register
 
 
 TUSHARE_TOKEN_PLACEHOLDERS = {"", "your-tushare-token"}

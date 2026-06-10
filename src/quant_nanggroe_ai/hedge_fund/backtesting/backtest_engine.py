@@ -14,8 +14,8 @@ from statistics import mean, stdev
 import pandas as pd
 import numpy as np
 
-from src.strategies.quantitative_strategies import StrategySignal, AggregatedSignal, analyze_with_all_strategies
-from src.agents.enhanced_agents import run_multi_agent_analysis
+from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import StrategySignal, AggregatedSignal, analyze_with_all_strategies
+from quant_nanggroe_ai.hedge_fund.agents.enhanced_agents import run_multi_agent_analysis
 
 
 logger = logging.getLogger(__name__)

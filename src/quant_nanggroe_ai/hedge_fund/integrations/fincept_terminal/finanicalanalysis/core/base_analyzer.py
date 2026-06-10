@@ -181,12 +181,14 @@ class BaseAnalyzer(ABC):
         Returns:
             List of analysis results
         """
-        pass
+        logger.debug("Stub: _initialize_formulas returning None")
+        return None
 
     @abstractmethod
     def get_key_metrics(self, statements: FinancialStatements) -> Dict[str, float]:
         """Return key metrics calculated by this analyzer"""
-        pass
+        logger.debug("Stub: _initialize_formulas returning None")
+        return None
 
     def validate_data_sufficiency(self, statements: FinancialStatements,
                                   required_fields: List[str]) -> Tuple[bool, List[str]]:

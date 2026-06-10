@@ -53,7 +53,7 @@ def main():
         sys.exit(1)
     
     try:
-        from src.ui.web.trading_terminal import app, run_terminal
+        from quant_nanggroe_ai.hedge_fund.ui.web.trading_terminal import app, run_terminal
         
         print(f"Starting trading terminal...")
         print(f"  URL: http://{args.host}:{args.port}")

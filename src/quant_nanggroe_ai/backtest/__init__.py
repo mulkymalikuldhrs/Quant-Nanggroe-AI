@@ -6,6 +6,7 @@ Exports:
     BacktestEngine   — Event-driven strategy backtesting
     WalkForwardAnalyzer — Walk-forward optimization
     BacktestMetrics  — Performance metric calculations (Sharpe, Sortino, etc.)
+    NautilusAdapter  — Bridge to NautilusTrader Rust-core backtesting
 
 Usage:
     from quant_nanggroe_ai.backtest import BacktestEngine, BacktestMetrics
@@ -19,6 +20,7 @@ Usage:
 from quant_nanggroe_ai.backtest.engine import BacktestEngine, BacktestResult, BacktestTrade
 from quant_nanggroe_ai.backtest.metrics import BacktestMetrics
 from quant_nanggroe_ai.backtest.walk_forward import WalkForwardAnalyzer, WalkForwardResult
+from quant_nanggroe_ai.backtest.nautilus_adapter import NautilusAdapter, NautilusConfig, NautilusBacktestResult
 
 __all__ = [
     "BacktestEngine",
@@ -27,4 +29,7 @@ __all__ = [
     "BacktestMetrics",
     "WalkForwardAnalyzer",
     "WalkForwardResult",
+    "NautilusAdapter",
+    "NautilusConfig",
+    "NautilusBacktestResult",
 ]

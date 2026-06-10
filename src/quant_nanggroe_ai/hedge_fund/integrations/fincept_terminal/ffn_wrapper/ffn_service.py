@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 FFN Service - Python backend for FFN analytics via PyO3
 ========================================================
 
@@ -382,13 +386,15 @@ def risk_metrics(params: Dict[str, Any]) -> Dict[str, Any]:
         try:
             ulcer_index = safe_float(engine.to_ulcer_index(prices))
         except Exception:
-            pass
+            logger.debug("Stub: safe_float returning None")
+            return None
 
         ulcer_perf = None
         try:
             ulcer_perf = safe_float(engine.to_ulcer_performance_index(prices, rf))
         except Exception:
-            pass
+            logger.debug("Stub: safe_float returning None")
+            return None
 
         # Calculate skewness and kurtosis safely
         skewness = None

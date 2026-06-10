@@ -2,9 +2,9 @@
 
 import json
 from pydantic import BaseModel
-from src.llm.models import get_model, get_model_info
-from src.utils.progress import progress
-from src.graph.state import AgentState
+from quant_nanggroe_ai.hedge_fund.llm.models import get_model, get_model_info
+from quant_nanggroe_ai.hedge_fund.utils.progress import progress
+from quant_nanggroe_ai.hedge_fund.graph.state import AgentState
 
 
 def call_llm(

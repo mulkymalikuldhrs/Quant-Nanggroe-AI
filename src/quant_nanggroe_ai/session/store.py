@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.session.models import Attempt, Message, Session
+from quant_nanggroe_ai.session.models import Attempt, Message, Session
 
 
 class SessionStore:

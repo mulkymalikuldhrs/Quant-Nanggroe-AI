@@ -371,9 +371,24 @@ def should_continue_after_risk(state: AgentState) -> str:
 
 
 def should_continue_after_regime(state: AgentState) -> str:
-    """Conditional routing: if NO_TRADE regime, skip to end."""
+    """Conditional routing: if NO_TRADE regime, skip to end; route to specialist."""
     if state.regime in (MarketRegime.NO_TRADE, MarketRegime.PANIC, MarketRegime.RISK_OFF):
         return "end"
+    # Route to domain specialist based on symbol type
+    symbol = state.symbol.upper()
+    crypto_bases = {"BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "DOT", "DOGE", "SHIB"}
+    if any(symbol.startswith(c) for c in crypto_bases) or "USDT" in symbol or "USDC" in symbol:
+        return "crypto"
+    forex_currencies = {"USD", "EUR", "GBP", "JPY", "CHF", "AUD", "NZD", "CAD"}
+    if len(symbol) == 6:
+        base, quote = symbol[:3], symbol[3:6]
+        if base in forex_currencies and quote in forex_currencies:
+            return "forex"
+    return "analyst"
+
+
+def should_continue_after_specialist(state: AgentState) -> str:
+    """After crypto/forex specialist, always go to analyst."""
     return "analyst"
 
 
@@ -388,19 +403,28 @@ def build_trading_graph() -> StateGraph:
 
     Flow:
     1. Researcher → gathers data
-    2. Analyst → processes intelligence (skip if NO_TRADE regime)
-    3. Strategist → generates strategy
-    4. Risk Manager → VETO/APPROVE
-    5. Trader → executes (if approved)
-    6. Portfolio Manager → final gate
+    2. (Crypto|Forex specialist) → domain-specific context (conditional)
+    3. Analyst → processes intelligence (skip if NO_TRADE regime)
+    4. Strategist → generates strategy
+    5. Risk Manager → VETO/APPROVE
+    6. Trader → executes (if approved)
+    7. Portfolio Manager → final gate
+
+    The graph routes through specialist nodes (crypto, forex) based on
+    the symbol type before reaching the generic analyst node.
 
     Returns:
         Compiled StateGraph ready for execution
     """
+    from quant_nanggroe_ai.agents.nodes.crypto import crypto_node
+    from quant_nanggroe_ai.agents.nodes.forex import forex_node
+
     graph = StateGraph(AgentState)
 
     # Add nodes
     graph.add_node("researcher", researcher_node)
+    graph.add_node("crypto", crypto_node)
+    graph.add_node("forex", forex_node)
     graph.add_node("analyst", analyst_node)
     graph.add_node("strategist", strategist_node)
     graph.add_node("risk_manager", risk_manager_node)
@@ -411,11 +435,15 @@ def build_trading_graph() -> StateGraph:
     graph.set_entry_point("researcher")
 
     # Add edges
+    # Researcher → conditional: crypto, forex, analyst, or end
     graph.add_conditional_edges(
         "researcher",
         should_continue_after_regime,
-        {"analyst": "analyst", "end": END},
+        {"crypto": "crypto", "forex": "forex", "analyst": "analyst", "end": END},
     )
+    # Specialist nodes → analyst
+    graph.add_edge("crypto", "analyst")
+    graph.add_edge("forex", "analyst")
     graph.add_edge("analyst", "strategist")
     graph.add_edge("strategist", "risk_manager")
     graph.add_conditional_edges(

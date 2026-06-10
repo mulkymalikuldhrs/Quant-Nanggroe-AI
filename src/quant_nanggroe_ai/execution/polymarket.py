@@ -5,7 +5,10 @@ Integration with the Polymarket CLOB (Central Limit Order Book) API
 for prediction market trading. Supports buying/selling shares,
 market discovery, and position management.
 
-Features:
+Enhanced with features from the sim repo TypeScript tools:
+    - Full Gamma API: events, markets, tags, series, search
+    - Full CLOB API: orderbook, price, midpoint, spread, tick_size, price_history
+    - Full Data API: positions, trades
     - Market discovery and search
     - Buy/sell shares with limit and market orders
     - Position tracking and PnL
@@ -99,6 +102,119 @@ class PolymarketBalance(BaseModel):
     positions: list[PolymarketPosition] = Field(default_factory=list)
 
 
+class PolymarketEvent(BaseModel):
+    """An event containing one or more markets on Polymarket."""
+
+    id: str = ""
+    ticker: str = ""
+    slug: str = ""
+    title: str = ""
+    description: str = ""
+    start_date: str = ""
+    creation_date: str = ""
+    end_date: str = ""
+    image: str = ""
+    icon: str = ""
+    active: bool = True
+    closed: bool = False
+    archived: bool = False
+    featured: bool = False
+    restricted: bool = False
+    liquidity: float = 0.0
+    volume: float = 0.0
+    open_interest: float = 0.0
+    comment_count: int = 0
+    markets: list[PolymarketMarket] = Field(default_factory=list)
+    raw_response: dict[str, Any] = Field(default_factory=dict)
+
+
+class PolymarketTag(BaseModel):
+    """A tag/category on Polymarket."""
+
+    id: str = ""
+    label: str = ""
+    slug: str = ""
+
+
+class PolymarketSeries(BaseModel):
+    """A series of related events on Polymarket."""
+
+    id: str = ""
+    ticker: str = ""
+    slug: str = ""
+    title: str = ""
+    series_type: str = ""
+    recurrence: str = ""
+    image: str = ""
+    icon: str = ""
+    active: bool = True
+    closed: bool = False
+    archived: bool = False
+    featured: bool = False
+    restricted: bool = False
+    created_at: str = ""
+    updated_at: str = ""
+    volume: float = 0.0
+    liquidity: float = 0.0
+    comment_count: int = 0
+    event_count: int = 0
+    raw_response: dict[str, Any] = Field(default_factory=dict)
+
+
+class PolymarketOrderbookEntry(BaseModel):
+    """A single entry in the Polymarket orderbook."""
+
+    price: str = ""
+    size: str = ""
+
+
+class PolymarketOrderbook(BaseModel):
+    """Orderbook data from Polymarket CLOB."""
+
+    market: str = ""
+    asset_id: str = ""
+    hash: str = ""
+    timestamp: str = ""
+    bids: list[PolymarketOrderbookEntry] = Field(default_factory=list)
+    asks: list[PolymarketOrderbookEntry] = Field(default_factory=list)
+
+
+class PolymarketPriceHistoryEntry(BaseModel):
+    """A single entry in price history."""
+
+    timestamp: int = 0
+    price: float = 0.0
+
+
+class PolymarketSearchResult(BaseModel):
+    """Search results from Polymarket."""
+
+    markets: list[PolymarketMarket] = Field(default_factory=list)
+    events: list[PolymarketEvent] = Field(default_factory=list)
+
+
+class PolymarketSpread(BaseModel):
+    """Bid-ask spread from Polymarket."""
+
+    bid: str = ""
+    ask: str = ""
+
+
+class PolymarketTradeRecord(BaseModel):
+    """A trade record from Polymarket Data API."""
+
+    id: str = ""
+    market: str = ""
+    asset_id: str = ""
+    side: str = ""
+    size: str = ""
+    price: str = ""
+    timestamp: str = ""
+    maker: str = ""
+    taker: str = ""
+    raw_response: dict[str, Any] = Field(default_factory=dict)
+
+
 # ══════════════════════════════════════════════════════════════════════
 # POLYMARKET BROKER
 # ══════════════════════════════════════════════════════════════════════
@@ -133,6 +249,7 @@ class PolymarketBroker:
 
     CLOB_URL = "https://clob.polymarket.com"
     GAMMA_URL = "https://gamma-api.polymarket.com"
+    DATA_URL = "https://data-api.polymarket.com"
 
     def __init__(
         self,
@@ -302,6 +419,86 @@ class PolymarketBroker:
                 outcomes.append(MarketOutcome(outcome=outcome_str))
 
         return outcomes
+
+    @staticmethod
+    def _parse_market_from_gamma(data: dict[str, Any]) -> PolymarketMarket:
+        """Parse a market from Gamma API response."""
+        clob_token_ids = data.get("clobTokenIds", [])
+        if isinstance(clob_token_ids, str):
+            try:
+                import json
+                clob_token_ids = json.loads(clob_token_ids)
+            except (json.JSONDecodeError, ValueError):
+                clob_token_ids = []
+
+        outcomes = data.get("outcomes", "")
+        outcome_prices = data.get("outcomePrices", "")
+
+        return PolymarketMarket(
+            condition_id=data.get("conditionId", data.get("id", "")),
+            question=data.get("question", ""),
+            slug=data.get("slug", ""),
+            end_date=data.get("endDate", ""),
+            active=data.get("active", True),
+            closed=data.get("closed", False),
+            outcomes=outcomes if isinstance(outcomes, list) else [],
+            volume=float(data.get("volume", 0)),
+            liquidity=float(data.get("liquidity", 0)),
+            category=data.get("category", ""),
+            raw_response=data,
+        )
+
+    @staticmethod
+    def _parse_event(data: dict[str, Any]) -> PolymarketEvent:
+        """Parse an event from Gamma API response."""
+        return PolymarketEvent(
+            id=str(data.get("id", "")),
+            ticker=data.get("ticker", ""),
+            slug=data.get("slug", ""),
+            title=data.get("title", ""),
+            description=data.get("description", ""),
+            start_date=data.get("startDate", ""),
+            creation_date=data.get("creationDate", ""),
+            end_date=data.get("endDate", ""),
+            image=data.get("image", ""),
+            icon=data.get("icon", ""),
+            active=data.get("active", True),
+            closed=data.get("closed", False),
+            archived=data.get("archived", False),
+            featured=data.get("featured", False),
+            restricted=data.get("restricted", False),
+            liquidity=float(data.get("liquidity", 0)),
+            volume=float(data.get("volume", 0)),
+            open_interest=float(data.get("openInterest", 0)),
+            comment_count=int(data.get("commentCount", 0)),
+            raw_response=data,
+        )
+
+    @staticmethod
+    def _parse_series(data: dict[str, Any]) -> PolymarketSeries:
+        """Parse a series from Gamma API response."""
+        return PolymarketSeries(
+            id=str(data.get("id", "")),
+            ticker=data.get("ticker", ""),
+            slug=data.get("slug", ""),
+            title=data.get("title", ""),
+            series_type=data.get("seriesType", ""),
+            recurrence=data.get("recurrence", ""),
+            image=data.get("image", ""),
+            icon=data.get("icon", ""),
+            active=data.get("active", True),
+            closed=data.get("closed", False),
+            archived=data.get("archived", False),
+            featured=data.get("featured", False),
+            restricted=data.get("restricted", False),
+            created_at=data.get("createdAt", ""),
+            updated_at=data.get("updatedAt", ""),
+            volume=float(data.get("volume", 0)),
+            liquidity=float(data.get("liquidity", 0)),
+            comment_count=int(data.get("commentCount", 0)),
+            event_count=int(data.get("eventCount", 0)),
+            raw_response=data,
+        )
 
     # ══════════════════════════════════════════════════════════════════
     # ORDER EXECUTION
@@ -563,6 +760,599 @@ class PolymarketBroker:
         except Exception as exc:
             logger.error("Cancel order failed: %s", exc)
             return {"order_id": order_id, "status": "error", "error": str(exc)}
+
+    # ══════════════════════════════════════════════════════════════════
+    # EVENT QUERIES (from sim repo Gamma API)
+    # ══════════════════════════════════════════════════════════════════
+
+    async def get_events(
+        self,
+        closed: bool | None = None,
+        order: str | None = None,
+        ascending: bool | None = None,
+        tag_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[PolymarketEvent]:
+        """
+        Retrieve a list of events from Polymarket.
+
+        Adapted from sim repo polymarket/get_events.ts
+
+        Args:
+            closed: Filter for closed (True) or active (False) events
+            order: Sort field (volume, liquidity, startDate, endDate, createdAt)
+            ascending: Sort direction
+            tag_id: Filter by tag ID
+            limit: Number of results (max 50)
+            offset: Pagination offset
+
+        Returns:
+            List of PolymarketEvent objects
+        """
+        client = await self._get_http_client()
+
+        params: dict[str, Any] = {"limit": min(limit, 50), "offset": offset}
+        if closed is not None:
+            params["closed"] = str(closed).lower()
+        if order:
+            params["order"] = order
+        if ascending is not None:
+            params["ascending"] = str(ascending).lower()
+        if tag_id:
+            params["tag_id"] = tag_id
+
+        try:
+            response = await client.get(
+                f"{self.GAMMA_URL}/events", params=params
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            events = []
+            for item in data if isinstance(data, list) else []:
+                event = self._parse_event(item)
+                events.append(event)
+
+            logger.info("Retrieved %d Polymarket events", len(events))
+            return events
+        except Exception as exc:
+            logger.error("Get events failed: %s", exc)
+            return []
+
+    async def get_event(
+        self,
+        event_id: str | None = None,
+        slug: str | None = None,
+    ) -> PolymarketEvent | None:
+        """
+        Retrieve a specific event by ID or slug.
+
+        Adapted from sim repo polymarket/get_event.ts
+
+        Args:
+            event_id: The event ID
+            slug: The event slug (e.g., "2024-presidential-election")
+
+        Returns:
+            PolymarketEvent or None
+        """
+        client = await self._get_http_client()
+
+        try:
+            if slug:
+                url = f"{self.GAMMA_URL}/events/slug/{slug}"
+            else:
+                url = f"{self.GAMMA_URL}/events/{event_id}"
+
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            return self._parse_event(data)
+        except Exception as exc:
+            logger.error("Get event failed: %s", exc)
+            return None
+
+    # ══════════════════════════════════════════════════════════════════
+    # CLOB DATA QUERIES (from sim repo CLOB API)
+    # ══════════════════════════════════════════════════════════════════
+
+    async def get_orderbook(self, token_id: str) -> PolymarketOrderbook:
+        """
+        Retrieve the order book for a specific token.
+
+        Adapted from sim repo polymarket/get_orderbook.ts
+
+        Args:
+            token_id: The CLOB token ID (from market clobTokenIds)
+
+        Returns:
+            PolymarketOrderbook with bids and asks
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.CLOB_URL}/book",
+                params={"token_id": token_id},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            bids = [
+                PolymarketOrderbookEntry(
+                    price=b.get("price", ""), size=b.get("size", "")
+                )
+                for b in data.get("bids", [])
+            ]
+            asks = [
+                PolymarketOrderbookEntry(
+                    price=a.get("price", ""), size=a.get("size", "")
+                )
+                for a in data.get("asks", [])
+            ]
+
+            return PolymarketOrderbook(
+                market=data.get("market", ""),
+                asset_id=data.get("asset_id", ""),
+                hash=data.get("hash", ""),
+                timestamp=data.get("timestamp", ""),
+                bids=bids,
+                asks=asks,
+            )
+        except Exception as exc:
+            logger.error("Get orderbook failed: %s", exc)
+            return PolymarketOrderbook()
+
+    async def get_price(
+        self, token_id: str, side: str = "buy"
+    ) -> str:
+        """
+        Get the current price for a specific token and side.
+
+        Adapted from sim repo polymarket/get_price.ts
+
+        Args:
+            token_id: The CLOB token ID
+            side: "buy" or "sell"
+
+        Returns:
+            Price as a string
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.CLOB_URL}/price",
+                params={"token_id": token_id, "side": side},
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("price", str(data)) if isinstance(data, dict) else str(data)
+        except Exception as exc:
+            logger.error("Get price failed: %s", exc)
+            return ""
+
+    async def get_midpoint(self, token_id: str) -> str:
+        """
+        Get the midpoint price for a specific token.
+
+        Adapted from sim repo polymarket/get_midpoint.ts
+
+        Args:
+            token_id: The CLOB token ID
+
+        Returns:
+            Midpoint price as a string
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.CLOB_URL}/midpoint",
+                params={"token_id": token_id},
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("mid", data.get("midpoint", str(data))) if isinstance(data, dict) else str(data)
+        except Exception as exc:
+            logger.error("Get midpoint failed: %s", exc)
+            return ""
+
+    async def get_last_trade_price(self, token_id: str) -> str:
+        """
+        Get the last trade price for a specific token.
+
+        Adapted from sim repo polymarket/get_last_trade_price.ts
+
+        Args:
+            token_id: The CLOB token ID
+
+        Returns:
+            Last trade price as a string
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.CLOB_URL}/last-trade-price",
+                params={"token_id": token_id},
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("price", str(data)) if isinstance(data, dict) else str(data)
+        except Exception as exc:
+            logger.error("Get last trade price failed: %s", exc)
+            return ""
+
+    async def get_spread(self, token_id: str) -> PolymarketSpread:
+        """
+        Get the bid-ask spread for a specific token.
+
+        Adapted from sim repo polymarket/get_spread.ts
+
+        Args:
+            token_id: The CLOB token ID
+
+        Returns:
+            PolymarketSpread with bid and ask
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.CLOB_URL}/spread",
+                params={"token_id": token_id},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            return PolymarketSpread(
+                bid=data.get("bid", ""),
+                ask=data.get("ask", ""),
+            )
+        except Exception as exc:
+            logger.error("Get spread failed: %s", exc)
+            return PolymarketSpread()
+
+    async def get_tick_size(self, token_id: str) -> str:
+        """
+        Get the minimum tick size for a specific token.
+
+        Adapted from sim repo polymarket/get_tick_size.ts
+
+        Args:
+            token_id: The CLOB token ID
+
+        Returns:
+            Tick size as a string
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.CLOB_URL}/tick-size",
+                params={"token_id": token_id},
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("minimum_tick_size", data.get("tick_size", str(data))) if isinstance(data, dict) else str(data)
+        except Exception as exc:
+            logger.error("Get tick size failed: %s", exc)
+            return ""
+
+    async def get_price_history(
+        self,
+        market: str,
+        interval: str | None = None,
+        fidelity: int | None = None,
+        start_ts: int | None = None,
+        end_ts: int | None = None,
+    ) -> list[PolymarketPriceHistoryEntry]:
+        """
+        Get price history for a market.
+
+        Adapted from sim repo polymarket/get_price_history.ts
+
+        Args:
+            market: Market condition ID
+            interval: Time interval ('1m', '1h', '6h', '1d', '1w', 'max')
+            fidelity: Data resolution in minutes
+            start_ts: Start timestamp (Unix seconds)
+            end_ts: End timestamp (Unix seconds)
+
+        Returns:
+            List of PolymarketPriceHistoryEntry
+        """
+        client = await self._get_http_client()
+
+        params: dict[str, Any] = {"market": market}
+        if interval:
+            params["interval"] = interval
+        if fidelity:
+            params["fidelity"] = fidelity
+        if start_ts:
+            params["start_ts"] = start_ts
+        if end_ts:
+            params["end_ts"] = end_ts
+
+        try:
+            response = await client.get(
+                f"{self.GAMMA_URL}/markets/{market}/price-history",
+                params=params,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            history = []
+            entries = data if isinstance(data, list) else data.get("history", [])
+            for item in entries:
+                history.append(PolymarketPriceHistoryEntry(
+                    timestamp=int(item.get("t", item.get("timestamp", 0))),
+                    price=float(item.get("p", item.get("price", 0))),
+                ))
+            return history
+        except Exception as exc:
+            logger.error("Get price history failed: %s", exc)
+            return []
+
+    # ══════════════════════════════════════════════════════════════════
+    # TAGS, SERIES, SEARCH (from sim repo Gamma API)
+    # ══════════════════════════════════════════════════════════════════
+
+    async def get_tags(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[PolymarketTag]:
+        """
+        Get available tags/categories.
+
+        Adapted from sim repo polymarket/get_tags.ts
+
+        Args:
+            limit: Number of results
+            offset: Pagination offset
+
+        Returns:
+            List of PolymarketTag objects
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.GAMMA_URL}/tags",
+                params={"limit": limit, "offset": offset},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            tags = []
+            for item in data if isinstance(data, list) else []:
+                tags.append(PolymarketTag(
+                    id=str(item.get("id", "")),
+                    label=item.get("label", ""),
+                    slug=item.get("slug", ""),
+                ))
+            return tags
+        except Exception as exc:
+            logger.error("Get tags failed: %s", exc)
+            return []
+
+    async def get_series(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[PolymarketSeries]:
+        """
+        Get available series.
+
+        Adapted from sim repo polymarket/get_series.ts
+
+        Args:
+            limit: Number of results
+            offset: Pagination offset
+
+        Returns:
+            List of PolymarketSeries objects
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.GAMMA_URL}/series",
+                params={"limit": limit, "offset": offset},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            series_list = []
+            for item in data if isinstance(data, list) else []:
+                series_list.append(self._parse_series(item))
+            return series_list
+        except Exception as exc:
+            logger.error("Get series failed: %s", exc)
+            return []
+
+    async def get_series_by_id(self, series_id: str) -> PolymarketSeries | None:
+        """
+        Get a specific series by ID.
+
+        Adapted from sim repo polymarket/get_series_by_id.ts
+
+        Args:
+            series_id: Series ID
+
+        Returns:
+            PolymarketSeries or None
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.GAMMA_URL}/series/{series_id}"
+            )
+            response.raise_for_status()
+            data = response.json()
+            return self._parse_series(data)
+        except Exception as exc:
+            logger.error("Get series by ID failed: %s", exc)
+            return None
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> PolymarketSearchResult:
+        """
+        Search Polymarket for markets and events.
+
+        Adapted from sim repo polymarket/search.ts
+
+        Args:
+            query: Search query string
+            limit: Number of results
+            offset: Pagination offset
+
+        Returns:
+            PolymarketSearchResult with matching markets and events
+        """
+        client = await self._get_http_client()
+
+        try:
+            response = await client.get(
+                f"{self.GAMMA_URL}/search",
+                params={"query": query, "limit": limit, "offset": offset},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            markets = []
+            for item in data.get("markets", []):
+                markets.append(self._parse_market_from_gamma(item))
+
+            events = []
+            for item in data.get("events", []):
+                events.append(self._parse_event(item))
+
+            return PolymarketSearchResult(markets=markets, events=events)
+        except Exception as exc:
+            logger.error("Search failed: %s", exc)
+            return PolymarketSearchResult()
+
+    # ══════════════════════════════════════════════════════════════════
+    # DATA API QUERIES (from sim repo Data API)
+    # ══════════════════════════════════════════════════════════════════
+
+    async def get_trades(
+        self,
+        user: str | None = None,
+        market: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[PolymarketTradeRecord]:
+        """
+        Get trade history from Data API.
+
+        Adapted from sim repo polymarket/get_trades.ts
+
+        Args:
+            user: Wallet address filter
+            market: Market ID filter
+            limit: Number of results
+            offset: Pagination offset
+
+        Returns:
+            List of PolymarketTradeRecord objects
+        """
+        client = await self._get_http_client()
+
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        if user:
+            params["user"] = user
+        if market:
+            params["market"] = market
+
+        try:
+            response = await client.get(
+                f"{self.DATA_URL}/trades", params=params
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            trades = []
+            for item in data if isinstance(data, list) else data.get("trades", []):
+                trades.append(PolymarketTradeRecord(
+                    id=str(item.get("id", "")),
+                    market=item.get("market", ""),
+                    asset_id=item.get("asset_id", ""),
+                    side=item.get("side", ""),
+                    size=item.get("size", ""),
+                    price=item.get("price", ""),
+                    timestamp=item.get("timestamp", ""),
+                    maker=item.get("maker", ""),
+                    taker=item.get("taker", ""),
+                    raw_response=item,
+                ))
+            return trades
+        except Exception as exc:
+            logger.error("Get trades failed: %s", exc)
+            return []
+
+    async def get_data_positions(
+        self,
+        user: str,
+        market: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[PolymarketPosition]:
+        """
+        Get positions from Data API (by wallet address).
+
+        Adapted from sim repo polymarket/get_positions.ts
+
+        Args:
+            user: Wallet address (required)
+            market: Market ID filter
+            limit: Number of results
+            offset: Pagination offset
+
+        Returns:
+            List of PolymarketPosition objects
+        """
+        client = await self._get_http_client()
+
+        params: dict[str, Any] = {
+            "user": user, "limit": limit, "offset": offset
+        }
+        if market:
+            params["market"] = market
+
+        try:
+            response = await client.get(
+                f"{self.DATA_URL}/positions", params=params
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            positions = []
+            for item in data if isinstance(data, list) else data.get("positions", []):
+                positions.append(PolymarketPosition(
+                    market_id=item.get("market", ""),
+                    condition_id=item.get("asset_id", ""),
+                    outcome="",
+                    size=float(item.get("size", 0)),
+                    avg_price=0.0,
+                    current_price=float(item.get("curPrice", 0)),
+                    pnl=0.0,
+                    question="",
+                ))
+            return positions
+        except Exception as exc:
+            logger.error("Get data positions failed: %s", exc)
+            return []
 
     # ══════════════════════════════════════════════════════════════════
     # INTERNAL HELPERS

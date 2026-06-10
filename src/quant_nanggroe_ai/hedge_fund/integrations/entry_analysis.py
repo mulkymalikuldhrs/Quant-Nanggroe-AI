@@ -12,9 +12,9 @@ import statistics
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.integrations.quant_strategies_analysis import quant_strategies_analysis
-from src.integrations.retail_strategies import retail_strategies
-from src.integrations.enhanced_sentiment_agent import enhanced_sentiment_agent
+from quant_nanggroe_ai.hedge_fund.integrations.quant_strategies_analysis import quant_strategies_analysis
+from quant_nanggroe_ai.hedge_fund.integrations.retail_strategies import retail_strategies
+from quant_nanggroe_ai.hedge_fund.integrations.enhanced_sentiment_agent import enhanced_sentiment_agent
 
 
 @dataclass

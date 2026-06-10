@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Type
 
-from backtest.loaders.base import NoAvailableSourceError
+from quant_nanggroe_ai.backtest.loaders.base import NoAvailableSourceError
 
 logger = logging.getLogger(__name__)
 

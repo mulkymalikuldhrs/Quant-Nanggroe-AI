@@ -60,17 +60,20 @@ class DataProvider(ABC):
     @abstractmethod
     def get_exchange_rates(self, base_currency: str, target_currencies: List[str], start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> pd.DataFrame:
         """Get exchange rate data"""
-        pass
+        logger.debug("Stub: get_exchange_rates returning None")
+        return None
 
     @abstractmethod
     def get_economic_indicators(self, country: str, indicators: List[str], start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> pd.DataFrame:
         """Get economic indicator data"""
-        pass
+        logger.debug("Stub: get_economic_indicators returning None")
+        return None
 
     @abstractmethod
     def get_interest_rates(self, country: str, rate_types: List[str], start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> pd.DataFrame:
         """Get interest rate data"""
-        pass
+        logger.debug("Stub: get_interest_rates returning None")
+        return None
 
     def _rate_limit(self):
         """Implement rate limiting"""

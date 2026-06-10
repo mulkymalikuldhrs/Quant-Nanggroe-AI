@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 
-from backtest.models import TradeRecord
+from quant_nanggroe_ai.backtest.models import TradeRecord
 
 
 # ─── Monte Carlo Permutation Test ───
@@ -35,7 +35,7 @@ def monte_carlo_test(
     a random ordering of the same trades.
 
     Args:
-        trades: Completed round-trip trades from backtest.
+        trades: Completed round-trip trades from quant_nanggroe_ai.backtest.
         initial_capital: Starting capital.
         n_simulations: Number of random permutations.
         seed: Random seed for reproducibility.

@@ -23,14 +23,14 @@ from langchain_core.messages import HumanMessage
 from langgraph.graph import END, StateGraph
 from colorama import Fore, Style, init
 import questionary
-from src.agents.portfolio_manager import portfolio_management_agent
-from src.agents.risk_manager import risk_management_agent
-from src.graph.state import AgentState
-from src.utils.display import print_trading_output
-from src.utils.analysts import ANALYST_ORDER, get_analyst_nodes
-from src.utils.progress import progress
-from src.utils.visualize import save_graph_as_png
-from src.cli.input import (
+from quant_nanggroe_ai.hedge_fund.agents.portfolio_manager import portfolio_management_agent
+from quant_nanggroe_ai.hedge_fund.agents.risk_manager import risk_management_agent
+from quant_nanggroe_ai.hedge_fund.graph.state import AgentState
+from quant_nanggroe_ai.hedge_fund.utils.display import print_trading_output
+from quant_nanggroe_ai.hedge_fund.utils.analysts import ANALYST_ORDER, get_analyst_nodes
+from quant_nanggroe_ai.hedge_fund.utils.progress import progress
+from quant_nanggroe_ai.hedge_fund.utils.visualize import save_graph_as_png
+from quant_nanggroe_ai.hedge_fund.cli.input import (
     parse_cli_inputs,
 )
 

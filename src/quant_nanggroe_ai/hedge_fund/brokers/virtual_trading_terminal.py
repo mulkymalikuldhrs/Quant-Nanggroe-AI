@@ -26,9 +26,9 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.utils import PlotlyJSONEncoder
-from src.brokers.free_broker_api import FreeBrokerGateway, BrokerAPI, BrokerType, OrderRequest, OrderSide, OrderType, TimeInForce, Account, Position, MarketData
-from src.strategies.wyckoff.wyckoff_strategy import WyckoffAnalyzer, WyckoffPhase
-from src.analysis.timeframe.multi_timeframe import MultiTimeframeAnalyzer, TrendDirection
+from quant_nanggroe_ai.hedge_fund.brokers.free_broker_api import FreeBrokerGateway, BrokerAPI, BrokerType, OrderRequest, OrderSide, OrderType, TimeInForce, Account, Position, MarketData
+from quant_nanggroe_ai.hedge_fund.strategies.wyckoff.wyckoff_strategy import WyckoffAnalyzer, WyckoffPhase
+from quant_nanggroe_ai.hedge_fund.analysis.timeframe.multi_timeframe import MultiTimeframeAnalyzer, TrendDirection
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,8 @@
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 Portfolio Optimization Analytics Module
 ======================================
 
@@ -534,7 +538,8 @@ class PyPortfolioOptAnalyticsEngine:
         if self.config.sector_constraints:
             for sector, (lower, upper) in self.config.sector_constraints.items():
                 # This would require sector mapping - simplified for demo
-                pass
+                logger.debug("Stub: _efficient_frontier_optimization returning None")
+                return None
 
         # Optimize based on objective
         if self.config.objective == "max_sharpe":

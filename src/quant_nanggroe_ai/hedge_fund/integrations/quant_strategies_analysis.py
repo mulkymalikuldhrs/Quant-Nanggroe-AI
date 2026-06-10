@@ -13,8 +13,8 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.indicators.technical_indicators import TechnicalIndicators
-from src.strategies.quantitative_strategies import analyze_with_all_strategies
+from quant_nanggroe_ai.hedge_fund.indicators.technical_indicators import TechnicalIndicators
+from quant_nanggroe_ai.hedge_fund.strategies.quantitative_strategies import analyze_with_all_strategies
 
 @dataclass
 class QuantSignal:

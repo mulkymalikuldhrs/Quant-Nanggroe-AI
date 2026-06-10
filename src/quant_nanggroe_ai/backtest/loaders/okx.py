@@ -12,12 +12,12 @@ from typing import Dict, List, Optional
 import pandas as pd
 import requests
 
-from backtest.loaders.base import (
+from quant_nanggroe_ai.backtest.loaders.base import (
     check_budget,
     retry_with_budget,
     validate_date_range,
 )
-from backtest.loaders.registry import register
+from quant_nanggroe_ai.backtest.loaders.registry import register
 
 BASE_URL = "https://www.okx.com/api/v5"
 _MAX_PER_PAGE = 300

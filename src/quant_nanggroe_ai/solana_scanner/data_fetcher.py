@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import asyncio
 import httpx
-from config import DEXSCREENER_BASE_URL, BIRDEYE_BASE_URL, BIRDEYE_API_KEY
+from quant_nanggroe_ai.solana_scanner.config import DEXSCREENER_BASE_URL, BIRDEYE_BASE_URL, BIRDEYE_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class DataFetcherService:
         """
         logger.info(f"Fetching data from Birdeye for token: {token_address or 'general'}")
         try:
-            headers = {"X-API-KEY": BIRDEYE_API_KEY or ""}
+            headers = {"X-API-KEY": BIRDEYE_API_KEY or "", "x-chain": "solana"}
             url = f"{BIRDEYE_BASE_URL}/token_overview?address={token_address}" if token_address else f"{BIRDEYE_BASE_URL}/tokenlist"
 
             response = await self._request_with_retry("GET", url, headers=headers)
@@ -173,6 +173,10 @@ class DataFetcherService:
                 transactions_24h = buys_24h + sells_24h
                 buy_sell_ratio = buys_24h / sells_24h if sells_24h > 0 else (1.0 if buys_24h > 0 else 0)
 
+                info = pair.get('info', {})
+                websites = [w.get('url') for w in info.get('websites', []) if w.get('url')]
+                socials = [s.get('url') for s in info.get('socials', []) if s.get('url')]
+
                 processed_tokens.append({
                     'address': token_address,
                     'name': token_name,
@@ -187,7 +191,9 @@ class DataFetcherService:
                     'transactions_24h': transactions_24h,
                     'buy_sell_ratio': round(buy_sell_ratio, 2),
                     'top_holder_percentage': 0,
-                    'dev_wallet_active': False
+                    'dev_wallet_active': False,
+                    'websites': websites,
+                    'socials': socials
                 })
             except Exception as e:
                 logger.warning(f"Error processing Dexscreener pair: {e} - {pair}")
