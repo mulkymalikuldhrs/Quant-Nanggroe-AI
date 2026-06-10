@@ -23,6 +23,14 @@ from quant_nanggroe_ai.memory.conversation import (
 )
 from quant_nanggroe_ai.memory.research import ResearchMemory, ResearchEntry
 
+# CompressibleMemory — adapted from agenticSeek (C2-SUPPORT, Task 9)
+from quant_nanggroe_ai.memory.compression import (
+    CompressibleMemory,
+    MessageRole as CompressionMessageRole,
+    CompressionStrategy,
+    ConversationMessage as CompressionConversationMessage,
+)
+
 __all__ = [
     "VectorMemory",
     "VectorDocument",
@@ -30,4 +38,8 @@ __all__ = [
     "ConversationMessage",
     "ResearchMemory",
     "ResearchEntry",
+    "CompressibleMemory",
+    "CompressionMessageRole",
+    "CompressionStrategy",
+    "CompressionConversationMessage",
 ]

@@ -57,6 +57,35 @@ from quant_nanggroe_ai.agents.tools.trading_plan import TradingPlanTool
 # FinancialDataTool — merged from ai-financial-agent (C2-CORE, Task 8-c)
 from quant_nanggroe_ai.agents.tools.financial_data import FinancialDataTool
 
+# PortfolioSimulator — adapted from ai-engineering-hub (C2-SUPPORT, Task 9)
+from quant_nanggroe_ai.agents.tools.portfolio_simulator import (
+    PortfolioSimulator,
+    InvestmentRequest,
+    InvestmentStrategy,
+    SimulationResult,
+    HoldingResult,
+    BullBearInsights,
+    Insight,
+)
+
+# QueryRouter — adapted from agenticSeek (C2-SUPPORT, Task 9)
+from quant_nanggroe_ai.agents.tools.query_router import (
+    QueryRouter,
+    AgentRole,
+    QueryComplexity,
+    RoutingDecision,
+    route_query,
+)
+
+# TokenReducer — concept from rtk-reduce-tokenLLM (C2-SUPPORT, Task 9)
+from quant_nanggroe_ai.agents.tools.token_reducer import (
+    OutputFilter,
+    FilterRule,
+    estimate_tokens,
+    reduce_output,
+    DEFAULT_FILTERS,
+)
+
 __all__ = [
     "MarketDataTool",
     "TechnicalAnalysisTool",
@@ -66,4 +95,21 @@ __all__ = [
     "FileOpsTool",
     "TradingPlanTool",
     "FinancialDataTool",
+    "PortfolioSimulator",
+    "InvestmentRequest",
+    "InvestmentStrategy",
+    "SimulationResult",
+    "HoldingResult",
+    "BullBearInsights",
+    "Insight",
+    "QueryRouter",
+    "AgentRole",
+    "QueryComplexity",
+    "RoutingDecision",
+    "route_query",
+    "OutputFilter",
+    "FilterRule",
+    "estimate_tokens",
+    "reduce_output",
+    "DEFAULT_FILTERS",
 ]
