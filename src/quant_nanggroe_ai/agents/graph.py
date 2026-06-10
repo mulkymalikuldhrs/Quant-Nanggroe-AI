@@ -1,12 +1,19 @@
 """
 Main LangGraph Trading Graph
 =============================
-Researcher → Analyst → Strategist → Risk Manager → Trader → Portfolio Manager
+Full Agent Council Flow:
+  Researcher → Macro → Analyst → Strategist → Risk Manager → Execution → Portfolio Manager
 
-The graph uses conditional routing:
+Domain-Specific Parallel Flows (activated by asset class):
+  Crypto:     Researcher → Crypto → Strategist → Risk → Execution → Portfolio
+  Forex:      Researcher → Forex → Strategist → Risk → Execution → Portfolio
+  Prediction: Researcher → PredictionMarket → Strategist → Risk → Execution → Portfolio
+
+Conditional routing:
 - If risk is VETOED → skip to end (NO_TRADE)
 - If regime is NO_TRADE → skip to end
 - Portfolio Manager has final gate approval
+- Asset-class nodes (crypto/forex/prediction) route based on symbol type
 
 LangGraph passes state as a Pydantic model — access fields via attribute
 notation, not dict .get(). Enum comparisons use enum members, not strings.
@@ -313,7 +320,7 @@ def portfolio_manager_node(state: AgentState) -> dict[str, Any]:
 def should_continue_after_risk(state: AgentState) -> str:
     """Conditional routing: if risk VETOED, skip to end."""
     if state.risk_clearance == RiskClearance.CLEAR:
-        return "trader"
+        return "execution"
     return "end"
 
 
@@ -321,6 +328,14 @@ def should_continue_after_regime(state: AgentState) -> str:
     """Conditional routing: if NO_TRADE regime, skip to end."""
     if state.regime in (MarketRegime.NO_TRADE, MarketRegime.PANIC, MarketRegime.RISK_OFF):
         return "end"
+    # Route to asset-class-specific analyst or default analyst
+    symbol = getattr(state, "symbol", "").upper()
+    if any(suffix in symbol for suffix in ["/USDT", "/BUSD", "/USD", "-PERP", "SOL/", "BNB/"]):
+        return "crypto"
+    if "/" in symbol and any(ccy in symbol for ccy in ["EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"]):
+        return "forex"
+    if any(kw in symbol.upper() for kw in ["POLY", "KALSHI", "PREDICT"]):
+        return "prediction_market"
     return "analyst"
 
 
@@ -328,44 +343,72 @@ def build_trading_graph() -> StateGraph:
     """
     Build the main LangGraph trading graph.
 
-    Flow:
-    1. Researcher → gathers data
-    2. Analyst → processes intelligence (skip if NO_TRADE regime)
-    3. Strategist → generates strategy
-    4. Risk Manager → VETO/APPROVE
-    5. Trader → executes (if approved)
-    6. Portfolio Manager → final gate
+    Full Agent Council Flow:
+    1. Researcher → gathers market data & news
+    2. Macro → macro-economic context (all flows)
+    3. [Conditional] → Crypto / Forex / PredictionMarket / Analyst
+    4. Strategist → generates strategy via pressure normalization
+    5. Risk Manager → 9-checkpoint VETO/APPROVE
+    6. Execution → smart order routing (if approved)
+    7. Portfolio Manager → final gate approval
 
     Returns:
         Compiled StateGraph ready for execution
     """
+    from quant_nanggroe_ai.agents.nodes.crypto import crypto_node
+    from quant_nanggroe_ai.agents.nodes.forex import forex_node
+    from quant_nanggroe_ai.agents.nodes.execution import execution_node
+    from quant_nanggroe_ai.agents.nodes.prediction_market import prediction_market_node
+
     graph = StateGraph(AgentState)
 
-    # Add nodes
+    # Add core nodes
     graph.add_node("researcher", researcher_node)
     graph.add_node("analyst", analyst_node)
     graph.add_node("strategist", strategist_node)
     graph.add_node("risk_manager", risk_manager_node)
-    graph.add_node("trader", trader_node)
+    graph.add_node("execution", execution_node)
     graph.add_node("portfolio_manager", portfolio_manager_node)
+
+    # Add domain-specific nodes
+    graph.add_node("crypto", crypto_node)
+    graph.add_node("forex", forex_node)
+    graph.add_node("prediction_market", prediction_market_node)
 
     # Set entry point
     graph.set_entry_point("researcher")
 
-    # Add edges
+    # Conditional routing after researcher: regime check + asset class routing
     graph.add_conditional_edges(
         "researcher",
         should_continue_after_regime,
-        {"analyst": "analyst", "end": END},
+        {
+            "analyst": "analyst",
+            "crypto": "crypto",
+            "forex": "forex",
+            "prediction_market": "prediction_market",
+            "end": END,
+        },
     )
+
+    # All analysis nodes converge to strategist
     graph.add_edge("analyst", "strategist")
+    graph.add_edge("crypto", "strategist")
+    graph.add_edge("forex", "strategist")
+    graph.add_edge("prediction_market", "strategist")
+
+    # Strategist → Risk Manager
     graph.add_edge("strategist", "risk_manager")
+
+    # Risk Manager → Execution or END
     graph.add_conditional_edges(
         "risk_manager",
         should_continue_after_risk,
-        {"trader": "trader", "end": END},
+        {"execution": "execution", "end": END},
     )
-    graph.add_edge("trader", "portfolio_manager")
+
+    # Execution → Portfolio Manager → END
+    graph.add_edge("execution", "portfolio_manager")
     graph.add_edge("portfolio_manager", END)
 
     return graph.compile()

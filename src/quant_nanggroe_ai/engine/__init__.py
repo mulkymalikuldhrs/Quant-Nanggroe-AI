@@ -14,6 +14,10 @@ from quant_nanggroe_ai.engine.kill_switch import KillSwitch, KillSwitchState
 from quant_nanggroe_ai.engine.strategy_lifecycle import StrategyLifecycleManager, StrategyState
 from quant_nanggroe_ai.engine.audit import AuditLogger, AuditEntry
 from quant_nanggroe_ai.engine.autoswitch import AutoSwitchEngine, ProviderHealth
+from quant_nanggroe_ai.engine.simulation import MonteCarloSimulationEngine, SimulationConfig, SimulationResult, RegimeSimulationConfig, WalkForwardSimulationResult
+from quant_nanggroe_ai.engine.models import FactorModelsEngine, FactorModelResult, FactorExposure, FactorReturnDecomposition, RiskAttribution, ZScoreResult
+from quant_nanggroe_ai.engine.regime import RegimeDetectionEngine, RegimeDetectionResult, HMMConfig, RegimeProbability, RegimeTransitionMatrix, RegimeClassification
+from quant_nanggroe_ai.engine.event_bus import EventBusEngine, Event, EventType, EventPriority, MarketDataEvent, AgentSignalEvent, ExecutionCommandEvent, RiskAlertEvent, DeadLetterEntry
 
 __all__ = [
     # Math
@@ -45,4 +49,34 @@ __all__ = [
     # AutoSwitch
     "AutoSwitchEngine",
     "ProviderHealth",
+    # Simulation
+    "MonteCarloSimulationEngine",
+    "SimulationConfig",
+    "SimulationResult",
+    "RegimeSimulationConfig",
+    "WalkForwardSimulationResult",
+    # Factor Models
+    "FactorModelsEngine",
+    "FactorModelResult",
+    "FactorExposure",
+    "FactorReturnDecomposition",
+    "RiskAttribution",
+    "ZScoreResult",
+    # Regime Detection
+    "RegimeDetectionEngine",
+    "RegimeDetectionResult",
+    "HMMConfig",
+    "RegimeProbability",
+    "RegimeTransitionMatrix",
+    "RegimeClassification",
+    # Event Bus
+    "EventBusEngine",
+    "Event",
+    "EventType",
+    "EventPriority",
+    "MarketDataEvent",
+    "AgentSignalEvent",
+    "ExecutionCommandEvent",
+    "RiskAlertEvent",
+    "DeadLetterEntry",
 ]
