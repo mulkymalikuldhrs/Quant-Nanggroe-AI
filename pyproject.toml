@@ -1,0 +1,121 @@
+[tool.poetry]
+name = "quant-nanggroe-ai"
+version = "1.0.0"
+description = "Agentic Trading Intelligence OS — Production-grade quantitative trading system with multi-agent AI, deterministic engines, and constitutional risk management."
+authors = ["Quant-Nanggroe-AI Team"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "quant_nanggroe_ai", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+# ── Core ──────────────────────────────────────────────────────
+fastapi = "^0.115.0"
+uvicorn = {version = "^0.32.0", extras = ["standard"]}
+pydantic = "^2.10.0"
+pydantic-settings = "^2.7.0"
+sqlalchemy = "^2.0.36"
+alembic = "^1.14.0"
+asyncpg = "^0.30.0"
+redis = {version = "^5.2.0", extras = ["hiredis"]}
+
+# ── Engine (Deterministic Math) ──────────────────────────────
+numpy = "^2.1.0"
+pandas = "^2.2.0"
+scipy = "^1.14.0"
+scikit-learn = "^1.6.0"
+
+# ── Agents (LangGraph / CrewAI / Pydantic-AI) ────────────────
+langgraph = "^0.2.60"
+langchain-core = "^0.3.0"
+langchain-openai = "^0.3.0"
+langchain-anthropic = "^0.3.0"
+crewai = "^1.14.0"
+pydantic-ai = "^0.0.30"
+
+# ── Data Sources ──────────────────────────────────────────────
+yfinance = "^0.2.50"
+ccxt = "^4.4.0"
+polygon-api-client = "^1.14.0"
+alpaca-trade-api = "^3.2.0"
+alpha-vantage = "^2.3.0"
+fred-api = "^0.5.1"
+sec-edgar-downloader = "^5.0.0"
+
+# ── Backtesting ──────────────────────────────────────────────
+vectorbt = "^0.26.0"
+quantstats = "^0.0.64"
+empyrical = "^0.5.5"
+
+# ── Risk ─────────────────────────────────────────────────────
+pyportfolioopt = "^1.5.0"
+
+# ── API & HTTP ───────────────────────────────────────────────
+httpx = "^0.28.0"
+websockets = "^14.0"
+python-multipart = "^0.0.18"
+
+# ── Auth ─────────────────────────────────────────────────────
+python-jose = {version = "^3.3.0", extras = ["cryptography"]}
+passlib = {version = "^1.7.4", extras = ["bcrypt"]}
+
+# ── Utilities ────────────────────────────────────────────────
+orjson = "^3.10.0"
+rich = "^13.9.0"
+click = "^8.1.0"
+structlog = "^24.4.0"
+tenacity = "^9.0.0"
+psutil = "^6.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+pytest-cov = "^6.0.0"
+ruff = "^0.8.0"
+mypy = "^1.13.0"
+pre-commit = "^4.0.0"
+bandit = "^1.8.0"
+ipython = "^8.29.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ── Ruff Configuration ──────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH", "RUF"]
+ignore = ["E501", "SIM108"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["quant_nanggroe_ai"]
+
+# ── MyPy Configuration ──────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["yfinance.*", "ccxt.*", "vectorbt.*", "quantstats.*", "empyrical.*", "pyportfolioopt.*", "crewai.*", "langgraph.*", "langchain.*", "alpha_vantage.*"]
+ignore_missing_imports = true
+
+# ── Pytest Configuration ────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "engine: Engine deterministic tests",
+    "agents: Agent layer tests",
+    "data: Data layer tests",
+    "api: API endpoint tests",
+    "slow: Slow-running tests",
+]
+addopts = "-v --tb=short"

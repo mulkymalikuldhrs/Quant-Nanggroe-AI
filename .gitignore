@@ -1,66 +1,80 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║      Quant-Nanggroe-AI  —  Comprehensive .gitignore                ║
+# ╚══════════════════════════════════════════════════════════════════════╝
 
-# Dependencies
-node_modules/
-
-# Build output
-dist/
-dist-ssr/
-*.local
-.next/
-.vercel/
-
-# Python
-venv/
+# ── Python ────────────────────────────────────────────────────────────
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
 
-# IDE
-.vscode/*
-!.vscode/extensions.json
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS Files
-.DS_Store
-Thumbs.db
-
-# Environment & Secrets
+# ── Virtual Environments ─────────────────────────────────────────────
+.venv/
+venv/
+env/
 .env
-.env.local
-.env.development
-.env.production
-.env*.local
-.env.example
 
-# Sensitive Files
+# ── Testing ───────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ── IDE ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Logs ──────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Data ──────────────────────────────────────────────────────────────
+data/
 *.db
-*.key
-*.crt
-*.p12
-*.sqlite
 *.sqlite3
-credentials.db
-master.key
-salt.key
-cred
+dev_qna.db
+test_qna.db
 
-# Test Coverage
-coverage/
-.nyc_output/
+# ── Kill Switch State ─────────────────────────────────────────────────
+.kill_switch_state.json
 
-# TypeScript
+# ── Docker ────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Node / Frontend ──────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.nuxt/
+.cache/
 *.tsbuildinfo
 
-# Orchids config
-.orchids/
+# ── Secrets ───────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*_key.pem
+*.p12
+*.jks
+
+# ── Build Artifacts ──────────────────────────────────────────────────
+*.tar.gz
+*.zip
+
+# ── OS ────────────────────────────────────────────────────────────────
+Thumbs.db
+Desktop.ini
