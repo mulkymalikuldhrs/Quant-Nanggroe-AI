@@ -3,6 +3,8 @@ Engine Package — Deterministic Core
 ====================================
 100% deterministic, no AI, no approximation.
 All functions are independently testable.
+
+Includes NautilusTrader adapter for production backtesting.
 """
 
 from quant_nanggroe_ai.engine.math_lib import MathEngine
@@ -46,3 +48,13 @@ __all__ = [
     "AutoSwitchEngine",
     "ProviderHealth",
 ]
+
+# Lazy imports for NautilusTrader adapter (optional dependency)
+def __getattr__(name: str):
+    if name in ("NautilusAdapter", "BacktestConfig", "NautilusResults", "StrategyAdapter", "AbstractStrategyAdapter"):
+        from quant_nanggroe_ai.engine.nautilus_adapter import (
+            NautilusAdapter, BacktestConfig, NautilusResults,
+            StrategyAdapter, AbstractStrategyAdapter, is_nautilus_available,
+        )
+        return locals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

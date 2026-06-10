@@ -1,0 +1,49 @@
+agent_name: ProductionAgent
+priority: P1
+database_path: data/production_agent.db
+
+phases:
+  - name: production_logging
+    description: Production logging system
+    steps: 20
+
+  - name: realtime_monitoring
+    description: Real-time monitoring and alerting
+    steps: 20
+
+  - name: health_check
+    description: Health check endpoints
+    steps: 20
+
+  - name: graceful_shutdown
+    description: Graceful shutdown procedures
+    steps: 20
+
+  - name: operational_excellence
+    description: Operational excellence
+    steps: 20
+
+logging:
+  level: INFO
+  format: structured
+  retention_days: 30
+  max_file_size_mb: 100
+
+monitoring:
+  - cpu_usage: True
+  - memory_usage: True
+  - disk_io: True
+  - network_io: True
+  - response_time: True
+
+health_checks:
+  - system_health: /health
+  - database_health: /health/db
+  - api_health: /health/api
+  - cache_health: /health/cache
+
+alerting:
+  enabled: True
+  email_alerts: False
+  slack_alerts: False
+  webhook_url: ""

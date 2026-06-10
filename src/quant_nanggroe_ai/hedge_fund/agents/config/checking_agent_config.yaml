@@ -1,0 +1,43 @@
+agent_name: CheckingAgent
+priority: P1
+database_path: data/checking_agent.db
+
+phases:
+  - name: system_health
+    description: System health checks
+    steps: 20
+
+  - name: integration_validation
+    description: Integration validation
+    steps: 20
+
+  - name: data_integrity
+    description: Data integrity checks
+    steps: 20
+
+  - name: security_verification
+    description: Security verification
+    steps: 20
+
+  - name: performance_measurement
+    description: Performance measurement
+    steps: 20
+
+health_checks:
+  - system_initialization: True
+  - data_pipeline: True
+  - database_connectivity: True
+  - api_endpoints: True
+  - logging_system: True
+
+integration_validation:
+  - external_apis: True
+  - internal_services: True
+  - message_passing: True
+  - database_queries: True
+
+security_verification:
+  - authentication: True
+  - authorization: True
+  - input_validation: True
+  - output_sanitization: True

@@ -1,0 +1,52 @@
+agent_name: RefactoringAgent
+priority: P4
+database_path: data/refactoring_agent.db
+
+phases:
+  - name: refactoring_assessment
+    description: Refactoring assessment
+    steps: 20
+
+  - name: structural_refactoring
+    description: Structural refactoring
+    steps: 20
+
+  - name: performance_optimization
+    description: Performance optimization
+    steps: 20
+
+  - name: quality_improvements
+    description: Quality improvements
+    steps: 20
+
+  - name: modernization
+    description: Modernization to latest practices
+    steps: 20
+
+code_smells_detection:
+  - long_methods: True
+  - long_parameter_lists: True
+  - duplicate_code: True
+  - complex_conditionals: True
+  - god_classes: True
+  - feature_envy: True
+  - data_clumps: True
+
+refactoring_priorities:
+  - high: security_vulnerabilities, performance_bottlenecks
+  - medium: code_smells, maintainability_issues
+  - low: style_improvements, documentation_gaps
+
+performance_optimization:
+  - algorithm_efficiency: True
+  - database_queries: True
+  - caching_strategies: True
+  - parallel_processing: True
+  - memory_management: True
+
+modernization:
+  - python_version_update: True
+  - library_updates: True
+  - deprecated_removal: True
+  - best_practices_adoption: True
+  - type_hints_enhancement: True

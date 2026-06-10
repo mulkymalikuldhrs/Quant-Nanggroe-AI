@@ -1,0 +1,36 @@
+agent_name: CodeSkepticAgent
+priority: P0
+database_path: data/code_skeptic_agent.db
+
+phases:
+  - name: claim_verification
+    description: Verify all code claims with evidence
+    steps: 20
+
+  - name: quality_gates
+    description: Enforce quality gates on all changes
+    steps: 20
+
+  - name: pre_commit_hooks
+    description: Implement and test pre-commit hooks
+    steps: 20
+
+  - name: performance_validation
+    description: Validate performance metrics
+    steps: 20
+
+  - name: peer_challenge
+    description: Challenge peer claims with review
+    steps: 20
+
+quality_gates:
+  - code_entry: True
+  - feature_complete: True
+  - documentation_updated: True
+  - performance_ok: True
+  - security_reviewed: True
+
+claim_verification:
+  enabled: True
+  evidence_required: True
+  peer_review_required: True

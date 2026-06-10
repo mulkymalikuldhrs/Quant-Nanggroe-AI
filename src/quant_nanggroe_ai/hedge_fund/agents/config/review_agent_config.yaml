@@ -1,0 +1,50 @@
+agent_name: ReviewAgent
+priority: P2
+database_path: data/review_agent.db
+
+phases:
+  - name: code_quality_review
+    description: Code quality review
+    steps: 25
+
+  - name: architecture_review
+    description: Architecture review
+    steps: 25
+
+  - name: security_review
+    description: Security review
+    steps: 25
+
+  - name: performance_review
+    description: Performance review
+    steps: 25
+
+code_quality_checks:
+  - pep8_compliance: True
+  - type_hints: True
+  - docstrings: True
+  - complexity_analysis: True
+  - code_duplication: True
+
+architecture_review:
+  - design_patterns: True
+  - separation_of_concerns: True
+  - modularity: True
+  - scalability: True
+  - maintainability: True
+
+security_review:
+  - sql_injection: True
+  - xss_vulnerabilities: True
+  - csrf_protection: True
+  - authentication: True
+  - authorization: True
+  - secrets_management: True
+
+performance_review:
+  - response_time: True
+  - throughput: True
+  - memory_usage: True
+  - cpu_usage: True
+  - database_queries: True
+  - caching_effectiveness: True

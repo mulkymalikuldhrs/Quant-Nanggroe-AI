@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "quant-nanggroe-ai"
-version = "1.0.0"
-description = "Agentic Trading Intelligence OS — Production-grade quantitative trading system with multi-agent AI, deterministic engines, and constitutional risk management."
-authors = ["Quant-Nanggroe-AI Team"]
+version = "2.0.0"
+description = "Agentic Trading Intelligence OS — Production-grade quantitative trading system with 456+ alpha factors, 9-agent CrewAI council, NautilusTrader backtesting, LangGraph orchestration, MCP/A2A protocols, and constitutional risk management."
+authors = ["Mulky Malikul Dhaher <mulkymalikuldhaher@email.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "quant_nanggroe_ai", from = "src"}]
@@ -26,13 +26,15 @@ pandas = "^2.2.0"
 scipy = "^1.14.0"
 scikit-learn = "^1.6.0"
 
-# ── Agents (LangGraph / CrewAI / Pydantic-AI) ────────────────
+# ── Agents (LangGraph / CrewAI / Pydantic-AI / DSPy) ──────────
 langgraph = "^0.2.60"
 langchain-core = "^0.3.0"
 langchain-openai = "^0.3.0"
 langchain-anthropic = "^0.3.0"
 crewai = "^1.14.0"
 pydantic-ai = "^0.0.30"
+dspy-ai = {version = "^2.5.0", optional = true}
+nautilus-trader = {version = "^1.200.0", optional = true}
 
 # ── Data Sources ──────────────────────────────────────────────
 yfinance = "^0.2.50"
@@ -47,6 +49,9 @@ sec-edgar-downloader = "^5.0.0"
 # ── Backtesting ──────────────────────────────────────────────
 vectorbt = "^0.26.0"
 quantstats = "^0.0.64"
+# NautilusTrader is an optional dependency — install with:
+#   pip install nautilus-trader
+# or:  poetry install -E nautilus
 # empyrical removed — incompatible with Python 3.12+ (SafeConfigParser deprecation).
 # Key metrics (annual_return, max_drawdown, sharpe_ratio, calmar_ratio, sortino_ratio)
 # are available via quantstats or can be computed manually with numpy/pandas/scipy.
@@ -70,6 +75,11 @@ click = "^8.1.0"
 structlog = "^24.4.0"
 tenacity = "^9.0.0"
 psutil = "^6.1.0"
+
+[tool.poetry.extras]
+nautilus = ["nautilus-trader"]
+dspy = ["dspy-ai"]
+all = ["nautilus-trader", "dspy-ai"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
