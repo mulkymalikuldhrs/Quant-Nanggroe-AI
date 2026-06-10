@@ -18,6 +18,7 @@ real exchange connectivity, offering:
 - **ExchangeManager**: Multi-exchange orchestration, failover, and portfolio sync
 - **ExchangeFactory**: Dynamic exchange client creation with capability detection
 - **GuardPipeline**: Pre-trade validation with Whitelist/Cooldown/MaxPosition guards
+- **PolymarketBroker**: Polymarket prediction market trading via CLOB API with EIP-712 signing
 - **Extended Order Types**: TrailingStop, Bracket, OCO, Iceberg orders with state machines
 
 Usage:
@@ -62,6 +63,7 @@ from quant_nanggroe.exchange.ccxt_broker import CCXTBroker
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 from quant_nanggroe.exchange.manager import ExchangeManager
 from quant_nanggroe.exchange.alpaca_broker import AlpacaBroker
+from quant_nanggroe.exchange.polymarket_broker import PolymarketBroker
 
 # Solana/Jupiter V6 integration
 from quant_nanggroe.exchange.solana import (
@@ -134,6 +136,7 @@ __all__ = [
     "CCXTBroker",
     "PaperExchangeBroker",
     "AlpacaBroker",
+    "PolymarketBroker",
     # Solana/Jupiter V6
     "SolanaWallet",
     "TokenAccountInfo",

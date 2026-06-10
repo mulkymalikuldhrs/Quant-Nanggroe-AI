@@ -6,12 +6,14 @@ including Binance, Coinbase, Bybit, OKX, Kraken, and 100+ more.
 
 Features
 --------
-* Async-first: all methods use ``ccxt.pro`` async exchange classes.
+* Async-first: all methods use ``ccxt.async_support`` async exchange classes.
 * Automatic rate-limit handling with exponential backoff.
 * Configurable retries on transient errors.
 * Market-data caching with configurable TTL.
-* Position tracking for futures / margin exchanges.
+* Position tracking for both spot (derived from balances) and futures.
 * WebSocket streaming via ``ccxt.pro`` watch methods.
+* Support for spot and futures/perps trading.
+* Balance tracking with free/used/total breakdown.
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ import logging
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt.async_support as ccxt
 
@@ -54,7 +56,7 @@ logger = logging.getLogger(__name__)
 # Mapping helpers
 # ---------------------------------------------------------------------------
 
-# TimeFrame enum → CCXT timeframe string
+# TimeFrame enum -> CCXT timeframe string
 _TIMEFRAME_MAP: Dict[TimeFrame, str] = {
     TimeFrame.M1: "1m",
     TimeFrame.M5: "5m",
@@ -67,16 +69,16 @@ _TIMEFRAME_MAP: Dict[TimeFrame, str] = {
     TimeFrame.MO1: "1M",
 }
 
-# OrderSide enum → CCXT side string
+# OrderSide enum -> CCXT side string
 _SIDE_MAP: Dict[OrderSide, str] = {
     OrderSide.BUY: "buy",
     OrderSide.SELL: "sell",
 }
 
-# CCXT side string → OrderSide enum
+# CCXT side string -> OrderSide enum
 _SIDE_REVERSE: Dict[str, OrderSide] = {v: k for k, v in _SIDE_MAP.items()}
 
-# OrderType enum → CCXT type string
+# OrderType enum -> CCXT type string
 _TYPE_MAP: Dict[OrderType, str] = {
     OrderType.MARKET: "market",
     OrderType.LIMIT: "limit",
@@ -87,7 +89,7 @@ _TYPE_MAP: Dict[OrderType, str] = {
     OrderType.TAKE_PROFIT_LIMIT: "take_profit_limit",
 }
 
-# CCXT status string → OrderStatus enum
+# CCXT status string -> OrderStatus enum
 _STATUS_MAP: Dict[str, OrderStatus] = {
     "open": OrderStatus.SUBMITTED,
     "closed": OrderStatus.FILLED,
@@ -97,6 +99,11 @@ _STATUS_MAP: Dict[str, OrderStatus] = {
     "expired": OrderStatus.EXPIRED,
     "pending": OrderStatus.PENDING,
 }
+
+# Known quote currencies for spot position derivation
+_QUOTE_CURRENCIES = frozenset({
+    "USDT", "USDC", "USD", "BUSD", "TUSD", "EUR", "BTC", "ETH", "BNB",
+})
 
 
 class CCXTBroker(ExchangeInterface):
@@ -136,9 +143,16 @@ class CCXTBroker(ExchangeInterface):
         self._ws_callbacks: Dict[str, Dict[str, WebSocketCallback]] = {}
         # Position tracking for futures
         self._local_positions: Dict[str, Position] = {}
+        # Spot position tracking derived from balances
+        self._spot_positions: Dict[str, Position] = {}
         # Rate-limit tracking
         self._last_request_ts: float = 0.0
         self._request_interval: float = 1.0 / max(config.rate_limit, 0.1)
+        # Market type detection
+        self._is_futures: bool = False
+        # Balance cache
+        self._balance_cache: Optional[Dict[str, float]] = None
+        self._balance_cache_ts: float = 0.0
 
     # ------------------------------------------------------------------ #
     # Connection lifecycle
@@ -172,8 +186,14 @@ class CCXTBroker(ExchangeInterface):
             }
             if self._config.sandbox:
                 exchange_kwargs["sandbox"] = True
+            if self._config.passphrase:
+                exchange_kwargs["password"] = self._config.passphrase
 
             self._exchange = exchange_class(**exchange_kwargs)
+
+            # Detect if we're in futures/perps mode
+            default_type = self._config.options.get("defaultType", "spot")
+            self._is_futures = default_type in ("future", "swap")
 
             # Load markets to validate connection + cache symbols
             await self._exchange.load_markets()
@@ -182,9 +202,10 @@ class CCXTBroker(ExchangeInterface):
 
             self._state = ExchangeState.CONNECTED
             logger.info(
-                "CCXTBroker [%s]: Connected — %d markets loaded",
+                "CCXTBroker [%s]: Connected — %d markets loaded (mode=%s)",
                 self._config.exchange_id,
                 len(self._markets_cache),
+                "futures" if self._is_futures else "spot",
             )
             return True
 
@@ -254,7 +275,7 @@ class CCXTBroker(ExchangeInterface):
             await asyncio.sleep(self._request_interval - elapsed)
         self._last_request_ts = time.monotonic()
 
-    async def _with_retry(self, coro_factory, *args, **kwargs):
+    async def _with_retry(self, coro_factory, *args, **kwargs) -> Any:
         """Execute an async call with retries and rate-limit handling.
 
         Args:
@@ -273,6 +294,7 @@ class CCXTBroker(ExchangeInterface):
             try:
                 await self._rate_limit_gate()
                 result = await coro_factory(*args, **kwargs)
+                self._state = ExchangeState.CONNECTED
                 return result
             except ccxt.RateLimitExceeded as exc:
                 wait = self._config.retry_delay * (2 ** attempt)
@@ -289,6 +311,7 @@ class CCXTBroker(ExchangeInterface):
                     "CCXTBroker [%s]: Network error, retrying in %.1fs: %s",
                     self.name, wait, exc,
                 )
+                self._state = ExchangeState.RECONNECTING
                 await asyncio.sleep(wait)
                 last_exc = exc
             except ccxt.AuthenticationError as exc:
@@ -335,13 +358,33 @@ class CCXTBroker(ExchangeInterface):
     # ------------------------------------------------------------------ #
 
     async def get_balance(self) -> Dict[str, float]:
-        """Fetch account balances, returning only non-zero balances."""
+        """Fetch account balances, returning only non-zero balances.
+
+        For spot exchanges, this returns free balances.
+        For futures exchanges, this may include margin info.
+        """
         ex = self._require_exchange()
         try:
             raw = await self._with_retry(ex.fetch_balance)
             # CCXT returns {'free': {...}, 'used': {...}, 'total': {...}}
             free = raw.get("free", {})
-            return {k: v for k, v in free.items() if v and v > 0}
+            result = {k: v for k, v in free.items() if v and v > 0}
+
+            # Cache for spot position derivation
+            self._balance_cache = result
+            self._balance_cache_ts = time.time()
+
+            # Add total equity for futures
+            if self._is_futures:
+                total_equity = raw.get("total", {})
+                total_usdt = sum(
+                    v for k, v in total_equity.items()
+                    if k in _QUOTE_CURRENCIES and v and v > 0
+                )
+                if total_usdt > 0:
+                    result["equity"] = total_usdt
+
+            return result
         except ExchangeError:
             raise
         except Exception as exc:
@@ -350,34 +393,119 @@ class CCXTBroker(ExchangeInterface):
             ) from exc
 
     async def get_positions(self) -> List[Position]:
-        """Fetch open positions (futures / margin exchanges).
+        """Fetch open positions.
 
-        For spot-only exchanges this returns locally tracked positions.
+        For futures/perps exchanges, uses CCXT's unified fetchPositions.
+        For spot exchanges, derives positions from non-zero token balances.
         """
         ex = self._require_exchange()
         try:
-            # Try CCXT unified positions first (futures exchanges)
-            if ex.has.get("fetchPositions"):
-                raw_positions = await self._with_retry(
-                    ex.fetch_positions,
-                )
-                positions = []
-                for rp in raw_positions:
-                    if rp and rp.get("contracts") and rp["contracts"] > 0:
-                        pos = self._ccxt_position_to_position(rp)
-                        if pos is not None:
-                            positions.append(pos)
-                # Update local cache
-                self._local_positions = {p.symbol: p for p in positions}
-                return positions
+            if self._is_futures and ex.has.get("fetchPositions"):
+                return await self._get_futures_positions(ex)
             else:
-                return list(self._local_positions.values())
+                return await self._get_spot_positions(ex)
         except ExchangeError:
             raise
         except Exception as exc:
             raise ExchangeError(
                 f"Failed to fetch positions: {exc}", exchange=self.name, original=exc,
             ) from exc
+
+    async def _get_futures_positions(self, ex: ccxt.Exchange) -> List[Position]:
+        """Fetch futures/perps positions via CCXT unified API."""
+        raw_positions = await self._with_retry(ex.fetch_positions)
+        positions: List[Position] = []
+        for rp in raw_positions:
+            if rp and rp.get("contracts") and rp["contracts"] > 0:
+                pos = self._ccxt_position_to_position(rp)
+                if pos is not None:
+                    positions.append(pos)
+        # Update local cache
+        self._local_positions = {p.symbol: p for p in positions}
+        return positions
+
+    async def _get_spot_positions(self, ex: ccxt.Exchange) -> List[Position]:
+        """Derive spot positions from non-zero token balances.
+
+        For spot exchanges, we treat each non-zero base currency balance
+        as a position. The entry price is estimated from market data.
+        """
+        # Use cached balances if available
+        balances = await self.get_balance()
+        positions: List[Position] = []
+
+        for currency, amount in balances.items():
+            if currency in _QUOTE_CURRENCIES:
+                continue
+            if amount <= 0:
+                continue
+
+            # Try to find a USDT or USD pair for this currency
+            symbol = None
+            for quote in ["USDT", "USDC", "USD", "BUSD"]:
+                candidate = f"{currency}/{quote}"
+                if self._exchange and candidate in self._exchange.markets:
+                    symbol = candidate
+                    break
+
+            if symbol is None:
+                # No market pair found; store without price
+                pos = Position(
+                    symbol=currency,
+                    side=PositionSide.LONG,
+                    quantity=amount,
+                    entry_price=0.0,
+                    current_price=0.0,
+                    cost_basis=0.0,
+                    market_value=0.0,
+                    broker_id=self.name,
+                    last_updated=datetime.now(tz=timezone.utc),
+                )
+                positions.append(pos)
+                self._spot_positions[currency] = pos
+                continue
+
+            # Fetch current price for this pair
+            try:
+                ticker = await self.get_ticker(symbol)
+                current_price = ticker.last_price
+                # Estimate entry price as current price (spot doesn't track entry)
+                entry_price = current_price
+
+                pos = Position(
+                    symbol=symbol,
+                    side=PositionSide.LONG,
+                    quantity=amount,
+                    entry_price=entry_price,
+                    current_price=current_price,
+                    cost_basis=entry_price * amount,
+                    market_value=current_price * amount,
+                    broker_id=self.name,
+                    last_updated=datetime.now(tz=timezone.utc),
+                )
+                positions.append(pos)
+                self._spot_positions[symbol] = pos
+            except Exception as exc:
+                logger.warning(
+                    "CCXTBroker [%s]: Failed to get price for %s: %s",
+                    self.name, symbol, exc,
+                )
+                # Store position without price data
+                pos = Position(
+                    symbol=symbol,
+                    side=PositionSide.LONG,
+                    quantity=amount,
+                    entry_price=0.0,
+                    current_price=0.0,
+                    cost_basis=0.0,
+                    market_value=0.0,
+                    broker_id=self.name,
+                    last_updated=datetime.now(tz=timezone.utc),
+                )
+                positions.append(pos)
+                self._spot_positions[symbol] = pos
+
+        return positions
 
     async def get_portfolio(self) -> Portfolio:
         """Build a Portfolio snapshot from balance + positions."""
@@ -387,10 +515,13 @@ class CCXTBroker(ExchangeInterface):
         # Determine base currency
         currency = "USDT"
         cash = balances.get(currency, 0.0)
-        # Also check USD
+        # Also check USD, USDC
         if cash == 0.0 and "USD" in balances:
             cash = balances["USD"]
             currency = "USD"
+        if cash == 0.0 and "USDC" in balances:
+            cash = balances["USDC"]
+            currency = "USDC"
 
         initial_capital = cash  # Approximation; real value should be tracked externally
 
@@ -422,7 +553,14 @@ class CCXTBroker(ExchangeInterface):
         agent_name: Optional[str] = None,
         notes: Optional[str] = None,
     ) -> Order:
-        """Place an order via CCXT."""
+        """Place an order via CCXT.
+
+        Supports market, limit, stop, stop_limit, trailing_stop,
+        take_profit, and take_profit_limit order types.
+
+        For stop and trigger orders, the CCXT ``params`` dict is used
+        to pass exchange-specific parameters like ``stopPrice``.
+        """
         ex = self._require_exchange()
         try:
             ccxt_side = _SIDE_MAP[side]
@@ -433,6 +571,12 @@ class CCXTBroker(ExchangeInterface):
                 params["stopPrice"] = stop_price
             if client_order_id is not None:
                 params["clientOrderId"] = client_order_id
+
+            # Handle trailing stop params
+            if order_type == OrderType.TRAILING_STOP:
+                if stop_price is not None:
+                    params["trailingAmount"] = stop_price
+                    params.pop("stopPrice", None)
 
             raw = await self._with_retry(
                 ex.create_order,
@@ -451,7 +595,9 @@ class CCXTBroker(ExchangeInterface):
                 notes=notes,
             )
 
-        except (OrderError, InsufficientFundsError, AuthenticationError):
+        except (OrderError, InsufficientFundsError, AuthenticationError, RateLimitError):
+            raise
+        except ExchangeError:
             raise
         except Exception as exc:
             raise OrderError(
@@ -470,7 +616,7 @@ class CCXTBroker(ExchangeInterface):
                 symbol or "",
             )
             return self._ccxt_order_to_order(raw)
-        except OrderError:
+        except (OrderError, ExchangeError):
             raise
         except Exception as exc:
             raise OrderError(
@@ -490,7 +636,7 @@ class CCXTBroker(ExchangeInterface):
                 symbol or "",
             )
             return self._ccxt_order_to_order(raw)
-        except OrderError:
+        except (OrderError, ExchangeError):
             raise
         except Exception as exc:
             raise OrderError(
@@ -543,6 +689,8 @@ class CCXTBroker(ExchangeInterface):
 
         except MarketDataError:
             raise
+        except ExchangeError:
+            raise
         except Exception as exc:
             raise MarketDataError(
                 f"Failed to fetch OHLCV for {symbol}: {exc}",
@@ -573,6 +721,8 @@ class CCXTBroker(ExchangeInterface):
                 vwap=float(raw["vwap"]) if raw.get("vwap") else None,
             )
         except MarketDataError:
+            raise
+        except ExchangeError:
             raise
         except Exception as exc:
             raise MarketDataError(
@@ -610,6 +760,8 @@ class CCXTBroker(ExchangeInterface):
             )
         except MarketDataError:
             raise
+        except ExchangeError:
+            raise
         except Exception as exc:
             raise MarketDataError(
                 f"Failed to fetch order book for {symbol}: {exc}",
@@ -644,6 +796,8 @@ class CCXTBroker(ExchangeInterface):
                 for t in raw
             ]
         except MarketDataError:
+            raise
+        except ExchangeError:
             raise
         except Exception as exc:
             raise MarketDataError(
@@ -705,8 +859,8 @@ class CCXTBroker(ExchangeInterface):
         self,
         channel: str,
         symbol: str,
-        watch_fn,
-        *watch_args,
+        watch_fn: Any,
+        *watch_args: Any,
     ) -> None:
         """Run a ccxt.pro watch loop, dispatching updates to callbacks."""
         key = f"{channel}:{symbol}"
@@ -753,6 +907,8 @@ class CCXTBroker(ExchangeInterface):
             self._markets_cache = list(ex.markets.keys())
             self._markets_cache_ts = time.time()
             return self._markets_cache
+        except ExchangeError:
+            raise
         except Exception as exc:
             raise MarketDataError(
                 f"Failed to load markets: {exc}",
@@ -777,7 +933,7 @@ class CCXTBroker(ExchangeInterface):
             return False
 
     # ------------------------------------------------------------------ #
-    # Internal: CCXT → domain type mappers
+    # Internal: CCXT -> domain type mappers
     # ------------------------------------------------------------------ #
 
     @staticmethod
@@ -802,24 +958,32 @@ class CCXTBroker(ExchangeInterface):
         raw_side = raw.get("side", "buy")
         side = _SIDE_REVERSE.get(raw_side, OrderSide.BUY)
 
+        # Extract fee
+        fee_cost = 0.0
+        fee_info = raw.get("fee")
+        if fee_info and isinstance(fee_info, dict):
+            fee_cost = float(fee_info.get("cost", 0) or 0)
+
+        # Extract timestamp
+        raw_ts = raw.get("timestamp", 0) or 0
+        created_at = datetime.fromtimestamp(raw_ts / 1000, tz=timezone.utc) if raw_ts else datetime.now(tz=timezone.utc)
+
         return Order(
             id=str(raw.get("id", uuid.uuid4())),
             client_order_id=raw.get("clientOrderId"),
             symbol=raw.get("symbol", ""),
             side=side,
             order_type=order_type,
-            quantity=float(raw.get("amount", 0)),
+            quantity=float(raw.get("amount", 0) or 0),
             price=float(raw["price"]) if raw.get("price") else None,
             stop_price=float(raw.get("stopPrice")) if raw.get("stopPrice") else None,
             status=status,
-            filled_quantity=float(raw.get("filled", 0)),
+            filled_quantity=float(raw.get("filled", 0) or 0),
             average_fill_price=float(raw.get("average")) if raw.get("average") else None,
-            commission=float(raw.get("fee", {}).get("cost", 0)) if raw.get("fee") else 0.0,
-            created_at=datetime.fromtimestamp(
-                (raw.get("timestamp", 0) or 0) / 1000, tz=timezone.utc,
-            ),
+            commission=fee_cost,
+            created_at=created_at,
             updated_at=datetime.now(tz=timezone.utc),
-            broker_id=raw.get("exchange", ""),
+            broker_id=raw.get("exchange", "") or "",
             broker_order_id=str(raw.get("id", "")),
             strategy_name=strategy_name,
             agent_name=agent_name,
@@ -830,15 +994,16 @@ class CCXTBroker(ExchangeInterface):
     def _ccxt_position_to_position(raw: Dict[str, Any]) -> Optional[Position]:
         """Convert a CCXT position dict to our Position model."""
         try:
-            contracts = float(raw.get("contracts", 0))
+            contracts = float(raw.get("contracts", 0) or 0)
             if contracts == 0:
                 return None
 
             side = PositionSide.LONG if raw.get("side") == "long" else PositionSide.SHORT
-            entry_price = float(raw.get("entryPrice", 0))
-            current_price = float(raw.get("markPrice", entry_price))
-            unrealized_pnl = float(raw.get("unrealizedPnl", 0))
+            entry_price = float(raw.get("entryPrice", 0) or 0)
+            current_price = float(raw.get("markPrice", 0) or entry_price)
+            unrealized_pnl = float(raw.get("unrealizedPnl", 0) or 0)
             cost_basis = entry_price * contracts
+            market_value = contracts * current_price
 
             return Position(
                 symbol=raw.get("symbol", ""),
@@ -848,8 +1013,8 @@ class CCXTBroker(ExchangeInterface):
                 current_price=current_price,
                 unrealized_pnl=unrealized_pnl,
                 cost_basis=cost_basis,
-                market_value=contracts * current_price,
-                broker_id=raw.get("exchange", ""),
+                market_value=market_value,
+                broker_id=raw.get("exchange", "") or "",
                 last_updated=datetime.now(tz=timezone.utc),
             )
         except (ValueError, TypeError, KeyError):

@@ -1,21 +1,29 @@
 """
 Pytest Configuration — Shared Fixtures for Quant-Nanggroe-AI Test Suite
 ========================================================================
+
+Extended with additional fixtures for comprehensive testing.
 """
 
 from __future__ import annotations
 
 import os
+import tempfile
 from typing import Generator
 
-import pytest
 import numpy as np
+import pandas as pd
+import pytest
 
 # Set test environment BEFORE importing app modules — must match config.py
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///test_qna.db")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+os.environ.setdefault("QNAI_LOG_LEVEL", "WARNING")  # Reduce noise in tests
+
+
+# ── Price Series Fixtures ──────────────────────────────────────────────
 
 
 @pytest.fixture
@@ -105,3 +113,93 @@ def kill_switch():
     """KillSwitch instance for testing."""
     from quant_nanggroe.engine.risk.kill_switch import KillSwitch
     return KillSwitch()
+
+
+@pytest.fixture
+def risk_manager():
+    """RiskManager instance for testing."""
+    from quant_nanggroe.engine.risk.manager import RiskManager
+    return RiskManager(initial_equity=1_000_000.0)
+
+
+@pytest.fixture
+def drawdown_monitor():
+    """DrawdownMonitor instance for testing."""
+    from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
+    return DrawdownMonitor(max_drawdown=0.10, initial_equity=1_000_000.0)
+
+
+@pytest.fixture
+def var_calculator():
+    """VaRCalculator instance for testing."""
+    from quant_nanggroe.engine.risk.var import VaRCalculator
+    return VaRCalculator(default_confidence=0.95)
+
+
+@pytest.fixture
+def kelly_criterion():
+    """KellyCriterion instance for testing."""
+    from quant_nanggroe.engine.risk.kelly import KellyCriterion
+    return KellyCriterion(max_position=0.20, min_position=0.01)
+
+
+@pytest.fixture
+def correlation_monitor():
+    """CorrelationMonitor instance for testing."""
+    from quant_nanggroe.engine.risk.correlation import CorrelationMonitor
+    return CorrelationMonitor()
+
+
+# ── Return Data Fixtures ───────────────────────────────────────────────
+
+
+@pytest.fixture
+def normal_returns():
+    """1000 normal-distribution returns for VaR/risk testing."""
+    np.random.seed(42)
+    return np.random.normal(0.0001, 0.02, 1000)
+
+
+@pytest.fixture
+def ohlcv_df():
+    """Standard 100-bar OHLCV DataFrame for factor testing."""
+    np.random.seed(42)
+    n = 100
+    returns = np.random.normal(0.0002, 0.015, n)
+    closes = 100.0 * np.cumprod(1 + returns)
+    dates = pd.date_range("2024-01-01", periods=n, freq="D")
+
+    return pd.DataFrame({
+        "open": closes * (1 + np.random.normal(0, 0.002, n)),
+        "high": closes * (1 + np.abs(np.random.normal(0, 0.005, n))),
+        "low": closes * (1 - np.abs(np.random.normal(0, 0.005, n))),
+        "close": closes,
+        "volume": np.maximum(np.random.lognormal(15, 1, n), 1000),
+    }, index=dates)
+
+
+# ── Persistence Fixtures ───────────────────────────────────────────────
+
+
+@pytest.fixture
+def tmp_persist_dir():
+    """Temporary directory for persistence tests."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield tmpdir
+
+
+# ── Agent State Fixtures ───────────────────────────────────────────────
+
+
+@pytest.fixture
+def initial_agent_state():
+    """Initial AgentState for graph/routing tests."""
+    from quant_nanggroe.agents.state import create_initial_state
+    return create_initial_state(["BTC/USDT", "ETH/USDT"], "2024-01-15")
+
+
+@pytest.fixture
+def good_kelly_params():
+    """Kelly parameters with a clear positive edge."""
+    from quant_nanggroe.engine.risk.kelly import KellyParameters
+    return KellyParameters(win_rate=0.6, avg_win=200.0, avg_loss=100.0, confidence=0.8)

@@ -271,21 +271,21 @@ class RiskManager:
 
         # Enforce constitutional limit on position size
         max_fraction = MAX_RISK_PER_TRADE
-        if result.adjusted_fraction > max_fraction:
-            result = result._replace(
-                adjusted_fraction=max_fraction,
-                recommendation=f"CONSTITUTIONAL LIMIT: Position capped at {max_fraction:.1%}",
-            )
+        adjusted_fraction = result.adjusted_fraction
+        recommendation = result.recommendation
+        if adjusted_fraction > max_fraction:
+            adjusted_fraction = max_fraction
+            recommendation = f"CONSTITUTIONAL LIMIT: Position capped at {max_fraction:.1%}"
 
-        position_size = account_balance * result.adjusted_fraction
+        position_size = account_balance * adjusted_fraction
 
         return {
             "optimal_fraction": result.optimal_fraction,
-            "adjusted_fraction": result.adjusted_fraction,
+            "adjusted_fraction": adjusted_fraction,
             "position_size": round(position_size, 2),
             "expected_growth": result.expected_growth,
             "risk_of_ruin": result.risk_of_ruin,
-            "recommendation": result.recommendation,
+            "recommendation": recommendation,
             "method": method,
         }
 

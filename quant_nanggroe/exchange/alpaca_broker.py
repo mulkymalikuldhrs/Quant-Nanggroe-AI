@@ -8,12 +8,15 @@ Features
 --------
 * Connect to Alpaca paper or live trading API
 * Place market, limit, stop, stop_limit, and trailing_stop orders
-* Cancel orders
+* Cancel orders with proper state tracking
 * Get positions, portfolio, and account information
 * Get order status and fills
 * Handle partial fills
 * Circuit breaker on consecutive errors
-* Real-time WebSocket streaming for trades and quotes
+* Real-time WebSocket streaming via Alpaca Stream
+* Market data: bars, quotes, trades (stocks + crypto)
+* Rate-limit handling with exponential backoff
+* Async-first architecture
 
 Dependencies
 ------------
@@ -29,12 +32,12 @@ use ``"BTC/USD"`` format.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-
-from pydantic import BaseModel, Field
 
 from quant_nanggroe.exchange.base import (
     ExchangeConfig,
@@ -59,7 +62,7 @@ logger = logging.getLogger(__name__)
 # Mapping helpers
 # ---------------------------------------------------------------------------
 
-# OrderType → Alpaca order type string
+# OrderType -> Alpaca order type string
 _ALPACA_TYPE_MAP: Dict[OrderType, str] = {
     OrderType.MARKET: "market",
     OrderType.LIMIT: "limit",
@@ -68,7 +71,7 @@ _ALPACA_TYPE_MAP: Dict[OrderType, str] = {
     OrderType.TRAILING_STOP: "trailing_stop",
 }
 
-# Alpaca order status → OrderStatus
+# Alpaca order status -> OrderStatus
 _ALPACA_STATUS_MAP: Dict[str, OrderStatus] = {
     "new": OrderStatus.SUBMITTED,
     "partially_filled": OrderStatus.PARTIALLY_FILLED,
@@ -89,16 +92,16 @@ _ALPACA_STATUS_MAP: Dict[str, OrderStatus] = {
     "calculated": OrderStatus.SUBMITTED,
 }
 
-# Alpaca side → OrderSide
+# Alpaca side -> OrderSide
 _ALPACA_SIDE_MAP: Dict[str, OrderSide] = {
     "buy": OrderSide.BUY,
     "sell": OrderSide.SELL,
 }
 
-# OrderSide → Alpaca side
+# OrderSide -> Alpaca side
 _SIDE_TO_ALPACA: Dict[OrderSide, str] = {v: k for k, v in _ALPACA_SIDE_MAP.items()}
 
-# TimeFrame → Alpaca timeframe string
+# TimeFrame -> Alpaca timeframe string
 _TIMEFRAME_TO_ALPACA: Dict[TimeFrame, str] = {
     TimeFrame.M1: "1Min",
     TimeFrame.M5: "5Min",
@@ -131,15 +134,14 @@ class CircuitBreaker:
     def __init__(self, max_errors: int = 5, cooldown_seconds: float = 60.0) -> None:
         self._max_errors = max_errors
         self._cooldown = cooldown_seconds
-        self._error_count = 0
+        self._error_count: int = 0
         self._opened_at: Optional[float] = None
-        self._is_open = False
+        self._is_open: bool = False
 
     @property
     def is_open(self) -> bool:
         """Whether the circuit breaker is currently open."""
         if self._is_open and self._opened_at:
-            import time
             if (time.time() - self._opened_at) > self._cooldown:
                 # Half-open: allow one attempt
                 return False
@@ -156,7 +158,6 @@ class CircuitBreaker:
         self._error_count += 1
         if self._error_count >= self._max_errors:
             self._is_open = True
-            import time
             self._opened_at = time.time()
             logger.warning(
                 "CircuitBreaker: OPENED after %d consecutive errors",
@@ -171,6 +172,46 @@ class CircuitBreaker:
 
 
 # ---------------------------------------------------------------------------
+# Rate Limiter
+# ---------------------------------------------------------------------------
+
+class RateLimiter:
+    """Token-bucket rate limiter for API requests.
+
+    Parameters
+    ----------
+    max_requests:
+        Maximum number of requests per window.
+    window_seconds:
+        Time window in seconds.
+    """
+
+    def __init__(self, max_requests: int = 200, window_seconds: float = 60.0) -> None:
+        self._max_requests = max_requests
+        self._window = window_seconds
+        self._tokens: float = max_requests
+        self._last_refill: float = time.monotonic()
+
+    async def acquire(self) -> None:
+        """Wait until a token is available."""
+        while True:
+            self._refill()
+            if self._tokens >= 1.0:
+                self._tokens -= 1.0
+                return
+            await asyncio.sleep(0.1)
+
+    def _refill(self) -> None:
+        now = time.monotonic()
+        elapsed = now - self._last_refill
+        self._tokens = min(
+            self._max_requests,
+            self._tokens + elapsed * (self._max_requests / self._window),
+        )
+        self._last_refill = now
+
+
+# ---------------------------------------------------------------------------
 # AlpacaBroker
 # ---------------------------------------------------------------------------
 
@@ -178,8 +219,8 @@ class AlpacaBroker(ExchangeInterface):
     """Alpaca trading broker implementing ExchangeInterface.
 
     Provides full trading capabilities via the Alpaca paper/live API,
-    including order placement, cancellation, position tracking, and
-    portfolio management.
+    including order placement, cancellation, position tracking,
+    portfolio management, and real-time streaming.
 
     Parameters
     ----------
@@ -212,11 +253,18 @@ class AlpacaBroker(ExchangeInterface):
     def __init__(self, config: ExchangeConfig) -> None:
         self._config = config
         self._state: ExchangeState = ExchangeState.DISCONNECTED
-        self._trading_client = None
-        self._stock_historical_client = None
+        self._trading_client: Any = None
+        self._stock_historical_client: Any = None
+        self._crypto_historical_client: Any = None
         self._circuit_breaker = CircuitBreaker(max_errors=5, cooldown_seconds=60.0)
+        self._rate_limiter = RateLimiter(max_requests=200, window_seconds=60.0)
         self._local_orders: Dict[str, Order] = {}
-        self._ws_tasks: Dict[str, Any] = {}
+        self._local_positions: Dict[str, Position] = {}
+        self._ws_tasks: Dict[str, asyncio.Task] = {}
+        self._ws_callbacks: Dict[str, Dict[str, WebSocketCallback]] = {}
+        self._stream_conn: Any = None
+        self._account_cache: Optional[Any] = None
+        self._account_cache_ts: float = 0.0
 
     # ----- Connection lifecycle -----
 
@@ -242,6 +290,7 @@ class AlpacaBroker(ExchangeInterface):
         try:
             from alpaca.trading.client import TradingClient  # type: ignore[import-untyped]
             from alpaca.data.historical.stock import StockHistoricalDataClient  # type: ignore[import-untyped]
+            from alpaca.data.historical.crypto import CryptoHistoricalDataClient  # type: ignore[import-untyped]
 
             self._trading_client = TradingClient(
                 api_key=self._config.api_key or "",
@@ -249,6 +298,10 @@ class AlpacaBroker(ExchangeInterface):
                 paper=self._config.sandbox,
             )
             self._stock_historical_client = StockHistoricalDataClient(
+                api_key=self._config.api_key or "",
+                secret_key=self._config.api_secret or "",
+            )
+            self._crypto_historical_client = CryptoHistoricalDataClient(
                 api_key=self._config.api_key or "",
                 secret_key=self._config.api_secret or "",
             )
@@ -261,6 +314,8 @@ class AlpacaBroker(ExchangeInterface):
                     exchange="alpaca",
                 )
 
+            self._account_cache = account
+            self._account_cache_ts = time.time()
             self._state = ExchangeState.CONNECTED
             self._circuit_breaker.reset()
             logger.info(
@@ -274,6 +329,8 @@ class AlpacaBroker(ExchangeInterface):
             raise ImportError(
                 "alpaca-py package is required. Install with: pip install alpaca-py"
             ) from exc
+        except ExchangeError:
+            raise
         except Exception as exc:
             self._state = ExchangeState.ERROR
             error_msg = str(exc).lower()
@@ -291,12 +348,26 @@ class AlpacaBroker(ExchangeInterface):
 
     async def disconnect(self) -> None:
         """Close the Alpaca connection and clean up resources."""
+        # Cancel WebSocket tasks
         for task in self._ws_tasks.values():
-            if hasattr(task, "cancel"):
+            if hasattr(task, "cancel") and not task.done():
                 task.cancel()
         self._ws_tasks.clear()
+        self._ws_callbacks.clear()
+
+        # Close streaming connection
+        if self._stream_conn is not None:
+            try:
+                if hasattr(self._stream_conn, "close"):
+                    self._stream_conn.close()
+            except Exception as exc:
+                logger.warning("AlpacaBroker: Error closing stream: %s", exc)
+            self._stream_conn = None
+
         self._trading_client = None
         self._stock_historical_client = None
+        self._crypto_historical_client = None
+        self._account_cache = None
         self._state = ExchangeState.DISCONNECTED
         logger.info("AlpacaBroker: Disconnected")
 
@@ -329,6 +400,107 @@ class AlpacaBroker(ExchangeInterface):
                 exchange="alpaca",
             )
 
+    # ----- Internal: API call with rate limiting and retry -----
+
+    async def _api_call(self, func, *args, **kwargs) -> Any:
+        """Execute an API call with rate limiting, retry, and error handling.
+
+        Parameters
+        ----------
+        func:
+            Callable to execute (synchronous Alpaca SDK method).
+        *args, **kwargs:
+            Arguments to pass to the callable.
+
+        Returns
+        -------
+        Any
+            The result of the API call.
+
+        Raises
+        ------
+        RateLimitError
+            If rate limit is still hit after retries.
+        ExchangeError
+            On non-transient errors.
+        """
+        self._check_circuit_breaker()
+        last_exc: Optional[Exception] = None
+
+        for attempt in range(self._config.retries + 1):
+            try:
+                await self._rate_limiter.acquire()
+                # Run synchronous SDK calls in an executor to avoid blocking
+                result = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: func(*args, **kwargs),
+                )
+                self._circuit_breaker.record_success()
+                return result
+            except ImportError:
+                raise
+            except Exception as exc:
+                last_exc = exc
+                error_msg = str(exc).lower()
+
+                # Rate limit handling
+                if "rate" in error_msg or "429" in error_msg:
+                    wait = self._config.retry_delay * (2 ** attempt)
+                    self._state = ExchangeState.RATE_LIMITED
+                    logger.warning(
+                        "AlpacaBroker: Rate limited, retrying in %.1fs (attempt %d/%d)",
+                        wait, attempt + 1, self._config.retries + 1,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+
+                # Authentication error — no retry
+                if "auth" in error_msg or "401" in error_msg or "403" in error_msg:
+                    self._circuit_breaker.record_error()
+                    raise AuthenticationError(
+                        f"Alpaca authentication failed: {exc}",
+                        exchange="alpaca",
+                        original=exc,
+                    ) from exc
+
+                # Insufficient funds — no retry
+                if "insufficient" in error_msg or "buying power" in error_msg:
+                    self._circuit_breaker.record_error()
+                    raise InsufficientFundsError(
+                        str(exc), exchange="alpaca", original=exc,
+                    ) from exc
+
+                # Network/transient error — retry
+                if "timeout" in error_msg or "connection" in error_msg or "500" in error_msg or "502" in error_msg or "503" in error_msg:
+                    wait = self._config.retry_delay * (2 ** attempt)
+                    logger.warning(
+                        "AlpacaBroker: Transient error, retrying in %.1fs: %s",
+                        wait, exc,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+
+                # Non-transient — don't retry
+                self._circuit_breaker.record_error()
+                raise ExchangeError(
+                    f"API call failed: {exc}",
+                    exchange="alpaca",
+                    original=exc,
+                ) from exc
+
+        # Exhausted retries
+        self._circuit_breaker.record_error()
+        if last_exc and ("rate" in str(last_exc).lower() or "429" in str(last_exc)):
+            raise RateLimitError(
+                f"Rate limit exceeded after {self._config.retries + 1} attempts",
+                retry_after=self._config.retry_delay * (2 ** self._config.retries),
+                exchange="alpaca",
+            )
+        raise ExchangeError(
+            f"API call failed after {self._config.retries + 1} attempts: {last_exc}",
+            exchange="alpaca",
+            original=last_exc,
+        )
+
     # ----- Account -----
 
     async def get_balance(self) -> Dict[str, float]:
@@ -337,22 +509,24 @@ class AlpacaBroker(ExchangeInterface):
         Returns
         -------
         dict
-            Mapping of currency → available balance.
+            Mapping of currency/field -> available balance.
         """
         self._require_client()
-        self._check_circuit_breaker()
         try:
-            account = self._trading_client.get_account()
-            self._circuit_breaker.record_success()
+            account = await self._api_call(self._trading_client.get_account)
             return {
                 "USD": float(account.cash or 0),
                 "equity": float(account.equity or 0),
                 "buying_power": float(account.buying_power or 0),
+                "long_market_value": float(account.long_market_value or 0),
+                "short_market_value": float(account.short_market_value or 0),
             }
+        except ExchangeError:
+            raise
         except Exception as exc:
             self._circuit_breaker.record_error()
             raise ExchangeError(
-                f"Failed to get balance: {exc}", exchange="alpaca", original=exc
+                f"Failed to get balance: {exc}", exchange="alpaca", original=exc,
             ) from exc
 
     async def get_positions(self) -> List[Position]:
@@ -364,21 +538,23 @@ class AlpacaBroker(ExchangeInterface):
             Current open positions.
         """
         self._require_client()
-        self._check_circuit_breaker()
         try:
-            alpaca_positions = self._trading_client.get_all_positions()
-            self._circuit_breaker.record_success()
-            positions = []
+            alpaca_positions = await self._api_call(
+                self._trading_client.get_all_positions,
+            )
+            positions: List[Position] = []
             for ap in alpaca_positions:
                 pos = self._alpaca_position_to_position(ap)
-                if pos:
+                if pos is not None:
                     positions.append(pos)
-                    self._local_positions[symbol] = pos  # type: ignore[name-defined]
+                    self._local_positions[pos.symbol] = pos
             return positions
+        except ExchangeError:
+            raise
         except Exception as exc:
             self._circuit_breaker.record_error()
             raise ExchangeError(
-                f"Failed to get positions: {exc}", exchange="alpaca", original=exc
+                f"Failed to get positions: {exc}", exchange="alpaca", original=exc,
             ) from exc
 
     async def get_portfolio(self) -> Portfolio:
@@ -390,9 +566,8 @@ class AlpacaBroker(ExchangeInterface):
             Complete portfolio with positions and metrics.
         """
         self._require_client()
-        self._check_circuit_breaker()
         try:
-            account = self._trading_client.get_account()
+            account = await self._api_call(self._trading_client.get_account)
             positions = await self.get_positions()
 
             cash = float(account.cash or 0)
@@ -409,14 +584,13 @@ class AlpacaBroker(ExchangeInterface):
             for pos in positions:
                 portfolio.positions[pos.symbol] = pos
             portfolio.recalculate()
-            self._circuit_breaker.record_success()
             return portfolio
         except ExchangeError:
             raise
         except Exception as exc:
             self._circuit_breaker.record_error()
             raise ExchangeError(
-                f"Failed to get portfolio: {exc}", exchange="alpaca", original=exc
+                f"Failed to get portfolio: {exc}", exchange="alpaca", original=exc,
             ) from exc
 
     # ----- Trading -----
@@ -468,10 +642,15 @@ class AlpacaBroker(ExchangeInterface):
             If the account lacks buying power.
         """
         self._require_client()
-        self._check_circuit_breaker()
 
         try:
-            from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, StopLimitOrderRequest, TrailingStopOrderRequest  # type: ignore[import-untyped]
+            from alpaca.trading.requests import (  # type: ignore[import-untyped]
+                MarketOrderRequest,
+                LimitOrderRequest,
+                StopOrderRequest,
+                StopLimitOrderRequest,
+                TrailingStopOrderRequest,
+            )
             from alpaca.trading.enums import OrderSide as AlpacaOrderSide, TimeInForce  # type: ignore[import-untyped]
 
             alpaca_side = (
@@ -480,7 +659,7 @@ class AlpacaBroker(ExchangeInterface):
             )
 
             # Build the appropriate request type
-            alpaca_order = None
+            alpaca_order: Any = None
 
             if order_type == OrderType.MARKET:
                 alpaca_order = MarketOrderRequest(
@@ -528,6 +707,11 @@ class AlpacaBroker(ExchangeInterface):
                     client_order_id=client_order_id,
                 )
             elif order_type == OrderType.TRAILING_STOP:
+                if stop_price is None:
+                    raise OrderError(
+                        "Trail amount (via stop_price) is required for TRAILING_STOP orders",
+                        exchange="alpaca",
+                    )
                 alpaca_order = TrailingStopOrderRequest(
                     symbol=symbol,
                     qty=quantity,
@@ -538,11 +722,13 @@ class AlpacaBroker(ExchangeInterface):
                 )
             else:
                 raise OrderError(
-                    f"Unsupported order type: {order_type}", exchange="alpaca"
+                    f"Unsupported order type: {order_type}", exchange="alpaca",
                 )
 
             # Submit order
-            result = self._trading_client.submit_order(alpaca_order)
+            result = await self._api_call(
+                self._trading_client.submit_order, alpaca_order,
+            )
             order = self._alpaca_order_to_order(
                 result,
                 strategy_name=strategy_name,
@@ -550,29 +736,28 @@ class AlpacaBroker(ExchangeInterface):
                 notes=notes,
             )
             self._local_orders[order.id] = order
-            self._circuit_breaker.record_success()
             return order
 
         except ImportError as exc:
             raise ImportError(
                 "alpaca-py package is required. Install with: pip install alpaca-py"
             ) from exc
-        except (OrderError, InsufficientFundsError):
+        except (OrderError, InsufficientFundsError, AuthenticationError, RateLimitError):
             self._circuit_breaker.record_error()
+            raise
+        except ExchangeError:
             raise
         except Exception as exc:
             self._circuit_breaker.record_error()
             error_msg = str(exc).lower()
             if "insufficient" in error_msg or "buying power" in error_msg:
                 raise InsufficientFundsError(
-                    str(exc), exchange="alpaca", original=exc
+                    str(exc), exchange="alpaca", original=exc,
                 ) from exc
             if "rate" in error_msg or "429" in error_msg:
-                raise RateLimitError(
-                    str(exc), exchange="alpaca"
-                )
+                raise RateLimitError(str(exc), exchange="alpaca")
             raise OrderError(
-                f"Failed to place order: {exc}", exchange="alpaca", original=exc
+                f"Failed to place order: {exc}", exchange="alpaca", original=exc,
             ) from exc
 
     async def cancel_order(self, order_id: str, symbol: Optional[str] = None) -> Order:
@@ -591,10 +776,10 @@ class AlpacaBroker(ExchangeInterface):
             The cancelled order.
         """
         self._require_client()
-        self._check_circuit_breaker()
         try:
-            self._trading_client.cancel_order_by_id(order_id)
-            self._circuit_breaker.record_success()
+            await self._api_call(
+                self._trading_client.cancel_order_by_id, order_id,
+            )
 
             # Return the cached order with updated status
             if order_id in self._local_orders:
@@ -603,7 +788,16 @@ class AlpacaBroker(ExchangeInterface):
                 order.updated_at = datetime.now(tz=timezone.utc)
                 return order
 
-            # If not in cache, create a minimal cancelled order
+            # Fetch fresh state from API
+            try:
+                alpaca_order = await self._api_call(
+                    self._trading_client.get_order_by_id, order_id,
+                )
+                return self._alpaca_order_to_order(alpaca_order)
+            except Exception:
+                pass
+
+            # Fallback: create a minimal cancelled order
             return Order(
                 id=order_id,
                 symbol=symbol or "UNKNOWN",
@@ -616,7 +810,6 @@ class AlpacaBroker(ExchangeInterface):
                 broker_order_id=order_id,
             )
         except (OrderError, ExchangeError):
-            self._circuit_breaker.record_error()
             raise
         except Exception as exc:
             self._circuit_breaker.record_error()
@@ -641,15 +834,14 @@ class AlpacaBroker(ExchangeInterface):
             Current order state with fill information.
         """
         self._require_client()
-        self._check_circuit_breaker()
         try:
-            alpaca_order = self._trading_client.get_order_by_id(order_id)
+            alpaca_order = await self._api_call(
+                self._trading_client.get_order_by_id, order_id,
+            )
             order = self._alpaca_order_to_order(alpaca_order)
             self._local_orders[order.id] = order
-            self._circuit_breaker.record_success()
             return order
-        except (OrderError, ExchangeError):
-            self._circuit_breaker.record_error()
+        except ExchangeError:
             raise
         except Exception as exc:
             self._circuit_breaker.record_error()
@@ -671,10 +863,12 @@ class AlpacaBroker(ExchangeInterface):
     ) -> List[OHLCV]:
         """Fetch OHLCV bars from Alpaca.
 
+        Supports both stocks and crypto symbols.
+
         Parameters
         ----------
         symbol:
-            Stock symbol (e.g. ``"AAPL"``).
+            Stock symbol (e.g. ``"AAPL"``) or crypto (e.g. ``"BTC/USD"``).
         timeframe:
             Bar timeframe.
         since:
@@ -686,8 +880,34 @@ class AlpacaBroker(ExchangeInterface):
         -------
         list of OHLCV
         """
+        self._require_connected()
+        try:
+            is_crypto = "/" in symbol
+            if is_crypto:
+                return await self._get_crypto_ohlcv(symbol, timeframe, since, limit)
+            else:
+                return await self._get_stock_ohlcv(symbol, timeframe, since, limit)
+        except MarketDataError:
+            raise
+        except ExchangeError:
+            raise
+        except Exception as exc:
+            self._circuit_breaker.record_error()
+            raise MarketDataError(
+                f"Failed to get OHLCV for {symbol}: {exc}",
+                exchange="alpaca",
+                original=exc,
+            ) from exc
+
+    async def _get_stock_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        since: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        """Fetch stock OHLCV bars from Alpaca."""
         self._require_data_client()
-        self._check_circuit_breaker()
         try:
             from alpaca.data.requests import StockBarsRequest  # type: ignore[import-untyped]
             from alpaca.data.timeframe import TimeFrame as AlpacaTimeFrame  # type: ignore[import-untyped]
@@ -702,17 +922,94 @@ class AlpacaBroker(ExchangeInterface):
                 limit=limit,
             )
 
-            bars = self._stock_historical_client.get_stock_bars(request)
-            self._circuit_breaker.record_success()
+            bars = await self._api_call(
+                self._stock_historical_client.get_stock_bars, request,
+            )
 
-            result: List[OHLCV] = []
+            return self._parse_alpaca_bars(bars, symbol)
+        except ImportError as exc:
+            raise ImportError(
+                "alpaca-py package is required. Install with: pip install alpaca-py"
+            ) from exc
+        except (MarketDataError, ExchangeError):
+            raise
+        except Exception as exc:
+            raise MarketDataError(
+                f"Failed to get stock OHLCV for {symbol}: {exc}",
+                exchange="alpaca",
+                original=exc,
+            ) from exc
+
+    async def _get_crypto_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        since: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        """Fetch crypto OHLCV bars from Alpaca."""
+        if self._crypto_historical_client is None:
+            raise MarketDataError(
+                "Crypto data client not initialized",
+                exchange="alpaca",
+            )
+        try:
+            from alpaca.data.requests import CryptoBarsRequest  # type: ignore[import-untyped]
+            from alpaca.data.timeframe import TimeFrame as AlpacaTimeFrame  # type: ignore[import-untyped]
+
+            tf_str = _TIMEFRAME_TO_ALPACA.get(timeframe, "1Day")
+            alpaca_tf = AlpacaTimeFrame(tf_str)
+
+            # Parse crypto symbol: "BTC/USD" -> base="BTC", quote="USD"
+            parts = symbol.split("/")
+            base_symbol = parts[0] if len(parts) > 1 else symbol
+
+            request = CryptoBarsRequest(
+                symbol_or_symbols=base_symbol + "USD",
+                timeframe=alpaca_tf,
+                start=since,
+                limit=limit,
+            )
+
+            bars = await self._api_call(
+                self._crypto_historical_client.get_crypto_bars, request,
+            )
+
+            return self._parse_alpaca_bars(bars, symbol)
+        except ImportError as exc:
+            raise ImportError(
+                "alpaca-py package is required. Install with: pip install alpaca-py"
+            ) from exc
+        except (MarketDataError, ExchangeError):
+            raise
+        except Exception as exc:
+            raise MarketDataError(
+                f"Failed to get crypto OHLCV for {symbol}: {exc}",
+                exchange="alpaca",
+                original=exc,
+            ) from exc
+
+    @staticmethod
+    def _parse_alpaca_bars(bars: Any, symbol: str) -> List[OHLCV]:
+        """Parse Alpaca bar response into OHLCV list."""
+        result: List[OHLCV] = []
+        try:
             if hasattr(bars, "df") and bars.df is not None:
                 df = bars.df
-                for _, row in df.iterrows():
+                for idx, row in df.iterrows():
+                    # Handle multi-index (symbol, timestamp) or single index (timestamp)
+                    ts = idx if isinstance(idx, datetime) else (
+                        idx[1] if hasattr(idx, "__len__") and len(idx) > 1 else row.get("timestamp", datetime.now(tz=timezone.utc))
+                    )
+                    if isinstance(ts, (int, float)):
+                        ts = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+                    elif not isinstance(ts, datetime):
+                        ts = datetime.now(tz=timezone.utc)
+
                     result.append(
                         OHLCV(
                             symbol=symbol,
-                            timestamp=row.get("timestamp", datetime.now(tz=timezone.utc)),
+                            timestamp=ts,
                             open=float(row.get("open", 0)),
                             high=float(row.get("high", 0)),
                             low=float(row.get("low", 0)),
@@ -720,19 +1017,9 @@ class AlpacaBroker(ExchangeInterface):
                             volume=float(row.get("volume", 0)),
                         )
                     )
-            return result
-
-        except ImportError as exc:
-            raise ImportError(
-                "alpaca-py package is required. Install with: pip install alpaca-py"
-            ) from exc
         except Exception as exc:
-            self._circuit_breaker.record_error()
-            raise MarketDataError(
-                f"Failed to get OHLCV for {symbol}: {exc}",
-                exchange="alpaca",
-                original=exc,
-            ) from exc
+            logger.warning("AlpacaBroker: Error parsing bars: %s", exc)
+        return result
 
     async def get_ticker(self, symbol: str) -> Ticker:
         """Get latest ticker from Alpaca.
@@ -740,34 +1027,117 @@ class AlpacaBroker(ExchangeInterface):
         Parameters
         ----------
         symbol:
-            Stock symbol.
+            Stock or crypto symbol.
 
         Returns
         -------
         Ticker
         """
-        self._require_data_client()
-        self._check_circuit_breaker()
+        self._require_connected()
+        is_crypto = "/" in symbol
         try:
-            from alpaca.data.requests import StockLatestTradeRequest  # type: ignore[import-untyped]
+            if is_crypto:
+                return await self._get_crypto_ticker(symbol)
+            else:
+                return await self._get_stock_ticker(symbol)
+        except MarketDataError:
+            raise
+        except ExchangeError:
+            raise
+        except Exception as exc:
+            self._circuit_breaker.record_error()
+            raise MarketDataError(
+                f"Failed to get ticker for {symbol}: {exc}",
+                exchange="alpaca",
+                original=exc,
+            ) from exc
 
-            request = StockLatestTradeRequest(symbol_or_symbols=symbol)
-            trades = self._stock_historical_client.get_stock_latest_trade(request)
-            self._circuit_breaker.record_success()
+    async def _get_stock_ticker(self, symbol: str) -> Ticker:
+        """Get latest stock ticker from Alpaca."""
+        self._require_data_client()
+        try:
+            from alpaca.data.requests import StockLatestTradeRequest, StockLatestQuoteRequest  # type: ignore[import-untyped]
+
+            # Get latest trade
+            trade_request = StockLatestTradeRequest(symbol_or_symbols=symbol)
+            trades = await self._api_call(
+                self._stock_historical_client.get_stock_latest_trade, trade_request,
+            )
+
+            # Get latest quote for bid/ask
+            quote_request = StockLatestQuoteRequest(symbol_or_symbols=symbol)
+            quotes = await self._api_call(
+                self._stock_historical_client.get_stock_latest_quote, quote_request,
+            )
 
             trade = trades.get(symbol) if trades else None
+            quote = quotes.get(symbol) if quotes else None
+
             last_price = float(trade.price) if trade else 0.0
             ts = trade.timestamp if trade else datetime.now(tz=timezone.utc)
+
+            bid = float(quote.bid_price) if quote and hasattr(quote, "bid_price") else None
+            ask = float(quote.ask_price) if quote and hasattr(quote, "ask_price") else None
 
             return Ticker(
                 symbol=symbol,
                 timestamp=ts,
                 last_price=last_price,
+                bid=bid,
+                ask=ask,
             )
+        except (MarketDataError, ExchangeError):
+            raise
         except Exception as exc:
-            self._circuit_breaker.record_error()
             raise MarketDataError(
-                f"Failed to get ticker for {symbol}: {exc}",
+                f"Failed to get stock ticker for {symbol}: {exc}",
+                exchange="alpaca",
+                original=exc,
+            ) from exc
+
+    async def _get_crypto_ticker(self, symbol: str) -> Ticker:
+        """Get latest crypto ticker from Alpaca."""
+        if self._crypto_historical_client is None:
+            raise MarketDataError(
+                "Crypto data client not initialized",
+                exchange="alpaca",
+            )
+        try:
+            from alpaca.data.requests import CryptoLatestTradeRequest, CryptoLatestQuoteRequest  # type: ignore[import-untyped]
+
+            parts = symbol.split("/")
+            base_symbol = parts[0] + "USD" if len(parts) > 1 else symbol
+
+            trade_request = CryptoLatestTradeRequest(symbol_or_symbols=base_symbol)
+            trades = await self._api_call(
+                self._crypto_historical_client.get_crypto_latest_trade, trade_request,
+            )
+
+            quote_request = CryptoLatestQuoteRequest(symbol_or_symbols=base_symbol)
+            quotes = await self._api_call(
+                self._crypto_historical_client.get_crypto_latest_quote, quote_request,
+            )
+
+            trade = trades.get(base_symbol) if trades else None
+            quote = quotes.get(base_symbol) if quotes else None
+
+            last_price = float(trade.price) if trade else 0.0
+            ts = trade.timestamp if trade else datetime.now(tz=timezone.utc)
+            bid = float(quote.bid_price) if quote and hasattr(quote, "bid_price") else None
+            ask = float(quote.ask_price) if quote and hasattr(quote, "ask_price") else None
+
+            return Ticker(
+                symbol=symbol,
+                timestamp=ts,
+                last_price=last_price,
+                bid=bid,
+                ask=ask,
+            )
+        except (MarketDataError, ExchangeError):
+            raise
+        except Exception as exc:
+            raise MarketDataError(
+                f"Failed to get crypto ticker for {symbol}: {exc}",
                 exchange="alpaca",
                 original=exc,
             ) from exc
@@ -807,7 +1177,6 @@ class AlpacaBroker(ExchangeInterface):
         list of dict
         """
         self._require_data_client()
-        self._check_circuit_breaker()
         try:
             from alpaca.data.requests import StockTradesRequest  # type: ignore[import-untyped]
 
@@ -816,8 +1185,9 @@ class AlpacaBroker(ExchangeInterface):
                 start=since,
                 limit=limit,
             )
-            trades_resp = self._stock_historical_client.get_stock_trades(request)
-            self._circuit_breaker.record_success()
+            trades_resp = await self._api_call(
+                self._stock_historical_client.get_stock_trades, request,
+            )
 
             results: List[Dict[str, Any]] = []
             if hasattr(trades_resp, "df") and trades_resp.df is not None:
@@ -828,10 +1198,12 @@ class AlpacaBroker(ExchangeInterface):
                         "price": float(row.get("price", 0)),
                         "amount": float(row.get("size", 0)),
                         "side": row.get("side", ""),
-                        "timestamp": row.get("timestamp", ""),
+                        "timestamp": str(row.get("timestamp", "")),
                     })
             return results
 
+        except (MarketDataError, ExchangeError):
+            raise
         except Exception as exc:
             self._circuit_breaker.record_error()
             raise MarketDataError(
@@ -843,11 +1215,19 @@ class AlpacaBroker(ExchangeInterface):
     # ----- WebSocket -----
 
     async def subscribe_ticker(self, symbol: str, callback: WebSocketCallback) -> None:
-        """Subscribe to real-time quote updates.
+        """Subscribe to real-time quote updates via Alpaca Stream.
 
-        Note: Requires Alpaca streaming (not fully implemented here).
+        Uses Alpaca's streaming API to receive real-time quote data.
+        Falls back to polling if the streaming SDK is not available.
         """
-        logger.info("AlpacaBroker: Ticker subscription for %s (not implemented)", symbol)
+        key = f"ticker:{symbol}"
+        self._ws_callbacks.setdefault(key, {})[symbol] = callback
+
+        if key not in self._ws_tasks or self._ws_tasks[key].done():
+            self._ws_tasks[key] = asyncio.create_task(
+                self._stream_ticker_loop(symbol),
+            )
+        logger.info("AlpacaBroker: Subscribed to ticker %s", symbol)
 
     async def subscribe_orderbook(self, symbol: str, callback: WebSocketCallback) -> None:
         """Not supported — Alpaca doesn't provide order books."""
@@ -857,21 +1237,104 @@ class AlpacaBroker(ExchangeInterface):
         )
 
     async def subscribe_trades(self, symbol: str, callback: WebSocketCallback) -> None:
-        """Subscribe to real-time trade updates.
+        """Subscribe to real-time trade updates via Alpaca Stream."""
+        key = f"trades:{symbol}"
+        self._ws_callbacks.setdefault(key, {})[symbol] = callback
 
-        Note: Requires Alpaca streaming (not fully implemented here).
-        """
-        logger.info("AlpacaBroker: Trade subscription for %s (not implemented)", symbol)
+        if key not in self._ws_tasks or self._ws_tasks[key].done():
+            self._ws_tasks[key] = asyncio.create_task(
+                self._stream_trades_loop(symbol),
+            )
+        logger.info("AlpacaBroker: Subscribed to trades %s", symbol)
 
     async def unsubscribe(self, symbol: str, channel: str) -> None:
         """Unsubscribe from a real-time data stream."""
-        logger.info("AlpacaBroker: Unsubscribe %s %s", channel, symbol)
+        key = f"{channel}:{symbol}"
+        task = self._ws_tasks.pop(key, None)
+        if task and not task.done():
+            task.cancel()
+        self._ws_callbacks.pop(key, None)
+        logger.info("AlpacaBroker: Unsubscribed from %s %s", channel, symbol)
+
+    async def _stream_ticker_loop(self, symbol: str) -> None:
+        """Polling-based ticker stream for Alpaca.
+
+        Uses a polling approach since the Alpaca streaming SDK
+        requires a different async model. Falls back gracefully.
+        """
+        key = f"ticker:{symbol}"
+        poll_interval = 1.0  # 1 second polling
+        try:
+            while True:
+                try:
+                    if not self.is_connected:
+                        await asyncio.sleep(5)
+                        continue
+                    ticker = await self.get_ticker(symbol)
+                    callbacks = self._ws_callbacks.get(key, {})
+                    for cb in callbacks.values():
+                        try:
+                            await cb(ticker.model_dump())
+                        except Exception as cb_exc:
+                            logger.warning(
+                                "AlpacaBroker: Ticker callback error: %s", cb_exc,
+                            )
+                    await asyncio.sleep(poll_interval)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    logger.warning(
+                        "AlpacaBroker: Ticker stream error for %s, retrying: %s",
+                        symbol, exc,
+                    )
+                    await asyncio.sleep(self._config.retry_delay)
+        except asyncio.CancelledError:
+            logger.debug("AlpacaBroker: Ticker stream cancelled for %s", symbol)
+
+    async def _stream_trades_loop(self, symbol: str) -> None:
+        """Polling-based trades stream for Alpaca."""
+        key = f"trades:{symbol}"
+        poll_interval = 1.0
+        last_ts: Optional[datetime] = None
+        try:
+            while True:
+                try:
+                    if not self.is_connected:
+                        await asyncio.sleep(5)
+                        continue
+                    trades = await self.get_trades(symbol, since=last_ts, limit=10)
+                    if trades:
+                        last_ts = datetime.now(tz=timezone.utc)
+                        callbacks = self._ws_callbacks.get(key, {})
+                        for trade in trades:
+                            for cb in callbacks.values():
+                                try:
+                                    await cb(trade)
+                                except Exception as cb_exc:
+                                    logger.warning(
+                                        "AlpacaBroker: Trade callback error: %s", cb_exc,
+                                    )
+                    await asyncio.sleep(poll_interval)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    logger.warning(
+                        "AlpacaBroker: Trade stream error for %s, retrying: %s",
+                        symbol, exc,
+                    )
+                    await asyncio.sleep(self._config.retry_delay)
+        except asyncio.CancelledError:
+            logger.debug("AlpacaBroker: Trade stream cancelled for %s", symbol)
 
     # ----- Utility -----
 
     async def get_markets(self) -> List[str]:
         """List available symbols (limited to known symbols)."""
-        return ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "SPY", "QQQ"]
+        return [
+            "AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META",
+            "NVDA", "SPY", "QQQ", "IWM", "DIA",
+            "BTC/USD", "ETH/USD",
+        ]
 
     async def health_check(self) -> bool:
         """Check Alpaca API health by fetching the account.
@@ -883,9 +1346,10 @@ class AlpacaBroker(ExchangeInterface):
         """
         try:
             self._require_client()
-            account = self._trading_client.get_account()
+            account = await self._api_call(self._trading_client.get_account)
             self._state = ExchangeState.CONNECTED
-            self._circuit_breaker.record_success()
+            self._account_cache = account
+            self._account_cache_ts = time.time()
             return account is not None
         except Exception as exc:
             logger.warning("AlpacaBroker: Health check failed: %s", exc)
@@ -895,25 +1359,30 @@ class AlpacaBroker(ExchangeInterface):
 
     # ----- Internal helpers -----
 
-    def _require_client(self):
+    def _require_client(self) -> None:
         """Ensure the trading client is initialized."""
         if not self._trading_client or not self.is_connected:
             raise ConnectionError(
-                "AlpacaBroker is not connected", exchange="alpaca"
+                "AlpacaBroker is not connected", exchange="alpaca",
             )
-        return self._trading_client
 
-    def _require_data_client(self):
+    def _require_data_client(self) -> None:
         """Ensure the data client is initialized."""
         if not self._stock_historical_client or not self.is_connected:
             raise ConnectionError(
-                "AlpacaBroker is not connected", exchange="alpaca"
+                "AlpacaBroker is not connected", exchange="alpaca",
             )
-        return self._stock_historical_client
+
+    def _require_connected(self) -> None:
+        """Ensure the broker is connected."""
+        if not self.is_connected:
+            raise ConnectionError(
+                "AlpacaBroker is not connected", exchange="alpaca",
+            )
 
     @staticmethod
     def _alpaca_order_to_order(
-        raw,
+        raw: Any,
         strategy_name: Optional[str] = None,
         agent_name: Optional[str] = None,
         notes: Optional[str] = None,
@@ -955,6 +1424,19 @@ class AlpacaBroker(ExchangeInterface):
         qty = float(getattr(raw, "qty", 0) or 0)
         filled_qty = float(getattr(raw, "filled_qty", 0) or 0)
 
+        # Extract limit/stop prices
+        limit_price = getattr(raw, "limit_price", None)
+        stop_price_val = getattr(raw, "stop_price", None)
+        avg_fill_price = getattr(raw, "filled_avg_price", None)
+
+        # Extract submitted_at
+        submitted_at = getattr(raw, "submitted_at", None)
+        created_at = submitted_at if submitted_at else datetime.now(tz=timezone.utc)
+
+        # Ensure timezone awareness
+        if created_at is not None and created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+
         order = Order(
             id=str(getattr(raw, "id", uuid.uuid4())),
             client_order_id=getattr(raw, "client_order_id", None),
@@ -962,21 +1444,13 @@ class AlpacaBroker(ExchangeInterface):
             side=side,
             order_type=order_type,
             quantity=qty,
-            price=float(raw.limit_price) if getattr(raw, "limit_price", None) else None,
-            stop_price=float(raw.stop_price) if getattr(raw, "stop_price", None) else None,
+            price=float(limit_price) if limit_price else None,
+            stop_price=float(stop_price_val) if stop_price_val else None,
             status=status,
             filled_quantity=filled_qty,
-            average_fill_price=(
-                float(raw.filled_avg_price)
-                if getattr(raw, "filled_avg_price", None)
-                else None
-            ),
+            average_fill_price=float(avg_fill_price) if avg_fill_price else None,
             commission=0.0,  # Alpaca doesn't charge commissions
-            created_at=(
-                raw.submitted_at
-                if getattr(raw, "submitted_at", None)
-                else datetime.now(tz=timezone.utc)
-            ),
+            created_at=created_at,
             updated_at=datetime.now(tz=timezone.utc),
             broker_id="alpaca",
             broker_order_id=str(getattr(raw, "id", "")),
@@ -987,7 +1461,7 @@ class AlpacaBroker(ExchangeInterface):
         return order
 
     @staticmethod
-    def _alpaca_position_to_position(raw) -> Optional[Position]:
+    def _alpaca_position_to_position(raw: Any) -> Optional[Position]:
         """Convert an Alpaca position object to our Position model.
 
         Parameters

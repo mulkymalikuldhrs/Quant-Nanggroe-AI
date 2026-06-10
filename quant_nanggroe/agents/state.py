@@ -73,6 +73,15 @@ class MarketRegime(str, Enum):
     RECOVERY = "RECOVERY"
 
 
+class AssetClass(str, Enum):
+    """Asset class types for multi-path routing."""
+    CRYPTO = "crypto"
+    FOREX = "forex"
+    EQUITY = "equity"
+    PREDICTION_MARKET = "prediction_market"
+    UNKNOWN = "unknown"
+
+
 class AgentRole(str, Enum):
     """Agent role types."""
     RESEARCHER = "researcher"
@@ -85,6 +94,7 @@ class AgentRole(str, Enum):
     CRYPTO = "crypto"
     FOREX = "forex"
     COUNCIL = "council"
+    PREDICTION_MARKET = "prediction_market"
 
 
 # =============================================================================
@@ -270,6 +280,71 @@ class CouncilResult(BaseModel):
     requires_human_review: bool = Field(False, description="Whether human review is needed")
 
 
+class PositionSizingResult(BaseModel):
+    """Result of ATR-based position sizing with TP1/TP2/TP3 geometry."""
+    model_config = ConfigDict(extra="allow")
+
+    symbol: str = Field(..., description="Trading symbol")
+    position_size_units: float = Field(0.0, description="Position size in units/shares")
+    position_size_usd: float = Field(0.0, description="Position size in USD")
+    position_size_pct: float = Field(0.0, description="Position size as % of portfolio")
+    risk_per_unit: float = Field(0.0, description="Risk amount per unit in USD")
+    atr_value: float = Field(0.0, description="Current ATR value")
+    stop_loss: float = Field(0.0, description="Stop loss price (entry - 1.5*ATR)")
+    tp1: float = Field(0.0, description="Take Profit 1 (entry + 1.0*ATR)")
+    tp2: float = Field(0.0, description="Take Profit 2 (entry + 2.0*ATR)")
+    tp3: float = Field(0.0, description="Take Profit 3 (entry + 3.0*ATR)")
+    tp1_rr: float = Field(0.0, description="Risk:Reward ratio at TP1")
+    tp2_rr: float = Field(0.0, description="Risk:Reward ratio at TP2")
+    tp3_rr: float = Field(0.0, description="Risk:Reward ratio at TP3")
+    fractional_risk_pct: float = Field(0.0, description="Fixed-fractional risk % used")
+    model: str = Field("fixed_fractional_atr", description="Position sizing model name")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Sizing timestamp")
+
+
+class PortfolioValidation(BaseModel):
+    """Portfolio validation result with concentration/correlation/Kelly checks."""
+    model_config = ConfigDict(extra="allow")
+
+    is_valid: bool = Field(True, description="Whether portfolio passes all checks")
+    concentration_check: Dict[str, Any] = Field(default_factory=dict, description="Per-symbol concentration check results")
+    correlation_check: Dict[str, Any] = Field(default_factory=dict, description="Correlation group check results")
+    kelly_check: Dict[str, Any] = Field(default_factory=dict, description="Kelly Criterion check results")
+    total_risk_budget_used: float = Field(0.0, description="Total risk budget utilized")
+    max_single_exposure_pct: float = Field(0.0, description="Largest single position exposure %")
+    warnings: List[str] = Field(default_factory=list, description="Validation warnings")
+    errors: List[str] = Field(default_factory=list, description="Validation errors (blocking)")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Validation timestamp")
+
+
+class VenueScore(BaseModel):
+    """Score for a single execution venue."""
+    model_config = ConfigDict(extra="allow")
+
+    venue_id: str = Field(..., description="Venue identifier")
+    venue_name: str = Field(..., description="Human-readable venue name")
+    score: float = Field(0.0, description="Overall venue score (0-100)")
+    latency_ms: float = Field(0.0, description="Estimated latency in milliseconds")
+    fee_bps: float = Field(0.0, description="Execution fee in basis points")
+    fill_rate: float = Field(0.0, description="Historical fill rate (0-1)")
+    slippage_bps: float = Field(0.0, description="Expected slippage in basis points")
+    supports_asset_class: bool = Field(True, description="Whether venue supports the asset class")
+    recommended: bool = Field(False, description="Whether this is the recommended venue")
+
+
+class SmartOrderRouting(BaseModel):
+    """Smart order routing result."""
+    model_config = ConfigDict(extra="allow")
+
+    symbol: str = Field(..., description="Trading symbol")
+    primary_venue: str = Field("", description="Primary venue selected")
+    venue_scores: List[VenueScore] = Field(default_factory=list, description="All venue scores")
+    routing_decision: str = Field("", description="Routing decision explanation")
+    estimated_slippage_bps: float = Field(0.0, description="Estimated total slippage")
+    estimated_latency_ms: float = Field(0.0, description="Expected execution latency")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Routing timestamp")
+
+
 # =============================================================================
 # Main Agent State (used by LangGraph StateGraph)
 # =============================================================================
@@ -279,7 +354,9 @@ class AgentState(TypedDict):
     Main agent state that flows through the LangGraph trading graph.
 
     This is the shared state that all agents read from and write to
-    during the trading pipeline execution.
+    during the trading pipeline execution. Extended with v2 multi-path
+    routing fields, position sizing, portfolio validation, and smart
+    order routing data.
     """
     # Core identification
     symbols: Annotated[List[str], "List of trading symbols to analyze"]
@@ -293,6 +370,11 @@ class AgentState(TypedDict):
     macro_output: Annotated[str, "Macro agent output"]
     crypto_output: Annotated[str, "Crypto agent output"]
     forex_output: Annotated[str, "Forex agent output"]
+    prediction_market_output: Annotated[str, "Prediction market agent output"]
+
+    # --- V2 Multi-path routing fields ---
+    asset_class: Annotated[str, "Detected asset class: crypto/forex/equity/prediction_market"]
+    execution_path: Annotated[str, "Selected execution path: crypto_path/forex_path/equity_path/prediction_market_path"]
 
     # Signal generation
     signals: Annotated[List[Dict[str, Any]], "Generated trading signals"]
@@ -301,6 +383,12 @@ class AgentState(TypedDict):
     # Risk assessment
     risk_assessment: Annotated[Dict[str, Any], "Risk assessment results"]
     risk_verdict: Annotated[str, "Risk verdict: APPROVED/VETOED/KILL_SWITCH"]
+
+    # --- V2 Position sizing ---
+    position_sizing_result: Annotated[Dict[str, Any], "ATR-based position sizing with TP1/TP2/TP3"]
+
+    # --- V2 Portfolio validation ---
+    portfolio_validation: Annotated[Dict[str, Any], "Concentration/correlation/Kelly validation result"]
 
     # Portfolio
     portfolio_state: Annotated[Dict[str, Any], "Current portfolio state"]
@@ -313,6 +401,15 @@ class AgentState(TypedDict):
     # Execution
     execution_output: Annotated[str, "Execution agent output"]
     orders_placed: Annotated[List[Dict[str, Any]], "Orders placed"]
+
+    # --- V2 Smart order routing ---
+    venue_scores: Annotated[List[Dict[str, Any]], "Venue scores for smart order routing"]
+    smart_routing_result: Annotated[Dict[str, Any], "Smart order routing result"]
+
+    # --- V2 Human-in-the-loop ---
+    human_approval_required: Annotated[bool, "Whether human approval is required before execution"]
+    human_approval_status: Annotated[str, "PENDING/APPROVED/REJECTED/TIMEOUT"]
+    human_approval_reason: Annotated[str, "Reason for requiring human approval"]
 
     # Council / Debate
     debate_state: Annotated[Dict[str, Any], "Current debate state"]
@@ -351,16 +448,31 @@ def create_initial_state(symbols: List[str], trade_date: str) -> Dict[str, Any]:
         "macro_output": "",
         "crypto_output": "",
         "forex_output": "",
+        "prediction_market_output": "",
+        # V2 multi-path routing fields
+        "asset_class": AssetClass.UNKNOWN.value,
+        "execution_path": "equity_path",
         "signals": [],
         "strategist_output": "",
         "risk_assessment": {},
         "risk_verdict": RiskVerdict.VETOED.value,
+        # V2 position sizing
+        "position_sizing_result": {},
+        # V2 portfolio validation
+        "portfolio_validation": {},
         "portfolio_state": {},
         "portfolio_output": "",
         "decisions": [],
         "trader_output": "",
         "execution_output": "",
         "orders_placed": [],
+        # V2 smart order routing
+        "venue_scores": [],
+        "smart_routing_result": {},
+        # V2 human-in-the-loop
+        "human_approval_required": False,
+        "human_approval_status": "NOT_REQUIRED",
+        "human_approval_reason": "",
         "debate_state": {
             "bull_history": "",
             "bear_history": "",

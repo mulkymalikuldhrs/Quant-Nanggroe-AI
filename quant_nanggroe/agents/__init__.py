@@ -4,6 +4,13 @@ Quant Nanggroe AI Agents Package.
 Complete agent framework for the Quant Nanggroe AI Trading Intelligence OS.
 Uses LangGraph for orchestration with 9 specialized agent types and a
 council debate system.
+
+v2 enhancements:
+- Multi-path asset-class conditional routing
+- ATR-based position sizing with TP1/TP2/TP3 geometry
+- Portfolio concentration/correlation/Kelly validation
+- Smart order routing with venue scoring
+- Human-in-the-loop checkpoint for high-risk trades
 """
 
 from quant_nanggroe.agents.base import BaseAgent, create_llm
@@ -11,20 +18,25 @@ from quant_nanggroe.agents.state import (
     AgentOutput,
     AgentRole,
     AgentState,
+    AssetClass,
     CouncilResult,
     Decision,
     DebateState,
     MarketData,
     MarketRegime,
     PortfolioState,
+    PortfolioValidation,
     PositionInfo,
+    PositionSizingResult,
     RiskAssessment,
     RiskCheckpoint,
     RiskDebateState,
     RiskVerdict,
     Signal,
     SignalDirection,
+    SmartOrderRouting,
     TradeAction,
+    VenueScore,
     VoteResult,
     create_initial_state,
     # Constitutional limits (HARDCODED - NO OVERRIDE)
@@ -40,7 +52,23 @@ from quant_nanggroe.agents.state import (
     CONFIDENCE_THRESHOLD,
 )
 from quant_nanggroe.agents.graph import TradingGraph
+from quant_nanggroe.agents.graph_v2 import TradingGraphV2
 from quant_nanggroe.agents.registry import AgentFactory, AgentRegistry
+
+# v2 Node modules
+from quant_nanggroe.agents.nodes import (
+    AssetRouter,
+    detect_asset_class,
+    route_by_asset_class,
+    PositionSizer,
+    compute_atr_position_sizing,
+    PortfolioValidator,
+    validate_portfolio,
+    SmartExecutor,
+    route_order_smart,
+    HumanCheckpoint,
+    check_human_approval,
+)
 
 # Agent classes
 from quant_nanggroe.agents.researcher.agent import ResearcherAgent
@@ -65,20 +93,25 @@ __all__ = [
     "AgentOutput",
     "AgentRole",
     "AgentState",
+    "AssetClass",
     "CouncilResult",
     "Decision",
     "DebateState",
     "MarketData",
     "MarketRegime",
     "PortfolioState",
+    "PortfolioValidation",
     "PositionInfo",
+    "PositionSizingResult",
     "RiskAssessment",
     "RiskCheckpoint",
     "RiskDebateState",
     "RiskVerdict",
     "Signal",
     "SignalDirection",
+    "SmartOrderRouting",
     "TradeAction",
+    "VenueScore",
     "VoteResult",
     "create_initial_state",
     # Constitutional limits
@@ -94,9 +127,22 @@ __all__ = [
     "CONFIDENCE_THRESHOLD",
     # Graph
     "TradingGraph",
+    "TradingGraphV2",
     # Registry
     "AgentFactory",
     "AgentRegistry",
+    # v2 Node modules
+    "AssetRouter",
+    "detect_asset_class",
+    "route_by_asset_class",
+    "PositionSizer",
+    "compute_atr_position_sizing",
+    "PortfolioValidator",
+    "validate_portfolio",
+    "SmartExecutor",
+    "route_order_smart",
+    "HumanCheckpoint",
+    "check_human_approval",
     # Agents
     "ResearcherAgent",
     "TraderAgent",
