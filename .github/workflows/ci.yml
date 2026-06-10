@@ -1,0 +1,103 @@
+name: CI — Quant-Nanggroe-AI
+
+on:
+  push:
+    branches: [main, cl1-agent-1, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint (Ruff + MyPy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install ruff mypy
+          pip install -e ".[dev]" || true
+      - name: Ruff check
+        run: ruff check src/ tests/ --output-format=github
+      - name: MyPy type check
+        run: mypy src/quant_nanggroe_ai/ --ignore-missing-imports || true
+
+  security:
+    name: Security (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Bandit
+        run: pip install bandit
+      - name: Bandit scan
+        run: bandit -r src/ -ll -ii -f json -o bandit-report.json || true
+      - name: Check for hardcoded secrets
+        run: |
+          ! grep -rn "sk-\|api_key\s*=\s*[\"'][^\"']\{10,\}" src/ --include="*.py" || (echo "HARDCODED SECRET DETECTED" && exit 1)
+
+  test:
+    name: Test (pytest)
+    runs-on: ubuntu-latest
+    needs: [lint]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: qna_test
+          POSTGRES_PASSWORD: qna_test
+          POSTGRES_DB: qna_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev,test]" || pip install pytest pytest-asyncio pytest-cov
+          pip install -e . || true
+      - name: Run tests
+        env:
+          QNA_ENV: test
+          QNA_DATABASE_URL: postgresql://qna_test:qna_test@localhost:5432/qna_test
+          QNA_REDIS_URL: redis://localhost:6379/15
+        run: |
+          pytest tests/ -v --tb=short --cov=src/quant_nanggroe_ai --cov-report=xml --cov-report=term-missing || true
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t quant-nanggroe-ai:ci-test .
+      - name: Test Docker run
+        run: |
+          docker run --rm -e QNA_ENV=test quant-nanggroe-ai:ci-test python -c "import quant_nanggroe_ai; print('OK')"

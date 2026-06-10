@@ -22,11 +22,11 @@ The foundation of the system. It harvests real-time L1/L2 data from:
 This data serves as the "truth source" for all agents.
 
 ### **Layer 1: Market Regime Engine (The Gatekeeper)**
-Determines the global market condition:
+Determines the global market condition using both deterministic heuristics (`MarketStateEngine`) and probabilistic Hidden Markov Models (`RegimeDetectionEngine`):
 - `TRENDING_UP` / `TRENDING_DOWN`
-- `RANGE_BOUND`
-- `RISK_OFF` / `PANIC`
-If the regime is unsuitable (e.g., extreme volatility or low liquidity), the system enters `NO_TRADE` mode to protect capital.
+- `RANGE_BOUND` / `SIDEWAYS`
+- `RISK_OFF` / `PANIC` / `VOLATILE`
+If the regime is unsuitable, the system enters `NO_TRADE` mode to protect capital.
 
 ### **Layer 2: Multi-Agent Sensors (The Eyes)**
 Specialized agents operate in parallel as numerical sensors:
@@ -48,7 +48,18 @@ The final authority. It uses a **Decision Matrix** to generate compressed execut
 
 ---
 
-## 3. Risk Guardian (The Constitution)
+## 3. Deterministic Engines (The Core)
+
+The system relies on a suite of 100% deterministic engines for mathematical and logical operations:
+- **MathEngine**: Pure functional implementations of technical indicators (RSI, ADX, ATR, etc.).
+- **RegimeDetectionEngine**: HMM-based probabilistic regime identification.
+- **MonteCarloSimulationEngine**: Portfolio trajectory simulation for VaR/CVaR estimation.
+- **FactorModelsEngine**: Fama-French and Barra-style factor decomposition and risk attribution.
+- **EventBusEngine**: High-performance internal messaging system for inter-agent communication.
+
+---
+
+## 4. Risk Guardian (The Constitution)
 Risk management is hard-coded and independent of AI logic to prevent "reasoning around" safety rules:
 1. **Kill-Switch**: Automatic system lock if daily drawdown exceeds 4%.
 2. **Correlation Monitor**: Blocks execution if the correlation between active assets exceeds 0.70.
@@ -56,12 +67,12 @@ Risk management is hard-coded and independent of AI logic to prevent "reasoning 
 
 ---
 
-## 4. Darwinian Strategy Evolution
+## 5. Darwinian Strategy Evolution
 The system monitors every strategy's performance. If a strategy's **Expectancy** becomes negative over a statistically significant sample size, it is marked as `KILLED`, and the system automatically shifts resources to higher-performing variants.
 
 ---
 
-## 5. Hybrid Storage Architecture
+## 6. Hybrid Storage Architecture
 The **StorageManager** uses an **Adapter Pattern** to manage data:
 1. **IndexedDB (Primary)**: High-capacity local storage for knowledge bases and market history.
 2. **LocalStorage**: Fast-access for UI preferences and session state.
