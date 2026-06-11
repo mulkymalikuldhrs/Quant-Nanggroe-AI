@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -65,7 +65,7 @@ class BacktestReport:
     ) -> str:
         """Generate JSON report."""
         report = {
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "summary": {k: v for k, v in metrics.items() if not isinstance(v, dict)},
             "config": config or {},
             "trade_count": len(trades),
