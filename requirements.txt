@@ -94,7 +94,7 @@ diskcache>=5.6
 # File Handling
 watchdog>=4.0
 pathspec>=0.12
-pillow>=10.1
+pillow>=12.2.0
 
 # JSON and Config
 jsonschema>=4.20
