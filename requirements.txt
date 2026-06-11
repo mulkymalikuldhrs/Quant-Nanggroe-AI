@@ -78,7 +78,7 @@ psycopg2-binary>=2.9
 asyncpg>=0.29
 
 # System and Security
-python-dotenv>=1.0
+python-dotenv>=1.2.2
 cryptography>=42.0
 psutil>=5.9
 
