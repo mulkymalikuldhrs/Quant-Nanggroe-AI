@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -25,14 +25,14 @@ class Triple(BaseModel):
     subject: str = ""
     predicate: str = ""
     object: str = ""
-    valid_from: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    valid_from: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     valid_to: Optional[str] = None  # None = still valid
     confidence: float = 1.0
     source: Dict[str, Any] = Field(default_factory=dict)
     supersedes: Optional[str] = None  # triple_id of older version
     superseded_by: Optional[str] = None  # triple_id of newer version
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     access_count: int = 0
 
 
@@ -45,7 +45,7 @@ class Entity(BaseModel):
     entity_type: str = "generic"
     attributes: Dict[str, Any] = Field(default_factory=dict)
     triple_count: int = 0
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class EvolutionEntry(BaseModel):
@@ -110,7 +110,7 @@ class TemporalKnowledgeGraph:
             subject=subject,
             predicate=predicate,
             object=object,
-            valid_from=valid_from or datetime.utcnow().isoformat(),
+            valid_from=valid_from or datetime.now(timezone.utc).isoformat(),
             valid_to=valid_to,
             confidence=confidence,
             source=source or {},
@@ -200,7 +200,7 @@ class TemporalKnowledgeGraph:
         candidates = self._get_candidates(subject, predicate, object)
 
         results = []
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
 
         for tid in candidates:
             triple = self._triples.get(tid)
@@ -296,7 +296,7 @@ class TemporalKnowledgeGraph:
     async def get_entity_triples(self, name: str, active_only: bool = True) -> List[Triple]:
         """Get all triples involving an entity (as subject or object)."""
         results = []
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
 
         # As subject
         for tid in self._subject_index.get(name, set()):

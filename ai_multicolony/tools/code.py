@@ -409,6 +409,7 @@ class CodeTool(MCPTool):
                 proc.kill()
                 await proc.wait()
             except Exception:
+                logger.exception("unhandled_error")
                 pass
             return SandboxResult(
                 stderr=f"Execution timed out after {timeout}s",
@@ -445,6 +446,7 @@ class CodeTool(MCPTool):
                 proc.kill()
                 await proc.wait()
             except Exception:
+                logger.exception("unhandled_error")
                 pass
             return SandboxResult(
                 stderr=f"Execution timed out after {timeout}s",

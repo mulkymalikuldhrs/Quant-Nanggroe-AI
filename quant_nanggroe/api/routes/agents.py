@@ -137,6 +137,7 @@ async def get_agent_status(http_request: Request) -> AgentStatusResponse:
         ks = get_kill_switch(http_request.app)
         kill_switch_active = ks.is_active
     except Exception:
+        logger.exception("unhandled_error")
         pass
 
     # Build agent list from the AgentRegistry
@@ -263,4 +264,5 @@ async def get_kill_switch_status(http_request: Request) -> KillSwitchStatusRespo
             message=status.get("message", ""),
         )
     except Exception:
+        logger.exception("unhandled_error")
         return KillSwitchStatusResponse(is_active=False, message="Status unavailable")

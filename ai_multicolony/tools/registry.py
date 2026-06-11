@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -78,7 +78,7 @@ class AuditEntry(BaseModel):
     model_config = ConfigDict(frozen=False)
 
     audit_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     tool_name: str = ""
     action: str = ""
     agent_id: str = ""

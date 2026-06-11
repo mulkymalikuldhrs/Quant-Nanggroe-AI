@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -55,8 +55,7 @@ class MemorySettings(BaseSettings):
     preload_enabled: bool = True
     preload_top_k: int = 3
     vector_db_url: str = "http://localhost:6333"
-    vector_db_collection: str = ""  # Empty = must be explicitly set; no shared default
-    vector_db_namespace: str = "default"  # Per-colony namespacing for isolation
+    vector_db_collection: str = "colony-general"
     vector_embedding_dims: int = 1536
     vector_distance: str = "Cosine"
     compaction_interval_s: int = 300
@@ -66,14 +65,16 @@ class MemorySettings(BaseSettings):
 
 class APISettings(BaseSettings):
     """API server configuration."""
-    host: str = "127.0.0.1"  # Override with 0.0.0.0 for Docker deployment
+    host: str = "0.0.0.0"
     port: int = 8000
     workers: int = 4
+    # IMPORTANT: Override cors_origins in production! Default allows only localhost.
     cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"])
     cors_methods: List[str] = Field(default_factory=lambda: ["*"])
     cors_headers: List[str] = Field(default_factory=lambda: ["*"])
     api_key_enabled: bool = True
-    jwt_secret: str = ""  # Must be set via JWT_SECRET env var (SEC-001)
+    # IMPORTANT: Override jwt_secret in production! Default value is insecure.
+    jwt_secret: str = "change-me-in-production"
     jwt_expiry_hours: int = 24
     rate_limit_per_minute: int = 60
     rate_limit_burst: int = 10
@@ -82,6 +83,24 @@ class APISettings(BaseSettings):
     ws_max_connections: int = 100
 
     model_config = {"env_prefix": "MULTICOLONY_API_"}
+
+    @model_validator(mode="after")
+    def _validate_production_secrets(self) -> "APISettings":
+        """Ensure insecure defaults are not used in production."""
+        import os
+        env_mode = os.getenv("QNAI_ENV", os.getenv("ENVIRONMENT", "development")).lower()
+        if env_mode in ("production", "prod", "staging"):
+            if self.jwt_secret == "change-me-in-production":
+                raise ValueError(
+                    "SECURITY: jwt_secret is still set to the default value 'change-me-in-production'. "
+                    "Set MULTICOLONY_API_JWT_SECRET to a strong random string before running in production."
+                )
+            if "*" in self.cors_origins:
+                raise ValueError(
+                    "SECURITY: cors_origins contains '*' in production. "
+                    "Set MULTICOLONY_API_CORS_ORIGINS to specific allowed origins."
+                )
+        return self
 
 
 class ChannelSettings(BaseSettings):
@@ -128,7 +147,7 @@ class Settings(BaseSettings):
 
     # ── Core ──
     app_name: str = "ai-multicolony"
-    version: str = ""  # Populated from ai_multicolony._version at init
+    version: str = "0.1.0"
     debug: bool = False
     log_level: str = "INFO"
 
@@ -177,10 +196,6 @@ def get_settings() -> Settings:
     global _settings
     if _settings is None:
         _settings = Settings()
-        # Populate version from single source of truth
-        if not _settings.version:
-            from .._version import __version__
-            _settings.version = __version__
     return _settings
 
 

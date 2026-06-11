@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -326,7 +326,7 @@ class SecurityAgent(BaseAgent):
             "findings_by_severity": findings_by_severity,
             "scans_performed": len(self._scan_history),
             "compliance": compliance,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "recommendations": self._generate_recommendations(findings_by_severity),
         }
 

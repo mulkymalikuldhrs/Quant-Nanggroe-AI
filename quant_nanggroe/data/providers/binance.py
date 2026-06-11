@@ -467,6 +467,7 @@ class BinanceProvider(DataProvider):
         try:
             await self._exchange.close()
         except Exception:
+            logger.exception("unhandled_error")
             pass
         if self._http_client and not self._http_client.is_closed:
             await self._http_client.aclose()

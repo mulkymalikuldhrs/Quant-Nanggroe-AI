@@ -269,6 +269,7 @@ class AgentLoop:
                 condensed = self._messages[:2] + self._messages[-10:]
                 llm_messages = [m.to_dict() for m in condensed]
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         # Get available tools

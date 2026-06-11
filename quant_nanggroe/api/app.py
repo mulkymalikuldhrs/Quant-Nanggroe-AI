@@ -38,6 +38,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger.info("startup_complete", extra={"app": settings.app_name, "env": "development"})
 
+    # ── P0-1 SAFETY: Auth warning ──────────────────────────────────
+    if not settings.require_auth:
+        logger.warning(
+            "⚠️  SECURITY WARNING: Authentication is DISABLED (QNAI_REQUIRE_AUTH=false). "
+            "Trading endpoints are accessible without API keys. "
+            "NEVER use this in production!"
+        )
+
+    # ── P0-3 SAFETY: Trading mode banner ───────────────────────────
+    try:
+        from quant_nanggroe.config.trading_mode import TradingModeConfig
+        TradingModeConfig()  # Triggers startup banner
+    except Exception:
+        logger.exception("unhandled_error")
+        pass
+
     yield
 
     # ── Shutdown ────────────────────────────────────────────────────
@@ -51,8 +67,6 @@ def create_app() -> FastAPI:
     Returns:
         Configured FastAPI instance
     """
-    import os
-
     settings = get_settings()
 
     app = FastAPI(
@@ -62,31 +76,28 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # ── CORS Middleware (SEC-016) ────────────────────────────────────
-    cors_env = os.environ.get("CORS_ORIGINS", "")
-    if cors_env:
-        allowed_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
-        if allowed_origins == ["*"]:
-            logger.warning(
-                "CORS_ORIGINS=['*'] with credentials is insecure — "
-                "use specific origins in production"
-            )
-    else:
-        allowed_origins = ["http://localhost:3000", "http://localhost:8000"]
+    # ── CORS Middleware (P0-1 SAFETY: Restrictive defaults) ─────────
+    # Read allowed origins from settings. If none configured,
+    # CORS is effectively disabled (no origins = no cross-origin requests).
+    # This is the SAFEST default — operators must explicitly allow origins.
+    cors_origins = settings.cors_origins_list
+    if not cors_origins:
+        # No origins configured — most restrictive: allow no cross-origin
+        # We use a sentinel that won't match any real origin
+        logger.warning(
+            "CORS: No allowed origins configured (QNAI_CORS_ALLOWED_ORIGINS is empty). "
+            "No cross-origin requests will be permitted. "
+            "Configure QNAI_CORS_ALLOWED_ORIGINS for frontend access."
+        )
+        cors_origins = []  # Empty list = no CORS allowed
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=cors_origins,
+        allow_credentials=True if cors_origins else False,
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["X-API-Key", "Content-Type", "Authorization"],
     )
-
-    # ── Auth Middleware (SEC-AUTH) ─────────────────────────────────────
-    from quant_nanggroe.api.middleware import AuthMiddleware, RateLimitMiddleware
-
-    app.add_middleware(AuthMiddleware)
-    app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws

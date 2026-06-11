@@ -5,7 +5,7 @@ Covers: agents, colonies, tools, memory, and tasks.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -302,7 +302,7 @@ class WSMessage(BaseModel):
     """WebSocket message envelope."""
     type: str  # task_update | heartbeat | alert | log
     payload: Dict[str, Any] = Field(default_factory=dict)
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     source: str = ""
 
 

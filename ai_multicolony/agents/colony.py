@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
 from .base import BaseAgent
@@ -117,7 +117,7 @@ class ColonyAgent(BaseAgent):
             return await self._handle_task_request(message.get("payload", {}))
         elif msg_type == "heartbeat":
             agent_id = message.get("payload", {}).get("agent_id", "")
-            self._heartbeat_timeouts[agent_id] = datetime.utcnow()
+            self._heartbeat_timeouts[agent_id] = datetime.now(timezone.utc)
             return {"acknowledged": True}
         elif msg_type == "agent_health":
             agent_id = message.get("payload", {}).get("agent_id", "")
@@ -184,7 +184,7 @@ class ColonyAgent(BaseAgent):
                 "task_id": task.task_id,
                 "target_agent": target_agent,
                 "message_id": message_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
             self._metrics.total_tasks_completed += 1
             return {"action": "assign", "target_agent": target_agent, "assigned": True}
@@ -230,7 +230,7 @@ class ColonyAgent(BaseAgent):
                 "hand": hand_type.value,
                 "target_agent": target_agent_id,
                 "message_id": message_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
             self._metrics.total_tasks_completed += 1
             return {
@@ -326,7 +326,7 @@ class ColonyAgent(BaseAgent):
         interval and flags them as potentially unresponsive.
         """
         timeout_seconds = 60  # 60 seconds without heartbeat = unresponsive
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         unresponsive: List[str] = []
 
         for agent_id, agent in self._managed_agents.items():

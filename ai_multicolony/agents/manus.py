@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -205,7 +205,7 @@ class ManusAgent(BaseAgent):
             "total_steps": total_steps,
             "progress_pct": round((step_num / max(1, total_steps)) * 100, 1),
             "step_success": step_result.get("success", False),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         self._progress_reports.append(report)
         await self.event_bus.publish_typed(

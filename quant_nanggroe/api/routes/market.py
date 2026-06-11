@@ -238,6 +238,7 @@ async def get_pressure(symbol: str, http_request: Request) -> dict[str, Any]:
                     "source": "cached_pressure_engine",
                 }
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         return {"symbol": symbol, "buy_pressure": 0.0, "sell_pressure": 0.0, "verdict": "NEUTRAL"}

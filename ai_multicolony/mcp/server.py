@@ -10,7 +10,7 @@ import json
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from .protocol import (
@@ -193,7 +193,7 @@ class MCPServer:
         self._audit_log: List[Dict[str, Any]] = []
         self._notification_handlers: Dict[str, List[Callable]] = {}
         self._server_id = uuid.uuid4().hex[:8]
-        self._started_at = datetime.utcnow().isoformat()
+        self._started_at = datetime.now(timezone.utc).isoformat()
 
     # ── Tool registration ────────────────────────────────────────
 
@@ -471,7 +471,7 @@ class MCPServer:
 
     def _audit(self, entry: Dict[str, Any]) -> None:
         entry["audit_id"] = uuid.uuid4().hex[:12]
-        entry["timestamp"] = datetime.utcnow().isoformat()
+        entry["timestamp"] = datetime.now(timezone.utc).isoformat()
         entry["server_id"] = self._server_id
         self._audit_log.append(entry)
 

@@ -86,6 +86,7 @@ class BinanceClient(BaseRestClient):
                     signed=True,
                 )
             except Exception:
+                logger.exception("unhandled_error")
                 pass
         if order.client_order_id:
             params["newClientOrderId"] = order.client_order_id
@@ -160,6 +161,7 @@ class BinanceClient(BaseRestClient):
                         total=float(b.get("balance", 0)),
                     ))
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         return balances

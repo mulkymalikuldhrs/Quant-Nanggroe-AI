@@ -26,8 +26,12 @@ def client():
     """Create a TestClient with mocked service dependencies."""
     import os
     # Disable auth for testing (tests don't provide API keys)
-    os.environ.setdefault("QNAI_REQUIRE_AUTH", "false")
-    os.environ.setdefault("QNAI_API_KEYS", "test-key-for-ci")
+    os.environ["QNAI_REQUIRE_AUTH"] = "false"
+    os.environ["QNAI_API_KEYS"] = "test-key-for-ci"
+    os.environ["QNAI_CORS_ALLOWED_ORIGINS"] = "http://localhost:3000,http://localhost:8000"
+    # Clear cached settings so env vars are picked up
+    from quant_nanggroe.config.settings import get_settings
+    get_settings.cache_clear()
     # Mock the services module that the app imports at startup
     with patch("quant_nanggroe.api.app.init_all_services", create=True):
         with patch("quant_nanggroe.services", create=True):

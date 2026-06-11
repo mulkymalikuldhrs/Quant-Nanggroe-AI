@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -38,7 +38,7 @@ class MemoryPageModel(BaseModel):
     agent_id: str = ""
     session_id: str = ""
     page_number: int = 0
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     token_count: int = 0
     summary: str = ""
     messages: List[Dict[str, Any]] = Field(default_factory=list)
@@ -54,7 +54,7 @@ class TemporalFactModel(BaseModel):
     subject: str = ""
     predicate: str = ""
     obj: str = ""
-    valid_from: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    valid_from: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     valid_to: Optional[str] = None
     confidence: float = 1.0
     source: Dict[str, Any] = Field(default_factory=dict)
@@ -71,8 +71,8 @@ class TreeNodeModel(BaseModel):
     content: Dict[str, Any] = Field(default_factory=dict)
     children: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     access_count: int = 0
 
 
@@ -165,7 +165,7 @@ class MemoryManager:
                 "id": store_id,
                 "key": key,
                 "value": value,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "metadata": metadata or {},
             })
             self._context_usage += len(str(value))
@@ -425,7 +425,7 @@ class MemoryManager:
         session_id = uuid.uuid4().hex[:12]
         self._sessions[session_id] = {
             "agent_id": agent_id,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "metadata": metadata or {},
         }
         return session_id

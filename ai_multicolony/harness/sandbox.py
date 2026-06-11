@@ -236,6 +236,7 @@ class SandboxHandle:
             try:
                 proc.kill()
             except Exception:
+                logger.exception("unhandled_error")
                 pass
             raise
         except FileNotFoundError:

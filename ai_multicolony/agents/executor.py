@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -83,7 +83,7 @@ class SandboxHandle:
         """Wall-clock execution time in milliseconds."""
         if self.started_at is None:
             return 0.0
-        end = self.completed_at or datetime.utcnow()
+        end = self.completed_at or datetime.now(timezone.utc)
         return (end - self.started_at).total_seconds() * 1000
 
     def to_dict(self) -> Dict[str, Any]:
@@ -231,7 +231,7 @@ class ExecutorAgent(BaseAgent):
             handle = self._sandboxes[sandbox_id]
 
         handle.status = "running"
-        handle.started_at = datetime.utcnow()
+        handle.started_at = datetime.now(timezone.utc)
 
         try:
             # Simulate command execution with timeout
@@ -240,19 +240,19 @@ class ExecutorAgent(BaseAgent):
             handle.exit_code = 0
             handle.stdout = result.get("output", "")
             handle.stderr = result.get("error", "")
-            handle.completed_at = datetime.utcnow()
+            handle.completed_at = datetime.now(timezone.utc)
             handle.cpu_usage = 0.5
             handle.memory_usage_mb = 128.0
         except asyncio.TimeoutError:
             handle.status = "timed_out"
             handle.exit_code = -1
             handle.stderr = f"Command timed out after {timeout_ms}ms"
-            handle.completed_at = datetime.utcnow()
+            handle.completed_at = datetime.now(timezone.utc)
         except Exception as e:
             handle.status = "failed"
             handle.exit_code = 1
             handle.stderr = str(e)
-            handle.completed_at = datetime.utcnow()
+            handle.completed_at = datetime.now(timezone.utc)
 
         # Log execution
         log_entry = {
@@ -262,7 +262,7 @@ class ExecutorAgent(BaseAgent):
             "status": handle.status,
             "exit_code": handle.exit_code,
             "execution_time_ms": handle.execution_time_ms,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         self._execution_log.append(log_entry)
 
