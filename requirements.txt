@@ -101,7 +101,7 @@ jsonschema>=4.20
 toml>=0.10
 
 # Platform Integrations
-google-auth>=2.28
+google-auth>=2.53.0
 google-auth-oauthlib>=1.2
 
 # Text Processing
