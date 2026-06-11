@@ -1,4 +1,8 @@
-"""Trading API routes."""
+"""Trading API routes.
+
+All trading routes require API key authentication (P0-1 SAFETY).
+The `verify_api_key` dependency is applied to every route in this module.
+"""
 
 from __future__ import annotations
 
@@ -7,8 +11,9 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 
+from quant_nanggroe.api.auth import verify_api_key
 from quant_nanggroe.api.schemas import (
     OrderRequest,
     OrderResponse,
@@ -49,21 +54,29 @@ def _get_exchange_manager(http_request: Request):
 
 
 @router.post("/order", response_model=OrderResponse)
-async def place_order(request: OrderRequest, http_request: Request) -> OrderResponse:
+async def place_order(
+    request: OrderRequest,
+    http_request: Request,
+    _api_key: str = Depends(verify_api_key),
+) -> OrderResponse:
     """Place a trade order.
 
     Submits an order through the ExecutionManager guard pipeline for
     validation and execution. The guard pipeline enforces cooldown,
     max-position, and whitelist checks before routing to a broker.
 
+    **Requires X-API-Key header** (P0-1 SAFETY).
+
     Args:
         request: OrderRequest with order details.
         http_request: HTTP request for accessing app state.
+        _api_key: Validated API key (injected by Depends).
 
     Returns:
         OrderResponse with order status.
     """
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
+    from quant_nanggroe.engine.execution.manager import KillSwitchActiveError, RiskLimitRejectedError
 
     # Map direction string to OrderSide enum
     try:
@@ -119,6 +132,24 @@ async def place_order(request: OrderRequest, http_request: Request) -> OrderResp
                 direction=request.direction,
                 quantity=request.quantity,
             )
+    except KillSwitchActiveError as exc:
+        logger.critical("place_order_kill_switch_rejected symbol=%s error=%s", request.symbol, exc)
+        return OrderResponse(
+            order_id=order.id,
+            status="KILL_SWITCH_REJECTED",
+            symbol=request.symbol,
+            direction=request.direction,
+            quantity=request.quantity,
+        )
+    except RiskLimitRejectedError as exc:
+        logger.warning("place_order_risk_rejected symbol=%s error=%s", request.symbol, exc)
+        return OrderResponse(
+            order_id=order.id,
+            status="RISK_REJECTED",
+            symbol=request.symbol,
+            direction=request.direction,
+            quantity=request.quantity,
+        )
     except Exception as exc:
         logger.error("place_order_failed symbol=%s error=%s", request.symbol, exc)
         return OrderResponse(
@@ -131,14 +162,20 @@ async def place_order(request: OrderRequest, http_request: Request) -> OrderResp
 
 
 @router.get("/positions", response_model=PositionsResponse)
-async def get_positions(http_request: Request) -> PositionsResponse:
+async def get_positions(
+    http_request: Request,
+    _api_key: str = Depends(verify_api_key),
+) -> PositionsResponse:
     """Get all open positions.
 
     Queries real positions from the broker through the ExchangeManager's
     aggregated portfolio endpoint.
 
+    **Requires X-API-Key header** (P0-1 SAFETY).
+
     Args:
         http_request: HTTP request for accessing app state.
+        _api_key: Validated API key (injected by Depends).
 
     Returns:
         PositionsResponse with current portfolio positions.
@@ -169,15 +206,22 @@ async def get_positions(http_request: Request) -> PositionsResponse:
 
 
 @router.get("/trades", response_model=TradeHistoryResponse)
-async def get_trade_history(limit: int = 50, http_request: Request = None) -> TradeHistoryResponse:
+async def get_trade_history(
+    limit: int = 50,
+    http_request: Request = None,
+    _api_key: str = Depends(verify_api_key),
+) -> TradeHistoryResponse:
     """Get trade history.
 
     Retrieves the execution audit log from the ExecutionManager, which
     records every order submission, guard block, and execution failure.
 
+    **Requires X-API-Key header** (P0-1 SAFETY).
+
     Args:
         limit: Maximum number of trades to return.
         http_request: HTTP request for accessing app state.
+        _api_key: Validated API key (injected by Depends).
 
     Returns:
         TradeHistoryResponse with recent trade records.
@@ -233,14 +277,21 @@ async def get_trade_history(limit: int = 50, http_request: Request = None) -> Tr
 
 
 @router.post("/risk-check", response_model=RiskCheckResponse)
-async def risk_check(request: RiskCheckRequest, http_request: Request) -> RiskCheckResponse:
+async def risk_check(
+    request: RiskCheckRequest,
+    http_request: Request,
+    _api_key: str = Depends(verify_api_key),
+) -> RiskCheckResponse:
     """Run 9-checkpoint risk validation on a proposed trade.
 
     Evaluates the trade through the constitutional risk management system.
 
+    **Requires X-API-Key header** (P0-1 SAFETY).
+
     Args:
         request: RiskCheckRequest with trade details.
         http_request: HTTP request for accessing app state.
+        _api_key: Validated API key (injected by Depends).
 
     Returns:
         RiskCheckResponse with verdict and checkpoint details.

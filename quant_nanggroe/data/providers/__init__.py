@@ -17,17 +17,30 @@ Provider priority order (lower = higher priority):
 """
 
 from quant_nanggroe.data.providers.binance import BinanceProvider
-from quant_nanggroe.data.providers.coin_gecko import CoinGeckoProvider
+from quant_nanggroe.data.providers.coingecko import CoinGeckoProvider
 from quant_nanggroe.data.providers.yahoo import YahooFinanceProvider
 from quant_nanggroe.data.providers.twelvedata import TwelveDataProvider
-from quant_nanggroe.data.providers.finnhub import FinnhubProvider
 from quant_nanggroe.data.providers.alpha_vantage import AlphaVantageProvider
 from quant_nanggroe.data.providers.alpaca import AlpacaProvider
 from quant_nanggroe.data.providers.polygon import PolygonProvider
 from quant_nanggroe.data.providers.fred import FREDProvider
-from quant_nanggroe.data.providers.ecb import ECBProvider
-from quant_nanggroe.data.providers.world_bank import WorldBankProvider
 from quant_nanggroe.data.providers.sec_edgar import SECEdgarProvider
+
+# Optional providers — require additional dependencies/API keys
+try:
+    from quant_nanggroe.data.providers.finnhub import FinnhubProvider
+except ImportError:
+    FinnhubProvider = None  # type: ignore[misc,assignment]
+
+try:
+    from quant_nanggroe.data.providers.ecb import ECBProvider
+except ImportError:
+    ECBProvider = None  # type: ignore[misc,assignment]
+
+try:
+    from quant_nanggroe.data.providers.world_bank import WorldBankProvider
+except ImportError:
+    WorldBankProvider = None  # type: ignore[misc,assignment]
 
 # Provider registry: maps name -> provider class
 PROVIDER_REGISTRY: dict[str, type] = {
@@ -35,28 +48,30 @@ PROVIDER_REGISTRY: dict[str, type] = {
     "coingecko": CoinGeckoProvider,
     "yahoo": YahooFinanceProvider,
     "twelvedata": TwelveDataProvider,
-    "finnhub": FinnhubProvider,
     "alpha_vantage": AlphaVantageProvider,
     "alpaca": AlpacaProvider,
     "polygon": PolygonProvider,
     "fred": FREDProvider,
-    "ecb": ECBProvider,
-    "world_bank": WorldBankProvider,
     "sec_edgar": SECEdgarProvider,
 }
+
+# Add optional providers if available
+if FinnhubProvider is not None:
+    PROVIDER_REGISTRY["finnhub"] = FinnhubProvider
+if ECBProvider is not None:
+    PROVIDER_REGISTRY["ecb"] = ECBProvider
+if WorldBankProvider is not None:
+    PROVIDER_REGISTRY["world_bank"] = WorldBankProvider
 
 __all__ = [
     "BinanceProvider",
     "CoinGeckoProvider",
     "YahooFinanceProvider",
     "TwelveDataProvider",
-    "FinnhubProvider",
     "AlphaVantageProvider",
     "AlpacaProvider",
     "PolygonProvider",
     "FREDProvider",
-    "ECBProvider",
-    "WorldBankProvider",
     "SECEdgarProvider",
     "PROVIDER_REGISTRY",
 ]

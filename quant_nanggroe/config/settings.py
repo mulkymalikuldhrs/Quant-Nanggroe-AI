@@ -107,6 +107,24 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "json"
 
+    # ── API Authentication (P0-1 SAFETY) ─────────────────────────
+    api_keys: str = Field(
+        default="",
+        description="Comma-separated list of valid API keys for trading endpoint auth. "
+        "Set via QNAI_API_KEYS env var. REQUIRED for production.",
+    )
+    require_auth: bool = Field(
+        default=True,
+        description="Whether authentication is required for trading endpoints. "
+        "Set to False ONLY for local development.",
+    )
+    cors_allowed_origins: str = Field(
+        default="",
+        description="Comma-separated list of allowed CORS origins. "
+        "Empty = no CORS origins allowed (most restrictive). "
+        "Set via QNAI_CORS_ALLOWED_ORIGINS env var.",
+    )
+
     # Constitutional Risk Limits (CANNOT be overridden by agents)
     risk_max_per_trade: float = Field(
         default=0.5,
@@ -141,6 +159,33 @@ class Settings(BaseSettings):
     # Data
     data_cache_ttl: int = 300  # 5 minutes
     data_provider_timeout: int = 30
+
+    @field_validator("require_auth")
+    @classmethod
+    def validate_require_auth(cls, v: bool) -> bool:
+        """Warn if auth is disabled."""
+        if not v:
+            import logging
+            logging.getLogger(__name__).warning(
+                "⚠️  SECURITY WARNING: require_auth is DISABLED. "
+                "Trading endpoints are accessible without authentication. "
+                "NEVER use this in production!"
+            )
+        return v
+
+    @property
+    def api_keys_list(self) -> list[str]:
+        """Parse the comma-separated API keys into a list."""
+        if not self.api_keys:
+            return []
+        return [k.strip() for k in self.api_keys.split(",") if k.strip()]
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse the comma-separated CORS origins into a list."""
+        if not self.cors_allowed_origins:
+            return []
+        return [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]
 
     @field_validator("log_level")
     @classmethod

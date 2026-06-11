@@ -422,7 +422,31 @@ class CCXTBroker(ExchangeInterface):
         agent_name: Optional[str] = None,
         notes: Optional[str] = None,
     ) -> Order:
-        """Place an order via CCXT."""
+        """Place an order via CCXT.
+
+        SAFETY (P0-3): Checks TradingModeConfig before executing.
+        In PAPER mode, this method should never be reached because the
+        ExchangeFactory redirects to PaperExchangeBroker. This check
+        serves as a defense-in-depth fallback.
+        """
+        # ── Defense-in-depth: Trading mode check (P0-3 SAFETY) ────────
+        from quant_nanggroe.config.trading_mode import TradingModeConfig, TradingMode
+
+        trading_mode = TradingModeConfig()
+        if trading_mode.mode == TradingMode.PAPER:
+            raise OrderError(
+                "ORDER BLOCKED: System is in PAPER trading mode. "
+                "Real exchange order placement is not permitted. "
+                "Use the paper broker instead.",
+                exchange=self.name,
+            )
+        if trading_mode.mode == TradingMode.SIMULATION and not self._config.sandbox:
+            raise OrderError(
+                "ORDER BLOCKED: System is in SIMULATION mode but this exchange "
+                "is not configured for sandbox/testnet. Refusing to execute.",
+                exchange=self.name,
+            )
+
         ex = self._require_exchange()
         try:
             ccxt_side = _SIDE_MAP[side]

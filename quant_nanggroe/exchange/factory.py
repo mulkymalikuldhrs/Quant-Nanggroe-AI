@@ -39,6 +39,7 @@ from pydantic import BaseModel, Field, field_validator
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeInterface
 from quant_nanggroe.exchange.ccxt_broker import CCXTBroker
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
+from quant_nanggroe.config.trading_mode import TradingModeConfig, TradingMode
 
 logger = logging.getLogger(__name__)
 
@@ -317,7 +318,22 @@ class ExchangeFactory:
         """
         name_lower = exchange_name.lower().strip()
 
-        # Handle paper trading
+        # ── Trading Mode Enforcement (P0-3 / P0-5 SAFETY) ────────────
+        # The system-wide TradingModeConfig governs whether real exchanges
+        # can be created. In PAPER mode, ALL exchange creation is
+        # redirected to the paper broker regardless of individual settings.
+        trading_mode = TradingModeConfig()
+        effective_exchange = trading_mode.validate_exchange_creation(name_lower)
+
+        if effective_exchange == "paper":
+            # PAPER mode: always use paper broker
+            return self._create_paper_broker(
+                initial_capital=initial_capital,
+                commission_rate=commission_rate,
+                slippage_bps=slippage_bps,
+            )
+
+        # Handle explicit paper trading request
         if name_lower == "paper":
             return self._create_paper_broker(
                 initial_capital=initial_capital,
@@ -363,12 +379,30 @@ class ExchangeFactory:
         if extra_options:
             options.update(extra_options)
 
+        # ── Sandbox/Mode Enforcement (P0-3 SAFETY) ────────────────
+        # In SIMULATION mode, force sandbox=True on all real exchanges.
+        # In LIVE mode, sandbox follows the caller's preference.
+        effective_sandbox = sandbox if sandbox is not None else self._config.sandbox
+        if trading_mode.mode == TradingMode.SIMULATION:
+            effective_sandbox = True
+            logger.info(
+                "ExchangeFactory: SIMULATION mode — forcing sandbox=True for %s",
+                name_lower,
+            )
+        elif trading_mode.mode == TradingMode.LIVE:
+            if not effective_sandbox:
+                logger.critical(
+                    "ExchangeFactory: LIVE mode — creating %s with sandbox=False. "
+                    "REAL CAPITAL IS AT RISK.",
+                    name_lower,
+                )
+
         exchange_config = ExchangeConfig(
             exchange_id=name_lower,
             api_key=api_key,
             api_secret=api_secret,
             passphrase=passphrase,
-            sandbox=sandbox if sandbox is not None else self._config.sandbox,
+            sandbox=effective_sandbox,
             rate_limit=rate_limit or self._config.default_rate_limit,
             timeout=timeout or self._config.default_timeout,
             retries=retries if retries is not None else self._config.default_retries,

@@ -47,14 +47,17 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
-COPY --chown=qna:qna src/ ./src/
+# Copy application code (quant_nanggroe + ai_multicolony packages)
+COPY --chown=qna:qna quant_nanggroe/ ./quant_nanggroe/
+COPY --chown=qna:qna ai_multicolony/ ./ai_multicolony/
 COPY --chown=qna:qna alembic/ ./alembic/
 COPY --chown=qna:qna alembic.ini ./alembic.ini
 COPY --chown=qna:qna scripts/ ./scripts/
+COPY --chown=qna:qna config/ ./config/
+COPY --chown=qna:qna pyproject.toml ./pyproject.toml
 
 # Environment
-ENV PYTHONPATH=/app/src \
+ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000
@@ -76,4 +79,4 @@ USER qna
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 
 # Default command (can be overridden for worker service)
-CMD ["uvicorn", "quant_nanggroe_ai.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "quant_nanggroe.api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

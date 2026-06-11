@@ -81,8 +81,8 @@ def drawdown_monitor() -> DrawdownMonitor:
 
 
 @pytest.fixture
-def kill_switch() -> KillSwitch:
-    return KillSwitch()
+def kill_switch(tmp_path) -> KillSwitch:
+    return KillSwitch(persist_dir=str(tmp_path / "kill_switch_test"))
 
 
 @pytest.fixture
@@ -1534,7 +1534,10 @@ class TestRiskManagerStatus:
         assert "hardcoded_limits" in status
 
     def test_status_trading_allowed_initially(self):
-        rm = RiskManager(initial_equity=1_000_000.0)
+        # Use persist_state=False to avoid interference from stale disk state
+        rm = RiskManager(initial_equity=1_000_000.0, persist_state=False)
+        # Also ensure no stale kill switch file from other tests
+        rm.kill_switch.reset(confirmation="CONFIRM_RESET_AFTER_REVIEW")
         status = rm.status()
         assert status["overall_status"] == "TRADING_ALLOWED"
 

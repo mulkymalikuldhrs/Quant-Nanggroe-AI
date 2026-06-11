@@ -23,14 +23,22 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.config.settings import get_settings
+from quant_nanggroe.security.auth_middleware import (
+    AuthContext,
+    require_auth,
+    require_role,
+    optional_auth,
+    authenticate_and_issue_token,
+)
 
 # Lazy imports for agent modules (may not be available if langchain is not installed)
 # RiskVerdict values are used as string constants in response models
@@ -276,13 +284,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # CORS middleware for dashboard integration
+    # CORS middleware — restricted to known origins in production
+    allowed_origins = os.getenv("QNAI_CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Restrict in production
+        allow_origins=[o.strip() for o in allowed_origins],
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "X-API-Key", "Content-Type"],
     )
 
     # ------------------------------------------------------------------
@@ -324,8 +333,18 @@ def create_app() -> FastAPI:
     # Trade
     # ------------------------------------------------------------------
 
-    @app.post("/api/v1/trade", response_model=TradeResponse, tags=["trading"])
-    async def execute_trade(request: TradeRequest):
+    @app.post("/api/v1/auth/token", tags=["auth"])
+    async def login(api_key: str = None):
+        """Authenticate with API key and receive JWT token.
+
+        Pass your API key to receive a JWT Bearer token for subsequent requests.
+        """
+        if not api_key:
+            raise HTTPException(status_code=400, detail="api_key parameter required")
+        return authenticate_and_issue_token(api_key)
+
+    @app.post("/api/v1/trade", response_model=TradeResponse, tags=["trading"], dependencies=[Depends(require_role("trade"))])
+    async def execute_trade(request: TradeRequest, auth: AuthContext = Depends(require_auth)):
         """
         Execute the full trading pipeline for specified symbols.
 
@@ -365,18 +384,11 @@ def create_app() -> FastAPI:
                     agent_outputs=result.get("agent_outputs", {}),
                 )
             except Exception as graph_err:
-                logger.warning(f"Trading graph execution failed: {graph_err}")
-                # Return simulated response when LLM keys are not configured
-                return TradeResponse(
-                    status="simulated",
-                    symbols=request.symbols,
-                    trade_date=trade_date,
-                    confidence=0.0,
-                    risk_verdict=_RISK_VERDICT_VETOED,
-                    decisions=[],
-                    signals=[],
-                    agent_outputs={"note": "Simulated response - configure LLM API keys for live execution"},
-                    error=f"Graph execution unavailable: {str(graph_err)[:200]}",
+                logger.error("Trading graph execution failed: %s", graph_err)
+                # FAIL CLOSED: Do not return fake/mock data when pipeline fails
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Trading pipeline unavailable: {str(graph_err)[:200]}. Configure LLM API keys for live execution.",
                 )
 
         except Exception as e:
@@ -390,8 +402,8 @@ def create_app() -> FastAPI:
     # Portfolio
     # ------------------------------------------------------------------
 
-    @app.get("/api/v1/portfolio", response_model=PortfolioResponse, tags=["portfolio"])
-    async def get_portfolio():
+    @app.get("/api/v1/portfolio", response_model=PortfolioResponse, tags=["portfolio"], dependencies=[Depends(require_role("read"))])
+    async def get_portfolio(auth: AuthContext = Depends(require_auth)):
         """
         Get current portfolio status.
 
@@ -446,8 +458,8 @@ def create_app() -> FastAPI:
         {"name": "forex", "role": "forex_analysis", "description": "Forex market analysis and currency pair evaluation", "tools": ["fx_rates", "carry_trade", "central_bank"]},
     ]
 
-    @app.get("/api/v1/agents", response_model=AgentListResponse, tags=["agents"])
-    async def list_agents():
+    @app.get("/api/v1/agents", response_model=AgentListResponse, tags=["agents"], dependencies=[Depends(require_role("read"))])
+    async def list_agents(auth: AuthContext = Depends(optional_auth)):
         """
         List all available trading agents.
 
@@ -469,8 +481,8 @@ def create_app() -> FastAPI:
     # Backtest
     # ------------------------------------------------------------------
 
-    @app.post("/api/v1/backtest", response_model=BacktestResponse, tags=["backtest"])
-    async def run_backtest(request: BacktestRequest):
+    @app.post("/api/v1/backtest", response_model=BacktestResponse, tags=["backtest"], dependencies=[Depends(require_role("analyze"))])
+    async def run_backtest(request: BacktestRequest, auth: AuthContext = Depends(require_auth)):
         """
         Run a backtest with the specified strategy.
 
@@ -540,8 +552,8 @@ def create_app() -> FastAPI:
     # Risk
     # ------------------------------------------------------------------
 
-    @app.get("/api/v1/risk/{symbol}", response_model=RiskCheckResponse, tags=["risk"])
-    async def check_risk(symbol: str):
+    @app.get("/api/v1/risk/{symbol}", response_model=RiskCheckResponse, tags=["risk"], dependencies=[Depends(require_role("read"))])
+    async def check_risk(symbol: str, auth: AuthContext = Depends(optional_auth)):
         """
         Run risk assessment for a specific symbol.
 

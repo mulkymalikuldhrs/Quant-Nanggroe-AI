@@ -82,12 +82,30 @@ class RiskManager:
             size = rm.calculate_position_size(...)
     """
 
-    def __init__(self, initial_equity: float = 1_000_000.0) -> None:
-        self.state = RiskState(
-            peak_equity=initial_equity,
-            current_equity=initial_equity,
-            last_reset_date=datetime.now().date(),
-        )
+    def __init__(self, initial_equity: float = 1_000_000.0, persist_state: bool = True) -> None:
+        from quant_nanggroe.engine.risk.persistent_state import PersistentRiskState
+
+        # Use persistent state by default — survives process restarts
+        if persist_state:
+            self._persistent = PersistentRiskState(initial_equity=initial_equity)
+            self._persistent.reset_daily_if_needed()
+            self.state = RiskState(
+                daily_pnl=self._persistent.daily_pnl,
+                weekly_pnl=self._persistent.weekly_pnl,
+                trade_count_today=self._persistent.trade_count_today,
+                trade_count_week=self._persistent.trade_count_week,
+                active_positions=self._persistent.active_positions,
+                peak_equity=self._persistent.peak_equity,
+                current_equity=self._persistent.current_equity,
+                last_reset_date=self._persistent.last_reset_date,
+            )
+        else:
+            self._persistent = None
+            self.state = RiskState(
+                peak_equity=initial_equity,
+                current_equity=initial_equity,
+                last_reset_date=datetime.now().date(),
+            )
         self.check_gate = RiskCheckGate()
         self.kill_switch = KillSwitch()
         self.drawdown_monitor = DrawdownMonitor(max_drawdown=MAX_DRAWDOWN)
@@ -181,6 +199,15 @@ class RiskManager:
         # Update equity
         self.state.current_equity += trade_pnl
         self.state.peak_equity = max(self.state.peak_equity, self.state.current_equity)
+
+        # Persist to disk
+        if self._persistent is not None:
+            self._persistent.daily_pnl = self.state.daily_pnl
+            self._persistent.weekly_pnl = self.state.weekly_pnl
+            self._persistent.trade_count_today = self.state.trade_count_today
+            self._persistent.trade_count_week = self.state.trade_count_week
+            self._persistent.current_equity = self.state.current_equity
+            self._persistent.peak_equity = self.state.peak_equity
 
         # Update drawdown monitor
         self.drawdown_monitor.update(self.state.current_equity)
