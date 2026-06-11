@@ -30,7 +30,7 @@
 
 **Quant Nanggroe AI** adalah **Multi-Agent Decision Intelligence Operating System** yang dirancang untuk riset kuantitatif dan trading sistematis di pasar keuangan. Dibangun di atas prinsip **Deterministic Decision Intelligence**, platform ini menolak narasi AI subjektif dan bias psikologis, dan menggantikannya dengan penalaran matematis terbatas pada data numerik mentah. Sistem memperlakukan Large Language Model bukan sebagai penasihat, tetapi sebagai **Logical Reasoning Engines** — masing-masing beroperasi di bawah kontrak ketat yang melarang opini subjektif, mewajibkan grounding data, dan mengharuskan output berbasis tekanan numerik.
 
-Platform ini mengkonsolidasikan kode dari **25+ repositori** ke dalam satu monorepo terpadu, menghasilkan sistem trading kuantitatif komprehensif dengan **9 agent nodes**, **456+ alpha factors**, **9 backtest engines**, **5 execution brokers**, **NautilusTrader integration**, dan **4-layer agent stack**.
+Platform ini mengkonsolidasikan kode dari **25 repositori** ke dalam satu monorepo terpadu, menghasilkan sistem trading kuantitatif komprehensif dengan **9 agent nodes**, **452 alpha factors**, **9 backtest engines**, **5 execution brokers**, **NautilusTrader integration**, dan **4-layer agent stack**. Semua branch implementasi dari C1 repos telah di-merge, dan package `quant_nanggroe/` (154 files) telah dikonsolidasikan ke dalam `src/quant_nanggroe_ai/`.
 
 > 🔗 **Part of the [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) Unified Project** — A full-stack quantitative intelligence ecosystem.
 
@@ -52,13 +52,13 @@ Sistem mengoordinasikan **9 node agent** melalui LangGraph StateGraph:
 
 Dua council debates (Bull/Bear, Risk Debate) menyediakan perspektif adversarial.
 
-### 🔢 456+ Alpha Factors
+### 🔢 452 Alpha Factors
 | Kategori | Jumlah | Sumber |
 |----------|--------|--------|
 | Alpha101 | 101 | WorldQuant Alpha101 |
 | Qlib158 | 154 | Microsoft Qlib |
-| Academic (Fama-French/Carhart) | 7 | Fama-French + Carhart |
-| GTJA191 | 192 | Guotai Junan 191 |
+| GTJA191 | 191 | Guotai Junan 191 |
+| Academic (Fama-French 5-Factor/Carhart) | 7 | Fama-French + Carhart |
 
 ### 📊 9 Backtest Engines + NautilusTrader
 | Engine | Pasar | Fitur |
@@ -140,7 +140,7 @@ Quant Nanggroe AI menggunakan arsitektur **multi-layer** dengan strict separatio
 │  PostgreSQL | QuestDB | Redis | SQLAlchemy 2.0 | Alembic  │
 ├──────────────────────────────────────────────────────────┤
 │  Factor Library                                          │
-│  456+ factors | 9 backtest engines | 8 data loaders      │
+│  452 factors (alpha101 + qlib158 + gtja191 + academic) | 9 backtest engines | 8 data loaders      │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -227,26 +227,36 @@ Set environment variables in `.env`:
 
 ```
 Quant-Nanggroe-AI/
-├── src/quant_nanggroe_ai/           # Python backend (21 packages)
+├── src/quant_nanggroe_ai/           # Python backend (27+ packages)
 │   ├── agents/                      # 9-node LangGraph agent system
-│   │   ├── nodes/                   # researcher, analyst, strategist, risk_manager, trader, portfolio, macro, forex, crypto
-│   │   ├── tools/                   # market_data, technical, sentiment, execution, backtest, trading_plan, file_ops
-│   │   ├── council/                 # bull_bear, risk_debate
+│   │   ├── nodes/                   # researcher, analyst, strategist, risk_manager, trader, portfolio, macro, forex, crypto, execution, prediction_market
+│   │   ├── tools/                   # market_data, technical, sentiment, execution, backtest, trading_plan, file_ops, financial_data, portfolio_simulator, query_router, token_reducer
+│   │   ├── council/                 # bull_bear, risk_debate, trading_council
+│   │   ├── skills/                  # market_research, decision_tracker, stock_analysis, finance_skills
+│   │   ├── agentpress/              # AgentPress framework (tool_registry, mcp_client, context_manager, sandbox)
+│   │   ├── memory/                  # Agent memory (extraction, memory_store)
 │   │   ├── graph.py                 # LangGraph StateGraph orchestration
 │   │   ├── mcp_protocol.py          # Model Context Protocol
 │   │   ├── a2a_protocol.py          # Agent-to-Agent Protocol
 │   │   ├── dspy_optimizer.py        # DSPy prompt optimization
-│   │   └── pydantic_validator.py    # PydanticAI validation
+│   │   ├── pydantic_validator.py    # PydanticAI validation
+│   │   ├── scheduler.py             # Agent scheduling
+│   │   ├── sandbox.py               # Agent sandboxing
+│   │   └── failsafe.py              # Agent failover
 │   ├── api/                         # FastAPI server
-│   │   ├── routes/                  # agents, backtest, market, portfolio, trading, auth, ws
+│   │   ├── routes/                  # agents, backtest, market, portfolio, trading, auth, users, ws
 │   │   ├── auth.py                  # JWT + RBAC authentication
+│   │   ├── middleware.py             # API middleware
 │   │   ├── client.py                # TradingPlan API client
-│   │   └── schemas.py               # Pydantic request/response models
+│   │   ├── schemas/                 # Pydantic request/response models (market, user)
+│   │   └── user_service.py          # User management service
 │   ├── backtest/                    # 9 backtest engines
 │   │   ├── engines/                 # china_a, global_equity, crypto, forex, china_futures, global_futures, composite, options_portfolio
 │   │   ├── loaders/                 # yfinance, ccxt, okx, futu, tushare, akshare
 │   │   ├── optimizers/              # mean_variance, risk_parity, max_diversification, equal_volatility
-│   │   └── nautilus_adapter.py      # NautilusTrader integration
+│   │   ├── benchmark.py             # Benchmark engine
+│   │   ├── walk_forward.py          # Walk-forward optimization
+│   │   └── validation.py            # Result validation
 │   ├── data/                        # Database + Cache layer
 │   │   ├── database.py              # SQLAlchemy 2.0 async
 │   │   ├── cache.py                 # Redis cache
@@ -260,41 +270,106 @@ Quant-Nanggroe-AI/
 │   │   ├── kill_switch.py           # Emergency halt
 │   │   ├── math_lib.py              # Pure math indicators
 │   │   ├── nautilus_adapter.py      # NautilusTrader adapter
-│   │   └── strategy_lifecycle.py    # Darwinian strategy evolution
-│   ├── execution/                   # 5 execution brokers
+│   │   ├── strategy_lifecycle.py    # Darwinian strategy evolution
+│   │   ├── event_bus.py             # Event-driven message bus
+│   │   ├── audit.py                 # Audit trail logging
+│   │   ├── simulation.py            # Monte Carlo simulation
+│   │   ├── regime.py                # Advanced regime detection
+│   │   ├── models.py                # Shared engine models
+│   │   ├── autoswitch.py            # LLM/data provider failover
+│   │   ├── risk/                    # Risk submodule
+│   │   │   ├── constants.py         # Constitutional rules (NON-NEGOTIABLE)
+│   │   │   ├── checks.py            # Risk checkpoint implementations
+│   │   │   ├── manager.py           # Risk manager coordination
+│   │   │   ├── position_sizing.py   # Position sizing algorithms
+│   │   │   ├── kelly.py             # Kelly criterion
+│   │   │   ├── var.py               # Value at Risk
+│   │   │   ├── drawdown.py          # Drawdown calculations
+│   │   │   ├── correlation.py       # Correlation monitoring
+│   │   │   ├── risk_parity.py       # Risk parity allocation
+│   │   │   ├── emotional_lockout.py # Emotional trading lockout
+│   │   │   └── kill_switch.py       # Emergency kill switch
+│   │   └── strategy/                # Strategy submodule
+│   │       ├── schema.py            # Strategy schema definitions
+│   │       ├── loader.py            # Strategy loading
+│   │       ├── parser.py            # Strategy parsing
+│   │       └── backtest_adapter.py  # Strategy backtest adapter
+│   ├── exchange/                    # Exchange abstraction layer
+│   │   ├── base.py                  # Base exchange interface
+│   │   ├── factory.py               # Exchange factory pattern
+│   │   ├── manager.py               # Exchange manager
+│   │   ├── guards.py                # Exchange guard rails
+│   │   ├── order_types.py           # Order type definitions
+│   │   ├── paper_broker.py          # Paper trading broker
+│   │   ├── alpaca_broker.py         # Alpaca (US Equities)
+│   │   ├── ccxt_broker.py           # CCXT (100+ crypto exchanges)
+│   │   └── solana/                  # Solana exchange submodule
+│   │       ├── jupiter.py           # Jupiter (Solana DEX)
+│   │       ├── rugcheck.py          # RugCheck integration
+│   │       ├── mempool.py           # Mempool monitoring
+│   │       ├── wallet.py            # Solana wallet
+│   │       └── broker.py            # Solana broker
+│   ├── execution/                   # 5 execution brokers (legacy)
 │   │   ├── paper.py                 # Paper trading
 │   │   ├── alpaca_broker.py         # Alpaca (US Equities)
 │   │   ├── jupiter.py               # Jupiter (Solana DEX)
 │   │   ├── polymarket.py            # Polymarket (Prediction Markets)
 │   │   └── kalshi.py                # Kalshi (Event Contracts)
-│   ├── factors/                     # 456+ alpha factors
+│   ├── factors/                     # 452 alpha factors
 │   │   ├── zoo/alpha101/            # 101 WorldQuant factors
 │   │   ├── zoo/qlib158/             # 154 Microsoft Qlib factors
-│   │   ├── zoo/academic/            # 7 Fama-French + Carhart
+│   │   ├── zoo/academic/            # 7 Fama-French 5-Factor + Carhart
 │   │   ├── registry.py              # Factor registry
+│   │   ├── fama_french.py           # Fama-French 5-factor model
 │   │   └── factor_analysis_core.py  # IC/IR analysis
 │   ├── hedge_fund/                  # AI Hedge Fund subsystem
-│   │   ├── agents/                  # Buffett, Ackman, Wood, Lynch, etc.
+│   │   ├── agents/                  # Buffett, Ackman, Wood, Lynch, Munger, Graham, Fisher, Burry, etc.
 │   │   ├── tools/                   # Multi-asset API, data providers
 │   │   ├── options/                 # Options pricing
 │   │   ├── risk/                    # Kelly, risk parity, VaR
-│   │   └── integrations/            # fincept_terminal (50+ wrappers)
+│   │   ├── strategies/              # Quantitative, Wyckoff, legendary investors
+│   │   ├── backtesting/             # Strategy backtesting
+│   │   ├── integrations/            # fincept_terminal (50+ wrappers)
+│   │   └── llm/                     # LLM routing and models
 │   ├── integrations/                # External integrations
 │   │   └── whatsapp_bot.py          # WhatsApp trading bot
-│   ├── memory/                      # Knowledge & memory
+│   ├── mcp/                         # Model Context Protocol
+│   │   ├── client.py                # MCP client implementation
+│   │   ├── server.py                # MCP server implementation
+│   │   ├── protocol.py              # MCP protocol definitions
+│   │   └── tools.py                 # MCP tool registry
+│   ├── memory/                      # Knowledge & memory system
 │   │   ├── vector.py                # TF-IDF vector search
 │   │   ├── conversation.py          # Chat history
-│   │   └── research.py              # Research notes
+│   │   ├── research.py              # Research notes
+│   │   ├── knowledge.py             # Knowledge base
+│   │   ├── knowledge_graph.py       # Knowledge graph
+│   │   ├── journal.py               # Trading journal
+│   │   ├── session.py               # Session memory
+│   │   ├── compression.py           # Memory compression (TokenJuice-style)
+│   │   └── paging.py                # Memory paging/overflow
 │   ├── ml_models/                   # ML models
 │   │   ├── kronos/                  # BSQuantizer financial model
 │   │   └── kronos_finetune/         # Fine-tuning pipeline
+│   ├── multicolony/                 # AI MultiColony Ecosystem (C2)
+│   │   ├── colony/                  # Colony lifecycle, config, routing
+│   │   ├── runtime/                 # Agent pool, health monitoring
+│   │   ├── skills/                  # Skill registry, dynamic loading
+│   │   ├── tools/                   # Browser, code execution, registry
+│   │   ├── memory/                  # Episodic, semantic, procedural
+│   │   └── knowledge/               # Document ingestion, RAG retrieval
 │   ├── risk/                        # Risk calculations
 │   │   ├── var.py                   # VaR (Parametric, Historical, Monte Carlo)
 │   │   ├── cvar.py                  # CVaR (Expected Shortfall)
 │   │   ├── drawdown.py              # Maximum drawdown
 │   │   ├── position_sizing.py       # Kelly criterion
 │   │   └── portfolio_risk.py        # Portfolio risk metrics
-│   ├── security/                    # Security scanning
+│   ├── security/                    # Security module
+│   │   ├── auth.py                  # Authentication service
+│   │   ├── scanner.py               # Security scanner
+│   │   ├── audit.py                 # Security audit logging
+│   │   ├── keyvault.py              # Key vault / secret management
+│   │   └── credential_inference.py  # Credential inference detection
 │   ├── session/                     # Session management
 │   ├── shadow_account/              # Paper trading account
 │   ├── solana_scanner/              # Solana on-chain scanner
@@ -304,7 +379,7 @@ Quant-Nanggroe-AI/
 │
 ├── components/                      # React 19 UI (25 components)
 ├── services/                        # TypeScript services (33 files)
-├── tests/                           # 30+ test files (175+ tests)
+├── tests/                           # 30+ test files (766+ tests)
 ├── alembic/                         # Database migrations (7 tables)
 ├── docs/                            # Documentation
 ├── repos/                           # 59 cloned source repos
@@ -331,7 +406,7 @@ poetry run pytest tests/test_api/         # API tests
 poetry run pytest --cov=quant_nanggroe_ai --cov-report=html
 ```
 
-**Test Status:** 175+ tests passing across 7 test directories.
+**Test Status:** 766+ tests passing across 7 test directories.
 
 ---
 

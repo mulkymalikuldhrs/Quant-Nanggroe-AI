@@ -1,5 +1,63 @@
 # CHANGELOG - QUANT NANGGROE AI
 
+## [v2.1.0] - 2026-06-11 — C1 FULL CONSOLIDATION & BRANCH MERGE
+
+### Overview
+Full consolidation of all C1 branches and `quant_nanggroe/` package merge. All 25 C1 repos audited, all branch implementations (cl1-agent-1, cl1-agent-3, cl1-agent-4, Julecl1-session) merged into Julecl1, and `quant_nanggroe/` package (154 files) consolidated into `src/quant_nanggroe_ai/`.
+
+### Added — Branch Consolidation
+- **cl1-agent-1 branch** → Agent nodes (execution, prediction_market), tools, exchange layer
+- **cl1-agent-3 branch** → Engine risk/strategy submodules, event_bus, models, regime, simulation
+- **cl1-agent-4 branch** → Memory expansion, MCP module, security expansion
+- **Julecl1-session branch** → Models, regime, simulation, types
+
+### Added — 7 Unique Python Modules from Branches
+- `agents/nodes/execution.py` — Order execution agent node
+- `agents/nodes/prediction_market.py` — Prediction market analysis node
+- `engine/event_bus.py` — Event-driven message bus
+- `engine/models.py` — Shared engine model definitions
+- `engine/regime.py` — Advanced regime detection
+- `engine/simulation.py` — Monte Carlo simulation engine
+- Type definitions across modules
+
+### Added — New Modules
+- **MCP Module** (`mcp/`) — Model Context Protocol: client, server, protocol, tools (5 files)
+- **Exchange Module** (`exchange/`) — Exchange abstraction layer: base, factory, manager, guards, order_types, paper_broker, alpaca_broker, ccxt_broker, solana/ submodule (15 files)
+- **Engine Strategy** (`engine/strategy/`) — Strategy schema, loader, parser, backtest_adapter (5 files)
+- **Engine Risk** (`engine/risk/`) — Constitutional rules hardcoded in constants.py, checks, manager, position_sizing, kelly, var, drawdown, correlation, risk_parity, emotional_lockout, kill_switch (11 files)
+- **Security** (expanded `security/`) — auth, scanner, audit, keyvault, credential_inference (6 files)
+- **Memory** (expanded `memory/`) — knowledge, knowledge_graph, journal, session, compression, paging (10 files)
+- **MultiColony** (`multicolony/`) — C2 AI MultiColony Ecosystem: colony, runtime, skills, tools, memory, knowledge (22 files, 6,613 lines)
+
+### Added — quant_nanggroe/ Package Merge
+- 154 files from `quant_nanggroe/` package consolidated into `src/quant_nanggroe_ai/`
+- All `from quant_nanggroe.*` imports refactored to `from quant_nanggroe_ai.*`
+- Module deduplication: overlapping code merged, not duplicated
+
+### Changed — Key Metrics
+- **Agent nodes**: 7 → 9+ (added execution, prediction_market)
+- **Agent tools**: 5 → 11 (added trading_plan, file_ops, financial_data, portfolio_simulator, query_router, token_reducer)
+- **Alpha factors**: 456+ → 452 (alpha101=101, qlib158=154, gtja191=191, academic=7)
+- **Execution brokers**: 4 → 5 (added Kalshi)
+- **Test count**: 175+ → 766+
+- **Python packages**: 20 → 27+
+
+### Architecture Highlights
+- **4-layer agent stack**: LangGraph → CrewAI → PydanticAI → DSPy
+- **9-agent trading council**: Researcher, Trader, Strategist, Risk, Portfolio, Execution, Macro, Crypto, Forex
+- **452 alpha factors**: alpha101 + qlib158 + gtja191 + academic
+- **Constitutional rules** hardcoded in `engine/risk/constants.py` (NON-NEGOTIABLE)
+- **NautilusTrader adapter** integrated
+- **Fama-French 5-factor model** implemented
+
+### Documentation Updated
+- **README.md** — Updated project structure with all new modules
+- **ARCHITECTURE.md** — v2.1.0 with new module descriptions (MCP, Exchange, Engine Risk/Strategy, Security, Memory)
+- **MONOREPO_STATUS.md** — Updated to 80% production-ready, all C1 repos consolidated
+- **CLUSTER1_CONSOLIDATION_REPORT.md** — Added Section 10: Branch Consolidation & quant_nanggroe/ Package Merge
+
+---
+
 ## [v2.0.0] - 2026-03-06 — C1 MONOREPO CONSOLIDATION
 
 ### Overview

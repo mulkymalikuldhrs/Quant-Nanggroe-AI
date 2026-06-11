@@ -1,6 +1,6 @@
 # Architecture: Quant Nanggroe AI
 
-**Version 2.0.0 | Multi-Agent Decision Intelligence Operating System**
+**Version 2.1.0 | Multi-Agent Decision Intelligence Operating System**
 
 Dokumen ini menyediakan referensi teknis komprehensif untuk arsitektur Quant Nanggroe AI. Mencakup model eksekusi berlapis, alur data, interaksi layanan, hubungan komponen, dan framework penalaran deterministik yang mengatur semua proses pengambilan keputusan.
 
@@ -21,6 +21,19 @@ Quant Nanggroe AI dibangun di atas premis yang berbeda secara fundamental dari a
 ---
 
 ## 2. Arsitektur Sistem Utama
+
+### 2.0 Arsitektur Consolidated Monorepo
+
+Setelah konsolidasi penuh dari 25 C1 repos, semua branch implementasi (cl1-agent-1, cl1-agent-3, cl1-agent-4, Julecl1-session) telah di-merge ke branch Julecl1. Package `quant_nanggroe/` (154 files) telah dikonsolidasikan ke dalam `src/quant_nanggroe_ai/`, menambahkan 7 unique Python modules: execution node, prediction_market node, event_bus, models, regime, simulation, types.
+
+Modul baru yang ditambahkan selama konsolidasi:
+- **MCP** (`mcp/`) — Model Context Protocol client/server/tools
+- **Exchange** (`exchange/`) — Exchange abstraction layer dengan factory pattern dan Solana submodule
+- **Engine Strategy** (`engine/strategy/`) — Strategy schema, loader, parser, backtest adapter
+- **Engine Risk** (`engine/risk/`) — Constitutional rules, risk checks, position sizing, VaR, drawdown, correlation
+- **Security** (`security/`) — Auth, audit, keyvault, credential inference, scanner
+- **Memory** (`memory/`) — Expanded: knowledge, knowledge_graph, journal, session, compression, paging
+- **MultiColony** (`multicolony/`) — C2 AI MultiColony Ecosystem (22 files, 6,613 lines)
 
 ### 2.1 4-Layer Agent Stack
 
@@ -109,8 +122,38 @@ Engine layer adalah **100% deterministik** — tidak ada panggilan LLM, tidak ad
 | **StrategyLifecycle** | `engine/strategy_lifecycle.py` | Darwinian evolution — auto-KILL negative expectancy |
 | **NautilusAdapter** | `engine/nautilus_adapter.py` | NautilusTrader backtesting integration |
 | **AutoSwitch** | `engine/autoswitch.py` | LLM/data provider failover |
+| **EventBus** | `engine/event_bus.py` | Event-driven message bus untuk inter-module communication |
+| **AuditEngine** | `engine/audit.py` | Full audit trail logging untuk decision provenance |
+| **SimulationEngine** | `engine/simulation.py` | Monte Carlo simulation untuk risk scenarios |
+| **RegimeEngine** | `engine/regime.py` | Advanced regime detection dari branch consolidation |
+| **EngineModels** | `engine/models.py` | Shared engine model definitions (dari quant_nanggroe/ package) |
 
-**Konstitusi Risk (NON-NEGOTIABLE):**
+#### Engine Risk Submodule (`engine/risk/`)
+
+| Module | File | Fungsi |
+|--------|------|--------|
+| **ConstitutionalConstants** | `engine/risk/constants.py` | Hardcoded constitutional rules (NON-NEGOTIABLE) |
+| **RiskChecks** | `engine/risk/checks.py` | Individual risk checkpoint implementations |
+| **RiskManager** | `engine/risk/manager.py` | Risk manager coordination layer |
+| **PositionSizing** | `engine/risk/position_sizing.py` | Position sizing algorithms |
+| **KellyCriterion** | `engine/risk/kelly.py` | Kelly criterion implementation |
+| **ValueAtRisk** | `engine/risk/var.py` | Value at Risk calculations |
+| **DrawdownMonitor** | `engine/risk/drawdown.py` | Drawdown calculations and monitoring |
+| **CorrelationMonitor** | `engine/risk/correlation.py` | Position correlation monitoring |
+| **RiskParity** | `engine/risk/risk_parity.py` | Risk parity allocation |
+| **EmotionalLockout** | `engine/risk/emotional_lockout.py` | Emotional trading lockout periods |
+| **RiskKillSwitch** | `engine/risk/kill_switch.py` | Risk-level emergency kill switch |
+
+#### Engine Strategy Submodule (`engine/strategy/`)
+
+| Module | File | Fungsi |
+|--------|------|--------|
+| **StrategySchema** | `engine/strategy/schema.py` | Strategy schema definitions |
+| **StrategyLoader** | `engine/strategy/loader.py` | Dynamic strategy loading |
+| **StrategyParser** | `engine/strategy/parser.py` | Strategy parameter parsing |
+| **BacktestAdapter** | `engine/strategy/backtest_adapter.py` | Strategy-to-backtest bridge |
+
+**Konstitusi Risk (NON-NEGOTIABLE) — hardcoded di `engine/risk/constants.py`:**
 ```python
 MAX_RISK_PER_TRADE = 0.005   # 0.5%
 MAX_DAILY_LOSS = 0.01        # 1.0%
@@ -120,7 +163,9 @@ MIN_RISK_REWARD = 2.0        # 1:2 minimum
 
 ---
 
-## 3. Execution Layer — 5 Brokers
+## 3. Execution Layer — 5 Brokers + Exchange Abstraction
+
+### 3.1 Legacy Execution Module (`execution/`)
 
 | Broker | Pasar | Auth | Fitur Utama |
 |--------|-------|------|-------------|
@@ -129,6 +174,31 @@ MIN_RISK_REWARD = 2.0        # 1:2 minimum
 | **Jupiter** | Solana DEX | Private Key | V6 swap API, JITO tips, transaction signing |
 | **Polymarket** | Prediction Markets | API Key | Gamma + CLOB + Data API, order management |
 | **Kalshi** | Event Contracts | RSA-PSS | Full order lifecycle, market data, account queries |
+
+### 3.2 Exchange Abstraction Layer (`exchange/`)
+
+Modul exchange baru menyediakan abstraction layer terpadu untuk semua broker:
+
+| Component | File | Fungsi |
+|-----------|------|--------|
+| **BaseExchange** | `exchange/base.py` | Abstract base exchange interface |
+| **ExchangeFactory** | `exchange/factory.py` | Factory pattern untuk broker instantiation |
+| **ExchangeManager** | `exchange/manager.py` | Exchange lifecycle dan connection management |
+| **ExchangeGuards** | `exchange/guards.py` | Pre-trade guard rails dan validation |
+| **OrderTypes** | `exchange/order_types.py` | Order type definitions dan enums |
+| **PaperBroker** | `exchange/paper_broker.py` | Paper trading via exchange interface |
+| **AlpacaBroker** | `exchange/alpaca_broker.py` | Alpaca via exchange interface |
+| **CCXTBroker** | `exchange/ccxt_broker.py` | CCXT (100+ crypto exchanges) via exchange interface |
+
+#### Solana Exchange Submodule (`exchange/solana/`)
+
+| Component | File | Fungsi |
+|-----------|------|--------|
+| **JupiterExchange** | `exchange/solana/jupiter.py` | Jupiter V6 swap integration |
+| **RugCheck** | `exchange/solana/rugcheck.py` | Token safety verification |
+| **MempoolMonitor** | `exchange/solana/mempool.py` | Solana mempool monitoring |
+| **SolanaWallet** | `exchange/solana/wallet.py` | Solana wallet management |
+| **SolanaBroker** | `exchange/solana/broker.py` | Solana broker via exchange interface |
 
 ### Broker Registry Pattern
 
@@ -145,7 +215,7 @@ BrokerType = type[PaperBroker | AlpacaBroker | JupiterBroker | PolymarketBroker 
 
 ---
 
-## 4. Factor Library — 456+ Alpha Factors
+## 4. Factor Library — 452 Alpha Factors
 
 ### Struktur
 
@@ -154,13 +224,23 @@ factors/
 ├── zoo/
 │   ├── alpha101/     # 101 WorldQuant Alpha101 factors
 │   ├── qlib158/      # 154 Microsoft Qlib factors
-│   └── academic/     # 7 Fama-French + Carhart factors
+│   └── academic/     # 7 Fama-French 5-Factor + Carhart factors
 ├── registry.py       # Factor registry & auto-discovery
 ├── registry_vt.py    # Virtual trading registry
 ├── factor_analysis_core.py  # IC/IR analysis engine
-├── fama_french.py    # Fama-French model
+├── fama_french.py    # Fama-French 5-factor model
 └── technical.py      # Technical indicator factors
 ```
+
+### Factor Breakdown
+
+| Kategori | Jumlah | Sumber |
+|----------|--------|--------|
+| Alpha101 | 101 | WorldQuant Alpha101 (Kakushadze 2015) |
+| Qlib158 | 154 | Microsoft Qlib Alpha158 |
+| GTJA191 | 191 | Guotai Junan 191 |
+| Academic | 7 | Fama-French 5-Factor + Carhart Momentum |
+| **Total** | **452** | |
 
 ### Factor Metadata
 
@@ -310,11 +390,40 @@ SQLAlchemy 2.0 (async sessions)
 | **Vector Memory** | `memory/vector.py` | TF-IDF embeddings, cosine similarity, metadata filtering |
 | **Conversation** | `memory/conversation.py` | Chat history management, context windowing |
 | **Research** | `memory/research.py` | Research note storage and retrieval |
+| **Knowledge** | `memory/knowledge.py` | Knowledge base storage |
+| **Knowledge Graph** | `memory/knowledge_graph.py` | Knowledge graph traversal and queries |
+| **Journal** | `memory/journal.py` | Trading journal dengan emotional tracking |
+| **Session** | `memory/session.py` | Session-scoped memory |
+| **Compression** | `memory/compression.py` | TokenJuice-style memory compression |
+| **Paging** | `memory/paging.py` | Memory paging dan overflow management |
 | **Persistent** | `memory_persistent/persistent.py` | Cross-session persistent storage |
 
 ---
 
-## 9. Integrations
+## 9. MCP Module (`mcp/`)
+
+Model Context Protocol diimplementasikan sebagai modul standalone:
+
+| Component | File | Deskripsi |
+|-----------|------|-----------|
+| **MCP Client** | `mcp/client.py` | MCP client untuk koneksi ke MCP servers |
+| **MCP Server** | `mcp/server.py` | MCP server implementation |
+| **MCP Protocol** | `mcp/protocol.py` | Protocol definitions dan message types |
+| **MCP Tools** | `mcp/tools.py` | MCP tool registry dan invocation |
+
+Ditambah: `agents/mcp_config.py` — 5 default MCP servers untuk trading platform, transport configuration, tool event definitions.
+
+## 10. Security Module (`security/`)
+
+| Component | File | Deskripsi |
+|-----------|------|-----------|
+| **AuthService** | `security/auth.py` | Authentication service (JWT + RBAC) |
+| **SecurityScanner** | `security/scanner.py` | Security vulnerability scanning |
+| **SecurityAudit** | `security/audit.py` | Security audit logging dan trail |
+| **KeyVault** | `security/keyvault.py` | Key vault dan secret management |
+| **CredentialInference** | `security/credential_inference.py` | Credential inference dan leak detection |
+
+## 11. Integrations
 
 ### WhatsApp Bot
 `integrations/whatsapp_bot.py` — Command parsing, message formatting, notification sending via WhatsApp Business API.
@@ -325,15 +434,12 @@ SQLAlchemy 2.0 (async sessions)
 ### File Operations
 `agents/tools/file_ops.py` — Local file storage + MongoDB GridFS, attachment service, file operation factory pattern.
 
-### MCP Configuration
-`agents/mcp_config.py` — 5 default MCP servers for trading platform, transport configuration, tool event definitions.
-
 ### Solana Scanner
 `solana_scanner/` — Mempool monitoring, RugCheck integration, auto-sniper with new-token callbacks, SQLite database for trades/positions/limit_orders.
 
 ---
 
-## 10. Risk Module
+## 12. Risk Module
 
 | Module | Metode | Deskripsi |
 |--------|--------|-----------|
@@ -347,7 +453,7 @@ Plus the engine-level `ConstitutionalRiskGuard` with 9-checkpoint VETO system ya
 
 ---
 
-## 11. Frontend Architecture
+## 13. Frontend Architecture
 
 Frontend dibangun sebagai antarmuka desktop-OS menggunakan React 19 dan TypeScript:
 
@@ -374,7 +480,7 @@ App.tsx (Root)
 
 ---
 
-## 12. Data Flow Summary
+## 14. Data Flow Summary
 
 ```
 [Market Data Providers]
@@ -420,7 +526,7 @@ App.tsx (Root)
 
 ---
 
-## 13. Service Dependency Graph
+## 15. Service Dependency Graph
 
 ```
 FastAPI App
@@ -435,30 +541,68 @@ FastAPI App
          └── auth → AuthService → JWTManager
 
 LangGraph Graph
-    ├── 9 Agent Nodes
-    ├── 7 Agent Tools
+    ├── 9 Agent Nodes (Researcher, Trader, Strategist, Risk, Portfolio, Execution, Macro, Crypto, Forex)
+    ├── 11 Agent Tools
     ├── 2 Council Debates
-    ├── MCP Protocol
+    ├── MCP Protocol (mcp/ module)
     └── A2A Protocol
 
 Engine Layer (Deterministic)
     ├── RiskGuard ←── StrategyLifecycle
     ├── DecisionEngine ←── PressureEngine
     ├── PressureEngine ←── MarketStateEngine
-    └── MarketStateEngine ←── MathLib
+    ├── MarketStateEngine ←── MathLib
+    ├── EventBus ←── inter-module communication
+    ├── SimulationEngine ←── Monte Carlo
+    ├── RegimeEngine ←── advanced regime detection
+    └── engine/risk/ ←── constants, checks, kelly, var, drawdown, correlation
 
-Execution Layer
+Engine Strategy (engine/strategy/)
+    ├── StrategySchema ←── strategy definitions
+    ├── StrategyLoader ←── dynamic loading
+    ├── StrategyParser ←── parameter parsing
+    └── BacktestAdapter ←── strategy-to-backtest bridge
+
+Exchange Layer
+    ├── BaseExchange (abstract interface)
+    ├── ExchangeFactory (broker instantiation)
+    ├── PaperBroker (in-memory)
+    ├── AlpacaBroker (REST API)
+    ├── CCXTBroker (100+ crypto exchanges)
+    └── Solana/ (Jupiter, RugCheck, Mempool, Wallet, Broker)
+
+Execution Layer (legacy)
     ├── PaperBroker (in-memory)
     ├── AlpacaBroker (REST API)
     ├── JupiterBroker (Solana V6)
     ├── PolymarketBroker (CLOB + Gamma + Data)
     └── KalshiBroker (RSA-PSS Auth)
 
+MCP Module
+    ├── MCPClient ←── external server connections
+    ├── MCPServer ←── server implementation
+    ├── MCPProtocol ←── message types
+    └── MCPTools ←── tool registry
+
+Security Module
+    ├── AuthService (JWT + RBAC)
+    ├── SecurityScanner (vulnerability scanning)
+    ├── SecurityAudit (audit logging)
+    ├── KeyVault (secret management)
+    └── CredentialInference (leak detection)
+
 Factor Library
     ├── 101 Alpha101 factors
     ├── 154 Qlib158 factors
-    ├── 7 Academic factors
+    ├── 191 GTJA191 factors
+    ├── 7 Academic factors (Fama-French 5-Factor + Carhart)
     └── Registry + Analysis Engine
+
+Memory System
+    ├── Vector Memory (TF-IDF)
+    ├── Conversation, Research, Knowledge, Knowledge Graph
+    ├── Journal, Session, Compression, Paging
+    └── Persistent storage
 
 Storage Layer
     ├── PostgreSQL (SQLAlchemy 2.0 async)
@@ -469,10 +613,14 @@ Storage Layer
 
 ---
 
-## 14. Monorepo Consolidation
+## 16. Monorepo Consolidation
 
-Sistem ini adalah hasil konsolidasi dari **25+ repositori** ke dalam satu monorepo. Lihat [CLUSTER1_CONSOLIDATION_REPORT.md](./CLUSTER1_CONSOLIDATION_REPORT.md) untuk detail lengkap tentang repo mana yang digabungkan, kode apa yang diekstrak, dan apa yang dibuang.
+Sistem ini adalah hasil konsolidasi dari **25 repositori** ke dalam satu monorepo. Semua branch implementasi (cl1-agent-1, cl1-agent-3, cl1-agent-4, Julecl1-session) telah di-merge ke branch Julecl1. Package `quant_nanggroe/` (154 files) telah dikonsolidasikan ke dalam `src/quant_nanggroe_ai/`, menambahkan 7 unique Python modules: execution node, prediction_market node, event_bus, models, regime, simulation, types.
+
+**766+ tests passing** | **452 alpha factors** | **9-agent trading council** | **4-layer agent stack**
+
+Lihat [CLUSTER1_CONSOLIDATION_REPORT.md](./CLUSTER1_CONSOLIDATION_REPORT.md) untuk detail lengkap tentang repo mana yang digabungkan, kode apa yang diekstrak, dan apa yang dibuang.
 
 ---
 
-© 2025-2026 Quant Nanggroe AI | Technical Architecture Reference v2.0.0
+© 2025-2026 Quant Nanggroe AI | Technical Architecture Reference v2.1.0
