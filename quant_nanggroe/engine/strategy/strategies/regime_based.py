@@ -20,6 +20,8 @@ Academic References:
 
 from __future__ import annotations
 
+import logging
+
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -239,6 +241,7 @@ class RegimeBasedStrategy(BaseStrategy):
                 self._regime_probs = current_probs
                 return current_state, current_probs
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
         # Fallback: simple regime detection based on recent returns and volatility

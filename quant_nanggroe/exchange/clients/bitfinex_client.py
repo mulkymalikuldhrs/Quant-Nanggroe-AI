@@ -145,6 +145,7 @@ class BitfinexClient(BaseRestClient):
                 if cid > 0:
                     body["cid"] = cid
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
         try:
@@ -208,6 +209,7 @@ class BitfinexClient(BaseRestClient):
                 filled = abs(amount_orig - amount_remaining)
                 avg_price = float(raw[14] or 0)
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         return Order(
@@ -324,4 +326,5 @@ class BitfinexClient(BaseRestClient):
             data = await self._request("GET", "/v2/platform/status", signed=False)
             return isinstance(data, list) and data and int(data[0]) == 1
         except Exception:
+            logger.exception("unhandled_error")
             return False

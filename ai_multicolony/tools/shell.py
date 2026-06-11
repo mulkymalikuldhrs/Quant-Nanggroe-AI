@@ -213,6 +213,7 @@ class ShellTool(MCPTool):
                 proc.kill()
                 await proc.wait()
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
             duration_ms = (time.monotonic() - start) * 1000

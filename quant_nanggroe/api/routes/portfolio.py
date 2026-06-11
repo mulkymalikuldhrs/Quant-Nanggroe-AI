@@ -183,6 +183,7 @@ async def get_portfolio_risk(http_request: Request) -> PortfolioRiskResponse:
                 var_95 = round(var_result.var_value, 4)
                 cvar_95 = round(var_result.cvar_value, 4)
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         daily_pnl_pct = 0.0

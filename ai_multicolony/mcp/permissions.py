@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -48,7 +48,7 @@ class PermissionCheck(BaseModel):
     required_level: int = 0
     current_level: int = 0
     escalation_available: bool = False
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class ApprovalRequest(BaseModel):
@@ -63,7 +63,7 @@ class ApprovalRequest(BaseModel):
     justification: str = ""
     tool_name: str = ""
     task_context: Dict[str, Any] = Field(default_factory=dict)
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     expires_at: Optional[str] = None
     duration_hours: int = 1
     status: str = "pending"  # pending | approved | denied | expired
@@ -82,7 +82,7 @@ class EscalationGrant(BaseModel):
     expires_at: str = ""
     reason: str = ""
     approved_by: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class AuditRecord(BaseModel):
@@ -90,7 +90,7 @@ class AuditRecord(BaseModel):
     model_config = ConfigDict(frozen=False)
 
     record_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     action: str = ""  # check | escalation_request | escalation_grant | escalation_deny
     agent_id: str = ""
     tool_name: str = ""
@@ -240,7 +240,7 @@ class PermissionEngine:
 
         max_elevated = base_level
         grant_ids = self._agent_grants.get(agent_id, [])
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for gid in grant_ids:
             grant = self._active_grants.get(gid)
@@ -319,7 +319,7 @@ class PermissionEngine:
             tool_name=tool_name,
             task_context=task_context or {},
             duration_hours=duration_hours,
-            expires_at=(datetime.utcnow() + timedelta(hours=duration_hours)).isoformat(),
+            expires_at=(datetime.now(timezone.utc) + timedelta(hours=duration_hours)).isoformat(),
         )
 
         self._escalation_requests[request.request_id] = request
@@ -360,7 +360,7 @@ class PermissionEngine:
             agent_id=request.agent_id,
             original_level=request.current_level,
             elevated_level=request.requested_level,
-            expires_at=request.expires_at or (datetime.utcnow() + timedelta(hours=request.duration_hours)).isoformat(),
+            expires_at=request.expires_at or (datetime.now(timezone.utc) + timedelta(hours=request.duration_hours)).isoformat(),
             reason=request.justification,
             approved_by=approved_by,
         )
@@ -405,7 +405,7 @@ class PermissionEngine:
         request.audit_entries.append({
             "action": "denied",
             "reason": reason,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
         self._audit(AuditRecord(
@@ -443,7 +443,7 @@ class PermissionEngine:
 
     def cleanup_expired(self) -> int:
         """Remove expired grants. Returns count of grants removed."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expired_ids = []
         for gid, grant in self._active_grants.items():
             try:

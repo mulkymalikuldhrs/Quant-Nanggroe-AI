@@ -51,6 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         from quant_nanggroe.config.trading_mode import TradingModeConfig
         TradingModeConfig()  # Triggers startup banner
     except Exception:
+        logger.exception("unhandled_error")
         pass
 
     yield

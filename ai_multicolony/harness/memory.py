@@ -528,6 +528,7 @@ class HarnessMemory:
                 self._ensure_init()
                 self._long_term.delete(entry.entry_id)
             except Exception:
+                logger.exception("unhandled_error")
                 pass
             return True
 
@@ -538,6 +539,7 @@ class HarnessMemory:
             if lt_entry:
                 return self._long_term.delete(lt_entry.entry_id)
         except Exception:
+            logger.exception("unhandled_error")
             pass
         return False
 
@@ -586,5 +588,6 @@ class HarnessMemory:
             self._ensure_init()
             stats.update(self._long_term.get_stats())
         except Exception:
+            logger.exception("unhandled_error")
             pass
         return stats

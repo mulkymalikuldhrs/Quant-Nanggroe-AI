@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -38,7 +38,7 @@ class CodeArtifact:
         self.issues: List[Dict[str, Any]] = []
         self.security_findings: List[Dict[str, Any]] = []
         self.suggestions: List[str] = []
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -323,7 +323,7 @@ class CoderAgent(BaseAgent):
             "message": message,
             "files": files,
             "branch": branch,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         self._vcs_log.append(entry)
 

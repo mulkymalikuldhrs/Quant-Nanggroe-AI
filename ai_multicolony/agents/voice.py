@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -25,7 +25,7 @@ class VoiceSession:
         self.language = language
         self.transcriptions: List[Dict[str, Any]] = []
         self.syntheses: List[Dict[str, Any]] = []
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

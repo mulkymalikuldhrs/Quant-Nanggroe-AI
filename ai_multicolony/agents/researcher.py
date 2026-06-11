@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -35,7 +35,7 @@ class ResearchDocument:
         self.content = content
         self.url = url
         self.relevance_score = relevance_score
-        self.retrieved_at = datetime.utcnow()
+        self.retrieved_at = datetime.now(timezone.utc)
         self.metadata: Dict[str, Any] = {}
 
     def to_dict(self) -> Dict[str, Any]:
@@ -61,7 +61,7 @@ class ResearchReport:
         self.sources: List[Dict[str, Any]] = []
         self.recommendations: List[str] = []
         self.confidence: float = 0.0
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -326,7 +326,7 @@ class ResearcherAgent(BaseAgent):
         self._knowledge_base[key] = {
             "content": content,
             "metadata": metadata or {},
-            "added_at": datetime.utcnow().isoformat(),
+            "added_at": datetime.now(timezone.utc).isoformat(),
         }
 
     # ── Summarization ──

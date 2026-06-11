@@ -9,7 +9,7 @@ from __future__ import annotations
 import base64
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import BaseAgent
@@ -27,7 +27,7 @@ class BrowserPage:
         self.status_code: int = 200
         self.content: str = ""
         self.screenshot: Optional[bytes] = None
-        self.loaded_at: datetime = datetime.utcnow()
+        self.loaded_at: datetime = datetime.now(timezone.utc)
         self.cookies: List[Dict[str, Any]] = []
         self.headers: Dict[str, str] = {}
 
@@ -138,7 +138,7 @@ class BrowserAgent(BaseAgent):
             "url": url,
             "status_code": page.status_code,
             "stealth_mode": self._stealth_mode,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
         return {

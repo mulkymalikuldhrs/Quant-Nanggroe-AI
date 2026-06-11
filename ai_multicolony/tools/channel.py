@@ -11,7 +11,7 @@ import hashlib
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import MCPTool
@@ -38,7 +38,7 @@ class WebhookEntry:
         self.url = url
         self.events = events or ["message"]
         self.secret = secret
-        self.created_at = datetime.utcnow().isoformat()
+        self.created_at = datetime.now(timezone.utc).isoformat()
         self.active: bool = True
         self.call_count: int = 0
 
@@ -74,7 +74,7 @@ class MessageRecord:
         self.recipient = recipient
         self.sender = sender
         self.metadata = metadata or {}
-        self.timestamp = datetime.utcnow().isoformat()
+        self.timestamp = datetime.now(timezone.utc).isoformat()
 
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -199,6 +199,7 @@ class FlowTool:
                     non_commercial_short=int(item.get("non_commercial_short", 0)),
                 )
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         return None

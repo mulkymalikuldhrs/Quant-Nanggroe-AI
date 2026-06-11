@@ -24,7 +24,7 @@ import logging
 import time
 import uuid
 from abc import abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
 from ..types import (
@@ -272,7 +272,7 @@ class BaseAgent:
         self._context: List[Dict[str, Any]] = []
         self._context_capacity: int = self.spec.heartbeat_interval_ms  # reuse as token proxy
         self._working_memory: Dict[str, Any] = {}
-        self._created_at = datetime.utcnow()
+        self._created_at = datetime.now(timezone.utc)
         self._lock = None
         self._retry_policy = RetryPolicy(max_retries=self.spec.max_retries)
         self._heartbeat_task: Optional[asyncio.Task] = None
@@ -356,7 +356,7 @@ class BaseAgent:
         )
         # Health check
         self._transition(AgentState.READY)
-        self._last_heartbeat = datetime.utcnow()
+        self._last_heartbeat = datetime.now(timezone.utc)
         await self.event_bus.publish_typed(
             EventType.AGENT_SPAWNED,
             self.agent_id,
@@ -374,7 +374,7 @@ class BaseAgent:
         if self.state not in (AgentState.READY, AgentState.ACTIVE):
             raise AgentStateError(f"Agent {self.agent_id} not ready: state={self.state}")
         self._transition(AgentState.ACTIVE)
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         # Check context compaction
         if self.context_usage >= self.COMPACTION_THRESHOLD:
@@ -384,7 +384,7 @@ class BaseAgent:
             result = await self._execute_with_retry(task)
             self._tasks_completed += 1
             self._update_health(True)
-            elapsed = (datetime.utcnow() - start_time).total_seconds() * 1000
+            elapsed = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
             return TaskResult(
                 task_id=task.task_id,
                 success=True,
@@ -394,7 +394,7 @@ class BaseAgent:
         except Exception as e:
             self._tasks_failed += 1
             self._update_health(False)
-            elapsed = (datetime.utcnow() - start_time).total_seconds() * 1000
+            elapsed = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
             return TaskResult(
                 task_id=task.task_id,
                 success=False,
@@ -537,7 +537,7 @@ class BaseAgent:
 
     def heartbeat(self) -> None:
         """Emit a heartbeat and update health regularity."""
-        self._last_heartbeat = datetime.utcnow()
+        self._last_heartbeat = datetime.now(timezone.utc)
         self._health_breakdown["heartbeat_regularity"] = min(
             1.0, self._health_breakdown["heartbeat_regularity"] + 0.01
         )
@@ -640,7 +640,7 @@ class BaseAgent:
             "agent_id": self.agent_id,
             "score": self._health_score,
             "breakdown": dict(self._health_breakdown),
-            "last_check": datetime.utcnow().isoformat(),
+            "last_check": datetime.now(timezone.utc).isoformat(),
             "issues": issues,
         }
 
@@ -673,7 +673,7 @@ class BaseAgent:
             "summary": summary,
             "key_facts": key_facts,
             "original_count": old_count,
-            "compacted_at": datetime.utcnow().isoformat(),
+            "compacted_at": datetime.now(timezone.utc).isoformat(),
         }
 
         self._context = [compacted_entry]
@@ -699,7 +699,7 @@ class BaseAgent:
         self._context.append({
             "key": key,
             "value": value,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
     # ── Autonomy escalation ──

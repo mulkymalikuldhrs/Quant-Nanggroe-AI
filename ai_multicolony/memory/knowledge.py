@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -25,14 +25,14 @@ class Fact(BaseModel):
     content: str = ""
     category: str = "general"
     confidence: float = 1.0
-    valid_from: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    valid_from: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     valid_to: Optional[str] = None
     source: Dict[str, Any] = Field(default_factory=dict)
     tags: List[str] = Field(default_factory=list)
     superseded_by: Optional[str] = None  # fact_id of newer fact
     supersedes: Optional[str] = None     # fact_id of older fact
     access_count: int = 0
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class Document(BaseModel):
@@ -43,7 +43,7 @@ class Document(BaseModel):
     content: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
     chunks: List[str] = Field(default_factory=list)
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class Chunk(BaseModel):
@@ -151,7 +151,7 @@ class KnowledgeBase:
             content=content,
             category=category,
             confidence=confidence,
-            valid_from=valid_from or datetime.utcnow().isoformat(),
+            valid_from=valid_from or datetime.now(timezone.utc).isoformat(),
             valid_to=valid_to,
             source=source or {},
             tags=tags or [],

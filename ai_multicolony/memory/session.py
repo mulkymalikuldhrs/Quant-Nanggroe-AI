@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -23,7 +23,7 @@ class Message(BaseModel):
     message_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     role: str = "user"  # user | assistant | system | tool
     content: str = ""
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     metadata: Dict[str, Any] = Field(default_factory=dict)
     token_count: int = 0
 
@@ -35,8 +35,8 @@ class Session(BaseModel):
     session_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     agent_id: str = ""
     colony_id: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    last_active: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_active: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     status: str = "active"  # active | compacted | archived | closed
     message_count: int = 0
     total_tokens: int = 0
@@ -169,7 +169,7 @@ class SessionMemory:
         # Update session stats
         session.message_count += 1
         session.total_tokens += token_count
-        session.last_active = datetime.utcnow().isoformat()
+        session.last_active = datetime.now(timezone.utc).isoformat()
 
         # Check compaction trigger
         usage_ratio = session.total_tokens / self.context_window_tokens

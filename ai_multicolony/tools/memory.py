@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .base import MCPTool
@@ -28,7 +28,7 @@ class MemoryEntry:
         self.key = key
         self.value = value
         self.metadata = metadata or {}
-        self.created_at: str = datetime.utcnow().isoformat()
+        self.created_at: str = datetime.now(timezone.utc).isoformat()
         self.updated_at: str = self.created_at
         self.access_count: int = 0
 
@@ -59,7 +59,7 @@ class MemoryPage:
         self.key_facts = key_facts
         self.entry_count = entry_count
         self.metadata = metadata or {}
-        self.created_at: str = datetime.utcnow().isoformat()
+        self.created_at: str = datetime.now(timezone.utc).isoformat()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -200,7 +200,7 @@ class MemoryTool(MCPTool):
             # Update existing entry
             entry = self._store[key]
             entry.value = value
-            entry.updated_at = datetime.utcnow().isoformat()
+            entry.updated_at = datetime.now(timezone.utc).isoformat()
             if metadata:
                 entry.metadata.update(metadata)
             return {
@@ -225,7 +225,7 @@ class MemoryTool(MCPTool):
 
         entry = self._store[key]
         entry.access_count += 1
-        entry.updated_at = datetime.utcnow().isoformat()
+        entry.updated_at = datetime.now(timezone.utc).isoformat()
         return {
             "success": True,
             "data": entry.to_dict(),
@@ -278,7 +278,7 @@ class MemoryTool(MCPTool):
             summary=summary,
             key_facts=key_facts,
             entry_count=len(keys),
-            metadata={"compaction_time": datetime.utcnow().isoformat()},
+            metadata={"compaction_time": datetime.now(timezone.utc).isoformat()},
         )
         self._pages[page.page_id] = page
 

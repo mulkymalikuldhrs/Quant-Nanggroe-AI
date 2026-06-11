@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -68,10 +68,12 @@ class APISettings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     workers: int = 4
-    cors_origins: List[str] = Field(default_factory=lambda: ["*"])
+    # IMPORTANT: Override cors_origins in production! Default allows only localhost.
+    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"])
     cors_methods: List[str] = Field(default_factory=lambda: ["*"])
     cors_headers: List[str] = Field(default_factory=lambda: ["*"])
     api_key_enabled: bool = True
+    # IMPORTANT: Override jwt_secret in production! Default value is insecure.
     jwt_secret: str = "change-me-in-production"
     jwt_expiry_hours: int = 24
     rate_limit_per_minute: int = 60
@@ -81,6 +83,24 @@ class APISettings(BaseSettings):
     ws_max_connections: int = 100
 
     model_config = {"env_prefix": "MULTICOLONY_API_"}
+
+    @model_validator(mode="after")
+    def _validate_production_secrets(self) -> "APISettings":
+        """Ensure insecure defaults are not used in production."""
+        import os
+        env_mode = os.getenv("QNAI_ENV", os.getenv("ENVIRONMENT", "development")).lower()
+        if env_mode in ("production", "prod", "staging"):
+            if self.jwt_secret == "change-me-in-production":
+                raise ValueError(
+                    "SECURITY: jwt_secret is still set to the default value 'change-me-in-production'. "
+                    "Set MULTICOLONY_API_JWT_SECRET to a strong random string before running in production."
+                )
+            if "*" in self.cors_origins:
+                raise ValueError(
+                    "SECURITY: cors_origins contains '*' in production. "
+                    "Set MULTICOLONY_API_CORS_ORIGINS to specific allowed origins."
+                )
+        return self
 
 
 class ChannelSettings(BaseSettings):

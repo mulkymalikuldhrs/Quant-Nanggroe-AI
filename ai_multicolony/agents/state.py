@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import threading
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -176,7 +176,7 @@ class TaskStateModel(BaseModel):
         """Check whether the task deadline has passed."""
         if self.deadline is None:
             return False
-        return datetime.utcnow() > self.deadline
+        return datetime.now(timezone.utc) > self.deadline
 
     @property
     def can_retry(self) -> bool:
@@ -252,7 +252,7 @@ class HealthReport(BaseModel):
             weights.get(k, 0.0) * v for k, v in self.breakdown.items()
         )
         self.score = max(0.0, min(1.0, self.score))
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now(timezone.utc)
 
     @property
     def is_healthy(self) -> bool:

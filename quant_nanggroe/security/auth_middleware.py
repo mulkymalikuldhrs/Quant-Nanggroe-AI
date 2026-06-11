@@ -70,14 +70,21 @@ def _init_auth() -> None:
                 except ValueError:
                     logger.warning("Invalid role '%s' for API key user '%s'", role_name, user_id)
 
-    # If no API keys configured, add a default admin key for development
+    # If no API keys configured, enforce security based on environment
     if _api_key_auth.key_count == 0:
-        dev_key = os.getenv("QNAI_DEV_API_KEY", "qnai-dev-admin-key")
-        _api_key_auth.add_key(dev_key, "dev-admin", UserRole.ADMIN)
-        logger.warning(
-            "No API keys configured. Using development key. "
-            "Set QNAI_API_KEYS env var for production."
-        )
+        env_mode = os.getenv("QNAI_ENV", os.getenv("ENVIRONMENT", "development")).lower()
+        if env_mode in ("production", "prod", "staging"):
+            raise RuntimeError(
+                "SECURITY: No API keys configured in production environment. "
+                "Set the QNAI_API_KEYS environment variable (format: key1:user1:role1,key2:user2:role2). "
+                "Refusing to start with no authentication."
+            )
+        else:
+            logger.warning(
+                "SECURITY WARNING: No API keys configured. Running in development mode "
+                "WITHOUT authentication. Set QNAI_API_KEYS env var before deploying to production. "
+                "(QNAI_ENV=%s)", env_mode
+            )
 
     # Initialize JWT auth
     jwt_secret = os.getenv("QNAI_JWT_SECRET", "")

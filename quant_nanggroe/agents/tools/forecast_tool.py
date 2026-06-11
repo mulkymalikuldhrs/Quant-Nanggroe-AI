@@ -340,6 +340,7 @@ class ForecastTool:
             if not hist.empty:
                 return float(hist["Close"].iloc[-1])
         except Exception:
+            logger.exception("unhandled_error")
             pass
         return 0.0
 

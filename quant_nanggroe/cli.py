@@ -13,6 +13,8 @@ Commands:
 
 from __future__ import annotations
 
+import logging
+
 import json
 import sys
 from datetime import datetime
@@ -409,6 +411,7 @@ def portfolio_status():
                 _display_portfolio(data)
                 return
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         # Fallback: show demo portfolio

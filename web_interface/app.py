@@ -5,6 +5,8 @@ Modern Flask-based control panel for multi-agent system
 Made with love by Mulky Malikul Dhaher in Indonesia
 """
 
+import logging
+logger = logging.getLogger(__name__)
 from flask import Flask, render_template, request, jsonify, session
 from flask_socketio import SocketIO, emit
 import json
@@ -192,6 +194,7 @@ def get_system_status():
                 data['uptime'] = master_status.get('uptime', '0')
                 data['memory_usage'] = master_status.get('memory_usage', 'Unknown')
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
         # Add LLM provider info if available
@@ -641,6 +644,7 @@ def workflow_history():
                 tasks = memory_bus.get_recent_tasks(limit=20)
                 history = [t for t in tasks if t.get('task_type') == 'workflow']
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
         return jsonify({'success': True, 'data': history})
@@ -764,6 +768,7 @@ def monitoring_logs():
                         'message': str(entry.content)[:200] if hasattr(entry, 'content') else ''
                     })
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
         # Also check file-based logs
@@ -775,6 +780,7 @@ def monitoring_logs():
                         for line in f.readlines()[-20:]:
                             logs.append({'message': line.strip(), 'level': 'info', 'source': log_file.name})
         except Exception:
+            logger.exception("unhandled_error")
             pass
 
         return jsonify({'success': True, 'data': logs})
@@ -1022,6 +1028,7 @@ def not_found(error):
     try:
         return render_template('offline.html'), 404
     except Exception:
+        logger.exception("unhandled_error")
         return jsonify({'success': False, 'error': 'Page not found'}), 404
 
 

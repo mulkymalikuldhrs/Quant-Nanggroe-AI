@@ -123,6 +123,7 @@ class BybitClient(BaseRestClient):
                     signed=True,
                 )
             except Exception:
+                logger.exception("unhandled_error")
                 pass
 
         data = await self._v5_request("POST", "/v5/order/create", params=params, signed=True)
