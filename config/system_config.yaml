@@ -5,7 +5,7 @@
 # System Information
 system:
   name: "Agentic AI System"
-  version: "2.0.0"
+  version: "2.1.0"
   description: "Autonomous Multi-Agent Intelligence Platform"
   author: "Mulky Malikul Dhaher"
   country: "Indonesia 🇮🇩"
@@ -327,13 +327,14 @@ security:
       burst_limit: 20
     
     authentication:
-      enabled: false  # Disabled for development
+      enabled: true  # Enable authentication for production
       type: "jwt"
       token_expiry: 3600
     
     cors:
       enabled: true
-      origins: "*"
+      # Restrict CORS in production
+      origins: "http://localhost:3000,http://localhost:8000"
       methods: ["GET", "POST", "PUT", "DELETE"]
       headers: ["Content-Type", "Authorization"]
   

@@ -3,7 +3,16 @@
 Autonomous Multi-Agent Intelligence System
 
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
+
+DEPRECATED: Legacy Flask interface is deprecated. Use quant_nanggroe CLI instead.
 """
+
+import warnings
+warnings.warn(
+    "Legacy Flask interface is deprecated. Use quant_nanggroe CLI instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import asyncio
 import sys
@@ -46,7 +55,7 @@ class AgenticAISystem:
     
     def __init__(self):
         self.system_id = "agentic_ai_system"
-        self.version = "2.0.0"
+        self.version = "2.1.0"
         self.status = "initializing"
         self.start_time = datetime.now()
         
@@ -160,6 +169,8 @@ class AgenticAISystem:
             from core.memory_bus import memory_bus
             self.memory_bus = memory_bus
             print("  ✅ Memory Bus")
+        except ImportError:
+            print("  ⚠️  Memory Bus: legacy module not available (deprecated)")
         except Exception as e:
             print(f"  ❌ Memory Bus: {e}")
         
@@ -168,6 +179,8 @@ class AgenticAISystem:
             from core.ai_selector import ai_selector
             self.ai_selector = ai_selector
             print("  ✅ AI Selector")
+        except ImportError:
+            print("  ⚠️  AI Selector: legacy module not available (deprecated)")
         except Exception as e:
             print(f"  ❌ AI Selector: {e}")
         
@@ -177,6 +190,8 @@ class AgenticAISystem:
             self.prompt_master = prompt_master
             self.prompt_master.start_time = self.start_time.timestamp()
             print("  ✅ Prompt Master")
+        except ImportError:
+            print("  ⚠️  Prompt Master: legacy module not available (deprecated)")
         except Exception as e:
             print(f"  ❌ Prompt Master: {e}")
     
@@ -234,6 +249,8 @@ class AgenticAISystem:
                 
                 print(f"  ✅ {agent_id}")
                 
+            except ImportError:
+                print(f"  ⚠️  {agent_id}: legacy module not available (deprecated)")
             except Exception as e:
                 print(f"  ❌ {agent_id}: {e}")
         
@@ -246,6 +263,8 @@ class AgenticAISystem:
             self.scheduler = agent_scheduler
             self.scheduler.start()
             print("  ✅ Agent Scheduler started")
+        except ImportError:
+            print("  ⚠️  Scheduler: legacy module not available (deprecated)")
         except Exception as e:
             print(f"  ❌ Scheduler failed: {e}")
     
@@ -256,6 +275,8 @@ class AgenticAISystem:
             self.sync_engine = sync_engine
             await self.sync_engine.start()
             print("  ✅ Sync Engine started")
+        except ImportError:
+            print("  ⚠️  Sync Engine: legacy module not available (deprecated)")
         except Exception as e:
             print(f"  ❌ Sync Engine failed: {e}")
     
