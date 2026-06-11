@@ -97,7 +97,7 @@ pathspec>=0.12
 pillow>=10.1
 
 # JSON and Config
-jsonschema>=4.20
+jsonschema>=4.26.0
 toml>=0.10
 
 # Platform Integrations
