@@ -85,7 +85,7 @@ psutil>=5.9
 # Data Utilities
 pyyaml>=6.0
 python-dateutil>=2.8
-python-multipart>=0.0
+python-multipart>=0.0.32
 
 # Monitoring and Logging
 cachetools>=5.3
