@@ -9,12 +9,19 @@ Tests cover:
 - Error handling for unsupported exchanges
 - Factory state tracking
 - Custom options and overrides
+
+NOTE: Most tests require TRADING_MODE=simulation because the default PAPER mode
+redirects ALL exchange creation to PaperExchangeBroker. The autouse fixture
+below sets simulation mode for this test module.
 """
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
+from quant_nanggroe.config.trading_mode import TradingMode, TradingModeConfig
 from quant_nanggroe.exchange.factory import (
     ExchangeCapabilities,
     ExchangeFactory,
@@ -32,6 +39,30 @@ from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 # ======================================================================
 # Fixtures
 # ======================================================================
+
+@pytest.fixture(autouse=True)
+def _simulation_mode():
+    """Set TRADING_MODE=simulation for all factory tests.
+
+    The ExchangeFactory consults TradingModeConfig (a singleton) before
+    creating any broker.  In the default PAPER mode,
+    ``validate_exchange_creation()`` returns ``"paper"`` for *every*
+    exchange name, so the factory always creates a PaperExchangeBroker
+    regardless of the requested exchange.  Switching to SIMULATION mode
+    lets the factory create real CCXTBroker instances and raise
+    ExchangeFactoryError for unsupported exchanges.
+    """
+    original = os.environ.get("TRADING_MODE")
+    os.environ["TRADING_MODE"] = "simulation"
+    TradingModeConfig.reset()
+    yield
+    # Restore original state
+    if original is None:
+        os.environ.pop("TRADING_MODE", None)
+    else:
+        os.environ["TRADING_MODE"] = original
+    TradingModeConfig.reset()
+
 
 @pytest.fixture
 def factory() -> ExchangeFactory:
@@ -140,14 +171,37 @@ class TestCCXTBrokerCreation:
 class TestUnsupportedExchange:
 
     def test_unsupported_exchange_raises(self, factory: ExchangeFactory):
+        """In SIMULATION mode, unsupported exchanges raise ExchangeFactoryError."""
         with pytest.raises(ExchangeFactoryError, match="Unsupported exchange"):
             factory.create("nonexistent_exchange")
 
     def test_error_includes_exchange_name(self, factory: ExchangeFactory):
-        try:
+        """ExchangeFactoryError should carry the exchange name."""
+        with pytest.raises(ExchangeFactoryError) as exc_info:
             factory.create("fake_exchange")
-        except ExchangeFactoryError as e:
-            assert e.exchange == "fake_exchange"
+        assert exc_info.value.exchange == "fake_exchange"
+
+    def test_unsupported_exchange_returns_paper_in_paper_mode(self):
+        """DESIGN CONCERN: In PAPER mode the factory silently falls back to
+        PaperExchangeBroker for *any* exchange name, including unsupported
+        ones like ``"nonexistent_exchange"``.  This means typos or
+        misconfigurations go undetected.  A stricter design would raise
+        ExchangeFactoryError even in PAPER mode, or at least log a loud
+        warning.  For now this test documents the actual behaviour."""
+        original = os.environ.get("TRADING_MODE")
+        os.environ["TRADING_MODE"] = "paper"
+        TradingModeConfig.reset()
+        try:
+            factory = ExchangeFactory()
+            broker = factory.create("nonexistent_exchange")
+            # PAPER mode silently redirects to paper broker
+            assert isinstance(broker, PaperExchangeBroker)
+        finally:
+            if original is None:
+                os.environ.pop("TRADING_MODE", None)
+            else:
+                os.environ["TRADING_MODE"] = original
+            TradingModeConfig.reset()
 
 
 # ======================================================================
@@ -205,10 +259,14 @@ class TestConfigurationValidation:
 
     def test_sandbox_config(self, factory_with_sandbox: ExchangeFactory):
         broker = factory_with_sandbox.create("binance", api_key="test", api_secret="test")
+        # In SIMULATION mode, sandbox is always forced True regardless
+        # of the factory config setting.
         assert broker._config.sandbox is True
 
     def test_sandbox_override(self, factory: ExchangeFactory):
         broker = factory.create("binance", api_key="test", api_secret="test", sandbox=True)
+        # In SIMULATION mode, sandbox is forced True by the trading mode
+        # enforcement, so this is True regardless of the explicit override.
         assert broker._config.sandbox is True
 
     def test_rate_limit_override(self, factory: ExchangeFactory):

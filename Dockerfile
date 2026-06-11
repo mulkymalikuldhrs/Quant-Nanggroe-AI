@@ -32,7 +32,7 @@ FROM python:3.12-slim AS production
 # Metadata
 LABEL maintainer="Quant-Nanggroe-AI Team"
 LABEL description="Agentic Trading Intelligence OS"
-LABEL version="1.0.0"
+LABEL version="2.1.0"
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

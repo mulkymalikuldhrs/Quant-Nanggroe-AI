@@ -24,6 +24,10 @@ from fastapi.testclient import TestClient
 @pytest.fixture(scope="module")
 def client():
     """Create a TestClient with mocked service dependencies."""
+    import os
+    # Disable auth for testing (tests don't provide API keys)
+    os.environ.setdefault("QNAI_REQUIRE_AUTH", "false")
+    os.environ.setdefault("QNAI_API_KEYS", "test-key-for-ci")
     # Mock the services module that the app imports at startup
     with patch("quant_nanggroe.api.app.init_all_services", create=True):
         with patch("quant_nanggroe.services", create=True):
