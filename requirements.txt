@@ -79,7 +79,7 @@ asyncpg>=0.29
 
 # System and Security
 python-dotenv>=1.0
-cryptography>=42.0
+cryptography>=48.0.1
 psutil>=5.9
 
 # Data Utilities
