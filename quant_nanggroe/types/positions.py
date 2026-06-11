@@ -111,7 +111,21 @@ class Portfolio(BaseModel):
         return len(self.positions) > 0
 
     def recalculate(self) -> None:
-        """Recalculate all derived portfolio metrics."""
+        """Recalculate all derived portfolio metrics.
+
+        Also updates each position's unrealized_pnl from entry/current price
+        to ensure consistency even if update_price() was not called.
+        """
+        for pos in self.positions.values():
+            # Recalculate unrealized PnL from entry/current price if not set
+            if pos.unrealized_pnl == 0.0 and pos.current_price != pos.entry_price:
+                if pos.side == PositionSide.LONG:
+                    pos.unrealized_pnl = (pos.current_price - pos.entry_price) * pos.quantity
+                else:
+                    pos.unrealized_pnl = (pos.entry_price - pos.current_price) * pos.quantity
+                if pos.cost_basis > 0:
+                    pos.unrealized_pnl_pct = (pos.unrealized_pnl / pos.cost_basis) * 100
+
         self.total_unrealized_pnl = sum(
             p.unrealized_pnl for p in self.positions.values()
         )

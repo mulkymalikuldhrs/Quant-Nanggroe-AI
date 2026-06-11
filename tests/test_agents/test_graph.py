@@ -53,8 +53,7 @@ class TestTradingGraphConstruction:
 class TestRiskConditional:
     """Test the risk conditional routing logic."""
 
-    @patch("quant_nanggroe.agents.graph.create_llm")
-    def setup_method(self, method):
+    def setup_method(self):
         """Set up test fixtures."""
         self.mock_llm = MagicMock()
         with patch("quant_nanggroe.agents.graph.create_llm", return_value=self.mock_llm):
@@ -110,8 +109,7 @@ class TestRiskConditional:
 class TestEmergencyExitNode:
     """Test the emergency exit node."""
 
-    @patch("quant_nanggroe.agents.graph.create_llm")
-    def setup_method(self, method):
+    def setup_method(self):
         """Set up test fixtures."""
         self.mock_llm = MagicMock()
         with patch("quant_nanggroe.agents.graph.create_llm", return_value=self.mock_llm):

@@ -22,10 +22,26 @@ def analyze(symbol: str, timeframe: str):
 
 
 @main.command()
-@click.option("--paper", is_flag=True, default=True, help="Use paper trading")
+@click.option("--paper", is_flag=True, default=True, help="Use paper trading (DEFAULT and RECOMMENDED)")
 @click.option("--strategy", "-st", default="default", help="Strategy name")
-def trade(paper: bool, strategy: str):
-    """Start trading with specified strategy."""
+@click.option("--confirm-live", is_flag=True, default=False, help="EXPLICIT CONFIRMATION required for live trading")
+def trade(paper: bool, strategy: str, confirm_live: bool):
+    """Start trading with specified strategy.
+
+    Paper trading is the default. Live trading requires BOTH --no-paper
+    AND --confirm-live flags as an explicit safety gate.
+    """
+    if not paper and not confirm_live:
+        click.echo("❌ BLOCKED: Live trading requires explicit confirmation.")
+        click.echo("   Use: qnai trade --no-paper --confirm-live")
+        click.echo("   WARNING: Live trading uses REAL funds. Ensure risk limits are configured.")
+        return
+
+    if not paper:
+        click.echo("⚠️  LIVE TRADING MODE ACTIVE")
+        click.echo("   Real funds will be used. Risk limits enforced by constitutional guard.")
+        click.confirm("   Are you sure you want to proceed with LIVE trading?", abort=True)
+
     mode = "PAPER" if paper else "LIVE"
     click.echo(f"Starting {mode} trading with strategy: {strategy}")
 

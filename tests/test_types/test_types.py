@@ -5,7 +5,7 @@ from datetime import datetime
 from pydantic import ValidationError
 
 from quant_nanggroe.types.market import OHLCV, Ticker, TimeFrame
-from quant_nanggroe.types.orders import Order, OrderType, OrderSide, MarketOrder, LimitOrder
+from quant_nanggroe.types.orders import Order, OrderType, OrderSide, OrderStatus, MarketOrder, LimitOrder
 from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
 from quant_nanggroe.types.signals import Signal, SignalType, SignalStrength
 from quant_nanggroe.types.risk import RiskAssessment, RiskLevel

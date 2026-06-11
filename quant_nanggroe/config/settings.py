@@ -91,27 +91,30 @@ class Settings(BaseSettings):
     log_format: str = "json"
 
     # Constitutional Risk Limits (CANNOT be overridden by agents)
+    # NOTE: These values are in PERCENTAGE units (0.5 = 0.5%)
+    # The risk manager (engine/risk/manager.py) uses FRACTIONAL units (0.005 = 0.5%)
+    # Always convert: fraction = percentage / 100
     risk_max_per_trade: float = Field(
         default=0.5,
-        description="Maximum risk percentage per trade. Constitutional limit.",
+        description="Maximum risk percentage per trade (0.5 = 0.5%). Constitutional limit.",
         ge=0.1,
         le=2.0,
     )
     risk_max_daily_loss: float = Field(
         default=1.0,
-        description="Maximum daily loss percentage. Constitutional limit.",
+        description="Maximum daily loss percentage (1.0 = 1%). Constitutional limit.",
         ge=0.5,
         le=5.0,
     )
     risk_max_weekly_loss: float = Field(
         default=3.0,
-        description="Maximum weekly loss percentage. Constitutional limit.",
+        description="Maximum weekly loss percentage (3.0 = 3%). Constitutional limit.",
         ge=1.0,
         le=10.0,
     )
     risk_max_drawdown: float = Field(
         default=10.0,
-        description="Maximum drawdown percentage. Constitutional limit.",
+        description="Maximum drawdown percentage (10.0 = 10%). Constitutional limit.",
         ge=5.0,
         le=20.0,
     )
