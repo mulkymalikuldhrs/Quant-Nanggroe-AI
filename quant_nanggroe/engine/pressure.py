@@ -21,6 +21,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.types.engine import PressureState, VolatilityLevel, LiquidityLevel
+from quant_nanggroe.engine.observability import get_observability, traced
 
 
 class PressureInput(BaseModel):
@@ -78,6 +79,7 @@ class PressureNormalizationEngine:
     def __init__(self) -> None:
         self.last_result: PressureResult | None = None
 
+    @traced("compile_pressure", attributes={"component": "pressure", "operation": "compile_pressure"})
     def compile_pressure(self, inputs: PressureInput) -> PressureResult:
         """
         Compile all sensor outputs into normalized pressure vectors.
@@ -91,6 +93,10 @@ class PressureNormalizationEngine:
         Returns:
             PressureResult with normalized pressures and verdict
         """
+        import time as _time
+        obs = get_observability()
+        start = _time.monotonic()
+
         buy = 0.0
         sell = 0.0
 
@@ -178,6 +184,11 @@ class PressureNormalizationEngine:
                 "flow": f"{inputs.flow_direction} ({inputs.flow_imbalance:.2f})",
             },
         )
+
+        # Record observability metrics
+        duration = _time.monotonic() - start
+        obs.metrics.pressure_score.set(buy_pressure, {"sensor": "quant_scanner", "side": "buy"})
+        obs.metrics.pressure_score.set(sell_pressure, {"sensor": "quant_scanner", "side": "sell"})
 
         self.last_result = result
         return result

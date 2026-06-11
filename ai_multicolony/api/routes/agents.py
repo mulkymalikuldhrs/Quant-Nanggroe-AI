@@ -13,6 +13,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
+from fastapi import HTTPException
+
 from ..schemas import (
     AgentCreateRequest,
     AgentCreateResponse,
@@ -62,20 +64,16 @@ class AgentRoutes:
         # Fallback when no registry
         import uuid
         logger.error(
-            "agent_create_stub - AgentRegistry not injected, returning stub response with 503. "
+            "agent_create_stub - AgentRegistry not injected, raising 503. "
             "Agent creation is unavailable without an AgentRegistry."
         )
-        result = AgentCreateResponse(
-            agent_id=uuid.uuid4().hex[:12],
-            agent_type=request.agent_type,
-            colony_id=request.colony_id,
-        ).model_dump(mode="json")
-        result.update({
-            "error": "Agent service unavailable - AgentRegistry not configured",
-            "code": "SERVICE_UNAVAILABLE",
-            "status_code": 503,
-        })
-        return result
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Agent service unavailable - AgentRegistry not configured",
+                "code": "SERVICE_UNAVAILABLE",
+            },
+        )
 
     async def list_agents(self, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/agents – list all agents."""
@@ -95,11 +93,15 @@ class AgentRoutes:
                 ).model_dump(mode="json"))
             return AgentListResponse(agents=agents, total=len(agents)).model_dump(mode="json")
 
-        logger.warning("agent_list_stub - AgentRegistry not injected, returning empty list with 503 indicator")
-        result = AgentListResponse().model_dump(mode="json")
-        result["warning"] = "AgentRegistry not configured - data may be incomplete"
-        result["status_code"] = 503
-        return result
+        logger.warning("agent_list_stub - AgentRegistry not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Agent service unavailable - AgentRegistry not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "AgentRegistry not configured - data may be incomplete",
+            },
+        )
 
     async def get_agent(self, agent_id: str, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/agents/{id} – get agent status."""

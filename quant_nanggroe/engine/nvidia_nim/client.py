@@ -47,6 +47,7 @@ from quant_nanggroe.engine.nvidia_nim.models import (
     NIMStreamDelta,
     NIMUsage,
 )
+from quant_nanggroe.engine.observability import get_observability, traced
 
 logger = structlog.get_logger(__name__)
 
@@ -325,6 +326,7 @@ class NIMClient:
     # Chat completions
     # ------------------------------------------------------------------
 
+    @traced("nim_chat", attributes={"component": "nvidia_nim", "operation": "chat"})
     async def chat(
         self,
         prompt: str,
@@ -376,6 +378,7 @@ class NIMClient:
             seed=seed,
         )
 
+        obs = get_observability()
         start = time.monotonic()
         response = await self._request_with_retry(
             "POST",
@@ -387,6 +390,20 @@ class NIMClient:
 
         data = response.json()
         nim_response = self._parse_chat_response(data, latency_ms)
+
+        # Record observability metrics
+        obs.metrics.api_request_duration_seconds.record(
+            latency_ms / 1000.0,
+            {"provider": "nvidia_nim", "model": model, "operation": "chat"},
+        )
+        obs.metrics.llm_tokens_total.add(
+            nim_response.usage.prompt_tokens,
+            {"model": model, "token_type": "input"},
+        )
+        obs.metrics.llm_tokens_total.add(
+            nim_response.usage.completion_tokens,
+            {"model": model, "token_type": "output"},
+        )
 
         logger.info(
             "nim_chat_complete",

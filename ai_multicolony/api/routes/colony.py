@@ -12,6 +12,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
+from fastapi import HTTPException
+
 from ..schemas import (
     ColonyCreateRequest,
     ColonyCreateResponse,
@@ -74,16 +76,16 @@ class ColonyRoutes:
             ).model_dump(mode="json")
 
         logger.error(
-            "colony_create_stub - ColonyManager not injected, returning 503. "
+            "colony_create_stub - ColonyManager not injected, raising 503. "
             "Colony creation is unavailable without a ColonyManager."
         )
-        result = ColonyCreateResponse(colony_id="stub", name=request.name).model_dump(mode="json")
-        result.update({
-            "error": "Colony service unavailable - ColonyManager not configured",
-            "code": "SERVICE_UNAVAILABLE",
-            "status_code": 503,
-        })
-        return result
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Colony service unavailable - ColonyManager not configured",
+                "code": "SERVICE_UNAVAILABLE",
+            },
+        )
 
     async def list_colonies(self, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/colonies – list all colonies."""
@@ -106,11 +108,15 @@ class ColonyRoutes:
                 ).model_dump(mode="json"))
             return ColonyListResponse(colonies=colonies, total=len(colonies)).model_dump(mode="json")
 
-        logger.warning("colony_list_stub - ColonyManager not injected, returning empty list with 503 indicator")
-        result = ColonyListResponse().model_dump(mode="json")
-        result["warning"] = "ColonyManager not configured - data may be incomplete"
-        result["status_code"] = 503
-        return result
+        logger.warning("colony_list_stub - ColonyManager not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Colony service unavailable - ColonyManager not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "ColonyManager not configured - data may be incomplete",
+            },
+        )
 
     async def get_colony(self, colony_id: str, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/colonies/{id} – get colony status."""

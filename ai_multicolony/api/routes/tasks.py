@@ -12,6 +12,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
+from fastapi import HTTPException
+
 from ..schemas import (
     TaskCreateRequest,
     TaskCreateResponse,
@@ -82,8 +84,15 @@ class TaskRoutes:
                 "scheduler_stats": stats,
             })
 
-        logger.warning("task_list_stub - TaskScheduler not injected, returning empty task list with 503 indicator")
-        return {"tasks": tasks, "total": len(tasks), "warning": "TaskScheduler not configured - data may be incomplete", "status_code": 503}
+        logger.warning("task_list_stub - TaskScheduler not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Task service unavailable - TaskScheduler not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "TaskScheduler not configured - data may be incomplete",
+            },
+        )
 
     async def get_task(self, task_id: str, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/tasks/{id} – get task status."""

@@ -1126,10 +1126,12 @@ class TestConstitutionalLimits:
         assert CONFIDENCE_THRESHOLD == 0.65
 
     def test_kill_switch_daily_pnl(self):
-        assert KILL_SWITCH_DAILY_PNL == -0.02
+        # Kill switch triggers at -0.8% (early warning before 1% hard limit)
+        assert KILL_SWITCH_DAILY_PNL == -0.008
 
     def test_kill_switch_weekly_pnl(self):
-        assert KILL_SWITCH_WEEKLY_PNL == -0.05
+        # Kill switch triggers at -2.5% (early warning before 3% hard limit)
+        assert KILL_SWITCH_WEEKLY_PNL == -0.025
 
     def test_limits_in_initial_state(self):
         """Verify constitutional limits are embedded in the initial state."""

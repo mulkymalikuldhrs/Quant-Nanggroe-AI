@@ -11,6 +11,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
+from fastapi import HTTPException
+
 from ..schemas import (
     ToolListResponse,
     ToolDescribeResponse,
@@ -44,11 +46,15 @@ class ToolRoutes:
             tools = self._mcp_server.list_tools()
             return ToolListResponse(tools=tools, total=len(tools)).model_dump(mode="json")
 
-        logger.warning("tool_list_stub - MCPServer not injected, returning empty tool list with 503 indicator")
-        result = ToolListResponse().model_dump(mode="json")
-        result["warning"] = "MCPServer not configured - no tools available"
-        result["status_code"] = 503
-        return result
+        logger.warning("tool_list_stub - MCPServer not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Tool service unavailable - MCPServer not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "MCPServer not configured - no tools available",
+            },
+        )
 
     async def describe_tool(self, tool_name: str, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/tools/{name} – describe a specific tool."""
@@ -107,10 +113,11 @@ class ToolRoutes:
                     error=str(exc),
                 ).model_dump(mode="json")
 
-        logger.error("tool_call_stub - MCPServer not injected, cannot call tool %s", tool_name)
-        return ToolCallResponse(
-            call_id="stub",
-            tool_name=tool_name,
-            status="error",
-            error="No MCP server available - service is not configured (503)",
-        ).model_dump(mode="json")
+        logger.error("tool_call_stub - MCPServer not injected, cannot call tool %s, raising 503", tool_name)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": f"Tool {tool_name} unavailable - MCPServer not configured",
+                "code": "SERVICE_UNAVAILABLE",
+            },
+        )

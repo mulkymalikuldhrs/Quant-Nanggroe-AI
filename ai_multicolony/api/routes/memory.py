@@ -12,6 +12,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
+from fastapi import HTTPException
+
 from ..schemas import (
     MemoryStoreRequest,
     MemoryStoreResponse,
@@ -60,16 +62,16 @@ class MemoryRoutes:
         # Fallback
         import uuid
         logger.error(
-            "memory_store_stub - MemoryManager not injected, returning stub store_id with 503. "
+            "memory_store_stub - MemoryManager not injected, raising 503. "
             "Memory storage is unavailable without a MemoryManager."
         )
-        result = MemoryStoreResponse(store_id=uuid.uuid4().hex[:12]).model_dump(mode="json")
-        result.update({
-            "error": "Memory service unavailable - MemoryManager not configured",
-            "code": "SERVICE_UNAVAILABLE",
-            "status_code": 503,
-        })
-        return result
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Memory service unavailable - MemoryManager not configured",
+                "code": "SERVICE_UNAVAILABLE",
+            },
+        )
 
     async def query(self, request: Optional[MemoryQueryRequest] = None, **kwargs: Any) -> Dict[str, Any]:
         """POST /api/v1/memory/query – query memory."""
@@ -84,11 +86,15 @@ class MemoryRoutes:
             results = await self._memory_manager.search(request.query, limit=request.limit)
             return MemoryQueryResponse(results=results, total=len(results)).model_dump(mode="json")
 
-        logger.warning("memory_query_stub - MemoryManager not injected, returning empty results with 503 indicator")
-        result = MemoryQueryResponse().model_dump(mode="json")
-        result["warning"] = "MemoryManager not configured - data may be incomplete"
-        result["status_code"] = 503
-        return result
+        logger.warning("memory_query_stub - MemoryManager not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Memory service unavailable - MemoryManager not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "MemoryManager not configured - data may be incomplete",
+            },
+        )
 
     async def compact(self, request: Optional[MemoryCompactRequest] = None, **kwargs: Any) -> Dict[str, Any]:
         """POST /api/v1/memory/compact – trigger memory compaction."""
@@ -119,11 +125,15 @@ class MemoryRoutes:
                     tokens_saved=0,
                 ).model_dump(mode="json")
 
-        logger.warning("memory_compact_stub - MemoryManager not injected, returning empty compact response with 503 indicator")
-        result = MemoryCompactResponse().model_dump(mode="json")
-        result["warning"] = "MemoryManager not configured"
-        result["status_code"] = 503
-        return result
+        logger.warning("memory_compact_stub - MemoryManager not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Memory service unavailable - MemoryManager not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "MemoryManager not configured",
+            },
+        )
 
     async def list_pages(self, **kwargs: Any) -> Dict[str, Any]:
         """GET /api/v1/memory/pages – list memory pages."""
@@ -131,8 +141,12 @@ class MemoryRoutes:
             pages = await self._memory_manager.list_pages()
             return MemoryPagesResponse(pages=pages, total=len(pages)).model_dump(mode="json")
 
-        logger.warning("memory_pages_stub - MemoryManager not injected, returning empty pages with 503 indicator")
-        result = MemoryPagesResponse().model_dump(mode="json")
-        result["warning"] = "MemoryManager not configured"
-        result["status_code"] = 503
-        return result
+        logger.warning("memory_pages_stub - MemoryManager not injected, raising 503")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Memory service unavailable - MemoryManager not configured",
+                "code": "SERVICE_UNAVAILABLE",
+                "warning": "MemoryManager not configured",
+            },
+        )

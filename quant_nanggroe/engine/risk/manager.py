@@ -37,6 +37,11 @@ from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
 from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.risk.var import VaRCalculator
+from quant_nanggroe.engine.persistence import (
+    PersistenceBackend,
+    get_persistence_backend,
+)
+from quant_nanggroe.engine.observability import get_observability, traced
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +87,11 @@ class RiskManager:
             size = rm.calculate_position_size(...)
     """
 
-    def __init__(self, initial_equity: float = 1_000_000.0) -> None:
+    def __init__(
+        self,
+        initial_equity: float = 1_000_000.0,
+        persistence: Optional[PersistenceBackend] = None,
+    ) -> None:
         self.state = RiskState(
             peak_equity=initial_equity,
             current_equity=initial_equity,
@@ -96,6 +105,11 @@ class RiskManager:
         self._veto_count: int = 0
         self._approval_count: int = 0
 
+        # Persistence layer — optional, defaults to env-configured backend
+        self._persistence = persistence or get_persistence_backend()
+        self._load_state()
+
+    @traced("check_trade", attributes={"component": "risk", "operation": "check_trade"})
     def check_trade(
         self,
         symbol: str,
@@ -123,10 +137,18 @@ class RiskManager:
         Returns:
             Dict with verdict, checkpoints, and risk metrics.
         """
+        import time as _time
+        obs = get_observability()
+        start = _time.monotonic()
+
         self._reset_daily_if_needed()
 
         # First check kill switch
         if self.kill_switch.is_active:
+            obs.metrics.risk_check_duration_seconds.record(
+                _time.monotonic() - start,
+                {"check_name": "kill_switch", "verdict": "VETOED"},
+            )
             return {
                 "symbol": symbol,
                 "direction": direction.upper(),
@@ -151,6 +173,16 @@ class RiskManager:
         )
 
         verdict = result["verdict"]
+
+        # Record observability metrics
+        obs.metrics.risk_check_duration_seconds.record(
+            _time.monotonic() - start,
+            {"check_name": "full_gate", "verdict": verdict},
+        )
+        obs.metrics.trades_total.add(
+            1,
+            {"symbol": symbol, "direction": direction.upper(), "verdict": verdict},
+        )
 
         if verdict == "VETOED":
             self._veto_count += 1
@@ -187,6 +219,9 @@ class RiskManager:
 
         # Auto-check kill switch
         self._auto_check_kill_switch()
+
+        # Persist state after update (including kill switch changes)
+        self._save_state()
 
     def add_position(self, symbol: str) -> None:
         """Track a new open position."""
@@ -343,6 +378,92 @@ class RiskManager:
                 self.state.weekly_pnl = 0.0
                 self.state.trade_count_week = 0
             self.state.last_reset_date = today
+            self._save_state()
+
+    # ── Persistence ─────────────────────────────────────────────────────
+
+    def _save_state(self) -> None:
+        """Persist risk state to the configured backend."""
+        try:
+            self._persistence.set_many({
+                "risk:daily_pnl": self.state.daily_pnl,
+                "risk:weekly_pnl": self.state.weekly_pnl,
+                "risk:trade_count_today": self.state.trade_count_today,
+                "risk:trade_count_week": self.state.trade_count_week,
+                "risk:peak_equity": self.state.peak_equity,
+                "risk:current_equity": self.state.current_equity,
+                "risk:last_reset_date": (
+                    self.state.last_reset_date.isoformat()
+                    if self.state.last_reset_date else None
+                ),
+                "risk:active_positions": self.state.active_positions,
+                "risk:veto_count": self._veto_count,
+                "risk:approval_count": self._approval_count,
+                "risk:kill_switch_active": self.kill_switch.is_active,
+                "risk:kill_switch_reason": self.kill_switch.status().get("activation_reason"),
+                "risk:kill_switch_activated_at": self.kill_switch.status().get("activated_at"),
+            }, ttl=86400 * 7)  # 7-day TTL
+        except Exception as e:
+            logger.warning("Failed to persist risk state: %s", e)
+
+    def _load_state(self) -> None:
+        """Load risk state from the configured backend."""
+        try:
+            daily_pnl = self._persistence.get("risk:daily_pnl")
+            if daily_pnl is not None:
+                self.state.daily_pnl = float(daily_pnl)
+
+            weekly_pnl = self._persistence.get("risk:weekly_pnl")
+            if weekly_pnl is not None:
+                self.state.weekly_pnl = float(weekly_pnl)
+
+            trade_count_today = self._persistence.get("risk:trade_count_today")
+            if trade_count_today is not None:
+                self.state.trade_count_today = int(trade_count_today)
+
+            trade_count_week = self._persistence.get("risk:trade_count_week")
+            if trade_count_week is not None:
+                self.state.trade_count_week = int(trade_count_week)
+
+            peak_equity = self._persistence.get("risk:peak_equity")
+            if peak_equity is not None:
+                self.state.peak_equity = float(peak_equity)
+
+            current_equity = self._persistence.get("risk:current_equity")
+            if current_equity is not None:
+                self.state.current_equity = float(current_equity)
+
+            last_reset_date = self._persistence.get("risk:last_reset_date")
+            if last_reset_date is not None and last_reset_date:
+                self.state.last_reset_date = date.fromisoformat(last_reset_date)
+
+            active_positions = self._persistence.get("risk:active_positions")
+            if active_positions is not None:
+                self.state.active_positions = list(active_positions)
+
+            veto_count = self._persistence.get("risk:veto_count")
+            if veto_count is not None:
+                self._veto_count = int(veto_count)
+
+            approval_count = self._persistence.get("risk:approval_count")
+            if approval_count is not None:
+                self._approval_count = int(approval_count)
+
+            # Restore kill switch state
+            kill_switch_active = self._persistence.get("risk:kill_switch_active")
+            if kill_switch_active:
+                reason = self._persistence.get("risk:kill_switch_reason") or "PERSISTED_STATE"
+                self.kill_switch.activate(reason)
+
+            # Reset daily counters if the persisted state is from a previous day
+            self._reset_daily_if_needed()
+
+            logger.info(
+                "Risk state loaded from persistence: daily_pnl=%.2f, weekly_pnl=%.2f, trades_today=%d",
+                self.state.daily_pnl, self.state.weekly_pnl, self.state.trade_count_today,
+            )
+        except Exception as e:
+            logger.warning("Failed to load risk state from persistence: %s", e)
 
     # ── Stress Testing (from ai-hedge-fund) ────────────────────────────
 

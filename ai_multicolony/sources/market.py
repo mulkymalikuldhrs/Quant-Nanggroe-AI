@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import aiohttp
+from cachetools import TTLCache
 from pydantic import BaseModel, Field, ConfigDict
 
 from .base import (
@@ -376,6 +377,10 @@ class MarketSource(SourceProvider):
             config=config,
         )
         self._segments = segments or ["equities", "crypto", "forex"]
+        # TTL caches for each segment
+        self._equity_cache: TTLCache = TTLCache(maxsize=64, ttl=300)   # 5 min
+        self._crypto_cache: TTLCache = TTLCache(maxsize=64, ttl=60)    # 1 min (crypto moves fast)
+        self._forex_cache: TTLCache = TTLCache(maxsize=64, ttl=300)    # 5 min
         # In-memory caches populated by live calls
         self._live_equities: Dict[str, Dict[str, Any]] = {}
         self._live_crypto: Dict[str, Dict[str, Any]] = {}
@@ -473,6 +478,9 @@ class MarketSource(SourceProvider):
 
         If ``_LIVE_MODE`` is ``False`` or all API calls fail, the caches
         are populated from SAMPLE_DATA and a warning is logged.
+
+        TTLCache is checked first – if a segment's cache is still valid
+        the API call for that segment is skipped entirely.
         """
         if not _LIVE_MODE:
             self._live_equities = dict(SAMPLE_EQUITY_DATA)
@@ -481,45 +489,70 @@ class MarketSource(SourceProvider):
             logger.warning("Using SAMPLE_DATA - live API disabled (_LIVE_MODE=False)")
             return
 
+        # ── Check TTL caches first ────────────────────────────────────
+        need_equities = "equities" not in self._equity_cache
+        need_crypto = "crypto" not in self._crypto_cache
+        need_forex = "forex" not in self._forex_cache
+
+        if not need_equities:
+            self._live_equities = self._equity_cache["equities"]
+            logger.debug("equity_cache hit – skipping API call")
+        if not need_crypto:
+            self._live_crypto = self._crypto_cache["crypto"]
+            logger.debug("crypto_cache hit – skipping API call")
+        if not need_forex:
+            self._live_forex = self._forex_cache["forex"]
+            logger.debug("forex_cache hit – skipping API call")
+
+        if not need_equities and not need_crypto and not need_forex:
+            return  # All segments served from cache
+
         async with aiohttp.ClientSession() as session:
             # Equities
-            eq_tasks = []
-            for sym in _YF_EQUITY_SYMBOLS:
-                yf_sym = sym.replace("BRK-B", "BRK-B")
-                eq_tasks.append(_fetch_yfinance_equity(session, sym, yf_sym))
-            eq_results = await asyncio.gather(*eq_tasks, return_exceptions=True)
-            live_eq: Dict[str, Dict[str, Any]] = {}
-            canonical_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B"]
-            for idx, res in enumerate(eq_results):
-                if isinstance(res, Exception) or res is None:
-                    continue
-                sym = canonical_symbols[idx] if idx < len(canonical_symbols) else f"UNK{idx}"
-                live_eq[sym] = res
-            if live_eq:
-                self._live_equities = live_eq
-            else:
-                self._live_equities = dict(SAMPLE_EQUITY_DATA)
-                logger.warning("Using SAMPLE_DATA - live API unavailable for equities (yfinance)")
+            if need_equities:
+                eq_tasks = []
+                for sym in _YF_EQUITY_SYMBOLS:
+                    yf_sym = sym.replace("BRK-B", "BRK-B")
+                    eq_tasks.append(_fetch_yfinance_equity(session, sym, yf_sym))
+                eq_results = await asyncio.gather(*eq_tasks, return_exceptions=True)
+                live_eq: Dict[str, Dict[str, Any]] = {}
+                canonical_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B"]
+                for idx, res in enumerate(eq_results):
+                    if isinstance(res, Exception) or res is None:
+                        continue
+                    sym = canonical_symbols[idx] if idx < len(canonical_symbols) else f"UNK{idx}"
+                    live_eq[sym] = res
+                if live_eq:
+                    self._live_equities = live_eq
+                    self._equity_cache["equities"] = live_eq
+                else:
+                    self._live_equities = dict(SAMPLE_EQUITY_DATA)
+                    logger.warning("Using SAMPLE_DATA - live API unavailable for equities (yfinance)")
 
             # Crypto – try CoinGecko, fall back to Binance
-            live_crypto = await _fetch_coingecko_market(session)
-            if live_crypto:
-                self._live_crypto = live_crypto
-            else:
-                live_crypto = await _fetch_binance_prices(session)
+            if need_crypto:
+                live_crypto = await _fetch_coingecko_market(session)
                 if live_crypto:
                     self._live_crypto = live_crypto
+                    self._crypto_cache["crypto"] = live_crypto
                 else:
-                    self._live_crypto = dict(SAMPLE_CRYPTO_DATA)
-                    logger.warning("Using SAMPLE_DATA - live API unavailable for crypto (coingecko/binance)")
+                    live_crypto = await _fetch_binance_prices(session)
+                    if live_crypto:
+                        self._live_crypto = live_crypto
+                        self._crypto_cache["crypto"] = live_crypto
+                    else:
+                        self._live_crypto = dict(SAMPLE_CRYPTO_DATA)
+                        logger.warning("Using SAMPLE_DATA - live API unavailable for crypto (coingecko/binance)")
 
             # Forex
-            live_fx = await _fetch_yfinance_forex(session)
-            if live_fx:
-                self._live_forex = live_fx
-            else:
-                self._live_forex = dict(SAMPLE_FOREX_DATA)
-                logger.warning("Using SAMPLE_DATA - live API unavailable for forex (yfinance)")
+            if need_forex:
+                live_fx = await _fetch_yfinance_forex(session)
+                if live_fx:
+                    self._live_forex = live_fx
+                    self._forex_cache["forex"] = live_fx
+                else:
+                    self._live_forex = dict(SAMPLE_FOREX_DATA)
+                    logger.warning("Using SAMPLE_DATA - live API unavailable for forex (yfinance)")
 
     # ── Segment-specific fetch ──────────────────────────────────────────
 

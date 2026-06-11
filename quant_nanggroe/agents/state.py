@@ -71,8 +71,10 @@ _assertion_checks = [
     ("MAX_DRAWDOWN_PCT", _ENGINE_MAX_DRAWDOWN_PCT, 0.15),
     ("MAX_DAILY_TRADES", _ENGINE_MAX_DAILY_TRADES, 5),
     ("CONFIDENCE_THRESHOLD", _ENGINE_CONFIDENCE_THRESHOLD, 0.65),
-    ("KILL_SWITCH_DAILY_PNL", _ENGINE_KILL_SWITCH_DAILY_PNL, -0.02),
-    ("KILL_SWITCH_WEEKLY_PNL", _ENGINE_KILL_SWITCH_WEEKLY_PNL, -0.05),
+    # Kill switch thresholds are EARLY WARNING — they trigger BEFORE constitutional hard limits
+    # KILL_SWITCH_DAILY: -0.8% (before 1% hard limit) | KILL_SWITCH_WEEKLY: -2.5% (before 3% hard limit)
+    ("KILL_SWITCH_DAILY_PNL", _ENGINE_KILL_SWITCH_DAILY_PNL, -0.008),
+    ("KILL_SWITCH_WEEKLY_PNL", _ENGINE_KILL_SWITCH_WEEKLY_PNL, -0.025),
 ]
 for _name, _imported_val, _expected_val in _assertion_checks:
     assert _imported_val == _expected_val, (
