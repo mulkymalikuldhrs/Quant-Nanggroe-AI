@@ -155,12 +155,8 @@ class AlphaFactor(ABC):
 # They are used by factor implementations to compose complex alpha formulas.
 
 
-def _as_float(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
-    """Convert DataFrame or Series to float64 if needed."""
-    if isinstance(df, pd.Series):
-        if df.dtype == np.float64:
-            return df
-        return df.astype(np.float64)
+def _as_float(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert DataFrame to float64 if needed."""
     if df.dtypes.eq(np.float64).all():
         return df
     return df.astype(np.float64)
@@ -214,91 +210,33 @@ def ts_rank(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
     return df.rolling(window=n, min_periods=n).apply(_last_rank, raw=True)
 
 
-def ts_corr(x: pd.DataFrame | pd.Series, y: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
+def ts_corr(x: pd.DataFrame, y: pd.DataFrame, n: int) -> pd.DataFrame:
     """Rolling Pearson correlation per column, min_periods=n.
 
     Constant series in the window → NaN (no silent zero).
-    Accepts both DataFrame and Series inputs. When both inputs are Series,
-    computes a single rolling correlation time-series.
     """
     if n < 2:
         raise ValueError(f"ts_corr window must be >= 2, got {n}")
-
-    # Series × Series case: compute single rolling correlation
-    if isinstance(x, pd.Series) and isinstance(y, pd.Series):
-        x = _as_float(x)
-        y = _as_float(y)
-        # Use pandas rolling corr between two Series
-        result = x.rolling(window=n, min_periods=n).corr(y)
-        return result.replace([np.inf, -np.inf], np.nan)
-
-    # DataFrame × DataFrame case: align columns
     x = _as_float(x)
     y = _as_float(y)
-
-    # If columns don't overlap, rename to a common column for element-wise corr
-    if isinstance(x, pd.DataFrame) and isinstance(y, pd.DataFrame):
-        if not x.columns.equals(y.columns):
-            # Rename both to same column name for proper alignment
-            common_col = "_corr_col"
-            x_renamed = x.rename(columns={x.columns[0]: common_col})
-            y_renamed = y.rename(columns={y.columns[0]: common_col})
-            if common_col in x_renamed.columns and common_col in y_renamed.columns:
-                xa = x_renamed[[common_col]]
-                ya = y_renamed[[common_col]]
-                corr = xa.rolling(window=n, min_periods=n).corr(ya)
-                # Rename back
-                corr = corr.rename(columns={common_col: x.columns[0]})
-                return corr.replace([np.inf, -np.inf], np.nan)
-
-        cols = x.columns.union(y.columns)
-        xa = x.reindex(columns=cols)
-        ya = y.reindex(columns=cols)
-        corr = xa.rolling(window=n, min_periods=n).corr(ya)
-        return corr.replace([np.inf, -np.inf], np.nan)
-
-    return pd.DataFrame()
+    cols = x.columns.union(y.columns)
+    xa = x.reindex(columns=cols)
+    ya = y.reindex(columns=cols)
+    corr = xa.rolling(window=n, min_periods=n).corr(ya)
+    return corr.replace([np.inf, -np.inf], np.nan)
 
 
-def ts_cov(x: pd.DataFrame | pd.Series, y: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
-    """Rolling sample covariance per column, min_periods=n.
-
-    Accepts both DataFrame and Series inputs. When both inputs are Series,
-    computes a single rolling covariance time-series.
-    """
+def ts_cov(x: pd.DataFrame, y: pd.DataFrame, n: int) -> pd.DataFrame:
+    """Rolling sample covariance per column, min_periods=n."""
     if n < 2:
         raise ValueError(f"ts_cov window must be >= 2, got {n}")
-
-    # Series × Series case
-    if isinstance(x, pd.Series) and isinstance(y, pd.Series):
-        x = _as_float(x)
-        y = _as_float(y)
-        result = x.rolling(window=n, min_periods=n).cov(y)
-        return result.replace([np.inf, -np.inf], np.nan)
-
-    # DataFrame × DataFrame case
     x = _as_float(x)
     y = _as_float(y)
-
-    if isinstance(x, pd.DataFrame) and isinstance(y, pd.DataFrame):
-        if not x.columns.equals(y.columns):
-            common_col = "_cov_col"
-            x_renamed = x.rename(columns={x.columns[0]: common_col})
-            y_renamed = y.rename(columns={y.columns[0]: common_col})
-            if common_col in x_renamed.columns and common_col in y_renamed.columns:
-                xa = x_renamed[[common_col]]
-                ya = y_renamed[[common_col]]
-                cov = xa.rolling(window=n, min_periods=n).cov(ya)
-                cov = cov.rename(columns={common_col: x.columns[0]})
-                return cov.replace([np.inf, -np.inf], np.nan)
-
-        cols = x.columns.union(y.columns)
-        xa = x.reindex(columns=cols)
-        ya = y.reindex(columns=cols)
-        cov = xa.rolling(window=n, min_periods=n).cov(ya)
-        return cov.replace([np.inf, -np.inf], np.nan)
-
-    return pd.DataFrame()
+    cols = x.columns.union(y.columns)
+    xa = x.reindex(columns=cols)
+    ya = y.reindex(columns=cols)
+    cov = xa.rolling(window=n, min_periods=n).cov(ya)
+    return cov.replace([np.inf, -np.inf], np.nan)
 
 
 def ts_mean(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
@@ -397,94 +335,11 @@ def signed_power(df: pd.DataFrame | pd.Series, p: float) -> pd.DataFrame | pd.Se
     return pd.DataFrame(out, index=df.index, columns=df.columns)
 
 
-def ts_sum(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
-    """Rolling sum per column, warmup → NaN.
-
-    Equivalent to the WorldQuant ``ts_sum(x, d)`` operator.
-    """
-    if n < 1:
-        raise ValueError(f"ts_sum window must be >= 1, got {n}")
-    return df.rolling(window=n, min_periods=n).sum()
-
-
-def ts_product(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
-    """Rolling product per column, warmup → NaN.
-
-    Used for multiplicative return aggregation in alpha formulas.
-    """
-    if n < 1:
-        raise ValueError(f"ts_product window must be >= 1, got {n}")
-
-    def _prod(arr: np.ndarray) -> float:
-        if np.isnan(arr).any():
-            return np.nan
-        return float(np.prod(arr))
-
-    return df.rolling(window=n, min_periods=n).apply(_prod, raw=True)
-
-
-def ts_median(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
-    """Rolling median per column, warmup → NaN.
-
-    Robust central-tendency estimator, less sensitive to outliers than ts_mean.
-    """
-    if n < 1:
-        raise ValueError(f"ts_median window must be >= 1, got {n}")
-    return df.rolling(window=n, min_periods=n).median()
-
-
-def ts_skewness(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
-    """Rolling skewness per column, warmup → NaN.
-
-    Measures asymmetry of the return distribution.
-    """
-    if n < 3:
-        raise ValueError(f"ts_skewness window must be >= 3, got {n}")
-    return df.rolling(window=n, min_periods=n).skew()
-
-
-def ts_kurtosis(df: pd.DataFrame | pd.Series, n: int) -> pd.DataFrame | pd.Series:
-    """Rolling excess kurtosis per column, warmup → NaN.
-
-    Measures tail heaviness of the return distribution.
-    """
-    if n < 4:
-        raise ValueError(f"ts_kurtosis window must be >= 4, got {n}")
-    return df.rolling(window=n, min_periods=n).kurt()
-
-
-def delay(df: pd.DataFrame | pd.Series, d: int) -> pd.DataFrame | pd.Series:
-    """Lag operator: ``df.shift(d)``.
-
-    Lookahead ban: ``d >= 1`` strictly. Equivalent to WorldQuant ``delay(x, d)``.
-    """
-    if d < 1:
-        raise ValueError(f"delay lag must be >= 1 (lookahead ban), got {d}")
-    return df.shift(d)
-
-
-def safe_div(
-    a: pd.DataFrame | pd.Series,
-    b: pd.DataFrame | pd.Series | float | int,
-    eps: float = 1e-12,
-) -> pd.DataFrame | pd.Series:
+def safe_div(a: pd.DataFrame, b: pd.DataFrame, eps: float = 1e-12) -> pd.DataFrame:
     """Safe division: ``a / (b + eps * sign(b))``.
 
     Where ``b == 0`` exactly (or NaN), result is NaN — never silently inf or 0.
-    Accepts both DataFrame and Series inputs.
     """
-    if isinstance(b, (int, float)):
-        denom = b if abs(b) > eps else np.nan
-        result = a / denom
-        if isinstance(result, pd.Series):
-            return result.replace([np.inf, -np.inf], np.nan)
-        return result.replace([np.inf, -np.inf], np.nan)
-
-    if isinstance(a, pd.Series) or isinstance(b, pd.Series):
-        b_safe = b.replace(0, np.nan) if isinstance(b, (pd.Series, pd.DataFrame)) else b
-        result = a / b_safe
-        return result.replace([np.inf, -np.inf], np.nan)
-
     a = _as_float(a)
     b = _as_float(b)
     sign = np.sign(b.to_numpy(dtype=np.float64, na_value=np.nan))

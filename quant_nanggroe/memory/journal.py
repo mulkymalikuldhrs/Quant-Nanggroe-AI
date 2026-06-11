@@ -120,19 +120,18 @@ class TradeJournal:
         trade["status"] = "closed"
         trade["notes"] = notes
 
-        quantity = trade["entry_quantity"]
-
         if pnl is not None:
             trade["pnl"] = pnl
         else:
             entry_price = trade["entry_price"]
+            quantity = trade["entry_quantity"]
             side = trade["side"]
             if side == "buy":
                 trade["pnl"] = (price - entry_price) * quantity
             else:
                 trade["pnl"] = (entry_price - price) * quantity
 
-        if trade["entry_price"] > 0 and quantity > 0:
+        if trade["entry_price"] > 0:
             trade["pnl_pct"] = (trade["pnl"] / (trade["entry_price"] * quantity)) * 100
 
         logger.info(f"Recorded exit: {trade['trade_id']} {symbol} @ {price}, PnL={trade['pnl']}")

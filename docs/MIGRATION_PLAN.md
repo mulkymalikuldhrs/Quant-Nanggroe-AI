@@ -1,626 +1,422 @@
 # Quant Nanggroe AI — Migration Plan
 
-**Version 4.0.0 | Step-by-Step Migration Guide**
+**Version 4.0.0 | 5-Phase Step-by-Step Migration**
 
-> This document provides a detailed step-by-step migration plan for consolidating 20+ repositories into the Quant Nanggroe AI monorepo, covering each phase, rollback procedures, and testing requirements.
+> 5-phase migration plan with tasks, validation criteria, and rollback procedures for consolidating 21 repositories into a single production-grade monorepo.
 
 ---
 
 ## Table of Contents
 
 1. [Migration Overview](#1-migration-overview)
-2. [Phase 1: Foundation (Complete)](#2-phase-1-foundation-complete)
-3. [Phase 2: Core Engines (Complete)](#3-phase-2-core-engines-complete)
-4. [Phase 3: Agent Implementations (In Progress)](#4-phase-3-agent-implementations-in-progress)
-5. [Phase 4: Exchange Integration (Planned)](#5-phase-4-exchange-integration-planned)
-6. [Phase 5: Production Hardening (Planned)](#6-phase-5-production-hardening-planned)
+2. [Phase 1: Foundation & Subtree Merge](#2-phase-1-foundation--subtree-merge)
+3. [Phase 2: Code Integration & De-duplication](#3-phase-2-code-integration--de-duplication)
+4. [Phase 3: Dependency Resolution & Testing](#4-phase-3-dependency-resolution--testing)
+5. [Phase 4: Event Bus & API Integration](#5-phase-4-event-bus--api-integration)
+6. [Phase 5: Production Readiness Validation](#6-phase-5-production-readiness-validation)
 7. [Rollback Procedures](#7-rollback-procedures)
-8. [Testing Requirements per Phase](#8-testing-requirements-per-phase)
-9. [Migration Checklist](#9-migration-checklist)
-10. [Risk Mitigation During Migration](#10-risk-mitigation-during-migration)
+8. [Migration Timeline](#8-migration-timeline)
 
 ---
 
 ## 1. Migration Overview
 
-### Migration Philosophy
+### Migration Principles
 
-1. **Never break the build** — Every phase must leave the system in a working state
-2. **Tests are the safety net** — All 2504+ tests must pass at every step
-3. **Incremental migration** — Small, reviewable changes
-4. **Rollback always possible** — Every change can be reverted
-5. **Constitutional limits never compromised** — Risk engine integrity at all times
+1. **Never break the build** — Every phase must result in a compiling, passing system
+2. **Incremental integration** — Merge one repo at a time, validate after each
+3. **Preserve history** — Use `git subtree` to retain commit history
+4. **Fail fast** — Surface import errors eagerly at startup, not at runtime
+5. **Constitutional limits are immutable** — Risk constants must match across all modules
 
-### Migration Statistics
+### Pre-Migration Checklist
 
-| Phase | Status | Repos | Modules | Tests | Duration |
-|---|---|---|---|---|---|
-| Phase 1: Foundation | ✅ Complete | 4 | 60+ | 800+ | 4 weeks |
-| Phase 2: Core Engines | ✅ Complete | 4 | 50+ | 700+ | 3 weeks |
-| Phase 3: Agent Implementations | 🔄 In Progress | 4 | 40+ | 500+ | 3 weeks |
-| Phase 4: Exchange Integration | 📋 Planned | 4 | 30+ | 300+ | 2 weeks |
-| Phase 5: Production Hardening | 📋 Planned | 5 | 34+ | 204+ | 2 weeks |
+- [x] Create target branch from `main`
+- [x] Verify all existing tests pass (175+ tests)
+- [ ] Complete dependency audit across all 21 repos
+- [ ] Generate dependency graph before any code changes
+- [ ] Backup all repository data
+
+### Repository Classification
+
+| Classification | Count | Action |
+|---------------|-------|--------|
+| Active — Full Integration | 16 | Merge code into `quant_nanggroe/` |
+| Research — Reference Only | 2 | Archive in `contrib/` |
+| Deprecated — Frozen | 3 | Freeze in `contrib/` with DEPRECATED.md |
 
 ---
 
-## 2. Phase 1: Foundation (Complete)
+## 2. Phase 1: Foundation & Subtree Merge
 
-**Timeline**: Weeks 1-4
-**Status**: ✅ Complete
-**Repositories**: AutoTrader, HermesQuantOS, TradingAgents, Vibe-Trading
+**Timeline: Week 1-2**
+**Goal: Establish clean monorepo with all repos merged as subtrees**
 
-### Step 1.1: Monorepo Structure Setup
+### 2.1 Tasks
 
-**Objective**: Create the `quant_nanggroe` package structure.
+| Task ID | Task | Priority | Status | Validation |
+|---------|------|----------|--------|------------|
+| P1-001 | Create monorepo branch from `main` | P0 | Pending | Branch exists |
+| P1-002 | Set up git remotes for all 21 repos | P0 | Pending | All remotes configured |
+| P1-003 | Merge P0 repos (langgraph-trading, risk-guardian, alpha-factors, api-server) | P0 | Pending | `git subtree add` succeeds |
+| P1-004 | Merge P1 repos (HermesQuantOS, market-data, execution-brokers, TradingAgents, ai-hedge-fund) | P1 | Pending | `git subtree add` succeeds |
+| P1-005 | Merge P2 repos (pressure-engine, decision-engine, vibe-trading, vector-memory, shared-types) | P2 | Pending | `git subtree add` succeeds |
+| P1-006 | Merge P3 repos (SolSniperX, Kronos, prediction-markets, dexter, OpenAlice) | P3 | Pending | `git subtree add` succeeds |
+| P1-007 | Merge deprecated repos (FinceptTerminal, crewai-agents, autogen-workflows) | P3 | Pending | `git subtree add` succeeds |
+| P1-008 | Consolidate `pyproject.toml` | P0 | Pending | `poetry install` succeeds |
+| P1-009 | Consolidate `package.json` | P1 | Pending | `npm install` succeeds |
+| P1-010 | Verify directory structure matches target | P0 | Pending | `ls -R` matches spec |
 
-**Tasks**:
-- [x] Create package directory structure
-- [x] Set up `pyproject.toml` with dependencies
-- [x] Configure ruff, mypy, pytest
-- [x] Set up CI pipeline
-- [x] Create initial `__init__.py` files
+### 2.2 Detailed Steps — Week 1
 
-**Validation**:
+```
+Day 1-2: Foundation
+  ├── Create branch `monorepo-migration` from main
+  ├── Configure git remotes for all 21 repos
+  ├── Execute `git subtree add` for P0 repos (4 repos)
+  ├── Run `poetry install` and resolve dependency errors
+  └── Run `pytest` for each P0 package
+
+Day 3-4: P1 Repos
+  ├── Execute `git subtree add` for P1 repos (5 repos)
+  ├── Resolve any merge conflicts
+  ├── Update pyproject.toml with new dependencies
+  └── Run `pytest` for each P1 package
+
+Day 5: P2 + P3 Repos
+  ├── Execute `git subtree add` for P2 repos (5 repos)
+  ├── Execute `git subtree add` for P3 repos (5 repos)
+  ├── Execute `git subtree add` for deprecated repos (3 repos)
+  └── Run `poetry install` and verify
+```
+
+### 2.3 Detailed Steps — Week 2
+
+```
+Day 6-7: Import Path Normalization
+  ├── Update all `import xxx` → `from quant_nanggroe.xxx import ...`
+  ├── Fix circular imports using `TYPE_CHECKING` pattern
+  ├── Remove old `sys.path` hacks from legacy repos
+  └── Verify all imports resolve: `python -c "from quant_nanggroe import *"`
+
+Day 8-9: Configuration Consolidation
+  ├── Merge all config files into single Settings hierarchy
+  ├── Remove per-repo `config.py` files
+  ├── Update environment variable prefixes
+  └── Verify Settings loads: `python -c "from quant_nanggroe.config import get_settings"`
+
+Day 10: Validation
+  ├── Run full test suite: `pytest tests/ -v`
+  ├── Run type checking: `mypy src/`
+  ├── Run linting: `ruff check .`
+  └── Create checkpoint commit
+```
+
+### 2.4 Exit Criteria
+
+- [ ] All 21 repos merged as subtrees
+- [ ] `poetry install` completes in clean Python 3.12 environment
+- [ ] `python -c "from quant_nanggroe import *"` succeeds
+- [ ] No import errors across the codebase
+- [ ] `pytest` passes for all existing tests (≥175 tests)
+
+---
+
+## 3. Phase 2: Code Integration & De-duplication
+
+**Timeline: Week 3-4**
+**Goal: Extract useful code from subtrees, remove duplicates, normalize patterns**
+
+### 3.1 Tasks
+
+| Task ID | Task | Priority | Status | Validation |
+|---------|------|----------|--------|------------|
+| P2-001 | Extract `TradingGraph` from langgraph-trading → `agents/graph.py` | P0 | Pending | Graph compiles + runs |
+| P2-002 | Extract `RiskCheckGate` from risk-guardian → `engine/risk/checks.py` | P0 | Pending | 9-checkpoint test passes |
+| P2-003 | Extract `FactorRegistry` from alpha-factors → `engine/factors/registry.py` | P0 | Pending | `registry.health()["loaded"] >= 400` |
+| P2-004 | Extract `ExchangeFactory` from execution-brokers → `exchange/factory.py` | P0 | Pending | `factory.create("binance")` works |
+| P2-005 | Extract `CouncilDebate` from TradingAgents → `agents/council/debate.py` | P1 | Pending | Debate runs without errors |
+| P2-006 | Extract stress test from ai-hedge-fund → `engine/risk/manager.py` | P1 | Pending | `rm.stress_test(returns)` returns dict |
+| P2-007 | De-duplicate market data tools | P1 | Pending | Single `MarketDataTool` class |
+| P2-008 | De-duplicate sentiment tools | P2 | Pending | Single `SentimentTool` class |
+| P2-009 | De-duplicate risk checks | P0 | Pending | Single `RiskCheckGate` with 9 checkpoints |
+| P2-010 | De-duplicate exchange connectors | P0 | Pending | Single `CCXTBroker` + `ExchangeFactory` |
+| P2-011 | De-duplicate config loading | P1 | Pending | Single `Settings` class |
+| P2-012 | De-duplicate logging setup | P2 | Pending | Single `structlog` config |
+| P2-013 | De-duplicate type definitions | P0 | Pending | Single `AgentState` + Pydantic models |
+| P2-014 | Port Vibe-Trading factors → `engine/factors/academic.py` | P2 | Pending | Factors register in `FactorRegistry` |
+| P2-015 | Port Polymarket adapter → `exchange/polymarket_broker.py` | P3 | Pending | Broker creates + validates |
+
+### 3.2 De-duplication Execution Order
+
+```
+Step 1: Type System Unification
+  ├── Merge all type definitions into agents/state.py
+  ├── Remove duplicate Pydantic models from contrib/
+  ├── All other packages import from quant_nanggroe.agents.state
+  └── Validate: mypy passes with no "duplicate definition" errors
+
+Step 2: Engine Consolidation
+  ├── Keep Python risk engine (engine/risk/)
+  ├── Keep Python factor engine (engine/factors/)
+  ├── Remove TypeScript engine duplicates (if any)
+  ├── Verify test parity between implementations
+  └── Validate: pytest passes for all engine tests
+
+Step 3: Exchange Layer Unification
+  ├── Keep CCXTBroker as the single exchange adapter
+  ├── Keep ExchangeFactory for dynamic creation
+  ├── Remove per-repo ccxt wrappers
+  └── Validate: factory.create() works for all 8 exchanges
+
+Step 4: Tool Consolidation
+  ├── Merge all agent tools into agents/tools/
+  ├── Remove duplicate MarketDataTool, SentimentTool, etc.
+  └── Validate: all agent tools accessible from registry
+```
+
+### 3.3 Exit Criteria
+
+- [ ] No duplicate class definitions across the codebase
+- [ ] `FactorRegistry.health()["loaded"] >= 400` (469 target)
+- [ ] `ExchangeFactory.list_supported_exchanges()` returns 8 exchanges
+- [ ] `RiskCheckGate.evaluate()` runs all 9 checkpoints
+- [ ] `CouncilDebate.run_full_debate()` completes without errors
+- [ ] All imports resolve through `quant_nanggroe.xxx`
+
+---
+
+## 4. Phase 3: Dependency Resolution & Testing
+
+**Timeline: Week 5-6**
+**Goal: Resolve all dependency conflicts, achieve green test suite**
+
+### 4.1 Tasks
+
+| Task ID | Task | Priority | Status | Validation |
+|---------|------|----------|--------|------------|
+| P3-001 | Upgrade Pydantic v1 → v2 across all code | P0 | Pending | `mypy` passes |
+| P3-002 | Upgrade SQLAlchemy 1.x → 2.x | P1 | Pending | DB queries work |
+| P3-003 | Upgrade numpy to 2.1+ | P1 | Pending | Factor computation works |
+| P3-004 | Upgrade ccxt to 4.4+ | P1 | Pending | Exchange connections work |
+| P3-005 | Upgrade langchain to 0.3+ | P1 | Pending | LLM calls work |
+| P3-006 | Upgrade pandas to 2.2+ | P2 | Pending | Data processing works |
+| P3-007 | Fix all `mypy --strict` errors | P0 | Pending | `mypy` returns 0 errors |
+| P3-008 | Fix all `ruff check` violations | P0 | Pending | `ruff` returns 0 violations |
+| P3-009 | Write missing tests for new integrations | P1 | Pending | Coverage ≥ 80% |
+| P3-010 | Validate constitutional limits match across modules | P0 | Pending | `constants.py` == `state.py` values |
+| P3-011 | Run full integration test | P0 | Pending | End-to-end pipeline works |
+
+### 4.2 Dependency Upgrade Order
+
+```
+Phase 3a: Core Dependencies
+  ├── Upgrade Pydantic (most breaking changes)
+  ├── Fix all @validator → @field_validator
+  ├── Fix all class Config → model_config = ConfigDict(...)
+  └── Run pytest after each upgrade
+
+Phase 3b: Data Dependencies
+  ├── Upgrade numpy, pandas
+  ├── Fix any deprecated numpy API calls
+  └── Verify factor computations produce same results
+
+Phase 3c: API Dependencies
+  ├── Upgrade ccxt, fastapi, sqlalchemy
+  ├── Fix SQLAlchemy 1→2 query patterns
+  └── Verify API endpoints work
+
+Phase 3d: AI Dependencies
+  ├── Upgrade langchain, langgraph
+  ├── Fix any deprecated LangChain API calls
+  └── Verify LLM integration works
+```
+
+### 4.3 Exit Criteria
+
+- [ ] `poetry install` completes without errors in clean env
+- [ ] `pytest` passes across all test suites (≥175 tests + new tests)
+- [ ] `mypy --strict src/` returns 0 errors
+- [ ] `ruff check .` returns 0 violations
+- [ ] Constitutional limits match between `constants.py` and `state.py`
+- [ ] `FactorRegistry.health()["failed"] == 0`
+- [ ] `ExchangeFactory.list_supported_exchanges()` returns 8+ exchanges
+- [ ] End-to-end pipeline runs: symbols → analysis → signal → risk → execution
+
+---
+
+## 5. Phase 4: Event Bus & API Integration
+
+**Timeline: Week 7-8**
+**Goal: Wire dual-bus architecture, API routes, and WebSocket streaming**
+
+### 5.1 Tasks
+
+| Task ID | Task | Priority | Status | Validation |
+|---------|------|----------|--------|------------|
+| P4-001 | Implement Redis execution bus | P0 | Pending | Messages delivered < 10ms |
+| P4-002 | Implement Redis agent reasoning bus | P1 | Pending | Messages delivered < 5s |
+| P4-003 | Wire API routes (6 groups) | P0 | Pending | All endpoints respond |
+| P4-004 | Implement WebSocket streaming | P1 | Pending | Real-time updates work |
+| P4-005 | Implement audit trail (PostgreSQL) | P1 | Pending | All events persisted |
+| P4-006 | Implement structured logging (structlog) | P2 | Pending | All events logged with context |
+| P4-007 | Docker Compose full stack | P0 | Pending | All services start |
+| P4-008 | Frontend builds + connects to API | P1 | Pending | Dashboard loads |
+
+### 5.2 API Route Validation
+
 ```bash
-pip install -e ".[dev]"
-pytest tests/  # Should find and run initial tests
-ruff check quant_nanggroe/
-mypy quant_nanggroe/
+# Health check
+curl http://localhost:8000/health
+# → {"status": "healthy", "service": "quant-nanggroe-ai"}
+
+# Market data
+curl http://localhost:8000/api/market/ohlcv?symbol=BTCUSDT&timeframe=1h
+
+# Agent status
+curl http://localhost:8000/api/agents/status
+
+# Portfolio state
+curl http://localhost:8000/api/portfolio/state
+
+# Risk status
+curl http://localhost:8000/api/trading/risk-status
 ```
 
-### Step 1.2: State and Type System
+### 5.3 Exit Criteria
 
-**Objective**: Define `AgentState` TypedDict and all supporting models.
-
-**Tasks**:
-- [x] Define `AgentState` TypedDict in `agents/state.py`
-- [x] Define all Pydantic models (Signal, Decision, RiskAssessment, etc.)
-- [x] Define all enumerations (TradeAction, RiskVerdict, AssetClass, etc.)
-- [x] Define constitutional risk limits as hardcoded constants
-- [x] Implement `create_initial_state()` factory
-
-**Source Files**:
-- `quant_nanggroe/agents/state.py` — All state definitions
-- `quant_nanggroe/engine/risk/constants.py` — Risk constants
-
-**Validation**:
-```python
-from quant_nanggroe.agents.state import AgentState, create_initial_state
-state = create_initial_state(["AAPL"], "2025-01-01")
-assert state["symbols"] == ["AAPL"]
-assert state["risk_verdict"] == "VETOED"
-assert state["metadata"]["constitutional_limits"]["override_possible"] is False
-```
-
-### Step 1.3: LangGraph Graph (v1)
-
-**Objective**: Implement the v1 trading graph.
-
-**Tasks**:
-- [x] Create `TradingGraph` class with StateGraph
-- [x] Implement market_analysis node
-- [x] Implement signal_generation node
-- [x] Implement risk_assessment node
-- [x] Implement portfolio_optimization node
-- [x] Implement execution_decision node
-- [x] Implement order_execution node
-- [x] Implement reflection node
-- [x] Implement council_debate node
-- [x] Implement emergency_exit node
-- [x] Add conditional edges for risk routing
-- [x] Add `run()` and `run_stream()` methods
-
-**Source Files**:
-- `quant_nanggroe/agents/graph.py` — v1 trading graph
-
-**Validation**:
-```python
-from quant_nanggroe.agents.graph import TradingGraph
-graph = TradingGraph(llm_provider="openai", deep_think_model="gpt-4o")
-# Note: Requires API key for full test
-# Unit tests verify graph structure without LLM calls
-```
-
-### Step 1.4: Risk Engine Foundation
-
-**Objective**: Port HermesQuantOS risk framework.
-
-**Tasks**:
-- [x] Implement `RiskCheckGate` with 9 checkpoints
-- [x] Implement `KillSwitch` with auto-activation
-- [x] Implement `DrawdownMonitor`
-- [x] Implement `CorrelationMonitor`
-- [x] Implement `VaRCalculator`
-- [x] Implement `KellyCriterion`
-- [x] Implement `RiskManager` top-level class
-- [x] Port constitutional constants
-
-**Source Files**:
-- `quant_nanggroe/engine/risk/constants.py`
-- `quant_nanggroe/engine/risk/checks.py`
-- `quant_nanggroe/engine/risk/kill_switch.py`
-- `quant_nanggroe/engine/risk/drawdown.py`
-- `quant_nanggroe/engine/risk/correlation.py`
-- `quant_nanggroe/engine/risk/var.py`
-- `quant_nanggroe/engine/risk/kelly.py`
-- `quant_nanggroe/engine/risk/manager.py`
-
-**Validation**:
-```python
-from quant_nanggroe.engine.risk.manager import RiskManager
-rm = RiskManager()
-result = rm.check_trade(
-    symbol="AAPL", direction="BUY", lot_size=0.1,
-    entry=150.0, stop_loss=148.0, account_balance=1_000_000
-)
-assert result["verdict"] in ("APPROVED", "VETOED")
-# VETOED if any checkpoint fails (e.g., risk:reward < 1:2)
-```
-
-### Step 1.5: Factor Engine Foundation
-
-**Objective**: Port Vibe-Trading factor zoos.
-
-**Tasks**:
-- [x] Implement `AlphaFactor` base class
-- [x] Implement `FactorMeta` metadata class
-- [x] Implement `FactorHandle` unified wrapper
-- [x] Implement `FactorRegistry` with discovery
-- [x] Port Alpha101 (101 factors)
-- [x] Port GTJA191 (191 factors)
-- [x] Port Qlib158 (158 factors)
-- [x] Port Academic factors
-- [x] Implement technical factors (class-based)
-- [x] Implement fundamental factors (class-based)
-- [x] Implement Barra factors
-- [x] Add output validation (no inf, < 95% NaN)
-- [x] Add thread-safe singleton
-
-**Source Files**:
-- `quant_nanggroe/engine/factors/base.py`
-- `quant_nanggroe/engine/factors/registry.py`
-- `quant_nanggroe/engine/factors/alpha101.py`
-- `quant_nanggroe/engine/factors/gtja191.py`
-- `quant_nanggroe/engine/factors/qlib158.py`
-- `quant_nanggroe/engine/factors/academic.py`
-- `quant_nanggroe/engine/factors/technical.py`
-- `quant_nanggroe/engine/factors/fundamental.py`
-- `quant_nanggroe/engine/factors/barra.py`
-- `quant_nanggroe/engine/factors/pipeline.py`
-
-**Validation**:
-```python
-from quant_nanggroe.engine.factors.registry import get_default_registry
-registry = get_default_registry()
-health = registry.health()
-assert health["loaded"] >= 469
-assert health["failed"] == 0
-```
+- [ ] All 6 API route groups respond to requests
+- [ ] WebSocket delivers real-time agent state updates
+- [ ] Redis execution bus delivers messages in < 10ms
+- [ ] PostgreSQL audit_events table records all state transitions
+- [ ] `docker-compose up` starts all services without errors
+- [ ] Frontend builds and connects to backend
 
 ---
 
-## 3. Phase 2: Core Engines (Complete)
+## 6. Phase 5: Production Readiness Validation
 
-**Timeline**: Weeks 5-7
-**Status**: ✅ Complete
-**Repositories**: AI-Trader, AutoHedge, QuantDinger, SolSniperX
+**Timeline: Week 9-10**
+**Goal: Validate the complete system under realistic conditions**
 
-### Step 2.1: Agent Factory and Base Agent
+### 6.1 Tasks
 
-**Tasks**:
-- [x] Implement `create_llm()` with multi-provider support
-- [x] Implement `AgentFactory` with agent creation
-- [x] Implement base agent class with tool binding
-- [x] Add agent role registration
+| Task ID | Task | Priority | Status | Validation |
+|---------|------|----------|--------|------------|
+| P5-001 | Run 48-hour paper trading session | P0 | Pending | No crashes, orders fill correctly |
+| P5-002 | Validate kill switch activation | P0 | Pending | Kill switch activates on limit breach |
+| P5-003 | Validate 9-checkpoint risk gate | P0 | Pending | All checkpoints VETO invalid trades |
+| P5-004 | Validate council debate mechanism | P1 | Pending | Debate produces structured decisions |
+| P5-005 | Performance benchmark: decision cycle < 2s | P1 | Pending | Measured latency |
+| P5-006 | Performance benchmark: multi-symbol < 5s | P2 | Pending | 5 symbols parallel |
+| P5-007 | Docker security hardening | P1 | Pending | `no-new-privileges`, `cap_drop ALL` |
+| P5-008 | Walk-forward validation (12 months) | P1 | Pending | Sharpe ≥ 1.0 |
+| P5-009 | VaR backtesting (95% confidence) | P1 | Pending | Violation rate < 5% |
+| P5-010 | Stress test (6 scenarios) | P2 | Pending | All scenarios produce results |
 
-### Step 2.2: Researcher Agent
+### 6.2 Paper Trading Validation Checklist
 
-**Tasks**:
-- [x] Port market data analysis from AI-Trader
-- [x] Implement researcher-specific tools
-- [x] Write researcher system prompt
-- [x] Add market data and sentiment tools
+```
+48-Hour Paper Trading Session:
+  ├── Deploy with PaperExchangeBroker
+  ├── Initial capital: $100,000
+  ├── Symbols: BTCUSDT, ETHUSDT, SOLUSDT
+  ├── Monitor:
+  │   ├── Orders submitted and filled correctly
+  │   ├── Stop losses triggered correctly
+  │   ├── Kill switch activates at daily loss limit
+  │   ├── Risk checkpoints VETO invalid trades
+  │   ├── Council debate triggers on low confidence
+  │   └── Factor computation produces valid signals
+  ├── Verify:
+  │   ├── No unhandled exceptions in logs
+  │   ├── All audit events persisted
+  │   ├── WebSocket updates reach frontend
+  │   └── Memory system stores + retrieves episodes
+  └── Document results
+```
 
-### Step 2.3: Solana Module
+### 6.3 Exit Criteria
 
-**Tasks**:
-- [x] Port Jupiter swap aggregator from SolSniperX
-- [x] Port RugCheck token safety from SolSniperX
-- [x] Port wallet management from SolSniperX
-- [x] Port mempool monitoring from SolSniperX
-- [x] Create Solana broker
-
-### Step 2.4: Risk Parity and Hedging
-
-**Tasks**:
-- [x] Port risk parity from AutoHedge
-- [x] Port correlation algorithms from AutoHedge
-- [x] Implement risk parity optimizer
-- [x] Implement mean-variance optimizer
-- [x] Implement equal volatility optimizer
-
-### Step 2.5: Backtest Engine
-
-**Tasks**:
-- [x] Implement core backtesting engine
-- [x] Implement Monte Carlo simulation
-- [x] Implement walk-forward optimization
-- [x] Implement multi-asset engines (equity, crypto, forex, futures)
-- [x] Implement execution simulation (slippage, partial fills)
-- [x] Implement data loaders (yfinance, CCXT)
-- [x] Implement portfolio optimizers
-
----
-
-## 4. Phase 3: Agent Implementations (In Progress)
-
-**Timeline**: Weeks 8-10
-**Status**: 🔄 In Progress
-**Repositories**: FinceptTerminal, OpenAlice, Misi-Screener, PromptForgeAI
-
-### Step 3.1: v2 Graph Architecture
-
-**Tasks**:
-- [x] Implement `TradingGraphV2` with multi-path routing
-- [x] Implement `AssetRouter` node
-- [x] Implement 4 execution paths (crypto, forex, equity, prediction_market)
-- [x] Implement `PositionSizer` node with ATR + TP1/TP2/TP3
-- [x] Implement `PortfolioValidator` node
-- [x] Implement `SmartExecutor` node
-- [x] Implement `HumanCheckpoint` node
-- [x] Add portfolio validation conditional edges
-- [x] Add human checkpoint conditional edges
-
-### Step 3.2: Crypto Agent
-
-**Tasks**:
-- [x] Implement crypto agent with Solana tools
-- [x] Write crypto-specific system prompt
-- [x] Add on-chain analysis tools
-- [x] Add DEX monitoring capabilities
-
-### Step 3.3: Forex Agent
-
-**Tasks**:
-- [x] Implement forex agent with FX-specific tools
-- [x] Write forex-specific system prompt
-- [x] Add carry trade calculator
-- [x] Add central bank policy tracker
-
-### Step 3.4: Macro Agent
-
-**Tasks**:
-- [x] Implement macro agent for regime detection
-- [x] Write macro-specific system prompt
-- [x] Add FRED economic data tools
-- [x] Add market regime classification
-
-### Step 3.5: Council Debate Enhancement
-
-**Tasks**:
-- [x] Port bull/bear debate from TradingAgents
-- [x] Port risk debate (conservative/neutral/aggressive)
-- [x] Implement council voting with weighted scores
-- [x] Add consensus threshold and human review trigger
-
-### Step 3.6: API Layer (from FinceptTerminal)
-
-**Tasks**:
-- [x] Implement FastAPI application
-- [x] Add CORS middleware
-- [x] Implement market data route
-- [x] Implement trading route
-- [x] Implement agents route
-- [x] Implement backtest route
-- [x] Implement portfolio route
-- [x] Implement WebSocket route
-- [x] Add health check endpoint
-- [x] Add global exception handler
-
-### Step 3.7: Remaining Agent Prompts (from PromptForgeAI)
-
-**Tasks**:
-- [ ] Optimize researcher prompts
-- [ ] Optimize strategist prompts
-- [ ] Optimize risk agent prompts
-- [ ] Add chain-of-thought patterns
-- [ ] A/B test prompt variations
-
----
-
-## 5. Phase 4: Exchange Integration (Planned)
-
-**Timeline**: Weeks 11-12
-**Status**: 📋 Planned
-**Repositories**: Clipper-AI, Kronos, Pentaract, ZeroInject
-
-### Step 4.1: Exchange Factory Enhancement
-
-**Tasks**:
-- [ ] Add remaining exchange configurations
-- [ ] Implement exchange health monitoring
-- [ ] Add automatic failover between exchanges
-- [ ] Implement rate limit management per exchange
-- [ ] Add exchange-specific error handling
-
-### Step 4.2: Smart Order Routing Enhancement
-
-**Tasks**:
-- [ ] Implement real-time venue scoring with live data
-- [ ] Add liquidity-based routing
-- [ ] Implement TWAP/VWAP order splitting
-- [ ] Add dark pool routing (where available)
-- [ ] Implement cross-exchange arbitrage detection
-
-### Step 4.3: Paper Trading Enhancement
-
-**Tasks**:
-- [ ] Add realistic slippage model
-- [ ] Add partial fill simulation
-- [ ] Add order rejection simulation
-- [ ] Add latency simulation
-- [ ] Implement paper trading dashboard
-
-### Step 4.4: Exchange Testing
-
-**Tasks**:
-- [ ] Integration tests for each exchange
-- [ ] Rate limit testing
-- [ ] Error handling testing
-- [ ] WebSocket reconnection testing
-- [ ] Order lifecycle testing
-
----
-
-## 6. Phase 5: Production Hardening (Planned)
-
-**Timeline**: Weeks 13-14
-**Status**: 📋 Planned
-**Repositories**: Crucix, QuantMuse, Dhaher-Corporation, MoneyPrinterTurbo, Trading-Plan-AI-Interactive
-
-### Step 5.1: Security Hardening
-
-**Tasks**:
-- [ ] Implement API key authentication
-- [ ] Add JWT token management
-- [ ] Implement role-based access control
-- [ ] Add credential leak prevention
-- [ ] Implement audit logging
-- [ ] Add rate limiting per user
-
-### Step 5.2: Monitoring and Observability
-
-**Tasks**:
-- [ ] Add Prometheus metrics export
-- [ ] Add structured logging (JSON format)
-- [ ] Implement health check endpoints
-- [ ] Add performance profiling
-- [ ] Implement alert rules for risk limits
-
-### Step 5.3: Performance Optimization
-
-**Tasks**:
-- [ ] Profile and optimize factor computation
-- [ ] Add caching for frequently computed factors
-- [ ] Optimize database queries
-- [ ] Add connection pooling for exchanges
-- [ ] Implement async exchange operations
-
-### Step 5.4: Documentation
-
-**Tasks**:
-- [ ] Complete API documentation (OpenAPI)
-- [ ] Write deployment guide
-- [ ] Write operations runbook
-- [ ] Write incident response procedures
-- [ ] Add inline code documentation
-
-### Step 5.5: Deployment Preparation
-
-**Tasks**:
-- [ ] Create Docker images
-- [ ] Set up Kubernetes manifests
-- [ ] Configure CI/CD pipeline
-- [ ] Set up staging environment
-- [ ] Create production deployment playbook
+- [ ] Paper trading runs continuously for 48 hours without crash
+- [ ] Kill switch activates correctly when daily loss limit is reached
+- [ ] All 9 risk checkpoints VETO invalid trades correctly
+- [ ] Council debate produces structured decisions
+- [ ] Single-symbol decision cycle completes in < 2 seconds
+- [ ] Walk-forward Sharpe ratio ≥ 1.0
+- [ ] VaR 95% confidence: realized losses exceed VaR < 5% of the time
+- [ ] Docker containers run with security hardening
 
 ---
 
 ## 7. Rollback Procedures
 
-### Rollback Principles
+### 7.1 Per-Phase Rollback
 
-1. **Every merge is a git commit** — Can always `git revert`
-2. **Tests are the safety net** — If tests fail, don't merge
-3. **Feature flags for risky changes** — Can disable without revert
-4. **Database migrations are reversible** — Always provide down migration
+| Phase | Rollback Strategy |
+|-------|------------------|
+| Phase 1 | `git revert` the subtree merge commit; fix conflicts in separate branch |
+| Phase 2 | `git checkout` specific files from pre-dedup commit |
+| Phase 3 | `poetry lock --no-update` to restore previous lock file |
+| Phase 4 | Disable Redis bus; fall back to direct API calls |
+| Phase 5 | Stop paper trading; review audit trail for root cause |
 
-### Rollback Procedures by Phase
-
-| Phase | Rollback Trigger | Procedure |
-|---|---|---|
-| Phase 1 | Core state/types broken | `git revert` to last working commit |
-| Phase 2 | Factor/risk engine broken | Disable new factors, fall back to v1 |
-| Phase 3 | Agent outputs invalid | Disable failing agent, use fallback |
-| Phase 4 | Exchange connection broken | Route to paper broker, log error |
-| Phase 5 | Security vulnerability | Disable affected endpoint, patch |
-
-### Emergency Rollback
+### 7.2 Emergency Rollback Script
 
 ```bash
-# Find the last working commit
-git log --oneline -10
+#!/bin/bash
+# rollback_migration.sh
+set -euo pipefail
 
-# Revert to that commit
-git revert <commit-hash>
+echo "CRITICAL BUILD FAILURE. INITIALIZING ROLLBACK..."
 
-# Or, hard reset (destructive)
-git reset --hard <commit-hash>
+# Reset to pre-merge state
+git reset --hard HEAD
+git clean -fd
 
-# Re-run tests to verify
-pytest tests/ -x
+# Remove temporary remotes
+for REMOTE in $(git remote | grep "^temp_"); do
+  git remote remove "$REMOTE"
+done
+
+# Force checkout last known good commit
+git checkout -B stable-recovery origin/main
+
+echo "ROLLBACK COMPLETE. System returned to stable recovery point."
 ```
 
-### Kill Switch Rollback
+### 7.3 Rollback Triggers
 
-If the kill switch triggers incorrectly:
-1. Review the trigger reason in logs
-2. Verify the PnL/drawdown calculations
-3. If false positive, manual reset via `kill_switch.deactivate()`
-4. Adjust thresholds only via code change (constitutional)
-
----
-
-## 8. Testing Requirements per Phase
-
-### Test Categories
-
-| Category | Description | Coverage Target |
-|---|---|---|
-| **Unit tests** | Individual function/class testing | 90%+ |
-| **Integration tests** | Multi-component testing | 80%+ |
-| **End-to-end tests** | Full pipeline testing | Key scenarios |
-| **Performance tests** | Latency/throughput testing | Benchmarks |
-| **Security tests** | Vulnerability scanning | Critical paths |
-
-### Phase-Specific Test Requirements
-
-#### Phase 1 Tests
-
-| Test | Count | Description |
-|---|---|---|
-| State model tests | 50+ | AgentState, all Pydantic models |
-| Risk engine tests | 100+ | 9 checkpoints, kill switch, VaR, Kelly |
-| Factor tests | 200+ | All 469+ factors compute correctly |
-| Graph structure tests | 30+ | Nodes, edges, conditional routing |
-
-#### Phase 2 Tests
-
-| Test | Count | Description |
-|---|---|---|
-| Agent factory tests | 20+ | Agent creation, LLM routing |
-| Researcher agent tests | 30+ | Market analysis, tool usage |
-| Solana module tests | 40+ | Jupiter, RugCheck, wallet |
-| Backtest engine tests | 100+ | Multi-asset, execution simulation |
-
-#### Phase 3 Tests
-
-| Test | Count | Description |
-|---|---|---|
-| v2 graph tests | 50+ | Multi-path routing, position sizing |
-| Crypto/Forex agent tests | 40+ | Asset-specific analysis |
-| Council debate tests | 30+ | Bull/bear, risk debate, voting |
-| API endpoint tests | 50+ | All routes, WebSocket |
-
-#### Phase 4 Tests
-
-| Test | Count | Description |
-|---|---|---|
-| Exchange integration tests | 60+ | All 10 exchanges |
-| Smart routing tests | 30+ | Venue scoring, order routing |
-| Paper trading tests | 20+ | Realistic simulation |
-| Failover tests | 20+ | Exchange failover scenarios |
-
-#### Phase 5 Tests
-
-| Test | Count | Description |
-|---|---|---|
-| Security tests | 40+ | Auth, key vault, audit |
-| Performance tests | 30+ | Factor computation, API latency |
-| Deployment tests | 20+ | Docker, Kubernetes |
-| End-to-end tests | 20+ | Full production scenarios |
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific category
-pytest tests/ -m "not slow" -v
-pytest tests/ -m integration -v
-
-# Run with coverage
-pytest tests/ --cov=quant_nanggroe --cov-report=html
-
-# Run specific module
-pytest tests/test_risk.py -v
-pytest tests/test_factors.py -v
-
-# Type checking
-mypy quant_nanggroe/
-
-# Linting
-ruff check quant_nanggroe/
-```
+| Trigger | Action |
+|---------|--------|
+| `poetry install` fails | Rollback to previous `pyproject.toml` + `poetry.lock` |
+| `pytest` failure rate > 20% | Rollback to last passing commit |
+| Import cycle detected | Rollback to pre-import-normalization commit |
+| Constitutional limits mismatch | STOP. Fix immediately. No rollback — this is a safety issue. |
+| API endpoint returns 500 | Rollback to previous API commit |
+| Paper trading crashes | Rollback to last stable build |
 
 ---
 
-## 9. Migration Checklist
+## 8. Migration Timeline
 
-### Pre-Migration
+| Phase | Week | Key Milestone | Risk Level | Go/No-Go |
+|-------|------|---------------|------------|----------|
+| Phase 1 | 1-2 | All subtrees merged, imports resolve | Medium (dependency conflicts) | All exit criteria met |
+| Phase 2 | 3-4 | Code integrated, duplicates removed | Medium (breaking changes) | No duplicate classes |
+| Phase 3 | 5-6 | All tests green, type checking passes | High (Pydantic v1→v2) | `mypy --strict` passes |
+| Phase 4 | 7-8 | API + event bus operational | Low (well-understood patterns) | All API endpoints work |
+| Phase 5 | 9-10 | Paper trading validated | Medium (real conditions) | 48-hour session passes |
 
-- [ ] Backup all source repositories
-- [ ] Create migration branch
-- [ ] Set up CI pipeline
-- [ ] Review all dependencies
-- [ ] Create test plan
+### Phase Transition Criteria
 
-### During Migration
-
-- [ ] All tests pass at every step
-- [ ] No circular imports introduced
-- [ ] Constitutional limits verified
-- [ ] Documentation updated
-- [ ] Code reviewed
-
-### Post-Migration
-
-- [ ] Full test suite passes (2504+)
-- [ ] Type checking passes (mypy)
-- [ ] Linting passes (ruff)
-- [ ] Performance benchmarks met
-- [ ] Security scan clean
-- [ ] API backward compatible
-- [ ] Documentation complete
+Each phase transition requires:
+1. **All exit criteria met** — No partial completions
+2. **No open P0/P1 bugs** — Critical issues must be resolved
+3. **Test coverage ≥ 80%** — For the phase's deliverables
+4. **Security review passed** — For infrastructure changes
+5. **Documentation updated** — All changes reflected in docs/
 
 ---
 
-## 10. Risk Mitigation During Migration
-
-### Migration Risks
-
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| **Breaking existing tests** | Medium | High | Run full test suite after every change |
-| **Circular imports** | Medium | Medium | Check imports with every module addition |
-| **Data model conflicts** | High | High | Unified AgentState TypedDict |
-| **Dependency version conflicts** | Medium | Medium | Pin all versions in pyproject.toml |
-| **Performance regression** | Low | High | Benchmark after every phase |
-| **Security vulnerability** | Low | Critical | Security scan after every phase |
-| **Risk engine bypass** | Very Low | Critical | Constitutional limits are hardcoded |
-
-### Continuous Validation
-
-Every commit must pass:
-
-```bash
-# 1. Lint
-ruff check quant_nanggroe/
-
-# 2. Type check
-mypy quant_nanggroe/
-
-# 3. Test
-pytest tests/ -x --tb=short
-
-# 4. Security
-python -m quant_nanggroe.security.credential_inference
-
-# 5. Factor health
-python -c "from quant_nanggroe.engine.factors.registry import get_default_registry; print(get_default_registry().health())"
-```
-
----
-
-© 2025-2026 Quant Nanggroe AI | Migration Plan v4.0.0
+*© 2025-2026 Quant Nanggroe AI | Migration Plan v4.0.0*

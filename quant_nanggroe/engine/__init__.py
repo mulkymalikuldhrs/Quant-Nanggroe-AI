@@ -10,6 +10,7 @@ Provides the complete engine layer:
 - Risk management (constitutional limits)
 - Backtesting (walk-forward, Monte Carlo)
 - Execution (broker adapters)
+- LLM Router (multi-provider failover with cost tracking)
 """
 
 # ── Core Engine Components ─────────────────────────────────────────────
@@ -51,6 +52,11 @@ def __getattr__(name: str):
         "CorrelationMonitor": ".risk.correlation",
         "RiskCheckGate": ".risk.checks",
         "KillSwitch": ".risk.kill_switch",
+        # LLM Router
+        "LLMRouter": ".llm_router",
+        "LLMProvider": ".llm_router",
+        "ModelTier": ".llm_router",
+        "get_llm_router": ".llm_router",
     }
     if name in _lazy_imports:
         import importlib
@@ -75,4 +81,6 @@ __all__ = [
     "RiskManager", "KellyCriterion", "KellyMethod", "KellyParameters", "KellyResult",
     "VaRCalculator", "RiskParityOptimizer", "PositionSizer",
     "DrawdownMonitor", "CorrelationMonitor", "RiskCheckGate", "KillSwitch",
+    # LLM Router
+    "LLMRouter", "LLMProvider", "ModelTier", "get_llm_router",
 ]

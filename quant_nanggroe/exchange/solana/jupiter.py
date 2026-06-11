@@ -1,4 +1,4 @@
-"""Jupiter V6 Swap Integration — Quotes, execution, price impact, token management.
+"""Jupiter V6 Swap Integration — Quotes, execution, price impact.
 
 Provides a client for the Jupiter V6 API (https://quote-api.jup.ag/v6)
 to fetch swap quotes and execute token swaps on Solana.
@@ -10,10 +10,6 @@ Features
 * Price impact estimation
 * Route computation and comparison
 * Support for priority fees and compute unit limits
-* Token price fetching via Jupiter price API
-* SPL token account creation and management
-* Transaction simulation before sending
-* Minimum output validation with slippage protection
 
 Security
 --------
@@ -38,17 +34,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 JUPITER_V6_BASE_URL = "https://quote-api.jup.ag/v6"
-JUPITER_PRICE_URL = "https://price.jup.ag/v6"
 SOL_MINT = "So11111111111111111111111111111111111111112"
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-USDT_MINT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
-
-# Default token decimals
-_DEFAULT_DECIMALS: Dict[str, int] = {
-    SOL_MINT: 9,
-    USDC_MINT: 6,
-    USDT_MINT: 6,
-}
 
 
 # ---------------------------------------------------------------------------
@@ -145,8 +132,6 @@ class JupiterSwapResult(BaseModel):
         Slot number of the confirmed transaction.
     fee:
         Transaction fee paid (lamports).
-    minimum_output_received:
-        Minimum output guaranteed by slippage.
     """
 
     signature: str
@@ -157,59 +142,6 @@ class JupiterSwapResult(BaseModel):
     status: str = "pending"
     slot: Optional[int] = None
     fee: int = 0
-    minimum_output_received: str = "0"
-
-    model_config = {"from_attributes": True}
-
-
-class TokenPrice(BaseModel):
-    """Token price from Jupiter Price API.
-
-    Attributes
-    ----------
-    mint:
-        Token mint address.
-    price_usd:
-        Price in USD.
-    price_sol:
-        Price in SOL.
-    last_updated:
-        Timestamp of the price data.
-    """
-
-    mint: str
-    price_usd: Optional[float] = None
-    price_sol: Optional[float] = None
-    last_updated: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
-
-    model_config = {"from_attributes": True}
-
-
-class TokenInfo(BaseModel):
-    """Token information from Jupiter token list.
-
-    Attributes
-    ----------
-    mint:
-        Token mint address.
-    symbol:
-        Token symbol (e.g. ``"SOL"``).
-    name:
-        Token name (e.g. ``"Solana"``).
-    decimals:
-        Token decimals.
-    logo_uri:
-        URI for the token logo.
-    tags:
-        Jupiter tags (e.g. ``["verified"]``).
-    """
-
-    mint: str
-    symbol: str = ""
-    name: str = ""
-    decimals: int = 9
-    logo_uri: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 
@@ -219,7 +151,7 @@ class TokenInfo(BaseModel):
 # ---------------------------------------------------------------------------
 
 class JupiterV6Client:
-    """Jupiter V6 API client for swap quotes, execution, and token management.
+    """Jupiter V6 API client for swap quotes and execution.
 
     Parameters
     ----------
@@ -229,8 +161,6 @@ class JupiterV6Client:
         Jupiter V6 API base URL. Defaults to the public endpoint.
     timeout:
         HTTP request timeout in seconds.
-    default_slippage_bps:
-        Default slippage tolerance in basis points.
 
     Examples
     --------
@@ -250,25 +180,18 @@ class JupiterV6Client:
         rpc_url: str = "https://api.mainnet-beta.solana.com",
         api_url: str = JUPITER_V6_BASE_URL,
         timeout: int = 30,
-        default_slippage_bps: int = 50,
     ) -> None:
         self._rpc_url = rpc_url
         self._api_url = api_url.rstrip("/")
         self._timeout = timeout
-        self._default_slippage_bps = default_slippage_bps
         self._http_client: Optional[httpx.AsyncClient] = None
-        self._token_list_cache: Optional[Dict[str, TokenInfo]] = None
-        self._token_list_cache_ts: float = 0.0
 
     # ----- HTTP client management -----
 
     async def _get_http(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
         if self._http_client is None or self._http_client.is_closed:
-            self._http_client = httpx.AsyncClient(
-                timeout=self._timeout,
-                headers={"Content-Type": "application/json"},
-            )
+            self._http_client = httpx.AsyncClient(timeout=self._timeout)
         return self._http_client
 
     async def close(self) -> None:
@@ -284,11 +207,10 @@ class JupiterV6Client:
         input_mint: str,
         output_mint: str,
         amount: int,
-        slippage_bps: Optional[int] = None,
+        slippage_bps: int = 50,
         only_direct_routes: bool = False,
         as_legacy_transaction: bool = False,
         platform_fee_bps: int = 0,
-        max_accounts: Optional[int] = None,
     ) -> JupiterQuote:
         """Fetch a swap quote from Jupiter V6.
 
@@ -302,15 +224,12 @@ class JupiterV6Client:
             Input amount in the smallest token unit (lamports for SOL).
         slippage_bps:
             Slippage tolerance in basis points (e.g. 50 = 0.5%).
-            Defaults to the client's default_slippage_bps.
         only_direct_routes:
             If ``True``, only return direct routes (no hops).
         as_legacy_transaction:
             If ``True``, use legacy (non-Versioned) transaction format.
         platform_fee_bps:
-            Platform fee in basis points (0-100).
-        max_accounts:
-            Maximum number of accounts allowed in the transaction.
+            Platform fee in basis points (0–100).
 
         Returns
         -------
@@ -319,24 +238,22 @@ class JupiterV6Client:
 
         Raises
         ------
+        httpx.HTTPError
+            On network/API errors.
         ValueError
             If the API returns an error response.
         """
         client = await self._get_http()
-        effective_slippage = slippage_bps if slippage_bps is not None else self._default_slippage_bps
-
-        params: Dict[str, Any] = {
+        params = {
             "inputMint": input_mint,
             "outputMint": output_mint,
             "amount": str(amount),
-            "slippageBps": str(effective_slippage),
+            "slippageBps": str(slippage_bps),
             "onlyDirectRoutes": str(only_direct_routes).lower(),
             "asLegacyTransaction": str(as_legacy_transaction).lower(),
         }
         if platform_fee_bps > 0:
             params["platformFeeBps"] = str(platform_fee_bps)
-        if max_accounts is not None:
-            params["maxAccounts"] = str(max_accounts)
 
         resp = await client.get(f"{self._api_url}/quote", params=params)
         if resp.status_code != 200:
@@ -368,7 +285,7 @@ class JupiterV6Client:
             other_amount_threshold=data.get("otherAmountThreshold", "0"),
             price_impact_pct=float(data.get("priceImpactPct", 0.0)),
             route_plan=route_plan,
-            slippage_bps=effective_slippage,
+            slippage_bps=slippage_bps,
         )
         # Store raw response for swap execution
         quote._raw_response = data
@@ -379,23 +296,19 @@ class JupiterV6Client:
     async def execute_swap(
         self,
         quote: JupiterQuote,
-        wallet: Any,  # SolanaWallet
+        wallet,  # SolanaWallet
         priority_fee_lamports: int = 0,
         max_retries: int = 3,
         confirm_timeout: int = 60,
-        simulate_first: bool = True,
-        skip_preflight: bool = False,
     ) -> JupiterSwapResult:
         """Execute a swap using a previously fetched quote.
 
         Steps:
         1. POST to ``/swap`` with the quote and wallet public key.
         2. Decode the returned transaction (Base64).
-        3. Optionally simulate the transaction.
-        4. Sign with the wallet's keypair.
-        5. Send the signed transaction to the Solana RPC.
-        6. Confirm the transaction.
-        7. Validate minimum output with slippage protection.
+        3. Sign with the wallet's keypair.
+        4. Send the signed transaction to the Solana RPC.
+        5. Confirm the transaction.
 
         Parameters
         ----------
@@ -409,10 +322,6 @@ class JupiterV6Client:
             Maximum number of retries for sending the transaction.
         confirm_timeout:
             Timeout in seconds for transaction confirmation.
-        simulate_first:
-            If ``True``, simulate the transaction before sending.
-        skip_preflight:
-            If ``True``, skip preflight checks when sending.
 
         Returns
         -------
@@ -424,32 +333,20 @@ class JupiterV6Client:
         ValueError
             If the swap API returns an error or the quote has no raw response.
         RuntimeError
-            If the transaction fails to confirm or simulation fails.
+            If the transaction fails to confirm.
         """
         if quote._raw_response is None:
             raise ValueError("Quote has no raw response — re-fetch the quote before swapping")
 
-        # Validate minimum output with slippage
-        out_amount = int(quote.out_amount) if quote.out_amount else 0
-        threshold = int(quote.other_amount_threshold) if quote.other_amount_threshold else 0
-        if threshold > 0 and out_amount > 0:
-            slippage_pct = ((out_amount - threshold) / out_amount) * 100
-            if slippage_pct > 10.0:
-                logger.warning(
-                    "JupiterV6Client: High slippage detected (%.2f%%) — "
-                    "output threshold is significantly below expected output",
-                    slippage_pct,
-                )
-
         client = await self._get_http()
 
         # Step 1: Get swap transaction from Jupiter
-        swap_payload: Dict[str, Any] = {
+        swap_payload = {
             "quoteResponse": quote._raw_response,
             "userPublicKey": wallet.public_key,
             "wrapAndUnwrapSol": True,
             "dynamicComputeUnitLimit": True,
-            "prioritizationFeeLamports": priority_fee_lamports if priority_fee_lamports > 0 else "auto",
+            "prioritizationFeeLamports": priority_fee_lamports or "auto",
         }
 
         resp = await client.post(
@@ -465,7 +362,7 @@ class JupiterV6Client:
         if not swap_transaction_b64:
             raise ValueError("No swap transaction returned from Jupiter")
 
-        # Step 2-6: Decode, optionally simulate, sign, send, confirm
+        # Step 2-4: Decode, sign, and send the transaction
         try:
             from solders.transaction import VersionedTransaction  # type: ignore[import-untyped]
             from solana.rpc.async_api import AsyncClient  # type: ignore[import-untyped]
@@ -478,84 +375,50 @@ class JupiterV6Client:
             # Sign with wallet keypair
             signed_tx = VersionedTransaction(tx.message, [wallet.keypair])
 
+            # Send to Solana RPC
             async with AsyncClient(self._rpc_url) as rpc_client:
-                # Optional: Simulate transaction before sending
-                if simulate_first:
-                    sim_result = await rpc_client.simulate_transaction(
-                        bytes(signed_tx),
-                        sig_verify=True,
-                    )
-                    if sim_result.value and sim_result.value.err:
-                        err_info = sim_result.value.err
-                        logger.error(
-                            "JupiterV6Client: Transaction simulation failed: %s",
-                            err_info,
-                        )
-                        raise RuntimeError(
-                            f"Transaction simulation failed: {err_info}"
-                        )
-                    logger.debug(
-                        "JupiterV6Client: Simulation successful, units consumed: %s",
-                        sim_result.value.units_consumed if sim_result.value else "unknown",
-                    )
-
-                # Send to Solana RPC
                 result = await rpc_client.send_raw_transaction(
                     bytes(signed_tx),
-                    opts={
-                        "skip_preflight": skip_preflight,
-                        "max_retries": max_retries,
-                    },
+                    opts={"skip_preflight": True, "max_retries": max_retries},
                 )
                 signature = str(result.value)
 
                 # Confirm transaction
-                try:
-                    await rpc_client.confirm_transaction(
-                        signature,
-                        commitment=Confirmed,
-                        sleep_seconds=0.5,
-                        last_valid_block_height=None,
-                    )
-                except Exception as confirm_exc:
-                    logger.warning(
-                        "JupiterV6Client: Transaction confirmation error (may still succeed): %s",
-                        confirm_exc,
-                    )
+                await rpc_client.confirm_transaction(
+                    signature,
+                    commitment=Confirmed,
+                    sleep_seconds=0.5,
+                    last_valid_block_height=None,
+                )
 
                 # Get transaction details
                 tx_details = await rpc_client.get_transaction(
                     signature,
                     commitment=Confirmed,
-                    max_supported_transaction_version=0,
                 )
 
                 status = "confirmed"
                 slot = None
                 fee = 0
+                out_amount = quote.out_amount
 
-                if tx_details and tx_details.value:
+                if tx_details.value:
                     slot = tx_details.value.slot
                     meta = tx_details.value.transaction.meta
                     if meta:
-                        fee = meta.fee or 0
+                        fee = meta.fee
                         if meta.err:
                             status = "failed"
-                            logger.error(
-                                "JupiterV6Client: Transaction failed on-chain: %s",
-                                meta.err,
-                            )
 
                 return JupiterSwapResult(
                     signature=signature,
                     input_mint=quote.input_mint,
                     output_mint=quote.output_mint,
                     in_amount=quote.in_amount,
-                    out_amount=quote.out_amount,
+                    out_amount=out_amount,
                     status=status,
                     slot=slot,
                     fee=fee,
-                    minimum_output_received=quote.other_amount_threshold,
                 )
 
         except ImportError as exc:
@@ -563,8 +426,6 @@ class JupiterV6Client:
                 "solana and solders packages are required for swap execution. "
                 "Install with: pip install solana solders"
             ) from exc
-        except RuntimeError:
-            raise
         except Exception as exc:
             logger.error("Swap execution failed: %s", exc)
             raise RuntimeError(f"Swap execution failed: {exc}") from exc
@@ -597,7 +458,7 @@ class JupiterV6Client:
         Returns
         -------
         float
-            Estimated price impact as a percentage (0-100).
+            Estimated price impact as a percentage (0–100).
         """
         in_human = in_amount / (10 ** input_decimals) if in_amount else 0
         out_human = out_amount / (10 ** output_decimals) if out_amount else 0
@@ -646,357 +507,6 @@ class JupiterV6Client:
             slippage_bps=slippage_bps,
         )
         return [quote]
-
-    # ----- Token Prices -----
-
-    async def get_price(
-        self,
-        mint: str,
-        vs_mint: str = USDC_MINT,
-    ) -> TokenPrice:
-        """Fetch the price of a token via Jupiter Price API.
-
-        Parameters
-        ----------
-        mint:
-            Token mint address.
-        vs_mint:
-            Quote token mint (defaults to USDC).
-
-        Returns
-        -------
-        TokenPrice
-            Current token price.
-
-        Raises
-        ------
-        ValueError
-            If the price API returns an error.
-        """
-        client = await self._get_http()
-        params = {
-            "ids": mint,
-            "vsToken": vs_mint,
-        }
-
-        resp = await client.get(f"{JUPITER_PRICE_URL}/price", params=params)
-        if resp.status_code != 200:
-            raise ValueError(f"Jupiter price API error ({resp.status_code}): {resp.text}")
-
-        data = resp.json()
-        price_data = data.get("data", {}).get(mint, {})
-
-        price_usd = None
-        price_sol = None
-
-        if vs_mint == USDC_MINT:
-            price_usd = float(price_data.get("price", 0)) if price_data.get("price") else None
-        elif vs_mint == SOL_MINT:
-            price_sol = float(price_data.get("price", 0)) if price_data.get("price") else None
-
-        # Also try to get SOL price if we got USD price
-        if price_usd is not None and price_sol is None:
-            try:
-                sol_price_data = await self._get_sol_price_usd(client)
-                if sol_price_data and sol_price_data > 0:
-                    price_sol = price_usd / sol_price_data
-            except Exception:
-                pass
-
-        return TokenPrice(
-            mint=mint,
-            price_usd=price_usd,
-            price_sol=price_sol,
-        )
-
-    async def get_prices(
-        self,
-        mints: List[str],
-        vs_mint: str = USDC_MINT,
-    ) -> Dict[str, TokenPrice]:
-        """Fetch prices for multiple tokens via Jupiter Price API.
-
-        Parameters
-        ----------
-        mints:
-            List of token mint addresses.
-        vs_mint:
-            Quote token mint (defaults to USDC).
-
-        Returns
-        -------
-        dict
-            Mapping of mint -> TokenPrice.
-        """
-        client = await self._get_http()
-        params = {
-            "ids": ",".join(mints),
-            "vsToken": vs_mint,
-        }
-
-        resp = await client.get(f"{JUPITER_PRICE_URL}/price", params=params)
-        if resp.status_code != 200:
-            raise ValueError(f"Jupiter price API error ({resp.status_code}): {resp.text}")
-
-        data = resp.json()
-        prices: Dict[str, TokenPrice] = {}
-
-        for mint in mints:
-            price_data = data.get("data", {}).get(mint, {})
-            price_val = float(price_data.get("price", 0)) if price_data.get("price") else None
-
-            if vs_mint == USDC_MINT:
-                prices[mint] = TokenPrice(mint=mint, price_usd=price_val)
-            elif vs_mint == SOL_MINT:
-                prices[mint] = TokenPrice(mint=mint, price_sol=price_val)
-            else:
-                prices[mint] = TokenPrice(mint=mint, price_usd=price_val)
-
-        return prices
-
-    async def _get_sol_price_usd(self, client: httpx.AsyncClient) -> Optional[float]:
-        """Get SOL price in USD."""
-        try:
-            params = {"ids": SOL_MINT, "vsToken": USDC_MINT}
-            resp = await client.get(f"{JUPITER_PRICE_URL}/price", params=params)
-            if resp.status_code == 200:
-                data = resp.json()
-                price_data = data.get("data", {}).get(SOL_MINT, {})
-                return float(price_data.get("price", 0)) if price_data.get("price") else None
-        except Exception:
-            pass
-        return None
-
-    # ----- Token List -----
-
-    async def get_token_list(self, force_refresh: bool = False) -> Dict[str, TokenInfo]:
-        """Fetch the Jupiter token list.
-
-        Returns a mapping of mint address -> TokenInfo.
-        Results are cached for 1 hour.
-
-        Parameters
-        ----------
-        force_refresh:
-            If ``True``, bypass the cache and fetch fresh data.
-
-        Returns
-        -------
-        dict
-            Mapping of mint address -> TokenInfo.
-        """
-        cache_ttl = 3600.0  # 1 hour
-        if (
-            not force_refresh
-            and self._token_list_cache is not None
-            and (datetime.now(tz=timezone.utc).timestamp() - self._token_list_cache_ts) < cache_ttl
-        ):
-            return self._token_list_cache
-
-        client = await self._get_http()
-        resp = await client.get("https://token.jup.ag/strict")
-        if resp.status_code != 200:
-            raise ValueError(f"Jupiter token list API error ({resp.status_code}): {resp.text}")
-
-        data = resp.json()
-        token_map: Dict[str, TokenInfo] = {}
-        for token in data:
-            mint = token.get("address", "")
-            if not mint:
-                continue
-            token_map[mint] = TokenInfo(
-                mint=mint,
-                symbol=token.get("symbol", ""),
-                name=token.get("name", ""),
-                decimals=token.get("decimals", 9),
-                logo_uri=token.get("logoURI"),
-                tags=token.get("tags", []),
-            )
-
-        self._token_list_cache = token_map
-        self._token_list_cache_ts = datetime.now(tz=timezone.utc).timestamp()
-        logger.info("JupiterV6Client: Token list loaded — %d tokens", len(token_map))
-        return token_map
-
-    async def get_token_info(self, mint: str) -> Optional[TokenInfo]:
-        """Get info for a specific token.
-
-        Parameters
-        ----------
-        mint:
-            Token mint address.
-
-        Returns
-        -------
-        TokenInfo or None
-        """
-        token_list = await self.get_token_list()
-        return token_list.get(mint)
-
-    # ----- SPL Token Account Management -----
-
-    async def create_associated_token_account(
-        self,
-        wallet: Any,  # SolanaWallet
-        mint: str,
-    ) -> str:
-        """Create an Associated Token Account for a mint if it doesn't exist.
-
-        Parameters
-        ----------
-        wallet:
-            A :class:`SolanaWallet` instance.
-        mint:
-            SPL token mint address.
-
-        Returns
-        -------
-        str
-            The token account address.
-
-        Raises
-        ------
-        RuntimeError
-            If account creation fails.
-        """
-        try:
-            from solders.pubkey import Pubkey  # type: ignore[import-untyped]
-            from spl.token.instructions import create_associated_token_account, get_associated_token_address  # type: ignore[import-untyped]
-            from solana.rpc.async_api import AsyncClient  # type: ignore[import-untyped]
-            from solana.rpc.commitment import Confirmed  # type: ignore[import-untyped]
-            from solana.transaction import Transaction  # type: ignore[import-untyped]
-
-            async with AsyncClient(self._rpc_url) as rpc_client:
-                owner_pubkey = Pubkey.from_string(wallet.public_key)
-                mint_pubkey = Pubkey.from_string(mint)
-                ata = get_associated_token_address(owner_pubkey, mint_pubkey)
-
-                # Check if account already exists
-                resp = await rpc_client.get_account_info(ata, commitment=Confirmed)
-                if resp.value is not None:
-                    return str(ata)
-
-                # Create the ATA
-                create_ix = create_associated_token_account(
-                    payer=owner_pubkey,
-                    owner=owner_pubkey,
-                    mint=mint_pubkey,
-                )
-
-                tx = Transaction()
-                tx.add(create_ix)
-                tx.recent_blockhash = (await rpc_client.get_latest_blockhash()).value.blockhash
-                tx.sign(wallet.keypair)
-
-                result = await rpc_client.send_transaction(
-                    tx,
-                    wallet.keypair,
-                    opts={"skip_preflight": False},
-                )
-                signature = str(result.value)
-
-                await rpc_client.confirm_transaction(
-                    signature,
-                    commitment=Confirmed,
-                )
-
-                logger.info(
-                    "JupiterV6Client: Created ATA for %s: %s",
-                    mint, str(ata),
-                )
-                return str(ata)
-
-        except ImportError as exc:
-            raise ImportError(
-                "solana, solders, and spl packages are required. "
-                "Install with: pip install solana solders spl-token"
-            ) from exc
-        except Exception as exc:
-            raise RuntimeError(f"Failed to create ATA for {mint}: {exc}") from exc
-
-    async def get_or_create_ata(
-        self,
-        wallet: Any,
-        mint: str,
-    ) -> str:
-        """Get the Associated Token Account address, creating it if needed.
-
-        Parameters
-        ----------
-        wallet:
-            A :class:`SolanaWallet` instance.
-        mint:
-            SPL token mint address.
-
-        Returns
-        -------
-        str
-            The token account address.
-        """
-        try:
-            from solders.pubkey import Pubkey  # type: ignore[import-untyped]
-            from spl.token.instructions import get_associated_token_address  # type: ignore[import-untyped]
-            from solana.rpc.async_api import AsyncClient  # type: ignore[import-untyped]
-            from solana.rpc.commitment import Confirmed  # type: ignore[import-untyped]
-
-            async with AsyncClient(self._rpc_url) as rpc_client:
-                owner_pubkey = Pubkey.from_string(wallet.public_key)
-                mint_pubkey = Pubkey.from_string(mint)
-                ata = get_associated_token_address(owner_pubkey, mint_pubkey)
-
-                # Check if account exists
-                resp = await rpc_client.get_account_info(ata, commitment=Confirmed)
-                if resp.value is not None:
-                    return str(ata)
-
-        except ImportError:
-            pass
-        except Exception as exc:
-            logger.warning(
-                "JupiterV6Client: Error checking ATA: %s, attempting creation",
-                exc,
-            )
-
-        # Create if not found
-        return await self.create_associated_token_account(wallet, mint)
-
-    # ----- Utility -----
-
-    @staticmethod
-    def to_raw_amount(amount: float, decimals: int) -> int:
-        """Convert a human-readable amount to raw (smallest unit).
-
-        Parameters
-        ----------
-        amount:
-            Human-readable amount.
-        decimals:
-            Token decimals.
-
-        Returns
-        -------
-        int
-            Raw amount.
-        """
-        return int(amount * (10 ** decimals))
-
-    @staticmethod
-    def from_raw_amount(raw_amount: int, decimals: int) -> float:
-        """Convert a raw amount to human-readable.
-
-        Parameters
-        ----------
-        raw_amount:
-            Raw amount in smallest unit.
-        decimals:
-            Token decimals.
-
-        Returns
-        -------
-        float
-            Human-readable amount.
-        """
-        return raw_amount / (10 ** decimals)
 
     def __repr__(self) -> str:
         return f"JupiterV6Client(api_url={self._api_url})"

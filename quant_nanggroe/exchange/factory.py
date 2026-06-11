@@ -8,7 +8,7 @@ All exchange implementations use CCXT as the underlying library.
 
 Supported Exchanges
 -------------------
-binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase, alpaca, polymarket
+binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase
 
 Usage
 -----
@@ -39,8 +39,6 @@ from pydantic import BaseModel, Field, field_validator
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeInterface
 from quant_nanggroe.exchange.ccxt_broker import CCXTBroker
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-from quant_nanggroe.exchange.alpaca_broker import AlpacaBroker
-from quant_nanggroe.exchange.polymarket_broker import PolymarketBroker
 
 logger = logging.getLogger(__name__)
 
@@ -183,30 +181,6 @@ _CAPABILITY_REGISTRY: Dict[str, ExchangeCapabilities] = {
         requires_passphrase=True,
         max_leverage=3.0,
         ccxt_id="coinbase",
-    ),
-    "alpaca": ExchangeCapabilities(
-        exchange_id="alpaca",
-        supports_spot=True,
-        supports_futures=False,
-        supports_perps=False,
-        supports_margin=True,
-        supports_websocket=True,
-        supports_paper_trading=True,
-        requires_passphrase=False,
-        max_leverage=4.0,
-        ccxt_id="",
-    ),
-    "polymarket": ExchangeCapabilities(
-        exchange_id="polymarket",
-        supports_spot=False,
-        supports_futures=False,
-        supports_perps=False,
-        supports_margin=False,
-        supports_websocket=True,
-        supports_paper_trading=False,
-        requires_passphrase=False,
-        max_leverage=1.0,
-        ccxt_id="",
     ),
 }
 
@@ -351,30 +325,6 @@ class ExchangeFactory:
                 slippage_bps=slippage_bps,
             )
 
-        # Handle Alpaca broker
-        if name_lower == "alpaca":
-            return self._create_alpaca_broker(
-                api_key=api_key,
-                api_secret=api_secret,
-                sandbox=sandbox,
-                rate_limit=rate_limit,
-                timeout=timeout,
-                retries=retries,
-                extra_options=extra_options,
-            )
-
-        # Handle Polymarket broker
-        if name_lower == "polymarket":
-            return self._create_polymarket_broker(
-                api_key=api_key,
-                api_secret=api_secret,
-                sandbox=sandbox,
-                rate_limit=rate_limit,
-                timeout=timeout,
-                retries=retries,
-                extra_options=extra_options,
-            )
-
         # Validate exchange name
         if name_lower not in SUPPORTED_EXCHANGES:
             raise ExchangeFactoryError(
@@ -435,101 +385,6 @@ class ExchangeFactory:
             name_lower, effective_market.value, exchange_config.sandbox,
         )
 
-        return broker
-
-    def _create_alpaca_broker(
-        self,
-        *,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
-        sandbox: Optional[bool] = None,
-        rate_limit: Optional[float] = None,
-        timeout: Optional[int] = None,
-        retries: Optional[int] = None,
-        extra_options: Optional[Dict[str, Any]] = None,
-    ) -> AlpacaBroker:
-        """Create an Alpaca broker.
-
-        Args:
-            api_key: Alpaca API key.
-            api_secret: Alpaca API secret.
-            sandbox: Use paper trading mode.
-            rate_limit: Rate limit override.
-            timeout: Timeout override.
-            retries: Retries override.
-            extra_options: Additional options.
-
-        Returns:
-            An :class:`~quant_nanggroe.exchange.alpaca_broker.AlpacaBroker`.
-        """
-        options: Dict[str, Any] = {}
-        if extra_options:
-            options.update(extra_options)
-
-        exchange_config = ExchangeConfig(
-            exchange_id="alpaca",
-            api_key=api_key,
-            api_secret=api_secret,
-            sandbox=sandbox if sandbox is not None else True,  # Default to paper
-            rate_limit=rate_limit or self._config.default_rate_limit,
-            timeout=timeout or self._config.default_timeout,
-            retries=retries if retries is not None else self._config.default_retries,
-            options=options,
-        )
-
-        broker = AlpacaBroker(exchange_config)
-        self._created_exchanges["alpaca"] = broker
-
-        logger.info(
-            "ExchangeFactory: Created Alpaca broker (sandbox=%s)",
-            exchange_config.sandbox,
-        )
-        return broker
-
-    def _create_polymarket_broker(
-        self,
-        *,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
-        sandbox: Optional[bool] = None,
-        rate_limit: Optional[float] = None,
-        timeout: Optional[int] = None,
-        retries: Optional[int] = None,
-        extra_options: Optional[Dict[str, Any]] = None,
-    ) -> PolymarketBroker:
-        """Create a Polymarket broker.
-
-        Args:
-            api_key: Ethereum private key (hex).
-            api_secret: CLOB API key (optional, can be derived).
-            sandbox: Not applicable for Polymarket.
-            rate_limit: Rate limit override.
-            timeout: Timeout override.
-            retries: Retries override.
-            extra_options: Additional options.
-
-        Returns:
-            A :class:`~quant_nanggroe.exchange.polymarket_broker.PolymarketBroker`.
-        """
-        options: Dict[str, Any] = {}
-        if extra_options:
-            options.update(extra_options)
-
-        exchange_config = ExchangeConfig(
-            exchange_id="polymarket",
-            api_key=api_key,
-            api_secret=api_secret,
-            sandbox=False,  # Polymarket has no sandbox
-            rate_limit=rate_limit or self._config.default_rate_limit,
-            timeout=timeout or self._config.default_timeout,
-            retries=retries if retries is not None else self._config.default_retries,
-            options=options,
-        )
-
-        broker = PolymarketBroker(exchange_config)
-        self._created_exchanges["polymarket"] = broker
-
-        logger.info("ExchangeFactory: Created Polymarket broker")
         return broker
 
     def _create_paper_broker(

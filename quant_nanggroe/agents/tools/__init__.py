@@ -3,12 +3,22 @@ Agent Tools Package — Unified Tool Interface for Quant Nanggroe AI
 ===================================================================
 All agent-facing tools are exported from this package.
 
-Tools:
+Core Tools:
     MarketDataTool        — OHLCV data, current prices, batch fetch
     TechnicalAnalysisTool — Full indicator suite, SMC, trend, S/R
     SentimentTool         — News sentiment, event classification
     ExecutionTool         — Order routing, paper/live trading
     BacktestTool          — Strategy backtesting and results
+
+Advanced Tools (NEW):
+    FlowTool              — Whale flow & COT positioning analysis
+    GeopoliticalTool      — Geopolitical risk analysis (WorldOrder, GrandChessboard, PrisonersOfGeography)
+    IntermarketTool       — Cross-market correlation & sector rotation
+    ScreenerTool          — 12-component screening engine
+    CompetitionTool       — Agent competition, leaderboard & A/B testing
+    ForecastTool          — Multi-day market forecast synthesis
+    EmotionalTool         — Emotional intelligence & gamified discipline
+    SkillTool             — Skill system, DCF valuation & marketplace
 
 LangChain @tool functions:
     get_ohlcv             — Fetch OHLCV candle data
@@ -21,6 +31,14 @@ LangChain @tool functions:
     get_order_status      — Query order status
     run_backtest          — Run a strategy backtest
     get_backtest_results  — Retrieve stored backtest results
+    analyze_flow          — Whale flow & COT positioning analysis
+    analyze_geopolitical  — Geopolitical risk analysis
+    analyze_intermarket   — Intermarket correlation analysis
+    screen_symbol         — 12-component screening
+    get_leaderboard       — Agent competition leaderboard
+    forecast_symbol       — Multi-timeframe market forecast
+    check_emotional_state — Emotional state & discipline check
+    run_dcf_valuation     — DCF valuation analysis
 
 Example::
 
@@ -30,6 +48,14 @@ Example::
         SentimentTool,
         ExecutionTool,
         BacktestTool,
+        FlowTool,
+        GeopoliticalTool,
+        IntermarketTool,
+        ScreenerTool,
+        CompetitionTool,
+        ForecastTool,
+        EmotionalTool,
+        SkillTool,
     )
 
     # Initialize with shared market data source
@@ -77,14 +103,57 @@ except ImportError:
     get_backtest_results = None  # type: ignore[assignment,misc]
     list_backtests = None  # type: ignore[assignment,misc]
 
+# New advanced tools
+from quant_nanggroe.agents.tools.flow_tool import (
+    FlowTool,
+    analyze_flow,
+)
+from quant_nanggroe.agents.tools.geopolitical_tool import (
+    GeopoliticalTool,
+    analyze_geopolitical,
+)
+from quant_nanggroe.agents.tools.intermarket_tool import (
+    IntermarketTool,
+    analyze_intermarket,
+)
+from quant_nanggroe.agents.tools.screener_tool import (
+    ScreenerTool,
+    screen_symbol,
+)
+from quant_nanggroe.agents.tools.competition_tool import (
+    CompetitionTool,
+    get_leaderboard,
+)
+from quant_nanggroe.agents.tools.forecast_tool import (
+    ForecastTool,
+    forecast_symbol,
+)
+from quant_nanggroe.agents.tools.emotional_tool import (
+    EmotionalTool,
+    check_emotional_state,
+)
+from quant_nanggroe.agents.tools.skill_tool import (
+    SkillTool,
+    run_dcf_valuation,
+)
+
 __all__ = [
-    # Class-based tools
+    # Core class-based tools
     "MarketDataTool",
     "TechnicalAnalysisTool",
     "SentimentTool",
     "ExecutionTool",
     "BacktestTool",
-    # LangChain @tool functions
+    # Advanced class-based tools
+    "FlowTool",
+    "GeopoliticalTool",
+    "IntermarketTool",
+    "ScreenerTool",
+    "CompetitionTool",
+    "ForecastTool",
+    "EmotionalTool",
+    "SkillTool",
+    # Core LangChain @tool functions
     "get_ohlcv",
     "get_current_price",
     "get_multiple_prices",
@@ -98,4 +167,13 @@ __all__ = [
     "run_backtest",
     "get_backtest_results",
     "list_backtests",
+    # Advanced LangChain @tool functions
+    "analyze_flow",
+    "analyze_geopolitical",
+    "analyze_intermarket",
+    "screen_symbol",
+    "get_leaderboard",
+    "forecast_symbol",
+    "check_emotional_state",
+    "run_dcf_valuation",
 ]

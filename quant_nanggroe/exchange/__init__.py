@@ -2,7 +2,8 @@
 
 Provides a unified interface for 100+ cryptocurrency exchanges via CCXT,
 alongside paper trading, Solana/Jupiter V6 integration, Alpaca equities
-trading, and multi-exchange management with failover.
+trading, MetaTrader 5, Interactive Brokers, Polymarket prediction markets,
+and multi-exchange management with failover.
 
 This module bridges the existing execution engine (engine/execution/) with
 real exchange connectivity, offering:
@@ -11,6 +12,10 @@ real exchange connectivity, offering:
 - **CCXTBroker**: Production CCXT implementation for Binance, Coinbase, Bybit, OKX, etc.
 - **PaperExchangeBroker**: Paper trading with slippage, commission, and P&L tracking
 - **AlpacaBroker**: Alpaca paper/live trading for US equities and crypto
+- **PolymarketBroker**: Polymarket CLOB prediction market trading
+- **MT5Broker**: MetaTrader 5 forex/CFD trading
+- **IBKRBroker**: Interactive Brokers TWS/Gateway trading
+- **QuantDingerFactory**: Multi-exchange factory for 9+ crypto exchanges
 - **SolanaBroker**: Solana/Jupiter V6 swap integration
 - **SolanaWallet**: Solana keypair management and balance queries
 - **JupiterV6Client**: Jupiter V6 swap quotes and execution
@@ -18,7 +23,6 @@ real exchange connectivity, offering:
 - **ExchangeManager**: Multi-exchange orchestration, failover, and portfolio sync
 - **ExchangeFactory**: Dynamic exchange client creation with capability detection
 - **GuardPipeline**: Pre-trade validation with Whitelist/Cooldown/MaxPosition guards
-- **PolymarketBroker**: Polymarket prediction market trading via CLOB API with EIP-712 signing
 - **Extended Order Types**: TrailingStop, Bracket, OCO, Iceberg orders with state machines
 
 Usage:
@@ -63,7 +67,12 @@ from quant_nanggroe.exchange.ccxt_broker import CCXTBroker
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 from quant_nanggroe.exchange.manager import ExchangeManager
 from quant_nanggroe.exchange.alpaca_broker import AlpacaBroker
-from quant_nanggroe.exchange.polymarket_broker import PolymarketBroker
+
+# New broker modules (optional dependencies)
+from quant_nanggroe.exchange.polymarket_broker import PolymarketBroker, PolymarketCLOBClient
+from quant_nanggroe.exchange.mt5_broker import MT5Broker
+from quant_nanggroe.exchange.ibkr_broker import IBKRBroker
+from quant_nanggroe.exchange.quantdinger_factory import QuantDingerFactory
 
 # Solana/Jupiter V6 integration
 from quant_nanggroe.exchange.solana import (
@@ -136,7 +145,12 @@ __all__ = [
     "CCXTBroker",
     "PaperExchangeBroker",
     "AlpacaBroker",
+    # New brokers
     "PolymarketBroker",
+    "PolymarketCLOBClient",
+    "MT5Broker",
+    "IBKRBroker",
+    "QuantDingerFactory",
     # Solana/Jupiter V6
     "SolanaWallet",
     "TokenAccountInfo",

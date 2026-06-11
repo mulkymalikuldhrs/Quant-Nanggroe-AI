@@ -1,890 +1,590 @@
-# Quant Nanggroe AI — Decision Log
+# Quant Nanggroe AI — Architecture Decision Records
 
-**Architecture Decision Records (ADR)**
+**Version 4.0.0 | ADR Log**
 
-> This document records the key architecture decisions made during the development of Quant Nanggroe AI, including the rationale, alternatives considered, and consequences of each decision.
-
----
-
-## Table of Contents
-
-1. [ADR-001: LangGraph-Style Graph Architecture](#adr-001-langgraph-style-graph-architecture)
-2. [ADR-002: Multi-Path Routing](#adr-002-multi-path-routing)
-3. [ADR-003: Constitutional Risk Limits](#adr-003-constitutional-risk-limits)
-4. [ADR-004: 11-Agent Council System](#adr-004-11-agent-council-system)
-5. [ADR-005: Pydantic for Data Models](#adr-005-pydantic-for-data-models)
-6. [ADR-006: CCXT for Exchanges](#adr-006-ccxt-for-exchanges)
-7. [ADR-007: 9-Checkpoint Risk Gate](#adr-007-9-checkpoint-risk-gate)
-8. [ADR-008: Factor Registry Pattern](#adr-008-factor-registry-pattern)
-9. [ADR-009: ATR-Based Position Sizing](#adr-009-atr-based-position-sizing)
-10. [ADR-010: FastAPI for API Layer](#adr-010-fastapi-for-api-layer)
-11. [ADR-011: Kill Switch Design](#adr-011-kill-switch-design)
-12. [ADR-012: Dual Graph Version Strategy](#adr-012-dual-graph-version-strategy)
-13. [ADR-013: Python 3.11 Minimum](#adr-013-python-311-minimum)
-14. [ADR-014: Monorepo Structure](#adr-014-monorepo-structure)
-15. [ADR-015: Function-Based Factor Pattern](#adr-015-function-based-factor-pattern)
-16. [Merge Decisions per Repo](#merge-decisions-per-repo)
+> Complete Architecture Decision Records (ADRs) for all major technical decisions in the Quant Nanggroe AI platform. Each ADR follows the structured format: Context, Decision, Rationale, Consequences.
 
 ---
 
-## ADR-001: LangGraph-Style Graph Architecture
+## Decision Summary
 
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Use LangGraph StateGraph as the primary orchestration mechanism for the trading pipeline.
+| ADR | Title | Category | Status | Key Trade-off |
+|-----|-------|----------|--------|---------------|
+| ADR-001 | LangGraph StateGraph for Agent Orchestration | Agent Architecture | Accepted | Framework convenience → Deterministic graph + conditional routing |
+| ADR-002 | 11-Agent Council Architecture | Agent Architecture | Accepted | Simplicity → Domain-specific expertise + debate mechanism |
+| ADR-003 | Constitutional Risk Limits (Hardcoded) | Risk | Accepted | Config flexibility → Immutable safety guarantees |
+| ADR-004 | 9-Checkpoint Risk Gate | Risk | Accepted | Speed → Comprehensive validation |
+| ADR-005 | CCXT as Unified Exchange Layer | Exchange | Accepted | Exchange-specific APIs → Unified abstraction |
+| ADR-006 | Pydantic v2 for All Data Models | Data | Accepted | Migration effort → Type safety + validation |
+| ADR-007 | Dual-Bus Architecture | Infrastructure | Accepted | Simplicity → Latency isolation |
+| ADR-008 | Python 3.12+ Runtime | Infrastructure | Accepted | Compatibility range → Modern features + performance |
+| ADR-009 | FactorRegistry with Dual Pattern Support | Factor Engine | Accepted | Simplicity → Flexibility (class + function factors) |
+| ADR-010 | TF-IDF Vector Memory (No External DB) | Memory | Accepted | Semantic quality → Zero dependencies |
+| ADR-011 | FastAPI for Backend API | API | Accepted | Flask simplicity → Async + auto-docs + type safety |
+| ADR-012 | Next.js Web Terminal (Not CLI) | Frontend | Accepted | CLI simplicity → Rich UX + real-time updates |
+| ADR-013 | Council Debate Mechanism | Agent Architecture | Accepted | Single-decider speed → Multi-perspective robustness |
+| ADR-014 | ATR-Based Position Sizing | Risk | Accepted | Fixed sizing → Volatility-adaptive sizing |
+| ADR-015 | PostgreSQL + TimescaleDB for Storage | Infrastructure | Accepted | Simplicity → Time-series optimization |
+
+---
+
+## ADR-001: LangGraph StateGraph for Agent Orchestration
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
+| **Deciders** | Architecture Team |
+| **Consulted** | LangGraph docs, CrewAI docs, AutoGen docs |
 
 ### Context
 
-The system needs to orchestrate multiple AI agents in a deterministic workflow where:
-- Agents execute in a specific order (analysis → signal → risk → execution)
-- Conditional routing is required (risk verdict determines next step)
-- State must be shared between agents
-- Human-in-the-loop checkpoints are needed
-- Emergency exits must be possible from any node
+Three agent coordination frameworks were evaluated:
 
-### Alternatives Considered
+1. **CrewAI** — Role-based orchestration with task delegation. Good for collaborative workflows but lacks fine-grained state control, conditional routing, and deterministic execution guarantees. Agents communicate through opaque "task" strings.
 
-| Alternative | Pros | Cons |
-|---|---|---|
-| **LangGraph StateGraph** | Conditional edges, streaming, human-in-loop, stateful, LangChain ecosystem | Learning curve, coupling to LangChain |
-| **CrewAI** | Simple role-based agents, built-in collaboration | No conditional routing, no graph structure, too abstract |
-| **AutoGen** | Conversation patterns, human participation | Non-deterministic, no graph structure, no risk gates |
-| **Custom DAG** | Full control, no dependencies | Reinventing the wheel, no ecosystem, more maintenance |
-| **Prefect/Airflow** | Mature workflow engines | Not designed for LLM agents, too heavy, wrong abstraction |
+2. **AutoGen** (Microsoft) — Conversation-based multi-agent framework. Fundamentally conversational — agents take turns speaking. Wrong for a trading system where parallel sensor execution is required. No built-in veto mechanism.
+
+3. **LangGraph** — StateGraph with explicit `AgentState` schema, conditional edges, and built-in persistence. Supports fan-out/fan-in for parallel agent execution.
 
 ### Decision
 
-Use LangGraph StateGraph because:
-1. **Conditional edges** are the core abstraction we need for risk routing
-2. **Stateful execution** with TypedDict matches our AgentState design
-3. **Human-in-the-loop** is a built-in feature
-4. **Streaming** support for real-time updates
-5. **LangChain ecosystem** integration for LLM tools
-6. **Graph visualization** for debugging and auditing
+Use **LangGraph Custom StateGraph** as the single agent coordination layer.
+
+### Rationale
+
+| Factor | CrewAI | AutoGen | LangGraph |
+|--------|--------|---------|-----------|
+| State management | Implicit (task strings) | Conversation history | Explicit TypedDict |
+| Conditional routing | No | No | ✅ `add_conditional_edges()` |
+| Veto/gate mechanism | No | No | ✅ Routing functions |
+| Parallel execution | Partial | No (conversational) | ✅ Fan-out/fan-in |
+| Audit trail | Task logs | Chat history | Full state trace |
+| Deterministic | No (LLM-driven) | No (LLM-driven) | ✅ Deterministic nodes + LLM where needed |
+| Risk gate support | No | No | ✅ `should_continue_after_risk()` |
 
 ### Consequences
 
-- **Positive**: Deterministic execution, excellent debugging, clean separation of concerns
-- **Negative**: Coupling to LangChain ecosystem, learning curve for new developers
-- **Risk**: LangGraph API changes may require refactoring (mitigated by pinning version)
+- **Positive**: Deterministic decision pipeline, full state auditability, conditional veto gates, typed state transitions
+- **Negative**: More boilerplate than CrewAI for simple workflows, LangGraph API stability risk
+- **Mitigation**: Pin LangGraph version, abstraction layer over graph construction via `TradingGraph` class
 
 ---
 
-## ADR-002: Multi-Path Routing
+## ADR-002: 11-Agent Council Architecture
 
-**Date**: 2025-Q1
-**Status**: Adopted (v2 graph)
-**Decision**: Implement asset-class conditional routing with 4 specialized execution paths.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-Different asset classes require fundamentally different analysis:
-- Crypto needs on-chain analysis, Solana/Jupiter tools, rug checks
-- Forex needs carry trade analysis, CB policy tracking, cross-currency dynamics
-- Equities need SEC filings, earnings calendars, insider trades
-- Prediction markets need probability estimation, event contract pricing
-
-A one-size-fits-all pipeline would be suboptimal for each asset class.
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Multi-path routing** | Specialized analysis per asset, optimal tools per domain | More graph nodes, more maintenance |
-| **Single path with conditional tools** | Simpler graph, fewer nodes | Tool explosion, agent confusion, harder to debug |
-| **Separate graphs per asset** | Maximum specialization | Code duplication, no shared infrastructure |
-| **Plugin-based tools** | Flexible, extensible | No graph-level routing, runtime complexity |
+The system needed to balance two competing needs:
+1. **Domain expertise** — Different asset classes (crypto, forex, equities) and analysis types (technical, fundamental, macro) require specialized knowledge
+2. **Decision coherence** — Too many agents can produce contradictory signals
 
 ### Decision
 
-Implement multi-path routing with the `AssetRouter` node that:
-1. Classifies symbols using regex pattern matching
-2. Routes to the appropriate specialized path
-3. All paths converge at `signal_generation` for unified processing
+Implement an **11-agent council** with clear separation of concerns:
+
+| Agent | Domain | LLM Tier | Rationale |
+|-------|--------|----------|-----------|
+| Researcher | General market research | Quick | Broad analysis, fast turnaround |
+| Macro | Global macroeconomics | Quick | Regime detection, policy analysis |
+| Crypto | Cryptocurrency markets | Quick | Sector-specific knowledge |
+| Forex | Foreign exchange markets | Quick | Currency-specific analysis |
+| Strategist | Signal synthesis | **Deep** | Requires deep reasoning to combine all inputs |
+| Risk | Risk validation | **Deep** | Critical function needs best reasoning |
+| Portfolio | Portfolio optimization | Quick | Mathematical optimization, less LLM dependency |
+| Trader | Trade decision | Quick | Execution-focused, follows strategy |
+| Execution | Order routing | Quick | Broker interaction, fast response |
+| Council | Debate + voting | **Deep** | Complex multi-agent reasoning |
+
+### Rationale
+
+- **Analysis phase** (Researcher + Macro + Crypto + Forex): Runs in parallel, each producing domain-specific output
+- **Synthesis phase** (Strategist): Deep LLM to combine 4 analysis streams into signals
+- **Validation phase** (Risk + Council): 9-checkpoint gate + debate for low-confidence signals
+- **Execution phase** (Portfolio + Trader + Execution): Fast execution path
 
 ### Consequences
 
-- **Positive**: Domain-specific analysis, clean separation, extensible for new asset classes
-- **Negative**: 4 additional graph nodes, must maintain path parity
-- **Risk**: Symbol misclassification (mitigated by defaulting to equity path)
+- **Positive**: Domain expertise per agent, parallel analysis, structured debate mechanism
+- **Negative**: Higher LLM token costs (4 analysis agents + strategist + risk + council), more complex graph
+- **Mitigation**: Quick LLM (`gpt-4o-mini`) for analysis agents reduces cost; only 3 agents use Deep LLM
 
 ---
 
-## ADR-003: Constitutional Risk Limits
+## ADR-003: Constitutional Risk Limits (Hardcoded)
 
-**Date**: 2024-Q4
-**Status**: Adopted (inviolable)
-**Decision**: Hardcode all risk limits as Python constants that cannot be overridden at runtime.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-In institutional trading, risk limits must be absolute. No agent, no matter how confident, should be able to override risk limits. The system needs to guarantee capital protection even in the face of:
-- LLM hallucination (agent believes a trade is "sure thing")
-- Configuration errors (someone sets risk to 50%)
-- Runtime modification (API call to change limits)
-- Cascading failures (one bad trade leads to revenge trading)
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Hardcoded constants** | Impossible to override, audit-proof, simple | Not configurable, requires code change to modify |
-| **Configuration file** | Flexible, easy to adjust | Can be modified at runtime, no guarantee |
-| **Environment variables** | Deployment-specific | Can be changed without code review |
-| **Database-stored limits** | Dynamic, admin-adjustable | Can be changed by any process with DB access |
-| **Hybrid (hardcoded + config)** | Some flexibility | Override mechanism creates loopholes |
+In a multi-agent system, any single agent with configuration access could theoretically override risk limits. The system needed risk limits that are **impossible** to override at runtime.
 
 ### Decision
 
-Hardcode all constitutional risk limits as module-level Python constants:
+All constitutional limits are **Python constants** defined in `engine/risk/constants.py`:
 
 ```python
-MAX_RISK_PER_TRADE: float = 0.005       # CANNOT be overridden
-MAX_DAILY_LOSS: float = 0.01            # CANNOT be overridden
-MAX_WEEKLY_LOSS: float = 0.03           # CANNOT be overridden
-# ... etc.
+MAX_RISK_PER_TRADE: float = 0.005       # 0.5% — cannot be changed via config
+MAX_DAILY_LOSS: float = 0.01            # 1% — cannot be changed via env vars
+MAX_WEEKLY_LOSS: float = 0.03           # 3% — cannot be changed at runtime
+MIN_RISK_REWARD: float = 2.0            # 1:2 R:R — hardcoded
+MAX_CORRELATED_POSITIONS: int = 3       # No override possible
+MAX_POSITION_SIZE_PCT: float = 0.10     # 10% cap
+MAX_LEVERAGE: float = 3.0               # 3x max
+MAX_DRAWDOWN_PCT: float = 0.15          # 15% before kill switch
+MAX_DAILY_TRADES: int = 5               # Overtrading prevention
 ```
 
-The `override_possible` field in AgentState is hardcoded to `False`.
+The `RiskAssessment` model enforces: `override_possible: bool = Field(False)`
+
+### Rationale
+
+| Factor | Config-based | Constitutional (chosen) |
+|--------|-------------|------------------------|
+| Override protection | Can be changed in config | **Hardcoded constants** |
+| Agent override | Possible | **Impossible** |
+| Runtime modification | Possible via env vars | **Impossible** |
+| Audit trail | Partial | Full 9-checkpoint log |
+| Kill switch | Manual | **Automatic** |
 
 ### Consequences
 
-- **Positive**: Absolute capital protection, audit-proof, no override possible
-- **Negative**: Cannot adjust limits without code deployment, may be too conservative
-- **Risk**: If limits are wrong, requires code change and redeployment (acceptable trade-off)
+- **Positive**: No override of risk limits, full audit trail, automatic kill switch
+- **Negative**: Changing limits requires code change + deployment; limits may be too conservative for some strategies
+- **Mitigation**: Softer limits (max_open_positions, etc.) are configurable via Settings; only core constitutional limits are hardcoded
 
 ---
 
-## ADR-004: 11-Agent Council System
+## ADR-004: 9-Checkpoint Risk Gate
 
-**Date**: 2024-Q4 (initial 5), 2025-Q1 (expanded to 11)
-**Status**: Adopted
-**Decision**: Implement 11 specialized agents with distinct roles, tools, and LLM configurations.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-A single "super-agent" cannot effectively handle all aspects of trading. Different tasks require different expertise, different data sources, and different levels of analysis depth.
-
-### Agent Evolution
-
-| Phase | Agents | Rationale |
-|---|---|---|
-| v0.1 | Researcher, Trader, Risk | Minimal viable agent set |
-| v1.0 | + Strategist, Portfolio | Signal generation and allocation |
-| v2.0 | + Macro, Crypto, Forex | Asset-class specialization |
-| v2.1 | + Council, Prediction Market | Debate mechanism and new asset class |
-| v3.0 | + Execution | Separate execution from trading decision |
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **11 specialized agents** | Domain expertise, clean separation, parallel execution | More maintenance, more LLM calls |
-| **5 general agents** | Simpler, fewer LLM calls | Lack of specialization, tool overload |
-| **Single agent with tools** | Simplest, cheapest | Context overload, no parallelism |
-| **Dynamic agent creation** | Flexible, adaptable | Unpredictable, hard to debug |
+The system needed comprehensive pre-trade validation that covers position sizing, loss limits, risk-reward ratios, and portfolio-level constraints. A simple "max loss" check was insufficient.
 
 ### Decision
 
-11 specialized agents because:
-1. Each agent has focused system prompts and tools
-2. Asset-class agents can run in parallel
-3. Risk agent operates independently with full veto authority
-4. Council agent provides governance for low-confidence decisions
-5. Deep vs Quick LLM selection optimizes cost/performance
+Every trade must pass all 9 checkpoints in `RiskCheckGate.evaluate()`. Any single failure results in immediate VETO:
+
+1. Risk per trade ≤ 0.5%
+2. Daily loss < 1.0%
+3. Weekly loss < 3.0%
+4. Risk:Reward ratio ≥ 1:2
+5. Stop loss exists and is valid
+6. Entry price is valid
+7. Direction is valid (BUY/SELL/LONG/SHORT)
+8. Not overtrading (≤ 5 trades/day)
+9. Correlated positions ≤ 3
+
+### Rationale
+
+Each checkpoint addresses a specific failure mode:
+- Checkpoints 1-3: Capital preservation (prevents catastrophic loss accumulation)
+- Checkpoint 4: Positive expectancy (ensures winners exceed losers when hit)
+- Checkpoints 5-7: Data integrity (prevents execution of malformed orders)
+- Checkpoint 8: Behavioral control (prevents revenge trading, overtrading)
+- Checkpoint 9: Diversification (prevents concentration risk)
 
 ### Consequences
 
-- **Positive**: Specialization, parallelism, clear responsibility, independent risk
-- **Negative**: More LLM API calls, more maintenance, higher cost
-- **Risk**: Agent coordination complexity (mitigated by LangGraph state management)
+- **Positive**: Comprehensive validation, no single point of failure in risk checks, clear audit trail per checkpoint
+- **Negative**: More false positives (legitimate trades may be vetoed if close to limits), adds ~10ms to decision latency
+- **Mitigation**: CONDITIONAL verdict (future) for trades that fail soft checks but pass hard checks
 
 ---
 
-## ADR-005: Pydantic for Data Models
+## ADR-005: CCXT as Unified Exchange Layer
 
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Use Pydantic BaseModel and TypedDict for all data models throughout the system.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-The system handles complex nested data structures (market data, signals, decisions, risk assessments) that flow between agents and through the graph. Without strict type definitions, data corruption would be inevitable.
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Pydantic v2** | Runtime validation, serialization, JSON schema, IDE support | Performance overhead for hot paths |
-| **dataclasses** | Built-in, fast, simple | No validation, no JSON schema, no serialization |
-| **TypedDict only** | LangGraph compatible, no overhead | No runtime validation, no defaults |
-| **msgspec** | Very fast, validation | Small ecosystem, less IDE support |
-| **attrs** | Mature, validation | Less common in modern Python |
+The system needed to support 8+ crypto exchanges with varying APIs, authentication methods, and market types. Building individual exchange adapters would result in significant code duplication.
 
 ### Decision
 
-Use **Pydantic v2 for data models** and **TypedDict for AgentState**:
-- Pydantic for all structured data that needs validation (Signal, Decision, RiskAssessment, etc.)
-- TypedDict for AgentState (required by LangGraph)
-- Pydantic's `ConfigDict(extra="allow")` for forward-compatible models
+Use **CCXT** as the unified exchange library, wrapped in `CCXTBroker` with `ExchangeFactory` for dynamic creation and `ExchangeCapabilities` for feature detection.
+
+### Rationale
+
+| Factor | Custom Adapters | CCXT (chosen) |
+|--------|----------------|---------------|
+| Exchange coverage | Per-exchange effort | 100+ exchanges |
+| API consistency | Custom per exchange | Unified interface |
+| Maintenance burden | High (per-exchange) | Low (community-maintained) |
+| Feature detection | Manual | ✅ `ExchangeCapabilities` |
+| Market type routing | Manual per exchange | ✅ `MarketType` enum |
+| Passphrase handling | Ad-hoc | ✅ Auto-warn |
 
 ### Consequences
 
-- **Positive**: Type safety, runtime validation, JSON schema generation, excellent IDE support
-- **Negative**: Slight performance overhead (acceptable for trading frequencies)
-- **Risk**: Pydantic v1→v2 migration was disruptive (now resolved)
+- **Positive**: 8 exchanges from day one, unified API, community maintenance, capability-aware routing
+- **Negative**: CCXT adds dependency; CCXT's unified API may not expose exchange-specific features
+- **Mitigation**: `ExchangeConfig.options` dict allows CCXT-specific options per exchange; custom brokers for non-CCXT venues (Alpaca, Polymarket, Jupiter)
 
 ---
 
-## ADR-006: CCXT for Exchanges
+## ADR-006: Pydantic v2 for All Data Models
 
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Use CCXT as the primary exchange abstraction layer for all crypto exchanges.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-The system needs to support 8+ cryptocurrency exchanges with a unified API. Each exchange has different:
-- Authentication methods (some require passphrases)
-- Market types (spot, futures, perps)
-- Order types and parameters
-- Rate limits and error handling
-- WebSocket protocols
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **CCXT** | 100+ exchanges, unified API, well-maintained, Python native | Python overhead, some exchange quirks |
-| **Individual SDKs** | Native features, best support | 8 different APIs to maintain, no consistency |
-| **Hummingbot connectors** | Trading-specific | Crypto-only, Hummingbot-specific patterns |
-| **Custom abstraction** | Full control | Massive development effort, ongoing maintenance |
+Legacy repos used Pydantic v1 with `@validator`, `class Config`, and `BaseSettings` from `pydantic`. The codebase needed to standardize on one version.
 
 ### Decision
 
-Use CCXT with our `CCXTBroker` wrapper that:
-1. Adds `ExchangeConfig` for configuration management
-2. Adds `ExchangeCapabilities` for feature detection
-3. Adds market type routing (spot/futures/perps)
-4. Adds configuration validation
-5. Adds sandbox mode support
+Standardize on **Pydantic v2** with `@field_validator`, `model_config = ConfigDict(...)`, and `pydantic-settings` for configuration.
 
-Non-CCXT exchanges (Alpaca, Polymarket) have dedicated brokers.
+### Rationale
+
+- Pydantic v2 is 5-50x faster than v1 (Rust core)
+- `field_validator` with `@classmethod` is more explicit
+- `ConfigDict` replaces `class Config` inner class
+- `pydantic-settings` separates settings from data models
+- `model_config = {"extra": "allow"}` provides backward compatibility
 
 ### Consequences
 
-- **Positive**: Unified API, 8 exchanges supported, community-maintained
-- **Negative**: CCXT overhead, exchange-specific quirks require workarounds
-- **Risk**: CCXT breaking changes (mitigated by pinning version >=4.0)
+- **Positive**: Performance improvement, modern API, better type inference
+- **Negative**: Breaking migration from v1 patterns; `BaseSettings` moved to separate package
+- **Mitigation**: `extra="allow"` provides flexibility; automated migration via `bump-pydantic` tool
 
 ---
 
-## ADR-007: 9-Checkpoint Risk Gate
+## ADR-007: Dual-Bus Architecture
 
-**Date**: 2024-Q4 (adapted from HermesQuantOS)
-**Status**: Adopted
-**Decision**: Implement a 9-checkpoint risk validation gate that every trade must pass before execution.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-A single risk check (e.g., "is the stop loss set?") is insufficient. Multiple failure modes exist:
-- Overtrading (too many trades per day)
-- Concentration (too much in one asset)
-- Correlation (all positions move together)
-- Missing stop loss (no downside protection)
-- Poor risk:reward (negative expectancy)
-- Daily/weekly drawdown limits
-
-### The 9 Checkpoints
-
-| # | Checkpoint | Why It Matters |
-|---|---|---|
-| 1 | Risk per trade ≤ 0.5% | Limits single-trade impact |
-| 2 | Daily loss ≤ 1% | Prevents catastrophic daily drawdowns |
-| 3 | Weekly loss ≤ 3% | Prevents cascading weekly losses |
-| 4 | Risk:Reward ≥ 1:2 | Ensures positive expectancy |
-| 5 | Stop loss exists | No unprotected positions |
-| 6 | Valid entry price | Prevents erroneous orders |
-| 7 | Valid direction | Prevents malformed orders |
-| 8 | Not overtrading | Prevents emotional/revenge trading |
-| 9 | Correlated positions < 3 | Prevents concentration risk |
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **9 checkpoints** | Comprehensive, failsafe | More complexity |
-| **5 core checkpoints** | Simpler | Misses edge cases (correlation, overtrading) |
-| **3 critical checkpoints** | Minimal | Insufficient protection |
-| **Configurable checkpoints** | Flexible | Can be disabled, defeats purpose |
-| **LLM-based risk assessment** | Contextual | Non-deterministic, can be convinced to approve |
+The system has two distinct communication patterns:
+1. **Order execution** — Latency-critical, must not be blocked by agent reasoning
+2. **Agent reasoning** — High-throughput, acceptable latency of 100ms-5s
 
 ### Decision
 
-9 hard checkpoints because:
-1. Each addresses a distinct failure mode
-2. ALL must pass for approval (AND logic, not OR)
-3. If ANY fails, the trade is VETOED
-4. No override possible (constitutional guarantee)
+Implement **dual-bus** architecture using Redis Pub/Sub:
+- **Execution Bus**: Low-latency (<10ms), FIFO ordering, P0 priority, volatile persistence
+- **Agent Reasoning Bus**: High-throughput, best-effort ordering, P2 priority, durable (Redis + PostgreSQL)
+
+### Rationale
+
+Mixing execution and reasoning on the same bus creates head-of-line blocking: a slow agent reasoning message could delay an order fill confirmation. The dual-bus isolates latency domains.
 
 ### Consequences
 
-- **Positive**: Comprehensive protection, clear audit trail, deterministic outcomes
-- **Negative**: Some good trades may be vetoed (acceptable: safety over profit)
-- **Risk**: Checkpoint rigidity may need adjustment over time (requires code change)
+- **Positive**: Execution never blocked by reasoning, independent scaling, separate monitoring
+- **Negative**: Two bus systems to maintain, bridge complexity in Trader node
+- **Mitigation**: Trader node acts as bridge; if reasoning bus is congested, execution continues on last known state
 
 ---
 
-## ADR-008: Factor Registry Pattern
+## ADR-008: Python 3.12+ Runtime
 
-**Date**: 2025-Q1
-**Status**: Adopted
-**Decision**: Implement a centralized FactorRegistry with unified FactorHandle for both class-based and function-based factors.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-Factors come from multiple sources with different patterns:
-- Technical/Fundamental: Class-based (AlphaFactor subclass)
-- Alpha101/GTJA191/Qlib158/Academic: Function-based (meta dict + compute function)
-
-A unified interface is needed for:
-- Discovery (list by zoo, theme, universe)
-- Computation (compute any factor from a panel)
-- Validation (output quality checks)
-- Health monitoring (track load errors)
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **FactorRegistry + FactorHandle** | Unified interface, lazy loading, validation | More abstraction |
-| **Direct module imports** | Simple, no abstraction | No discovery, no validation, no health check |
-| **Plugin system** | Dynamic, extensible | Runtime complexity, security concerns |
-| **Separate registries per zoo** | Isolation | No cross-zoo discovery, code duplication |
+Legacy repos used Python 3.9-3.11. The codebase needed a single runtime version.
 
 ### Decision
 
-Single `FactorRegistry` with `FactorHandle` that:
-1. Wraps both class-based and function-based factors
-2. Provides unified `compute(panel)` interface
-3. Validates output quality (no inf, < 95% NaN)
-4. Supports discovery by zoo, theme, universe
-5. Thread-safe singleton via `get_default_registry()`
-6. AST-based metadata extraction (no import needed for discovery)
+Standardize on **Python 3.12+**.
+
+### Rationale
+
+- PEP 695: `type` keyword for generic aliases (`list[str]` not `List[str]`)
+- PEP 709: Inline comprehension performance improvement (~40% faster than 3.9)
+- Better error messages for debugging
+- `typing` module improvements (TypeAliasType, TypeGuard)
+- Required by latest Pydantic v2, LangGraph, and LangChain versions
 
 ### Consequences
 
-- **Positive**: Unified API, lazy loading, output validation, health monitoring
-- **Negative**: More abstraction, FactorHandle indirection
-- **Risk**: Factor format divergence (mitigated by FactorHandle adapter)
+- **Positive**: Consistent runtime, modern syntax, faster execution, single package manager
+- **Negative**: Some legacy repos need code changes for 3.12 compatibility
+- **Mitigation**: `ruff` automated upgrade rules, `pyupgrade` for syntax modernization
 
 ---
 
-## ADR-009: ATR-Based Position Sizing
+## ADR-009: FactorRegistry with Dual Pattern Support
 
-**Date**: 2025-Q1
-**Status**: Adopted (v2 graph)
-**Decision**: Implement fixed-fractional ATR-based position sizing with three take-profit levels.
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
 ### Context
 
-Position sizing is critical for risk management. Fixed lot sizes don't account for volatility differences between assets. ATR (Average True Range) provides a volatility-adjusted measure that:
-- Adapts to each asset's volatility
-- Provides consistent risk across different instruments
-- Naturally sets stop-loss and take-profit levels
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Fixed-fractional ATR** | Volatility-adapted, consistent risk, TP levels | Requires ATR calculation, may be too conservative |
-| **Kelly Criterion** | Optimal growth rate | Requires accurate win rate, can be aggressive |
-| **Fixed lot size** | Simple | Ignores volatility, inconsistent risk |
-| **Risk parity** | Equal risk contribution | Complex, requires correlation matrix |
-| **Volatility targeting** | Portfolio-level risk control | Doesn't set stop/take-profit levels |
+The system needed to support two factor implementation patterns:
+1. **Class-based** (`AlphaFactor` subclasses with `name/meta/compute` properties) — Used by Technical and Fundamental factor zoos
+2. **Function-based** (`__alpha_meta__` dict + `compute(panel)` function pairs) — Used by Alpha101, GTJA191, Qlib158, Academic zoos (ported from Vibe-Trading)
 
 ### Decision
 
-Fixed-fractional ATR with TP1/TP2/TP3 because:
-1. ATR adapts to each asset's volatility profile
-2. Fixed-fractional ensures consistent risk per trade
-3. Three TP levels allow partial profit-taking
-4. Stop loss at 1.5×ATR provides structural invalidation
-5. Risk:Reward at TP3 = 1:2.00 meets constitutional minimum
+Implement `FactorHandle` as a unified wrapper that normalizes both patterns:
 
-### Consequences
-
-- **Positive**: Volatility-adapted, consistent risk, multiple exit levels
-- **Negative**: Requires ATR data, may underperform in low-vol regimes
-- **Risk**: ATR may be too wide/narrow for some assets (multipliers are configurable)
-
----
-
-## ADR-010: FastAPI for API Layer
-
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Use FastAPI as the API server with uvicorn for ASGI.
-
-### Context
-
-The system needs an HTTP API for:
-- Market data queries
-- Trading execution
-- Agent status monitoring
-- Backtest management
-- Real-time WebSocket streaming
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **FastAPI** | Async, OpenAPI docs, Pydantic integration, WebSocket | Relatively new, less middleware |
-| **Flask** | Mature, simple | Synchronous, no native async, no OpenAPI |
-| **Django** | Full-featured, ORM | Too heavy, synchronous, wrong abstraction |
-| **Starlette** | Lightweight, async | No built-in OpenAPI, more boilerplate |
-
-### Decision
-
-FastAPI because:
-1. Native async support (critical for trading operations)
-2. Automatic OpenAPI documentation
-3. Pydantic integration for request/response validation
-4. WebSocket support for real-time streaming
-5. High performance (comparable to Node.js/Go)
-
-### Consequences
-
-- **Positive**: Async, documented, validated, fast
-- **Negative**: Less middleware ecosystem than Flask/Django
-- **Risk**: Breaking changes in FastAPI (mitigated by pinning version)
-
----
-
-## ADR-011: Kill Switch Design
-
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Implement an automatic kill switch that triggers on drawdown, daily loss, and weekly loss thresholds.
-
-### Context
-
-In extreme market conditions, the system must automatically halt all trading and close positions. This cannot depend on:
-- Agent judgment (agents may disagree)
-- Human monitoring (may not be watching)
-- Network connectivity (may be down)
-
-The kill switch must be an independent, automatic mechanism.
-
-### Kill Switch Triggers
-
-| Trigger | Threshold | Action |
-|---|---|---|
-| Daily PnL | ≤ -2% | Activate kill switch |
-| Weekly PnL | ≤ -5% | Activate kill switch |
-| Max Drawdown | ≥ 15% | Activate kill switch |
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Automatic kill switch** | Instant response, no human delay | May trigger on false positives |
-| **Manual kill switch only** | Human judgment | Too slow in fast-moving markets |
-| **Configurable thresholds** | Flexible | Can be misconfigured |
-| **Gradual wind-down** | Less disruptive | Too slow for catastrophic scenarios |
-
-### Decision
-
-Automatic kill switch with hardcoded thresholds because:
-1. Speed is critical (markets can move 5% in minutes)
-2. No human dependency (24/7 operation)
-3. Hardcoded thresholds (cannot be misconfigured)
-4. Manual reset required (forces human review)
-
-### Consequences
-
-- **Positive**: Immediate capital protection, no human dependency
-- **Negative**: May trigger unnecessarily in volatile but recoverable situations
-- **Risk**: False positive triggers (mitigated by conservative thresholds)
-
----
-
-## ADR-012: Dual Graph Version Strategy
-
-**Date**: 2025-Q1
-**Status**: Adopted
-**Decision**: Maintain both v1 (`graph.py`) and v2 (`graph_v2.py`) trading graphs during the transition period.
-
-### Context
-
-The v2 graph introduces significant new features (multi-path routing, position sizing, portfolio validation, smart order routing, human checkpoints). Rather than replacing v1 immediately, both versions coexist during the transition.
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Dual graphs (v1 + v2)** | Backward compatible, gradual migration | Code duplication, maintenance burden |
-| **Replace v1 with v2** | Single codebase | Breaking changes, no rollback |
-| **Feature flags** | Single graph, configurable | Complex conditional logic |
-| **v2 only, deprecate v1** | Clean break | No backward compatibility |
-
-### Decision
-
-Dual graphs during transition because:
-1. v1 is battle-tested (2504+ tests pass)
-2. v2 adds new features that need validation
-3. Users can choose which graph to use
-4. Gradual migration reduces risk
-
-### Consequences
-
-- **Positive**: Backward compatibility, safe migration
-- **Negative**: Code duplication, must maintain both
-- **Risk**: Divergence between v1 and v2 (mitigated by shared AgentState)
-
----
-
-## ADR-013: Python 3.11 Minimum
-
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Require Python 3.11 as the minimum version.
-
-### Context
-
-The system needs modern Python features for performance, type safety, and developer experience.
-
-### Key Features Used
-
-| Feature | Python Version | Usage |
-|---|---|---|
-| `tomllib` | 3.11 | Built-in TOML parsing |
-| `ExceptionGroup` | 3.11 | Multiple exception handling |
-| `Self` type | 3.11 | Recursive type annotations |
-| `TaskGroup` | 3.11 | Structured concurrency |
-| `TypedDict` with `Annotated` | 3.9+ | AgentState definition |
-| `match` statement | 3.10 | Pattern matching (potential) |
-
-### Alternatives Considered
-
-| Version | Pros | Cons |
-|---|---|---|
-| **3.11** | Modern features, performance, good compatibility | Not available on older systems |
-| **3.10** | Wider availability | Missing 3.11 features |
-| **3.12** | Latest features | Some libraries not compatible |
-| **3.9** | Maximum compatibility | Missing important features |
-
-### Decision
-
-Python 3.11 because:
-1. Significant performance improvements (10-60% faster than 3.10)
-2. Modern type system features
-3. Good library compatibility
-4. `tomllib` built-in (no PyPI dependency)
-
-### Consequences
-
-- **Positive**: Performance, features, type safety
-- **Negative**: Not available on some older systems
-- **Risk**: Some deployment environments may not support 3.11 (decreasing risk)
-
----
-
-## ADR-014: Monorepo Structure
-
-**Date**: 2024-Q4
-**Status**: Adopted
-**Decision**: Consolidate 20+ repositories into a single monorepo under the `quant_nanggroe` package.
-
-### Context
-
-The project evolved from 20+ independent repositories, each with its own:
-- Directory structure
-- Dependency management
-- Testing framework
-- Documentation
-- Configuration format
-
-Maintaining 20+ repos was unsustainable for:
-- Cross-repo refactoring
-- Dependency management
-- Consistent testing
-- Documentation alignment
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons |
-|---|---|---|
-| **Monorepo** | Unified deps, single CI, easy refactoring | Large repo, complex tooling |
-| **Multi-repo** | Isolation, independent releases | Cross-repo coordination, dependency hell |
-| **Meta-repo (git submodules)** | Some isolation | Submodule complexity, sync issues |
-| **Workspace (like Cargo)** | Best of both | No Python-native workspace tool |
-
-### Decision
-
-Monorepo because:
-1. Single dependency tree (no version conflicts)
-2. Single test suite (easy cross-module testing)
-3. Single CI pipeline (simplified DevOps)
-4. Easy cross-module refactoring
-5. Consistent code style and tooling
-
-### Consequences
-
-- **Positive**: Unified deps, easy refactoring, consistent testing
-- **Negative**: Large repo, longer CI times
-- **Risk**: Merge conflicts (mitigated by clear module boundaries)
-
----
-
-## ADR-015: Function-Based Factor Pattern
-
-**Date**: 2025-Q1
-**Status**: Adopted
-**Decision**: Support both class-based and function-based factor patterns, with function-based as the preferred pattern for new factors.
-
-### Context
-
-The Alpha101 and GTJA191 factor zoos were ported from Vibe-Trading, which uses a function-based pattern:
 ```python
-__alpha_meta_xxx = { "id": "xxx", "zoo": "alpha101", ... }
-def compute_xxx(panel) -> pd.DataFrame: ...
+class FactorHandle:
+    def __init__(self, factor_id, zoo, meta_dict, compute_fn=None, class_instance=None):
+        self._compute_fn = compute_fn        # Function-based
+        self._class_instance = class_instance  # Class-based
+    
+    def compute(self, panel):
+        if self._compute_fn is not None:
+            return self._compute_fn(panel)
+        elif self._class_instance is not None:
+            return self._adapt_class_compute(panel)
 ```
 
-This pattern is simpler than the class-based pattern:
-```python
-class MyFactor(AlphaFactor):
-    name = "xxx"
-    meta = FactorMeta(...)
-    def compute(self, df) -> pd.DataFrame: ...
-```
+### Rationale
 
-### Decision
-
-Support both patterns via `FactorHandle`:
-- Class-based: For factors with complex state or inheritance
-- Function-based: For simple formulaic factors (preferred for new additions)
+| Factor | Class-based Only | Dual Pattern (chosen) |
+|--------|-----------------|----------------------|
+| Alpha101 (101 factors) | Would require 101 classes | ✅ Function-based with meta dict |
+| Technical (25+ factors) | ✅ Natural fit | ✅ Class-based with properties |
+| Migration effort | Rewrite all function factors | Zero — both patterns supported |
+| Discovery | Inspect class attributes | ✅ `list(zoo=, theme=, universe=)` |
 
 ### Consequences
 
-- **Positive**: Flexibility, simpler factor authoring, compatible with existing zoos
-- **Negative**: Two patterns to maintain, FactorHandle indirection
-- **Risk**: Pattern divergence (mitigated by FactorHandle adapter)
+- **Positive**: No rewriting of existing factor implementations, unified `FactorRegistry.list()` API across all zoos
+- **Negative**: Two code paths in `FactorHandle.compute()`, class-based adaptation is less efficient for wide DataFrames
+- **Mitigation**: Function-based is the preferred pattern for new factors; class-based adapter handles wide DataFrame per-column
 
 ---
 
-## Merge Decisions per Repo
+## ADR-010: TF-IDF Vector Memory (No External DB)
 
-### AI-Trader
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
 
-| Attribute | Decision |
-|---|---|
-| **Priority** | HIGH |
-| **Strategy** | FULL |
-| **What We Keep** | Agent architecture, trading logic, exchange abstraction |
-| **What We Reject** | Legacy Python 3.8 code, custom LLM wrappers |
-| **Rationale** | Core trading agent patterns formed the basis of our agent system |
+### Context
 
-### AutoHedge
+The system needed semantic search for research notes and trade reasoning. Options included:
+1. External vector databases (ChromaDB, Pinecone, Weaviate) — Full-featured but add infrastructure dependencies
+2. Neural embeddings (OpenAI, sentence-transformers) — Better semantic quality but add API dependency
+3. Built-in TF-IDF — Lower semantic quality but zero dependencies
 
-| Attribute | Decision |
-|---|---|
-| **Priority** | HIGH |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Hedging strategies, risk parity, correlation monitoring |
-| **What We Reject** | Custom database layer, outdated API |
-| **Rationale** | Hedging and correlation concepts adopted into risk engine |
+### Decision
 
-### AutoTrader
+Use **built-in TF-IDF** vector memory with cosine similarity for the initial implementation.
 
-| Attribute | Decision |
-|---|---|
-| **Priority** | CRITICAL |
-| **Strategy** | FULL |
-| **What We Keep** | Auto-trading loop, signal generation, execution framework |
-| **What We Reject** | Monolithic architecture, no multi-agent support |
-| **Rationale** | Core auto-trading loop is the foundation of TradingGraph |
+### Rationale
 
-### Clipper-AI
+| Factor | External Vector DB | Neural Embeddings | TF-IDF (chosen) |
+|--------|-------------------|-------------------|-----------------|
+| External dependencies | High (DB service) | Medium (API calls) | **Zero** |
+| Setup complexity | High | Medium | **Low** |
+| Semantic quality | Best | Good | Adequate |
+| Latency | Network-dependent | API-dependent | **Local (<1ms)** |
+| Capacity | Unlimited | Token-limited | ~100k documents |
+| Migration path | — | — | pgvector for scale |
 
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Quick-profit strategies, scalping indicators |
-| **What We Reject** | No risk management, aggressive position sizing |
-| **Rationale** | Fast-execution patterns adopted for execution engine |
+### Consequences
 
-### Crucix
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Cross-validation approach, signal quality metrics |
-| **What We Reject** | Proprietary data format, no factor framework |
-| **Rationale** | Referenced for signal validation patterns |
-
-### FinceptTerminal
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | HIGH |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Terminal UI patterns, data visualization, WebSocket streaming |
-| **What We Reject** | Frontend-only, no backend trading logic |
-| **Rationale** | UI patterns and real-time streaming adopted for API layer |
-
-### HermesQuantOS
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | CRITICAL |
-| **Strategy** | FULL |
-| **What We Keep** | Risk Officer (9-checkpoint gate), strategy lifecycle, audit trail, 5-layer execution stack |
-| **What We Reject** | TypeScript components, browser-only architecture |
-| **Rationale** | Risk framework and constitutional limits directly adopted |
-
-### Kronos
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Time-series analysis patterns |
-| **What We Reject** | Custom framework, no multi-agent |
-| **Rationale** | Referenced for time-series factor computation |
-
-### Misi-Screener
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Stock screening logic, fundamental analysis |
-| **What We Reject** | Limited to Malaysian market |
-| **Rationale** | Screening patterns adopted for researcher agent |
-
-### MoneyPrinterTurbo
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | LOW |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Yield farming concepts |
-| **What We Reject** | DeFi-only, no risk management |
-| **Rationale** | Referenced for yield optimization patterns |
-
-### OpenAlice
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Open order management, exchange connectivity |
-| **What We Reject** | Limited exchange support |
-| **Rationale** | Order management patterns adopted for execution engine |
-
-### Pentaract
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | LOW |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Multi-dimensional analysis concept |
-| **What We Reject** | Academic-only, no production code |
-| **Rationale** | Conceptual reference for multi-factor analysis |
-
-### QuantDinger
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | HIGH |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Factor computation, alpha generation, backtesting |
-| **What We Reject** | Proprietary data pipeline |
-| **Rationale** | Factor computation patterns adopted for FactorRegistry |
-
-### QuantMuse
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Research methodology, factor documentation |
-| **What We Reject** | No production infrastructure |
-| **Rationale** | Research methodology for factor development |
-
-### SolSniperX
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | HIGH |
-| **Strategy** | FULL |
-| **What We Keep** | Solana integration, Jupiter swap, rug check, wallet management |
-| **What We Reject** | Meme-coin-only focus |
-| **Rationale** | Solana tools directly adopted into exchange/solana/ module |
-
-### Trading-Plan-AI-Interactive
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Interactive trading plan generation |
-| **What We Reject** | No execution capability |
-| **Rationale** | Referenced for human-in-the-loop patterns |
-
-### TradingAgents
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | CRITICAL |
-| **Strategy** | FULL |
-| **What We Keep** | Multi-agent debate, bull/bear, risk debate, stress testing |
-| **What We Reject** | Simple risk management, no constitutional limits |
-| **Rationale** | Agent debate and stress testing directly adopted |
-
-### Vibe-Trading
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | CRITICAL |
-| **Strategy** | FULL |
-| **What We Keep** | Factor zoo modules (Alpha101, GTJA191, Qlib158), function-based factor pattern |
-| **What We Reject** | Custom orchestration (replaced by LangGraph) |
-| **Rationale** | 469+ factors and function-based pattern directly adopted |
-
-### ZeroInject
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | LOW |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Zero-latency execution concept |
-| **What We Reject** | Custom exchange protocol |
-| **Rationale** | Referenced for low-latency execution patterns |
-
-### Dhaher-Corporation
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | REFERENCE |
-| **What We Keep** | Enterprise patterns, security practices |
-| **What We Reject** | Java/TypeScript components |
-| **Rationale** | Enterprise security and audit patterns referenced |
-
-### PromptForgeAI
-
-| Attribute | Decision |
-|---|---|
-| **Priority** | MEDIUM |
-| **Strategy** | PARTIAL |
-| **What We Keep** | Prompt engineering patterns, LLM optimization |
-| **What We Reject** | General-purpose focus (we need trading-specific) |
-| **Rationale** | Prompt patterns adopted for agent system prompts |
+- **Positive**: Zero external dependencies, fast local search, simple implementation
+- **Negative**: TF-IDF is less semantically rich than neural embeddings; limited to keyword-level matching
+- **Mitigation**: pgvector migration path for production scale; pluggable embedding interface for future upgrade
 
 ---
 
-© 2025-2026 Quant Nanggroe AI | Decision Log v4.0.0
+## ADR-011: FastAPI for Backend API
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
+
+### Context
+
+The backend API needed to serve REST endpoints, WebSocket connections, and async background tasks.
+
+### Decision
+
+Use **FastAPI** with 6 route groups: Market, Trading, Agents, Backtest, Portfolio, WebSocket.
+
+### Rationale
+
+- Native async/await support for concurrent API calls
+- Automatic OpenAPI documentation
+- Pydantic request/response validation (shared models with agent layer)
+- WebSocket support via `FastAPI.websocket`
+- Uvicorn ASGI server for production
+
+### Consequences
+
+- **Positive**: Auto-docs, type-safe API, async performance, WebSocket support
+- **Negative**: FastAPI's dependency injection can be complex; ASGI debugging is harder than WSGI
+- **Mitigation**: Structured error handling via global exception handler; lifespan events for eager service initialization
+
+---
+
+## ADR-012: Next.js Web Terminal (Not CLI)
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
+
+### Context
+
+Legacy interfaces included FinceptTerminal (Python CLI) and a Bloomberg-style TUI. Both were limited by terminal constraints.
+
+### Decision
+
+Build a **Next.js Web Terminal** with desktop-OS-inspired window manager (draggable, resizable panels).
+
+### Rationale
+
+| Factor | CLI/TUI | Web Terminal |
+|--------|---------|--------------|
+| Real-time charting | ASCII art only | Full OHLCV with Lightweight Charts |
+| Multi-panel layout | Terminal tabs | Draggable windows with z-index |
+| Mobile access | SSH only | Responsive web |
+| WebSocket support | Limited | Native |
+| Deployment | Local Python | Docker container |
+
+### Consequences
+
+- **Positive**: Rich UX, real-time updates, broader accessibility, maintainable TypeScript
+- **Negative**: Higher memory footprint, requires browser runtime
+- **Mitigation**: Lazy-load windows, Vite code splitting, WebSocket compression
+
+---
+
+## ADR-013: Council Debate Mechanism
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
+
+### Context
+
+When confidence is below `CONFIDENCE_THRESHOLD` (0.65), a single-agent decision is unreliable. The system needed a mechanism to resolve uncertainty.
+
+### Decision
+
+Implement **structured debate** with two formats:
+1. **Investment Debate**: Bull Researcher vs. Bear Researcher → Investment Judge
+2. **Risk Debate**: Conservative vs. Neutral vs. Aggressive → Risk Judge
+
+Followed by **weighted council voting** where each agent's vote is weighted by historical accuracy.
+
+### Rationale
+
+Inspired by TradingAgents' multi-debate framework. Key advantages:
+- **Forced perspective diversity**: Agents must argue from opposing viewpoints
+- **Structured reasoning**: Judges produce explicit summaries before decisions
+- **Weighted voting**: Historically accurate agents have more influence
+- **Human review flag**: Low consensus (`consensus_level < 0.65`) triggers human review
+
+### Consequences
+
+- **Positive**: Better decisions under uncertainty, structured reasoning trail, built-in checks and balances
+- **Negative**: Additional LLM costs (6-10 extra LLM calls for debate), latency (adds 5-15s for debate)
+- **Mitigation**: Debate only triggered when `confidence < 0.65`; max 2 rounds per debate
+
+---
+
+## ADR-014: ATR-Based Position Sizing
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
+
+### Context
+
+Fixed lot sizing ignores market volatility. The same position size that's appropriate during low volatility becomes dangerous during high volatility.
+
+### Decision
+
+Use **ATR (Average True Range) based position sizing** with 2×ATR stop distance:
+
+```python
+stop_distance = 2 * atr
+position_size = risk_amount / stop_distance
+stop_loss = entry_price - stop_distance  # For BUY
+```
+
+Risk amount is capped at `MAX_RISK_PER_TRADE` (0.5%) regardless of input.
+
+### Rationale
+
+- ATR adapts to current volatility: larger stops in volatile markets, smaller in calm markets
+- 2×ATR is a standard swing trading stop distance
+- Position automatically scales down in volatile markets (higher ATR = larger stop = fewer units)
+- Constitutional cap prevents exceeding 0.5% risk regardless of ATR
+
+### Consequences
+
+- **Positive**: Volatility-adaptive sizing, consistent risk across market conditions
+- **Negative**: Requires ATR calculation (needs OHLCV data), may produce very small positions in extreme volatility
+- **Mitigation**: `position_size = max(0.01, round(lot_size * 100) / 100)` ensures minimum lot size
+
+---
+
+## ADR-015: PostgreSQL + TimescaleDB for Storage
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2025-Q1 |
+| **Status** | Accepted |
+
+### Context
+
+The system needed storage for:
+- Agent state (relational)
+- OHLCV data (time-series, high-volume)
+- Audit events (append-only, high-volume)
+- Factor values (time-series)
+
+### Decision
+
+Use **PostgreSQL with TimescaleDB extension** as the primary database.
+
+### Rationale
+
+- TimescaleDB provides hypertable optimization for OHLCV and factor data
+- Same PostgreSQL instance handles both relational and time-series workloads
+- No separate time-series database to manage
+- pgvector extension available for future vector search migration
+
+### Consequences
+
+- **Positive**: Single database technology, mature ecosystem, TimescaleDB compression for historical data
+- **Negative**: TimescaleDB extension adds deployment complexity; not as fast as specialized TSDBs (QuestDB) for ingestion
+- **Mitigation**: QuestDB available as optional high-frequency ingestion path; PostgreSQL remains primary query engine
+
+---
+
+*© 2025-2026 Quant Nanggroe AI | Decision Log v4.0.0*

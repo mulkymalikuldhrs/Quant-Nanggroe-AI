@@ -7,11 +7,11 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "dev": "cd dashboard && npx next dev -p 3000",
+    "build": "cd dashboard && npm run build",
+    "preview": "cd dashboard && npm run start",
+    "typecheck": "cd dashboard && npx tsc --noEmit",
+    "lint": "cd dashboard && npm run lint"
   },
   "dependencies": {
     "react-dom": "^19.2.3",

@@ -1,536 +1,429 @@
 # Quant Nanggroe AI — Development Roadmap
 
-**Version 4.0.0 | 2025-2026 Development Plan**
+**Version 4.0.0 | Q3 2025 through Q1 2026+**
 
-> This document outlines the development roadmap for Quant Nanggroe AI, covering quarterly milestones from Q3 2025 through future multi-colony integration.
+> Complete roadmap with milestones, KPIs, feature priority, and go/no-go criteria for each development phase.
 
 ---
 
 ## Table of Contents
 
 1. [Roadmap Overview](#1-roadmap-overview)
-2. [Q3 2025: Production-Ready Core](#2-q3-2025-production-ready-core)
-3. [Q4 2025: Advanced Features](#3-q4-2025-advanced-features)
-4. [Q1 2026: Scale and Optimize](#4-q1-2026-scale-and-optimize)
-5. [Future: Multi-Colony Integration](#5-future-multi-colony-integration)
-6. [Feature Priority Matrix](#6-feature-priority-matrix)
-7. [Technical Debt Register](#7-technical-debt-register)
-8. [Release Schedule](#8-release-schedule)
+2. [Q3 2025: Monorepo Foundation](#2-q3-2025-monorepo-foundation)
+3. [Q3 2025: Agent Council Activation](#3-q3-2025-agent-council-activation)
+4. [Q4 2025: Engine Hardening](#4-q4-2025-engine-hardening)
+5. [Q4 2025: Production Deployment](#5-q4-2025-production-deployment)
+6. [Q1 2026: Scale & Intelligence](#6-q1-2026-scale--intelligence)
+7. [KPI Dashboard](#7-kpi-dashboard)
+8. [Feature Priority Matrix](#8-feature-priority-matrix)
 
 ---
 
 ## 1. Roadmap Overview
 
-### Current State (v4.0.0)
-
-| Metric | Value |
-|---|---|
-| Version | 4.0.0 (LangGraph v2 Architecture) |
-| Python Modules | 214+ |
-| Tests Passing | 2,504+ |
-| Alpha Factors | 469 (7 zoos) |
-| Exchanges | 10 (8 CCXT + Alpaca + Polymarket) |
-| Agents | 11 (researcher, trader, strategist, risk, portfolio, execution, macro, crypto, forex, council, prediction_market) |
-| Risk Checkpoints | 9 (constitutional, hardcoded) |
-| Execution Paths | 4 (crypto, forex, equity, prediction_market) |
-
-### Roadmap Timeline
-
 ```mermaid
 gantt
-    title Quant Nanggroe AI Development Roadmap
-    dateFormat YYYY-MM
+    title Quant Nanggroe AI Roadmap
+    dateFormat YYYY-MM-DD
     section Q3 2025
-    v2 Graph Stabilization       :2025-07, 3M
-    Remaining Agent Merges       :2025-07, 2M
-    Exchange Testing             :2025-08, 2M
-    Security Hardening           :2025-09, 2M
-    Production Deployment        :2025-09, 1M
-
+    Monorepo Migration     :a1, 2025-07-01, 21d
+    Code Integration       :a2, after a1, 14d
+    Dependency Resolution  :a3, after a2, 14d
+    section Q3 2025 (cont)
+    Agent Council Wiring   :b1, after a3, 14d
+    Event Bus + API        :b2, after b1, 14d
+    Council Debate Testing :b3, after b2, 7d
     section Q4 2025
-    ML Model Integration         :2025-10, 3M
-    Advanced Risk (CDaR, EVaR)   :2025-10, 2M
-    FinGPT Sentiment             :2025-11, 2M
-    RL Strategy Optimization     :2025-12, 2M
-
+    Factor Engine v2       :c1, 2025-10-01, 21d
+    Risk Engine Hardening  :c2, after c1, 21d
+    Paper Trading          :c3, after c2, 14d
+    section Q4 2025 (cont)
+    Live Trading Crypto    :d1, 2025-11-15, 21d
+    Live Trading Equity    :d2, after d1, 21d
+    Live Trading PM        :d3, after d2, 14d
     section Q1 2026
-    Market Making Agent          :2026-01, 2M
-    Options Support              :2026-01, 3M
-    Multi-Colony Protocol        :2026-02, 3M
-    Performance Optimization     :2026-03, 2M
+    Kronos Integration     :e1, 2026-01-01, 21d
+    Multi-Venue Arbitrage  :e2, after e1, 21d
+    Darwinian Evolution    :e3, after e2, 28d
+```
+
+### Key Milestones
+
+| Milestone | Target Date | Description |
+|-----------|-------------|-------------|
+| **M1: Monorepo Green** | 2025-08-15 | All 21 repos merged, all tests passing |
+| **M2: Council Live** | 2025-09-30 | 11-agent council operational with debate |
+| **M3: Paper Validated** | 2025-10-31 | 48-hour paper trading passes all checks |
+| **M4: Live Trading** | 2025-12-15 | Live crypto trading with $500 capital |
+| **M5: Production Scale** | 2026-02-28 | Multi-venue + Kronos + Darwinian evolution |
+
+---
+
+## 2. Q3 2025: Monorepo Foundation
+
+**July 1 – August 15, 2025**
+
+### 2.1 Milestone: M1 — Monorepo Green
+
+### Deliverables
+
+| Deliverable | Description | Target Date | KPI |
+|-------------|-------------|-------------|-----|
+| Repository merge | All 21 repos merged via git subtree | Jul 21 | 21 repos in monorepo |
+| Import normalization | All `quant_nanggroe.xxx` imports resolve | Jul 28 | 0 import errors |
+| Dependency consolidation | Single `pyproject.toml` + `poetry.lock` | Aug 4 | `poetry install` succeeds |
+| Type system unification | Single `AgentState` + Pydantic models | Aug 4 | 0 duplicate type defs |
+| Pydantic v2 migration | All code upgraded from v1 | Aug 8 | `mypy --strict` passes |
+| SQLAlchemy 2.0 migration | All DB queries upgraded | Aug 8 | All DB operations work |
+| Test suite green | All existing + new tests pass | Aug 15 | ≥175 tests passing |
+| Docker build | Full stack builds + starts | Aug 15 | `docker-compose up` works |
+
+### Weekly Breakdown
+
+```
+Week 1 (Jul 1-7): Subtree Merge
+  ├── Create monorepo branch
+  ├── Configure git remotes (21 repos)
+  ├── Execute git subtree add for P0-P1 repos (9 repos)
+  └── Validate: git log shows subtree merges
+
+Week 2 (Jul 8-14): P2-P3 Merge + Import Fix
+  ├── Execute git subtree add for remaining repos (12 repos)
+  ├── Normalize all imports to quant_nanggroe.xxx
+  ├── Fix circular imports with TYPE_CHECKING
+  └── Validate: python -c "from quant_nanggroe import *"
+
+Week 3 (Jul 15-21): Configuration + Dependencies
+  ├── Consolidate pyproject.toml
+  ├── Consolidate package.json
+  ├── Merge all Settings classes
+  └── Validate: poetry install succeeds
+
+Week 4 (Jul 22-28): De-duplication
+  ├── Remove duplicate MarketDataTool, SentimentTool
+  ├── Remove duplicate risk check implementations
+  ├── Remove duplicate exchange wrappers
+  └── Validate: no duplicate class definitions
+
+Week 5 (Jul 29 - Aug 4): Pydantic Migration
+  ├── Upgrade all Pydantic v1 → v2
+  ├── Fix @validator → @field_validator
+  ├── Fix class Config → model_config = ConfigDict(...)
+  └── Validate: mypy --strict passes
+
+Week 6 (Aug 5-15): Testing + Validation
+  ├── Write missing tests for new integrations
+  ├── Run full pytest suite
+  ├── Docker build validation
+  └── Validate: all exit criteria met
+```
+
+### Risk Gates
+
+| Risk | Probability | Impact | Mitigation |
+|------|------------|--------|------------|
+| Pydantic v1→v2 breaks legacy repos | High | Medium | Keep legacy repos as frozen `contrib/` |
+| Circular imports between modules | Medium | High | Lazy imports + TYPE_CHECKING |
+| `poetry install` fails on dependency conflicts | Medium | High | Pin minimum compatible versions |
+
+---
+
+## 3. Q3 2025: Agent Council Activation
+
+**August 16 – September 30, 2025**
+
+### 3.1 Milestone: M2 — Council Live
+
+### Deliverables
+
+| Deliverable | Description | Target Date | KPI |
+|-------------|-------------|-------------|-----|
+| LangGraph graph operational | TradingGraph compiles + runs | Aug 23 | `graph.invoke()` succeeds |
+| 11 agents registered | All agents in AgentRegistry | Aug 30 | `AgentRegistry.list_agents()` returns 11 |
+| 9-checkpoint risk gate | RiskCheckGate validates trades | Sep 6 | All 9 checkpoints tested |
+| Council debate mechanism | Bull/Bear + Risk debate works | Sep 13 | Debate produces judge decision |
+| Redis execution bus | Low-latency order messaging | Sep 13 | Messages < 10ms |
+| Redis agent reasoning bus | High-throughput agent events | Sep 20 | Messages < 5s |
+| FastAPI routes (6 groups) | All API endpoints operational | Sep 20 | All endpoints return 200 |
+| WebSocket streaming | Real-time agent state updates | Sep 27 | Frontend receives updates |
+| Audit trail | PostgreSQL audit_events populated | Sep 27 | All state transitions persisted |
+
+### Key Architecture Validation
+
+```
+End-to-End Pipeline Test:
+  Input: symbols=["BTCUSDT"], trade_date="2025-09-01"
+  → Market Analysis: research_output, macro_output, crypto_output, forex_output
+  → Signal Generation: signals[], confidence=0.72
+  → Risk Assessment: risk_verdict="APPROVED" (all 9 checkpoints pass)
+  → Portfolio Optimization: portfolio_output
+  → Execution Decision: decisions[]
+  → Order Execution: orders_placed[]
+  → Reflection: debate_state
+
+  Expected: Full pipeline completes in < 5 seconds
+  Kill Switch Test: Verify VETO when risk_pct > 0.005
+  Low Confidence Test: Verify council_debate when confidence < 0.65
+```
+
+### Exit Criteria
+
+- [ ] `TradingGraph.run(["BTCUSDT"])` completes successfully
+- [ ] All 11 agents registered and callable
+- [ ] RiskCheckGate VETOES a trade with risk_pct > 0.005
+- [ ] Council debate produces structured judge decision
+- [ ] All 6 API route groups respond to requests
+- [ ] WebSocket delivers real-time updates
+
+---
+
+## 4. Q4 2025: Engine Hardening
+
+**October 1 – October 31, 2025**
+
+### 4.1 Milestone: M3 — Paper Validated
+
+### Deliverables
+
+| Deliverable | Description | Target Date | KPI |
+|-------------|-------------|-------------|-----|
+| Factor engine v2 | All 469 factors registered + validated | Oct 7 | `registry.health()["loaded"] >= 469` |
+| Factor output validation | No inf values, <5% NaN | Oct 7 | All factors produce valid DataFrames |
+| Risk engine hardening | Kill switch + drawdown + VaR tested | Oct 14 | All risk methods work |
+| Walk-forward validation | 12-month rolling out-of-sample | Oct 21 | Walk-forward Sharpe ≥ 1.0 |
+| 48-hour paper trading | Continuous paper trading session | Oct 28 | No crashes, all orders tracked |
+| Execution reality validation | Slippage/spread/latency models | Oct 31 | Model deviation < 20% |
+
+### Paper Trading Configuration
+
+```
+Paper Trading Session:
+  Broker: PaperExchangeBroker
+  Initial Capital: $100,000
+  Commission Rate: 0.001 (0.1%)
+  Slippage: 5 bps
+  Symbols: BTCUSDT, ETHUSDT, SOLUSDT
+  Duration: 48 hours continuous
+  
+  Constitutional Limits (HARDCODED):
+    max_risk_per_trade: 0.005 (0.5%)
+    max_daily_loss: 0.01 (1%)
+    max_weekly_loss: 0.03 (3%)
+    min_risk_reward: 2.0 (1:2 R:R)
+    max_daily_trades: 5
+    max_drawdown: 0.15 (15%)
+```
+
+### Exit Criteria
+
+- [ ] 48-hour paper trading with zero unhandled exceptions
+- [ ] Kill switch activates correctly on daily loss limit breach
+- [ ] All 9 risk checkpoints VETO invalid trades
+- [ ] Walk-forward Sharpe ratio ≥ 1.0
+- [ ] FactorRegistry loads 469+ factors with 0 failures
+- [ ] Execution reality model deviation from paper trading < 20%
+
+---
+
+## 5. Q4 2025: Production Deployment
+
+**November 1 – December 31, 2025**
+
+### 5.1 Milestone: M4 — Live Trading
+
+### Deliverables
+
+| Deliverable | Description | Target Date | KPI |
+|-------------|-------------|-------------|-----|
+| Production Docker images | Hardened, minimal images | Nov 7 | Trivy scan clean |
+| Live crypto trading (Binance) | $500 initial capital | Nov 15 | First live trade executed |
+| Live crypto trading (Bybit) | Secondary venue | Nov 30 | Cross-venue routing works |
+| Live equity trading (Alpaca) | US equities paper → live | Dec 7 | Alpaca orders fill |
+| Live prediction markets (Polymarket) | Prediction market trading | Dec 15 | PM orders execute |
+| Monitoring + alerting | Prometheus + Grafana + PagerDuty | Dec 7 | Dashboards live |
+| Disaster recovery | Automated backup + failover | Dec 21 | DR test passes |
+
+### Live Trading Rollout Plan
+
+```
+Phase 1 (Nov 1-7): Infrastructure
+  ├── Build hardened Docker images (distroless base)
+  ├── Deploy to production server
+  ├── Configure monitoring (Prometheus + Grafana)
+  └── Configure alerting (PagerDuty for kill switch, daily loss > 0.5%)
+
+Phase 2 (Nov 8-15): Controlled Live
+  ├── Deploy with $500 initial capital
+  ├── Feature flags: ENABLE_LIVE_TRADING=true, ENABLE_KILL_SWITCH=true
+  ├── Conservative settings: max 3 trades/day, max 1 position
+  ├── Monitor continuously for 72 hours
+  └── Daily review of execution quality + decision quality
+
+Phase 3 (Nov 16-30): Multi-Venue
+  ├── Enable Bybit as secondary crypto venue
+  ├── Enable cross-venue smart order routing
+  └── Portfolio-level risk management across venues
+
+Phase 4 (Dec 1-15): Expansion
+  ├── Enable Alpaca for US equity trading
+  ├── Enable Polymarket for prediction markets
+  └── Full portfolio risk across all venues
+
+Phase 5 (Dec 16-31): Scaling
+  ├── Increase capital allocation based on performance
+  ├── Enable multi-position mode (max 3 concurrent)
+  ├── Enable multi-symbol trading (BTC, ETH, SOL)
+  └── Automated Darwinian strategy lifecycle
+```
+
+### Exit Criteria
+
+- [ ] Live trading runs for 30 days without system failure
+- [ ] Daily loss limit (1%) never breached
+- [ ] Weekly loss limit (3%) never breached
+- [ ] Kill switch activates within 5 seconds of limit breach
+- [ ] All audit events are persisted and queryable
+- [ ] Monitoring dashboards are live and accurate
+
+---
+
+## 6. Q1 2026: Scale & Intelligence
+
+**January 1 – March 31, 2026**
+
+### 6.1 Milestone: M5 — Production Scale
+
+### Deliverables
+
+| Deliverable | Description | Target Date | KPI |
+|-------------|-------------|-------------|-----|
+| Kronos C++ integration | PyO3 bindings for low-latency execution | Jan 15 | Bridge latency < 5ms |
+| Multi-venue arbitrage | Cross-venue price detection | Feb 1 | Arbitrage signals generated |
+| Darwinian evolution | Strategy lifecycle management | Feb 15 | Strategy auto-kill on negative expectancy |
+| Memory system v2 | Episodic + Pattern + Knowledge Graph | Mar 1 | Memory retrieval < 100ms |
+| Reinforcement learning | FinRL-based strategy optimization | Mar 15 | RL agent outperforms baseline |
+| Advanced factor synthesis | GpLearn symbolic regression | Mar 31 | New alpha factors discovered |
+
+### Kronos Integration Plan
+
+```
+Week 1-2: Build
+  ├── Build Kronos C++ library
+  ├── Generate PyO3 bindings
+  ├── Write Python wrapper for order submission
+  └── Benchmark: Python → PyO3 → C++ → Exchange round-trip
+
+Week 3: Integration
+  ├── Replace ccxt hot path with Kronos for supported venues
+  ├── Fallback: verify ccxt Python execution still works
+  └── End-to-end test with paper trading
+
+Week 4: Validation
+  ├── Latency benchmark: < 5ms bridge + < 50ms exchange = < 55ms total
+  ├── Reliability test: 1000 consecutive orders without error
+  └── Failover test: Kronos → ccxt fallback works
+```
+
+### Darwinian Strategy Evolution
+
+```
+Strategy Lifecycle States:
+  INCUBATING → TESTING → LIVE → KILLED
+
+  Incubating: Strategy under development
+  Testing: Walk-forward validation in progress
+  Live: Active in production with allocated capital
+  Killed: Negative expectancy over statistically significant sample
+
+  Auto-kill Trigger:
+    - Expectancy < 0 over last 100 trades
+    - Max drawdown > 15% (constitutional)
+    - Sharpe ratio < 0.5 over last 30 days
 ```
 
 ---
 
-## 2. Q3 2025: Production-Ready Core
+## 7. KPI Dashboard
 
-**Theme**: Stabilize, secure, and deploy the v2 architecture
+### 7.1 System Health KPIs
 
-### 2.1 v2 Graph Stabilization (July 2025)
+| KPI | Target | Measurement | Frequency |
+|-----|--------|-------------|-----------|
+| Test pass rate | 100% | `pytest --tb=short` | Every commit |
+| Type check errors | 0 | `mypy --strict` | Every commit |
+| Lint violations | 0 | `ruff check` | Every commit |
+| Factor load rate | 100% (469/469) | `registry.health()["loaded"]` | Daily |
+| Exchange connectivity | 8/8 | `factory.list_supported_exchanges()` | Hourly |
+| API response time | < 200ms p95 | API metrics | Continuous |
+| WebSocket latency | < 100ms | Client measurement | Continuous |
 
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Complete v2 graph edge coverage testing | CRITICAL | 🔄 In Progress | 2 weeks |
-| Fix asset router edge cases (mixed symbols) | HIGH | 📋 Planned | 1 week |
-| Position sizer validation across all asset classes | HIGH | 📋 Planned | 1 week |
-| Portfolio validator edge cases | MEDIUM | 📋 Planned | 1 week |
-| Human checkpoint WebSocket integration | HIGH | 📋 Planned | 2 weeks |
-| Smart executor real venue scoring | HIGH | 📋 Planned | 2 weeks |
-| End-to-end pipeline test (full graph) | CRITICAL | 📋 Planned | 1 week |
+### 7.2 Trading Performance KPIs
 
-**Deliverable**: v2 graph passes all 2504+ tests and completes end-to-end pipeline runs.
+| KPI | Target | Measurement | Frequency |
+|-----|--------|-------------|-----------|
+| Daily max drawdown | < 1% (constitutional) | RiskManager.status() | Per trade |
+| Weekly max drawdown | < 3% (constitutional) | RiskManager.status() | Per trade |
+| Kill switch activation | Only on limit breach | Audit trail | Continuous |
+| VaR 95% violation rate | < 5% | Backtest vs. realized | Weekly |
+| Sharpe ratio | ≥ 1.0 (walk-forward) | Backtest engine | Monthly |
+| Win rate | ≥ 55% | Trade journal | Weekly |
+| Average R:R achieved | ≥ 1.5:1 | Trade journal | Weekly |
+| Execution slippage | < 10bps | Fill price vs. signal price | Per trade |
+| Decision-to-fill latency | < 3s | Timestamps | Per trade |
+| Council debate trigger rate | < 30% of trades | Agent state log | Weekly |
 
-### 2.2 Remaining Agent Merges (July-August 2025)
+### 7.3 Risk KPIs
 
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Merge Misi-Screener screening logic | MEDIUM | 🔄 In Progress | 1 week |
-| Merge FinceptTerminal WebSocket patterns | HIGH | 🔄 In Progress | 1 week |
-| Merge OpenAlice order management | MEDIUM | 🔄 In Progress | 1 week |
-| Merge PromptForgeAI prompt optimization | MEDIUM | 🔄 In Progress | 2 weeks |
-| Agent prompt A/B testing framework | LOW | 📋 Planned | 2 weeks |
-
-**Deliverable**: All Phase 3 repos merged, agent quality improved.
-
-### 2.3 Exchange Testing and Integration (August 2025)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Binance integration test suite | CRITICAL | 📋 Planned | 1 week |
-| OKX integration test suite | HIGH | 📋 Planned | 1 week |
-| Bybit integration test suite | HIGH | 📋 Planned | 1 week |
-| Alpaca integration test suite | CRITICAL | 📋 Planned | 1 week |
-| Polymarket integration test suite | MEDIUM | 📋 Planned | 1 week |
-| Exchange failover testing | HIGH | 📋 Planned | 1 week |
-| Rate limit handling testing | HIGH | 📋 Planned | 1 week |
-| Smart order routing with live data | HIGH | 📋 Planned | 2 weeks |
-
-**Deliverable**: All 10 exchanges tested with sandbox/paper accounts.
-
-### 2.4 Security Hardening (August-September 2025)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| API key authentication | CRITICAL | 📋 Planned | 1 week |
-| JWT token management | HIGH | 📋 Planned | 1 week |
-| Role-based access control | HIGH | 📋 Planned | 2 weeks |
-| Credential leak prevention audit | CRITICAL | 📋 Planned | 1 week |
-| Rate limiting per endpoint | MEDIUM | 📋 Planned | 1 week |
-| CORS configuration for production | HIGH | 📋 Planned | 0.5 week |
-| Security audit logging | HIGH | 📋 Planned | 1 week |
-| Penetration testing | CRITICAL | 📋 Planned | 1 week |
-
-**Deliverable**: Production-grade security with authentication, authorization, and audit logging.
-
-### 2.5 Production Deployment (September 2025)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Docker image creation | CRITICAL | 📋 Planned | 1 week |
-| Kubernetes manifests | HIGH | 📋 Planned | 1 week |
-| CI/CD pipeline setup | CRITICAL | 📋 Planned | 1 week |
-| Staging environment setup | HIGH | 📋 Planned | 1 week |
-| Production deployment playbook | CRITICAL | 📋 Planned | 1 week |
-| Monitoring setup (Prometheus/Grafana) | HIGH | 📋 Planned | 1 week |
-| Incident response procedures | HIGH | 📋 Planned | 1 week |
-| Runbook creation | MEDIUM | 📋 Planned | 1 week |
-
-**Deliverable**: System running in production with monitoring and incident response.
-
-### Q3 2025 Milestone Targets
-
-| Metric | Target | Current |
-|---|---|---|
-| Test coverage | ≥ 90% | ~85% |
-| End-to-end pipeline success | 99%+ | 95% |
-| API latency (p99) | < 500ms | ~800ms |
-| Exchange uptime | 99.9% | Testing |
-| Security vulnerabilities | 0 critical | In audit |
-| Documentation coverage | 100% | ~80% |
+| KPI | Target | Measurement | Frequency |
+|-----|--------|-------------|-----------|
+| Max risk per trade | ≤ 0.5% (constitutional) | RiskCheckGate checkpoint 1 | Per trade |
+| Correlated positions | ≤ 3 (constitutional) | RiskCheckGate checkpoint 9 | Per trade |
+| Kelly fraction used | ≤ HALF_KELLY | RiskManager.calculate_kelly_size() | Per trade |
+| ATR stop distance | 2× ATR14 | RiskManager.atr_position_size() | Per trade |
+| Stress test pass | All 6 scenarios | RiskManager.stress_test() | Daily |
 
 ---
 
-## 3. Q4 2025: Advanced Features
+## 8. Feature Priority Matrix
 
-**Theme**: Intelligence amplification through ML, advanced risk, and NLP
+### 8.1 Priority Classification
 
-### 3.1 ML Model Integration (October 2025)
+| Priority | Description | Examples |
+|----------|-------------|----------|
+| **P0** | Must have for production | Constitutional risk, kill switch, 9-checkpoint gate, LangGraph graph |
+| **P1** | Should have for launch | Council debate, ATR sizing, factor registry, exchange factory |
+| **P2** | Nice to have at launch | Walk-forward validation, stress testing, memory system |
+| **P3** | Future enhancement | Kronos C++, RL strategies, Darwinian evolution, multi-venue arbitrage |
 
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| LightGBM factor model integration | HIGH | 📋 Planned | 3 weeks |
-| LSTM time-series model | MEDIUM | 📋 Planned | 3 weeks |
-| Transformer-based prediction | MEDIUM | 📋 Planned | 4 weeks |
-| Ensemble model framework enhancement | HIGH | 📋 Planned | 2 weeks |
-| Feature store for ML models | HIGH | 📋 Planned | 2 weeks |
-| Model training pipeline | MEDIUM | 📋 Planned | 3 weeks |
-| Model evaluation and backtesting | HIGH | 📋 Planned | 2 weeks |
-| AutoML for factor selection | LOW | 📋 Planned | 4 weeks |
+### 8.2 Feature Priority by Quarter
 
-**Technical Approach**:
-- `quant_nanggroe/engine/models/` already has base infrastructure
-- Integrate with existing FactorRegistry for feature generation
-- Use Qlib158 factors as primary features for ML models
-- Ensemble with existing rule-based strategies
-
-### 3.2 Advanced Risk Measures (October-November 2025)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| CDaR (Conditional Drawdown-at-Risk) | MEDIUM | 📋 Planned | 2 weeks |
-| EVaR (Entropic Value-at-Risk) | MEDIUM | 📋 Planned | 2 weeks |
-| Tail risk parity | LOW | 📋 Planned | 2 weeks |
-| Regime-conditional VaR | HIGH | 📋 Planned | 3 weeks |
-| Dynamic risk budget allocation | MEDIUM | 📋 Planned | 2 weeks |
-| Portfolio insurance (CPPI) | LOW | 📋 Planned | 3 weeks |
-| Counterparty risk tracking | MEDIUM | 📋 Planned | 2 weeks |
-
-**Technical Approach**:
-- Extend `quant_nanggroe/engine/risk/var.py` with new risk measures
-- Integrate with RiskManager for stress testing
-- Add regime-conditional calculations using MarketRegime
-
-### 3.3 Financial NLP (November 2025)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| FinGPT model integration | HIGH | 📋 Planned | 3 weeks |
-| News sentiment pipeline | HIGH | 📋 Planned | 2 weeks |
-| SEC filing analysis (10-K, 10-Q) | MEDIUM | 📋 Planned | 3 weeks |
-| Earnings call transcript analysis | MEDIUM | 📋 Planned | 2 weeks |
-| Social media sentiment (Twitter/Reddit) | LOW | 📋 Planned | 3 weeks |
-| Central bank communication analysis | MEDIUM | 📋 Planned | 2 weeks |
-
-**Technical Approach**:
-- Add NLP tools to Researcher agent
-- Process SEC EDGAR filings for fundamental signals
-- Feed sentiment into Strategist agent for signal generation
-
-### 3.4 RL Strategy Optimization (December 2025)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Trading environment (gym interface) | HIGH | 📋 Planned | 3 weeks |
-| PPO agent for strategy optimization | MEDIUM | 📋 Planned | 3 weeks |
-| Multi-agent RL for council optimization | LOW | 📋 Planned | 4 weeks |
-| Reward function engineering | HIGH | 📋 Planned | 2 weeks |
-- Safe RL with constitutional constraints | HIGH | 📋 Planned | 2 weeks |
-| RL-backtest integration | MEDIUM | 📋 Planned | 2 weeks |
-
-**Technical Approach**:
-- Wrap our backtest engine as a Gymnasium environment
-- Ensure RL policies cannot violate constitutional limits
-- Use Safe RL techniques (constrained policy optimization)
-
-### Q4 2025 Milestone Targets
-
-| Metric | Target | Current |
-|---|---|---|
-| ML model prediction accuracy | > 55% IC | N/A |
-| Risk measure coverage | VaR, CVaR, CDaR, EVaR | VaR, CVaR |
-| NLP sentiment accuracy | > 70% | N/A |
-| Strategy Sharpe (backtest) | > 1.5 | ~1.0 |
-| Factor count | 500+ | 469 |
+| Feature | Q3 2025 | Q4 2025 | Q1 2026 |
+|---------|---------|---------|---------|
+| LangGraph trading graph | **P0** | ✅ | ✅ |
+| 11-agent council | **P0** | ✅ | ✅ |
+| 9-checkpoint risk gate | **P0** | ✅ | ✅ |
+| Constitutional limits | **P0** | ✅ | ✅ |
+| Kill switch | **P0** | ✅ | ✅ |
+| FactorRegistry (469 factors) | **P1** | ✅ | ✅ |
+| ExchangeFactory (8 exchanges) | **P1** | ✅ | ✅ |
+| Council debate mechanism | **P1** | ✅ | ✅ |
+| ATR position sizing | **P1** | ✅ | ✅ |
+| Kelly Criterion sizing | **P1** | ✅ | ✅ |
+| Dual-bus architecture | **P2** | ✅ | ✅ |
+| Walk-forward validation | **P2** | **P1** | ✅ |
+| Stress testing (6 scenarios) | **P2** | **P1** | ✅ |
+| VaR/CVaR calculation | **P1** | ✅ | ✅ |
+| Memory system (3-layer) | **P2** | **P2** | **P1** |
+| Paper trading validation | — | **P0** | ✅ |
+| Live trading (crypto) | — | **P0** | ✅ |
+| Live trading (equity) | — | **P1** | ✅ |
+| Live trading (prediction) | — | **P2** | ✅ |
+| Kronos C++ execution | — | — | **P3** |
+| Darwinian evolution | — | — | **P3** |
+| Multi-venue arbitrage | — | — | **P3** |
+| RL strategy optimization | — | — | **P3** |
+| GpLearn factor synthesis | — | — | **P3** |
 
 ---
 
-## 4. Q1 2026: Scale and Optimize
-
-**Theme**: Market making, options, and multi-colony architecture
-
-### 4.1 Market Making Agent (January 2026)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Market making strategy implementation | HIGH | 📋 Planned | 4 weeks |
-| Spread management system | HIGH | 📋 Planned | 2 weeks |
-| Inventory management | HIGH | 📋 Planned | 3 weeks |
-| Adverse selection protection | HIGH | 📋 Planned | 2 weeks |
-| Multi-venue market making | MEDIUM | 📋 Planned | 3 weeks |
-| Market making risk limits | CRITICAL | 📋 Planned | 2 weeks |
-
-**Technical Approach**:
-- New MarketMaking agent role added to AgentRole enum
-- Dedicated execution path for market-making orders
-- Enhanced risk limits for market making (higher trade count, lower per-trade risk)
-- Avellaneda-Stoikov optimal quoting model
-
-### 4.2 Options Support (January-February 2026)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Options pricing (Black-Scholes, binomial) | HIGH | 📋 Planned | 3 weeks |
-| Greeks calculation (delta, gamma, vega, theta) | HIGH | 📋 Planned | 2 weeks |
-| Options chain data integration | HIGH | 📋 Planned | 2 weeks |
-| Volatility surface construction | MEDIUM | 📋 Planned | 3 weeks |
-| Options strategy generation | MEDIUM | 📋 Planned | 3 weeks |
-| Options risk management | CRITICAL | 📋 Planned | 2 weeks |
-| Alpaca options trading integration | HIGH | 📋 Planned | 2 weeks |
-
-**Technical Approach**:
-- New `options_path` execution path in v2 graph
-- Options agent with specialized tools
-- Greeks-based position sizing
-- Portfolio-level Greeks management
-
-### 4.3 Multi-Colony Protocol (February-March 2026)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Colony communication protocol | CRITICAL | 📋 Planned | 4 weeks |
-| Inter-colony signal sharing | HIGH | 📋 Planned | 3 weeks |
-| Distributed risk management | CRITICAL | 📋 Planned | 3 weeks |
-| Colony leader election | MEDIUM | 📋 Planned | 2 weeks |
-| Cross-colony arbitrage | HIGH | 📋 Planned | 3 weeks |
-| Colony health monitoring | HIGH | 📋 Planned | 2 weeks |
-
-**Technical Approach**:
-- Each colony runs its own TradingGraphV2 instance
-- Colonies communicate via Redis pub/sub
-- Global risk limits enforced across colonies
-- Leader colony coordinates inter-colony decisions
-
-### 4.4 Performance Optimization (March 2026)
-
-| Task | Priority | Status | Effort |
-|---|---|---|---|
-| Factor computation optimization (vectorized) | HIGH | 📋 Planned | 2 weeks |
-| Database query optimization | MEDIUM | 📋 Planned | 1 week |
-- Exchange connection pooling | HIGH | 📋 Planned | 2 weeks |
-| Async graph execution | MEDIUM | 📋 Planned | 3 weeks |
-| Memory optimization for large portfolios | MEDIUM | 📋 Planned | 2 weeks |
-| Caching strategy optimization | HIGH | 📋 Planned | 1 week |
-
-### Q1 2026 Milestone Targets
-
-| Metric | Target | Current |
-|---|---|---|
-| Market making spread capture | > 50% | N/A |
-| Options pricing accuracy | < 5% error | N/A |
-| Colony communication latency | < 100ms | N/A |
-| Factor computation time (469 factors) | < 5s | ~15s |
-| API latency (p99) | < 200ms | ~800ms |
-| Concurrent symbols | 200+ | ~50 |
-
----
-
-## 5. Future: Multi-Colony Integration
-
-**Theme**: Distributed trading intelligence across markets and strategies
-
-### 5.1 Colony Architecture
-
-```mermaid
-graph TB
-    subgraph "Colony Alpha (US Equities)"
-        GA1[TradingGraphV2]
-        AG1[11 Agents]
-        RE1[Risk Engine]
-    end
-    
-    subgraph "Colony Beta (Crypto)"
-        GA2[TradingGraphV2]
-        AG2[11 Agents]
-        RE2[Risk Engine]
-    end
-    
-    subgraph "Colony Gamma (Forex)"
-        GA3[TradingGraphV2]
-        AG3[11 Agents]
-        RE3[Risk Engine]
-    end
-    
-    subgraph "Colony Delta (Options)"
-        GA4[TradingGraphV2]
-        AG4[11 Agents]
-        RE4[Risk Engine]
-    end
-    
-    subgraph "Global Risk Coordinator"
-        GRC[Risk Coordinator]
-        GL[Global Limits]
-        CM[Colony Monitor]
-    end
-    
-    GA1 <--> GRC
-    GA2 <--> GRC
-    GA3 <--> GRC
-    GA4 <--> GRC
-    GRC --> GL
-    GRC --> CM
-```
-
-### 5.2 Future Features (2026+)
-
-| Feature | Description | Priority |
-|---|---|---|
-| **Multi-colony federation** | Multiple colonies sharing signals and risk budgets | HIGH |
-| **Cross-chain DeFi** | Ethereum, Solana, Base, Arbitrum integration | MEDIUM |
-| **Derivatives trading** | Options, futures, swaps across all asset classes | HIGH |
-| **Real-time news trading** | Sub-second news event trading | MEDIUM |
-| **Institutional integration** | FIX protocol, prime broker connectivity | LOW |
-| **Mobile monitoring** | iOS/Android app for monitoring and approval | MEDIUM |
-| **Social trading** | Strategy sharing and copy trading | LOW |
-| **Quantum computing** | Portfolio optimization with quantum algorithms | RESEARCH |
-| **Autonomous strategy development** | AI-generated and tested strategies | RESEARCH |
-
----
-
-## 6. Resource Allocation
-
-### Team Structure (Planned)
-
-| Role | Count | Focus Area |
-|---|---|---|
-| Quant Engineers | 2-3 | Factor engine, backtesting, risk models |
-| Agent Engineers | 2-3 | LangGraph, agent development, council system |
-| Platform Engineers | 1-2 | Exchange integration, API, deployment |
-| ML Engineers | 1-2 | Model training, NLP, RL |
-| DevOps | 1 | CI/CD, monitoring, infrastructure |
-
-### Budget Allocation by Quarter
-
-| Category | Q3 2025 | Q4 2025 | Q1 2026 |
-|---|---|---|---|
-| Infrastructure | 40% | 25% | 20% |
-| LLM API Costs | 20% | 30% | 25% |
-| Data Providers | 15% | 20% | 15% |
-| Exchange Fees | 10% | 10% | 15% |
-| Tooling/Services | 10% | 10% | 15% |
-| Contingency | 5% | 5% | 10% |
-
-### Key Performance Indicators (KPIs)
-
-| KPI | Q3 2025 Target | Q4 2025 Target | Q1 2026 Target |
-|---|---|---|---|
-| System Uptime | 99.5% | 99.9% | 99.95% |
-| Pipeline Latency (p50) | < 5s | < 3s | < 2s |
-| Risk Gate Pass Rate | > 30% | > 40% | > 50% |
-| Factor Computation Time | < 15s | < 10s | < 5s |
-| Test Coverage | > 90% | > 92% | > 95% |
-| Agent Confidence (avg) | > 0.70 | > 0.75 | > 0.80 |
-| Kill Switch False Positive | < 5/month | < 2/month | < 1/month |
-
----
-
-## 7. Feature Priority Matrix
-
-| Feature | Impact | Effort | Priority | Quarter |
-|---|---|---|---|---|
-| v2 graph stabilization | HIGH | MEDIUM | CRITICAL | Q3 2025 |
-| Security hardening | HIGH | HIGH | CRITICAL | Q3 2025 |
-| Exchange integration tests | HIGH | MEDIUM | CRITICAL | Q3 2025 |
-| Production deployment | HIGH | HIGH | CRITICAL | Q3 2025 |
-| ML model integration | HIGH | HIGH | HIGH | Q4 2025 |
-| Advanced risk measures | MEDIUM | MEDIUM | HIGH | Q4 2025 |
-| Financial NLP | HIGH | HIGH | HIGH | Q4 2025 |
-| RL strategy optimization | MEDIUM | HIGH | MEDIUM | Q4 2025 |
-| Market making | HIGH | HIGH | HIGH | Q1 2026 |
-| Options support | HIGH | VERY HIGH | HIGH | Q1 2026 |
-| Multi-colony protocol | VERY HIGH | VERY HIGH | MEDIUM | Q1 2026 |
-| Performance optimization | HIGH | MEDIUM | HIGH | Q1 2026 |
-
----
-
-## 7. Technical Debt Register
-
-| Debt Item | Description | Priority | Target |
-|---|---|---|---|
-| v1/v2 graph duplication | graph.py and graph_v2.py maintain separate implementations | HIGH | Q3 2025 |
-| Agent prompt inconsistency | Prompts vary in quality across agents | MEDIUM | Q4 2025 |
-| No async graph execution | LangGraph runs synchronously | LOW | Q1 2026 |
-| Missing exchange WebSocket | No real-time market data streaming | MEDIUM | Q3 2025 |
-| Factor computation speed | 469 factors take ~15s to compute | HIGH | Q1 2026 |
-| No database migrations | Alembic configured but no migrations | MEDIUM | Q3 2025 |
-| Limited error recovery | Some agent failures not gracefully handled | MEDIUM | Q3 2025 |
-| No model versioning | ML models not versioned or tracked | LOW | Q4 2025 |
-
----
-
-## 8. Dependency Roadmap
-
-### Critical Dependencies
-
-| Dependency | Current | Target | Risk |
-|---|---|---|---|
-| LangGraph | >=0.2 | >=0.3 | API changes |
-| LangChain | >=0.3 | >=0.3 | Stable |
-| CCXT | >=4.0 | >=4.0 | Exchange support |
-| Pydantic | >=2.0 | >=2.5 | Breaking changes |
-| FastAPI | >=0.100 | >=0.110 | Stable |
-| SQLAlchemy | >=2.0 | >=2.0 | Stable |
-
-### Planned Dependency Additions
-
-| Dependency | Quarter | Purpose |
-|---|---|---|
-| torch | Q4 2025 | LSTM/Transformer models |
-| xgboost | Q4 2025 | Factor prediction |
-| gymnasium | Q4 2025 | RL environment |
-| stable-baselines3 | Q4 2025 | RL algorithms |
-| prometheus-client | Q3 2025 | Metrics export |
-| alembic | Q3 2025 | Database migrations |
-
----
-
-## 9. Release Schedule
-
-| Version | Date | Theme | Key Features |
-|---|---|---|---|
-| **v4.0.0** | 2025-Q2 | LangGraph v2 Architecture | Multi-path routing, ATR sizing, SOR, human checkpoint |
-| **v4.1.0** | 2025-Q3 | Production Ready | Security, exchange testing, deployment, monitoring |
-| **v5.0.0** | 2025-Q4 | Intelligence Amplification | ML models, NLP, advanced risk, RL |
-| **v5.1.0** | 2026-Q1 | Market Making | MM agent, options, multi-colony |
-| **v6.0.0** | 2026-Q2 | Distributed Intelligence | Colony federation, cross-chain, performance |
-
-### Version Numbering
-
-- **Major (X.0.0)**: Breaking changes, new architecture
-- **Minor (4.X.0)**: New features, backward compatible
-- **Patch (4.0.X)**: Bug fixes, security patches
-
-### Release Criteria
-
-Every release must meet these criteria before shipping:
-
-| Criterion | Requirement |
-|---|---|
-| Test suite | 100% pass rate on all 2504+ tests |
-| Type checking | mypy --strict passes with 0 errors |
-| Linting | ruff check passes with 0 errors |
-| Security | No critical vulnerabilities in dependencies |
-| Performance | No regression > 10% on benchmarks |
-| Documentation | All new features documented |
-| Risk engine | Constitutional limits verified |
-| Factor health | All 469+ factors compute correctly |
-
----
-
-## 10. Success Metrics
-
-### North Star Metrics
-
-| Metric | Q3 2025 | Q4 2025 | Q1 2026 | Q2 2026 |
-|---|---|---|---|---|
-| Total return (backtest) | > 10% annualized | > 15% annualized | > 20% annualized | > 25% annualized |
-| Max drawdown | < 10% | < 8% | < 7% | < 5% |
-| Sharpe ratio | > 1.0 | > 1.5 | > 2.0 | > 2.5 |
-| Sortino ratio | > 1.5 | > 2.0 | > 2.5 | > 3.0 |
-| Win rate | > 50% | > 55% | > 58% | > 60% |
-| Risk gate pass rate | > 30% | > 40% | > 50% | > 55% |
-| System uptime | > 99.5% | > 99.9% | > 99.95% | > 99.99% |
-| Kill switch false positive | < 5/month | < 2/month | < 1/month | 0/month |
-
-### Operational Metrics
-
-| Metric | Q3 2025 | Q4 2025 | Q1 2026 |
-|---|---|---|---|
-| Mean time to detect (MTTD) | < 5 min | < 2 min | < 1 min |
-| Mean time to recover (MTTR) | < 30 min | < 10 min | < 5 min |
-| Deployment frequency | Weekly | Daily | On-demand |
-| Change failure rate | < 10% | < 5% | < 2% |
-| Rollback time | < 15 min | < 5 min | < 2 min |
-
----
-
-© 2025-2026 Quant Nanggroe AI | Roadmap v4.0.0
+*© 2025-2026 Quant Nanggroe AI | Roadmap v4.0.0*
