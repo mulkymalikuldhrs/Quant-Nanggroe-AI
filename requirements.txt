@@ -55,7 +55,7 @@ flask>=3.0               # LEGACY: Legacy web interface
 flask-socketio>=5.3      # LEGACY: Legacy WebSocket support
 python-socketio>=5.10    # LEGACY: Legacy Socket.IO
 werkzeug>=3.0            # LEGACY: Flask WSGI utility
-gunicorn>=22.0           # LEGACY: Production WSGI server
+gunicorn>=26.0.0           # LEGACY: Production WSGI server
 gevent>=24.0             # LEGACY: Async workers for gunicorn
 gevent-websocket>=0.10   # LEGACY: WebSocket support for gevent
 
