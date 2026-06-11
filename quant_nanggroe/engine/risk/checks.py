@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from quant_nanggroe.engine.risk.manager import (
+from quant_nanggroe.engine.risk.constants import (
     MAX_RISK_PER_TRADE,
     MAX_DAILY_LOSS,
     MAX_WEEKLY_LOSS,

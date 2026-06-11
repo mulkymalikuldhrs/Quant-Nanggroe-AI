@@ -16,7 +16,7 @@ from typing import Dict, List, Optional
 
 from langchain_core.tools import tool
 
-from quant_nanggroe.agents.state import (
+from quant_nanggroe.engine.risk.constants import (
     MAX_CORRELATED_POSITIONS,
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,

@@ -136,8 +136,8 @@ class TestDrawdownCheck:
 
     def test_pre_calculated_drawdown(self):
         """Should use pre-calculated drawdown if provided."""
-        result = json.loads(check_drawdown.invoke({"portfolio_value": 100000, "peak_value": 100000, "current_drawdown_pct": 10.0}))
-        assert result["drawdown_pct"] == 10.0
+        result = json.loads(check_drawdown.invoke({"portfolio_value": 100000, "peak_value": 100000, "current_drawdown_pct": 8.0}))
+        assert result["drawdown_pct"] == 8.0
         assert result["passed"] is True
 
 

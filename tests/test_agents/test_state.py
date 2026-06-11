@@ -75,8 +75,8 @@ class TestConstitutionalLimits:
         assert MAX_LEVERAGE == 3.0
 
     def test_max_drawdown(self):
-        """Max drawdown should be 15%."""
-        assert MAX_DRAWDOWN_PCT == 0.15
+        """Max drawdown should be 10% (most conservative)."""
+        assert MAX_DRAWDOWN_PCT == 0.10
 
     def test_max_trades_per_day(self):
         """Max trades per day should be 5."""

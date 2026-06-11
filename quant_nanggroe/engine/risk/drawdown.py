@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.risk.manager import MAX_DRAWDOWN
+from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN
 
 logger = logging.getLogger(__name__)
 

@@ -21,6 +21,12 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional
 
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DAILY_LOSS,
+    MAX_WEEKLY_LOSS,
+    MAX_DRAWDOWN,
+)
+
 logger = logging.getLogger(__name__)
 
 # Confirmation string required for reset (prevents accidental reset)
@@ -154,12 +160,6 @@ class KillSwitch:
         Returns:
             Activation dict if triggered, None otherwise.
         """
-        from quant_nanggroe.engine.risk.manager import (
-            MAX_DAILY_LOSS,
-            MAX_WEEKLY_LOSS,
-            MAX_DRAWDOWN,
-        )
-
         if daily_loss_pct >= MAX_DAILY_LOSS:
             return self.activate("AUTO_DAILY_LIMIT")
 

@@ -27,6 +27,8 @@ from quant_nanggroe.agents.state import (
     RiskAssessment,
     RiskCheckpoint,
     RiskVerdict,
+)
+from quant_nanggroe.engine.risk.constants import (
     MAX_CORRELATED_POSITIONS,
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,

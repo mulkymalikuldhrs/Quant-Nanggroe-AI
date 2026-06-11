@@ -23,6 +23,15 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.risk.constants import (
+    MAX_RISK_PER_TRADE,
+    MAX_DAILY_LOSS,
+    MAX_WEEKLY_LOSS,
+    MAX_DRAWDOWN,
+    MIN_RISK_REWARD,
+    MAX_CORRELATED_POSITIONS,
+    MAX_DAILY_TRADES,
+)
 from quant_nanggroe.engine.risk.checks import RiskCheckGate
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
@@ -31,18 +40,7 @@ from quant_nanggroe.engine.risk.var import VaRCalculator
 
 logger = logging.getLogger(__name__)
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# CONSTITUTIONAL RISK LIMITS — HARDCODED, IMMUTABLE, NO OVERRIDE
-# These values are final and cannot be changed by any agent, config, or API.
-# ═══════════════════════════════════════════════════════════════════════════════
-
-MAX_RISK_PER_TRADE: float = 0.005      # 0.5% max risk per trade
-MAX_DAILY_LOSS: float = 0.01           # 1% max daily loss
-MAX_WEEKLY_LOSS: float = 0.03          # 3% max weekly loss
-MAX_DRAWDOWN: float = 0.10             # 10% max drawdown
-MIN_RISK_REWARD: float = 2.0           # Minimum 1:2 R:R ratio
-MAX_CORRELATED_POSITIONS: int = 3      # Max correlated positions
-MAX_DAILY_TRADES: int = 5             # Max trades per day
+# Re-export constants for backward compatibility — canonical source is constants.py
 
 
 @dataclass
