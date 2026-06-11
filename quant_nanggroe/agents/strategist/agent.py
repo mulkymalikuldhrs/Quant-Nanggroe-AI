@@ -21,7 +21,7 @@ from quant_nanggroe.agents.strategist.prompts import (
 )
 from quant_nanggroe.agents.strategist.tools import STRATEGIST_TOOLS
 from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentSignal, AgentState, SignalDirection, TradeAction
+from quant_nanggroe.agents.state import AgentOutput, AgentRole, Signal, AgentState, SignalDirection, TradeAction
 
 
 logger = logging.getLogger(__name__)
