@@ -42,7 +42,7 @@
     "postcss": "^8.5.0",
     "prisma": "^6.0.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^15.3.0",
+    "eslint-config-next": "^16.2.9",
     "@eslint/eslintrc": "^3.0.0"
   }
 }
