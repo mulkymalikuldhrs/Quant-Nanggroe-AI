@@ -1,0 +1,2 @@
+[console_scripts]
+multicolony = ai_multicolony.cli:main

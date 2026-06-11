@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-multicolony"
+version = "0.1.0"
+description = "Autonomous Agent Operating System — Colony-based multi-agent orchestration"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    # Agent framework
+    "langgraph>=0.2",
+    "langchain>=0.3",
+    "langchain-openai>=0.2",
+    "langchain-anthropic>=0.2",
+    "langchain-google-genai>=2.0",
+    "langchain-core>=0.3",
+    # Data
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    # API
+    "fastapi>=0.100",
+    "uvicorn>=0.24",
+    "httpx>=0.25",
+    "aiohttp>=3.9",
+    # CLI/Logging
+    "structlog>=23.0",
+    "rich>=13.0",
+    "click>=8.0",
+    # Database
+    "sqlalchemy>=2.0",
+    "redis>=5.0",
+    # Crypto
+    "cryptography>=42.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "ruff>=0.1",
+]
+ml = [
+    "scikit-learn>=1.3",
+    "chromadb>=0.4",
+]
+voice = [
+    "openai-whisper",
+    "pyttsx3",
+]
+
+[project.scripts]
+multicolony = "ai_multicolony.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ai_multicolony*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks integration tests",
+]
