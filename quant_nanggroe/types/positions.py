@@ -6,7 +6,7 @@ Positions are tracked in real-time and used by the risk engine.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -36,8 +36,8 @@ class Position(BaseModel):
     unrealized_pnl_pct: float = 0.0
     cost_basis: float = Field(..., gt=0)
     market_value: float = 0.0
-    entry_time: datetime = Field(default_factory=datetime.now)
-    last_updated: datetime = Field(default_factory=datetime.now)
+    entry_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     stop_loss: Optional[float] = Field(None, gt=0)
     take_profit: Optional[float] = Field(None, gt=0)
     trailing_stop: Optional[float] = None
@@ -67,7 +67,7 @@ class Position(BaseModel):
                 self.max_drawdown,
                 (self.max_price - price) / self.max_price * 100,
             )
-        self.last_updated = datetime.now()
+        self.last_updated = datetime.now(timezone.utc)
 
 
 class Portfolio(BaseModel):
@@ -95,8 +95,8 @@ class Portfolio(BaseModel):
     total_trades: int = 0
     winning_trades: int = 0
     losing_trades: int = 0
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     model_config = {"from_attributes": True}
 
@@ -122,4 +122,4 @@ class Portfolio(BaseModel):
             if self.initial_capital > 0
             else 0.0
         )
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(timezone.utc)

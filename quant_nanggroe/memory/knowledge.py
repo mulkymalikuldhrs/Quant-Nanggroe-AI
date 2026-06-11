@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -72,8 +72,8 @@ class KnowledgeBase:
             "tags": tags or [],
             "source": source,
             "confidence": confidence,
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "metadata": metadata or {},
         }
         self._entries.append(entry)
@@ -146,7 +146,7 @@ class KnowledgeBase:
                     entry["content"] = content
                 if tags:
                     entry["tags"] = tags
-                entry["updated_at"] = datetime.now().isoformat()
+                entry["updated_at"] = datetime.now(timezone.utc).isoformat()
                 return True
         return False
 

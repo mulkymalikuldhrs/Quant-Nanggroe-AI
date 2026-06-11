@@ -97,6 +97,7 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+norecursedirs = ["quant-nanggroe-ai"]
 markers = [
     "slow: marks tests as slow",
     "integration: marks integration tests requiring API keys",

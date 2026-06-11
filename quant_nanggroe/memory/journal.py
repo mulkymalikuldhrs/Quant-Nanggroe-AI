@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -38,7 +38,8 @@ class TradeJournal:
         """
         self._persist_path = Path(persist_path) if persist_path else None
         self._trades: List[Dict[str, Any]] = []
-        self._open_positions: Dict[str, Dict[str, Any]] = {}
+        # Dict[str, List[Dict]] — supports multiple open positions per symbol
+        self._open_positions: Dict[str, List[Dict[str, Any]]] = {}
 
     def record_entry(
         self,
@@ -74,7 +75,7 @@ class TradeJournal:
             "side": side,
             "entry_price": price,
             "entry_quantity": quantity,
-            "entry_time": datetime.now().isoformat(),
+            "entry_time": datetime.now(timezone.utc).isoformat(),
             "agent_name": agent_name,
             "strategy": strategy,
             "reasoning": reasoning,
@@ -87,7 +88,7 @@ class TradeJournal:
             "reflection": None,
         }
         self._trades.append(entry)
-        self._open_positions[symbol] = entry
+        self._open_positions.setdefault(symbol, []).append(entry)
         logger.info(f"Recorded entry: {trade_id} {side} {symbol} @ {price}")
         return trade_id
 
@@ -97,6 +98,7 @@ class TradeJournal:
         price: float,
         pnl: Optional[float] = None,
         notes: Optional[str] = None,
+        trade_id: Optional[str] = None,
     ) -> Optional[str]:
         """
         Record a trade exit.
@@ -106,17 +108,35 @@ class TradeJournal:
             price: Exit price
             pnl: Realized PnL
             notes: Exit notes
+            trade_id: Optional specific trade ID to close. If omitted, closes
+                      the most recently opened position for the symbol (LIFO).
 
         Returns:
             Trade ID if found, None otherwise
         """
-        if symbol not in self._open_positions:
+        positions = self._open_positions.get(symbol, [])
+        if not positions:
             logger.warning(f"No open position found for {symbol}")
             return None
 
-        trade = self._open_positions.pop(symbol)
+        # Find the specific trade or fall back to the last one (LIFO)
+        trade = None
+        if trade_id:
+            for idx, t in enumerate(positions):
+                if t["trade_id"] == trade_id:
+                    trade = positions.pop(idx)
+                    break
+            if trade is None:
+                logger.warning(f"No open position with trade_id={trade_id} for {symbol}")
+                return None
+        else:
+            trade = positions.pop()  # LIFO: close most recent
+
+        # Clean up empty lists
+        if not positions:
+            self._open_positions.pop(symbol, None)
         trade["exit_price"] = price
-        trade["exit_time"] = datetime.now().isoformat()
+        trade["exit_time"] = datetime.now(timezone.utc).isoformat()
         trade["status"] = "closed"
         trade["notes"] = notes
 
@@ -137,9 +157,23 @@ class TradeJournal:
         logger.info(f"Recorded exit: {trade['trade_id']} {symbol} @ {price}, PnL={trade['pnl']}")
         return trade["trade_id"]
 
-    def add_reflection(self, symbol: str, notes: str, rating: Optional[int] = None) -> None:
-        """Add reflection notes to an open or recent trade."""
-        trade = self._open_positions.get(symbol)
+    def add_reflection(self, symbol: str, notes: str, rating: Optional[int] = None, trade_id: Optional[str] = None) -> None:
+        """Add reflection notes to an open or recent trade.
+
+        Args:
+            symbol: Trading pair symbol
+            notes: Reflection notes
+            rating: Optional rating (1-5)
+            trade_id: Optional specific trade ID. If omitted, applies to the
+                      most recent open position for the symbol.
+        """
+        positions = self._open_positions.get(symbol, [])
+        trade = None
+        if positions:
+            if trade_id:
+                trade = next((t for t in positions if t["trade_id"] == trade_id), None)
+            if trade is None and positions:
+                trade = positions[-1]  # most recent open position
         if trade:
             trade["reflection"] = {"notes": notes, "rating": rating}
         else:
@@ -212,8 +246,9 @@ class TradeJournal:
         with open(self._persist_path) as f:
             data = json.load(f)
         self._trades = data.get("trades", [])
-        # Rebuild open positions index
-        self._open_positions = {
-            t["symbol"]: t for t in self._trades if t["status"] == "open"
-        }
+        # Rebuild open positions index (supports multiple positions per symbol)
+        self._open_positions: Dict[str, List[Dict[str, Any]]] = {}
+        for t in self._trades:
+            if t["status"] == "open":
+                self._open_positions.setdefault(t["symbol"], []).append(t)
         return True

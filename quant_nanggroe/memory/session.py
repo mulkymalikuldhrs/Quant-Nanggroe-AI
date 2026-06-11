@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -42,12 +42,12 @@ class SessionMemory:
             persist_dir: Directory for file-based persistence
             max_entries: Maximum entries per agent before compaction
         """
-        self._session_id = session_id or datetime.now().strftime("session_%Y%m%d_%H%M%S")
+        self._session_id = session_id or datetime.now(timezone.utc).strftime("session_%Y%m%d_%H%M%S")
         self._persist_dir = Path(persist_dir) if persist_dir else None
         self._max_entries = max_entries
         self._store: Dict[str, List[Dict[str, Any]]] = {}
         self._metadata: Dict[str, Any] = {
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "session_id": self._session_id,
         }
 
@@ -68,7 +68,7 @@ class SessionMemory:
             self._store[agent_name] = []
 
         entry = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": data,
         }
         self._store[agent_name].append(entry)

@@ -22,9 +22,9 @@ from quant_nanggroe.agents.risk.tools import RISK_TOOLS, _is_correlated
 from quant_nanggroe.agents.registry import AgentRegistry
 from quant_nanggroe.agents.state import (
     AgentOutput,
+    AgentRiskAssessment,
     AgentRole,
     AgentState,
-    RiskAssessment,
     RiskCheckpoint,
     RiskVerdict,
     MAX_CORRELATED_POSITIONS,
@@ -116,7 +116,7 @@ class RiskAgent(BaseAgent):
             verdict = RiskVerdict.APPROVED
 
         # Build risk assessment
-        assessment = RiskAssessment(
+        assessment = AgentRiskAssessment(
             verdict=verdict,
             checkpoints=checkpoints,
             daily_pnl_pct=daily_pnl,
@@ -315,7 +315,7 @@ class RiskAgent(BaseAgent):
 
     def _kill_switch_active(self, state: AgentState) -> Dict[str, Any]:
         """Handle already-active kill switch."""
-        assessment = RiskAssessment(
+        assessment = AgentRiskAssessment(
             verdict=RiskVerdict.KILL_SWITCH,
             kill_switch_active=True,
             override_possible=False,

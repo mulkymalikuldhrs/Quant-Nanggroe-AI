@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -164,7 +164,7 @@ class CorrelationMonitor:
         self,
         returns: pd.DataFrame,
         window: Optional[int] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Detect market stress via correlation analysis.
 
         During stress, correlations tend to increase (everything falls together).

@@ -6,7 +6,7 @@ Every field is validated and normalized regardless of the source provider.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -113,7 +113,7 @@ class MarketData(BaseModel):
     ohlcv: List[OHLCV] = Field(default_factory=list)
     ticker: Optional[Ticker] = None
     orderbook: Optional[OrderBook] = None
-    updated_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     provider: str = Field(default="unknown", description="Data provider name")
 
     model_config = {"from_attributes": True}

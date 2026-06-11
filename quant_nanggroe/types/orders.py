@@ -6,7 +6,7 @@ Orders are the primary interface between agents and broker implementations.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -62,7 +62,7 @@ class Order(BaseModel):
     average_fill_price: Optional[float] = Field(None, gt=0)
     commission: float = Field(default=0.0, ge=0)
     slippage: float = Field(default=0.0, ge=0)
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = None
     broker_id: Optional[str] = None
     broker_order_id: Optional[str] = None

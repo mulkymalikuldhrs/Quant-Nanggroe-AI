@@ -4,25 +4,40 @@ Quant Nanggroe AI Agents Package.
 Complete agent framework for the Quant Nanggroe AI Trading Intelligence OS.
 Uses LangGraph for orchestration with 9 specialized agent types and a
 council debate system.
+
+Type Resolution (P0-04 FIX):
+- Agent* prefixed types (AgentSignal, AgentDecision, AgentRiskAssessment,
+  AgentMarketData) are LangGraph pipeline-specific wrappers.
+- Canonical types live in quant_nanggroe.types.* and are for domain modelling.
+- Backward-compatible aliases (Signal, Decision, RiskAssessment, MarketData)
+  point to the Agent* versions for pipeline use.
+- For canonical types, import from quant_nanggroe.types.* directly.
 """
 
 from quant_nanggroe.agents.base import BaseAgent, create_llm
 from quant_nanggroe.agents.state import (
+    # Agent-pipeline-specific types (preferred new names)
+    AgentDecision,
+    AgentMarketData,
     AgentOutput,
+    AgentRiskAssessment,
+    AgentSignal,
+    # Backward-compatible aliases (deprecated, point to Agent* versions)
+    Decision,
+    MarketData,
+    RiskAssessment,
+    Signal,
+    # Agent-specific types (not duplicated in types/)
     AgentRole,
     AgentState,
     CouncilResult,
-    Decision,
     DebateState,
-    MarketData,
     MarketRegime,
     PortfolioState,
     PositionInfo,
-    RiskAssessment,
     RiskCheckpoint,
     RiskDebateState,
     RiskVerdict,
-    Signal,
     SignalDirection,
     TradeAction,
     VoteResult,
@@ -61,22 +76,28 @@ __all__ = [
     # Base
     "BaseAgent",
     "create_llm",
-    # State
+    # Agent-pipeline-specific types (preferred)
+    "AgentDecision",
+    "AgentMarketData",
     "AgentOutput",
+    "AgentRiskAssessment",
+    "AgentSignal",
+    # Backward-compatible aliases (deprecated)
+    "Decision",
+    "MarketData",
+    "RiskAssessment",
+    "Signal",
+    # Agent-specific types (not duplicated)
     "AgentRole",
     "AgentState",
     "CouncilResult",
-    "Decision",
     "DebateState",
-    "MarketData",
     "MarketRegime",
     "PortfolioState",
     "PositionInfo",
-    "RiskAssessment",
     "RiskCheckpoint",
     "RiskDebateState",
     "RiskVerdict",
-    "Signal",
     "SignalDirection",
     "TradeAction",
     "VoteResult",
