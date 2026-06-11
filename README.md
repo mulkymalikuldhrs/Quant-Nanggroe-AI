@@ -1,24 +1,26 @@
+<img src="docs/banner.png" width="100%">
+
 <a href="https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI">
   <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:001a0a,50:003d1a,100:005c2a&height=220&section=header&text=Quant%20Nanggroe%20AI&fontSize=42&fontColor=00D4AA&animation=fadeIn&fontAlignY=30&desc=Multi-Agent%20Decision%20Intelligence%20OS%20for%20Quantitative%20Trading&descSize=16&descColor=fbbf24&descAlignY=50" />
 </a>
 
 <div align="center">
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=00D4AA&center=true&vCenter=true&width=720&lines=Multi-Agent+Decision+Intelligence+OS;5-Layer+Deterministic+Execution+Stack;Darwinian+Strategy+Lifecycle;Risk+Guardian+Constitution;Decision-Support+%E2%80%94+Not+Guaranteed+Profit)](https://git.io/typing-svg)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=00D4AA&center=true&vCenter=true&width=720&lines=Multi-Agent+Decision+Intelligence+OS;5-Layer+Deterministic+Execution+Stack;Darwinian+Strategy+Lifecycle;Risk+Guardian+Constitution;Decision-Support+Not+Guaranteed+Profit)](https://git.io/typing-svg)
 
 <br/>
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
-[![Binance](https://img.shields.io/badge/Binance-API-F0B90B?style=for-the-badge&logo=binance&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
-[![Multi-Agent](https://img.shields.io/badge/Multi-Agent-5_Layers-00D4AA?style=for-the-badge&logo=ai&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
-[![Version](https://img.shields.io/badge/Version-v15.3.0-005c2a?style=for-the-badge&logo=semanticrelease&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
+[![Binance](https://img.shields.io/badge/Binance-API-F0B90B?style=for-the-badge&logo=binance&logoColor=white)](https://www.binance.com)
+[![Multi-Agent](https://img.shields.io/badge/Multi-Agent-5_Layers-00D4AA?style=for-the-badge&logo=ai&logoColor=white)](#)
+[![Version](https://img.shields.io/badge/Version-v15.3.0-005c2a?style=for-the-badge&logo=semanticrelease&logoColor=white)](#)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 <br/>
 
 [![GitHub Stars](https://img.shields.io/github/stars/mulkymalikuldhrs/Quant-Nanggroe-AI?style=for-the-badge&logo=github&color=gold)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/stargazers)
-[![GitHub Forks](https://img.shields.io/badge/GitHub-Forks-blue?style=for-the-badge&logo=github&color=blue)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/fork)
+[![GitHub Forks](https://img.shields.io/github/forks/mulkymalikuldhrs/Quant-Nanggroe-AI?style=for-the-badge&logo=github&color=blue)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/fork)
 [![GitHub Issues](https://img.shields.io/github/issues/mulkymalikuldhrs/Quant-Nanggroe-AI?style=for-the-badge&logo=github&color=red)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/issues)
 
 <br/>
@@ -33,11 +35,9 @@
 
 ---
 
-<a href="https://www.producthunt.com/products/quant-nanggroe-ai?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-quant-nanggroe-ai" target="_blank" rel="noopener noreferrer"><img alt="Quant Nanggroe AI - trading, quantitative, stocks, ai, ai agent, swarm | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1169196&amp;theme=dark&amp;t=1781170069213"></a>
-
 ## Overview
 
-Quant Nanggroe AI is a **Multi-Agent Decision Intelligence Operating System** for quantitative research and systematic trading in financial markets. It is part of the [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) unified project ecosystem.
+**Quant Nanggroe AI** is a **Multi-Agent Decision Intelligence Operating System** for quantitative research and systematic trading in financial markets.
 
 Built on the principle of **Deterministic Decision Intelligence**, the platform treats LLMs as Logical Reasoning Engines operating under strict contracts that forbid subjective opinions, mandate data grounding, and require pressure-based numerical outputs rather than direct trade signals.
 
@@ -135,55 +135,51 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Quant Nanggroe AI — Colony System"
-        direction TB
-
-        subgraph "Alpha Colony — Trend Following"
-            AlphaLead["Colony Leader<br/>Trend Strategist"]
-            AlphaTech["Technical Sensor<br/>Momentum Analysis"]
-            AlphaSent["Sentiment Sensor<br/>News Flow"]
-            AlphaLead --> AlphaTech
-            AlphaLead --> AlphaSent
-        end
-
-        subgraph "Beta Colony — Mean Reversion"
-            BetaLead["Colony Leader<br/>MR Strategist"]
-            BetaTech["Technical Sensor<br/>Statistical Analysis"]
-            BetaVol["Volatility Sensor<br/>Mean-Revert Detection"]
-            BetaLead --> BetaTech
-            BetaLead --> BetaVol
-        end
-
-        subgraph "Gamma Colony — Macro Analysis"
-            GammaLead["Colony Leader<br/>Macro Strategist"]
-            GammaMacro["Macro Sensor<br/>Interest Rates / Correlations"]
-            GammaOnChain["On-Chain Sensor<br/>Smart Money Flow"]
-            GammaLead --> GammaMacro
-            GammaLead --> GammaOnChain
-        end
-
-        subgraph "Colony Orchestrator"
-            Orchestrator["Colony<br/>Orchestrator"]
-            RegimeInput["Regime Context<br/>from Layer 1"]
-            PressureNorm["Pressure<br/>Normalizer"]
-            StrategyLife["Darwinian<br/>Strategy Lifecycle"]
-        end
-
-        RegimeInput --> Orchestrator
-        Orchestrator --> AlphaLead
-        Orchestrator --> BetaLead
-        Orchestrator --> GammaLead
-
-        AlphaTech -->|"Pressure Vector"| PressureNorm
-        AlphaSent -->|"Pressure Vector"| PressureNorm
-        BetaTech -->|"Pressure Vector"| PressureNorm
-        BetaVol -->|"Pressure Vector"| PressureNorm
-        GammaMacro -->|"Pressure Vector"| PressureNorm
-        GammaOnChain -->|"Pressure Vector"| PressureNorm
-
-        PressureNorm --> StrategyLife
-        StrategyLife -->|"Retire Underperformers"| Orchestrator
+    subgraph AlphaColony["Alpha Colony — Trend Following"]
+        AlphaLead["Colony Leader<br/>Trend Strategist"]
+        AlphaTech["Technical Sensor<br/>Momentum Analysis"]
+        AlphaSent["Sentiment Sensor<br/>News Flow"]
+        AlphaLead --> AlphaTech
+        AlphaLead --> AlphaSent
     end
+
+    subgraph BetaColony["Beta Colony — Mean Reversion"]
+        BetaLead["Colony Leader<br/>MR Strategist"]
+        BetaTech["Technical Sensor<br/>Statistical Analysis"]
+        BetaVol["Volatility Sensor<br/>Mean-Revert Detection"]
+        BetaLead --> BetaTech
+        BetaLead --> BetaVol
+    end
+
+    subgraph GammaColony["Gamma Colony — Macro Analysis"]
+        GammaLead["Colony Leader<br/>Macro Strategist"]
+        GammaMacro["Macro Sensor<br/>Interest Rates / Correlations"]
+        GammaOnChain["On-Chain Sensor<br/>Smart Money Flow"]
+        GammaLead --> GammaMacro
+        GammaLead --> GammaOnChain
+    end
+
+    subgraph OrchestratorGroup["Colony Orchestrator"]
+        Orchestrator["Colony<br/>Orchestrator"]
+        RegimeInput["Regime Context<br/>from Layer 1"]
+        PressureNorm["Pressure<br/>Normalizer"]
+        StrategyLife["Darwinian<br/>Strategy Lifecycle"]
+    end
+
+    RegimeInput --> Orchestrator
+    Orchestrator --> AlphaLead
+    Orchestrator --> BetaLead
+    Orchestrator --> GammaLead
+
+    AlphaTech -->|"Pressure Vector"| PressureNorm
+    AlphaSent -->|"Pressure Vector"| PressureNorm
+    BetaTech -->|"Pressure Vector"| PressureNorm
+    BetaVol -->|"Pressure Vector"| PressureNorm
+    GammaMacro -->|"Pressure Vector"| PressureNorm
+    GammaOnChain -->|"Pressure Vector"| PressureNorm
+
+    PressureNorm --> StrategyLife
+    StrategyLife -->|"Retire Underperformers"| Orchestrator
 
     style AlphaLead fill:#065f46,stroke:#10b981,color:#fff
     style BetaLead fill:#1e40af,stroke:#3b82f6,color:#fff
@@ -206,71 +202,67 @@ sequenceDiagram
     participant Output as Decision Artifact
 
     Market->>Auto: Raw L1/L2 Data
-    Auto->>Auto: Failover Check<br/>(Binance → CoinCap → AlphaVantage)
+    Auto->>Auto: Failover Check Binance to CoinCap to AlphaVantage
     Auto->>Regime: Normalized Market Data
 
-    Regime->>Regime: Classify Regime<br/>(Trending/Volatile/Quiet)
+    Regime->>Regime: Classify Regime Trending/Volatile/Quiet
     Regime->>Sensors: Regime Context + Confidence
 
     par Parallel Sensor Analysis
-        Sensors->>Normalizer: Technical Pressure<br/>(dir: 0.72, mag: 0.65)
+        Sensors->>Normalizer: Technical Pressure dir 0.72 mag 0.65
     and
-        Sensors->>Normalizer: Sentiment Pressure<br/>(dir: 0.45, mag: 0.30)
+        Sensors->>Normalizer: Sentiment Pressure dir 0.45 mag 0.30
     and
-        Sensors->>Normalizer: Liquidity Pressure<br/>(dir: 0.61, mag: 0.55)
+        Sensors->>Normalizer: Liquidity Pressure dir 0.61 mag 0.55
     and
-        Sensors->>Normalizer: On-Chain Pressure<br/>(dir: 0.80, mag: 0.40)
+        Sensors->>Normalizer: On-Chain Pressure dir 0.80 mag 0.40
     end
 
-    Normalizer->>Normalizer: Weighted Aggregation<br/>+ Conflict Resolution<br/>+ Darwinian Weighting
-    Normalizer->>Synthesizer: Unified Pressure Vector<br/>(dir: 0.61, mag: 0.55, conf: 0.68)
+    Normalizer->>Normalizer: Weighted Aggregation + Conflict Resolution + Darwinian Weighting
+    Normalizer->>Synthesizer: Unified Pressure Vector dir 0.61 mag 0.55 conf 0.68
 
     Synthesizer->>Synthesizer: Kelly-Derived Position Sizing
-    Synthesizer->>Guardian: Proposed Action<br/>(reduce_long, size: 0.05)
+    Synthesizer->>Guardian: Proposed Action reduce_long size 0.05
 
     alt Risk Within Limits
-        Guardian-->>Synthesizer: PASS — Adjusted Size: 0.03
+        Guardian-->>Synthesizer: PASS Adjusted Size 0.03
     else Risk Exceeds Limits
-        Guardian-->>Synthesizer: REDUCE — Portfolio Heat 15.2%
+        Guardian-->>Synthesizer: REDUCE Portfolio Heat 15.2%
     else Kill Switch Triggered
-        Guardian-->>Synthesizer: BLOCK — Emergency Halt
+        Guardian-->>Synthesizer: BLOCK Emergency Halt
     end
 
-    Synthesizer->>Output: Decision Artifact<br/>(action, size, confidence, provenance)
+    Synthesizer->>Output: Decision Artifact action size confidence provenance
 ```
 
 ### 4. Multi-Exchange Integration — How Exchanges Connect
 
 ```mermaid
 graph TB
-    subgraph "Quant Nanggroe AI — Exchange Layer"
-        direction TB
+    subgraph Exchanges["Exchange Adapters"]
+        Binance["Binance<br/>Crypto Spot + Futures"]
+        Alpaca["Alpaca<br/>US Equities"]
+        IBKR["Interactive Brokers<br/>Global Multi-Asset"]
+        Solana["Solana / Jupiter<br/>DEX + DeFi"]
+        Polymarket["Polymarket<br/>Prediction Markets"]
+    end
 
-        subgraph "Exchange Adapters"
-            Binance["Binance<br/>Crypto Spot + Futures"]
-            Alpaca["Alpaca<br/>US Equities"]
-            IBKR["Interactive Brokers<br/>Global Multi-Asset"]
-            Solana["Solana / Jupiter<br/>DEX + DeFi"]
-            Polymarket["Polymarket<br/>Prediction Markets"]
-        end
+    subgraph OrderInterface["Unified Order Interface"]
+        OrderFactory["Order Type Factory<br/>Market / Limit / Stop"]
+        ExecutionEngine["Execution Engine<br/>Smart Order Routing"]
+        SlippageGuard["Slippage Guard<br/>Max Deviation Check"]
+    end
 
-        subgraph "Unified Order Interface"
-            OrderFactory["Order Type Factory<br/>Market / Limit / Stop"]
-            ExecutionEngine["Execution Engine<br/>Smart Order Routing"]
-            SlippageGuard["Slippage Guard<br/>Max Deviation Check"]
-        end
+    subgraph RiskCompliance["Risk and Compliance"]
+        RiskGuardian["Risk Guardian<br/>Constitution"]
+        KillSwitch["Kill Switch<br/>Emergency Halt"]
+        AuditLogger["Audit Logger<br/>Full Provenance"]
+        RugCheck["RugCheck Guard<br/>Token Safety - Solana"]
+    end
 
-        subgraph "Risk & Compliance"
-            RiskGuardian["Risk Guardian<br/>Constitution"]
-            KillSwitch["Kill Switch<br/>Emergency Halt"]
-            AuditLogger["Audit Logger<br/>Full Provenance"]
-            RugCheck["RugCheck Guard<br/>Token Safety (Solana)"]
-        end
-
-        subgraph "Data Flow"
-            MarketData["Market Data<br/>L1/L2 Feeds"]
-            PortfolioState["Portfolio State<br/>Positions + P&L"]
-        end
+    subgraph DataFlow["Data Flow"]
+        MarketData["Market Data<br/>L1/L2 Feeds"]
+        PortfolioState["Portfolio State<br/>Positions + P/L"]
     end
 
     Binance --> OrderFactory
@@ -310,29 +302,29 @@ graph TB
 flowchart TD
     Input["Proposed Action<br/>from Decision Synthesizer"]
 
-    Input --> PosCheck{"Position Size<br/>≤ 5% Portfolio?"}
+    Input --> PosCheck{"Position Size<br/>Max 5% Portfolio?"}
     PosCheck -->|"No"| Reduce["REDUCE<br/>Adjust to 5% max"]
     PosCheck -->|"Yes"| HeatCheck
 
-    HeatCheck{"Portfolio Heat<br/>≤ 20%?"}
+    HeatCheck{"Portfolio Heat<br/>Max 20%?"}
     HeatCheck -->|"No"| Reduce
     HeatCheck -->|"Yes"| DrawdownCheck
 
-    DrawdownCheck{"Daily Drawdown<br/>≤ 3%?"}
-    DrawdownCheck -->|"No"| Block["BLOCK<br/>Daily Limit Exceeded<br/>🛑"]
+    DrawdownCheck{"Daily Drawdown<br/>Max 3%?"}
+    DrawdownCheck -->|"No"| Block["BLOCK<br/>Daily Limit Exceeded"]
     DrawdownCheck -->|"Yes"| CorrelCheck
 
-    CorrelCheck{"Correlated Exposure<br/>≤ 15%?"}
+    CorrelCheck{"Correlated Exposure<br/>Max 15%?"}
     CorrelCheck -->|"No"| Reduce
     CorrelCheck -->|"Yes"| EmotionCheck
 
     EmotionCheck{"Emotional Lockout<br/>Active?"}
-    EmotionCheck -->|"Yes — Recent Loss"| Cooldown["COOLDOWN<br/>Mandatory Pause<br/>⏸️"]
+    EmotionCheck -->|"Yes - Recent Loss"| Cooldown["COOLDOWN<br/>Mandatory Pause"]
     EmotionCheck -->|"No"| KillCheck
 
     KillCheck{"Kill Switch<br/>Triggered?"}
-    KillCheck -->|"Yes — Emergency"| Halt["HALT<br/>All Activity Stopped<br/>🚨"]
-    KillCheck -->|"No"| Pass["PASS ✅<br/>Action Approved<br/>with Adjusted Size"]
+    KillCheck -->|"Yes - Emergency"| Halt["HALT<br/>All Activity Stopped"]
+    KillCheck -->|"No"| Pass["PASS<br/>Action Approved<br/>with Adjusted Size"]
 
     Reduce --> AuditLog["Audit Trail<br/>Verdict + Reason"]
     Block --> AuditLog
@@ -512,7 +504,6 @@ The final layer combines the normalized pressure vector with portfolio state and
 | "Risk Guardian" | Reduces risk through hard-coded safety rules, but **cannot eliminate risk**. Market conditions can exceed any risk model. |
 | "Darwinian Strategy Lifecycle" | Automatically retires poor strategies based on metrics, but **past performance does not guarantee future results**. |
 | "Multi-Agent Analysis" | Multiple agents provide diverse perspectives, but **diverse analysis does not equal correct analysis**. |
-| Part of HermesQuantOS | This project is one component of the larger [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) ecosystem. |
 
 **Critical reminders:**
 - All trading involves **significant risk of loss**
@@ -535,13 +526,6 @@ The final layer combines the normalized pressure vector with portfolio state and
 
 ```bash
 # Clone the repository
-
-<!-- AUTO-PACKAGE-BADGES:START -->
-<!-- Auto-generated package badges -->
-
-![PyPI version](https://img.shields.io/pypi/v/quant-nanggroe-ai?style=flat-square&logo=pypi&color=green) ![PyPI downloads](https://img.shields.io/pypi/dm/quant-nanggroe-ai?style=flat-square&color=brightgreen) ![PyPI license](https://img.shields.io/pypi/l/quant-nanggroe-ai?style=flat-square) [![Deployed](https://img.shields.io/badge/deployed-0.2.0-blue?style=flat-square)](https://pypi.org/project/quant-nanggroe-ai)
-
-<!-- AUTO-PACKAGE-BADGES:END -->
 git clone https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI.git
 cd Quant-Nanggroe-AI
 
@@ -760,49 +744,18 @@ This project is provided strictly for educational and research purposes. The aut
 
 ---
 
+## Related Projects
 
-
-## 🔗 Related Projects
-
-We're building a family of open source tools! Check out our other projects:
-
-| Project | Description | Stars |
-|---------|-------------|-------|
-| [📈 Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI) | AI-powered quantitative analysis for Nanggroe market | ⭐ |
-| [🧠 AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | Multi-agent AI colony simulation | ⭐ 3 |
-| [📋 Kalen](https://github.com/mulkymalikuldhrs/kalen) | Smart scheduling & AI task management | ⭐ |
-| [🤖 ProxyGateLLM](https://github.com/mulkymalikuldhrs/ProxyGateLLM) | Multi-LLM gateway with priority fallback | ⭐ 36 |
-| [🧩 Mnemosyne](https://github.com/mulkymalikuldhrs/mnemosyne) | Knowledge management & note-taking | ⭐ |
-
-🚀 **[Visit our Contributor Hub](https://mulkymalikuldhrs.github.io/contribute-to-our-projects/)** — 28 open source projects seeking contributors!
+| Project | Description |
+|---------|-------------|
+| [AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | 5-Package Multi-Agent AI Monorepo (OSINT + Agents + Trading + Autonomous) |
+| [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) | Unified Trading Intelligence Platform |
+| [ProxyGateLLM](https://github.com/mulkymalikuldhrs/ProxyGateLLM) | Multi-LLM Gateway with Priority Fallback |
+| [autonomous-organism](https://github.com/mulkymalikuldhrs/autonomous-organism) | Self-Evolving Digital Entity Research Project |
 
 ## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
-```
-MIT License
-
-Copyright (c) 2024-2026 Mulky Malikul Dhaher
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
 
 ---
 
@@ -815,35 +768,6 @@ SOFTWARE.
 
 ---
 
-<div align="center">
-
-**Part of the [HermesQuantOS](https://github.com/mulkymalikuldhrs/HermesQuantOS) Unified Project**
-
-</div>
-
 <a href="https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI">
   <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=100:005c2a,50:003d1a,0:001a0a&height=100&section=footer" />
 </a>
-
-
-<!-- Schema.org Structured Data for Search Engines -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareSourceCode",
-  "name": "Quant-Nanggroe-AI",
-  "author": {
-    "@type": "Person",
-    "name": "Mulky Malikul Adhr",
-    "url": "https://github.com/mulkymalikuldhrs"
-  },
-  "programmingLanguage": "TypeScript",
-  "license": "https://spdx.org/licenses/MIT",
-  "codeRepository": "https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI",
-  "contributor": {
-    "@type": "Organization",
-    "name": "Open Source Contributors",
-    "url": "https://mulkymalikuldhrs.github.io/contribute-to-our-projects/"
-  }
-}
-</script>
