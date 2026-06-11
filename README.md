@@ -18,7 +18,7 @@
 <br/>
 
 [![GitHub Stars](https://img.shields.io/github/stars/mulkymalikuldhrs/Quant-Nanggroe-AI?style=for-the-badge&logo=github&color=gold)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/mulkymalikuldhrs/Quant-Nanggroe-AI?style=for-the-badge&logo=github&color=blue)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/fork)
+[![GitHub Forks](https://img.shields.io/badge/GitHub-Forks-blue?style=for-the-badge&logo=github&color=blue)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/fork)
 [![GitHub Issues](https://img.shields.io/github/issues/mulkymalikuldhrs/Quant-Nanggroe-AI?style=for-the-badge&logo=github&color=red)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI/issues)
 
 <br/>
@@ -44,6 +44,311 @@ Built on the principle of **Deterministic Decision Intelligence**, the platform 
 The system implements a **5-Layer Execution Stack** that processes market data from raw L1/L2 feeds through regime detection, multi-agent sensor analysis, pressure normalization, and decision synthesis with risk enforcement. It features a **Darwinian Strategy Lifecycle** that automatically retires underperforming strategies and a **Risk Guardian Constitution** as an independent layer of hard-coded safety rules.
 
 > **Honest Note**: This is a **decision-support and research tool**, not an autonomous trading system that guarantees profits. "Deterministic Decision Intelligence" means the data flow pipeline is deterministic — **not** that its outputs are guaranteed correct. All trading involves risk of loss. The Risk Guardian reduces but cannot eliminate risk.
+
+---
+
+## Visual Architecture
+
+### 1. 5-Layer Execution Stack — Visual Pipeline
+
+```mermaid
+graph TB
+    subgraph Layer4["LAYER 4 — DECISION"]
+        direction LR
+        Synth["Decision<br/>Synthesizer"]
+        Risk["Risk Guardian<br/>Constitution"]
+        Sizing["Kelly-Derived<br/>Position Sizer"]
+        Audit["Audit Logger<br/>Full Provenance"]
+        Synth --> Risk --> Sizing --> Audit
+    end
+
+    subgraph Layer3["LAYER 3 — NORMALIZATION"]
+        direction LR
+        WAgg["Weighted<br/>Aggregation"]
+        ConfRes["Conflict<br/>Resolution"]
+        TempSmooth["Temporal<br/>Smoothing"]
+        Darwin["Darwinian<br/>Weighting"]
+        WAgg --> ConfRes --> TempSmooth --> Darwin
+    end
+
+    subgraph Layer2["LAYER 2 — MULTI-AGENT SENSORS"]
+        direction LR
+        Tech["Technical<br/>Sensor"]
+        Sent["Sentiment<br/>Sensor"]
+        Macro["Macro<br/>Sensor"]
+        Liq["Liquidity<br/>Sensor"]
+        Vol["Volatility<br/>Sensor"]
+        OnChain["On-Chain<br/>Sensor"]
+    end
+
+    subgraph Layer1["LAYER 1 — REGIME DETECTION"]
+        direction LR
+        Classify["Regime<br/>Classifier"]
+        Trans["Transition<br/>Detector"]
+        Conf["Confidence<br/>Scorer"]
+        Classify --> Trans --> Conf
+    end
+
+    subgraph Layer0["LAYER 0 — DATA FOUNDATION"]
+        direction LR
+        Binance["Binance<br/>L1/L2"]
+        CoinCap["CoinCap<br/>Market Data"]
+        AlphaV["AlphaVantage<br/>Stocks/Forex"]
+        Polygon["Polygon<br/>US Equities"]
+        Finnhub["Finnhub<br/>Real-time"]
+        AutoSwitch["AutoSwitch<br/>Data Engine"]
+    end
+
+    Binance --> AutoSwitch
+    CoinCap --> AutoSwitch
+    AlphaV --> AutoSwitch
+    Polygon --> AutoSwitch
+    Finnhub --> AutoSwitch
+
+    AutoSwitch -->|"Normalized<br/>Data"| Classify
+    Conf -->|"Regime<br/>Context"| Tech
+    Conf --> Sent
+    Conf --> Macro
+    Conf --> Liq
+    Conf --> Vol
+    Conf --> OnChain
+
+    Tech -->|"Pressure<br/>Vector"| WAgg
+    Sent -->|"Pressure<br/>Vector"| WAgg
+    Macro -->|"Pressure<br/>Vector"| WAgg
+    Liq -->|"Pressure<br/>Vector"| WAgg
+    Vol -->|"Pressure<br/>Vector"| WAgg
+    OnChain -->|"Pressure<br/>Vector"| WAgg
+
+    Darwin -->|"Unified<br/>Pressure"| Synth
+
+    style Layer4 fill:#15803d,stroke:#22c55e,color:#fff
+    style Layer3 fill:#1e40af,stroke:#3b82f6,color:#fff
+    style Layer2 fill:#7c2d12,stroke:#f97316,color:#fff
+    style Layer1 fill:#581c87,stroke:#a855f7,color:#fff
+    style Layer0 fill:#1e293b,stroke:#475569,color:#fff
+    style Risk fill:#b91c1c,stroke:#ef4444,color:#fff
+    style AutoSwitch fill:#0f766e,stroke:#14b8a6,color:#fff
+```
+
+### 2. Agent Colony Architecture — How Agents Form Colonies
+
+```mermaid
+graph TB
+    subgraph "Quant Nanggroe AI — Colony System"
+        direction TB
+
+        subgraph "Alpha Colony — Trend Following"
+            AlphaLead["Colony Leader<br/>Trend Strategist"]
+            AlphaTech["Technical Sensor<br/>Momentum Analysis"]
+            AlphaSent["Sentiment Sensor<br/>News Flow"]
+            AlphaLead --> AlphaTech
+            AlphaLead --> AlphaSent
+        end
+
+        subgraph "Beta Colony — Mean Reversion"
+            BetaLead["Colony Leader<br/>MR Strategist"]
+            BetaTech["Technical Sensor<br/>Statistical Analysis"]
+            BetaVol["Volatility Sensor<br/>Mean-Revert Detection"]
+            BetaLead --> BetaTech
+            BetaLead --> BetaVol
+        end
+
+        subgraph "Gamma Colony — Macro Analysis"
+            GammaLead["Colony Leader<br/>Macro Strategist"]
+            GammaMacro["Macro Sensor<br/>Interest Rates / Correlations"]
+            GammaOnChain["On-Chain Sensor<br/>Smart Money Flow"]
+            GammaLead --> GammaMacro
+            GammaLead --> GammaOnChain
+        end
+
+        subgraph "Colony Orchestrator"
+            Orchestrator["Colony<br/>Orchestrator"]
+            RegimeInput["Regime Context<br/>from Layer 1"]
+            PressureNorm["Pressure<br/>Normalizer"]
+            StrategyLife["Darwinian<br/>Strategy Lifecycle"]
+        end
+
+        RegimeInput --> Orchestrator
+        Orchestrator --> AlphaLead
+        Orchestrator --> BetaLead
+        Orchestrator --> GammaLead
+
+        AlphaTech -->|"Pressure Vector"| PressureNorm
+        AlphaSent -->|"Pressure Vector"| PressureNorm
+        BetaTech -->|"Pressure Vector"| PressureNorm
+        BetaVol -->|"Pressure Vector"| PressureNorm
+        GammaMacro -->|"Pressure Vector"| PressureNorm
+        GammaOnChain -->|"Pressure Vector"| PressureNorm
+
+        PressureNorm --> StrategyLife
+        StrategyLife -->|"Retire Underperformers"| Orchestrator
+    end
+
+    style AlphaLead fill:#065f46,stroke:#10b981,color:#fff
+    style BetaLead fill:#1e40af,stroke:#3b82f6,color:#fff
+    style GammaLead fill:#7c2d12,stroke:#f97316,color:#fff
+    style Orchestrator fill:#581c87,stroke:#a855f7,color:#fff
+    style StrategyLife fill:#b91c1c,stroke:#ef4444,color:#fff
+```
+
+### 3. Decision Flow — From Market Data to Trade Decision
+
+```mermaid
+sequenceDiagram
+    participant Market as Market Data Feeds
+    participant Auto as AutoSwitch Engine
+    participant Regime as Regime Detector
+    participant Sensors as Multi-Agent Sensors
+    participant Normalizer as Pressure Normalizer
+    participant Synthesizer as Decision Synthesizer
+    participant Guardian as Risk Guardian
+    participant Output as Decision Artifact
+
+    Market->>Auto: Raw L1/L2 Data
+    Auto->>Auto: Failover Check<br/>(Binance → CoinCap → AlphaVantage)
+    Auto->>Regime: Normalized Market Data
+
+    Regime->>Regime: Classify Regime<br/>(Trending/Volatile/Quiet)
+    Regime->>Sensors: Regime Context + Confidence
+
+    par Parallel Sensor Analysis
+        Sensors->>Normalizer: Technical Pressure<br/>(dir: 0.72, mag: 0.65)
+    and
+        Sensors->>Normalizer: Sentiment Pressure<br/>(dir: 0.45, mag: 0.30)
+    and
+        Sensors->>Normalizer: Liquidity Pressure<br/>(dir: 0.61, mag: 0.55)
+    and
+        Sensors->>Normalizer: On-Chain Pressure<br/>(dir: 0.80, mag: 0.40)
+    end
+
+    Normalizer->>Normalizer: Weighted Aggregation<br/>+ Conflict Resolution<br/>+ Darwinian Weighting
+    Normalizer->>Synthesizer: Unified Pressure Vector<br/>(dir: 0.61, mag: 0.55, conf: 0.68)
+
+    Synthesizer->>Synthesizer: Kelly-Derived Position Sizing
+    Synthesizer->>Guardian: Proposed Action<br/>(reduce_long, size: 0.05)
+
+    alt Risk Within Limits
+        Guardian-->>Synthesizer: PASS — Adjusted Size: 0.03
+    else Risk Exceeds Limits
+        Guardian-->>Synthesizer: REDUCE — Portfolio Heat 15.2%
+    else Kill Switch Triggered
+        Guardian-->>Synthesizer: BLOCK — Emergency Halt
+    end
+
+    Synthesizer->>Output: Decision Artifact<br/>(action, size, confidence, provenance)
+```
+
+### 4. Multi-Exchange Integration — How Exchanges Connect
+
+```mermaid
+graph TB
+    subgraph "Quant Nanggroe AI — Exchange Layer"
+        direction TB
+
+        subgraph "Exchange Adapters"
+            Binance["Binance<br/>Crypto Spot + Futures"]
+            Alpaca["Alpaca<br/>US Equities"]
+            IBKR["Interactive Brokers<br/>Global Multi-Asset"]
+            Solana["Solana / Jupiter<br/>DEX + DeFi"]
+            Polymarket["Polymarket<br/>Prediction Markets"]
+        end
+
+        subgraph "Unified Order Interface"
+            OrderFactory["Order Type Factory<br/>Market / Limit / Stop"]
+            ExecutionEngine["Execution Engine<br/>Smart Order Routing"]
+            SlippageGuard["Slippage Guard<br/>Max Deviation Check"]
+        end
+
+        subgraph "Risk & Compliance"
+            RiskGuardian["Risk Guardian<br/>Constitution"]
+            KillSwitch["Kill Switch<br/>Emergency Halt"]
+            AuditLogger["Audit Logger<br/>Full Provenance"]
+            RugCheck["RugCheck Guard<br/>Token Safety (Solana)"]
+        end
+
+        subgraph "Data Flow"
+            MarketData["Market Data<br/>L1/L2 Feeds"]
+            PortfolioState["Portfolio State<br/>Positions + P&L"]
+        end
+    end
+
+    Binance --> OrderFactory
+    Alpaca --> OrderFactory
+    IBKR --> OrderFactory
+    Solana --> OrderFactory
+    Polymarket --> OrderFactory
+
+    OrderFactory --> ExecutionEngine
+    ExecutionEngine --> SlippageGuard
+
+    SlippageGuard --> RiskGuardian
+    RiskGuardian --> KillSwitch
+    KillSwitch --> AuditLogger
+
+    Binance --> MarketData
+    Alpaca --> MarketData
+    IBKR --> MarketData
+    Solana --> RugCheck
+    RugCheck --> MarketData
+
+    MarketData --> PortfolioState
+    PortfolioState --> RiskGuardian
+
+    style Binance fill:#f0b90b,stroke:#f0b90b,color:#000
+    style Alpaca fill:#00c2a8,stroke:#00c2a8,color:#000
+    style IBKR fill:#e1251b,stroke:#e1251b,color:#fff
+    style Solana fill:#9945ff,stroke:#9945ff,color:#fff
+    style Polymarket fill:#5b6bf0,stroke:#5b6bf0,color:#fff
+    style RiskGuardian fill:#b91c1c,stroke:#ef4444,color:#fff
+    style KillSwitch fill:#7f1d1d,stroke:#dc2626,color:#fff
+```
+
+### 5. Risk Guardian Constitution — Risk Gate Flow
+
+```mermaid
+flowchart TD
+    Input["Proposed Action<br/>from Decision Synthesizer"]
+
+    Input --> PosCheck{"Position Size<br/>≤ 5% Portfolio?"}
+    PosCheck -->|"No"| Reduce["REDUCE<br/>Adjust to 5% max"]
+    PosCheck -->|"Yes"| HeatCheck
+
+    HeatCheck{"Portfolio Heat<br/>≤ 20%?"}
+    HeatCheck -->|"No"| Reduce
+    HeatCheck -->|"Yes"| DrawdownCheck
+
+    DrawdownCheck{"Daily Drawdown<br/>≤ 3%?"}
+    DrawdownCheck -->|"No"| Block["BLOCK<br/>Daily Limit Exceeded<br/>🛑"]
+    DrawdownCheck -->|"Yes"| CorrelCheck
+
+    CorrelCheck{"Correlated Exposure<br/>≤ 15%?"}
+    CorrelCheck -->|"No"| Reduce
+    CorrelCheck -->|"Yes"| EmotionCheck
+
+    EmotionCheck{"Emotional Lockout<br/>Active?"}
+    EmotionCheck -->|"Yes — Recent Loss"| Cooldown["COOLDOWN<br/>Mandatory Pause<br/>⏸️"]
+    EmotionCheck -->|"No"| KillCheck
+
+    KillCheck{"Kill Switch<br/>Triggered?"}
+    KillCheck -->|"Yes — Emergency"| Halt["HALT<br/>All Activity Stopped<br/>🚨"]
+    KillCheck -->|"No"| Pass["PASS ✅<br/>Action Approved<br/>with Adjusted Size"]
+
+    Reduce --> AuditLog["Audit Trail<br/>Verdict + Reason"]
+    Block --> AuditLog
+    Cooldown --> AuditLog
+    Halt --> AuditLog
+    Pass --> AuditLog
+
+    AuditLog --> Output["Decision Artifact<br/>with Guardian Ruling"]
+
+    style Halt fill:#7f1d1d,stroke:#dc2626,color:#fff
+    style Block fill:#b91c1c,stroke:#ef4444,color:#fff
+    style Reduce fill:#92400e,stroke:#f59e0b,color:#fff
+    style Cooldown fill:#713f12,stroke:#eab308,color:#fff
+    style Pass fill:#15803d,stroke:#22c55e,color:#fff
+    style AuditLog fill:#1e40af,stroke:#3b82f6,color:#fff
+```
 
 ---
 
