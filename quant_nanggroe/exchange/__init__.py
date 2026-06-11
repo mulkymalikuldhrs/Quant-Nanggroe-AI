@@ -100,6 +100,15 @@ from quant_nanggroe.exchange.factory import (
     SUPPORTED_EXCHANGES,
 )
 
+# Multi-exchange REST clients
+from quant_nanggroe.exchange.clients import (
+    BaseRestClient,
+    ExchangeCapability as RestClientCapabilities,
+    BinanceClient,
+    BybitClient,
+    OKXClient,
+)
+
 # Trading guards pipeline
 from quant_nanggroe.exchange.guards import (
     BaseGuard,
@@ -173,6 +182,20 @@ __all__ = [
     "ExchangeCapabilities",
     "MarketType",
     "SUPPORTED_EXCHANGES",
+    # Multi-exchange REST clients
+    "BaseRestClient",
+    "RestClientCapabilities",
+    "RateLimiter",
+    "BinanceClient",
+    "BybitClient",
+    "OKXClient",
+    "KrakenClient",
+    "KuCoinClient",
+    "BitgetClient",
+    "BitfinexClient",
+    "CoinbaseClient",
+    "GateClient",
+    "LongbridgeClient",
     # Guards
     "BaseGuard",
     "WhitelistGuard",

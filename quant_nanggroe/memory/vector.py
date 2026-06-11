@@ -120,9 +120,11 @@ class VectorStore:
         self,
         persist_directory: Optional[str] = None,
         embedding_provider: EmbeddingProvider = EmbeddingProvider.DEFAULT,
+        use_fallback: bool = False,
     ) -> None:
         self._persist_directory = persist_directory
         self._embedding_provider = embedding_provider
+        self._use_fallback = use_fallback
         self._client = None
         self._collections: Dict[str, Any] = {}
         self._initialized = False
@@ -130,6 +132,17 @@ class VectorStore:
         self._fallback_store: Dict[str, List[VectorDocument]] = {
             c.value: [] for c in CollectionName
         }
+
+    def reset(self) -> None:
+        """Reset the vector store to a clean state.
+
+        Useful for testing to avoid state leakage between test cases.
+        """
+        self._client = None
+        self._collections = {}
+        self._initialized = False
+        self._chromadb_available = False
+        self._fallback_store = {c.value: [] for c in CollectionName}
 
     async def initialize(self) -> bool:
         """Initialize the ChromaDB client and collections.
@@ -139,6 +152,12 @@ class VectorStore:
         """
         if self._initialized:
             return True
+
+        if self._use_fallback:
+            logger.info("VectorStore: Forced fallback mode")
+            self._chromadb_available = False
+            self._initialized = True
+            return False
 
         try:
             import chromadb  # type: ignore[import-untyped]

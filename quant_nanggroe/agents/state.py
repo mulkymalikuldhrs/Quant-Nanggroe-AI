@@ -85,6 +85,9 @@ class AgentRole(str, Enum):
     CRYPTO = "crypto"
     FOREX = "forex"
     COUNCIL = "council"
+    GEOPOLITICS = "geopolitics"
+    SMC = "smc"
+    PERSONA = "persona"
 
 
 # =============================================================================

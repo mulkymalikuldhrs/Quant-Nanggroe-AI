@@ -4,11 +4,14 @@ Provides a factory for creating exchange clients based on exchange name,
 with support for multiple exchanges, market type routing, configuration
 validation, and exchange capability detection.
 
-All exchange implementations use CCXT as the underlying library.
+Supports two modes:
+1. **CCXT mode** (via ``create()``) — Uses CCXT as the underlying library.
+2. **REST client mode** (via ``create_rest_client()``) — Uses native REST
+   clients with per-exchange signing, rate limiting, and retry logic.
 
 Supported Exchanges
 -------------------
-binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase
+binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase, bitfinex, longbridge
 
 Usage
 -----
@@ -16,11 +19,11 @@ Usage
 
     factory = ExchangeFactory()
 
-    # Create a Binance spot exchange
+    # Create a Binance spot exchange (CCXT mode)
     broker = factory.create("binance", api_key="...", api_secret="...", market_type="spot")
 
-    # Create an OKX futures exchange
-    broker = factory.create("okx", api_key="...", api_secret="...", passphrase="...", market_type="futures")
+    # Create an OKX futures exchange (REST client mode)
+    client = factory.create_rest_client("okx", api_key="...", api_secret="...", passphrase="...", market_type="futures")
 
     # Check capabilities
     caps = factory.get_capabilities("binance")
@@ -39,6 +42,12 @@ from pydantic import BaseModel, Field, field_validator
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeInterface
 from quant_nanggroe.exchange.ccxt_broker import CCXTBroker
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
+from quant_nanggroe.exchange.clients import (
+    BaseRestClient,
+    BinanceClient,
+    BybitClient,
+    OKXClient,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +190,28 @@ _CAPABILITY_REGISTRY: Dict[str, ExchangeCapabilities] = {
         requires_passphrase=True,
         max_leverage=3.0,
         ccxt_id="coinbase",
+    ),
+    "bitfinex": ExchangeCapabilities(
+        exchange_id="bitfinex",
+        supports_spot=True,
+        supports_futures=True,
+        supports_perps=True,
+        supports_margin=True,
+        supports_websocket=True,
+        requires_passphrase=False,
+        max_leverage=10.0,
+        ccxt_id="bitfinex",
+    ),
+    "longbridge": ExchangeCapabilities(
+        exchange_id="longbridge",
+        supports_spot=True,
+        supports_futures=False,
+        supports_perps=False,
+        supports_margin=True,
+        supports_websocket=True,
+        requires_passphrase=False,
+        max_leverage=1.0,
+        ccxt_id="",
     ),
 }
 
@@ -386,6 +417,116 @@ class ExchangeFactory:
         )
 
         return broker
+
+    # ------------------------------------------------------------------ #
+    # Create REST client (native)
+    # ------------------------------------------------------------------ #
+
+    # Registry mapping exchange names to their REST client classes
+    _REST_CLIENT_REGISTRY: Dict[str, type] = {
+        "binance": BinanceClient,
+        "bybit": BybitClient,
+        "okx": OKXClient,
+    }
+
+    def create_rest_client(
+        self,
+        exchange_name: str,
+        *,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+        passphrase: Optional[str] = None,
+        market_type: Optional[str] = None,
+        sandbox: Optional[bool] = None,
+        rate_limit: Optional[float] = None,
+        timeout: Optional[int] = None,
+        retries: Optional[int] = None,
+        extra_options: Optional[Dict[str, Any]] = None,
+    ) -> BaseRestClient:
+        """Create a native REST client for an exchange.
+
+        Unlike ``create()`` which uses CCXT, this creates a native REST
+        client with per-exchange signing, rate limiting, and retry logic.
+
+        Args:
+            exchange_name: Exchange identifier (e.g. ``"binance"``, ``"okx"``).
+            api_key: Exchange API key.
+            api_secret: Exchange API secret.
+            passphrase: API passphrase (required for OKX, KuCoin, Bitget, Coinbase).
+            market_type: Market type (``"spot"``, ``"futures"``, ``"perps"``).
+            sandbox: Override sandbox mode.
+            rate_limit: Override rate limit.
+            timeout: Override timeout.
+            retries: Override retries.
+            extra_options: Additional exchange-specific options.
+
+        Returns:
+            A :class:`~quant_nanggroe.exchange.clients.base_rest_client.BaseRestClient` instance.
+
+        Raises:
+            ExchangeFactoryError: If the exchange is not supported.
+        """
+        name_lower = exchange_name.lower().strip()
+
+        client_class = self._REST_CLIENT_REGISTRY.get(name_lower)
+        if client_class is None:
+            raise ExchangeFactoryError(
+                f"No REST client available for '{exchange_name}'. "
+                f"Available: {sorted(self._REST_CLIENT_REGISTRY.keys())}",
+                exchange=exchange_name,
+            )
+
+        # Validate configuration
+        self._validate_config(
+            name_lower,
+            api_key=api_key,
+            api_secret=api_secret,
+            passphrase=passphrase,
+        )
+
+        # Resolve market type
+        effective_market = self._resolve_market_type(name_lower, market_type)
+
+        # Build options
+        options: Dict[str, Any] = {}
+        if market_type:
+            options["market_type"] = market_type
+        if effective_market == MarketType.FUTURES:
+            options["market_type"] = "futures"
+        elif effective_market == MarketType.PERPS:
+            options["market_type"] = "perps"
+        else:
+            options["market_type"] = "spot"
+
+        # Merge custom options
+        custom = self._config.custom_options.get(name_lower, {})
+        options.update(custom)
+        if extra_options:
+            options.update(extra_options)
+
+        exchange_config = ExchangeConfig(
+            exchange_id=name_lower,
+            api_key=api_key,
+            api_secret=api_secret,
+            passphrase=passphrase,
+            sandbox=sandbox if sandbox is not None else self._config.sandbox,
+            rate_limit=rate_limit or self._config.default_rate_limit,
+            timeout=timeout or self._config.default_timeout,
+            retries=retries if retries is not None else self._config.default_retries,
+            options=options,
+        )
+
+        client = client_class(exchange_config)
+
+        # Track created exchange
+        self._created_exchanges[f"rest:{name_lower}"] = client
+
+        logger.info(
+            "ExchangeFactory: Created %s REST client (market=%s, sandbox=%s)",
+            name_lower, effective_market.value, exchange_config.sandbox,
+        )
+
+        return client
 
     def _create_paper_broker(
         self,

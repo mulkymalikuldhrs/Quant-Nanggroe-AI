@@ -12,6 +12,8 @@ Features
 * Consistent BaseExchange interface across all adapters
 * Market type detection and appropriate data source routing
 * Graceful fallback when exchange APIs are unavailable
+* **New**: Native REST client creation via ``create_rest_client()`` using
+  the new ``quant_nanggroe.exchange.clients`` module
 
 Dependencies
 ------------
@@ -22,6 +24,7 @@ Notes
 -----
 This factory creates adapters that wrap the existing CCXTBroker with
 market-specific configurations and additional data source capabilities.
+It also supports creating native REST clients via the new clients module.
 """
 
 from __future__ import annotations
@@ -40,6 +43,21 @@ from quant_nanggroe.exchange.base import (
     ExchangeInterface,
     ExchangeState,
 )
+from quant_nanggroe.exchange.clients import (
+    BaseRestClient,
+    BinanceClient,
+    BybitClient,
+    OKXClient,
+)
+
+# Lazy imports for clients that may not be available yet
+_KRAKEN_AVAILABLE = False
+_KUCOIN_AVAILABLE = False
+_BITGET_AVAILABLE = False
+_BITFINEX_AVAILABLE = False
+_COINBASE_AVAILABLE = False
+_GATE_AVAILABLE = False
+_LONGBRIDGE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -729,6 +747,63 @@ class QuantDingerFactory:
         except Exception as exc:
             logger.error("Failed to fetch klines for %s:%s - %s", market, symbol, exc)
             return []
+
+    # REST client registry mapping exchange names to their native REST client classes
+    _REST_CLIENT_REGISTRY: Dict[str, type] = {
+        "binance": BinanceClient,
+        "bybit": BybitClient,
+        "okx": OKXClient,
+    }
+
+    def create_rest_client(
+        self,
+        exchange_name: str,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> BaseRestClient:
+        """Create a native REST client for an exchange.
+
+        Unlike ``create_exchange_adapter()`` which uses CCXT, this creates
+        a native REST client with per-exchange signing, rate limiting, and
+        retry logic from the new ``quant_nanggroe.exchange.clients`` module.
+
+        Args:
+            exchange_name: Exchange identifier (e.g., "binance", "bybit").
+            config: Exchange configuration dict. Required keys:
+                - ``api_key``: API key
+                - ``api_secret``: API secret
+                Optional keys:
+                - ``passphrase``: API passphrase (OKX, KuCoin, Bitget, Coinbase)
+                - ``market_type``: "spot" or "futures" (default: "spot")
+                - ``sandbox``: Use testnet (default: False)
+
+        Returns:
+            BaseRestClient instance.
+
+        Raises:
+            ValueError: If exchange_name is not supported.
+        """
+        key = exchange_name.lower().strip()
+        client_class = self._REST_CLIENT_REGISTRY.get(key)
+        if client_class is None:
+            raise ValueError(
+                f"No REST client available for '{exchange_name}'. "
+                f"Available: {sorted(self._REST_CLIENT_REGISTRY.keys())}"
+            )
+
+        merged_config = {**self._default_config, **(config or {})}
+        exchange_config = ExchangeConfig(
+            exchange_id=key,
+            api_key=merged_config.get("api_key"),
+            api_secret=merged_config.get("api_secret"),
+            passphrase=merged_config.get("passphrase"),
+            sandbox=merged_config.get("sandbox", False),
+            options={
+                "market_type": merged_config.get("market_type", "spot"),
+            },
+        )
+        client = client_class(exchange_config)
+        logger.info("QuantDingerFactory: Created %s REST client", key)
+        return client
 
     @staticmethod
     def get_supported_exchanges() -> List[str]:

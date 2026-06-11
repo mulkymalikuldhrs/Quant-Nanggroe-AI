@@ -41,8 +41,8 @@ from quant_nanggroe.memory.vector import (
 
 @pytest.fixture
 def vector_store():
-    """Create a fresh VectorStore with in-memory fallback."""
-    return VectorStore()
+    """Create a fresh VectorStore with in-memory fallback (no ChromaDB leakage)."""
+    return VectorStore(use_fallback=True)
 
 
 @pytest.fixture
@@ -332,9 +332,10 @@ class TestVectorStoreInit:
             assert vector_store._chromadb_available is False
 
     @pytest.mark.asyncio
-    async def test_initialize_with_chromadb_mock(self, vector_store):
+    async def test_initialize_with_chromadb_mock(self):
         """Test initialization with mocked ChromaDB via sys.modules injection."""
         import sys
+        store = VectorStore()  # Not use_fallback=True, so ChromaDB path is attempted
         mock_client = MagicMock()
         mock_collection = MagicMock()
         mock_client.get_or_create_collection.return_value = mock_collection
@@ -342,11 +343,10 @@ class TestVectorStoreInit:
         mock_chroma.Client.return_value = mock_client
         mock_chroma.PersistentClient.return_value = mock_client
 
-        vector_store._initialized = False
         with patch.dict(sys.modules, {"chromadb": mock_chroma}):
-            result = await vector_store.initialize()
-            assert vector_store._initialized is True
-            assert vector_store._chromadb_available is True
+            result = await store.initialize()
+            assert store._initialized is True
+            assert store._chromadb_available is True
 
     @pytest.mark.asyncio
     async def test_initialize_persistent_client(self, tmp_path):
@@ -365,9 +365,10 @@ class TestVectorStoreInit:
             mock_chroma.PersistentClient.assert_called_once_with(path=str(tmp_path))
 
     @pytest.mark.asyncio
-    async def test_initialize_creates_all_collections(self, vector_store):
+    async def test_initialize_creates_all_collections(self):
         """All 5 collections should be created with ChromaDB mock."""
         import sys
+        store = VectorStore()  # Not use_fallback=True
         mock_client = MagicMock()
         mock_collection = MagicMock()
         mock_client.get_or_create_collection.return_value = mock_collection
@@ -375,9 +376,8 @@ class TestVectorStoreInit:
         mock_chroma.Client.return_value = mock_client
         mock_chroma.PersistentClient.return_value = mock_client
 
-        vector_store._initialized = False
         with patch.dict(sys.modules, {"chromadb": mock_chroma}):
-            await vector_store.initialize()
+            await store.initialize()
             # Should have called get_or_create_collection for each of the 5 collections
             assert mock_client.get_or_create_collection.call_count == 5
 

@@ -298,7 +298,7 @@ class TestListingAndDiscovery:
         assert "binance" in exchanges
         assert "okx" in exchanges
         assert "kraken" in exchanges
-        assert len(exchanges) == 8
+        assert len(exchanges) >= 8
 
     def test_list_by_capability_futures(self):
         exchanges = ExchangeFactory.list_exchanges_by_capability("supports_futures")
