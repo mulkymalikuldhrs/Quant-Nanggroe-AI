@@ -11,7 +11,10 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from langchain_core.language_models import BaseChatModel
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
 
 from quant_nanggroe.agents.geopolitics.base import GeopoliticsAgent
 from quant_nanggroe.agents.registry import AgentRegistry

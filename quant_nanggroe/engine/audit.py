@@ -4,16 +4,21 @@ Audit Logger — Full Traceability Across All Decision Layers
 From Quant-Nanggroe-AI — Layers: MARKET → SENSOR → PRESSURE → DECISION → RISK → EXECUTION → SYSTEM
 
 Max 1000 entries per session, filterable by layer and severity.
+Supports file-based persistence via flush() for crash recovery.
 """
 
 from __future__ import annotations
 
 import json
+import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class AuditEntry(BaseModel):
@@ -129,3 +134,23 @@ class AuditLogger:
                 default=str,
             )
         )
+
+    def flush(self) -> None:
+        """Write audit log entries to disk as JSONL for crash recovery.
+
+        Appends the most recent entries to a JSONL file, ensuring audit
+        records survive process crashes.  The file path is configurable
+        via the ``QNAI_AUDIT_FILE`` environment variable (defaults to
+        ``/tmp/qnai_audit.jsonl``).
+
+        Only the last 100 entries are flushed to keep file size bounded.
+        """
+        try:
+            audit_file = os.environ.get("QNAI_AUDIT_FILE", "/tmp/qnai_audit.jsonl")
+            entries_to_flush = self.entries[-100:]
+            with open(audit_file, "a") as f:
+                for entry in entries_to_flush:
+                    f.write(json.dumps(entry.model_dump(), default=str) + "\n")
+            logger.info("audit_flushed: entries=%d, file=%s", len(entries_to_flush), audit_file)
+        except Exception as e:
+            logger.warning("audit_flush_error: %s", e)

@@ -12,13 +12,40 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type
 
-from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
-from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.prebuilt import ToolNode
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
+
+try:
+    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+except ImportError:
+    AIMessage = BaseMessage = HumanMessage = SystemMessage = None
+
+try:
+    from langchain_core.tools import BaseTool
+except ImportError:
+    BaseTool = None
+
+try:
+    from langchain_openai import ChatOpenAI
+except ImportError:
+    ChatOpenAI = None
+
+try:
+    from langchain_anthropic import ChatAnthropic
+except ImportError:
+    ChatAnthropic = None
+
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None
+
+try:
+    from langgraph.prebuilt import ToolNode
+except ImportError:
+    ToolNode = None
 
 from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState
 
@@ -49,11 +76,17 @@ def create_llm(
         A configured BaseChatModel instance
 
     Raises:
+        ImportError: If the required langchain package is not installed
         ValueError: If the provider is not supported
     """
     provider_lower = provider.lower()
 
     if provider_lower in ("openai", "ollama", "openrouter"):
+        if ChatOpenAI is None:
+            raise ImportError(
+                "langchain_openai is required for the openai/ollama/openrouter provider. "
+                "Install with: pip install langchain-openai"
+            )
         return ChatOpenAI(
             model=model,
             base_url=base_url,
@@ -62,6 +95,11 @@ def create_llm(
             **kwargs,
         )
     elif provider_lower == "anthropic":
+        if ChatAnthropic is None:
+            raise ImportError(
+                "langchain_anthropic is required for the anthropic provider. "
+                "Install with: pip install langchain-anthropic"
+            )
         return ChatAnthropic(
             model=model,
             base_url=base_url,
@@ -70,6 +108,11 @@ def create_llm(
             **kwargs,
         )
     elif provider_lower == "google":
+        if ChatGoogleGenerativeAI is None:
+            raise ImportError(
+                "langchain_google_genai is required for the google provider. "
+                "Install with: pip install langchain-google-genai"
+            )
         return ChatGoogleGenerativeAI(
             model=model,
             api_key=api_key,
@@ -103,7 +146,7 @@ class BaseAgent(ABC):
         name: str,
         role: AgentRole,
         description: str,
-        llm: BaseChatModel,
+        llm: BaseChatModel = None,
         tools: Optional[List[BaseTool]] = None,
         system_prompt: Optional[str] = None,
     ) -> None:
@@ -114,7 +157,7 @@ class BaseAgent(ABC):
             name: Unique agent name
             role: Agent role type
             description: Human-readable description
-            llm: Language model instance
+            llm: Language model instance (None if langchain not installed)
             tools: Optional list of LangChain tools
             system_prompt: Optional system prompt for the agent
         """
@@ -124,10 +167,10 @@ class BaseAgent(ABC):
         self._llm = llm
         self._tools = tools or []
         self._system_prompt = system_prompt or self.default_system_prompt()
-        self._tool_node = ToolNode(self._tools) if self._tools else None
+        self._tool_node = ToolNode(self._tools) if self._tools and ToolNode is not None else None
 
-        # Bind tools to LLM if tools exist
-        if self._tools:
+        # Bind tools to LLM if tools exist and LLM supports it
+        if self._tools and self._llm is not None and hasattr(self._llm, "bind_tools"):
             self._llm_with_tools = self._llm.bind_tools(self._tools)
         else:
             self._llm_with_tools = self._llm

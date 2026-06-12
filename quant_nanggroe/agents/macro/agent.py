@@ -10,7 +10,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from langchain_core.language_models import BaseChatModel
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
 
 from quant_nanggroe.agents.base import BaseAgent
 from quant_nanggroe.agents.macro.prompts import MACRO_SYSTEM_PROMPT, MACRO_TASK_TEMPLATE

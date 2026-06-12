@@ -12,7 +12,10 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from langchain_core.language_models import BaseChatModel
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
 
 from quant_nanggroe.agents.base import BaseAgent
 from quant_nanggroe.agents.trader.prompts import (

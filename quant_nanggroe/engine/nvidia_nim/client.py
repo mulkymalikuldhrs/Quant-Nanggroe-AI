@@ -26,6 +26,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 import httpx
 import structlog
 
+from quant_nanggroe.core.circuit_breaker import CircuitBreaker
 from quant_nanggroe.engine.nvidia_nim.config import NIMConfig, get_nim_config
 from quant_nanggroe.engine.nvidia_nim.models import (
     NIMChatMessage,
@@ -50,6 +51,14 @@ from quant_nanggroe.engine.nvidia_nim.models import (
 from quant_nanggroe.engine.observability import get_observability, traced
 
 logger = structlog.get_logger(__name__)
+
+# ── Circuit breaker for NIM API protection ─────────────────────────────────
+nim_circuit_breaker = CircuitBreaker(
+    name="nim_client",
+    failure_threshold=5,
+    recovery_timeout=60.0,
+    half_open_max=3,
+)
 
 # ---------------------------------------------------------------------------
 # Approximate cost table (USD per 1K tokens) — NVIDIA NIM pricing as of 2025
@@ -112,6 +121,14 @@ class NIMClient:
         # Model cache
         self._models_cache: Optional[NIMModelList] = None
         self._models_cache_time: float = 0.0
+
+        # Circuit breaker instance (uses module-level by default)
+        self._circuit_breaker: CircuitBreaker = nim_circuit_breaker
+
+    @property
+    def circuit_breaker(self) -> CircuitBreaker:
+        """Access the circuit breaker for introspection or manual reset."""
+        return self._circuit_breaker
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -210,6 +227,14 @@ class NIMClient:
         retryable_statuses = {429, 500, 502, 503, 504}
         last_exc: Exception | None = None
 
+        # Circuit breaker guard — reject immediately if circuit is OPEN
+        if not self._circuit_breaker.can_execute():
+            raise NIMAPIError(
+                status_code=503,
+                message=f"Circuit breaker OPEN for {self._circuit_breaker.name} — rejecting request",
+                model=model,
+            )
+
         for attempt in range(1, self._max_retries + 1):
             try:
                 self._check_rate_limit()
@@ -244,9 +269,13 @@ class NIMClient:
                         model=model,
                     )
 
+                # Success — record with circuit breaker
+                self._circuit_breaker.record_success()
                 return response
 
             except NIMAPIError:
+                # Record failure for circuit breaker on non-retryable errors
+                self._circuit_breaker.record_failure()
                 raise
             except NIMRateLimitError:
                 if attempt < self._max_retries:
@@ -277,6 +306,18 @@ class NIMClient:
         raise RuntimeError(
             f"NIM request failed after {self._max_retries} retries: {last_exc}"
         )
+
+    # ------------------------------------------------------------------
+    # Circuit breaker helpers
+    # ------------------------------------------------------------------
+
+    def _cb_record_success(self) -> None:
+        """Record a successful API call with the circuit breaker."""
+        self._circuit_breaker.record_success()
+
+    def _cb_record_failure(self) -> None:
+        """Record a failed API call with the circuit breaker."""
+        self._circuit_breaker.record_failure()
 
     # ------------------------------------------------------------------
     # Cost estimation
@@ -650,6 +691,14 @@ class NIMClient:
             Dict with 'healthy' (bool), 'latency_ms' (float), and
             optional 'error' (str) if unhealthy.
         """
+        # If circuit breaker is OPEN, report unhealthy without making API call
+        if not self._circuit_breaker.can_execute():
+            return {
+                "healthy": False,
+                "latency_ms": 0.0,
+                "error": f"Circuit breaker OPEN for {self._circuit_breaker.name}",
+            }
+
         start = time.monotonic()
         try:
             client = await self._ensure_client()
@@ -659,11 +708,13 @@ class NIMClient:
             latency_ms = (time.monotonic() - start) * 1000.0
 
             if response.status_code == 200:
+                self._circuit_breaker.record_success()
                 return {
                     "healthy": True,
                     "latency_ms": round(latency_ms, 1),
                     "status_code": response.status_code,
                 }
+            self._circuit_breaker.record_failure()
             return {
                 "healthy": False,
                 "latency_ms": round(latency_ms, 1),
@@ -671,6 +722,7 @@ class NIMClient:
                 "error": response.text[:200],
             }
         except Exception as exc:
+            self._circuit_breaker.record_failure()
             latency_ms = (time.monotonic() - start) * 1000.0
             return {
                 "healthy": False,

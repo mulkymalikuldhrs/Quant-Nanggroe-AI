@@ -123,6 +123,7 @@ class UnifiedRetailStrategy(Strategy):
                 low_val = min(data.get("low", [0]))
                 high_val = max(data.get("high", [0]))
         except Exception:
+            logger.exception("price_extraction_failed: current_price set to 0")
             current_price = 0
             low_val = 0
             high_val = 0
@@ -191,6 +192,7 @@ class UnifiedRetailStrategy(Strategy):
 
             return {"direction": "neutral", "support": support, "resistance": resistance}
         except Exception:
+            logger.exception("snr_analysis_failed: returning neutral with error flag")
             return {"direction": "neutral", "error": True}
 
 

@@ -13,7 +13,17 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from langchain_core.tools import tool
+try:
+    from langchain_core.tools import tool
+except ImportError:
+    # Fallback: provide a no-op decorator when langchain_core is not installed
+    def tool(func=None, *args, **kwargs):
+        """No-op fallback for langchain_core.tools.tool when langchain_core is not installed."""
+        if func is not None:
+            return func
+        def decorator(f):
+            return f
+        return decorator
 
 
 logger = logging.getLogger(__name__)
@@ -181,21 +191,20 @@ def fetch_macro_data(
                         vix_data = loop.run_until_complete(mdt.get_current_price("^VIX"))
                         result["indicators"]["VIX"] = round(vix_data.get("price", 0.0), 2)
                     except Exception:
+                        logger.exception("fetch_macro_data_vix_failed")
                         pass
-
-                    # Fetch DXY (US Dollar Index)
                     try:
                         dxy_data = loop.run_until_complete(mdt.get_current_price("DX-Y.NYB"))
                         result["indicators"]["DXY"] = round(dxy_data.get("price", 0.0), 2)
                     except Exception:
+                        logger.exception("fetch_macro_data_dxy_failed")
                         pass
-
-                    # Fetch Treasury Yields
                     for symbol, key in [("^TNX", "Yield_10Y"), ("^IRX", "Yield_13W"), ("^TYX", "Yield_30Y")]:
                         try:
                             yield_data = loop.run_until_complete(mdt.get_current_price(symbol))
                             result["indicators"][key] = round(yield_data.get("price", 0.0), 2)
                         except Exception:
+                            logger.exception("fetch_macro_data_yield_failed: symbol=%s", symbol)
                             pass
 
                     if result["indicators"]:
@@ -403,10 +412,10 @@ def analyze_correlations(
                             if len(closes) > 10:
                                 all_closes[sym] = closes
                         except Exception:
+                            logger.exception("fetch_ohlcv_failed: symbol=%s", sym)
                             pass
 
                     if len(all_closes) >= 2:
-                        # Compute real correlation matrix
                         min_len = min(len(v) for v in all_closes.values())
                         returns_data = {}
                         for sym, closes in all_closes.items():

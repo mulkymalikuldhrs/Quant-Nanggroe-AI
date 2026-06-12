@@ -33,9 +33,22 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from langchain_core.language_models import BaseChatModel
-from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
+
+try:
+    from langgraph.graph import END, START, StateGraph
+except ImportError:
+    END = "END"
+    START = "START"
+    StateGraph = None
+
+try:
+    from langgraph.prebuilt import ToolNode
+except ImportError:
+    ToolNode = None
 
 from quant_nanggroe.agents.base import create_llm
 from quant_nanggroe.agents.bridges.risk_gate_bridge import RiskGateBridge, GateVerdict

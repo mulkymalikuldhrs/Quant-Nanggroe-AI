@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from langchain_core.language_models import BaseChatModel
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
 
 from quant_nanggroe.agents.personas.base_investor import BaseInvestorAgent
 from quant_nanggroe.agents.registry import AgentRegistry

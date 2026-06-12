@@ -662,6 +662,7 @@ def create_app() -> FastAPI:
                             "timestamp": datetime.now().isoformat(),
                         })
                     except Exception:
+                        logger.exception("websocket_heartbeat_failed: breaking WebSocket loop")
                         break
 
         except WebSocketDisconnect:

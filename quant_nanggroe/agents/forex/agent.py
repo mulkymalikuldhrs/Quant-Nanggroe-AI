@@ -11,7 +11,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from langchain_core.language_models import BaseChatModel
+try:
+    from langchain_core.language_models import BaseChatModel
+except ImportError:
+    BaseChatModel = None
 
 from quant_nanggroe.agents.base import BaseAgent
 from quant_nanggroe.agents.forex.prompts import FOREX_SYSTEM_PROMPT, FOREX_TASK_TEMPLATE

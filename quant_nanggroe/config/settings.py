@@ -138,6 +138,20 @@ class Settings(BaseSettings):
     backtest_default_slippage: float = 0.0005
     backtest_default_initial_capital: float = 100000.0
 
+    # CORS
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8000", "http://localhost:8080"],
+        description="Allowed CORS origins. Never use wildcard with credentials.",
+    )
+    cors_methods: list[str] = Field(
+        default=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        description="Allowed CORS HTTP methods.",
+    )
+    cors_headers: list[str] = Field(
+        default=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
+        description="Allowed CORS request headers.",
+    )
+
     # Data
     data_cache_ttl: int = 300  # 5 minutes
     data_provider_timeout: int = 30

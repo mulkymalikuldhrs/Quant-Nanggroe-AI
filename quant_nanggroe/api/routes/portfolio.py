@@ -124,7 +124,7 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
                     )
                 )
         except Exception:
-            pass  # ExchangeManager may not have connected exchanges
+            logger.exception("exchange_manager_portfolio_failed: ExchangeManager may not have connected exchanges")
 
         return PortfolioSummaryResponse(
             total_value=total_value,
@@ -135,6 +135,7 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
             cash_balance=cash_balance,
         )
     except Exception:
+        logger.exception("portfolio_summary_failed: returning empty response")
         return PortfolioSummaryResponse()
 
 
@@ -183,7 +184,7 @@ async def get_portfolio_risk(http_request: Request) -> PortfolioRiskResponse:
                 var_95 = round(var_result.var_value, 4)
                 cvar_95 = round(var_result.cvar_value, 4)
         except Exception:
-            pass
+            logger.exception("var_calculation_failed: could not compute VaR/CVaR")
 
         daily_pnl_pct = 0.0
         raw_daily = status.get("daily_loss_pct", "0")
@@ -229,6 +230,7 @@ async def run_stress_test(http_request: Request) -> dict[str, Any]:
         status = rm.status()
         portfolio_value = status.get("current_equity", 100000.0)
     except Exception:
+        logger.exception("stress_test_risk_manager_failed: using hardcoded portfolio_value fallback")
         portfolio_value = 100000.0
 
     # Get current portfolio positions to compute position-aware shocks

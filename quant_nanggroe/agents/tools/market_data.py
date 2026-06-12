@@ -18,9 +18,19 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from langchain_core.tools import tool
+try:
+    from langchain_core.tools import tool
+except ImportError:
+    def tool(func=None, *args, **kwargs):
+        """No-op fallback when langchain_core is not installed."""
+        if func is not None:
+            return func
+        def decorator(f):
+            return f
+        return decorator
 
 from quant_nanggroe.config.settings import get_settings
+from quant_nanggroe.core.circuit_breaker import CircuitBreaker
 from quant_nanggroe.exceptions import (
     DataError,
     DataSourceUnavailableError,
@@ -28,6 +38,14 @@ from quant_nanggroe.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ── Circuit breaker for market data API protection ──────────────────────────
+market_data_circuit_breaker = CircuitBreaker(
+    name="market_data",
+    failure_threshold=5,
+    recovery_timeout=60.0,
+    half_open_max=3,
+)
 
 # ══════════════════════════════════════════════════════════════════════
 # Symbol classification helpers
@@ -171,6 +189,12 @@ class MarketDataTool:
         self._settings = get_settings()
         self._cache = _InMemoryCache(default_ttl=cache_ttl)
         self._ccxt_exchange: Any = None
+        self._circuit_breaker: CircuitBreaker = market_data_circuit_breaker
+
+    @property
+    def circuit_breaker(self) -> CircuitBreaker:
+        """Access the circuit breaker for introspection or manual reset."""
+        return self._circuit_breaker
 
     # ── Public API ────────────────────────────────────────────────────
 
@@ -202,12 +226,21 @@ class MarketDataTool:
             logger.debug("Cache hit for %s", cache_key)
             return cached
 
+        # Circuit breaker guard
+        if not self._circuit_breaker.can_execute():
+            raise DataError(
+                f"Circuit breaker OPEN for {self._circuit_breaker.name} — "
+                f"market data API unavailable for {symbol}"
+            )
+
         try:
             if _is_crypto_symbol(symbol):
                 result = await self._fetch_crypto_ohlcv(symbol, timeframe, limit)
             else:
                 result = await self._fetch_yfinance_ohlcv(symbol, timeframe, limit)
+            self._circuit_breaker.record_success()
         except Exception as exc:
+            self._circuit_breaker.record_failure()
             logger.error("Failed to fetch OHLCV for %s: %s", symbol, exc)
             raise DataError(f"Cannot fetch OHLCV for {symbol}: {exc}") from exc
 
@@ -240,12 +273,21 @@ class MarketDataTool:
         if cached is not None:
             return cached
 
+        # Circuit breaker guard
+        if not self._circuit_breaker.can_execute():
+            raise DataError(
+                f"Circuit breaker OPEN for {self._circuit_breaker.name} — "
+                f"market data API unavailable for {symbol}"
+            )
+
         try:
             if _is_crypto_symbol(symbol):
                 result = await self._fetch_crypto_price(symbol)
             else:
                 result = await self._fetch_yfinance_price(symbol)
+            self._circuit_breaker.record_success()
         except Exception as exc:
+            self._circuit_breaker.record_failure()
             logger.error("Failed to fetch price for %s: %s", symbol, exc)
             raise DataError(f"Cannot fetch price for {symbol}: {exc}") from exc
 

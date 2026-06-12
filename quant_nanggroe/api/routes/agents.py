@@ -136,7 +136,7 @@ async def get_agent_status(http_request: Request) -> AgentStatusResponse:
         ks = get_kill_switch(http_request.app)
         kill_switch_active = ks.is_active
     except Exception:
-        pass
+        logger.exception("kill_switch_check_failed: could not retrieve kill switch status")
 
     # Build agent list from the AgentRegistry
     agents = []
@@ -262,4 +262,5 @@ async def get_kill_switch_status(http_request: Request) -> KillSwitchStatusRespo
             message=status.get("message", ""),
         )
     except Exception:
+        logger.exception("kill_switch_status_failed: could not retrieve kill switch status")
         return KillSwitchStatusResponse(is_active=False, message="Status unavailable")

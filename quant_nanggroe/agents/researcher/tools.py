@@ -15,7 +15,16 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from langchain_core.tools import tool
+try:
+    from langchain_core.tools import tool
+except ImportError:
+    def tool(func=None, *args, **kwargs):
+        """No-op fallback when langchain_core is not installed."""
+        if func is not None:
+            return func
+        def decorator(f):
+            return f
+        return decorator
 
 
 logger = logging.getLogger(__name__)
