@@ -17,6 +17,12 @@ from quant_nanggroe.data.providers import (
     TwelveDataProvider,
     YahooFinanceProvider,
 )
+from quant_nanggroe.data.fallback import (
+    CircuitState,
+    FallbackChain,
+    FallbackEvent,
+    ProviderHealth,
+)
 
 __all__ = [
     "DataProvider",
@@ -30,4 +36,8 @@ __all__ = [
     "SECEdgarProvider",
     "TwelveDataProvider",
     "YahooFinanceProvider",
+    "CircuitState",
+    "FallbackChain",
+    "FallbackEvent",
+    "ProviderHealth",
 ]

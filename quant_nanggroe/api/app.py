@@ -62,12 +62,22 @@ def create_app() -> FastAPI:
     )
 
     # ── CORS Middleware ──────────────────────────────────────────────
+    # SECURITY: Do NOT use allow_origins=["*"] with allow_credentials=True
+    # In production, set QNAI_CORS_ORIGINS to explicit allowed origins.
+    cors_origins = getattr(settings, "cors_origins", None)
+    if not cors_origins:
+        import os
+        cors_env = os.environ.get("QNAI_CORS_ORIGINS", "")
+        cors_origins = [o.strip() for o in cors_env.split(",") if o.strip()] or ["*"]
+
+    allow_credentials = cors_origins != ["*"]  # Wildcard + credentials = security violation
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=cors_origins,
+        allow_credentials=allow_credentials,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     )
 
     # ── Prometheus Middleware ────────────────────────────────────────
@@ -79,6 +89,10 @@ def create_app() -> FastAPI:
     @app.get("/metrics", include_in_schema=False)
     async def prometheus_metrics() -> _Response:
         return metrics_response()
+
+    # ── Rate Limiting ────────────────────────────────────────────────
+    from quant_nanggroe.api.middleware import RateLimitMiddleware
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws
@@ -107,9 +121,10 @@ def create_app() -> FastAPI:
                 "error": str(exc),
             },
         )
+        # SECURITY: Do not leak exception type names to clients
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal server error", "type": type(exc).__name__},
+            content={"detail": "Internal server error"},
         )
 
     return app
