@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 
 from quant_nanggroe.api.schemas import (
     OrderRequest,
@@ -19,6 +19,7 @@ from quant_nanggroe.api.schemas import (
     RiskCheckRequest,
     RiskCheckResponse,
 )
+from quant_nanggroe.security.auth import require_auth, require_trade_auth, AuthResult
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,7 +49,7 @@ def _get_exchange_manager(http_request: Request):
     return http_request.app.state._services["exchange_manager"]
 
 
-@router.post("/order", response_model=OrderResponse)
+@router.post("/order", response_model=OrderResponse, dependencies=[Depends(require_trade_auth)])
 async def place_order(request: OrderRequest, http_request: Request) -> OrderResponse:
     """Place a trade order.
 
@@ -130,7 +131,7 @@ async def place_order(request: OrderRequest, http_request: Request) -> OrderResp
         )
 
 
-@router.get("/positions", response_model=PositionsResponse)
+@router.get("/positions", response_model=PositionsResponse, dependencies=[Depends(require_auth)])
 async def get_positions(http_request: Request) -> PositionsResponse:
     """Get all open positions.
 
@@ -168,7 +169,7 @@ async def get_positions(http_request: Request) -> PositionsResponse:
         return PositionsResponse(positions=[], total_count=0)
 
 
-@router.get("/trades", response_model=TradeHistoryResponse)
+@router.get("/trades", response_model=TradeHistoryResponse, dependencies=[Depends(require_auth)])
 async def get_trade_history(limit: int = 50, http_request: Request = None) -> TradeHistoryResponse:
     """Get trade history.
 
@@ -232,7 +233,7 @@ async def get_trade_history(limit: int = 50, http_request: Request = None) -> Tr
         return TradeHistoryResponse(trades=[], total_count=0, limit=limit)
 
 
-@router.post("/risk-check", response_model=RiskCheckResponse)
+@router.post("/risk-check", response_model=RiskCheckResponse, dependencies=[Depends(require_trade_auth)])
 async def risk_check(request: RiskCheckRequest, http_request: Request) -> RiskCheckResponse:
     """Run 9-checkpoint risk validation on a proposed trade.
 

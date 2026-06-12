@@ -17,6 +17,21 @@ Security
 - Tokens include expiration and role claims
 - API keys are validated against a configurable store
 - Secret keys are never logged or exposed
+
+FastAPI Integration
+-------------------
+Use ``require_auth`` as a ``Depends()`` dependency on protected routes::
+
+    from quant_nanggroe.security.auth import require_auth
+
+    @router.post("/order", dependencies=[Depends(require_auth)])
+    async def place_order(...):
+        ...
+
+Set ``AUTH_DISABLED=true`` in the environment to bypass authentication
+(dev/test mode).  When auth is disabled the dependency returns a synthetic
+admin-level ``AuthResult`` so that route handlers can still inspect the
+authenticated identity without special-casing.
 """
 
 from __future__ import annotations
@@ -25,12 +40,15 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import time
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -503,3 +521,129 @@ class JWTAuth:
 
     def __repr__(self) -> str:
         return f"JWTAuth(algorithm={self._algorithm}, revoked={len(self._revoked_tokens)})"
+
+
+# ---------------------------------------------------------------------------
+# FastAPI Dependency — require_auth
+# ---------------------------------------------------------------------------
+
+# Security scheme declarations (used by OpenAPI docs)
+_bearer_scheme = HTTPBearer(auto_error=False)
+_api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def _is_auth_disabled() -> bool:
+    """Check if auth bypass is enabled via environment variable."""
+    return os.environ.get("AUTH_DISABLED", "").lower() in ("true", "1", "yes")
+
+
+def _get_jwt_auth() -> JWTAuth:
+    """Create/reuse a JWTAuth instance from environment configuration."""
+    secret = os.environ.get("QNAI_SECRET_KEY") or os.environ.get("SECRET_KEY", "change-me-in-production")
+    return JWTAuth(secret_key=secret)
+
+
+def _get_api_key_auth() -> APIKeyAuth:
+    """Create an APIKeyAuth instance from environment configuration.
+
+    Reads ``QNAI_API_KEYS`` env var — a JSON object mapping API key strings
+    to ``{"user_id": str, "role": str}`` dicts.  Example::
+
+        QNAI_API_KEYS='{"ak-admin-001": {"user_id": "admin1", "role": "admin"}}'
+    """
+    auth = APIKeyAuth()
+    raw = os.environ.get("QNAI_API_KEYS", "")
+    if raw:
+        try:
+            key_map: Dict[str, Dict[str, str]] = json.loads(raw)
+            for api_key, info in key_map.items():
+                role = UserRole(info.get("role", "viewer"))
+                auth.add_key(api_key, info.get("user_id", "unknown"), role)
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning("Failed to parse QNAI_API_KEYS: %s", exc)
+    return auth
+
+
+async def require_auth(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
+    api_key: Optional[str] = Depends(_api_key_scheme),
+) -> AuthResult:
+    """FastAPI dependency that enforces authentication on protected routes.
+
+    Supports two authentication methods (checked in order):
+
+    1. **Bearer token** — ``Authorization: Bearer <jwt_token>``
+    2. **API key** — ``X-API-Key: <api_key>``
+
+    When ``AUTH_DISABLED=true`` is set in the environment the dependency
+    returns a synthetic admin ``AuthResult`` so that development and testing
+    can proceed without configuring credentials.
+
+    Returns
+    -------
+    AuthResult
+        The authenticated user's identity and role.
+
+    Raises
+    ------
+    HTTPException
+        401 if no valid credentials are provided.
+    """
+    # ── Dev / test bypass ──────────────────────────────────────────────
+    if _is_auth_disabled():
+        return AuthResult(
+            success=True,
+            user_id="dev-bypass",
+            role=UserRole.ADMIN,
+        )
+
+    # ── Try JWT Bearer token ───────────────────────────────────────────
+    if credentials is not None:
+        jwt_auth = _get_jwt_auth()
+        try:
+            payload = jwt_auth.validate_token(credentials.credentials)
+            return AuthResult(
+                success=True,
+                user_id=payload.user_id,
+                role=payload.role,
+            )
+        except ValueError:
+            pass  # fall through to API key check
+
+    # ── Try API key ────────────────────────────────────────────────────
+    if api_key is not None:
+        api_key_auth = _get_api_key_auth()
+        result = api_key_auth.authenticate(api_key)
+        if result.success:
+            return result
+
+    # ── No valid credentials ───────────────────────────────────────────
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required. Provide Authorization: Bearer <token> or X-API-Key header.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+async def require_trade_auth(
+    request: Request,
+    auth_result: AuthResult = Depends(require_auth),
+) -> AuthResult:
+    """FastAPI dependency that enforces *trade* permission on top of auth.
+
+    The authenticated user must have the ``"trade"`` permission
+    (i.e. role must be ``TRADER`` or ``ADMIN``).
+
+    Raises
+    ------
+    HTTPException
+        403 if the user is authenticated but lacks the ``trade`` permission.
+    """
+    permissions = _ROLE_PERMISSIONS.get(auth_result.role, [])
+    if "trade" not in permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{auth_result.role.value}' does not have trade permission.",
+        )
+    return auth_result

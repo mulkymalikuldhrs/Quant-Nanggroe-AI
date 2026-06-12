@@ -263,6 +263,13 @@ _ws_connections: List[WebSocket] = []
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    import warnings
+    warnings.warn(
+        "quant_nanggroe.api.create_app() is deprecated. "
+        "Use quant_nanggroe.api.app.create_app() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     app = FastAPI(
         title="Quant Nanggroe AI",

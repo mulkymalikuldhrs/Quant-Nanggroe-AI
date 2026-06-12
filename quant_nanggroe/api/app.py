@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from quant_nanggroe.config import get_settings
+from quant_nanggroe.api.metrics import prometheus_middleware, metrics_response
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,16 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # ── Prometheus Middleware ────────────────────────────────────────
+    app.middleware("http")(prometheus_middleware)
+
+    # ── Prometheus /metrics Endpoint ─────────────────────────────────
+    from fastapi import Response as _Response
+
+    @app.get("/metrics", include_in_schema=False)
+    async def prometheus_metrics() -> _Response:
+        return metrics_response()
 
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws
