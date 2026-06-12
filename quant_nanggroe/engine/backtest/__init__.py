@@ -67,6 +67,17 @@ from quant_nanggroe.engine.backtest.optimizers import (
     EqualVolatilityOptimizer,
 )
 
+# ── Data Leakage Detector ──
+
+from quant_nanggroe.engine.backtest.leakage_detector import (
+    LeakageType,
+    Severity,
+    LeakageFinding,
+    LeakageReport,
+    DataLeakageDetector,
+    purge_embargo_split,
+)
+
 __all__ = [
     # Core
     "BacktestEngine",
@@ -112,4 +123,11 @@ __all__ = [
     "RiskParityOptimizer",
     "MeanVarianceOptimizer",
     "EqualVolatilityOptimizer",
+    # Data Leakage Detector
+    "LeakageType",
+    "Severity",
+    "LeakageFinding",
+    "LeakageReport",
+    "DataLeakageDetector",
+    "purge_embargo_split",
 ]

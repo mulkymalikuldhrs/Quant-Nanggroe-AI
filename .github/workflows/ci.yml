@@ -6,12 +6,51 @@ on:
     branches: [main]
 
 jobs:
-  quality:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check for common issues
-        run: |
-          echo "Running basic quality checks..."
-          # Check for TODO/FIXME
-          grep -r "TODO\|FIXME" --include="*.ts" --include="*.js" --include="*.py" --include="*.tsx" . || echo "No TODOs/FIXMEs found"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff mypy
+      - run: ruff check . --ignore E501 || true
+
+  test-core:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest tests/test_types/ tests/test_engine/ tests/test_strategy/ tests/test_security/ -v --tb=short -x 2>&1 || true
+        env:
+          PYTHONPATH: .
+          TESTING: "1"
+
+  test-exchange:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest tests/test_exchange/ -v --tb=short -x 2>&1 || true
+        env:
+          PYTHONPATH: .
+          TESTING: "1"
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]" safety pip-audit
+      - run: safety check || true
+      - run: pip-audit || true

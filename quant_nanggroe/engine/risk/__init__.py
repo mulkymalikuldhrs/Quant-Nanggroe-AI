@@ -38,6 +38,21 @@ def __getattr__(name: str):
         "CorrelationMonitor": ".correlation",
         "RiskCheckGate": ".checks",
         "KillSwitch": ".kill_switch",
+        # Deflated Sharpe Ratio (Bailey & de Prado 2014)
+        "DeflatedSharpeResult": ".deflated_sharpe",
+        "OverfittingReport": ".deflated_sharpe",
+        "deflated_sharpe_ratio": ".deflated_sharpe",
+        "minimum_track_record_length": ".deflated_sharpe",
+        "probability_of_backtest_overfitting": ".deflated_sharpe",
+        "generate_overfitting_report": ".deflated_sharpe",
+        # Risk of Ruin (Monte Carlo)
+        "RiskOfRuinConfig": ".risk_of_ruin",
+        "RiskOfRuinResult": ".risk_of_ruin",
+        "RiskOfRuinReport": ".risk_of_ruin",
+        "simulate_risk_of_ruin": ".risk_of_ruin",
+        "kelly_risk_of_ruin": ".risk_of_ruin",
+        "optimal_position_size": ".risk_of_ruin",
+        "generate_risk_of_ruin_report": ".risk_of_ruin",
     }
     if name in _lazy_imports:
         import importlib
@@ -56,4 +71,19 @@ __all__ = [
     "CorrelationMonitor",
     "RiskCheckGate",
     "KillSwitch",
+    # Deflated Sharpe Ratio
+    "DeflatedSharpeResult",
+    "OverfittingReport",
+    "deflated_sharpe_ratio",
+    "minimum_track_record_length",
+    "probability_of_backtest_overfitting",
+    "generate_overfitting_report",
+    # Risk of Ruin
+    "RiskOfRuinConfig",
+    "RiskOfRuinResult",
+    "RiskOfRuinReport",
+    "simulate_risk_of_ruin",
+    "kelly_risk_of_ruin",
+    "optimal_position_size",
+    "generate_risk_of_ruin_report",
 ]

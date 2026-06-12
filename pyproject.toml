@@ -28,7 +28,8 @@ dependencies = [
     "yfinance>=0.2",
     "ccxt>=4.0",
     # Database & Caching
-    "sqlalchemy>=2.0",
+    "sqlalchemy>=2.0.31",
+    "urllib3>=2.2.2",
     "alembic>=1.12",
     "redis>=5.0",
     # API Server
@@ -36,7 +37,7 @@ dependencies = [
     "uvicorn>=0.24",
     # HTTP & Async
     "httpx>=0.25",
-    "aiohttp>=3.9",
+    "aiohttp>=3.9.4",
     # Logging & CLI
     "structlog>=23.0",
     "rich>=13.0",
@@ -80,7 +81,7 @@ dev = [
 qnai = "quant_nanggroe.cli:main"
 
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=70.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
