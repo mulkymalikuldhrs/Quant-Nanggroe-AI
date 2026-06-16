@@ -1,208 +1,341 @@
-"""
-Pressure Normalization Engine
-==============================
-From Quant-Nanggroe-AI + HermesQuantOS — Multi-sensor input fusion.
+"""Market buy/sell pressure engine for the AI-MultiColony finance module.
 
-Converts all sensor/agent outputs → BUY_PRESSURE / SELL_PRESSURE.
-Normalized to 0.0 - 1.0 scale for deterministic decision synthesis.
+Analyses order flow, volume patterns, and price action to determine
+the prevailing buy/sell pressure in the market.  This intelligence
+is used to inform trade timing and direction decisions.
 
-Sensor weight allocation (per Blueprint Final):
-  - QuantScanner: 25% (Trend/ADX signals)
-  - SMCAgent: 30% (Smart Money Concepts)
-  - NewsSentinel: 20% (News/sentiment impact)
-  - FlowAgent: 25% (Whale/flow signals)
+Pressure analysis considers:
+* Volume-weighted price movement
+* Order flow imbalance
+* Tick-by-tick price action
+* Support/resistance proximity
 """
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
+import logging
+import math
+import uuid
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
-from quant_nanggroe.types.engine import PressureState, VolatilityLevel, LiquidityLevel
-from quant_nanggroe.engine.observability import get_observability, traced
+logger = logging.getLogger(__name__)
 
 
-class PressureInput(BaseModel):
-    """Input data for pressure calculation."""
+# ── Enums ────────────────────────────────────────────────────────────────────
 
-    # Quant Scanner (25%)
-    trend_direction: str = "neutral"  # bullish / bearish / neutral
-    trend_strength: float = Field(ge=0.0, le=1.0, default=0.0)
 
-    # SMC Agent (30%)
-    smc_signal: str = "none"  # bullish_bos, bearish_bos, bullish_choch, bearish_choch, none
-    displacement_strength: float = Field(ge=0.0, le=1.0, default=0.0)
-    liquidity_sweep: bool = False
+class PressureDirection(str, Enum):
+    """Direction of market pressure."""
+    BUY = "buy"
+    SELL = "sell"
+    NEUTRAL = "neutral"
+    MIXED = "mixed"
 
-    # News Sentinel (20%)
-    news_impact: float = Field(ge=0.0, le=1.0, default=0.0)
-    news_uncertainty: float = Field(ge=0.0, le=1.0, default=0.5)
 
-    # Flow Agent (25%)
-    flow_direction: str = "neutral"  # long / short / neutral
-    flow_imbalance: float = Field(ge=0.0, le=1.0, default=0.0)
+class PressureStrength(str, Enum):
+    """Strength of market pressure."""
+    WEAK = "weak"
+    MODERATE = "moderate"
+    STRONG = "strong"
+    EXTREME = "extreme"
+
+
+# ── Models ───────────────────────────────────────────────────────────────────
 
 
 class PressureResult(BaseModel):
-    """Result of pressure calculation."""
+    """Result from a pressure analysis."""
+    model_config = ConfigDict(frozen=False)
 
-    buy_pressure: float = Field(ge=0.0, le=1.0)
-    sell_pressure: float = Field(ge=0.0, le=1.0)
-    confidence: float = Field(ge=0.0, le=1.0)
-    verdict: str  # STRONG_BUY, BUY, NEUTRAL, SELL, STRONG_SELL
-    raw_buy: float = 0.0
-    raw_sell: float = 0.0
-    sensor_inputs: dict[str, Any] = Field(default_factory=dict)
-    timestamp: datetime = Field(default_factory=datetime.now)
+    result_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    symbol: str = ""
+    direction: PressureDirection = PressureDirection.NEUTRAL
+    strength: PressureStrength = PressureStrength.WEAK
+    buy_pressure: float = 0.0  # 0-1
+    sell_pressure: float = 0.0  # 0-1
+    net_pressure: float = 0.0  # -1 to +1 (negative = sell, positive = buy)
+    volume_imbalance: float = 0.0  # -1 to +1
+    price_momentum: float = 0.0  # Rate of change
+    confidence: float = 0.0
+    indicators: Dict[str, float] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class PressureNormalizationEngine:
+class OHLCVBar(BaseModel):
+    """A single OHLCV bar."""
+    open: float = 0.0
+    high: float = 0.0
+    low: float = 0.0
+    close: float = 0.0
+    volume: float = 0.0
+    timestamp: Optional[datetime] = None
+
+
+class PressureConfig(BaseModel):
+    """Configuration for pressure analysis."""
+    model_config = ConfigDict(frozen=False)
+
+    lookback_period: int = 20
+    volume_weight_factor: float = 0.5
+    momentum_weight_factor: float = 0.3
+    imbalance_weight_factor: float = 0.2
+    strong_threshold: float = 0.6
+    extreme_threshold: float = 0.8
+    smoothing_period: int = 5
+
+
+# ── Pressure Engine ──────────────────────────────────────────────────────────
+
+
+class PressureEngine:
+    """Analyses market buy/sell pressure.
+
+    Uses volume analysis, price momentum, and order flow
+    approximation to determine market pressure.
+
+    Usage::
+
+        engine = PressureEngine()
+        bars = [OHLCVBar(open=100, high=102, low=99, close=101, volume=1000), ...]
+        result = engine.analyze(bars, symbol="AAPL")
     """
-    Compiles all sensor outputs into normalized pressure vectors.
 
-    Weight allocation per Blueprint Final:
-    - Quant Scanner: 25% (Trend/ADX)
-    - SMC Agent: 30% (Smart Money Concepts)
-    - News Sentinel: 20% (News/sentiment)
-    - Flow Agent: 25% (Whale/flow)
-    """
+    def __init__(self, config: Optional[PressureConfig] = None):
+        self._config = config or PressureConfig()
+        self._results: List[PressureResult] = []
 
-    SENSOR_WEIGHTS: dict[str, float] = {
-        "quant_scanner": 0.25,
-        "smc_agent": 0.30,
-        "news_sentinel": 0.20,
-        "flow_agent": 0.25,
-    }
+    def analyze(
+        self,
+        bars: List[OHLCVBar],
+        symbol: str = "",
+    ) -> PressureResult:
+        """Analyse buy/sell pressure from OHLCV data.
 
-    def __init__(self) -> None:
-        self.last_result: PressureResult | None = None
+        Parameters
+        ----------
+        bars:
+            List of OHLCV bars (most recent last).
+        symbol:
+            Symbol being analyzed.
 
-    @traced("compile_pressure", attributes={"component": "pressure", "operation": "compile_pressure"})
-    def compile_pressure(self, inputs: PressureInput) -> PressureResult:
+        Returns
+        -------
+        PressureResult
+            Pressure analysis result.
         """
-        Compile all sensor outputs into normalized pressure vectors.
+        if len(bars) < 3:
+            return PressureResult(
+                symbol=symbol,
+                direction=PressureDirection.NEUTRAL,
+                confidence=0.0,
+            )
 
-        Each sensor contributes proportionally to its weight, modulated
-        by the signal strength. Pressures are then normalized to 0.0-1.0.
+        # Calculate indicators
+        volume_imbalance = self._compute_volume_imbalance(bars)
+        price_momentum = self._compute_price_momentum(bars)
+        vwap_deviation = self._compute_vwap_deviation(bars)
+        close_position = self._compute_close_position(bars)
 
-        Args:
-            inputs: PressureInput with all sensor readings
+        # Weighted pressure calculation
+        cfg = self._config
+        buy_signals = 0.0
+        sell_signals = 0.0
 
-        Returns:
-            PressureResult with normalized pressures and verdict
-        """
-        import time as _time
-        obs = get_observability()
-        start = _time.monotonic()
-
-        buy = 0.0
-        sell = 0.0
-
-        # ── Quant Scanner contribution (Trend + ADX) — 25% ──────────
-        weight = self.SENSOR_WEIGHTS["quant_scanner"]
-        if inputs.trend_direction == "bullish":
-            buy += weight * inputs.trend_strength
-        elif inputs.trend_direction == "bearish":
-            sell += weight * inputs.trend_strength
-
-        # ── SMC Agent contribution — 30% ────────────────────────────
-        weight = self.SENSOR_WEIGHTS["smc_agent"]
-        if inputs.smc_signal in ("bullish_bos", "bullish_choch"):
-            buy += weight * inputs.displacement_strength
-        elif inputs.smc_signal in ("bearish_bos", "bearish_choch"):
-            sell += weight * inputs.displacement_strength
-
-        if inputs.liquidity_sweep:
-            # Liquidity sweep adds to both sides (displacement direction unknown)
-            buy += weight * 0.2 * inputs.displacement_strength
-            sell += weight * 0.2 * inputs.displacement_strength
-
-        # ── News Sentinel contribution — 20% ────────────────────────
-        weight = self.SENSOR_WEIGHTS["news_sentinel"]
-        # News with high uncertainty adds to BOTH sides (unknown direction),
-        # but the net contribution is proportional to directional_factor.
-        directional_factor = 1.0 - inputs.news_uncertainty
-        if directional_factor >= 0.5:
-            # More certain direction — add primarily to the directional side
-            buy += weight * inputs.news_impact * directional_factor
-            sell += weight * inputs.news_impact * (1 - directional_factor) * 0.3
+        # Volume imbalance contribution
+        if volume_imbalance > 0:
+            buy_signals += volume_imbalance * cfg.volume_weight_factor
         else:
-            # High uncertainty — split more evenly but with less total contribution
-            buy += weight * inputs.news_impact * 0.5
-            sell += weight * inputs.news_impact * 0.5
+            sell_signals += abs(volume_imbalance) * cfg.volume_weight_factor
 
-        # ── Flow Agent contribution (Whale/COT) — 25% ──────────────
-        weight = self.SENSOR_WEIGHTS["flow_agent"]
-        if inputs.flow_direction == "long":
-            buy += weight * inputs.flow_imbalance
-        elif inputs.flow_direction == "short":
-            sell += weight * inputs.flow_imbalance
-
-        # ── Normalize pressures to 0.0 - 1.0 ───────────────────────
-        max_possible = sum(self.SENSOR_WEIGHTS.values())  # 1.0
-        if max_possible > 0:
-            buy_pressure = min(buy / max_possible, 1.0)
-            sell_pressure = min(sell / max_possible, 1.0)
+        # Price momentum contribution
+        if price_momentum > 0:
+            buy_signals += min(1.0, abs(price_momentum)) * cfg.momentum_weight_factor
         else:
-            buy_pressure = 0.0
-            sell_pressure = 0.0
+            sell_signals += min(1.0, abs(price_momentum)) * cfg.momentum_weight_factor
 
-        # Confidence = how strong the dominant side is relative to total
-        total = buy + sell
-        if total > 0:
-            confidence = max(buy, sell) / total
+        # Close position contribution
+        if close_position > 0.5:
+            buy_signals += (close_position - 0.5) * 2 * cfg.imbalance_weight_factor
         else:
-            confidence = 0.0
+            sell_signals += (0.5 - close_position) * 2 * cfg.imbalance_weight_factor
 
-        # ── Determine verdict ───────────────────────────────────────
-        if buy_pressure > 0.70:
-            verdict = "STRONG_BUY"
-        elif buy_pressure > 0.55:
-            verdict = "BUY"
-        elif sell_pressure > 0.70:
-            verdict = "STRONG_SELL"
-        elif sell_pressure > 0.55:
-            verdict = "SELL"
+        # Normalize
+        total = buy_signals + sell_signals
+        buy_pressure = buy_signals / total if total > 0 else 0.5
+        sell_pressure = sell_signals / total if total > 0 else 0.5
+        net_pressure = buy_pressure - sell_pressure
+
+        # Determine direction
+        if abs(net_pressure) < 0.1:
+            direction = PressureDirection.NEUTRAL
+        elif buy_pressure > 0.7 and sell_pressure < 0.3:
+            direction = PressureDirection.BUY
+        elif sell_pressure > 0.7 and buy_pressure < 0.3:
+            direction = PressureDirection.SELL
         else:
-            verdict = "NEUTRAL"
+            direction = PressureDirection.MIXED
+
+        # Determine strength
+        max_pressure = max(buy_pressure, sell_pressure)
+        if max_pressure >= cfg.extreme_threshold:
+            strength = PressureStrength.EXTREME
+        elif max_pressure >= cfg.strong_threshold:
+            strength = PressureStrength.STRONG
+        elif max_pressure >= 0.4:
+            strength = PressureStrength.MODERATE
+        else:
+            strength = PressureStrength.WEAK
+
+        # Confidence
+        confidence = min(1.0, max(0.0, abs(net_pressure) * 2))
 
         result = PressureResult(
-            buy_pressure=round(buy_pressure, 4),
-            sell_pressure=round(sell_pressure, 4),
-            confidence=round(confidence, 4),
-            verdict=verdict,
-            raw_buy=round(buy, 4),
-            raw_sell=round(sell, 4),
-            sensor_inputs={
-                "trend": f"{inputs.trend_direction} ({inputs.trend_strength:.2f})",
-                "smc": inputs.smc_signal,
-                "displacement": f"{inputs.displacement_strength:.2f}",
-                "liquidity_sweep": inputs.liquidity_sweep,
-                "news_impact": f"{inputs.news_impact:.2f}",
-                "flow": f"{inputs.flow_direction} ({inputs.flow_imbalance:.2f})",
+            symbol=symbol,
+            direction=direction,
+            strength=strength,
+            buy_pressure=round(buy_pressure, 3),
+            sell_pressure=round(sell_pressure, 3),
+            net_pressure=round(net_pressure, 3),
+            volume_imbalance=round(volume_imbalance, 3),
+            price_momentum=round(price_momentum, 4),
+            confidence=round(confidence, 3),
+            indicators={
+                "vwap_deviation": round(vwap_deviation, 4),
+                "close_position": round(close_position, 3),
             },
         )
 
-        # Record observability metrics
-        duration = _time.monotonic() - start
-        obs.metrics.pressure_score.set(buy_pressure, {"sensor": "quant_scanner", "side": "buy"})
-        obs.metrics.pressure_score.set(sell_pressure, {"sensor": "quant_scanner", "side": "sell"})
-
-        self.last_result = result
+        self._results.append(result)
         return result
 
-    def get_pressure(self) -> PressureResult | None:
-        """Get current pressure state."""
-        return self.last_result
+    def analyze_from_arrays(
+        self,
+        opens: List[float],
+        highs: List[float],
+        lows: List[float],
+        closes: List[float],
+        volumes: List[float],
+        symbol: str = "",
+    ) -> PressureResult:
+        """Analyze pressure from separate price/volume arrays."""
+        n = min(len(opens), len(highs), len(lows), len(closes), len(volumes))
+        bars = [
+            OHLCVBar(open=opens[i], high=highs[i], low=lows[i],
+                     close=closes[i], volume=volumes[i])
+            for i in range(n)
+        ]
+        return self.analyze(bars, symbol)
 
-    def get_pressure_state(self) -> PressureState:
-        """Get current pressure as a PressureState model."""
-        if self.last_result:
-            return PressureState(
-                buy_pressure=self.last_result.buy_pressure,
-                sell_pressure=self.last_result.sell_pressure,
-                confidence_score=self.last_result.confidence,
-            )
-        return PressureState()
+    # ── Indicator computations ──────────────────────────────────────────
+
+    @staticmethod
+    def _compute_volume_imbalance(bars: List[OHLCVBar]) -> float:
+        """Compute volume imbalance (up volume vs down volume).
+
+        Returns
+        -------
+        float
+            -1 to +1 (positive = more up volume).
+        """
+        up_volume = 0.0
+        down_volume = 0.0
+
+        for bar in bars:
+            if bar.close >= bar.open:
+                up_volume += bar.volume
+            else:
+                down_volume += bar.volume
+
+        total = up_volume + down_volume
+        if total == 0:
+            return 0.0
+        return (up_volume - down_volume) / total
+
+    @staticmethod
+    def _compute_price_momentum(bars: List[OHLCVBar]) -> float:
+        """Compute price momentum as rate of change."""
+        if len(bars) < 2:
+            return 0.0
+
+        # Use exponential weighting for recent bars
+        n = len(bars)
+        weights = [math.exp(i / n) for i in range(n)]
+        weighted_sum = sum(w * b.close for w, b in zip(weights, bars))
+        total_weight = sum(weights)
+
+        if total_weight == 0 or bars[0].close == 0:
+            return 0.0
+
+        weighted_avg = weighted_sum / total_weight
+        return (weighted_avg - bars[0].close) / bars[0].close
+
+    @staticmethod
+    def _compute_vwap_deviation(bars: List[OHLCVBar]) -> float:
+        """Compute deviation of current price from VWAP."""
+        if not bars:
+            return 0.0
+
+        total_volume = sum(b.volume for b in bars)
+        if total_volume == 0:
+            return 0.0
+
+        vwap = sum(
+            ((b.high + b.low + b.close) / 3) * b.volume
+            for b in bars
+        ) / total_volume
+
+        current_price = bars[-1].close
+        if vwap == 0:
+            return 0.0
+
+        return (current_price - vwap) / vwap
+
+    @staticmethod
+    def _compute_close_position(bars: List[OHLCVBar]) -> float:
+        """Compute where the close sits relative to the bar's range.
+
+        Returns
+        -------
+        float
+            0.0 = close at low, 1.0 = close at high, 0.5 = mid-range.
+        """
+        if not bars:
+            return 0.5
+
+        # Average across recent bars
+        positions = []
+        for bar in bars[-10:]:
+            range_val = bar.high - bar.low
+            if range_val > 0:
+                positions.append((bar.close - bar.low) / range_val)
+            else:
+                positions.append(0.5)
+
+        return sum(positions) / len(positions)
+
+    # ── Properties ──────────────────────────────────────────────────────
+
+    @property
+    def history(self) -> List[PressureResult]:
+        return list(self._results)
+
+    @property
+    def config(self) -> PressureConfig:
+        return self._config
+
+    @property
+    def stats(self) -> Dict[str, Any]:
+        """Pressure engine statistics."""
+        direction_counts: Dict[str, int] = {}
+        for result in self._results:
+            key = result.direction.value
+            direction_counts[key] = direction_counts.get(key, 0) + 1
+
+        return {
+            "total_analyses": len(self._results),
+            "direction_distribution": direction_counts,
+        }

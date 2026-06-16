@@ -450,3 +450,35 @@ class RegimeBasedStrategy(BaseStrategy):
                     )
 
         return None
+
+
+import numpy as np
+from typing import Optional
+from dataclasses import dataclass
+
+@dataclass
+class RegimeAllocation:
+    regime: str
+    strategy_weights: dict[str, float]
+    risk_multiplier: float
+    leverage: float
+
+class RegimeAwareStrategy:
+    def __init__(self):
+        self.regime_allocations = {
+            "BULL": RegimeAllocation("BULL", {"momentum": 0.5, "trend": 0.3, "breakout": 0.2}, 1.0, 1.0),
+            "BEAR": RegimeAllocation("BEAR", {"mean_reversion": 0.4, "volatility_arb": 0.3, "defensive": 0.3}, 0.5, 0.5),
+            "SIDEWAYS": RegimeAllocation("SIDEWAYS", {"mean_reversion": 0.4, "pairs_trading": 0.3, "market_making": 0.3}, 0.7, 0.7),
+            "HIGH_VOL": RegimeAllocation("HIGH_VOL", {"volatility_arb": 0.5, "defensive": 0.3, "options": 0.2}, 0.3, 0.3),
+            "CRISIS": RegimeAllocation("CRISIS", {"defensive": 0.6, "volatility_arb": 0.4}, 0.1, 0.1),
+        }
+    
+    def get_allocation(self, regime: str) -> RegimeAllocation:
+        return self.regime_allocations.get(regime, self.regime_allocations["SIDEWAYS"])
+    
+    def get_strategy_weights(self, regime: str) -> dict[str, float]:
+        alloc = self.get_allocation(regime)
+        return alloc.strategy_weights
+    
+    def get_risk_multiplier(self, regime: str) -> float:
+        return self.get_allocation(regime).risk_multiplier
