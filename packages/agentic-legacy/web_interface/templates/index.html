@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Agentic AI System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+        Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#quickTaskModal">
+            <i class="fas fa-plus"></i> Quick Task
+        </button>
+    </div>
+</div>
+
+<!-- System Overview Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <div class="metric-value" id="total-agents">8</div>
+                        <div class="metric-label">Total Agents</div>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-robot fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card metric-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <div class="metric-value" id="active-workflows">0</div>
+                        <div class="metric-label">Active Workflows</div>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-project-diagram fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card metric-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333;">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <div class="metric-value" id="tasks-completed">0</div>
+                        <div class="metric-label">Tasks Completed</div>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card metric-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <div class="metric-value" id="system-uptime">99.9%</div>
+                        <div class="metric-label">System Uptime</div>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-heartbeat fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Agent Status -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-robot me-2"></i>
+                    Agent Status Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="agents-overview">
+                    <!-- Agents will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Performance -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    System Performance
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="performanceChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Agent</th>
+                                <th>Activity</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-log">
+                            <!-- Activity log will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Task Modal -->
+<div class="modal fade" id="quickTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-rocket me-2"></i>
+                    Submit Quick Task
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickTaskForm">
+                    <div class="mb-3">
+                        <label for="taskAgent" class="form-label">Select Agent</label>
+                        <select class="form-select" id="taskAgent" required>
+                            <option value="">Choose an agent...</option>
+                            <option value="agent_base">Agent Base (Coordinator)</option>
+                            <option value="agent_03_planner">Agent 03 (Planner)</option>
+                            <option value="agent_04_executor">Agent 04 (Executor)</option>
+                            <option value="agent_05_designer">Agent 05 (Designer)</option>
+                            <option value="agent_06_specialist">Agent 06 (Specialist)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskRequest" class="form-label">Task Description</label>
+                        <textarea class="form-control" id="taskRequest" rows="4" 
+                                  placeholder="Describe what you want the agent to do..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskPriority" class="form-label">Priority</label>
+                        <select class="form-select" id="taskPriority">
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitQuickTask()">
+                    <i class="fas fa-paper-plane me-1"></i>
+                    Submit Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let performanceChart;
+    
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAgentsOverview();
+        initializePerformanceChart();
+        loadRecentActivity();
+        
+        // Refresh every 30 seconds
+        setInterval(refreshDashboard, 30000);
+    });
+    
+    function loadAgentsOverview() {
+        fetch('/api/agents/list')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayAgentsOverview(data.data);
+                    document.getElementById('total-agents').textContent = data.data.length;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading agents:', error);
+                showNotification('Error loading agents overview', 'danger');
+            });
+    }
+    
+    function displayAgentsOverview(agents) {
+        const container = document.getElementById('agents-overview');
+        container.innerHTML = '';
+        
+        agents.forEach(agent => {
+            const statusClass = agent.status === 'ready' ? 'status-online' : 
+                               agent.status === 'processing' ? 'status-busy' : 'status-offline';
+            
+            const agentCard = document.createElement('div');
+            agentCard.className = 'col-md-6 col-lg-4 mb-3';
+            agentCard.innerHTML = `
+                <div class="card agent-card h-100" onclick="viewAgentDetails('${agent.id}')">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <span class="status-indicator ${statusClass}"></span>
+                                <span class="fw-bold">${agent.emoji || '🤖'}</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="card-title mb-1">${agent.name}</h6>
+                                <small class="text-muted">${agent.role}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(agentCard);
+        });
+    }
+    
+    function initializePerformanceChart() {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        performanceChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['CPU Usage', 'Memory Usage', 'Available'],
+                datasets: [{
+                    data: [23, 45, 32],
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    function loadRecentActivity() {
+        const activityLog = document.getElementById('activity-log');
+        const activities = [
+            {
+                time: '2 minutes ago',
+                agent: 'Agent Base',
+                activity: 'Coordinated workflow execution',
+                status: 'completed',
+                duration: '1.2s'
+            },
+            {
+                time: '5 minutes ago',
+                agent: 'Agent 04 (Executor)',
+                activity: 'Executed Python script',
+                status: 'completed',
+                duration: '15.3s'
+            },
+            {
+                time: '8 minutes ago',
+                agent: 'Agent 03 (Planner)',
+                activity: 'Created project plan',
+                status: 'completed',
+                duration: '45.1s'
+            }
+        ];
+        
+        activityLog.innerHTML = '';
+        activities.forEach(activity => {
+            const statusBadge = activity.status === 'completed' ? 'success' : 
+                               activity.status === 'running' ? 'primary' : 'danger';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${activity.time}</td>
+                <td>${activity.agent}</td>
+                <td>${activity.activity}</td>
+                <td><span class="badge bg-${statusBadge}">${activity.status}</span></td>
+                <td>${activity.duration}</td>
+            `;
+            activityLog.appendChild(row);
+        });
+    }
+    
+    function submitQuickTask() {
+        const form = document.getElementById('quickTaskForm');
+        const formData = new FormData(form);
+        
+        const taskData = {
+            agent_id: document.getElementById('taskAgent').value,
+            task: {
+                task_id: `quick_task_${Date.now()}`,
+                request: document.getElementById('taskRequest').value,
+                context: {
+                    priority: document.getElementById('taskPriority').value,
+                    submitted_via: 'web_interface',
+                    timestamp: new Date().toISOString()
+                }
+            }
+        };
+        
+        if (!taskData.agent_id || !taskData.task.request) {
+            showNotification('Please fill in all required fields', 'warning');
+            return;
+        }
+        
+        // Show loading
+        const submitBtn = event.target;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Submitting...';
+        submitBtn.disabled = true;
+        
+        fetch('/api/task/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Task submitted successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('quickTaskModal')).hide();
+                form.reset();
+                
+                // Refresh dashboard
+                setTimeout(refreshDashboard, 1000);
+            } else {
+                showNotification(`Error: ${data.error}`, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting task:', error);
+            showNotification('Error submitting task', 'danger');
+        })
+        .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+    
+    function viewAgentDetails(agentId) {
+        window.location.href = `/agents?agent=${agentId}`;
+    }
+    
+    function refreshDashboard() {
+        loadAgentsOverview();
+        loadRecentActivity();
+        
+        // Update performance metrics
+        fetch('/api/system/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateDashboardMetrics(data.data);
+                }
+            })
+            .catch(error => console.error('Error refreshing dashboard:', error));
+    }
+    
+    function updateDashboardMetrics(systemData) {
+        if (systemData.total_agents) {
+            document.getElementById('total-agents').textContent = systemData.total_agents;
+        }
+        
+        if (systemData.active_workflows !== undefined) {
+            document.getElementById('active-workflows').textContent = systemData.active_workflows;
+        }
+        
+        // Update other metrics as needed
+    }
+    
+    // Socket.IO event handlers specific to dashboard
+    socket.on('task_completed', function(data) {
+        loadRecentActivity(); // Refresh activity log
+        showNotification(`Task completed: ${data.task_summary}`, 'success');
+    });
+    
+    socket.on('agent_status_changed', function(data) {
+        loadAgentsOverview(); // Refresh agents overview
+    });
+</script>
+{% endblock %}

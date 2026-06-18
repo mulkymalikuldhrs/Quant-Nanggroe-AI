@@ -1,0 +1,542 @@
+{% extends "base_new.html" %}
+
+{% block title %}Advanced Dashboard - Agentic AI System v2.0{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">🧠 Agentic AI System v2.0</h1>
+                <p class="hero-subtitle">Autonomous Multi-Agent Intelligence with Advanced Voice Interaction & PWA Support</p>
+                <div class="hero-badges">
+                    <span class="badge badge-primary">🎤 Voice Commands</span>
+                    <span class="badge badge-success">📱 PWA Ready</span>
+                    <span class="badge badge-info">🤖 12+ Agents</span>
+                    <span class="badge badge-warning">🚀 Auto-Scaling</span>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="total-agents">12</div>
+                        <div class="stat-label">Active Agents</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="system-uptime">99.9%</div>
+                        <div class="stat-label">System Uptime</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="quick-action-card voice-action" onclick="activateVoice()">
+                    <i class="fas fa-microphone"></i>
+                    <h4>Voice Commands</h4>
+                    <p>Press Ctrl+Space or click to start</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="createAgent()">
+                    <i class="fas fa-robot"></i>
+                    <h4>Create Agent</h4>
+                    <p>Generate specialized AI agent</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="executeCode()">
+                    <i class="fas fa-code"></i>
+                    <h4>Execute Code</h4>
+                    <p>Run code in multiple languages</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="optimizeSystem()">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <h4>Optimize System</h4>
+                    <p>Auto-optimize performance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agents Network Visualization -->
+<div class="agents-network-section">
+    <div class="container">
+        <h2 class="section-title">🤖 Agent Network</h2>
+        <div class="agents-grid" id="agents-network">
+            <!-- Agents will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- System Performance Dashboard -->
+<div class="performance-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card performance-card">
+                    <div class="card-header">
+                        <h3>📊 Real-time Performance</h3>
+                        <div class="performance-controls">
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshPerformance()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="performanceChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="system-info-card">
+                    <h3>🖥️ System Info</h3>
+                    <div class="info-item">
+                        <span class="label">CPU Usage:</span>
+                        <div class="progress">
+                            <div class="progress-bar" id="cpu-progress" style="width: 25%">25%</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Memory Usage:</span>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" id="memory-progress" style="width: 45%">45%</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Active Tasks:</span>
+                        <span class="value" id="active-tasks">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Tasks Completed:</span>
+                        <span class="value" id="completed-tasks">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Code Execution Modal -->
+<div class="modal fade" id="codeExecutionModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">💻 Code Execution Environment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="code-editor">
+                            <div class="editor-header">
+                                <select id="language-select" class="form-select">
+                                    <option value="python">Python</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="typescript">TypeScript</option>
+                                    <option value="java">Java</option>
+                                    <option value="cpp">C++</option>
+                                    <option value="rust">Rust</option>
+                                    <option value="go">Go</option>
+                                    <option value="bash">Bash</option>
+                                </select>
+                                <button class="btn btn-primary" onclick="runCode()">
+                                    <i class="fas fa-play"></i> Run
+                                </button>
+                            </div>
+                            <textarea id="code-editor" placeholder="Enter your code here...">
+# Welcome to Agentic AI Code Executor
+print("Hello from Agentic AI System!")
+print("🇮🇩 Made with ❤️ by Mulky Malikul Dhaher in Indonesia")
+                            </textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="output-panel">
+                            <h6>Output:</h6>
+                            <div id="code-output" class="output-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Dashboard Styles */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4rem 0;
+    margin-top: -2rem;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+}
+
+.hero-badges .badge {
+    margin-right: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.quick-actions-section {
+    padding: 2rem 0;
+    background: white;
+}
+
+.quick-action-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border-color: var(--primary-color);
+}
+
+.quick-action-card.voice-action {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+}
+
+.quick-action-card i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.quick-action-card.voice-action i {
+    color: white;
+}
+
+.agents-network-section {
+    padding: 3rem 0;
+    background: #f8fafc;
+}
+
+.section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.agent-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.agent-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.code-editor {
+    background: #1e293b;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.editor-header {
+    background: #334155;
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+#code-editor {
+    width: 100%;
+    height: 400px;
+    background: #1e293b;
+    color: #e2e8f0;
+    border: none;
+    padding: 1rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    resize: none;
+}
+
+.output-panel {
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    height: 100%;
+}
+
+.output-content {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-family: monospace;
+    min-height: 300px;
+    white-space: pre-wrap;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let performanceChart;
+let agentsData = [];
+
+// Initialize enhanced dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadAgentsNetwork();
+    initializePerformanceChart();
+    startRealTimeUpdates();
+});
+
+function loadAgentsNetwork() {
+    fetch('/api/agents/list')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                agentsData = data.data;
+                displayAgentsNetwork(data.data);
+                updateAgentCount(data.data.length);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading agents:', error);
+        });
+}
+
+function displayAgentsNetwork(agents) {
+    const container = document.getElementById('agents-network');
+    container.innerHTML = '';
+    
+    const agentIcons = {
+        'prompt_master': '🧠',
+        'cybershell': '🖥️',
+        'agent_maker': '🤖',
+        'ui_designer': '🎨',
+        'dev_engine': '⚙️',
+        'data_sync': '🔄',
+        'fullstack_dev': '🚀',
+        'meta_agent_creator': '🎭',
+        'system_optimizer': '⚡',
+        'code_executor': '💻',
+        'ai_research_agent': '🔬'
+    };
+    
+    agents.forEach(agent => {
+        const agentCard = document.createElement('div');
+        agentCard.className = 'agent-card';
+        agentCard.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 1rem;">
+                    ${agentIcons[agent.id] || '🤖'}
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 1.125rem; font-weight: 600;">${agent.name}</h4>
+                    <div style="font-size: 0.875rem; color: #64748b;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-right: 0.5rem;"></span>
+                        ${agent.status || 'ready'}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                ${(agent.capabilities || []).slice(0, 3).map(cap => 
+                    `<span style="background: #e2e8f0; color: #475569; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem;">${cap}</span>`
+                ).join('')}
+            </div>
+        `;
+        
+        agentCard.addEventListener('click', () => viewAgentDetails(agent.id));
+        container.appendChild(agentCard);
+    });
+}
+
+function initializePerformanceChart() {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU Usage %',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Memory Usage %',
+                data: [],
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+function startRealTimeUpdates() {
+    setInterval(() => {
+        updateSystemPerformance();
+    }, 5000);
+}
+
+function updateSystemPerformance() {
+    const now = new Date().toLocaleTimeString();
+    const cpuUsage = Math.random() * 40 + 20;
+    const memoryUsage = Math.random() * 30 + 30;
+    
+    if (performanceChart.data.labels.length > 20) {
+        performanceChart.data.labels.shift();
+        performanceChart.data.datasets[0].data.shift();
+        performanceChart.data.datasets[1].data.shift();
+    }
+    
+    performanceChart.data.labels.push(now);
+    performanceChart.data.datasets[0].data.push(cpuUsage);
+    performanceChart.data.datasets[1].data.push(memoryUsage);
+    
+    performanceChart.update('none');
+    
+    // Update progress bars
+    const cpuProgress = document.getElementById('cpu-progress');
+    const memoryProgress = document.getElementById('memory-progress');
+    if (cpuProgress) {
+        cpuProgress.style.width = cpuUsage + '%';
+        cpuProgress.textContent = Math.round(cpuUsage) + '%';
+    }
+    if (memoryProgress) {
+        memoryProgress.style.width = memoryUsage + '%';
+        memoryProgress.textContent = Math.round(memoryUsage) + '%';
+    }
+}
+
+function updateAgentCount(count) {
+    const element = document.getElementById('total-agents');
+    if (element) {
+        element.textContent = count;
+    }
+}
+
+// Action handlers
+function activateVoice() {
+    if (window.agenticVoice) {
+        window.agenticVoice.startVoiceRecognition();
+    } else {
+        alert('Voice system is initializing. Please try again in a moment.');
+    }
+}
+
+function createAgent() {
+    alert('🤖 Agent Creation: This feature will open the meta agent creator interface to build specialized AI agents.');
+}
+
+function executeCode() {
+    const modal = new bootstrap.Modal(document.getElementById('codeExecutionModal'));
+    modal.show();
+}
+
+function optimizeSystem() {
+    alert('⚡ System Optimization: Running automated performance improvements...');
+}
+
+function runCode() {
+    const code = document.getElementById('code-editor').value;
+    const language = document.getElementById('language-select').value;
+    const outputElement = document.getElementById('code-output');
+    
+    outputElement.textContent = 'Executing...';
+    
+    // Mock execution for demo
+    setTimeout(() => {
+        if (language === 'python') {
+            outputElement.textContent = 'Hello from Agentic AI System!\n🇮🇩 Made with ❤️ by Mulky Malikul Dhaher in Indonesia\n\nExecution completed successfully!';
+        } else {
+            outputElement.textContent = `Code executed in ${language}:\n\nOutput: Hello World!\n\nExecution time: 0.123s`;
+        }
+    }, 1000);
+}
+
+function viewAgentDetails(agentId) {
+    window.location.href = `/agents?agent=${agentId}`;
+}
+
+function refreshPerformance() {
+    updateSystemPerformance();
+    loadAgentsNetwork();
+}
+</script>
+{% endblock %}

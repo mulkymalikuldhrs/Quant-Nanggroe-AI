@@ -1,0 +1,115 @@
+version: "3.9"
+
+# =============================================================================
+# Quant-Nanggroe-AI — Full Stack Docker Compose
+# =============================================================================
+# Services:
+#   app     — FastAPI application server
+#   db      — PostgreSQL 16 (production persistence)
+#   redis   — Redis 7 (session state, pub/sub, cache)
+#   chroma  — ChromaDB (vector search for agent memory)
+#   worker  — Background task worker (async pipeline execution)
+# =============================================================================
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - QNAI_DATABASE_URL=postgresql://qnai:qnai@db:5432/qnai
+      - QNAI_REDIS_URL=redis://redis:6379/0
+      - QNAI_CHROMA_URL=http://chroma:8000
+      - QNAI_DEBUG=false
+      - QNAI_ENV=production
+    env_file:
+      - ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+    restart: unless-stopped
+    volumes:
+      - app-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["python", "-m", "quant_nanggroe.cli", "serve", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      - QNAI_DATABASE_URL=postgresql://qnai:qnai@db:5432/qnai
+      - QNAI_REDIS_URL=redis://redis:6379/0
+      - QNAI_CHROMA_URL=http://chroma:8000
+      - QNAI_DEBUG=false
+      - QNAI_ENV=production
+      - QNAI_WORKER_MODE=true
+    env_file:
+      - ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - app-data:/app/data
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: qnai
+      POSTGRES_USER: qnai
+      POSTGRES_PASSWORD: qnai
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qnai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=FALSE
+      - ALLOW_RESET=TRUE
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  pg-data:
+  redis-data:
+  chroma-data:

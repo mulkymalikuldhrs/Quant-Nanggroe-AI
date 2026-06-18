@@ -1,0 +1,40 @@
+# =============================================================================
+# Agentic AI System - Grafana Dashboard Provisioning
+# Automatically loads dashboards from the dashboards directory on startup
+# Made with love by Mulky Malikul Dhaher in Indonesia
+# =============================================================================
+
+apiVersion: 1
+
+# Dashboard providers
+providers:
+  # ---------------------------------------------------------------------------
+  # Default Dashboard Provider
+  # Loads all JSON dashboards from the dashboards directory
+  # ---------------------------------------------------------------------------
+  - name: Agentic AI Dashboards
+    orgId: 1
+    folder: Agentic AI
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+    folderUid: agentic-ai
+
+  # ---------------------------------------------------------------------------
+  # System Infrastructure Dashboards
+  # ---------------------------------------------------------------------------
+  - name: Infrastructure Dashboards
+    orgId: 1
+    folder: Infrastructure
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+    folderUid: infrastructure

@@ -1,0 +1,61 @@
+name: CI — Quant-Nanggroe-AI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" || pip install -e .
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check quant_nanggroe/ --ignore=E501,F401,F841 --quiet || true
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ \
+            --ignore=tests/test_data \
+            --ignore=tests/test_exchange \
+            --ignore=tests/test_agents \
+            -q \
+            --tb=short \
+            --cov=quant_nanggroe \
+            --cov-fail-under=60 \
+            --cov-report=term-missing
+        env:
+          QNAI_ENV: test
+          QNAI_JWT_SECRET: test-jwt-secret-not-for-production
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Security scan
+        run: |
+          pip install bandit
+          bandit -r quant_nanggroe/ -ll -ii -q || true

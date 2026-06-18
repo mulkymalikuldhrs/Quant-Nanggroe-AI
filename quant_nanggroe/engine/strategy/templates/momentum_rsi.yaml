@@ -1,0 +1,46 @@
+name: "RSI Momentum"
+description: "RSI-based momentum strategy with volume confirmation. Buys oversold conditions with above-average volume, sells when overbought or risk limits hit."
+version: "1.0.0"
+author: "Quant Nanggroe AI"
+tags:
+  - momentum
+  - rsi
+  - equity
+  - etf
+
+universe:
+  symbols: ["SPY", "QQQ", "IWM"]
+  exchanges: ["NYSE", "NASDAQ", "ARCA"]
+
+timeframe: "1d"
+
+entry_rules:
+  - indicator: "rsi"
+    operator: "lt"
+    value: 30
+    params:
+      period: 14
+    weight: 1.0
+  - indicator: "volume"
+    operator: "gt"
+    value: 1.5
+    params:
+      period: 20
+    weight: 0.8
+
+exit_rules:
+  - indicator: "rsi"
+    operator: "gt"
+    value: 70
+    params:
+      period: 14
+  - trailing_stop_pct: 5.0
+  - take_profit_pct: 15.0
+
+risk_rules:
+  max_position_pct: 10.0
+  stop_loss_pct: 3.0
+  max_daily_trades: 5
+  max_portfolio_heat: 30.0
+  max_drawdown_pct: 20.0
+  min_cash_reserve_pct: 10.0

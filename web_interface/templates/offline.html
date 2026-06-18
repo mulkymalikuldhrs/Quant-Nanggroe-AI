@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Agentic AI System</title>
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <style>
+        .offline-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .offline-content {
+            max-width: 600px;
+        }
+        
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+        
+        .offline-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .offline-message {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .offline-features {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .offline-features h3 {
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+        
+        .offline-features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .offline-features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .offline-features li::before {
+            content: "✅";
+        }
+        
+        .btn-retry {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-retry:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .connection-status {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .made-in-indonesia {
+            margin-top: 2rem;
+            opacity: 0.8;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-content">
+            <div class="offline-icon">📴</div>
+            <h1 class="offline-title">You're Offline</h1>
+            <p class="offline-message">
+                No internet connection detected. Don't worry, you can still use many features of Agentic AI System!
+            </p>
+            
+            <div class="offline-features">
+                <h3>🚀 Available Offline Features:</h3>
+                <ul>
+                    <li>Voice commands (stored for sync)</li>
+                    <li>Browse cached agents</li>
+                    <li>View system documentation</li>
+                    <li>Access recently viewed pages</li>
+                    <li>Local task management</li>
+                    <li>Voice interaction recording</li>
+                </ul>
+            </div>
+            
+            <div class="connection-status">
+                <p><strong>🔄 Checking connection...</strong></p>
+                <p>Your tasks will automatically sync when you're back online.</p>
+            </div>
+            
+            <a href="/" class="btn-retry" onclick="window.location.reload()">
+                🔄 Try Again
+            </a>
+            
+            <div class="made-in-indonesia">
+                🇮🇩 Made with ❤️ by Mulky Malikul Dhaher in Indonesia
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check connection status
+        function updateConnectionStatus() {
+            const statusElement = document.querySelector('.connection-status p');
+            
+            if (navigator.onLine) {
+                statusElement.innerHTML = '<strong>🌐 Connection restored!</strong><br>Redirecting...';
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                statusElement.innerHTML = '<strong>📴 Still offline</strong><br>Your tasks will sync when connection is restored.';
+            }
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Check every 5 seconds
+        setInterval(updateConnectionStatus, 5000);
+        
+        // Initial check
+        updateConnectionStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+name: "MACD Trend Following"
+description: "MACD trend-following strategy. Enters when MACD crosses above signal line with price above SMA(50), exits on MACD crossbelow or trailing stop."
+version: "1.0.0"
+author: "Quant Nanggroe AI"
+tags:
+  - trend
+  - macd
+  - equity
+  - tech
+
+universe:
+  symbols: ["AAPL", "MSFT", "GOOGL", "AMZN"]
+  exchanges: ["NASDAQ"]
+
+timeframe: "1d"
+
+entry_rules:
+  - indicator: "macd"
+    operator: "cross_above"
+    value: 0.0
+    params:
+      fast_period: 12
+      slow_period: 26
+      signal_period: 9
+    weight: 1.0
+  - indicator: "price"
+    operator: "gt"
+    value: 0.0
+    params:
+      sma_period: 50
+      compare: "sma"
+    weight: 0.7
+
+exit_rules:
+  - indicator: "macd"
+    operator: "cross_below"
+    value: 0.0
+    params:
+      fast_period: 12
+      slow_period: 26
+      signal_period: 9
+  - trailing_stop_pct: 4.0
+
+risk_rules:
+  max_position_pct: 8.0
+  stop_loss_pct: 2.5
+  max_daily_trades: 5
+  max_portfolio_heat: 24.0
+  max_drawdown_pct: 15.0
+  min_cash_reserve_pct: 10.0

@@ -1,0 +1,45 @@
+name: "Crypto Momentum"
+description: "Cryptocurrency momentum strategy with strong volume confirmation. Enters deeply oversold conditions with 2x average volume, exits overbought or trailing stop."
+version: "1.0.0"
+author: "Quant Nanggroe AI"
+tags:
+  - momentum
+  - rsi
+  - crypto
+  - high-volatility
+
+universe:
+  symbols: ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+  exchanges: ["BINANCE", "COINBASE"]
+
+timeframe: "4h"
+
+entry_rules:
+  - indicator: "rsi"
+    operator: "lt"
+    value: 25
+    params:
+      period: 14
+    weight: 1.0
+  - indicator: "volume"
+    operator: "gt"
+    value: 2.0
+    params:
+      period: 20
+    weight: 0.9
+
+exit_rules:
+  - indicator: "rsi"
+    operator: "gt"
+    value: 75
+    params:
+      period: 14
+  - trailing_stop_pct: 8.0
+
+risk_rules:
+  max_position_pct: 5.0
+  stop_loss_pct: 5.0
+  max_daily_trades: 3
+  max_portfolio_heat: 15.0
+  max_drawdown_pct: 25.0
+  min_cash_reserve_pct: 20.0

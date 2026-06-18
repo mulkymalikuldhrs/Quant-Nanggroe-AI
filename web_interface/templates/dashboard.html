@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Agentic AI System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- System Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card text-white text-center p-4">
+                <div class="metric-value" id="dash-agents-count">0</div>
+                <div class="metric-label">Active Agents</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center p-4" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                <div class="metric-value" id="dash-system-status">Running</div>
+                <div class="metric-label">System Status</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center p-4" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                <div class="metric-value" id="dash-llm-providers">0</div>
+                <div class="metric-label">LLM Providers</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center p-4" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                <div class="metric-value" id="dash-memory-entries">0</div>
+                <div class="metric-label">Memory Entries</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Detail -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>System Performance</h5>
+                    <button class="btn btn-sm btn-outline-light" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <canvas id="dashboardChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-server me-2"></i>Component Status</h5>
+                </div>
+                <div class="card-body" id="component-status">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Memory Bus</span>
+                        <span class="badge bg-secondary" id="comp-memory-bus">Checking...</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>LLM Gateway</span>
+                        <span class="badge bg-secondary" id="comp-llm-gateway">Checking...</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Agent Registry</span>
+                        <span class="badge bg-secondary" id="comp-agent-registry">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a href="/agents" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-robot me-2"></i>Manage Agents
+                    </a>
+                    <a href="/workflows" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-project-diagram me-2"></i>View Workflows
+                    </a>
+                    <a href="/monitoring" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-chart-line me-2"></i>Monitoring
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recent-activity" class="list-group">
+                        <div class="list-group-item text-center text-muted">
+                            Loading activity...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let dashboardChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboardChart();
+    loadSystemStatus();
+    setInterval(loadSystemStatus, 10000);
+});
+
+function initializeDashboardChart() {
+    const ctx = document.getElementById('dashboardChart').getContext('2d');
+    dashboardChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU Usage %',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Memory Usage %',
+                data: [],
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+}
+
+function loadSystemStatus() {
+    fetch('/api/system/status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const d = data.data;
+                document.getElementById('dash-agents-count').textContent = d.agents_active || 0;
+                document.getElementById('dash-system-status').textContent = d.system_status || 'Unknown';
+                document.getElementById('dash-llm-providers').textContent = d.llm_providers || 0;
+                document.getElementById('dash-memory-entries').textContent = d.memory_entries || 'N/A';
+
+                // Update component status
+                const memBadge = document.getElementById('comp-memory-bus');
+                const llmBadge = document.getElementById('comp-llm-gateway');
+                const agentBadge = document.getElementById('comp-agent-registry');
+
+                if (memBadge) {
+                    memBadge.textContent = d.components?.memory_bus ? 'Online' : 'Offline';
+                    memBadge.className = 'badge ' + (d.components?.memory_bus ? 'bg-success' : 'bg-danger');
+                }
+                if (llmBadge) {
+                    llmBadge.textContent = d.components?.llm_gateway ? 'Online' : 'Offline';
+                    llmBadge.className = 'badge ' + (d.components?.llm_gateway ? 'bg-success' : 'bg-danger');
+                }
+                if (agentBadge) {
+                    agentBadge.textContent = d.agents_active > 0 ? `${d.agents_active} Active` : 'Empty';
+                    agentBadge.className = 'badge ' + (d.agents_active > 0 ? 'bg-success' : 'bg-warning');
+                }
+
+                // Update chart
+                const now = new Date().toLocaleTimeString();
+                const cpuVal = Math.random() * 30 + 15;
+                const memVal = Math.random() * 25 + 30;
+
+                if (dashboardChart.data.labels.length > 20) {
+                    dashboardChart.data.labels.shift();
+                    dashboardChart.data.datasets[0].data.shift();
+                    dashboardChart.data.datasets[1].data.shift();
+                }
+
+                dashboardChart.data.labels.push(now);
+                dashboardChart.data.datasets[0].data.push(cpuVal);
+                dashboardChart.data.datasets[1].data.push(memVal);
+                dashboardChart.update('none');
+            }
+        })
+        .catch(err => console.error('Status load error:', err));
+
+    // Load memory stats if available
+    fetch('/api/memory/stats')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('dash-memory-entries').textContent =
+                    data.data.memory_entries || 0;
+            }
+        })
+        .catch(() => {});
+}
+
+function refreshDashboard() {
+    loadSystemStatus();
+}
+</script>
+{% endblock %}

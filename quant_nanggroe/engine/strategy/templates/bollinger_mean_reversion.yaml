@@ -1,0 +1,49 @@
+name: "Bollinger Mean Reversion"
+description: "Bollinger Band mean-reversion strategy. Buys when price is below lower Bollinger Band and RSI is oversold, exits at SMA(20) or risk limits."
+version: "1.0.0"
+author: "Quant Nanggroe AI"
+tags:
+  - mean-reversion
+  - bollinger
+  - rsi
+  - equity
+  - etf
+
+universe:
+  symbols: ["SPY", "QQQ", "DIA"]
+  exchanges: ["NYSE", "NASDAQ", "ARCA"]
+
+timeframe: "1d"
+
+entry_rules:
+  - indicator: "bollinger"
+    operator: "lt"
+    value: -2.0
+    params:
+      period: 20
+      std_dev: 2
+    weight: 1.0
+  - indicator: "rsi"
+    operator: "lt"
+    value: 35
+    params:
+      period: 14
+    weight: 0.8
+
+exit_rules:
+  - indicator: "sma"
+    operator: "gt"
+    value: 0.0
+    params:
+      period: 20
+      compare: "price_above_sma"
+  - trailing_stop_pct: 3.0
+  - take_profit_pct: 8.0
+
+risk_rules:
+  max_position_pct: 5.0
+  stop_loss_pct: 2.0
+  max_daily_trades: 8
+  max_portfolio_heat: 20.0
+  max_drawdown_pct: 10.0
+  min_cash_reserve_pct: 15.0

@@ -1,0 +1,105 @@
+{
+  "version": 2,
+  "name": "agentic-ai-system",
+  "alias": ["agentic-ai", "mulky-ai-system"],
+  "builds": [
+    {
+      "src": "web_interface/app.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "runtime": "python3.12"
+      }
+    },
+    {
+      "src": "web_interface/static/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "web_interface/templates/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/web_interface/static/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/web_interface/app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/web_interface/app.py"
+    }
+  ],
+  "env": {
+    "FLASK_ENV": "production",
+    "VERCEL_DEPLOYMENT": "true",
+    "AGENTIC_ENVIRONMENT": "vercel",
+    "ENABLE_DYNAMIC_AGENTS": "true",
+    "SELENIUM_HEADLESS": "true"
+  },
+  "functions": {
+    "web_interface/app.py": {
+      "maxDuration": 30,
+      "memory": 1024,
+      "runtime": "python3.12"
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods", 
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "X-Powered-By",
+          "value": "Agentic AI System - Made by Mulky Malikul Dhaher 🇮🇩"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/web_interface/app.py"
+    },
+    {
+      "source": "/agents",
+      "destination": "/web_interface/app.py"
+    },
+    {
+      "source": "/workflows",
+      "destination": "/web_interface/app.py"
+    },
+    {
+      "source": "/monitoring",
+      "destination": "/web_interface/app.py"
+    },
+    {
+      "source": "/integrations",
+      "destination": "/web_interface/app.py"
+    },
+    {
+      "source": "/credentials",
+      "destination": "/web_interface/app.py"
+    }
+  ],
+  "regions": ["iad1", "sin1"],
+  "github": {
+    "enabled": true,
+    "autoAlias": false
+  }
+}

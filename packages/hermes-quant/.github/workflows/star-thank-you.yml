@@ -1,0 +1,17 @@
+name: Thank Stargazer
+on:
+  watch:
+    types: [started]
+
+jobs:
+  thank:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const stargazer = context.payload.sender.login;
+            console.log(`New stargazer: ${stargazer}`);
+            // You could follow the user back or send a thank you message
+            // For now, just log it for awareness
+            console.log(`${stargazer} starred ${context.repo.repo}! Consider reaching out to invite them to contribute.`);
