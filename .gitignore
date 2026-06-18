@@ -79,3 +79,13 @@ out/
 Thumbs.db
 Desktop.ini
 cluster2-repos/
+
+# Large files (removed from tracking)
+skills/design/design-templates/
+packages/deer-flow/
+packages/crucix/
+Agentic_AI_System_Prompts.docx
+screenshots/
+*.mp4
+*.jpg
+*.docx
