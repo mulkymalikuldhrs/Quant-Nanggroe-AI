@@ -1,0 +1,80 @@
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║      Quant-Nanggroe-AI  —  E2B Sandbox Configuration              ║
+# ║      Production-Ready Deployment Configuration                     ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+
+[sandbox]
+image = "quant-nanggroe-ai"
+version = "1.0.0"
+
+[sandbox.build]
+dockerfile = "Dockerfile"
+context = "."
+target = "production"
+
+[sandbox.env]
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+QNAI_ENV = "sandbox"
+QNAI_LOG_LEVEL = "info"
+QNAI_API_HOST = "0.0.0.0"
+QNAI_API_PORT = "8080"
+QNAI_DEBUG = "false"
+QNAI_WORKERS = "4"
+QNAI_DATABASE_URL = "sqlite:///data/quant.db"
+QNAI_REDIS_URL = "redis://localhost:6379/0"
+
+# Data provider keys (set via E2B secrets in production)
+# QNAI_OPENAI_API_KEY = ""
+# QNAI_ANTHROPIC_API_KEY = ""
+# QNAI_ALPHA_VANTAGE_KEY = ""
+# QNAI_POLYGON_API_KEY = ""
+# QNAI_TWELVEDATA_API_KEY = ""
+# QNAI_ALPACA_API_KEY = ""
+# QNAI_ALPACA_SECRET_KEY = ""
+# QNAI_BINANCE_API_KEY = ""
+# QNAI_BINANCE_SECRET_KEY = ""
+
+[sandbox.ports]
+8080 = { host = "8080", protocol = "tcp" }
+
+[sandbox.startup]
+command = [
+    "python", "-m", "uvicorn",
+    "quant_nanggroe.api:app",
+    "--host", "0.0.0.0",
+    "--port", "8080",
+    "--workers", "4",
+    "--loop", "uvloop",
+    "--http", "httptools",
+    "--log-level", "info",
+    "--access-log",
+]
+timeout = 60
+ready_timeout = 30
+
+[sandbox.health]
+endpoint = "/health"
+interval = 10
+timeout = 5
+retries = 3
+start_period = 10
+
+[sandbox.mounts]
+source = "."
+target = "/home/user/quant-nanggroe-ai"
+read_only = false
+
+[sandbox.permissions]
+run_as_user = "user"
+network = true
+
+[sandbox.resources]
+cpu_count = 2
+memory_mb = 2048
+disk_mb = 10240
+
+[sandbox.security]
+allow_internet = true
+allow_outbound = true
+blocked_hosts = []

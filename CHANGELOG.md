@@ -1,98 +1,199 @@
-# CHANGELOG - QUANT NANGGROE AI
+# Changelog — Quant Nanggroe AI
 
-## [v15.3.1] - 2026-03-06
+## [1.0.0] — 2026-06-18
 
-### Security Fixes
-- **CRITICAL**: Removed API key injection from `vite.config.ts` — `GEMINI_API_KEY` and `GOOGLE_DRIVE_FOLDER_ID` were being embedded into the client-side bundle via `define`, making them accessible in browser DevTools. API keys are now managed exclusively through the runtime Settings panel.
-- **MEDIUM**: Fixed `ErrorBoundary` leaking internal error messages to end users in production. Now only shows generic error text in production mode; full details reserved for development.
+### Added — Production Release
 
-### Bug Fixes
-- **CRITICAL**: Fixed `App.tsx` using wrong property names `data.current_price` and `data.price_change_percentage_24h` — the `MarketTicker` type defines `currentPrice` and `priceChange24h`. This caused `/scan` market commands to crash with `undefined.toLocaleString()`.
-- **CRITICAL**: Fixed `research_agent.ts` using wrong property names `btc?.current_price` and `btc?.price_change_percentage_24h` — same type mismatch as above.
-- **CRITICAL**: Added missing `MathEngine.calculateCorrelation()` method — `CorrelationMonitor` was calling it but it didn't exist, causing runtime crash when `RiskManagement.validateTrade()` was invoked.
-- **HIGH**: Fixed `AuditLogger` calling non-existent `BrowserFS.loadFile()` and `BrowserFS.saveFile()` — correct method names are `readFile()` and `writeFile()`.
-- **HIGH**: Fixed `DecisionSynthesisEngine.synthesize()` calling `RiskManagement.validateTrade()` with 3 arguments when it expects 5 — replaced with `checkKillSwitch()` which matches the available data.
-- **HIGH**: Fixed `backtest_engine.ts` argument order mismatch in `PressureNormalizationEngine.normalize()` call — reordered to match the function signature `(market, quant, smc, news, flow)`.
-- **MEDIUM**: Added missing type definitions to `types.ts`: `StrategySignal`, `ConsensusReport`, `VirtualDiskNode`, `NeuralWeights`, `EvolutionState`.
-- **MEDIUM**: Updated `TechnicalIndicators` type to include `stoch`, `cci`, `adx`, `bollinger`, `vwap`, `ma10`, `ma100` — matching what `MathEngine.analyzeSequence()` actually returns.
+#### Deployment & Infrastructure
+- **Multi-Target Deployment** (`deploy.sh`)
+  - E2B sandbox deployment with health verification
+  - VPS deployment (Ubuntu/Debian) with systemd service
+  - Docker Compose deployment with health checks
+  - Unified health check endpoint for all targets
+- **E2B Configuration** (`e2b.toml`)
+  - Production-ready sandbox configuration
+  - Resource limits (2 CPU, 2GB RAM, 10GB disk)
+  - Security permissions and network configuration
+- **Monitoring Stack** (`docker-compose.monitoring.yml`)
+  - Prometheus with 30-day retention and 10GB size limit
+  - Grafana with auto-provisioned dashboards and datasources
+  - Alertmanager for notification routing
+  - Node Exporter for host system metrics
+  - PostgreSQL and Redis exporters for database metrics
+- **Prometheus Alert Rules** (`monitoring/prometheus/alert_rules.yml`)
+  - High latency alert (P95 > 2s warning, > 5s critical)
+  - High error rate alert (> 5% warning, > 15% critical)
+  - Service down alerts (API, PostgreSQL, Redis, Prometheus)
+  - Low disk space alert (> 85% warning, > 95% critical)
+  - High memory/CPU usage alerts
 
-### Version Alignment
-- Aligned all version strings across the codebase to **15.3.0**:
-  - `package.json`: 2.0.0 → 15.3.0
-  - `README.md` badge: 15.2.0 → 15.3.0
-  - `metadata.json`: 15.1.0 → 15.3.0
-  - `App.tsx` system prompt: v11.5.0 → v15.3.0
-  - `gemini.ts` system prompt: v15.1.0 → v15.3.0
-  - `ControlCenter.tsx`: v15.1.0 → v15.3.0
-  - `SystemUpdater` prop: v11.5.0 → v15.3.0
-  - `ARCHITECTURE.md`: v15.2.0 → v15.3.0
-  - Terminal welcome text: v11.5 → v15.3
-  - ResearchAgent log: v11.4 → v15.3.0
+#### Backup & Recovery
+- **Automated Backup System** (`scripts/backup.sh`)
+  - Database backup (PostgreSQL, SQLite, MySQL)
+  - Configuration backup (env, config, docker-compose)
+  - Log backup with journalctl integration
+  - Rotation policy (7 daily, 4 weekly)
+  - S3 upload with STANDARD_IA storage class
+  - Structured backup reports
 
-### Code Quality Improvements
-- Fixed `package.json` name from `quant-nanggroe-ai-|-autonomous-hedge-fund` to `quant-nanggroe-ai` (pipe character is non-standard for npm package names)
-- Added `description`, `author`, `license` fields to `package.json`
-- Added `typecheck` and `lint` scripts to `package.json`
-- Build script now runs `tsc --noEmit && vite build` for type-safe builds
-- Added `@types/react` and `@types/react-dom` devDependencies (were missing)
-- Enabled TypeScript strict mode with `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`
-- Removed unnecessary `experimentalDecorators` and `useDefineForClassFields` from `tsconfig.json` (no decorators used)
-- Added `.env.example` template with all configurable environment variables documented
-- Enhanced `.gitignore` with better organization, `.env.example` exclusion, certificate files, coverage, TypeScript build info
-- Removed `requestFramePermissions` from `metadata.json` (Framer-specific, unnecessary)
-- Rewrote `SECURITY.md` with comprehensive policy including API key protection, input validation, known limitations
+#### Load Testing
+- **Load Test Framework** (`scripts/load_test.py`)
+  - Concurrent request testing with configurable threads
+  - Throughput measurement (req/s and MB/s)
+  - Latency distribution (P50, P90, P95, P99)
+  - Per-endpoint breakdown and error tracking
+  - JSON report generation
+  - Rate limiting support
 
----
+#### Security Hardening
+- **Environment Hardening** (`scripts/harden.sh`)
+  - SSH hardening (disable root, key-only auth, strong ciphers)
+  - UFW firewall configuration (SSH, HTTP, HTTPS, app ports)
+  - Fail2Ban with SSH and API-specific jails
+  - Automatic security updates (unattended-upgrades)
+  - Kernel hardening (sysctl: anti-spoof, SYN flood, etc.)
+  - Verification tooling
 
-## [v15.3.0] - 2026-03-05
-
-### Fixed
-- Replaced mock chart data with empty fallback in `market.ts` — no more fake OHLCV when APIs unavailable
-- Replaced random mock flow/whale data with neutral state in `market.ts`
-- Updated `.gitignore` to cover `.env.local`, sensitive files, and `cred`
-- Removed `.env.local` and empty `cred` file from version control
-- Fixed broken contact links in README
-- Updated README with consolidated trilingual disclaimer (EN/ID/CN)
-- Added contributor welcome section with specific roles
-
----
-
-## [v15.2.0] - Previous Release
-### Added
-- **Contextual Neural Grounding**: Implementasi pemanenan data real-time sebelum penalaran agent untuk eliminasi halusinasi.
-- **Latency & Performance Tracking**: Pelacakan timing presisi tinggi pada siklus Neural Swarm untuk kebutuhan audit institusional.
-- **Institutional UI Flair**: Peningkatan `ControlCenter` dengan "Security Matrix" dan dashboard kesehatan "Risk Guardian".
-- **Neural Inferences Grounding**: Pelabelan eksplisit pada sintesis swarm sebagai `NEURAL_INFERENCE` dengan trust score.
+#### Documentation
+- **User Guide** (`docs/USER_GUIDE_QNA.md`)
+  - Installation guide (source, Docker, system deps)
+  - Quick start with 4-step onboarding
+  - Complete configuration reference
+  - API reference with request/response examples
+  - CLI reference for QNA and BH Colony CLIs
+  - Troubleshooting guide (6 common issues)
+  - FAQ covering general, data, trading, and deployment topics
 
 ### Changed
-- **Institutional Logic (v15.1.0)**: Upgrade kernel prompt untuk mewajibkan penalaran deterministik dan bukti kuantitatif.
-- **Stability Patch**: Sinkronisasi konsistensi data (`currentPrice` & `priceChange24h`) di seluruh ekosistem Market & Portfolio.
+- Updated `CHANGELOG.md` with v1.0.0 release notes
+- Updated `e2b.toml` with production configuration
+- Updated `monitoring/prometheus.yml` with new scrape targets
+
+### Deprecated
+- None
+
+### Removed
+- None
+
+### Fixed
+- None (clean release)
+
+### Security
+- SSH root login disabled by default
+- Password authentication disabled (key-only)
+- Firewall configured with deny-by-default policy
+- Automatic security updates enabled
+- Kernel network stack hardened against common attacks
 
 ---
 
-## [v15.0.0] - 2026-01-06 (FINAL MVP: OPERATIONAL READINESS)
-### Added
-- **Risk Guardian (Constitutional Law)**: Implementasi layer penegakan risiko deterministik (Kill-switch 4% DD & Correlation Monitor).
-- **Execution Reality Engine**: Integrasi simulasi trading realistis (Dynamic Spread, Slippage, Latency 100-500ms).
-- **Strategy Lifecycle Manager**: Darwinian management yang membunuh strategi non-performan secara otomatis.
-- **Audit Traceability**: Integrasi `AuditLogger` di seluruh layer (Market -> Sensor -> Pressure -> Decision -> Risk).
+## [1.0.0-rc.1] — 2026-06-18
 
-### Completed
-- **Full MVP Lifecycle**: Penyelesaian seluruh rencana pembangunan 6 minggu sesuai `BUILD_PLAN.md`.
+### Added — Release Candidate
+- **CLI Tools** (`scripts/qna-cli.py`, `scripts/bh-cli.py`)
+  - `qna kelly/regime/stress/backtest/health/serve` — production CLI with engine integration
+  - `bh status/agents/mesh/radar/health` — BH Colony mesh management CLI
+  - JSON output mode (`--json`) for all commands
+  - Graceful fallback when engine modules are unavailable
+- **Health & Monitoring Probes** (`engine/api/health.py`)
+  - `GET /health` — Full system health (DB, data providers, LLM providers, engine modules)
+  - `GET /metrics` — Prometheus-format metrics endpoint
+  - `GET /ready` — Kubernetes readiness probe
+  - `GET /live` — Kubernetes liveness probe
+  - Component-level health checks with status degradation tracking
+- **Security Audit Scanner** (`scripts/security_audit.py`)
+  - Hardcoded API keys / secrets detection
+  - Hardcoded passwords / credentials detection
+  - Insecure import scanning (pickle, eval, exec, shell=True)
+  - SQL injection pattern detection (string formatting in queries)
+  - Debug / development leftover detection
+  - JSON and human-readable report output
+- **Pre-Release Checklist** (`docs/PRE_RELEASE_CHECKLIST.md`)
+  - 8-section checklist: code quality, tests, security, docs, perf, deploy, deps, git
+  - Sign-off table for team accountability
+- **Runbook** (`docs/RUNBOOK.md`)
+  - Full system architecture diagram
+  - Deployment procedures (local, Docker, E2B, Kubernetes)
+  - Troubleshooting guide (6 common issues with solutions)
+  - Rollback procedures (Docker, database, git, kill switch)
+  - Monitoring & alerting reference
+  - Environment variables reference
+- **E2B Sandbox Configuration** (`e2b.toml`)
+  - E2B sandbox image, build, env, ports, startup, health check
+  - Network permissions and mount configuration
 
----
+### Added — Core Engine (pre-existing in rc.1)
+- **12 Data Providers** (`engine/data/providers/`)
+  - yfinance, Alpha Vantage, Polygon, Binance/CCXT, CoinGecko
+  - FRED, Finnhub, Twelve Data, FMP, BLS, GDELT, World Bank
+  - Unified BaseProvider with async fetch, retry, rate limiting
+- **Data Fallback Chain** (`engine/data/fallback_chain.py`)
+  - Priority-based provider fallback
+  - Circuit breaker pattern (3-failure threshold, auto-reset)
+  - Per-provider success/failure/skip statistics
+- **Data Manager** (`engine/data/data_manager.py`)
+  - Unified interface: get_ohlcv(), get_fundamentals(), get_economic()
+  - In-memory + disk caching with TTL
+  - Health check endpoint
+- **Kelly→Backtest Integration** (`engine/kelly/backtest_integration.py`)
+  - KellyBacktestBridge: auto-selects Fractional/Bayesian/Drawdown Kelly
+  - StrategyKellyMixin for existing strategies
+- **Regime→Strategy Selector** (`engine/regime/strategy_selector.py`)
+  - 7 regime→strategy mappings with Kelly scaling
+  - RegimeAdaptiveStrategy
+- **Stress Testing Enhanced** (`engine/stress_testing/`)
+  - Monte Carlo: GBM, jump-diffusion, regime-switching, correlated multi-asset
+  - Historical: 5 crisis scenarios (2008, COVID, 2022, DotCom, Black Monday)
+  - EWHS VaR/CVaR with configurable half-life
+  - Sensitivity/what-if analysis (rates, vol, correlation)
+- **Pattern Recorder Enhanced** (`engine/pattern_recorder/`)
+  - Matrix Profile (STUMPY + numpy fallback)
+  - DTW with Sakoe-Chiba band, DDTW, batch matching
+  - Embedding similarity (26 statistical/spectral/shape features)
+  - Recurrence Plot Analysis with RQA measures
+- **Almgren-Chriss Full** (`engine/execution/almgren_chriss.py`)
+  - TWAP, VWAP, IS, Adaptive strategies
+  - ExecutionSimulator with Monte Carlo VaR
+  - Convenience function: optimal_execution_schedule()
+- **Visualization Dashboard** (`engine/visualization/`)
+  - ChartFactory: OHLCV, line, bar, heatmap, equity, drawdown, distribution
+  - QNADashboard: metrics computation (Sharpe, Sortino, VaR, etc.), HTML export
+- **Unit Tests** — 187 tests across 35 test classes
 
-## [v12.0.0] - 2026-01-06 (PROFESSIONAL TRADING EDITION)
-### Added
-- **Institutional Logic (SMC)**: Implementasi Order Blocks, FVG, dan Market Structure Breaks.
-- **Trading Terminal Portfolio**: Redesain Portfolio Management menjadi gaya terminal profesional (Equity, Margin, PnL real-time).
-- **Institutional Data Pipeline**: Pipeline proxy-rotator untuk Binance dan sumber institusional.
+### Enhanced
+- All stress testing modules: rewritten with proper OOP, dataclass results
+- All pattern recorder modules: rewritten with numpy fallbacks, robust typing
+- Execution module: from minimal stub to full implementation
+- Visualization: from stub to full Plotly dashboard
 
----
-*(Versi sebelumnya tetap tersedia di riwayat audit sistem)*
+### Documentation
+- README.md with full architecture overview
+- docs/api.md with module-by-module API reference
+- docs/PRE_RELEASE_CHECKLIST.md — pre-release quality gates
+- docs/RUNBOOK.md — deployment, troubleshooting, rollback procedures
+- CHANGELOG.md (this file)
+- Test scripts in scripts/ directory
 
----
+### Deployment
+- E2B-ready: all dependencies documented, import-verified
+- E2B sandbox configuration (`e2b.toml`)
+- Integration with BH colony bridge via 11 quant capabilities
 
-> **Contact:** Mulky Malikul Dhaher — [mulkymalikuldhaher@email.com](mailto:mulkymalikuldhaher@email.com)
->
-> **Disclaimer:** This project is for Education Purpose only. Risiko apapun tidak kita tanggung. (We are not responsible for any risks or damages.)
+### Known Issues
+- LLM API keys required for full agent pipeline (degrades gracefully to simulation)
+- Some engine modules have optional dependencies (hmmlearn, stumpy) — degrade gracefully
+- WebSocket reconnection not yet implemented for real-time streaming
+
+### Migration Guide (from 0.2.0)
+1. Run `pip install -e ".[dev]"` to update dependencies
+2. Copy `.env.example` to `.env` and configure new keys
+3. Run `python scripts/qna-cli.py health` to verify system
+4. Run `python scripts/security_audit.py` to check for issues
+5. API endpoints remain backward-compatible — no breaking changes
+6. New health/metrics endpoints available at `/health`, `/metrics`, `/ready`, `/live`
+
+## [0.1.0] — Pre-MVP
+- Basic Kelly implementation
+- HMM regime detection
+- Initial stress testing stubs
+- Basic data layer

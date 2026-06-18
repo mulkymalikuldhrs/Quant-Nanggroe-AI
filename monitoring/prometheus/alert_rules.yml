@@ -1,0 +1,166 @@
+# Quant-Nanggroe-AI — Prometheus Alert Rules
+# High Latency, Error Rate, Service Down, Low Disk Space
+
+groups:
+  - name: qna_alerts
+    rules:
+      # ── High Latency Alert ──────────────────────────────────────────
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="agentic-ai-app"}[5m])) by (le)
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency detected"
+          description: "P95 latency is {{ $value }}s (threshold: 2.0s) for the last 5 minutes."
+          runbook_url: "https://github.com/quant-nanggroe-ai/docs/runbook#high-latency"
+
+      - alert: HighAPILatencyCritical
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="agentic-ai-app"}[5m])) by (le)
+          ) > 5.0
+        for: 3m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Critical API latency"
+          description: "P95 latency is {{ $value }}s (threshold: 5.0s). Service may be degraded."
+
+      # ── High Error Rate Alert ──────────────────────────────────────
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="agentic-ai-app",code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="agentic-ai-app"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High error rate on API"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)."
+
+      - alert: HighErrorRateCritical
+        expr: |
+          (
+            sum(rate(http_requests_total{job="agentic-ai-app",code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="agentic-ai-app"}[5m]))
+          ) > 0.15
+        for: 3m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Critical error rate on API"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 15%). Immediate investigation required."
+
+      # ── Service Down Alert ─────────────────────────────────────────
+      - alert: ServiceDown
+        expr: |
+          up{job="agentic-ai-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "QNA API service is down"
+          description: "The QNA API has been unreachable for over 1 minute."
+
+      - alert: PostgresDown
+        expr: |
+          up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been unreachable for over 1 minute."
+
+      - alert: RedisDown
+        expr: |
+          up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been unreachable for over 1 minute."
+
+      - alert: PrometheusDown
+        expr: |
+          up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: monitoring
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus monitoring has been unreachable for over 1 minute."
+
+      # ── Low Disk Space Alert ───────────────────────────────────────
+      - alert: LowDiskSpace
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"}
+            /
+            node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}
+          ) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Low disk space on host"
+          description: "Disk usage is above 85% ({{ $value | humanizePercentage }} free)."
+
+      - alert: LowDiskSpaceCritical
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"}
+            /
+            node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}
+          ) < 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: host
+        annotations:
+          summary: "Critical disk space on host"
+          description: "Disk usage is above 95% ({{ $value | humanizePercentage }} free). Service may crash."
+
+      # ── High Memory Usage ──────────────────────────────────────────
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 85%)."
+
+      # ── High CPU Usage ─────────────────────────────────────────────
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 90% for 10 minutes."

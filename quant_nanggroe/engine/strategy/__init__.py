@@ -37,6 +37,7 @@ from quant_nanggroe.engine.strategy.loader import (
     StrategyLoadError,
 )
 from quant_nanggroe.engine.strategy.backtest_adapter import StrategyBacktestAdapter
+from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
 
 __all__ = [
     # Schema
@@ -60,4 +61,6 @@ __all__ = [
     "StrategyLoadError",
     # Adapter
     "StrategyBacktestAdapter",
+    # Regime-adaptive
+    "RegimeAdaptiveStrategy",
 ]
