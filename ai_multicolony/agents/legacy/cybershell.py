@@ -257,7 +257,7 @@ class CyberShellAgent:
             # Load average (Unix-like systems)
             try:
                 load_avg = os.getloadavg()
-            except:
+            except Exception:
                 load_avg = [0, 0, 0]
             
             # Process count
@@ -336,7 +336,7 @@ class CyberShellAgent:
                     "return_code": process.returncode
                 }
                 process_list.append(process_info)
-            except:
+            except Exception:
                 process_list.append({
                     "process_id": process_id,
                     "status": "error",

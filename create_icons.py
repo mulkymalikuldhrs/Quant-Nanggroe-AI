@@ -104,7 +104,7 @@ def create_cover_image():
             title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
             subtitle_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 36)
             credit_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
-        except:
+        except Exception:
             title_font = ImageFont.load_default()
             subtitle_font = ImageFont.load_default()  
             credit_font = ImageFont.load_default()

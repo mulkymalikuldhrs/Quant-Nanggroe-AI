@@ -1,17 +1,17 @@
 <!-- 🦅 QUANT NANGGROE AI — 中文 README -->
 <!-- Language: 中文 (Chinese) -->
 
-<a href="https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI">
+<a href="https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI">
   <img align="center" src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=36&duration=3000&pause=1500&color=00D4AA&center=true&vCenter=true&multiline=true&repeat=true&width=800&height=120&lines=QUANT+NANGGROE+AI;多智能体决策智能操作系统" alt="Typing SVG" />
 </a>
 
 <div align="center">
 
-[![版本](https://img.shields.io/badge/版本-15.3.0-gold?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+[![版本](https://img.shields.io/badge/版本-15.3.0-gold?style=for-the-badge&logo=semver&logoColor=white)](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![许可证](https://img.shields.io/badge/许可证-MIT-green?style=for-the-badge&logo=open-source-initiative&logoColor=white)](./LICENSE)
-[![状态](https://img.shields.io/badge/状态-全面运行-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+[![状态](https://img.shields.io/badge/状态-全面运行-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)
 
 </div>
 
@@ -127,7 +127,7 @@ Quant Nanggroe AI 基于**5层确定性执行堆栈**构建，每一层都充当
 
 ```bash
 # 克隆仓库
-git clone https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI.git
+git clone https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI.git
 
 # 进入项目目录
 cd Quant-Nanggroe-AI
@@ -254,7 +254,7 @@ Quant-Nanggroe-AI/
 
 ### 如何贡献
 
-1. **Fork** 仓库：[https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+1. **Fork** 仓库：[https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)
 2. **创建** 功能分支：`git checkout -b feature/your-feature-name`
 3. **提交** 您的更改，附带清晰、描述性的提交信息
 4. **推送** 到您的fork：`git push origin feature/your-feature-name`

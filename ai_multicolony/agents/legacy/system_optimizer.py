@@ -380,7 +380,7 @@ class SystemOptimizerAgent:
                     try:
                         # Test if cache is accessible
                         list(os.listdir(cache_dir))
-                    except:
+                    except Exception:
                         import shutil
                         shutil.rmtree(cache_dir)
                         fixes.append(f"Removed corrupted cache: {cache_dir}")

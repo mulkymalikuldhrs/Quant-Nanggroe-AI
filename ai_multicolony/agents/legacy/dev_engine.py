@@ -287,7 +287,7 @@ class DevEngineAgent:
                     check=True
                 )
                 git_initialized = True
-            except:
+            except Exception:
                 git_initialized = False
             
             # Install dependencies if package.json exists
@@ -301,7 +301,7 @@ class DevEngineAgent:
                         check=True
                     )
                     dependencies_installed = True
-                except:
+                except Exception:
                     pass
             
             # Store project info

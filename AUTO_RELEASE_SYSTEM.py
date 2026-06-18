@@ -203,7 +203,7 @@ class UltimateReleaseSystem:
                 text=True
             )
             return result.stdout.strip() if result.returncode == 0 else "unknown"
-        except:
+        except Exception:
             return "unknown"
     
     def _get_directory_size(self, path: Path) -> int:
@@ -542,7 +542,7 @@ class UltimateReleaseSystem:
 ## 🔗 Links
 - **Documentation**: [README.md](./README.md)
 - **Changelog**: [CHANGELOG.md](./CHANGELOG.md)
-- **Issues**: [GitHub Issues](https://github.com/tokenew6/Agentic-AI-Ecosystem/issues)
+- **Issues**: [GitHub Issues](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI/issues)
 
 ---
 *🇮🇩 Made with ❤️ by Mulky Malikul Dhaher in Indonesia*

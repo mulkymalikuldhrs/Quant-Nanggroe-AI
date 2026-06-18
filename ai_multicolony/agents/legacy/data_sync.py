@@ -614,7 +614,7 @@ class DataSyncAgent:
                             if datetime.now() - updated_time > timedelta(hours=24):
                                 redis_conn.delete(key)
                                 cleaned_records += 1
-                    except:
+                    except Exception:
                         continue
             
             return {
@@ -780,7 +780,7 @@ class DataSyncAgent:
                 elif conn_name == "redis":
                     conn.ping()
                     status[f"{conn_name}_status"] = "connected"
-            except:
+            except Exception:
                 status[f"{conn_name}_status"] = "disconnected"
         
         return status

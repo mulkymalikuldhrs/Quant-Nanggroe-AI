@@ -33,7 +33,7 @@
 ### **Step 1: Clone & Install (2 minutes)**
 ```bash
 # 🚀 Get the system
-git clone https://github.com/tokenew6/Agentic-AI-Ecosystem.git
+git clone https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI.git
 cd Agentic-AI-Ecosystem
 
 # 📦 Install magic
@@ -458,9 +458,9 @@ docker compose --profile monitoring up -d
 | **Agent Watcher alerts** | Check `data/health_reports/` for reports, review watcher configuration |
 
 ### **📞 Get Help**
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/tokenew6/Agentic-AI-Ecosystem/issues)
+- **🐛 Bug Reports**: [GitHub Issues](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI/issues)
 - **💬 Community**: [Discord Server](https://discord.gg/agentic-ai)
-- **📚 Documentation**: [Complete Wiki](https://github.com/tokenew6/Agentic-AI-Ecosystem/wiki)
+- **📚 Documentation**: [Complete Wiki](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI/wiki)
 - **📧 Direct Support**: support@agentic-ai.com
 
 ---

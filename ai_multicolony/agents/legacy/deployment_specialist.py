@@ -333,7 +333,7 @@ class DeploymentSpecialist:
         try:
             response = requests.get(f"http://{address}:5000/api/system/status", timeout=5)
             return response.status_code == 200
-        except:
+        except Exception:
             return False
     
     # Template methods for colony files
@@ -463,7 +463,7 @@ CMD ["python", "main.py"]
                 self.strategic_engine.is_active() and
                 self.target_scanner.is_active()
             )
-        except:
+        except Exception:
             return False
     
     async def stop(self):
@@ -590,7 +590,7 @@ class DockerDeployment(BaseDeployment):
                 return
             self.docker_client = docker.from_env()
             print("🐳 Docker deployment method initialized")
-        except:
+        except Exception:
             print("⚠️ Docker not available")
             self.docker_client = None
     

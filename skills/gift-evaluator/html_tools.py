@@ -38,12 +38,12 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
     # --- 1. 数据解析 ---
     try:
         thank_you_data = json.loads(thank_you_json)
-    except:
+    except Exception:
         thank_you_data = [{"style": "通用版", "content": thank_you_json}]
 
     try:
         return_gift_data = json.loads(return_gift_json)
-    except:
+    except Exception:
         return_gift_data = [{"target": "通用建议", "item": return_gift_json, "reason": "万能回礼"}]
 
     # --- 2. 风格配置 ---

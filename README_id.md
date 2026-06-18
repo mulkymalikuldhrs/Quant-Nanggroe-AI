@@ -1,17 +1,17 @@
 <!-- 🦅 QUANT NANGGROE AI — README Bahasa Indonesia -->
 <!-- Language: Bahasa Indonesia -->
 
-<a href="https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI">
+<a href="https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI">
   <img align="center" src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=36&duration=3000&pause=1500&color=00D4AA&center=true&vCenter=true&multiline=true&repeat=true&width=800&height=120&lines=QUANT+NANGGROE+AI;OS+Intelijen+Keputusan+Multi-Agent" alt="Typing SVG" />
 </a>
 
 <div align="center">
 
-[![Versi](https://img.shields.io/badge/Versi-15.3.0-gold?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+[![Versi](https://img.shields.io/badge/Versi-15.3.0-gold?style=for-the-badge&logo=semver&logoColor=white)](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Lisensi](https://img.shields.io/badge/Lisensi-MIT-green?style=for-the-badge&logo=open-source-initiative&logoColor=white)](./LICENSE)
-[![Status](https://img.shields.io/badge/Status-Operasional_Penuh-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+[![Status](https://img.shields.io/badge/Status-Operasional_Penuh-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)
 
 </div>
 
@@ -127,7 +127,7 @@ Mesin **AutoSwitch** menyediakan failover penyedia otomatis dengan logika coba u
 
 ```bash
 # Klon repositori
-git clone https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI.git
+git clone https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI.git
 
 # Navigasi ke direktori proyek
 cd Quant-Nanggroe-AI
@@ -254,7 +254,7 @@ Kami menyambut kontributor dari seluruh dunia! Quant Nanggroe AI adalah proyek a
 
 ### Cara Berkontribusi
 
-1. **Fork** repositori di [https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)
+1. **Fork** repositori di [https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)
 2. **Buat** branch fitur: `git checkout -b feature/nama-fitur-anda`
 3. **Commit** perubahan Anda dengan pesan yang jelas dan deskriptif
 4. **Push** ke fork Anda: `git push origin feature/nama-fitur-anda`

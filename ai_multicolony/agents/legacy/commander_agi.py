@@ -233,7 +233,7 @@ class CommanderAGI:
                     temps = psutil.sensors_temperatures()
                     if temps:
                         temperature = list(temps.values())[0][0].current
-                except:
+                except Exception:
                     pass
                 
                 # Battery (if available)
@@ -242,7 +242,7 @@ class CommanderAGI:
                     battery = psutil.sensors_battery()
                     if battery:
                         battery_level = int(battery.percent)
-                except:
+                except Exception:
                     pass
             else:
                 # Fallback without psutil

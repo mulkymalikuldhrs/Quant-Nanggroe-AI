@@ -26,7 +26,7 @@
 <br/>
 
 **Fork dari [NousResearch/Hermes](https://github.com/NousResearch/Hermes)** ⭐
-**Digabungkan dengan [Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI) | [AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | [Vibe-Trading](https://github.com/mulkymalikuldhrs/Vibe-Trading) | [AutoHedge](https://github.com/mulkymalikuldhrs/AutoHedge)**
+**Digabungkan dengan [Quant-Nanggroe-AI](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI) | [AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | [Vibe-Trading](https://github.com/mulkymalikuldhrs/Vibe-Trading) | [AutoHedge](https://github.com/mulkymalikuldhrs/AutoHedge)**
 
 <br/>
 
@@ -70,7 +70,7 @@ Arsitektur ini menyintesis pola terkuat dari empat repositori referensi ke dalam
 | Repositori Sumber | Kontribusi | Versi |
 |---|---|---|
 | **[NousResearch/Hermes](https://github.com/NousResearch/Hermes)** ⭐ | Framework agent dasar, orkestrasi tool, loop percakapan | upstream |
-| **[Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)** | Deterministic Agent Execution, Pressure Normalization, Market Regime Engine, Darwinian Strategy Evolution, 10 tool terintegrasi | v15.2.0 |
+| **[Quant-Nanggroe-AI](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)** | Deterministic Agent Execution, Pressure Normalization, Market Regime Engine, Darwinian Strategy Evolution, 10 tool terintegrasi | v15.2.0 |
 | **[AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem)** | Unified Agent Registry, manajemen lifecycle multi-agent, koordinasi koloni | v8.0.0 |
 | **[Vibe-Trading](https://github.com/mulkymalikuldhrs/Vibe-Trading)** | 450+ alpha quant siap pakai, penerapan alpha purity, analisis faktor | v0.1.8 |
 | **[AutoHedge](https://github.com/mulkymalikuldhrs/AutoHedge)** | Arsitektur swarm pipeline (Director → Quant → Risk → Execution), integrasi venue-specific | terbaru |

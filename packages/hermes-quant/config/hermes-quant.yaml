@@ -122,7 +122,7 @@ sources:
   
   integrated:
     - name: "Quant-Nanggroe-AI"
-      url: "https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI"
+      url: "https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI"
       version: "v15.2.0"
     
     - name: "AI-MultiColony-Ecosystem"

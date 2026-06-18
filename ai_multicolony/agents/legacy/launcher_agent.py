@@ -435,7 +435,7 @@ Please specify if you would like to:
                 return "✅ Active"
             else:
                 return "⚠️ Database not found"
-        except:
+        except Exception:
             return "❌ Error"
     
     def _check_knowledge_system(self) -> str:
@@ -448,7 +448,7 @@ Please specify if you would like to:
                 return "✅ Active"
             else:
                 return "⚠️ Limited"
-        except:
+        except Exception:
             return "❌ Error"
     
     def _get_integrations_status(self) -> Dict[str, Any]:
@@ -472,7 +472,7 @@ Please specify if you would like to:
             headers = {'Authorization': f'token {token}'}
             response = requests.get('https://api.github.com/user', headers=headers, timeout=5)
             return response.status_code == 200
-        except:
+        except Exception:
             return False
     
     def _test_openai_connection(self) -> bool:
@@ -485,7 +485,7 @@ Please specify if you would like to:
             headers = {'Authorization': f'Bearer {token}'}
             response = requests.get('https://api.openai.com/v1/models', headers=headers, timeout=5)
             return response.status_code == 200
-        except:
+        except Exception:
             return False
     
     def _test_huggingface_connection(self) -> bool:
@@ -494,5 +494,5 @@ Please specify if you would like to:
             # Test free endpoint
             response = requests.get('https://api-inference.huggingface.co/models', timeout=5)
             return response.status_code == 200
-        except:
+        except Exception:
             return False

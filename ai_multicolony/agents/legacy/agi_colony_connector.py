@@ -161,7 +161,7 @@ class AGIColonyConnector:
                         addrs = netifaces.ifaddresses(interface)
                         if netifaces.AF_INET in addrs:
                             self.network_info[interface] = addrs[netifaces.AF_INET][0]['addr']
-                    except:
+                    except Exception:
                         continue
             else:
                 print("📦 netifaces not available, using basic networking")
@@ -169,7 +169,7 @@ class AGIColonyConnector:
                 try:
                     hostname = socket.gethostname()
                     self.network_info['default'] = socket.gethostbyname(hostname)
-                except:
+                except Exception:
                     self.network_info['default'] = '127.0.0.1'
             
             # Initialize tunnel manager
@@ -241,7 +241,7 @@ class AGIColonyConnector:
             
             sock.close()
             
-        except:
+        except Exception:
             pass  # Silent failure for scanning
     
     def _initiate_colony_handshake(self, ip: str):
@@ -467,7 +467,7 @@ class AGIColonyConnector:
                     json=intelligence,
                     timeout=5
                 )
-            except:
+            except Exception:
                 pass  # Continue with other colonies
     
     def _autonomous_evolution(self):
@@ -492,7 +492,7 @@ class AGIColonyConnector:
             
             return True
             
-        except:
+        except Exception:
             return False
     
     async def stop(self):

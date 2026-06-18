@@ -28,7 +28,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/quant-nanggroe/quant-nanggroe-ai.git
+git clone https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI.git
 cd quant-nanggroe-ai
 
 # Create virtual environment
@@ -48,7 +48,7 @@ cp .env.example .env
 
 ```bash
 # Clone and start all services
-git clone https://github.com/quant-nanggroe/quant-nanggroe-ai.git
+git clone https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI.git
 cd quant-nanggroe-ai
 
 # Start the full stack

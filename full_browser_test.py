@@ -125,7 +125,7 @@ def test_all():
                         result = {"action": "click_link", "href": href, "text": text}
                         results["clicks"].append(result)
                         print(f"  Link: {text} -> {href}")
-                except:
+                except Exception:
                     pass
             
             # Test buttons
@@ -135,7 +135,7 @@ def test_all():
                     result = {"action": "click_button", "text": text}
                     results["clicks"].append(result)
                     print(f"  Button: {text}")
-                except:
+                except Exception:
                     pass
         except Exception as e:
             results["errors"].append(f"Interactive test: {str(e)}")
@@ -162,9 +162,9 @@ def test_all():
                         try:
                             data = json.loads(content)
                             result = {"endpoint": endpoint, "method": method, "status": status, "data_keys": list(data.keys())[:10] if isinstance(data, dict) else "array"}
-                        except:
+                        except Exception:
                             result = {"endpoint": endpoint, "method": method, "status": status, "response_length": len(content)}
-                    except:
+                    except Exception:
                         result = {"endpoint": endpoint, "method": method, "status": status}
                 else:
                     result = {"endpoint": endpoint, "method": method, "status": status}

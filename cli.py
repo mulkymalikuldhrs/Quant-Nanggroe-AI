@@ -157,7 +157,7 @@ def stop():
         else:
             print_warning("Graceful shutdown failed, checking processes...")
             
-    except:
+    except Exception:
         print_warning("Could not connect to system API")
     
     # Check for running processes
@@ -200,7 +200,7 @@ def health(output):
         else:
             health_report['system']['status'] = 'error'
             print_error("System status: ERROR")
-    except:
+    except Exception:
         health_report['system']['status'] = 'offline'
         print_warning("System status: OFFLINE")
     
@@ -214,7 +214,7 @@ def health(output):
             print_info(f"Agents: {active_agents}/{len(agents_data)} active")
         else:
             print_warning("Could not retrieve agent status")
-    except:
+    except Exception:
         print_warning("Agent status check failed")
     
     # Check services
@@ -240,7 +240,7 @@ def health(output):
                     r = redis.Redis(host='localhost', port=6379, db=0)
                     r.ping()
                     status = 'ok'
-                except:
+                except Exception:
                     status = 'offline'
             
             health_report['services'][service_name] = status

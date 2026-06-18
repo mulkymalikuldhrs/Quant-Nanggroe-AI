@@ -275,7 +275,7 @@ class CodeTool(MCPTool):
                 warnings.append({"line": i, "message": f"Line too long ({len(stripped)} chars)", "type": "style"})
 
             # Bare except
-            if stripped.endswith("except:"):
+            if stripped.endswith("except Exception:"):
                 errors.append({"line": i, "message": "Bare except clause", "type": "error"})
 
             # Mutable default arguments

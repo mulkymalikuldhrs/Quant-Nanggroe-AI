@@ -229,7 +229,7 @@ def down(connection):
     for table in tables:
         try:
             connection.execute(text(f"DROP TABLE IF EXISTS {table}"))
-        except:
+        except Exception:
             pass
 ''',
     
@@ -249,21 +249,21 @@ def up(connection):
         connection.execute(text("""
             ALTER TABLE agents ADD COLUMN total_tasks INTEGER DEFAULT 0
         """))
-    except:
+    except Exception:
         pass
         
     try:
         connection.execute(text("""
             ALTER TABLE agents ADD COLUMN successful_tasks INTEGER DEFAULT 0
         """))
-    except:
+    except Exception:
         pass
         
     try:
         connection.execute(text("""
             ALTER TABLE agents ADD COLUMN avg_response_time FLOAT DEFAULT 0.0
         """))
-    except:
+    except Exception:
         pass
 
 def down(connection):
@@ -272,7 +272,7 @@ def down(connection):
         connection.execute(text("ALTER TABLE agents DROP COLUMN total_tasks"))
         connection.execute(text("ALTER TABLE agents DROP COLUMN successful_tasks"))
         connection.execute(text("ALTER TABLE agents DROP COLUMN avg_response_time"))
-    except:
+    except Exception:
         pass
 ''',
     
@@ -292,14 +292,14 @@ def up(connection):
         connection.execute(text("""
             ALTER TABLE workflows ADD COLUMN is_template BOOLEAN DEFAULT FALSE
         """))
-    except:
+    except Exception:
         pass
         
     try:
         connection.execute(text("""
             ALTER TABLE workflows ADD COLUMN template_version VARCHAR(20) DEFAULT '1.0'
         """))
-    except:
+    except Exception:
         pass
 
 def down(connection):
@@ -307,7 +307,7 @@ def down(connection):
     try:
         connection.execute(text("ALTER TABLE workflows DROP COLUMN is_template"))
         connection.execute(text("ALTER TABLE workflows DROP COLUMN template_version"))
-    except:
+    except Exception:
         pass
 '''
 }

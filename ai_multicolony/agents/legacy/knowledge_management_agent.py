@@ -407,7 +407,7 @@ class KnowledgeManagementAgent:
                     nltk.download('punkt', quiet=True)
                     nltk.download('stopwords', quiet=True)
                     nltk.download('wordnet', quiet=True)
-                except:
+                except Exception:
                     pass  # Ignore download errors
             else:
                 self.logger.warning("NLTK not installed. Some NLP features may be limited.")

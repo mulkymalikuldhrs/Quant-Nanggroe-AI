@@ -414,7 +414,7 @@ class PromptMasterAgent:
             )
             
             summary = response["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             summary = f"Workflow completed with {len(successful_steps)} successful steps"
         
         return {

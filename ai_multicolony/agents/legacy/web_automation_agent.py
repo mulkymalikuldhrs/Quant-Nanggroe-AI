@@ -198,7 +198,7 @@ class WebAutomationAgent(BaseAgent):
             if self.driver:
                 self.driver.quit()
                 self.driver = None
-        except:
+        except Exception:
             pass
     
     def _perform_login(self, context: Dict) -> str:

@@ -26,7 +26,7 @@
 <br/>
 
 **基于 [NousResearch/Hermes](https://github.com/NousResearch/Hermes)** ⭐ **的 Fork**
-**融合 [Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI) | [AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | [Vibe-Trading](https://github.com/mulkymalikuldhrs/Vibe-Trading) | [AutoHedge](https://github.com/mulkymalikuldhrs/AutoHedge)**
+**融合 [Quant-Nanggroe-AI](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI) | [AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | [Vibe-Trading](https://github.com/mulkymalikuldhrs/Vibe-Trading) | [AutoHedge](https://github.com/mulkymalikuldhrs/AutoHedge)**
 
 <br/>
 
@@ -70,7 +70,7 @@ Hermes Quant Operating System 是一个**生产级自主多代理交易和研究
 | 来源仓库 | 贡献 | 版本 |
 |---|---|---|
 | **[NousResearch/Hermes](https://github.com/NousResearch/Hermes)** ⭐ | 基础代理框架、工具编排、对话循环 | 上游 |
-| **[Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI)** | 确定性代理执行、压力归一化、市场状态引擎、达尔文策略进化、10个集成工具 | v15.2.0 |
+| **[Quant-Nanggroe-AI](https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI)** | 确定性代理执行、压力归一化、市场状态引擎、达尔文策略进化、10个集成工具 | v15.2.0 |
 | **[AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem)** | 统一代理注册、多代理生命周期管理、集群协调 | v8.0.0 |
 | **[Vibe-Trading](https://github.com/mulkymalikuldhrs/Vibe-Trading)** | 450+预构建量化因子、因子纯度执行、因子分析 | v0.1.8 |
 | **[AutoHedge](https://github.com/mulkymalikuldhrs/AutoHedge)** | 集群管道架构（Director → Quant → Risk → Execution）、特定场所集成 | 最新 |

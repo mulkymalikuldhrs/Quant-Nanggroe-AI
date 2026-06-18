@@ -217,7 +217,7 @@ class ExternalAPIManager:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, timeout=5) as resp:
                         self.status[name] = 'available' if resp.status < 400 else 'limited'
-            except:
+            except Exception:
                 self.status[name] = 'unavailable'
     
     def is_connected(self) -> bool:
@@ -327,7 +327,7 @@ class AIPlatformManager:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers, timeout=10) as resp:
                     return resp.status == 200
-        except:
+        except Exception:
             return False
     
     def is_connected(self) -> bool:
