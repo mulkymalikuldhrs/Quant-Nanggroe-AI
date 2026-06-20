@@ -4,7 +4,7 @@ All domain types use Pydantic v2 BaseModel with full validation.
 These types form the contract between all modules.
 """
 
-from quant_nanggroe.types.market import (
+from quant_nanggroe.schemas.market import (
     OHLCV,
     Ticker,
     OrderBook,
@@ -12,7 +12,7 @@ from quant_nanggroe.types.market import (
     MarketData,
     TimeFrame,
 )
-from quant_nanggroe.types.orders import (
+from quant_nanggroe.schemas.orders import (
     Order,
     OrderType,
     OrderSide,
@@ -22,30 +22,30 @@ from quant_nanggroe.types.orders import (
     StopOrder,
     StopLimitOrder,
 )
-from quant_nanggroe.types.positions import (
+from quant_nanggroe.schemas.positions import (
     Position,
     PositionSide,
     Portfolio,
 )
-from quant_nanggroe.types.signals import (
+from quant_nanggroe.schemas.signals import (
     Signal,
     SignalType,
     SignalStrength,
 )
-from quant_nanggroe.types.risk import (
+from quant_nanggroe.schemas.risk import (
     RiskAssessment,
     RiskLevel,
     VaRResult,
     DrawdownResult,
     PositionSizingResult,
 )
-from quant_nanggroe.types.decisions import (
+from quant_nanggroe.schemas.decisions import (
     Decision,
     DecisionType,
     DecisionTable,
     ConfluenceScore,
 )
-from quant_nanggroe.types.engine import (
+from quant_nanggroe.schemas.engine import (
     MarketRegime,
     VolatilityLevel,
     LiquidityLevel,
