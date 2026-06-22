@@ -1,6 +1,8 @@
 import json
+import os
 import sqlite3
 import logging
+import tempfile
 import threading
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -10,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class RegimeStore:
-    def __init__(self, db_path: str = "/tmp/quant_nanggroe_regime.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: str = ""):
+        self.db_path = db_path or os.path.join(tempfile.gettempdir(), "quant_nanggroe_regime.db")
         self._local = threading.local()
         self._init_db()
 

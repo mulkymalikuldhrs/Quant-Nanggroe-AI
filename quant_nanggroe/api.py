@@ -244,18 +244,21 @@ class ErrorResponse(BaseModel):
 # Track app start time
 _start_time: float = datetime.now().timestamp()
 
-# In-memory portfolio state (for demo; production would use DB)
-_portfolio_state: Dict[str, Any] = {
-    "total_value": 1000000.0,
-    "cash": 500000.0,
-    "positions": [],
-    "unrealized_pnl": 0.0,
-    "realized_pnl": 0.0,
-    "daily_pnl": 0.0,
-    "weekly_pnl": 0.0,
-    "allocation": {},
-    "risk_budget_used": 0.0,
-}
+_portfolio_broker = None
+
+def _get_portfolio_broker():
+    global _portfolio_broker
+    if _portfolio_broker is None:
+        try:
+            from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
+            _portfolio_broker = PaperExchangeBroker(initial_capital=100000.0)
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(_portfolio_broker.connect())
+            loop.close()
+        except Exception:
+            pass
+    return _portfolio_broker
 
 # WebSocket connection manager
 _ws_connections: List[WebSocket] = []
@@ -366,18 +369,46 @@ def create_app() -> FastAPI:
                 )
             except Exception as graph_err:
                 logger.warning(f"Trading graph execution failed: {graph_err}")
-                # Return simulated response when LLM keys are not configured
-                return TradeResponse(
-                    status="simulated",
-                    symbols=request.symbols,
-                    trade_date=trade_date,
-                    confidence=0.0,
-                    risk_verdict=_RISK_VERDICT_VETOED,
-                    decisions=[],
-                    signals=[],
-                    agent_outputs={"note": "Simulated response - configure LLM API keys for live execution"},
-                    error=f"Graph execution unavailable: {str(graph_err)[:200]}",
-                )
+                # Fallback: try ProductionStrategyRunner for non-LLM signals
+                try:
+                    from quant_nanggroe.engine_production_bridge import ProductionStrategyRunner
+                    runner = ProductionStrategyRunner()
+                    market_data = {}
+                    prices = {}
+                    broker = _get_portfolio_broker()
+                    if broker is not None:
+                        for sym in request.symbols:
+                            prices[sym] = broker.get_price(sym)
+                    signals_raw = runner.generate_signals(market_data, prices)
+                    signals = []
+                    for s in signals_raw:
+                        signals.append({
+                            "symbol": s.symbol,
+                            "action": s.side.upper(),
+                            "confidence": s.confidence,
+                            "price": s.price,
+                            "strategy": s.strategy,
+                            "reason": s.reason,
+                        })
+                    conf = max([s.confidence for s in signals_raw], default=0.0)
+                    return TradeResponse(
+                        status="success",
+                        symbols=request.symbols,
+                        trade_date=trade_date,
+                        confidence=conf,
+                        risk_verdict=_RISK_VERDICT_CONDITIONAL,
+                        signals=signals,
+                        agent_outputs={"note": "Strategy-only pipeline (no LLM). Configure LLM API keys for full agentic execution."},
+                    )
+                except Exception as strat_err:
+                    return TradeResponse(
+                        status="error",
+                        symbols=request.symbols,
+                        trade_date=trade_date,
+                        confidence=0.0,
+                        risk_verdict=_RISK_VERDICT_VETOED,
+                        error=f"Graph: {str(graph_err)[:200]} | Strategy fallback: {str(strat_err)[:200]}",
+                    )
 
         except Exception as e:
             logger.error(f"Trade execution error: {e}")
@@ -398,29 +429,48 @@ def create_app() -> FastAPI:
         Returns portfolio value, positions, P&L, and allocation.
         """
         try:
-            # In production, this would query a real portfolio manager
-            positions = [
-                PositionInfoResponse(
-                    symbol=p["symbol"],
-                    quantity=p.get("quantity", 0),
-                    entry_price=p.get("entry_price", 0),
-                    current_price=p.get("current_price", 0),
-                    unrealized_pnl=p.get("unrealized_pnl", 0),
-                    direction=p.get("direction", "LONG"),
-                )
-                for p in _portfolio_state.get("positions", [])
-            ]
+            broker = _get_portfolio_broker()
+            if broker is None:
+                return PortfolioResponse()
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            positions_raw = loop.run_until_complete(broker.get_positions())
+            balances = loop.run_until_complete(broker.get_balance())
+            portfolio = loop.run_until_complete(broker.get_portfolio())
+            loop.close()
+
+            cash = balances.get("USDT", 0.0)
+
+            positions = []
+            total_pos_value = 0.0
+            for p in positions_raw:
+                positions.append(PositionInfoResponse(
+                    symbol=p.symbol,
+                    quantity=p.quantity,
+                    entry_price=p.entry_price,
+                    current_price=p.current_price,
+                    unrealized_pnl=p.unrealized_pnl,
+                    direction="LONG" if p.side.value == "long" else "SHORT",
+                ))
+                total_pos_value += p.market_value
+
+            total_value = portfolio.total_value or (cash + total_pos_value)
+
+            allocation = {}
+            if total_value > 0:
+                for p in positions_raw:
+                    allocation[p.symbol] = p.market_value / total_value
 
             return PortfolioResponse(
-                total_value=_portfolio_state["total_value"],
-                cash=_portfolio_state["cash"],
+                total_value=total_value,
+                cash=cash,
                 positions=positions,
-                unrealized_pnl=_portfolio_state["unrealized_pnl"],
-                realized_pnl=_portfolio_state["realized_pnl"],
-                daily_pnl=_portfolio_state["daily_pnl"],
-                weekly_pnl=_portfolio_state["weekly_pnl"],
-                allocation=_portfolio_state.get("allocation", {}),
-                risk_budget_used=_portfolio_state.get("risk_budget_used", 0.0),
+                unrealized_pnl=portfolio.total_unrealized_pnl,
+                realized_pnl=portfolio.total_realized_pnl,
+                daily_pnl=portfolio.daily_pnl,
+                weekly_pnl=portfolio.weekly_pnl,
+                allocation=allocation,
             )
         except Exception as e:
             logger.error(f"Portfolio query error: {e}")
@@ -433,18 +483,54 @@ def create_app() -> FastAPI:
     # Agents
     # ------------------------------------------------------------------
 
-    # Static agent definitions (mirrors the actual agent registry)
-    _AGENT_DEFINITIONS = [
-        {"name": "researcher", "role": "research", "description": "Market research and data analysis", "tools": ["web_search", "financial_data", "news"]},
-        {"name": "strategist", "role": "strategy", "description": "Signal generation and strategy formulation", "tools": ["technical_analysis", "factor_library", "signal_generator"]},
-        {"name": "risk", "role": "risk_management", "description": "9-checkpoint risk assessment with constitutional limits", "tools": ["var_calculator", "kelly_criterion", "drawdown_monitor"]},
-        {"name": "trader", "role": "trading", "description": "Trade execution decisions and order management", "tools": ["order_manager", "position_tracker"]},
-        {"name": "portfolio", "role": "portfolio", "description": "Portfolio optimization and allocation", "tools": ["risk_parity", "rebalance", "allocation_optimizer"]},
-        {"name": "execution", "role": "execution", "description": "Order execution and fill tracking", "tools": ["broker_adapter", "fill_simulator", "guard_rails"]},
-        {"name": "macro", "role": "macro_analysis", "description": "Macroeconomic analysis and regime detection", "tools": ["economic_calendar", "regime_detector"]},
-        {"name": "crypto", "role": "crypto_analysis", "description": "Cryptocurrency market analysis", "tools": ["on_chain_data", "sentiment", "whale_tracker"]},
-        {"name": "forex", "role": "forex_analysis", "description": "Forex market analysis and currency pair evaluation", "tools": ["fx_rates", "carry_trade", "central_bank"]},
-    ]
+    def _get_agent_definitions():
+        try:
+            from quant_nanggroe.agents.registry import AgentRegistry
+            names = AgentRegistry.list_agents()
+            agents = []
+            for name in names:
+                factory = AgentRegistry.get(name)
+                if factory is None:
+                    continue
+                try:
+                    instance = factory(llm=None)
+                    role = instance.role.value if hasattr(instance.role, 'value') else str(instance.role)
+                    agents.append({
+                        "name": instance.name,
+                        "role": role,
+                        "description": instance.description,
+                        "tools": [t.name for t in instance.tools if hasattr(t, 'name')],
+                    })
+                except Exception:
+                    role = "unknown"
+                    for r, n in AgentRegistry._role_mapping.items():
+                        if n == name:
+                            role = r.value if hasattr(r, 'value') else str(r)
+                            break
+                    agents.append({
+                        "name": name,
+                        "role": role,
+                        "description": "",
+                        "tools": [],
+                    })
+            return agents
+        except Exception:
+            pass
+        try:
+            from quant_nanggroe.agents.graph import TradingGraph
+            return [
+                {"name": "researcher", "role": "research", "description": "Market research and data analysis", "tools": []},
+                {"name": "strategist", "role": "strategy", "description": "Signal generation and strategy formulation", "tools": []},
+                {"name": "risk", "role": "risk_management", "description": "9-checkpoint risk assessment", "tools": []},
+                {"name": "trader", "role": "trading", "description": "Trade execution decisions", "tools": []},
+                {"name": "portfolio", "role": "portfolio", "description": "Portfolio optimization and allocation", "tools": []},
+                {"name": "execution", "role": "execution", "description": "Order execution and fill tracking", "tools": []},
+                {"name": "macro", "role": "macro_analysis", "description": "Macroeconomic analysis", "tools": []},
+                {"name": "crypto", "role": "crypto_analysis", "description": "Cryptocurrency analysis", "tools": []},
+                {"name": "forex", "role": "forex_analysis", "description": "Forex market analysis", "tools": []},
+            ]
+        except Exception:
+            return []
 
     @app.get("/api/v1/agents", response_model=AgentListResponse, tags=["agents"])
     async def list_agents():
@@ -453,6 +539,7 @@ def create_app() -> FastAPI:
 
         Returns agent names, roles, descriptions, and available tools.
         """
+        agent_defs = _get_agent_definitions()
         agents = [
             AgentInfoResponse(
                 name=a["name"],
@@ -461,7 +548,7 @@ def create_app() -> FastAPI:
                 status="ready",
                 tools=a["tools"],
             )
-            for a in _AGENT_DEFINITIONS
+            for a in agent_defs
         ]
         return AgentListResponse(agents=agents, total=len(agents))
 
@@ -656,9 +743,20 @@ def create_app() -> FastAPI:
                 except asyncio.TimeoutError:
                     # Send heartbeat on timeout
                     try:
+                        portfolio_value = 0.0
+                        broker = _get_portfolio_broker()
+                        if broker is not None:
+                            try:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                                bal = loop.run_until_complete(broker.get_balance())
+                                loop.close()
+                                portfolio_value = bal.get("USDT", 0.0)
+                            except Exception:
+                                pass
                         await websocket.send_json({
                             "type": "heartbeat",
-                            "data": {"status": "alive", "portfolio_value": _portfolio_state["total_value"]},
+                            "data": {"status": "alive", "portfolio_value": portfolio_value},
                             "timestamp": datetime.now().isoformat(),
                         })
                     except Exception:

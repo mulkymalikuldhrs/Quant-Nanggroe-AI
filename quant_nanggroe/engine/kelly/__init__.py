@@ -1,20 +1,38 @@
-from quant_nanggroe.engine.kelly.base import BaseKelly, KellyParameters, KellyResult, KellyMethod
-from quant_nanggroe.engine.kelly.fractional import FractionalKelly
-from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
-from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
-from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
-from quant_nanggroe.engine.kelly.adaptive import AdaptiveKelly
-from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
-from quant_nanggroe.engine.kelly.optimal_f import OptimalF
-from quant_nanggroe.engine.kelly.backtest_integration import (
-    KellyBacktestBridge,
-    KellySignal,
-    StrategyKellyMixin,
-)
+"""Kelly Criterion package — lazy imports for fast module loading.
 
-__all__ = [
-    "BaseKelly", "KellyParameters", "KellyResult", "KellyMethod",
-    "FractionalKelly", "BayesianKelly", "DrawdownControlledKelly",
-    "CorrelationAwareKelly", "AdaptiveKelly", "MultiAssetKelly", "OptimalF",
-    "KellyBacktestBridge", "KellySignal", "StrategyKellyMixin",
-]
+Provides optimal position sizing through Fractional, Bayesian, Drawdown,
+Correlation, Adaptive, Multi-Asset Kelly and Optimal F.
+"""
+
+from __future__ import annotations
+
+import importlib
+from typing import Any
+
+_module_registry = {
+    "BaseKelly": ".base",
+    "KellyParameters": ".base",
+    "KellyResult": ".base",
+    "KellyMethod": ".base",
+    "FractionalKelly": ".fractional",
+    "BayesianKelly": ".bayesian",
+    "DrawdownControlledKelly": ".drawdown",
+    "CorrelationAwareKelly": ".correlation",
+    "AdaptiveKelly": ".adaptive",
+    "MultiAssetKelly": ".multi_asset",
+    "OptimalF": ".optimal_f",
+    "KellyBacktestBridge": ".backtest_integration",
+    "KellySignal": ".backtest_integration",
+    "StrategyKellyMixin": ".backtest_integration",
+}
+
+__all__ = sorted(_module_registry.keys())
+
+
+def __getattr__(name: str) -> Any:
+    if name not in _module_registry:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    mod = importlib.import_module(_module_registry[name], package=__name__)
+    attr = getattr(mod, name)
+    globals()[name] = attr
+    return attr

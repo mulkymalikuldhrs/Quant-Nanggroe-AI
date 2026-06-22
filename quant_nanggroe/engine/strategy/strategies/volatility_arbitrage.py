@@ -23,7 +23,6 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy import optimize
 
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
@@ -87,6 +86,7 @@ class GARCH11:
             return -ll
 
         try:
+            from scipy import optimize
             result = optimize.minimize(
                 neg_log_likelihood,
                 initial_params,

@@ -39,7 +39,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Tuple
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, validator, root_validator
 
 
 class StrategyType(str, Enum):
@@ -53,6 +53,13 @@ class StrategyType(str, Enum):
     MARKET_MAKING = "market_making"
     REGIME_BASED = "regime_based"
     CRYPTO_SPECIFIC = "crypto_specific"
+    SMC = "smc"
+    ICT = "ict"
+    SUPPORT_RESISTANCE = "support_resistance"
+    SUPPLY_DEMAND = "supply_demand"
+    WYCKOFF = "wyckoff"
+    COT = "cot"
+    FUNDAMENTAL = "fundamental"
     CUSTOM = "custom"
 
 
@@ -138,7 +145,7 @@ class EntryRule(BaseModel):
         le=2.0,
     )
 
-    @field_validator("indicator")
+    @validator("indicator")
     @classmethod
     def indicator_must_be_valid(cls, v: str) -> str:
         """Validate indicator name is non-empty and lowercase."""
@@ -188,18 +195,18 @@ class ExitRule(BaseModel):
         description="Additional parameters for indicator computation",
     )
 
-    @model_validator(mode="after")
-    def must_have_exit_condition(self) -> "ExitRule":
+    @root_validator(pre=False, skip_on_failure=True)
+    def must_have_exit_condition(cls, values):
         """Validate that at least one exit condition is specified."""
-        has_indicator_exit = self.indicator is not None and self.operator is not None
-        has_pct_exit = self.trailing_stop_pct is not None or self.take_profit_pct is not None
+        has_indicator_exit = values.get("indicator") is not None and values.get("operator") is not None
+        has_pct_exit = values.get("trailing_stop_pct") is not None or values.get("take_profit_pct") is not None
         if not has_indicator_exit and not has_pct_exit:
             raise ValueError(
                 "ExitRule must have either an indicator-based condition "
                 "(indicator + operator + value) or a percentage-based exit "
                 "(trailing_stop_pct and/or take_profit_pct)"
             )
-        return self
+        return values
 
 
 class RiskRules(BaseModel):
@@ -301,39 +308,39 @@ class UniverseDefinition(BaseModel):
         gt=0.0,
     )
 
-    @field_validator("symbols")
+    @validator("symbols")
     @classmethod
     def symbols_must_be_uppercase(cls, v: List[str]) -> List[str]:
         """Normalize symbols to uppercase."""
         return [s.strip().upper() for s in v if s.strip()]
 
-    @field_validator("exchanges")
+    @validator("exchanges")
     @classmethod
     def exchanges_must_be_uppercase(cls, v: List[str]) -> List[str]:
         """Normalize exchange names to uppercase."""
         return [e.strip().upper() for e in v if e.strip()]
 
-    @field_validator("sector_filter")
+    @validator("sector_filter")
     @classmethod
     def sectors_must_be_title_case(cls, v: List[str]) -> List[str]:
         """Normalize sector names to title case."""
         return [s.strip().title() for s in v if s.strip()]
 
-    @model_validator(mode="after")
-    def must_have_at_least_one_filter(self) -> "UniverseDefinition":
+    @root_validator(pre=False, skip_on_failure=True)
+    def must_have_at_least_one_filter(cls, values):
         """Validate that at least one universe filter is specified."""
         has_any = (
-            len(self.symbols) > 0
-            or len(self.exchanges) > 0
-            or self.market_cap_range is not None
-            or len(self.sector_filter) > 0
+            len(values.get("symbols", [])) > 0
+            or len(values.get("exchanges", [])) > 0
+            or values.get("market_cap_range") is not None
+            or len(values.get("sector_filter", [])) > 0
         )
         if not has_any:
             raise ValueError(
                 "UniverseDefinition must specify at least one filter: "
                 "symbols, exchanges, market_cap_range, or sector_filter"
             )
-        return self
+        return values
 
 
 class StrategyConfig(BaseModel):
@@ -407,7 +414,7 @@ class StrategyConfig(BaseModel):
         description="Last update date (ISO 8601)",
     )
 
-    @field_validator("name")
+    @validator("name")
     @classmethod
     def name_must_be_valid(cls, v: str) -> str:
         """Validate strategy name."""
@@ -418,21 +425,22 @@ class StrategyConfig(BaseModel):
             raise ValueError("Strategy name must be <= 100 characters")
         return v
 
-    @field_validator("tags")
+    @validator("tags")
     @classmethod
     def tags_must_be_lowercase(cls, v: List[str]) -> List[str]:
         """Normalize tags to lowercase."""
         return [t.strip().lower() for t in v if t.strip()]
 
-    @model_validator(mode="after")
-    def must_have_strategy_or_rules(self) -> "StrategyConfig":
+    @root_validator(pre=False, skip_on_failure=True)
+    def must_have_strategy_or_rules(cls, values):
         """Validate that either strategy_type or entry/exit rules are provided."""
-        has_type = self.strategy_type is not None
-        has_rules = len(self.entry_rules) > 0 or len(self.exit_rules) > 0
+        has_type = values.get("strategy_type") is not None
+        has_rules = len(values.get("entry_rules", [])) > 0 or len(values.get("exit_rules", [])) > 0
         if not has_type and not has_rules:
             raise ValueError(
                 "Strategy must have either a strategy_type or entry/exit rules"
             )
-        return self
+        return values
 
-    model_config = {"extra": "forbid"}
+    class Config:
+        extra = "forbid"

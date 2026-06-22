@@ -807,6 +807,13 @@ class StrategyRegistry:
             "market_making": "MarketMaking",
             "regime_based": "RegimeBased",
             "crypto_specific": "CryptoSpecific",
+            "smc": "SMC",
+            "ict": "ICT",
+            "support_resistance": "S/R",
+            "supply_demand": "SnD",
+            "wyckoff": "Wyckoff",
+            "cot": "COT",
+            "fundamental": "Fundamental",
         }
 
         registry_name = type_to_name.get(strategy_name, strategy_name)

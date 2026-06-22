@@ -108,38 +108,24 @@ class AutoAware:
             log.error(f"Backtest failed: {e}")
 
     def detect_regime(self, candles: List[Dict]) -> str:
-        """Detect market regime using pure-Python calculations."""
+        """Detect market regime using numpy-powered calculations."""
+        import numpy as np
         if len(candles) < self.REGIME_WINDOW:
             return self.regime
 
-        closes = [c["close"] for c in candles[-self.REGIME_WINDOW:]]
+        closes = np.array([c["close"] for c in candles[-self.REGIME_WINDOW:]])
         n = len(closes)
 
-        # Returns and volatility
-        returns = [(closes[i] - closes[i - 1]) / closes[i - 1]
-                   for i in range(1, n)]
-        mean_ret = sum(returns) / len(returns)
-        variance = sum((r - mean_ret) ** 2 for r in returns) / len(returns)
-        volatility = math.sqrt(variance)
+        returns = np.diff(closes) / closes[:-1]
+        volatility = float(np.std(returns))
 
-        # Trend strength (linear regression slope, normalized)
-        x = list(range(n))
-        sx = sum(x)
-        sy = sum(closes)
-        sxy = sum(x[i] * closes[i] for i in range(n))
-        sx2 = sum(xi ** 2 for xi in x)
-        denom = n * sx2 - sx ** 2
-        slope = (n * sxy - sx * sy) / denom if denom != 0 else 0
-        avg_price = sy / n
-        trend_pct = slope / avg_price * 100 if avg_price > 0 else 0
+        x = np.arange(n, dtype=np.float64)
+        slope, _ = np.polyfit(x, closes, 1)
+        trend_pct = slope / float(np.mean(closes)) * 100
 
-        # ADX-like trend strength
-        direction = 0
-        for i in range(1, n):
-            direction += 1 if closes[i] > closes[i - 1] else -1
+        direction = np.sum(np.diff(closes) > 0)
         adx_like = abs(direction) / n
 
-        # Regime classification
         old_regime = self.regime
         if volatility > 0.035:
             self.regime = "volatile"

@@ -770,3 +770,20 @@ class TradingGraph:
 
         for chunk in self._graph.stream(initial_state):
             yield chunk
+
+
+# ── Module-level factory functions ──────────────────────────────────────────
+
+_trading_graph_instance: Optional[TradingGraph] = None
+
+
+def get_trading_graph() -> TradingGraph:
+    global _trading_graph_instance
+    if _trading_graph_instance is None:
+        _trading_graph_instance = TradingGraph()
+    return _trading_graph_instance
+
+
+def reset_trading_graph() -> None:
+    global _trading_graph_instance
+    _trading_graph_instance = None

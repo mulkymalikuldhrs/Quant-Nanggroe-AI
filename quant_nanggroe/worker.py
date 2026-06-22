@@ -210,14 +210,17 @@ class TradingWorker:
             try:
                 # Import here to avoid circular imports
                 from quant_nanggroe.agents.graph import get_trading_graph
-                from quant_nanggroe.agents.state import AgentState
+                from quant_nanggroe.agents.state import create_initial_state
 
                 graph = get_trading_graph()
-                initial_state = AgentState(symbol=symbol, timeframe="1d")
+                initial_state = create_initial_state(
+                    symbols=[symbol],
+                    trade_date=datetime.now().strftime("%Y-%m-%d"),
+                )
 
                 # Run with timeout
                 result = await asyncio.wait_for(
-                    graph.ainvoke(initial_state.model_dump()),
+                    graph.ainvoke(initial_state),
                     timeout=self.config.graph_timeout,
                 )
 

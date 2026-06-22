@@ -21,7 +21,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
+
 
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
@@ -103,6 +103,7 @@ class MeanReversionStrategy(BaseStrategy):
 
         # OLS: delta = alpha + beta * lagged
         try:
+            from scipy import stats as scipy_stats
             slope, intercept, r_value, p_value, std_err = scipy_stats.linregress(
                 lagged.values, delta.values
             )

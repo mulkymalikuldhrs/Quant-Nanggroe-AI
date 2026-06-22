@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from quant_nanggroe.types.engine import StrategyStatus
 
@@ -37,8 +37,8 @@ class StrategyState(BaseModel):
     state_history: list[dict[str, Any]] = Field(default_factory=list)
 
     # Cumulative win/loss amounts for proper average calculation
-    _cum_wins: float = 0.0
-    _cum_losses: float = 0.0
+    _cum_wins: float = PrivateAttr(default=0.0)
+    _cum_losses: float = PrivateAttr(default=0.0)
 
 
 class StrategyLifecycleManager:

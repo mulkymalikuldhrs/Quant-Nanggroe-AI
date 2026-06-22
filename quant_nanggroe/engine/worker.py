@@ -191,10 +191,11 @@ class SingletonLock:
 
     def __init__(
         self,
-        lock_path: str = "/tmp/quant_nanggroe_worker.lock",
+        lock_path: str = "",
         worker_id: Optional[str] = None,
     ) -> None:
-        self.lock_path = Path(lock_path)
+        import tempfile
+        self.lock_path = Path(lock_path or os.path.join(tempfile.gettempdir(), "quant_nanggroe_worker.lock"))
         self.worker_id = worker_id or uuid.uuid4().hex[:8]
         self._lock_file: Optional[Any] = None
         self._is_held = False
@@ -296,7 +297,7 @@ class BackgroundWorker:
     def __init__(
         self,
         worker_id: Optional[str] = None,
-        lock_path: str = "/tmp/quant_nanggroe_worker.lock",
+        lock_path: str = "",
         tasks: Optional[List[WorkerTask]] = None,
     ) -> None:
         self.worker_id = worker_id or uuid.uuid4().hex[:8]

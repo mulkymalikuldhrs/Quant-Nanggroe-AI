@@ -34,7 +34,7 @@ import logging
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeInterface
 
@@ -92,7 +92,8 @@ class ExchangeCapabilities(BaseModel):
     max_leverage: float = 1.0
     ccxt_id: str = ""
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +223,8 @@ class ExchangeFactoryConfig(BaseModel):
     default_retries: int = Field(default=3, ge=0)
     custom_options: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
 
 
 # ---------------------------------------------------------------------------

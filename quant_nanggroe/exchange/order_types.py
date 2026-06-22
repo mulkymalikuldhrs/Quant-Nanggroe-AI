@@ -47,7 +47,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, validator
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,8 @@ class TransitionRecord(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     reason: str = ""
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
 
 
 def transition_status(
@@ -217,13 +218,13 @@ class TrailingStopOrder(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     transitions: List[TransitionRecord] = Field(default_factory=list)
 
-    @field_validator("trail_amount", "trail_percentage")
-    @classmethod
-    def validate_trail_params(cls, v, info):
+    @validator("trail_amount", "trail_percentage")
+    def validate_trail_params(cls, v):
         """Ensure at least one trail parameter is set on creation."""
         return v
 
-    def model_post_init(self, __context: Any) -> None:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         """Validate that at least one trail parameter is provided."""
         if self.trail_amount is None and self.trail_percentage is None:
             raise ValueError("Either trail_amount or trail_percentage must be specified")
@@ -306,7 +307,9 @@ class TrailingStopOrder(BaseModel):
         self.transitions.append(record)
         self.status = target
 
-    model_config = {"from_attributes": True, "arbitrary_types_allowed": True}
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
 
 
 # ---------------------------------------------------------------------------
@@ -363,15 +366,15 @@ class BracketOrder(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     transitions: List[TransitionRecord] = Field(default_factory=list)
 
-    @field_validator("take_profit_price", "stop_loss_price")
-    @classmethod
+    @validator("take_profit_price", "stop_loss_price")
     def validate_prices(cls, v):
         """Ensure prices are positive."""
         if v <= 0:
             raise ValueError("Price must be positive")
         return v
 
-    def model_post_init(self, __context: Any) -> None:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         """Validate price relationships."""
         side_upper = self.side.upper()
         if side_upper == "BUY":
@@ -472,7 +475,9 @@ class BracketOrder(BaseModel):
         self.transitions.append(record)
         self.status = target
 
-    model_config = {"from_attributes": True, "arbitrary_types_allowed": True}
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
 
 
 # ---------------------------------------------------------------------------
@@ -517,7 +522,8 @@ class OCOOrder(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     transitions: List[TransitionRecord] = Field(default_factory=list)
 
-    def model_post_init(self, __context: Any) -> None:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         """Validate that order B has either a price or stop price."""
         if not self.order_b_is_stop and self.order_b_price is None:
             raise ValueError("order_b_price is required when order_b_is_stop is False")
@@ -569,7 +575,9 @@ class OCOOrder(BaseModel):
         self.transitions.append(record)
         self.status = target
 
-    model_config = {"from_attributes": True, "arbitrary_types_allowed": True}
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
 
 
 # ---------------------------------------------------------------------------
@@ -608,13 +616,13 @@ class IcebergOrder(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     transitions: List[TransitionRecord] = Field(default_factory=list)
 
-    @field_validator("display_quantity")
-    @classmethod
-    def validate_display_quantity(cls, v, info):
+    @validator("display_quantity")
+    def validate_display_quantity(cls, v):
         """Display quantity must be less than total quantity."""
         return v
 
-    def model_post_init(self, __context: Any) -> None:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         """Validate and set initial display quantity."""
         if self.display_quantity > self.total_quantity:
             raise ValueError(
@@ -716,4 +724,6 @@ class IcebergOrder(BaseModel):
         self.transitions.append(record)
         self.status = target
 
-    model_config = {"from_attributes": True, "arbitrary_types_allowed": True}
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True

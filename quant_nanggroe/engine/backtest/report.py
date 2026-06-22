@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.backtest.portfolio import TradeRecord
+from quant_nanggroe.engine.backtest import persistence
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,75 @@ class BacktestReport:
     - Parameter sensitivity (if provided)
     - Benchmark comparison (if provided)
     """
+
+    @classmethod
+    def save_to_db(
+        cls,
+        metrics: Dict[str, Any],
+        equity_curve: pd.Series,
+        trades: List[TradeRecord],
+        config: Optional[Dict[str, Any]] = None,
+        strategy_name: str = "",
+        strategy_type: str = "",
+        symbol: str = "",
+        timeframe: str = "",
+        start_date: str = "",
+        end_date: str = "",
+    ) -> str:
+        """Save backtest results to SQLite database.
+
+        Args:
+            metrics: Performance metrics dict.
+            equity_curve: Equity curve series.
+            trades: List of trade records.
+            config: Backtest configuration dict.
+            strategy_name: Strategy name.
+            strategy_type: Strategy type/class name.
+            symbol: Traded symbol.
+            timeframe: Bar timeframe.
+            start_date: Backtest start date.
+            end_date: Backtest end date.
+
+        Returns:
+            Run ID string.
+        """
+        curve_data = []
+        if len(equity_curve) > 0:
+            step = max(1, len(equity_curve) // 2000)
+            for i in range(0, len(equity_curve), step):
+                curve_data.append({
+                    "t": str(equity_curve.index[i]),
+                    "e": round(float(equity_curve.iloc[i]), 6),
+                })
+
+        trade_data = []
+        for t in trades:
+            trade_data.append({
+                "symbol": t.symbol,
+                "direction": "LONG" if t.direction == 1 else "SHORT",
+                "entry_price": round(t.entry_price, 4),
+                "exit_price": round(t.exit_price, 4),
+                "entry_time": str(t.entry_time) if hasattr(t, "entry_time") else "",
+                "exit_time": str(t.exit_time) if hasattr(t, "exit_time") else "",
+                "pnl": round(t.pnl, 4),
+                "pnl_pct": round(t.pnl_pct, 2),
+                "exit_reason": t.exit_reason,
+                "holding_bars": t.holding_bars,
+            })
+
+        run_data = {
+            "strategy_name": strategy_name,
+            "strategy_type": strategy_type,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "start_date": start_date,
+            "end_date": end_date,
+            "parameters": config or {},
+            "metrics": metrics,
+            "equity_curve": curve_data,
+            "trades": trade_data,
+        }
+        return persistence.save_run(run_data)
 
     @staticmethod
     def generate(

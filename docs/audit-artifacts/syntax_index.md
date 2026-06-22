@@ -1,0 +1,118 @@
+# QNA Syntax and Entrypoint Index
+
+- Python symbols indexed: 2779
+- Shell scripts indexed: 16
+- Config files indexed: 22
+
+## Shell Scripts
+
+- `deploy.sh`
+- `qna.sh`
+- `run.sh`
+- `start.sh`
+- `start_engine.sh`
+- `start_production.sh`
+- `scripts/activate-trading.sh`
+- `scripts/backup.sh`
+- `scripts/entrypoint.sh`
+- `scripts/harden.sh`
+- `scripts/qna-heartbeat.sh`
+- `scripts/setup.sh`
+- `scripts/setup_dev.sh`
+- `scripts/setup_warp.sh`
+- `scripts/start_alpaca_paper.sh`
+- `scripts/test-all.sh`
+
+## Config Files
+
+- `.env.example`
+- `.env.template`
+- `.pre-commit-config.yaml`
+- `Dockerfile`
+- `alembic.ini`
+- `cdk.json`
+- `docker-compose.dev.yml`
+- `docker-compose.monitoring.yml`
+- `docker-compose.yml`
+- `e2b.toml`
+- `firebase.json`
+- `k8s-deployment.yaml`
+- `metadata.json`
+- `netlify.toml`
+- `package-lock.json`
+- `package.json`
+- `pyproject.toml`
+- `railway.json`
+- `render.yaml`
+- `template.yaml`
+- `tsconfig.json`
+- `vercel.json`
+
+## Key Python Symbols
+
+- `quant_nanggroe/api/app.py:42` async_function `lifespan`
+- `quant_nanggroe/api/app.py:111` function `create_app`
+- `quant_nanggroe/api/app.py:206` function `_setup_signal_handlers`
+- `quant_nanggroe/api.py:61` class `TradeRequest`
+- `quant_nanggroe/api.py:79` class `TradeResponse`
+- `quant_nanggroe/api.py:99` class `PositionInfoResponse`
+- `quant_nanggroe/api.py:109` class `PortfolioResponse`
+- `quant_nanggroe/api.py:127` class `AgentInfoResponse`
+- `quant_nanggroe/api.py:136` class `AgentListResponse`
+- `quant_nanggroe/api.py:146` class `BacktestRequest`
+- `quant_nanggroe/api.py:160` class `BacktestMetricsResponse`
+- `quant_nanggroe/api.py:172` class `BacktestResponse`
+- `quant_nanggroe/api.py:192` class `RiskCheckResponse`
+- `quant_nanggroe/api.py:217` class `HealthResponse`
+- `quant_nanggroe/api.py:230` class `ErrorResponse`
+- `quant_nanggroe/api.py:249` function `_get_portfolio_broker`
+- `quant_nanggroe/api.py:267` function `create_app`
+- `quant_nanggroe/cli.py:42` function `main`
+- `quant_nanggroe/cli.py:69` function `run`
+- `quant_nanggroe/cli.py:156` function `_run_strategy_pipeline`
+- `quant_nanggroe/cli.py:196` function `_display_pipeline_result`
+- `quant_nanggroe/cli.py:263` function `backtest`
+- `quant_nanggroe/cli.py:334` function `agents`
+- `quant_nanggroe/cli.py:340` function `agents_list`
+- `quant_nanggroe/cli.py:445` function `portfolio`
+- `quant_nanggroe/cli.py:451` function `portfolio_status`
+- `quant_nanggroe/cli.py:475` function `_get_local_portfolio_data`
+- `quant_nanggroe/cli.py:536` function `_display_local_portfolio`
+- `quant_nanggroe/cli.py:542` function `_display_portfolio`
+- `quant_nanggroe/cli.py:597` function `risk`
+- `quant_nanggroe/cli.py:604` function `risk_check`
+- `quant_nanggroe/cli.py:704` function `serve`
+- `quant_nanggroe/cli.py:728` function `memory`
+- `quant_nanggroe/cli.py:734` function `memory_stats`
+- `quant_nanggroe/cli.py:780` function `memory_graph_stats`
+- `quant_nanggroe/engine/live/adaptive_integration.py:24` class `LiveSignal`
+- `quant_nanggroe/engine/live/adaptive_integration.py:38` class `AdaptiveSignalPipeline`
+- `quant_nanggroe/engine/live/adaptive_integration.py:326` class `RiskGate`
+- `quant_nanggroe/engine/live/adaptive_integration.py:410` class `DataFeedIntegrator`
+- `quant_nanggroe/engine/live/adaptive_integration.py:543` function `create_live_pipeline`
+- `quant_nanggroe/engine/risk/manager.py:58` class `RiskState`
+- `quant_nanggroe/engine/risk/manager.py:75` class `RiskManager`
+- `quant_nanggroe/engine_bridge.py:43` class `DNSBypass`
+- `quant_nanggroe/engine_bridge.py:131` class `ExchangeBypassProvider`
+- `quant_nanggroe/engine_bridge.py:195` class `EnginePriceProvider`
+- `quant_nanggroe/engine_bridge.py:382` class `EngineRiskManager`
+- `quant_nanggroe/engine_bridge.py:556` class `StalePositionAnalyzer`
+- `quant_nanggroe/engine_production_bridge.py:30` class `Signal`
+- `quant_nanggroe/engine_production_bridge.py:44` class `ProductionStrategyRunner`
+- `quant_nanggroe/engine_production_bridge.py:144` class `RegimeAwareExecution`
+- `quant_nanggroe/engine_production_bridge.py:224` class `SyncPaperBroker`
+- `quant_nanggroe/engine_production_bridge.py:301` class `ProductionExecutionManager`
+- `quant_nanggroe/engine_production_bridge.py:391` class `RiskEnforcer`
+- `quant_nanggroe/engine_production_bridge.py:480` class `AutomatedBacktestRunner`
+- `quant_nanggroe/engine_production_bridge.py:535` function `create_production_engine`
+- `quant_nanggroe/live_engine.py:72` function `_env_bool`
+- `quant_nanggroe/live_engine.py:81` function `init_db`
+- `quant_nanggroe/live_engine.py:164` class `Strategy`
+- `quant_nanggroe/live_engine.py:176` class `SMCStrategy`
+- `quant_nanggroe/live_engine.py:198` class `MomentumStrategy`
+- `quant_nanggroe/live_engine.py:217` class `MeanReversionStrategy`
+- `quant_nanggroe/live_engine.py:237` class `GridTradingStrategy`
+- `quant_nanggroe/live_engine.py:266` class `TrendStrengthStrategy`
+- `quant_nanggroe/live_engine.py:318` class `PerformanceTracker`
+- `quant_nanggroe/live_engine.py:462` class `LiveEngine`
+- `quant_nanggroe/live_engine.py:1246` function `main`

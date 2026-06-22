@@ -38,6 +38,17 @@ from quant_nanggroe.engine.strategy.strategies.statistical_arbitrage import (
 from quant_nanggroe.engine.strategy.strategies.market_making import MarketMakingStrategy
 from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedStrategy
 from quant_nanggroe.engine.strategy.strategies.crypto_specific import CryptoSpecificStrategy
+from quant_nanggroe.engine.strategy.strategies.smc_strategy import SMCStrategy
+from quant_nanggroe.engine.strategy.strategies.ict_strategy import ICTStrategy
+from quant_nanggroe.engine.strategy.strategies.support_resistance_strategy import (
+    SupportResistanceStrategy,
+)
+from quant_nanggroe.engine.strategy.strategies.supply_demand_strategy import (
+    SupplyDemandStrategy,
+)
+from quant_nanggroe.engine.strategy.strategies.wyckoff_strategy import WyckoffStrategy
+from quant_nanggroe.engine.strategy.strategies.cot_strategy import COTStrategy
+from quant_nanggroe.engine.strategy.strategies.fundamental_strategy import FundamentalStrategy
 
 
 # Strategy class registry: name -> class
@@ -50,6 +61,13 @@ _STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {
     "MarketMaking": MarketMakingStrategy,
     "RegimeBased": RegimeBasedStrategy,
     "CryptoSpecific": CryptoSpecificStrategy,
+    "SMC": SMCStrategy,
+    "ICT": ICTStrategy,
+    "S/R": SupportResistanceStrategy,
+    "SnD": SupplyDemandStrategy,
+    "Wyckoff": WyckoffStrategy,
+    "COT": COTStrategy,
+    "Fundamental": FundamentalStrategy,
 }
 
 # Strategy metadata for discovery
@@ -101,6 +119,48 @@ _STRATEGY_METADATA: Dict[str, Dict] = {
         "asset_classes": ["crypto"],
         "timeframes": ["5m", "15m", "1h", "4h", "1d"],
         "category": "crypto",
+    },
+    "SMC": {
+        "description": "Smart Money Concept: order blocks, liquidity sweeps, FVG, market structure shifts",
+        "asset_classes": ["crypto", "forex", "stocks"],
+        "timeframes": ["5m", "15m", "1h", "4h", "1d"],
+        "category": "pattern",
+    },
+    "ICT": {
+        "description": "Inner Circle Trader: displacement, FVG, OTE retracement, kill zones, order blocks",
+        "asset_classes": ["crypto", "forex", "stocks"],
+        "timeframes": ["5m", "15m", "1h", "4h", "1d"],
+        "category": "pattern",
+    },
+    "S/R": {
+        "description": "Dynamic Support & Resistance: swing pivots, zone clustering, bounce/breakout detection",
+        "asset_classes": ["crypto", "forex", "stocks", "futures"],
+        "timeframes": ["15m", "1h", "4h", "1d"],
+        "category": "supply_demand",
+    },
+    "SnD": {
+        "description": "Supply & Demand zones: institutional zone detection, strength scoring, zone touches",
+        "asset_classes": ["crypto", "forex", "stocks"],
+        "timeframes": ["15m", "1h", "4h", "1d"],
+        "category": "supply_demand",
+    },
+    "Wyckoff": {
+        "description": "Wyckoff Method: accumulation/distribution phases, SC, AR, ST, Spring, UT detection",
+        "asset_classes": ["crypto", "stocks", "futures"],
+        "timeframes": ["1h", "4h", "1d", "1w"],
+        "category": "wyckoff",
+    },
+    "COT": {
+        "description": "Commitment of Traders: speculator positioning, COT index, commercial divergence, extreme readings",
+        "asset_classes": ["futures", "forex"],
+        "timeframes": ["1d", "1w"],
+        "category": "cot",
+    },
+    "Fundamental": {
+        "description": "Fundamental analysis: economic calendar, macro data, sentiment, central bank policy, event-driven",
+        "asset_classes": ["forex", "stocks", "futures", "crypto"],
+        "timeframes": ["1h", "4h", "1d", "1w"],
+        "category": "fundamental",
     },
 }
 
@@ -194,6 +254,13 @@ __all__ = [
     "MarketMakingStrategy",
     "RegimeBasedStrategy",
     "CryptoSpecificStrategy",
+    "SMCStrategy",
+    "ICTStrategy",
+    "SupportResistanceStrategy",
+    "SupplyDemandStrategy",
+    "WyckoffStrategy",
+    "COTStrategy",
+    "FundamentalStrategy",
     # Registry functions
     "create_strategy",
     "list_strategies",

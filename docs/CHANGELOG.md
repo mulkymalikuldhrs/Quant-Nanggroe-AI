@@ -6,7 +6,43 @@
 
 ---
 
-## [4.0.0] — 2025-Q3 (Current)
+## [5.0.0] — 2026-06-22 (Session 3b)
+
+### Added
+- **docs/WS1_ALPHA_REPORT.md** — Full walk-forward validation: 3 strategies × 4 coins × 3 params × 5 folds = 180 combos. Result: 19 fold-specific passes, 0 universal. MACD separately: 0/4 coins.
+- **docs/SYSTEM.md** — Comprehensive file-by-file system documentation (data flow, deployment, API reference)
+- **scripts/start_alpaca_paper.sh** — Auto-path, key validation, auto-install alpaca-py
+- **Dockerfile** — Multi-stage build (builder → non-root qna), healthcheck
+- **docker-compose.yml** — 3 services: api (FastAPI), worker, redis
+- **.env.template** — 33 documented environment variables
+
+### Changed
+- **Dashboard production wired**: `api-client.ts` 69→177 lines (proper TypeScript interfaces, `/api/v1/` paths), `store.ts` 43→119 lines (async actions, loading/error states), `websocket.ts` fixed (20-retry exponential backoff reconnection)
+- **All mock/simulated code removed**: `_portfolio_state` → PaperExchangeBroker, `_AGENT_DEFINITIONS` → dynamic AgentRegistry, `status="simulated"` → ProductionStrategyRunner, `_MOCK_MODE` + 3 `_mock_*` functions removed (322→230 lines), `_show_simulated_pipeline` → `_run_strategy_pipeline`, 6 fallback arrays removed from dashboard pages, 11 pages wired to API/store
+- **Path auto-detection**: 4 scripts (`test_data_fallback.py`, `activate-trading.sh`, `qna-heartbeat.sh`, `start_alpaca_paper.sh`) now use `SCRIPT_DIR` relative resolution — no more hardcoded `/sdcard/dhaherlabs/` paths
+- **README.md** — Complete rewrite with architecture pipeline, directory structure, quick start, changelog
+- **docs/architecture-v2.md** — Updated diagram showing real production components, mock removal, Docker, auto-path
+
+### Removed
+- `dashboard/src/lib/mock-data.ts` — **DELETED** (was the last source of fake data)
+- All `_MOCK_MODE` references across codebase
+- All `_show_simulated_pipeline` references (replaced by `_run_strategy_pipeline`)
+- 6 hardcoded fallback data arrays from dashboard pages
+- Hardcoded `/sdcard/dhaherlabs/` paths from all scripts
+
+### Quality
+- 19 files syntax-checked: 7 Python, 4 shell, 3 Docker/YAML/env, 5 TypeScript — all PASS
+- Zero mock/simulated data across entire QNA codebase
+- Auto Ω singularity kernel genome v1.2.0 (6 gene mutations, fitness 0.86)
+
+### Known
+- **No validated alpha**: 0/4 coins pass walk-forward on any strategy (SMC/ICT/Wyckoff/MACD)
+- **npm install times out**: Dashboard deps not installable in Termux
+- **Docker daemon unavailable**: Can't test Dockerfile in Termux
+- **Alpaca keys not in credentials.md**: `start_alpaca_paper.sh` will fail without keys
+- **0 real trades, $0 P&L**: QNA has never executed a single real trade
+
+---
 
 ### Added
 - **11-Agent Council Architecture**: Full LangGraph StateGraph with 9 nodes and conditional edges

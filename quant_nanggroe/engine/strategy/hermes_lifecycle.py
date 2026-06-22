@@ -45,6 +45,8 @@ class StrategyLifecycleManager:
             "wins": 0,
             "losses": 0,
             "total_pnl": 0.0,
+            "total_wins": 0.0,
+            "total_losses": 0.0,
             "max_drawdown": 0.0,
             "expectancy": 0.0,
             "win_rate": 0.0,
@@ -67,14 +69,16 @@ class StrategyLifecycleManager:
 
         if is_win:
             strategy["wins"] += 1
+            strategy["total_wins"] += pnl
         else:
             strategy["losses"] += 1
+            strategy["total_losses"] += abs(pnl)
 
         # Calculate expectancy
         if strategy["trades_count"] > 0:
             strategy["win_rate"] = strategy["wins"] / strategy["trades_count"]
-            avg_win = strategy["total_pnl"] / max(strategy["wins"], 1)
-            avg_loss = strategy["total_pnl"] / max(strategy["losses"], 1) if strategy["losses"] > 0 else 0
+            avg_win = strategy["total_wins"] / max(strategy["wins"], 1)
+            avg_loss = strategy["total_losses"] / max(strategy["losses"], 1) if strategy["losses"] > 0 else 0
             strategy["expectancy"] = strategy["win_rate"] * avg_win - \
                                      (1 - strategy["win_rate"]) * abs(avg_loss)
 

@@ -1,9 +1,7 @@
 """Test data fallback chain and circuit breaker."""
+import os
 import sys
-sys.path.insert(0, '/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree')
-
-import sys
-sys.path.insert(0, '/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree')
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import directly to avoid numpy dependency in normalizer
 from quant_nanggroe.engine.data.provider_interface import (

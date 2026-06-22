@@ -345,3 +345,7 @@ class ConstitutionalRiskGuard:
                 "mandatory_stop_loss_pct": MANDATORY_STOP_LOSS_PCT,
             },
         }
+
+
+# ── Compatibility alias ──────────────────────────────────────────────────────
+RiskCheckGate = ConstitutionalRiskGuard

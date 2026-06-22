@@ -2,7 +2,8 @@
 # QNA Heartbeat — cron-friendly health check (every 5 minutes)
 # If engine dies, restart it automatically
 
-QNA_DIR="/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+QNA_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ENGINE="$QNA_DIR/quant_nanggroe/live_engine.py"
 PID_FILE="$QNA_DIR/data/qna.pid"
 LOG="$QNA_DIR/logs/heartbeat.log"

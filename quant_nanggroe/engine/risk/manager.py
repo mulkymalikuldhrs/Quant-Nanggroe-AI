@@ -37,6 +37,7 @@ from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
 from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.risk.var import VaRCalculator
+from quant_nanggroe.engine.risk.trailing_stop import TrailingStopManager
 from quant_nanggroe.engine.persistence import (
     PersistenceBackend,
     get_persistence_backend,
@@ -102,6 +103,7 @@ class RiskManager:
         self.drawdown_monitor = DrawdownMonitor(max_drawdown=MAX_DRAWDOWN)
         self.kelly = KellyCriterion()
         self.var_calculator = VaRCalculator()
+        self.trailing_stop = TrailingStopManager()
         self._veto_count: int = 0
         self._approval_count: int = 0
 
@@ -635,6 +637,23 @@ class RiskManager:
         position_size = min(1.0, max_var_pct / var_pct)
 
         return position_size
+
+    def check_trailing_stops(self, positions: dict) -> list:
+        """Check trailing stops for all open positions.
+
+        Args:
+            positions: Dict of {symbol: current_price}.
+
+        Returns:
+            List of symbols that triggered trailing stop and should be closed.
+        """
+        triggered = []
+        for symbol, current_price in positions.items():
+            self.trailing_stop.add_position(symbol, current_price)
+            result = self.trailing_stop.update(symbol, current_price)
+            if result is not None:
+                triggered.append(result)
+        return triggered
 
     def _auto_check_kill_switch(self) -> None:
         """Auto-check if kill switch should activate based on risk limits."""

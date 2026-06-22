@@ -76,9 +76,9 @@ class KillSwitchConfig(BaseModel):
     model_config = ConfigDict(frozen=False)
 
     # Auto-activation thresholds
-    auto_daily_loss_pct: float = 1.5       # Auto-activate at 1.5% daily loss
-    auto_weekly_loss_pct: float = 4.0      # Auto-activate at 4% weekly loss
-    auto_max_drawdown_pct: float = 5.0     # Auto-activate at 5% drawdown
+    auto_daily_loss_pct: float = 0.8       # Auto-activate at 0.8% daily loss (before 1% constitutional limit)
+    auto_weekly_loss_pct: float = 2.5      # Auto-activate at 2.5% weekly loss (before 3% limit)
+    auto_max_drawdown_pct: float = 10.0    # Auto-activate at 10% drawdown (before 15% limit)
     auto_volatility_spike_pct: float = 10.0  # Auto-activate on 10% volatility spike
 
     # Cooldown settings

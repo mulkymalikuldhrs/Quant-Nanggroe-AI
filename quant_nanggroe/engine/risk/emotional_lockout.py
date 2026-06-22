@@ -134,7 +134,7 @@ class EmotionalLockoutConfig(BaseModel):
 
     consecutive_losses_threshold: int = Field(default=3, ge=1, description="Consecutive losses to trigger lockout")
     consecutive_losses_lockout_hours: float = Field(default=1.0, gt=0, description="Lockout hours after consecutive losses")
-    daily_loss_pct_threshold: float = Field(default=0.05, gt=0, le=1.0, description="Daily loss % to trigger lockout")
+    daily_loss_pct_threshold: float = Field(default=0.008, gt=0, le=1.0, description="Daily loss % to trigger lockout (before 1% constitutional limit)")
     override_attempts_limit: int = Field(default=3, ge=1, description="Override attempts before blocking")
     override_blockout_hours: float = Field(default=24.0, gt=0, description="Lockout hours after override abuse")
     enable_progressive: bool = Field(default=True, description="Enable progressive lockout durations")

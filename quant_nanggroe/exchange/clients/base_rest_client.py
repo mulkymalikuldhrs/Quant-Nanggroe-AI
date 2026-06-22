@@ -30,6 +30,21 @@ class ExchangeCapability(Flag):
     OPTIONS = auto()
 
 
+class ClientCapabilities(BaseModel):
+    """Exchange client capability descriptor."""
+    spot: bool = True
+    futures: bool = False
+    perps: bool = False
+    margin: bool = False
+    websocket: bool = False
+    options: bool = False
+    max_leverage: float = 1.0
+    requires_passphrase: bool = False
+
+    class Config:
+        from_attributes = True
+
+
 class RestClientConfig(BaseModel):
     """Configuration for REST exchange client."""
     exchange_id: str = Field(..., description="Exchange identifier")
@@ -37,6 +52,8 @@ class RestClientConfig(BaseModel):
     api_secret: str = Field("", description="API secret")
     passphrase: str = Field("", description="API passphrase (OKX)")
     base_url: str = Field("", description="Base API URL")
+    proxy_url: str = Field("", description="Proxy URL (e.g. http://127.0.0.1:8080)")
+    verify_ssl: bool = Field(True, description="Verify SSL certificates")
     rate_limit: int = Field(10, description="Max requests per second")
     timeout: int = Field(30, description="Request timeout seconds")
     testnet: bool = Field(False, description="Use testnet")
@@ -207,7 +224,10 @@ class BaseRestClient(ABC):
             params["timestamp"] = str(int(time.time() * 1000))
             params["signature"] = self._sign(params, self._config.api_secret)
 
-        async with httpx.AsyncClient(timeout=self._config.timeout) as client:
+        client_kwargs = {"timeout": self._config.timeout, "verify": self._config.verify_ssl}
+        if self._config.proxy_url:
+            client_kwargs["proxy"] = self._config.proxy_url
+        async with httpx.AsyncClient(**client_kwargs) as client:
             fn = getattr(client, method.lower())
             response = await fn(url, params=params, headers=headers)
             response.raise_for_status()

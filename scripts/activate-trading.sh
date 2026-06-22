@@ -2,7 +2,8 @@
 # Quant Nanggroe — Live Trading Activation
 set -e
 
-QNA_DIR="/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+QNA_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ENGINE="$QNA_DIR/quant_nanggroe/live_engine.py"
 LOG_DIR="$QNA_DIR/logs"
 DATA_DIR="$QNA_DIR/data"

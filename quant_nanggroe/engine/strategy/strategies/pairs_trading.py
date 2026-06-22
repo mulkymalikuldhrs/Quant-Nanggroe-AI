@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
+
 from statsmodels.tsa.stattools import coint, adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 
@@ -265,6 +265,7 @@ class PairsTradingStrategy(BaseStrategy):
         spread_delta = spread_delta.loc[common_idx]
 
         try:
+            from scipy import stats as scipy_stats
             slope, _, _, _, _ = scipy_stats.linregress(
                 spread_lag.values, spread_delta.values
             )

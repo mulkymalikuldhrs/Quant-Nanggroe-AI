@@ -23,7 +23,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
+
 from sklearn.decomposition import PCA
 
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
@@ -222,6 +222,7 @@ class StatisticalArbitrageStrategy(BaseStrategy):
         delta = np.diff(residuals)
 
         try:
+            from scipy import stats as scipy_stats
             slope, _, _, _, _ = scipy_stats.linregress(lag, delta)
         except (ValueError, np.linalg.LinAlgError):
             return np.inf
