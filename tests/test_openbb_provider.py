@@ -10,6 +10,7 @@ from __future__ import annotations
 import sys
 import unittest
 import os
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -129,6 +130,43 @@ class TestFetchOHLCV(unittest.TestCase):
         mock_sdk.equity.price.historical.assert_called_once_with(
             symbol="AAPL", provider="yfinance"
         )
+
+    def test_sdk_receives_start_end(self):
+        mock_sdk = MagicMock()
+        mock_data = MagicMock()
+        mock_data.empty = False
+        mock_df = pd.DataFrame({
+            "date": ["2024-01-02"],
+            "open": [181.0], "high": [182.0], "low": [179.5],
+            "close": [181.0], "volume": [55_000_000],
+        })
+        mock_data.to_dataframe.return_value = mock_df
+        mock_sdk.equity.price.historical.return_value = mock_data
+
+        provider = OpenBBMCPProvider()
+        provider._sdk = mock_sdk
+        provider.fetch_ohlcv("AAPL", "D1", datetime(2024, 1, 1), datetime(2024, 1, 31))
+
+        mock_sdk.equity.price.historical.assert_called_once_with(
+            symbol="AAPL", provider="yfinance",
+            start_date="2024-01-01T00:00:00",
+            end_date="2024-01-31T00:00:00",
+        )
+
+    def test_rest_url_contains_start_end_timeframe(self):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {}
+        mock_resp.raise_for_status.return_value = None
+
+        provider = OpenBBMCPProvider()
+        with patch.object(provider, "_sdk", None):
+            with patch("requests.get", return_value=mock_resp) as mock_get:
+                provider.fetch_ohlcv("AAPL", "H1", datetime(2024, 1, 1), datetime(2024, 1, 31))
+
+        params = mock_get.call_args[1]["params"]
+        self.assertEqual(params["start_date"], "2024-01-01T00:00:00")
+        self.assertEqual(params["end_date"], "2024-01-31T00:00:00")
+        self.assertEqual(params["interval"], "1h")
 
 
 class TestDataManagerIntegration(unittest.TestCase):

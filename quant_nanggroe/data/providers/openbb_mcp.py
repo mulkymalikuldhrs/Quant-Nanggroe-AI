@@ -103,6 +103,17 @@ class OpenBBMCPProvider:
     # SDK path
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _timeframe_to_interval(timeframe: str) -> Optional[str]:
+        mapping = {
+            "D1": None,
+            "H1": "1h",
+            "h4": "4h",
+            "W1": "1wk",
+            "M1": "1mo",
+        }
+        return mapping.get(timeframe)
+
     def _fetch_via_sdk(
         self,
         symbol: str,
@@ -112,9 +123,16 @@ class OpenBBMCPProvider:
     ) -> pd.DataFrame:
         """Fetch data via the OpenBB Python SDK."""
         try:
+            params: dict = {"symbol": symbol, "provider": "yfinance"}
+            if start:
+                params["start_date"] = start.isoformat()
+            if end:
+                params["end_date"] = end.isoformat()
+            interval = self._timeframe_to_interval(timeframe)
+            if interval:
+                params["interval"] = interval
             data = self._sdk.equity.price.historical(  # type: ignore[union-attr]
-                symbol=symbol,
-                provider="yfinance",
+                **params,
             )
             if data is not None and not data.empty:
                 df = data.to_dataframe()
@@ -143,6 +161,9 @@ class OpenBBMCPProvider:
                 params["start_date"] = start.isoformat()
             if end:
                 params["end_date"] = end.isoformat()
+            interval = self._timeframe_to_interval(timeframe)
+            if interval:
+                params["interval"] = interval
             headers = {}
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
