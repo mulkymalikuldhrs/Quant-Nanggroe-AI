@@ -1,0 +1,131 @@
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║      Quant-Nanggroe-AI  —  Full Stack Docker Compose               ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+
+version: "3.9"
+
+services:
+  # ── API Server ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qna-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-quant_nanggroe}
+      - REDIS_URL=redis://redis:6379/0
+      - QUESTDB_URL=http://questdb:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - qna-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # ── Trading Worker ──────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qna-worker
+    restart: unless-stopped
+    command: ["python", "-m", "quant_nanggroe.worker"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-quant_nanggroe}
+      - REDIS_URL=redis://redis:6379/0
+      - QUESTDB_URL=http://questdb:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - qna-network
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: qna-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-quant_nanggroe}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - qna-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: qna-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - qna-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── QuestDB (Time-series) ───────────────────────────────────────────
+  questdb:
+    image: questdb/questdb:latest
+    container_name: qna-questdb
+    restart: unless-stopped
+    ports:
+      - "9000:9000"   # Web console
+      - "8812:8812"   # PostgreSQL wire protocol
+      - "9009:9009"   # InfluxDB line protocol
+    environment:
+      QDB_MALLOC_SIZE: 4G
+    volumes:
+      - questdb_data:/root/.questdb
+    networks:
+      - qna-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  questdb_data:
+
+networks:
+  qna-network:
+    driver: bridge

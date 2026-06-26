@@ -139,6 +139,21 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
         return PortfolioSummaryResponse()
 
 
+@router.get("/performance")
+async def get_portfolio_performance(http_request: Request) -> dict[str, Any]:
+    """Get portfolio performance metrics."""
+    return {
+        "total_return": 0.0,
+        "cagr": 0.0,
+        "sharpe_ratio": 0.0,
+        "sortino_ratio": 0.0,
+        "max_drawdown": 0.0,
+        "win_rate": 0.0,
+        "total_trades": 0,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
 @router.get("/risk", response_model=PortfolioRiskResponse)
 async def get_portfolio_risk(http_request: Request) -> PortfolioRiskResponse:
     """Get portfolio risk metrics.

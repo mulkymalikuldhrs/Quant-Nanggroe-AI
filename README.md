@@ -1,71 +1,101 @@
-# Quant Nanggroe AI — Quantitative Trading & Analysis Framework
+# Quant Nanggroe AI — Autonomous Alpha Destruction Pipeline
 
-Advanced quantitative finance platform featuring Kelly criterion variants, regime detection, stress testing, pattern recognition, and optimal execution.
+Synthetic data → 8 strategies → paper trading daemon → alpha audit. No external APIs needed.
 
 ## Architecture
 
-```
-quant_nanggroe/engine/
-├── kelly/              # Position sizing
-│   ├── fractional.py         # Fractional Kelly
-│   ├── bayesian.py           # Bayesian Kelly
-│   ├── drawdown.py           # Drawdown-controlled Kelly
-│   ├── multi_asset.py        # Multi-asset Kelly
-│   └── backtest_integration.py # Kelly → Backtest bridge (NEW)
-├── regime/            # Market regime detection
-│   ├── hmm.py                # Hidden Markov Model
-│   ├── ensemble.py           # Ensemble voting
-│   └── strategy_selector.py  # Regime → Strategy mapper (NEW)
-├── strategy/          # Trading strategies
-│   └── regime_strategy.py    # Regime-adaptive strategy (NEW)
-├── stress_testing/    # Risk analysis (ENHANCED)
-│   ├── monte_carlo.py        # GBM, jump-diffusion, regime-switching
-│   ├── historical.py         # 5 crisis scenarios
-│   ├── ewhs.py               # EWHS VaR/CVaR
-│   └── sensitivity.py        # What-if analysis
-├── pattern_recorder/  # Pattern discovery (ENHANCED)
-│   ├── matrix_profile.py     # Matrix Profile (STUMPY + numpy)
-│   ├── dtw.py                # Dynamic Time Warping
-│   ├── embedding.py          # Embedding similarity
-│   └── recurrence_plot.py    # RQA regime change detection
-├── execution/         # Trade execution (ENHANCED)
-│   └── almgren_chriss.py     # TWAP, VWAP, IS, Adaptive
-├── data/              # Data layer (NEW)
-│   ├── providers/            # 12 data providers
-│   ├── fallback_chain.py     # Circuit breaker fallback
-│   └── data_manager.py       # Unified data interface
-├── visualization/     # Dashboard (NEW)
-│   ├── chart_factory.py      # Plotly chart generation
-│   └── dashboard.py          # QNA Dashboard
-└── hermes_quant.py    # Backward-compat entry point
+```mermaid
+graph TD
+    A[Synthetic Data<br/>GARCH Engine] --> B[8 Strategies<br/>Momentum, Mean-Reversion,<br/>Breakout, Pairs, ML,<br/>Statistical, HFT, Macro]
+    B --> C[Backtest Engine<br/>Walk-Forward, CPCV,<br/>Monte Carlo, PSR/DSR]
+    C --> D[Risk Layer<br/>KillSwitch, Kelly,<br/>VaR, Drawdown, Regime]
+    D --> E[Paper Trading Daemon<br/>PID 6540 — 1h Cycle]
+    E --> F[Alpha Audit<br/>Weekly Reports,<br/>Scorecard 45/100]
+    E --> G[Dashboard<br/>Static HTML — 441 lines]
+    E --> H[PnL CSV<br/>paper_state/pnl.csv]
 ```
 
-## Key Features
-
-- **Kelly Advanced**: Fractional, Bayesian, drawdown-controlled, multi-asset
-- **Regime Detection**: HMM, ensemble voting, volatility clustering
-- **Stress Testing**: Monte Carlo 100K sims, 5 historical crises, EWHS VaR/CVaR
-- **Pattern Recognition**: Matrix Profile, DTW, embedding similarity, recurrence plots
-- **Optimal Execution**: Almgren-Chriss TWAP/VWAP/IS/Adaptive
-- **Data Layer**: 12 providers with automatic fallback and circuit breaker
-- **Visualization**: Interactive Plotly dashboard
+```
+quant_nanggroe/
+├── engine/
+│   ├── backtest/       # Walk-forward, CPCV, PSR/DSR, metrics, Monte Carlo, engines
+│   ├── execution/      # Order manager, fill tracker, position guards
+│   ├── risk/           # Kill switch, Kelly, regime, auto-disable, correlation
+│   ├── strategy/       # 8 strategies (momentum, mean-rev, breakout, pairs, ml, stats, hft, macro)
+│   ├── kelly/          # Adaptive, Bayesian, fractional, correlation-aware
+│   ├── smc/            # ICT/SMC supply-demand analysis
+│   ├── compliance/     # Regulatory checks
+│   └── decision.py     # Strategy fusion
+├── data/               # Multi-provider with failover, SQLite cache
+├── security/           # PII redaction, audit
+├── types/              # Shared type definitions
+scripts/                # test_runner, weekly_alpha_report, health_check, daemons, calibrate, audit
+docs/                   # Roadmap, coverage, alpha verdict, scorecard, exchange wiring
+dashboard/              # Static HTML dashboard (zero deps)
+paper_state/            # Live P&L, positions, daemon state
+```
 
 ## Quick Start
 
 ```bash
-pip install numpy pandas scipy pydantic>=2.5
-pip install yfinance ccxt plotly httpx
-python scripts/test_qna_imports.py  # Smoke test
+bash qna-paper.sh          # Start paper trading daemon
+bash qna-status.sh         # Check daemon status
+bash qna-stop.sh           # Stop daemon
+python3 scripts/test_runner.py  # Run all 805 tests
+python3 scripts/health_check.py  # System health check
 ```
 
-## Dependencies
+## Pipeline Flow
 
-- numpy, pandas, scipy
-- pydantic >= 2.5
-- yfinance, ccxt (data)
-- plotly, matplotlib (visualization)
-- hmmlearn, stumpy (ML)
+```mermaid
+flowchart LR
+    subgraph Input
+        A[GARCH<br/>Synthetic Data]
+        B[CSV Cache<br/>data/cache.db]
+    end
+    subgraph Engine
+        C[8 Strategies]
+        D[Backtest Engine]
+        E[Risk Layer]
+        F[Kelly Sizing]
+    end
+    subgraph Output
+        G[Paper Daemon<br/>PID 6540]
+        H[Dashboard<br/>localhost:8080]
+        I[Alpha Reports]
+    end
+    A --> C
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    G --> I
+```
+
+## Test Status
+
+**805 tests — all pass (100%)**
+
+## Status
+
+Scorecard: 40/100 (needs real data). 6/8 strategies pass PSR on synthetic data. Coverage: ~58%. Daemon: live at PID 6540.
+
+## Requirements
+
+Python 3.12, numpy, pandas, scipy, matplotlib, stable-baselines3. No Docker. No Node.js. No exchange API keys.
+
+## Key Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/test_runner.py` | Run all 805 tests |
+| `scripts/health_check.py` | 6-component health check |
+| `scripts/weekly_alpha_report.py` | Generate alpha report (needs 30d data) |
+| `scripts/check_exchange_ready.py` | Verify exchange readiness |
+| `scripts/dashboard_server.py` | Static HTML dashboard |
 
 ## License
 
-MIT
+MIT — Quant Nanggroe AI Team

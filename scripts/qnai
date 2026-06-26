@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""qnai — Unified CLI for Quant Nanggroe AI.
+
+Usage:
+  bash scripts/qnai.sh <subcommand> [args...]
+  python3 scripts/qnai <subcommand> [args...]
+"""
+
+import csv
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = REPO_ROOT / "scripts"
+PAPER_STATE = REPO_ROOT / "paper_state"
+
+
+def _run_script(name: str, passthrough: bool = True) -> None:
+    path = SCRIPTS / name
+    if not path.exists():
+        print(f"Error: script not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    args = sys.argv[2:] if passthrough else []
+    result = subprocess.run([sys.executable, str(path)] + args)
+    sys.exit(result.returncode)
+
+
+def _run_script_by_path(path: Path, args: list[str] | None = None) -> None:
+    if not path.exists():
+        print(f"Error: script not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    result = subprocess.run([sys.executable, str(path)] + (args or []))
+    sys.exit(result.returncode)
+
+
+def _run_bash(script_name: str) -> None:
+    path = REPO_ROOT / script_name
+    if not path.exists():
+        print(f"Error: script not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    result = subprocess.run(["bash", str(path)] + sys.argv[3:])
+    sys.exit(result.returncode)
+
+
+def _read_json(path: Path) -> dict | None:
+    try:
+        return json.loads(path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def cmd_alpha() -> None:
+    _run_script("alpha_destruction.py")
+
+
+def cmd_backtest() -> None:
+    print("qnai backtest: delegating to quant_nanggroe backtest engine...")
+    sys.path.insert(0, str(REPO_ROOT))
+    from quant_nanggroe.cli import backtest
+    import click
+    from click.testing import CliRunner
+    runner = CliRunner()
+    result = runner.invoke(backtest, sys.argv[2:])
+    print(result.output, end="")
+    sys.exit(result.exit_code)
+
+
+def cmd_architect() -> None:
+    _run_script("qna-architect.py")
+
+
+def cmd_test() -> None:
+    _run_script("test_runner.py")
+
+
+def cmd_audit() -> None:
+    if len(sys.argv) < 3 or sys.argv[2] != "security":
+        print("Usage: qnai audit security [args...]", file=sys.stderr)
+        sys.exit(1)
+    subcmd_args = sys.argv[3:]
+    path = SCRIPTS / "security_audit.py"
+    result = subprocess.run([sys.executable, str(path)] + subcmd_args)
+    sys.exit(result.returncode)
+
+
+def cmd_paper() -> None:
+    if len(sys.argv) < 3:
+        print("Usage: qnai paper start|stop|status", file=sys.stderr)
+        sys.exit(1)
+    action = sys.argv[2]
+    mapping = {"start": "qna-paper.sh", "stop": "qna-stop.sh", "status": "qna-status.sh"}
+    if action not in mapping:
+        print(f"Error: unknown paper action '{action}'. Use start|stop|status.", file=sys.stderr)
+        sys.exit(1)
+    path = REPO_ROOT / mapping[action]
+    cmd = ["bash", str(path)] + sys.argv[3:]
+    result = subprocess.run(cmd)
+    sys.exit(result.returncode)
+
+
+def cmd_tune() -> None:
+    _run_script("auto_tune.py")
+
+
+def cmd_rotate() -> None:
+    _run_script("auto_rotate.py")
+
+
+def cmd_calibrate() -> None:
+    _run_script("calibrate_slippage.py")
+
+
+def cmd_drill() -> None:
+    _run_script("disaster_recovery_drill.py")
+
+
+def cmd_regime() -> None:
+    _run_script("regime_adaptive_execution.py")
+
+
+def cmd_budget() -> None:
+    _run_script("token_aware_budget.py")
+
+
+def cmd_anomaly() -> None:
+    _run_script("anomaly_reporter.py")
+
+
+def cmd_status() -> None:
+    pid_file = PAPER_STATE / "daemon.pid"
+    pnl_file = PAPER_STATE / "pnl.csv"
+    state_file = PAPER_STATE / "state.json"
+    ks_file = PAPER_STATE / "kill_switch_state.json"
+    ad_file = PAPER_STATE / "auto_disable_state.json"
+
+    # Daemon status
+    daemon_pid = None
+    daemon_running = False
+    if pid_file.exists():
+        daemon_pid = pid_file.read_text().strip()
+        try:
+            pid = int(daemon_pid)
+            proc = subprocess.run(["kill", "-0", str(pid)], capture_output=True)
+            daemon_running = proc.returncode == 0
+        except (ValueError, OSError):
+            pass
+
+    print("=== Daemon ===")
+    if daemon_running:
+        print(f"  Status: RUNNING (PID: {daemon_pid})")
+    elif daemon_pid:
+        print(f"  Status: NOT RUNNING (stale PID: {daemon_pid})")
+    else:
+        print("  Status: NOT RUNNING (no PID file)")
+    print()
+
+    # P&L
+    print("=== Trading Summary ===")
+    if pnl_file.exists() and pnl_file.stat().st_size > 0:
+        with pnl_file.open() as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+        if len(rows) > 1:
+            last = rows[-1]
+            headers = rows[0]
+            try:
+                ci = headers.index("cycle")
+                pnli = headers.index("total_pnl")
+                ddi = headers.index("drawdown_pct")
+                print(f"  Total cycles:  {last[ci]}")
+                print(f"  Current P&L:   {last[pnli]}")
+                print(f"  Latest drawdown: {last[ddi]}%")
+            except ValueError:
+                pass
+            print()
+            print("  Last 5 cycles:")
+            print(f"    {'Cycle':<7} {'Signals':<9} {'Cash':<10} {'Total Val':<11} {'Unrealized':<12} {'Realized':<11} {'Total PnL':<11} {'Pos':<5} {'DD%'}")
+            print(f"    {'-'*7} {'-'*9} {'-'*10} {'-'*11} {'-'*12} {'-'*11} {'-'*11} {'-'*5} {'---'}")
+            for row in rows[-5:]:
+                if row == rows[0]:
+                    continue
+                vals = {h: row[i] for i, h in enumerate(headers)}
+                print(f"    {vals.get('cycle', ''):<7} {vals.get('signals', ''):<9} {vals.get('cash', ''):<10} {vals.get('total_value', ''):<11} {vals.get('unrealized_pnl', ''):<12} {vals.get('realized_pnl', ''):<11} {vals.get('total_pnl', ''):<11} {vals.get('positions', ''):<5} {vals.get('drawdown_pct', '')}")
+        else:
+            print("  P&L file has header only — no trading data yet.")
+    else:
+        print("  No P&L data yet.")
+    print()
+
+    # State
+    print("=== State ===")
+    state = _read_json(state_file)
+    if state:
+        for k, v in state.items():
+            print(f"  {k}: {v}")
+    else:
+        print("  No state data yet.")
+    print()
+
+    # Kill switch
+    print("=== KillSwitch ===")
+    ks_state = _read_json(ks_file)
+    if ks_state:
+        print(f"  Level: {ks_state.get('level', 'none')}")
+        print(f"  Active: {ks_state.get('is_active', False)}")
+    else:
+        sys.path.insert(0, str(REPO_ROOT))
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+            ks = KillSwitch()
+            print(f"  KillSwitch: {'ACTIVE' if not ks.can_trade() else 'OK'}")
+        except ImportError:
+            print("  KillSwitch: could not import")
+    print()
+
+    # Strategy counts
+    print("=== Strategies ===")
+    ad_state = _read_json(ad_file)
+    if ad_state and "strategies" in ad_state:
+        strategies = ad_state["strategies"]
+        active = sum(1 for s in strategies.values() if not s.get("disabled", False))
+        disabled = sum(1 for s in strategies.values() if s.get("disabled", False))
+        print(f"  Active:  {active}")
+        print(f"  Disabled: {disabled}")
+        for name, info in strategies.items():
+            status = "DISABLED" if info.get("disabled") else "ACTIVE"
+            reason = info.get("disabled_reason", "")
+            extra = f" — {reason}" if reason else ""
+            print(f"    {name}: {status}{extra}")
+    else:
+        print("  No auto-disable state data yet.")
+
+
+def cmd_serve() -> None:
+    import uvicorn
+    sys.path.insert(0, str(REPO_ROOT))
+    uvicorn.run("quant_nanggroe.api:app", host="0.0.0.0", port=8000)
+
+
+def cmd_health() -> None:
+    import urllib.request
+    import json
+    try:
+        resp = urllib.request.urlopen("http://localhost:8000/health", timeout=5)
+        data = json.loads(resp.read())
+        print("Health: OK")
+        for k, v in data.items():
+            print(f"  {k}: {v}")
+    except Exception as e:
+        print(f"Health: UNREACHABLE ({e})")
+
+
+def main() -> None:
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
+        print(__doc__)
+        print("Commands:")
+        print("  alpha       Run alpha destruction protocol")
+        print("  architect   Run codebase architect analysis")
+        print("  audit       security  Run security audit")
+        print("  backtest    Run backtest (delegates to Click CLI)")
+        print("  test        Run test suite")
+        print("  paper       start|stop|status  Manage paper trading daemon")
+        print("  tune        Run auto-tuner")
+        print("  rotate      Run auto-rotate")
+        print("  calibrate   Run slippage calibrator")
+        print("  drill       Run disaster recovery drill")
+        print("  regime      Run regime-adaptive execution")
+        print("  budget      Run token-aware budget")
+        print("  anomaly     Run anomaly reporter")
+        print("  status      Show system status")
+        print("  serve       Start API server on port 8000")
+        print("  health      Run health check")
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+    mapping = {
+        "alpha": cmd_alpha,
+        "backtest": cmd_backtest,
+        "architect": cmd_architect,
+        "test": cmd_test,
+        "audit": cmd_audit,
+        "paper": cmd_paper,
+        "tune": cmd_tune,
+        "rotate": cmd_rotate,
+        "calibrate": cmd_calibrate,
+        "drill": cmd_drill,
+        "regime": cmd_regime,
+        "budget": cmd_budget,
+        "anomaly": cmd_anomaly,
+        "status": cmd_status,
+        "serve": cmd_serve,
+        "health": cmd_health,
+    }
+    fn = mapping.get(cmd)
+    if fn is None:
+        print(f"Error: unknown command '{cmd}'. Use 'help' to see available commands.", file=sys.stderr)
+        sys.exit(1)
+    fn()
+
+
+if __name__ == "__main__":
+    main()

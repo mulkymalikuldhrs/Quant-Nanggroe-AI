@@ -30,7 +30,6 @@ from quant_nanggroe.engine.strategy.strategies.momentum import MomentumStrategy
 from quant_nanggroe.engine.strategy.strategies.pairs_trading import PairsTradingStrategy
 from quant_nanggroe.engine.strategy.strategies.volatility_arbitrage import (
     VolatilityArbitrageStrategy,
-    GARCH11,
 )
 from quant_nanggroe.engine.strategy.strategies.statistical_arbitrage import (
     StatisticalArbitrageStrategy,
@@ -189,7 +188,6 @@ __all__ = [
     "MomentumStrategy",
     "PairsTradingStrategy",
     "VolatilityArbitrageStrategy",
-    "GARCH11",
     "StatisticalArbitrageStrategy",
     "MarketMakingStrategy",
     "RegimeBasedStrategy",

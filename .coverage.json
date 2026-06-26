@@ -1,0 +1,310 @@
+{
+  "meta": {
+    "tool": "trace_module_manual",
+    "overall_pct": 40.2,
+    "total_executed": 3799,
+    "total_lines": 9453
+  },
+  "files": {
+    "quant_nanggroe/data/cache.py": {
+      "executed": 28,
+      "total": 169,
+      "pct": 16.6
+    },
+    "quant_nanggroe/data/data_manager.py": {
+      "executed": 68,
+      "total": 182,
+      "pct": 37.4
+    },
+    "quant_nanggroe/data/monitor.py": {
+      "executed": 81,
+      "total": 134,
+      "pct": 60.4
+    },
+    "quant_nanggroe/data/survivorship.py": {
+      "executed": 70,
+      "total": 76,
+      "pct": 92.1
+    },
+    "quant_nanggroe/engine/backtest/benchmarks.py": {
+      "executed": 37,
+      "total": 65,
+      "pct": 56.9
+    },
+    "quant_nanggroe/engine/backtest/engine.py": {
+      "executed": 103,
+      "total": 442,
+      "pct": 23.3
+    },
+    "quant_nanggroe/engine/backtest/engines/base_engine.py": {
+      "executed": 102,
+      "total": 318,
+      "pct": 32.1
+    },
+    "quant_nanggroe/engine/backtest/engines/composite_engine.py": {
+      "executed": 47,
+      "total": 163,
+      "pct": 28.8
+    },
+    "quant_nanggroe/engine/backtest/engines/crypto_engine.py": {
+      "executed": 41,
+      "total": 107,
+      "pct": 38.3
+    },
+    "quant_nanggroe/engine/backtest/engines/equity_engine.py": {
+      "executed": 22,
+      "total": 109,
+      "pct": 20.2
+    },
+    "quant_nanggroe/engine/backtest/engines/forex_engine.py": {
+      "executed": 47,
+      "total": 105,
+      "pct": 44.8
+    },
+    "quant_nanggroe/engine/backtest/engines/futures_engine.py": {
+      "executed": 59,
+      "total": 112,
+      "pct": 52.7
+    },
+    "quant_nanggroe/engine/backtest/engines/market_detection.py": {
+      "executed": 22,
+      "total": 51,
+      "pct": 43.1
+    },
+    "quant_nanggroe/engine/backtest/execution.py": {
+      "executed": 38,
+      "total": 77,
+      "pct": 49.4
+    },
+    "quant_nanggroe/engine/backtest/loaders/base_loader.py": {
+      "executed": 38,
+      "total": 67,
+      "pct": 56.7
+    },
+    "quant_nanggroe/engine/backtest/loaders/ccxt_loader.py": {
+      "executed": 40,
+      "total": 126,
+      "pct": 31.7
+    },
+    "quant_nanggroe/engine/backtest/loaders/yfinance_loader.py": {
+      "executed": 50,
+      "total": 177,
+      "pct": 28.2
+    },
+    "quant_nanggroe/engine/backtest/metrics.py": {
+      "executed": 54,
+      "total": 217,
+      "pct": 24.9
+    },
+    "quant_nanggroe/engine/backtest/monte_carlo.py": {
+      "executed": 126,
+      "total": 455,
+      "pct": 27.7
+    },
+    "quant_nanggroe/engine/backtest/optimizers/base_optimizer.py": {
+      "executed": 23,
+      "total": 57,
+      "pct": 40.4
+    },
+    "quant_nanggroe/engine/backtest/optimizers/equal_volatility_optimizer.py": {
+      "executed": 18,
+      "total": 23,
+      "pct": 78.3
+    },
+    "quant_nanggroe/engine/backtest/optimizers/mean_variance_optimizer.py": {
+      "executed": 22,
+      "total": 57,
+      "pct": 38.6
+    },
+    "quant_nanggroe/engine/backtest/optimizers/risk_parity_optimizer.py": {
+      "executed": 15,
+      "total": 33,
+      "pct": 45.5
+    },
+    "quant_nanggroe/engine/backtest/portfolio.py": {
+      "executed": 65,
+      "total": 139,
+      "pct": 46.8
+    },
+    "quant_nanggroe/engine/backtest/psr.py": {
+      "executed": 142,
+      "total": 156,
+      "pct": 91.0
+    },
+    "quant_nanggroe/engine/backtest/report.py": {
+      "executed": 94,
+      "total": 639,
+      "pct": 14.7
+    },
+    "quant_nanggroe/engine/backtest/walk_forward.py": {
+      "executed": 86,
+      "total": 469,
+      "pct": 18.3
+    },
+    "quant_nanggroe/engine/regime/correlation_regime.py": {
+      "executed": 8,
+      "total": 35,
+      "pct": 22.9
+    },
+    "quant_nanggroe/engine/regime/ensemble.py": {
+      "executed": 14,
+      "total": 48,
+      "pct": 29.2
+    },
+    "quant_nanggroe/engine/regime/hmm_detector.py": {
+      "executed": 63,
+      "total": 269,
+      "pct": 23.4
+    },
+    "quant_nanggroe/engine/regime/macro_regime.py": {
+      "executed": 7,
+      "total": 30,
+      "pct": 23.3
+    },
+    "quant_nanggroe/engine/regime/regime_store.py": {
+      "executed": 18,
+      "total": 82,
+      "pct": 22.0
+    },
+    "quant_nanggroe/engine/regime/strategy_selector.py": {
+      "executed": 108,
+      "total": 152,
+      "pct": 71.1
+    },
+    "quant_nanggroe/engine/regime/volatility_clustering.py": {
+      "executed": 9,
+      "total": 46,
+      "pct": 19.6
+    },
+    "quant_nanggroe/engine/risk/checks.py": {
+      "executed": 180,
+      "total": 246,
+      "pct": 73.2
+    },
+    "quant_nanggroe/engine/risk/constants.py": {
+      "executed": 14,
+      "total": 13,
+      "pct": 107.7
+    },
+    "quant_nanggroe/engine/risk/kill_switch.py": {
+      "executed": 155,
+      "total": 267,
+      "pct": 58.1
+    },
+    "quant_nanggroe/engine/strategy/backtest_adapter.py": {
+      "executed": 60,
+      "total": 361,
+      "pct": 16.6
+    },
+    "quant_nanggroe/engine/strategy/parser.py": {
+      "executed": 24,
+      "total": 281,
+      "pct": 8.5
+    },
+    "quant_nanggroe/engine/strategy/regime_strategy.py": {
+      "executed": 21,
+      "total": 114,
+      "pct": 18.4
+    },
+    "quant_nanggroe/engine/strategy/schema.py": {
+      "executed": 245,
+      "total": 319,
+      "pct": 76.8
+    },
+    "quant_nanggroe/engine/strategy/strategies/base_strategy.py": {
+      "executed": 54,
+      "total": 91,
+      "pct": 59.3
+    },
+    "quant_nanggroe/engine/strategy/strategies/crypto_specific.py": {
+      "executed": 93,
+      "total": 335,
+      "pct": 27.8
+    },
+    "quant_nanggroe/engine/strategy/strategies/market_making.py": {
+      "executed": 97,
+      "total": 106,
+      "pct": 91.5
+    },
+    "quant_nanggroe/engine/strategy/strategies/mean_reversion.py": {
+      "executed": 100,
+      "total": 155,
+      "pct": 64.5
+    },
+    "quant_nanggroe/engine/strategy/strategies/momentum.py": {
+      "executed": 40,
+      "total": 149,
+      "pct": 26.8
+    },
+    "quant_nanggroe/engine/strategy/strategies/pairs_trading.py": {
+      "executed": 32,
+      "total": 130,
+      "pct": 24.6
+    },
+    "quant_nanggroe/engine/strategy/strategies/regime_based.py": {
+      "executed": 51,
+      "total": 201,
+      "pct": 25.4
+    },
+    "quant_nanggroe/engine/strategy/strategies/statistical_arbitrage.py": {
+      "executed": 94,
+      "total": 147,
+      "pct": 63.9
+    },
+    "quant_nanggroe/engine/strategy/strategies/volatility_arbitrage.py": {
+      "executed": 59,
+      "total": 145,
+      "pct": 40.7
+    },
+    "quant_nanggroe/security/audit.py": {
+      "executed": 73,
+      "total": 168,
+      "pct": 43.5
+    },
+    "quant_nanggroe/security/auth.py": {
+      "executed": 124,
+      "total": 163,
+      "pct": 76.1
+    },
+    "quant_nanggroe/security/credential_inference.py": {
+      "executed": 91,
+      "total": 214,
+      "pct": 42.5
+    },
+    "quant_nanggroe/security/keyvault.py": {
+      "executed": 24,
+      "total": 54,
+      "pct": 44.4
+    },
+    "quant_nanggroe/types/decisions.py": {
+      "executed": 54,
+      "total": 63,
+      "pct": 85.7
+    },
+    "quant_nanggroe/types/engine.py": {
+      "executed": 62,
+      "total": 53,
+      "pct": 117.0
+    },
+    "quant_nanggroe/types/market.py": {
+      "executed": 72,
+      "total": 67,
+      "pct": 107.5
+    },
+    "quant_nanggroe/types/orders.py": {
+      "executed": 68,
+      "total": 59,
+      "pct": 115.3
+    },
+    "quant_nanggroe/types/positions.py": {
+      "executed": 65,
+      "total": 89,
+      "pct": 73.0
+    },
+    "quant_nanggroe/types/risk.py": {
+      "executed": 82,
+      "total": 76,
+      "pct": 107.9
+    }
+  }
+}

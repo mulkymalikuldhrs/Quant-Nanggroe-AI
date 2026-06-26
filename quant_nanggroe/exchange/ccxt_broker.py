@@ -117,8 +117,8 @@ class CCXTBroker(ExchangeInterface):
 
         config = ExchangeConfig(
             exchange_id="binance",
-            api_key="...",
-            api_secret="...",
+            api_key="YOUR_API_KEY_HERE",
+            api_secret="YOUR_API_SECRET_HERE",
             sandbox=True,
         )
         broker = CCXTBroker(config)

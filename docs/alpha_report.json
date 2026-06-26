@@ -1,0 +1,621 @@
+{
+  "summary": {
+    "total_strategies": 8,
+    "passed": 6,
+    "failed": 2,
+    "pass_rate": 75.0,
+    "symbols_tested": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "XRP"
+    ],
+    "data_source": "synthetic"
+  },
+  "strategies": {
+    "CryptoSpecific": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": 0.5156,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 467,
+          "notes": [
+            "High skewness (1.40); Sharpe may mislead",
+            "Fat tails (kurtosis=12.77); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": 0.5156,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 467,
+          "notes": [
+            "High skewness (1.40); Sharpe may mislead",
+            "Fat tails (kurtosis=12.77); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": 0.5156,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 467,
+          "notes": [
+            "High skewness (1.40); Sharpe may mislead",
+            "Fat tails (kurtosis=12.77); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": 0.5156,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 467,
+          "notes": [
+            "High skewness (1.40); Sharpe may mislead",
+            "Fat tails (kurtosis=12.77); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": 0.5156,
+        "mean_psr": 1.0,
+        "mean_dsr": 1.0,
+        "survives_alpha_test": true,
+        "data_source": "synthetic"
+      },
+      "verdict": "PASS"
+    },
+    "MarketMaking": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": 0.1972,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 481,
+          "notes": [
+            "Fat tails (kurtosis=8.83); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": 0.1972,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 481,
+          "notes": [
+            "Fat tails (kurtosis=8.83); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": 0.1972,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 481,
+          "notes": [
+            "Fat tails (kurtosis=8.83); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": 0.1972,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 481,
+          "notes": [
+            "Fat tails (kurtosis=8.83); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": 0.1972,
+        "mean_psr": 1.0,
+        "mean_dsr": 1.0,
+        "survives_alpha_test": true,
+        "data_source": "synthetic"
+      },
+      "verdict": "PASS"
+    },
+    "MeanReversion": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": -2.637,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 478,
+          "notes": [
+            "High skewness (-8.31); Sharpe may mislead",
+            "Fat tails (kurtosis=88.53); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": -2.637,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 478,
+          "notes": [
+            "High skewness (-8.31); Sharpe may mislead",
+            "Fat tails (kurtosis=88.53); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": -2.637,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 478,
+          "notes": [
+            "High skewness (-8.31); Sharpe may mislead",
+            "Fat tails (kurtosis=88.53); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": -2.637,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 478,
+          "notes": [
+            "High skewness (-8.31); Sharpe may mislead",
+            "Fat tails (kurtosis=88.53); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": -2.637,
+        "mean_psr": 0.0,
+        "mean_dsr": 0.0,
+        "survives_alpha_test": false,
+        "data_source": "synthetic"
+      },
+      "verdict": "FAIL"
+    },
+    "Momentum": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": 0.8983,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 367,
+          "notes": [
+            "High skewness (3.63); Sharpe may mislead",
+            "Fat tails (kurtosis=54.18); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": 0.8983,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 367,
+          "notes": [
+            "High skewness (3.63); Sharpe may mislead",
+            "Fat tails (kurtosis=54.18); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": 0.8983,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 367,
+          "notes": [
+            "High skewness (3.63); Sharpe may mislead",
+            "Fat tails (kurtosis=54.18); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": 0.8983,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 367,
+          "notes": [
+            "High skewness (3.63); Sharpe may mislead",
+            "Fat tails (kurtosis=54.18); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": 0.8983,
+        "mean_psr": 1.0,
+        "mean_dsr": 1.0,
+        "survives_alpha_test": true,
+        "data_source": "synthetic"
+      },
+      "verdict": "PASS"
+    },
+    "PairsTrading": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": 0.4249,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 189,
+          "notes": [
+            "High skewness (4.49); Sharpe may mislead",
+            "Fat tails (kurtosis=39.09); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": 0.4249,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 189,
+          "notes": [
+            "High skewness (4.49); Sharpe may mislead",
+            "Fat tails (kurtosis=39.09); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": 0.4249,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 189,
+          "notes": [
+            "High skewness (4.49); Sharpe may mislead",
+            "Fat tails (kurtosis=39.09); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": 0.4249,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 189,
+          "notes": [
+            "High skewness (4.49); Sharpe may mislead",
+            "Fat tails (kurtosis=39.09); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": 0.4249,
+        "mean_psr": 1.0,
+        "mean_dsr": 1.0,
+        "survives_alpha_test": true,
+        "data_source": "synthetic"
+      },
+      "verdict": "PASS"
+    },
+    "RegimeBased": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": 2.2581,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 239,
+          "notes": [
+            "High skewness (1.75); Sharpe may mislead",
+            "Fat tails (kurtosis=20.00); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": 2.2581,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 239,
+          "notes": [
+            "High skewness (1.75); Sharpe may mislead",
+            "Fat tails (kurtosis=20.00); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": 2.2581,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 239,
+          "notes": [
+            "High skewness (1.75); Sharpe may mislead",
+            "Fat tails (kurtosis=20.00); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": 2.2581,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 239,
+          "notes": [
+            "High skewness (1.75); Sharpe may mislead",
+            "Fat tails (kurtosis=20.00); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": 2.2581,
+        "mean_psr": 1.0,
+        "mean_dsr": 1.0,
+        "survives_alpha_test": true,
+        "data_source": "synthetic"
+      },
+      "verdict": "PASS"
+    },
+    "StatisticalArbitrage": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": 0.606,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 417,
+          "notes": [
+            "High skewness (7.84); Sharpe may mislead",
+            "Fat tails (kurtosis=99.62); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": 0.606,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 417,
+          "notes": [
+            "High skewness (7.84); Sharpe may mislead",
+            "Fat tails (kurtosis=99.62); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": 0.606,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 417,
+          "notes": [
+            "High skewness (7.84); Sharpe may mislead",
+            "Fat tails (kurtosis=99.62); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": 0.606,
+          "psr": 1.0,
+          "psr_significant": true,
+          "dsr": 1.0,
+          "dsr_significant": true,
+          "num_trades": 417,
+          "notes": [
+            "High skewness (7.84); Sharpe may mislead",
+            "Fat tails (kurtosis=99.62); expect tail risk",
+            "PSR=1.000 (>0.95): statistically significant alpha (SR>0.00)",
+            "DSR=1.000: survives multiple-testing correction (8 trials)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": 0.606,
+        "mean_psr": 1.0,
+        "mean_dsr": 1.0,
+        "survives_alpha_test": true,
+        "data_source": "synthetic"
+      },
+      "verdict": "PASS"
+    },
+    "VolatilityArbitrage": {
+      "symbols": {
+        "BTC": {
+          "symbol": "BTC",
+          "n": 500,
+          "sharpe": -0.7164,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 330,
+          "notes": [
+            "High skewness (-2.66); Sharpe may mislead",
+            "Fat tails (kurtosis=79.47); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        },
+        "ETH": {
+          "symbol": "ETH",
+          "n": 500,
+          "sharpe": -0.7164,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 330,
+          "notes": [
+            "High skewness (-2.66); Sharpe may mislead",
+            "Fat tails (kurtosis=79.47); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        },
+        "SOL": {
+          "symbol": "SOL",
+          "n": 500,
+          "sharpe": -0.7164,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 330,
+          "notes": [
+            "High skewness (-2.66); Sharpe may mislead",
+            "Fat tails (kurtosis=79.47); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        },
+        "XRP": {
+          "symbol": "XRP",
+          "n": 500,
+          "sharpe": -0.7164,
+          "psr": 0.0,
+          "psr_significant": false,
+          "dsr": 0.0,
+          "dsr_significant": false,
+          "num_trades": 330,
+          "notes": [
+            "High skewness (-2.66); Sharpe may mislead",
+            "Fat tails (kurtosis=79.47); expect tail risk",
+            "PSR=0.000 (\u22640.95): cannot reject SR<=0.00",
+            "DSR=0.000: fails multiple-testing correction (expected max SR by chance=0.000)"
+          ]
+        }
+      },
+      "aggregate": {
+        "mean_sharpe": -0.7164,
+        "mean_psr": 0.0,
+        "mean_dsr": 0.0,
+        "survives_alpha_test": false,
+        "data_source": "synthetic"
+      },
+      "verdict": "FAIL"
+    }
+  }
+}

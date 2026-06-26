@@ -56,8 +56,8 @@ def mt5_config():
     """Create an ExchangeConfig for MT5."""
     return ExchangeConfig(
         exchange_id="mt5",
-        api_key="12345678",
-        api_secret="password",
+        api_key="YOUR_API_KEY_HERE",
+        api_secret="YOUR_API_SECRET_HERE",
         options={"server": "MetaQuotes-Demo"},
     )
 

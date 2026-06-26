@@ -57,6 +57,12 @@ def __getattr__(name: str):
         "LLMProvider": ".llm_router",
         "ModelTier": ".llm_router",
         "get_llm_router": ".llm_router",
+        # Microstructure
+        "MicrostructureAnalyzer": ".microstructure",
+        "MicrostructureMetrics": ".microstructure",
+        "VPINCalculator": ".microstructure",
+        "KyleLambdaCalculator": ".microstructure",
+        "AmihudCalculator": ".microstructure",
     }
     if name in _lazy_imports:
         import importlib
@@ -83,4 +89,7 @@ __all__ = [
     "DrawdownMonitor", "CorrelationMonitor", "RiskCheckGate", "KillSwitch",
     # LLM Router
     "LLMRouter", "LLMProvider", "ModelTier", "get_llm_router",
+    # Microstructure
+    "MicrostructureAnalyzer", "MicrostructureMetrics",
+    "VPINCalculator", "KyleLambdaCalculator", "AmihudCalculator",
 ]

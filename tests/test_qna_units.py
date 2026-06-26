@@ -1892,7 +1892,7 @@ class TestExecutionBase(unittest.TestCase):
     def test_broker_abc(self):
         try:
             from quant_nanggroe.engine.execution.base import Broker
-            self.assertTrue(hasattr(Broker, "execute_order"))
+            self.assertTrue(hasattr(Broker, "submit_order"))
             self.assertTrue(hasattr(Broker, "cancel_order"))
         except ImportError as e:
             self.skipTest(str(e))

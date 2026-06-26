@@ -179,8 +179,8 @@ class CredentialInference:
         # Validate credentials
         check = inference.validate_credentials(
             exchange_type=ExchangeType.ALPACA,
-            api_key="PKABCD1234...",
-            api_secret="...",
+            api_key="YOUR_API_KEY_HERE",
+            api_secret="YOUR_API_SECRET_HERE",
         )
         assert check.is_complete
     """

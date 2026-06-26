@@ -161,7 +161,7 @@ class MonteCarloSimulator:
         Returns:
             MonteCarloResult with confidence intervals.
         """
-        if len(returns) == 0:
+        if len(returns) < 2:
             return self._empty_result(metric)
 
         rng = np.random.default_rng(self.random_seed)

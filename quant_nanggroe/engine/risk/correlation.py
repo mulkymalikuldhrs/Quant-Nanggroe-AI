@@ -14,12 +14,18 @@ Provides:
 
 from __future__ import annotations
 
+import json
 import logging
+from collections import deque
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
+from scipy.stats import spearmanr
+
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +170,7 @@ class CorrelationMonitor:
         self,
         returns: pd.DataFrame,
         window: Optional[int] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Detect market stress via correlation analysis.
 
         During stress, correlations tend to increase (everything falls together).
@@ -199,3 +205,201 @@ class CorrelationMonitor:
             "max_pairwise": round(float(corr.values[mask].max()), 4),
             "min_pairwise": round(float(corr.values[mask].min()), 4),
         }
+
+
+class StrategyCorrelationMonitor:
+    """Monitors pairwise strategy return correlations to detect rank collapse (herding).
+
+    Tracks trailing returns for all registered strategies, computes pairwise
+    Spearman rank correlations, and auto-activates the kill switch when the
+    mean correlation exceeds the herding threshold.
+
+    Parameters
+    ----------
+    kill_switch : KillSwitch, optional
+        Kill switch instance to trigger on herding. If None, only logs warnings.
+    window : int
+        Trailing window size for return history (default 30).
+    threshold : float
+        Mean Spearman correlation threshold for herding detection (default 0.85).
+    state_dir : str
+        Directory for persisting correlation state as JSON (default "paper_state").
+    """
+
+    def __init__(
+        self,
+        kill_switch: Optional[KillSwitch] = None,
+        window: int = 30,
+        threshold: float = 0.85,
+        state_dir: str = "paper_state",
+    ) -> None:
+        self.kill_switch = kill_switch
+        self.window = window
+        self.threshold = threshold
+        self.state_dir = Path(state_dir)
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+
+        # strategy_name -> deque of trailing returns (FIFO, maxlen=window)
+        self._trailing_returns: Dict[str, deque[float]] = {}
+
+        # One-shot flag: prevent repeated kill switch firings until reset
+        self._fired: bool = False
+
+        self.load_state(self.state_dir / "correlation_state.json")
+
+    # ── Public API ─────────────────────────────────────────────────────────
+
+    def update(self, strategy_name: str, returns: np.ndarray) -> None:
+        """Feed latest returns for a strategy. Stores trailing window."""
+        if strategy_name not in self._trailing_returns:
+            self._trailing_returns[strategy_name] = deque(maxlen=self.window)
+
+        for r in np.atleast_1d(returns):
+            self._trailing_returns[strategy_name].append(float(r))
+
+    def compute_correlations(self) -> Dict[str, Dict[str, float]]:
+        """Pairwise Spearman rank correlations between all tracked strategies.
+
+        Returns
+        -------
+        Dict[str, Dict[str, float]]
+            Nested dict: {strategy_a: {strategy_b: correlation}}.
+            Empty dict when fewer than 2 strategies are tracked.
+        """
+        if len(self._trailing_returns) < 2:
+            return {}
+
+        strategies = list(self._trailing_returns.keys())
+        correlations: Dict[str, Dict[str, float]] = {}
+
+        for i, s1 in enumerate(strategies):
+            correlations[s1] = {}
+            arr1 = np.array(list(self._trailing_returns[s1]))
+
+            for s2 in strategies[i + 1:]:
+                arr2 = np.array(list(self._trailing_returns[s2]))
+
+                # Need at least 3 points for meaningful Spearman
+                if len(arr1) < 3 or len(arr2) < 3:
+                    continue
+
+                n = min(len(arr1), len(arr2))
+                try:
+                    rho, _ = spearmanr(arr1[-n:], arr2[-n:])
+                    val = round(float(rho), 4)
+                    correlations[s1][s2] = val
+                except Exception:
+                    continue
+
+        return correlations
+
+    def check_and_act(self) -> Dict[str, Any]:
+        """Check for herding and activate kill switch if threshold breached.
+
+        Returns
+        -------
+        Dict
+            Current status dictionary from ``get_status()``.
+        """
+        status = self.get_status()
+
+        if status["num_strategies"] < 2:
+            return status
+
+        avg_corr = status["avg_correlation"]
+        if avg_corr is None:
+            return status
+
+        if avg_corr > self.threshold:
+            if self.kill_switch is not None and not self._fired:
+                self.kill_switch.activate(
+                    level=KillSwitchLevel.LEVEL_1,
+                    trigger=KillSwitchTrigger.MANUAL,
+                    reason=(
+                        f"correlation_herding: Mean rank correlation "
+                        f"{avg_corr:.3f} > threshold {self.threshold}"
+                    ),
+                    auto_activated=True,
+                )
+                self._fired = True
+                logger.critical(
+                    "Correlation herding detected: avg=%.3f, threshold=%.3f",
+                    avg_corr, self.threshold,
+                )
+            elif self.kill_switch is None:
+                logger.warning(
+                    "Correlation herding detected (avg=%.3f) but no kill switch installed",
+                    avg_corr,
+                )
+
+        self.save_state(self.state_dir / "correlation_state.json")
+        return status
+
+    def get_status(self) -> Dict[str, Any]:
+        """Current correlation matrix summary, avg, max, disabled strategies.
+
+        Returns
+        -------
+        Dict
+            Keys: num_strategies, avg_correlation, max_correlation, matrix,
+            threshold, kill_switch_fired, window.
+        """
+        corr = self.compute_correlations()
+        num_strategies = len(self._trailing_returns)
+
+        values = []
+        for s1, pairs in corr.items():
+            for s2, val in pairs.items():
+                if s1 != s2:
+                    values.append(val)
+
+        avg_corr = float(np.mean(values)) if values else None
+        max_corr = float(np.max(values)) if values else None
+
+        return {
+            "num_strategies": num_strategies,
+            "avg_correlation": avg_corr,
+            "max_correlation": max_corr,
+            "matrix": corr,
+            "threshold": self.threshold,
+            "kill_switch_fired": self._fired,
+            "window": self.window,
+        }
+
+    # ── Persistence ─────────────────────────────────────────────────────
+
+    def load_state(self, path: Path) -> None:
+        """Load persisted trailing returns from JSON file."""
+        try:
+            if path.exists():
+                with open(path) as f:
+                    data = json.load(f)
+                for strategy, returns in data.get("trailing_returns", {}).items():
+                    self._trailing_returns[strategy] = deque(
+                        returns, maxlen=self.window,
+                    )
+                self._fired = data.get("kill_switch_fired", False)
+                logger.info(
+                    "Loaded correlation state for %d strategies",
+                    len(self._trailing_returns),
+                )
+        except Exception as e:
+            logger.warning("Failed to load correlation state: %s", e)
+
+    def save_state(self, path: Path) -> None:
+        """Persist trailing returns to JSON file."""
+        try:
+            data: Dict[str, Any] = {
+                "trailing_returns": {
+                    s: list(dq) for s, dq in self._trailing_returns.items()
+                },
+                "kill_switch_fired": self._fired,
+                "window": self.window,
+                "threshold": self.threshold,
+            }
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
+            logger.debug("Saved correlation state to %s", path)
+        except Exception as e:
+            logger.warning("Failed to save correlation state: %s", e)

@@ -138,7 +138,16 @@ class WalkForwardAnalyzer:
         signals: pd.DataFrame,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Run walk-forward analysis.
+        """Run walk-forward analysis on pre-computed signals.
+
+        .. warning::
+
+            This method accepts pre-computed signals — it does **not** re-fit
+            the strategy on each fold. Use only for strategies that require
+            no model fitting (e.g., simple technical indicators).
+            For strategies with fitted models (cointegration, GARCH, HMM, ML),
+            use :meth:`analyze_strategy` instead, which re-fits per fold and
+            eliminates lookahead bias.
 
         Args:
             prices: Price data with DatetimeIndex.
@@ -193,14 +202,18 @@ class WalkForwardAnalyzer:
             if test_end > n_bars:
                 break
 
+            # Apply purge gap: remove bars from end of training data
+            # adjacent to the test fold (prevents information leakage)
+            effective_train_end = train_end - self.purge_gap if self.purge_gap > 0 else train_end
+
             # Validate minimum observations
-            if (train_end - train_start) < self.min_observations:
-                start += self.test_window
+            if (effective_train_end - train_start) < self.min_observations:
+                start += self.test_window + self.embargo
                 continue
 
-            # Extract data slices
-            train_prices = prices.iloc[train_start:train_end]
-            train_signals = signals.iloc[train_start:train_end]
+            # Extract data slices (purged training data)
+            train_prices = prices.iloc[train_start:effective_train_end]
+            train_signals = signals.iloc[train_start:effective_train_end]
             test_prices = prices.iloc[test_start:test_end]
             test_signals = signals.iloc[test_start:test_end]
 
@@ -240,8 +253,8 @@ class WalkForwardAnalyzer:
             if len(oos_eq) > 0:
                 oos_equity_parts.append(oos_eq)
 
-            # Roll forward
-            start += self.test_window
+            # Roll forward (skip embargo bars to prevent leakage)
+            start += self.test_window + self.embargo
 
         # Calculate aggregate statistics
         aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes)
@@ -259,6 +272,180 @@ class WalkForwardAnalyzer:
             "mode": self.mode,
             "oos_equity_curve": oos_equity_curve,
         }
+
+    def analyze_strategy(
+        self,
+        prices: pd.DataFrame,
+        strategy_class: type,
+        strategy_params: Optional[Dict[str, Any]] = None,
+        purge_gap: int = 10,
+        embargo: int = 5,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """Run walk-forward with per-fold strategy re-fitting.
+
+        Unlike :meth:`analyze`, this method re-instantiates and re-fits the
+        strategy on each training fold, eliminating lookahead bias from
+        pre-computed signals.
+
+        Args:
+            prices: Price data with DatetimeIndex.
+            strategy_class: Strategy class (subclass of BaseStrategy).
+            strategy_params: Parameters to pass to strategy constructor.
+            purge_gap: Bars to purge between train/test boundaries.
+            embargo: Bars to embargo after test period.
+            **kwargs: Additional arguments passed to engine.run().
+
+        Returns:
+            Same structure as :meth:`analyze`.
+        """
+        params = strategy_params or {}
+        n_bars = len(prices)
+        total_window = self.train_window + self.test_window + purge_gap
+
+        if n_bars < total_window:
+            logger.warning(
+                "Insufficient data for walk-forward: %d bars < %d required",
+                n_bars, total_window,
+            )
+            return {
+                "windows": [], "aggregate": {}, "degradation_stats": {},
+                "stability": WalkForwardStability(), "mode": self.mode,
+                "oos_equity_curve": pd.Series(dtype=float),
+            }
+
+        windows: List[WalkForwardResult] = []
+        oos_returns: List[float] = []
+        oos_sharpes: List[float] = []
+        oos_equity_parts: List[pd.Series] = []
+
+        start = 0
+        fold = 0
+        while start + total_window <= n_bars:
+            fold += 1
+            if self.mode == "anchored":
+                train_end = start + self.train_window
+                train_start = 0
+            else:
+                train_start = start
+                train_end = start + self.train_window
+
+            test_start = train_end + purge_gap
+            test_end = test_start + self.test_window
+
+            if test_end > n_bars:
+                break
+
+            effective_train_end = train_end - purge_gap if purge_gap > 0 else train_end
+            if (effective_train_end - train_start) < self.min_observations:
+                start += self.test_window + embargo
+                continue
+
+            train_prices = prices.iloc[train_start:effective_train_end]
+            test_prices = prices.iloc[test_start:test_end]
+
+            logger.info(
+                "Fold %d: train [%d:%d] test [%d:%d]",
+                fold, train_start, effective_train_end, test_start, test_end,
+            )
+
+            try:
+                strategy = strategy_class(**params)
+                train_signals = self._generate_strategy_signals(strategy, train_prices)
+                test_signals = self._generate_strategy_signals(strategy, test_prices)
+            except Exception as e:
+                logger.warning("Fold %d strategy execution failed: %s", fold, e)
+                start += self.test_window + embargo
+                continue
+
+            if train_signals is None or train_signals.empty:
+                logger.warning("Fold %d: no training signals generated", fold)
+                start += self.test_window + embargo
+                continue
+
+            is_result = self.engine.run(train_prices, train_signals, **kwargs)
+            is_metrics = is_result.get("metrics", {})
+
+            if test_signals is not None and not test_signals.empty:
+                oos_result = self.engine.run(test_prices, test_signals, **kwargs)
+                oos_metrics = oos_result.get("metrics", {})
+                oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
+                if len(oos_eq) > 0:
+                    oos_equity_parts.append(oos_eq)
+            else:
+                oos_metrics = {"sharpe_ratio": 0.0, "total_return": 0.0, "max_drawdown": 0.0}
+
+            is_sharpe = is_metrics.get("sharpe_ratio", 0.0)
+            oos_sharpe = oos_metrics.get("sharpe_ratio", 0.0)
+            degradation = oos_sharpe / is_sharpe if abs(is_sharpe) > 1e-10 else 0.0
+
+            wf_result = WalkForwardResult(
+                train_start=train_prices.index[0],
+                train_end=train_prices.index[-1],
+                test_start=test_prices.index[0],
+                test_end=test_prices.index[-1],
+                in_sample_return=is_metrics.get("total_return", 0.0),
+                out_of_sample_return=oos_metrics.get("total_return", 0.0),
+                in_sample_sharpe=is_sharpe,
+                out_of_sample_sharpe=oos_sharpe,
+                in_sample_max_dd=is_metrics.get("max_drawdown", 0.0),
+                out_of_sample_max_dd=oos_metrics.get("max_drawdown", 0.0),
+                degradation_ratio=degradation,
+            )
+
+            windows.append(wf_result)
+            oos_returns.append(oos_metrics.get("total_return", 0.0))
+            oos_sharpes.append(oos_sharpe)
+            start += self.test_window + embargo
+
+        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes)
+        degradation_stats = self._calculate_degradation_stats(windows)
+        stability = self._calculate_stability(windows, oos_sharpes, oos_returns)
+        oos_equity_curve = self._combine_oos_equity(oos_equity_parts)
+
+        return {
+            "windows": windows,
+            "aggregate": aggregate,
+            "degradation_stats": degradation_stats,
+            "stability": stability,
+            "mode": self.mode,
+            "oos_equity_curve": oos_equity_curve,
+            "n_folds": fold,
+        }
+
+    @staticmethod
+    def _generate_strategy_signals(
+        strategy: Any,
+        prices: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """Generate signals from a strategy instance for a price slice.
+
+        Calls ``generate_signal`` bar-by-bar to avoid lookahead bias,
+        then assembles the results into a single-column signal DataFrame.
+
+        Args:
+            strategy: BaseStrategy instance.
+            prices: Price DataFrame for the fold.
+
+        Returns:
+            Signal DataFrame with same index as prices, or None on failure.
+        """
+        signals = []
+        required_cols = strategy.required_columns()
+        warmup = strategy.warmup_period()
+
+        for i in range(len(prices)):
+            data_slice = prices.iloc[max(0, i - warmup):i + 1]
+            if len(data_slice) < warmup:
+                signals.append(0.0)
+                continue
+            try:
+                signal = strategy.generate_signal(data_slice)
+                signals.append(signal.signal if signal is not None else 0.0)
+            except Exception:
+                signals.append(0.0)
+
+        return pd.DataFrame({"signal": signals}, index=prices.index)
 
     def _analyze_cpcv(
         self,

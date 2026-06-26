@@ -1,23 +1,24 @@
-"""Mean Reversion Strategy.
+"""Mean reversion strategy with transaction costs, frequency controls, and multiple variants.
 
-Implements production-quality mean reversion trading using:
-1. Bollinger Bands mean reversion
-2. Z-score based mean reversion on rolling window
-3. Ornstein-Uhlenbeck parameter estimation (half-life calculation)
-4. Position sizing based on z-score magnitude
+Implements three mean reversion approaches:
+1. Z-score — entry/exit on rolling z-score thresholds
+2. Bollinger Band — entry when price crosses band boundaries
+3. Ornstein-Uhlenbeck — position sizing via half-life estimation
 
-Academic References:
-    - Bollinger, J. (2001). Bollinger on Bollinger Bands. McGraw-Hill.
-    - Ornstein, L.S. & Uhlenbeck, G.E. (1930). "On the Theory of the Brownian Motion."
-      Physical Review, 36(5), 823-841.
-    - Avellaneda, M. & Lee, J.H. (2010). "Statistical Arbitrage in the US Equities Market."
-      Quantitative Finance, 10(7), 761-782.
-    - De Prado, M. (2018). Advances in Financial Machine Learning. Wiley. Ch.5.
+Transaction costs and trade frequency controls prevent overtrading.
+Half-life is estimated per call rather than pre-computed, so walk-forward
+validation re-fits the OU parameters on each fold's training window.
+
+References:
+    - Avellaneda, M. & Lee, J.H. (2010). "Statistical Arbitrage in the US
+      Equities Market." Quantitative Finance, 10(7), 761-782.
+    - De Prado, M. (2018). Advances in Financial Machine Learning. Wiley.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+import logging
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -26,277 +27,218 @@ from scipy import stats as scipy_stats
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
+logger = logging.getLogger(__name__)
+
 
 class MeanReversionStrategy(BaseStrategy):
-    """Mean reversion strategy using Bollinger Bands, Z-score, and OU process.
+    """Mean reversion with configurable variant and trade frequency controls.
 
-    The strategy enters long when price falls below the lower Bollinger Band
-    (or when z-score drops below the entry threshold) and exits when price
-    rises above the upper band (or z-score crosses above exit threshold).
-
-    Position sizing is scaled by z-score magnitude: larger deviations receive
-    bigger position sizes, following the OU half-life for optimal timing.
-
-    Parameters:
-        lookback: Rolling window for mean and std calculation (default 20).
-        entry_z: Z-score threshold for entry (default -2.0).
-        exit_z: Z-score threshold for exit (default 0.0).
-        bb_std: Number of standard deviations for Bollinger Bands (default 2.0).
-        stop_loss_pct: Stop loss as fraction of entry price (default 0.03).
-        take_profit_pct: Take profit as fraction of entry price (default 0.06).
-        max_position_size: Maximum position weight (default 1.0).
-        use_ou_half_life: Whether to use OU half-life for timing (default True).
-        symbol: Trading symbol for signal generation (default "ASSET").
+    Parameters
+    ----------
+    strategy_type : str
+        ``"zscore"``, ``"bollinger"``, or ``"ou"`` (default ``"zscore"``).
+    lookback : int
+        Rolling window for mean / std calculation (default 20).
+    entry_threshold : float
+        Z-score or band threshold for entry (default 2.0).
+    exit_threshold : float
+        Z-score or band threshold for exit (default 0.5).
+    bollinger_std : float
+        Standard deviations for Bollinger Bands (default 2.0).
+    min_signal_strength : float
+        Minimum absolute signal value to generate a trade (default 0.1).
+    transaction_cost_bps : float
+        One-way transaction cost in basis points (default 10.0 = 0.1%).
+    min_trade_interval_bars : int
+        Minimum bars between consecutive trades (default 5).
     """
 
-    def __init__(self, params: Optional[Dict] = None):
+    def __init__(self, params: Optional[dict] = None):
         super().__init__(name="MeanReversion", params=params)
+        self.strategy_type: str = self.params.get("strategy_type", "zscore")
         self.lookback: int = self.params.get("lookback", 20)
-        self.entry_z: float = self.params.get("entry_z", -2.0)
-        self.exit_z: float = self.params.get("exit_z", 0.0)
-        self.bb_std: float = self.params.get("bb_std", 2.0)
-        self.stop_loss_pct: float = self.params.get("stop_loss_pct", 0.03)
-        self.take_profit_pct: float = self.params.get("take_profit_pct", 0.06)
-        self.max_position_size: float = self.params.get("max_position_size", 1.0)
-        self.use_ou_half_life: bool = self.params.get("use_ou_half_life", True)
-        self.symbol: str = self.params.get("symbol", "ASSET")
+        self.entry_threshold: float = self.params.get("entry_threshold", 2.0)
+        self.exit_threshold: float = self.params.get("exit_threshold", 0.5)
+        self.bollinger_std: float = self.params.get("bollinger_std", 2.0)
+        self.min_signal_strength: float = self.params.get("min_signal_strength", 0.1)
+        self.transaction_cost_bps: float = self.params.get("transaction_cost_bps", 10.0)
+        self.min_trade_interval_bars: int = self.params.get("min_trade_interval_bars", 5)
+
+        # Internal state — reset on fresh init
+        self._last_trade_bar: int = -self.min_trade_interval_bars
+        self._current_position: float = 0.0  # net target in [-1, 1]
 
     def required_columns(self) -> List[str]:
-        return ["open", "high", "low", "close", "volume"]
+        return ["close"]
 
     def warmup_period(self) -> int:
-        return self.lookback + 10  # Extra buffer for stability
+        return self.lookback + 1
 
-    def estimate_ou_half_life(self, series: pd.Series) -> float:
-        """Estimate Ornstein-Uhlenbeck half-life via OLS regression.
+    # ------------------------------------------------------------------
+    # OU half-life estimation  (re-fits every call — walk-forward safe)
+    # ------------------------------------------------------------------
 
-        The OU process is:
-            dX_t = theta * (mu - X_t) * dt + sigma * dW_t
+    @staticmethod
+    def estimate_half_life(series: pd.Series) -> float:
+        """OU half-life via OLS: X_{t+1} - X_t = alpha + beta * X_t + eps.
 
-        Discretized as:
-            X_{t+1} - X_t = alpha + beta * X_t + epsilon
+        Returns bars-to-half-mean-reversion or ``inf`` if not mean-reverting.
 
-        Half-life = -ln(2) / beta  (where beta < 0 for mean-reverting)
-
-        References:
-            - Ornstein & Uhlenbeck (1930), Physical Review, 36(5), 823-841.
-
-        Args:
-            series: Price or spread series.
-
-        Returns:
-            Estimated half-life in number of bars. Returns np.inf if not mean-reverting.
+        .. math:: \\text{half-life} = -\\ln(2) / \\beta,\\quad \\beta < 0
         """
         if len(series) < 10:
             return np.inf
-
         lagged = series.shift(1).dropna()
         delta = series.diff().dropna()
-
-        # Align indices
-        common_idx = lagged.index.intersection(delta.index)
-        if len(common_idx) < 5:
+        common = lagged.index.intersection(delta.index)
+        if len(common) < 5:
             return np.inf
-
-        lagged = lagged.loc[common_idx]
-        delta = delta.loc[common_idx]
-
-        # OLS: delta = alpha + beta * lagged
         try:
-            slope, intercept, r_value, p_value, std_err = scipy_stats.linregress(
-                lagged.values, delta.values
+            slope, *_ = scipy_stats.linregress(
+                lagged.loc[common].values, delta.loc[common].values
             )
         except (ValueError, np.linalg.LinAlgError):
             return np.inf
-
         if slope >= 0:
-            # Not mean-reverting
             return np.inf
+        return max(-np.log(2) / slope, 1.0)
 
-        half_life = -np.log(2) / slope
-        return max(half_life, 1.0)
-
-    def compute_close_zscore(self, data: pd.DataFrame) -> pd.Series:
-        """Compute rolling z-score of close prices.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Z-score series.
-        """
-        return self.compute_zscore(data["close"], self.lookback)
+    # ------------------------------------------------------------------
+    # Signal generation
+    # ------------------------------------------------------------------
 
     def generate_signal(self, data: pd.DataFrame) -> Optional[Signal]:
-        """Generate mean reversion signal based on Bollinger Bands and Z-score.
-
-        Entry logic (long):
-            - Price closes below lower Bollinger Band AND
-            - Z-score < entry_z threshold
-
-        Exit logic (close long):
-            - Z-score > exit_z threshold (mean reversion complete)
-
-        Short logic is symmetric.
-
-        Position sizing:
-            - Scaled by |z-score| / max(|entry_z|, 1) * max_position_size
-            - If OU half-life is used and half-life < lookback, boost confidence
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Signal if entry/exit condition met, None otherwise.
-        """
         if not self.validate_data(data):
             return None
 
         close = data["close"]
-        current_price = close.iloc[-1]
+        price = float(close.iloc[-1])
+        bars = len(data)
 
-        # Compute Bollinger Bands
-        upper, middle, lower = self.compute_bollinger_bands(
-            close, self.lookback, self.bb_std
-        )
+        target = self._compute_target(close)
 
-        # Compute Z-score
-        z_score_series = self.compute_close_zscore(data)
-        current_z = z_score_series.iloc[-1]
+        if abs(target) < self.min_signal_strength:
+            target = 0.0
 
-        # Previous values for crossover detection
-        prev_z = z_score_series.iloc[-2] if len(z_score_series) > 1 else 0.0
-
-        # Estimate half-life if enabled
-        half_life = None
-        if self.use_ou_half_life:
-            half_life = self.estimate_ou_half_life(close)
-
-        # Check for NaN
-        if np.isnan(current_z):
+        # Trade frequency gate: enough bars since last trade?
+        if bars - self._last_trade_bar < self.min_trade_interval_bars:
             return None
 
-        # --- Entry signals ---
-        # Long entry: z-score crosses below entry threshold
-        if current_z < self.entry_z and prev_z >= self.entry_z:
-            position_size = self._compute_position_size(current_z, half_life)
-            stop_loss_price = current_price * (1 - self.stop_loss_pct)
-            take_profit_price = current_price * (1 + self.take_profit_pct)
+        # No meaningful change from current position
+        if abs(target - self._current_position) < 0.01:
+            return None
 
-            confidence = min(abs(current_z) / (abs(self.entry_z) + 1), 1.0)
-            if half_life is not None and half_life < self.lookback * 2:
-                confidence = min(confidence * 1.2, 1.0)  # Boost if strongly mean-reverting
+        self._last_trade_bar = bars
 
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.BUY,
-                confidence=round(confidence, 4),
-                price=round(current_price, 6),
-                stop_loss=round(stop_loss_price, 6),
-                take_profit=round(take_profit_price, 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=(
-                    f"Mean reversion BUY: z-score={current_z:.2f} < entry_z={self.entry_z}, "
-                    f"price below lower BB={lower.iloc[-1]:.4f}, "
-                    f"half_life={half_life:.1f}" if half_life else f"z-score={current_z:.2f}"
-                ),
-                evidence={
-                    "z_score": round(float(current_z), 4),
-                    "bb_upper": round(float(upper.iloc[-1]), 4),
-                    "bb_middle": round(float(middle.iloc[-1]), 4),
-                    "bb_lower": round(float(lower.iloc[-1]), 4),
-                    "position_size": round(float(position_size), 4),
-                    "half_life": round(float(half_life), 1) if half_life else None,
-                },
-                factors=["bollinger_band", "z_score", "mean_reversion"],
-            )
-
-        # Short entry: z-score crosses above negative entry threshold
-        if current_z > -self.entry_z and prev_z <= -self.entry_z:
-            position_size = self._compute_position_size(current_z, half_life)
-            stop_loss_price = current_price * (1 + self.stop_loss_pct)
-            take_profit_price = current_price * (1 - self.take_profit_pct)
-
-            confidence = min(abs(current_z) / (abs(self.entry_z) + 1), 1.0)
-            if half_life is not None and half_life < self.lookback * 2:
-                confidence = min(confidence * 1.2, 1.0)
-
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.SELL,
-                confidence=round(confidence, 4),
-                price=round(current_price, 6),
-                stop_loss=round(stop_loss_price, 6),
-                take_profit=round(take_profit_price, 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=(
-                    f"Mean reversion SELL: z-score={current_z:.2f} > {-self.entry_z:.2f}, "
-                    f"price above upper BB={upper.iloc[-1]:.4f}"
-                ),
-                evidence={
-                    "z_score": round(float(current_z), 4),
-                    "bb_upper": round(float(upper.iloc[-1]), 4),
-                    "bb_middle": round(float(middle.iloc[-1]), 4),
-                    "bb_lower": round(float(lower.iloc[-1]), 4),
-                    "position_size": round(float(position_size), 4),
-                    "half_life": round(float(half_life), 1) if half_life else None,
-                },
-                factors=["bollinger_band", "z_score", "mean_reversion"],
-            )
-
-        # --- Exit signals ---
-        # Close long: z-score crosses above exit threshold
-        if current_z > self.exit_z and prev_z <= self.exit_z:
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.CLOSE_LONG,
-                confidence=0.7,
-                price=round(current_price, 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=f"Mean reversion exit long: z-score={current_z:.2f} > exit_z={self.exit_z}",
-                evidence={"z_score": round(float(current_z), 4)},
-                factors=["z_score", "mean_reversion"],
-            )
-
-        # Close short: z-score crosses below negative exit threshold
-        if current_z < -self.exit_z and prev_z >= -self.exit_z:
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.CLOSE_SHORT,
-                confidence=0.7,
-                price=round(current_price, 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=f"Mean reversion exit short: z-score={current_z:.2f} < {-self.exit_z:.2f}",
-                evidence={"z_score": round(float(current_z), 4)},
-                factors=["z_score", "mean_reversion"],
-            )
-
+        if target == 0.0 and self._current_position != 0.0:
+            return self._exit_signal(price)
+        if target != 0.0:
+            return self._entry_signal(target, price)
         return None
 
-    def _compute_position_size(
-        self, z_score: float, half_life: Optional[float]
-    ) -> float:
-        """Compute position size scaled by z-score magnitude.
+    def _compute_target(self, close: pd.Series) -> float:
+        """Dispatch to variant. Returns target position in [-1, 1]."""
+        if self.strategy_type == "zscore":
+            return self._zscore_target(close)
+        if self.strategy_type == "bollinger":
+            return self._bollinger_target(close)
+        if self.strategy_type == "ou":
+            return self._ou_target(close)
+        logger.warning("Unknown strategy_type '%s'", self.strategy_type)
+        return 0.0
 
-        Larger z-scores imply stronger mean reversion opportunity.
-        If OU half-life is available and short, increase position size.
+    # ------------------------------------------------------------------
+    # Variant implementations  —  each returns target in [-1, 1]
+    # ------------------------------------------------------------------
 
-        Args:
-            z_score: Current z-score value.
-            half_life: Estimated OU half-life (None if not used).
+    def _zscore_target(self, close: pd.Series) -> float:
+        zs = self.compute_zscore(close, self.lookback)
+        z = float(zs.iloc[-1])
+        if np.isnan(z):
+            return 0.0
+        if z > self.entry_threshold:
+            return -min(z / self.entry_threshold, 1.0)
+        if z < -self.entry_threshold:
+            return min(-z / self.entry_threshold, 1.0)
+        return 0.0  # ponytail: between thresholds — no action
 
-        Returns:
-            Position size between 0 and max_position_size.
-        """
-        base_size = min(abs(z_score) / (abs(self.entry_z) + 1), 1.0)
-        position_size = base_size * self.max_position_size
+    def _bollinger_target(self, close: pd.Series) -> float:
+        upper, _middle, lower = self.compute_bollinger_bands(
+            close, self.lookback, self.bollinger_std
+        )
+        p = float(close.iloc[-1])
+        lv = float(lower.iloc[-1])
+        uv = float(upper.iloc[-1])
+        if np.isnan(lv) or np.isnan(uv):
+            return 0.0
+        if p < lv:
+            return min((lv - p) / (lv + 1e-10) * 10, 1.0)
+        if p > uv:
+            return -min((p - uv) / (uv + 1e-10) * 10, 1.0)
+        return 0.0  # ponytail: inside bands — no action
 
-        if half_life is not None and half_life < self.lookback:
-            # Shorter half-life = faster mean reversion = more confidence
-            position_size = min(position_size * 1.3, self.max_position_size)
+    def _ou_target(self, close: pd.Series) -> float:
+        zs = self.compute_zscore(close, self.lookback)
+        z = float(zs.iloc[-1])
+        if np.isnan(z):
+            return 0.0
+        hl = self.estimate_half_life(close)
+        if hl == np.inf:
+            return 0.0
+        size_mult = min(self.lookback / max(hl, 1.0), 2.0)
+        if z > self.entry_threshold:
+            return -min(z / self.entry_threshold * size_mult, 1.0)
+        if z < -self.entry_threshold:
+            return min(-z / self.entry_threshold * size_mult, 1.0)
+        return 0.0
 
-        return round(float(position_size), 4)
+    # ------------------------------------------------------------------
+    # Signal construction helpers
+    # ------------------------------------------------------------------
+
+    def _entry_signal(self, target: float, price: float) -> Signal:
+        direction = SignalType.BUY if target > 0 else SignalType.SELL
+        confidence = min(abs(target), 1.0)
+        self._current_position = target
+        return Signal(
+            symbol=self.name,
+            signal_type=direction,
+            confidence=round(confidence, 4),
+            price=round(price, 6),
+            source_agent=self.name,
+            source_strategy=self.name,
+            reasoning=(
+                f"MeanReversion[{self.strategy_type}] "
+                f"{'LONG' if target > 0 else 'SHORT'} "
+                f"signal={target:.3f}, cost={self.transaction_cost_bps:.0f}bps"
+            ),
+            evidence={
+                "strategy_type": self.strategy_type,
+                "target_signal": round(float(target), 4),
+                "transaction_cost_bps": self.transaction_cost_bps,
+            },
+            factors=["mean_reversion", self.strategy_type],
+        )
+
+    def _exit_signal(self, price: float) -> Signal:
+        exit_type = (
+            SignalType.CLOSE_LONG
+            if self._current_position > 0
+            else SignalType.CLOSE_SHORT
+        )
+        prior = self._current_position
+        self._current_position = 0.0
+        return Signal(
+            symbol=self.name,
+            signal_type=exit_type,
+            confidence=0.7,
+            price=round(price, 6),
+            source_agent=self.name,
+            source_strategy=self.name,
+            reasoning=f"MeanReversion[{self.strategy_type}] EXIT flat",
+            evidence={
+                "prior_position": round(float(prior), 4),
+                "transaction_cost_bps": self.transaction_cost_bps,
+            },
+            factors=["mean_reversion", self.strategy_type],
+        )

@@ -20,7 +20,8 @@ from fastapi.responses import JSONResponse
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from starlette.responses import Response
 
-from quant_nanggroe.api.middleware import RateLimitMiddleware
+from quant_nanggroe.api.middleware import RateLimitMiddleware, AuthMiddleware, SecurityHeadersMiddleware
+from quant_nanggroe.security.auth import JWTAuth, APIKeyAuth, UserRole
 from quant_nanggroe.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -143,9 +144,6 @@ def create_app() -> FastAPI:
         return response
 
     # ── CORS Middleware ──────────────────────────────────────────────
-    # NOTE: allow_origins=["*"] + allow_credentials=True is a security
-    # vulnerability (browser spec forbids it; some frameworks silently
-    # drop credentials).  We use explicit origins from settings instead.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -154,11 +152,36 @@ def create_app() -> FastAPI:
         allow_headers=settings.cors_headers,
     )
 
+    # ── Security Headers Middleware ──────────────────────────────────
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # ── Auth Middleware ──────────────────────────────────────────────
+    jwt_auth = JWTAuth(
+        secret_key=getattr(settings, "jwt_secret", "change-me-in-production"),
+        default_ttl=3600,
+    )
+    api_key_auth = APIKeyAuth()
+
+    # Register a default admin API key from settings or env
+    default_key = os.environ.get("QNAI_API_KEY", "")
+    if default_key:
+        api_key_auth.add_key(default_key, "admin", UserRole.ADMIN)
+
+    app.state.auth = jwt_auth
+    app.state.api_key_auth = api_key_auth
+
+    app.add_middleware(
+        AuthMiddleware,
+        auth=jwt_auth,
+        api_key_auth=api_key_auth,
+    )
+
     # ── Rate Limit Middleware ────────────────────────────────────────
     app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
-    from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws
+    from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws, memory, ecosystem
+    from quant_nanggroe.api.routes import colony
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
@@ -166,6 +189,9 @@ def create_app() -> FastAPI:
     app.include_router(backtest.router, prefix="/api/backtest", tags=["Backtest"])
     app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
     app.include_router(ws.router, prefix="/api/ws", tags=["WebSocket"])
+    app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
+    app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["Ecosystem"])
+    app.include_router(colony.router, prefix="/api", tags=["Colony"])
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")

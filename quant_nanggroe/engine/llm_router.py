@@ -191,7 +191,7 @@ class LLMRouter:
         router = LLMRouter()
         router.add_provider(ProviderConfig(
             provider=LLMProvider.OPENAI,
-            api_key="sk-...",
+            api_key="YOUR_API_KEY_HERE",
             priority=0,
         ))
         response = await router.chat("Explain market volatility", tier=ModelTier.QUICK)

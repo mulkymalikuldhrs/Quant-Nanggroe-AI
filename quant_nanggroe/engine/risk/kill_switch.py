@@ -22,6 +22,8 @@ from pydantic import BaseModel, Field, ConfigDict
 
 logger = logging.getLogger(__name__)
 
+EARLY_WARNING_THRESHOLD: float = 0.8
+RESET_CONFIRMATION: str = "CONFIRM_RESET_AFTER_REVIEW"
 
 # ── Enums ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +46,7 @@ class KillSwitchTrigger(str, Enum):
     MARKET_CRASH = "market_crash"
     SYSTEM_ERROR = "system_error"
     COMPLIANCE_VIOLATION = "compliance_violation"
+    DATA_STALE = "data_stale"
 
 
 class KillSwitchStatus(str, Enum):
@@ -75,11 +78,11 @@ class KillSwitchConfig(BaseModel):
     """Configuration for the kill switch."""
     model_config = ConfigDict(frozen=False)
 
-    # Auto-activation thresholds
-    auto_daily_loss_pct: float = 1.5       # Auto-activate at 1.5% daily loss
-    auto_weekly_loss_pct: float = 4.0      # Auto-activate at 4% weekly loss
-    auto_max_drawdown_pct: float = 5.0     # Auto-activate at 5% drawdown
-    auto_volatility_spike_pct: float = 10.0  # Auto-activate on 10% volatility spike
+    # Auto-activation thresholds (as fractions, e.g. 0.015 = 1.5%)
+    auto_daily_loss_pct: float = 0.015
+    auto_weekly_loss_pct: float = 0.04
+    auto_max_drawdown_pct: float = 0.05
+    auto_volatility_spike_pct: float = 0.10
 
     # Cooldown settings
     cooldown_minutes: int = 30             # Minutes before manual deactivation
@@ -121,17 +124,75 @@ class KillSwitch:
         self._status: KillSwitchStatus = KillSwitchStatus.INACTIVE
         self._events: List[KillSwitchEvent] = []
         self._activated_at: Optional[datetime] = None
-        self._callbacks: Dict[KillSwitchLevel, List[Callable]] = {
+        self._callbacks: Dict[KillSwitchLevel, List[Callable[[KillSwitchEvent], None]]] = {
             KillSwitchLevel.LEVEL_1: [],
             KillSwitchLevel.LEVEL_2: [],
             KillSwitchLevel.LEVEL_3: [],
         }
 
+    # ── Backward-compatible API ────────────────────────────────────────
+
+    @property
+    def is_active(self) -> bool:
+        """Property access for is_active (backward compat)."""
+        return self._status == KillSwitchStatus.ACTIVE
+
+    def status(self) -> Dict[str, Any]:
+        """Dict-returning status (backward compat for tests/RiskManager)."""
+        return {
+            "is_active": self.is_active,
+            "current_level": self._current_level.value,
+            "status": self._status.value,
+            "activation_reason": self._events[-1].reason if self._events else "",
+            "total_activations": len(self._events),
+            "auto_triggers": sum(1 for e in self._events if e.auto_activated),
+            "manual_triggers": sum(1 for e in self._events if not e.auto_activated),
+            "activated_at": (
+                self._activated_at.isoformat() if self._activated_at else None
+            ),
+        }
+
+    def reset(self, confirmation: str = "") -> Dict[str, str]:
+        """Reset kill switch (bypasses cooldown for emergency reset)."""
+        if not self.is_active:
+            return {"status": "NOT_ACTIVE"}
+        if confirmation != RESET_CONFIRMATION:
+            return {"status": "STILL_ACTIVE"}
+        previous_level = self._current_level
+        self._current_level = KillSwitchLevel.NONE
+        self._status = KillSwitchStatus.INACTIVE
+        self._activated_at = None
+        for event in reversed(self._events):
+            if not event.resolved:
+                event.resolved = True
+                event.resolved_at = datetime.now(timezone.utc)
+                break
+        logger.info("Kill switch reset via confirmation: %s → NONE", previous_level.value)
+        return {"status": "RESET"}
+
+    def check_auto_trigger(
+        self,
+        daily_loss_pct: float = 0.0,
+        weekly_loss_pct: float = 0.0,
+        drawdown_pct: float = 0.0,
+        volatility_pct: float = 0.0,
+    ) -> Optional[Dict[str, Any]]:
+        """Dict-returning auto-trigger check (backward compat)."""
+        event = self.check_auto_activate(
+            daily_pnl_pct=-daily_loss_pct,
+            weekly_pnl_pct=-weekly_loss_pct,
+            max_drawdown_pct=drawdown_pct,
+            volatility_pct=volatility_pct,
+        )
+        if event is None:
+            return None
+        return self.status()
+
     # ── Activation ──────────────────────────────────────────────────────
 
     def activate(
         self,
-        level: KillSwitchLevel,
+        level: KillSwitchLevel | str | None = None,
         reason: str = "",
         trigger: KillSwitchTrigger = KillSwitchTrigger.MANUAL,
         auto_activated: bool = False,
@@ -154,6 +215,11 @@ class KillSwitch:
         KillSwitchEvent
             Record of the activation.
         """
+        if isinstance(level, str) and not isinstance(level, KillSwitchLevel):
+            reason = level
+            level = KillSwitchLevel.LEVEL_1
+            trigger = KillSwitchTrigger.MANUAL
+
         if level == KillSwitchLevel.NONE:
             logger.warning("Cannot activate kill switch at NONE level")
             return KillSwitchEvent()
@@ -307,6 +373,54 @@ class KillSwitch:
 
     # ── Query methods ───────────────────────────────────────────────────
 
+    def check_warning(
+        self,
+        daily_pnl_pct: float = 0.0,
+        weekly_pnl_pct: float = 0.0,
+        max_drawdown_pct: float = 0.0,
+        volatility_pct: float = 0.0,
+    ) -> bool:
+        """Check if any metric is approaching its auto-activation threshold.
+
+        Returns True if any metric exceeds EARLY_WARNING_THRESHOLD (80%)
+        of its limit. Does NOT trigger the kill switch — just returns a flag.
+
+        Parameters
+        ----------
+        daily_pnl_pct:
+            Current daily P&L as percentage (negative for loss).
+        weekly_pnl_pct:
+            Current weekly P&L as percentage (negative for loss).
+        max_drawdown_pct:
+            Current maximum drawdown percentage.
+        volatility_pct:
+            Current market volatility percentage.
+
+        Returns
+        -------
+        bool
+            True if any metric is in the warning zone.
+        """
+        daily_loss = abs(min(0, daily_pnl_pct))
+        if daily_loss >= self._config.auto_daily_loss_pct * EARLY_WARNING_THRESHOLD:
+            logger.info("Early warning: daily loss %.2f%% approaching limit", daily_loss)
+            return True
+
+        weekly_loss = abs(min(0, weekly_pnl_pct))
+        if weekly_loss >= self._config.auto_weekly_loss_pct * EARLY_WARNING_THRESHOLD:
+            logger.info("Early warning: weekly loss %.2f%% approaching limit", weekly_loss)
+            return True
+
+        if max_drawdown_pct >= self._config.auto_max_drawdown_pct * EARLY_WARNING_THRESHOLD:
+            logger.info("Early warning: drawdown %.2f%% approaching limit", max_drawdown_pct)
+            return True
+
+        if volatility_pct >= self._config.auto_volatility_spike_pct * EARLY_WARNING_THRESHOLD:
+            logger.info("Early warning: volatility %.2f%% approaching limit", volatility_pct)
+            return True
+
+        return False
+
     def can_trade(self) -> bool:
         """Check if new trades are allowed."""
         return self._status == KillSwitchStatus.INACTIVE and self._current_level == KillSwitchLevel.NONE
@@ -315,13 +429,9 @@ class KillSwitch:
         """Check if holding existing positions is allowed."""
         return self._current_level != KillSwitchLevel.LEVEL_3
 
-    def is_active(self) -> bool:
-        """Check if the kill switch is active."""
-        return self._status == KillSwitchStatus.ACTIVE
-
     # ── Callbacks ───────────────────────────────────────────────────────
 
-    def on_activate(self, level: KillSwitchLevel, callback: Callable) -> None:
+    def on_activate(self, level: KillSwitchLevel, callback: Callable[[KillSwitchEvent], None]) -> None:
         """Register a callback for a specific kill switch level."""
         self._callbacks.setdefault(level, []).append(callback)
 
@@ -330,10 +440,6 @@ class KillSwitch:
     @property
     def current_level(self) -> KillSwitchLevel:
         return self._current_level
-
-    @property
-    def status(self) -> KillSwitchStatus:
-        return self._status
 
     @property
     def events(self) -> List[KillSwitchEvent]:
@@ -349,7 +455,7 @@ class KillSwitch:
         return {
             "current_level": self._current_level.value,
             "status": self._status.value,
-            "is_active": self.is_active(),
+            "is_active": self.is_active,
             "can_trade": self.can_trade(),
             "total_events": len(self._events),
             "auto_activations": sum(1 for e in self._events if e.auto_activated),

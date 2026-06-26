@@ -1,26 +1,19 @@
 """Momentum Strategy.
 
-Implements production-quality momentum trading using:
-1. Time-series momentum (MOM) across multiple lookbacks
-2. Cross-sectional momentum (relative strength ranking)
-3. Dual momentum (absolute + relative)
-4. Moving average crossover (SMA, EMA, WMA, HMA)
-5. MACD-based momentum
-6. Trend following with ATR trailing stop
+Four variants: time-series, dual momentum, MA crossover, and MACD.
+Includes transaction cost modeling and trade frequency gates.
 
-Academic References:
-    - Jegadeesh, N. & Titman, S. (1993). "Returns to Buying Winners and Selling Losers."
+References:
+    - Jegadeesh & Titman (1993). Returns to Buying Winners and Selling Losers.
       Journal of Finance, 48(1), 65-91.
-    - Moskowitz, T.J., Ooi, Y.H., & Pedersen, L.H. (2012). "Time Series Momentum."
+    - Moskowitz, Ooi & Pedersen (2012). Time Series Momentum.
       Journal of Financial Economics, 104(2), 228-250.
     - Antonacci, G. (2014). Dual Momentum Investing. McGraw-Hill.
-    - Hull, A.W. (2005). "How to Reduce Lag in a Moving Average."
-      Active Trader Magazine.
-    - Wilder, J.W. (1978). New Concepts in Technical Trading Systems. Trend Research.
 """
 
 from __future__ import annotations
 
+import logging
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -29,374 +22,235 @@ import pandas as pd
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
+logger = logging.getLogger(__name__)
+
 
 class MomentumStrategy(BaseStrategy):
-    """Multi-method momentum strategy.
+    """Multi-variant momentum strategy with cost and frequency controls.
 
-    Supports multiple momentum calculation modes:
-    - 'ts_momentum': Time-series momentum (price change over lookback)
-    - 'dual_momentum': Absolute + relative momentum
-    - 'ma_crossover': Moving average crossover system
-    - 'macd': MACD-based momentum
+    Signal format: float in [-1, 1] embedded via SignalType + confidence.
+       > 0 → BUY,  < 0 → SELL,  0 → no position.
 
     Parameters:
-        mode: Momentum calculation mode (default 'ts_momentum').
-        fast_period: Fast MA / momentum lookback (default 12).
-        slow_period: Slow MA period (default 26).
-        signal_period: Signal line period for MACD (default 9).
-        atr_period: ATR period for trailing stop (default 14).
-        atr_multiplier: ATR multiplier for trailing stop distance (default 2.5).
-        stop_loss_pct: Hard stop loss fraction (default 0.05).
-        take_profit_pct: Take profit fraction (default 0.15).
-        ma_type: Moving average type: 'sma', 'ema', 'wma', 'hma' (default 'ema').
-        lookbacks: List of momentum lookback periods (default [21, 63, 126]).
-        symbol: Trading symbol (default "ASSET").
+        strategy_type: "ts_momentum", "dual_momentum", "ma_crossover", "macd"
+        lookback: TS momentum lookback (default 126, ~6 months daily)
+        fast_lookback: Fast MA period for dual/ma_crossover/macd (default 20)
+        slow_lookback: Slow MA period for dual/ma_crossover/macd (default 50)
+        entry_threshold: Minimum |signal| to open a position (default 0.05)
+        exit_threshold: |signal| below this forces flat (default 0.01)
+        transaction_cost_bps: One-way cost in basis points (default 10.0)
+        min_trade_interval_bars: Minimum bars between trades (default 5)
+        signal_smoothing: SMA window on raw signal to reduce whipsaws (default 3)
+        symbol: Trading symbol for Signal generation (default "ASSET")
     """
 
     def __init__(self, params: Optional[Dict] = None):
         super().__init__(name="Momentum", params=params)
-        self.mode: str = self.params.get("mode", "ts_momentum")
-        self.fast_period: int = self.params.get("fast_period", 12)
-        self.slow_period: int = self.params.get("slow_period", 26)
-        self.signal_period: int = self.params.get("signal_period", 9)
-        self.atr_period: int = self.params.get("atr_period", 14)
-        self.atr_multiplier: float = self.params.get("atr_multiplier", 2.5)
-        self.stop_loss_pct: float = self.params.get("stop_loss_pct", 0.05)
-        self.take_profit_pct: float = self.params.get("take_profit_pct", 0.15)
-        self.ma_type: str = self.params.get("ma_type", "ema")
-        self.lookbacks: List[int] = self.params.get("lookbacks", [21, 63, 126])
+        self.strategy_type: str = self.params.get("strategy_type", "ts_momentum")
+        self.lookback: int = self.params.get("lookback", 126)
+        self.fast_lookback: int = self.params.get("fast_lookback", 20)
+        self.slow_lookback: int = self.params.get("slow_lookback", 50)
+        self.entry_threshold: float = self.params.get("entry_threshold", 0.05)
+        self.exit_threshold: float = self.params.get("exit_threshold", 0.01)
+        self.transaction_cost_bps: float = self.params.get("transaction_cost_bps", 10.0)
+        self.min_trade_interval_bars: int = self.params.get("min_trade_interval_bars", 5)
+        self.signal_smoothing: int = self.params.get("signal_smoothing", 3)
         self.symbol: str = self.params.get("symbol", "ASSET")
+
+        self._last_trade_bar: int = -self.min_trade_interval_bars  # ponytail: first trade always allowed
+        self._signal_buffer: List[float] = []  # ponytail: FIFO for SMA smoothing
 
     def required_columns(self) -> List[str]:
         return ["open", "high", "low", "close", "volume"]
 
     def warmup_period(self) -> int:
-        if self.mode == "ma_crossover":
-            return self.slow_period + 20
-        elif self.mode == "macd":
-            return self.slow_period + self.signal_period + 10
-        else:
-            return max(self.lookbacks) + 10
-
-    def compute_wma(self, series: pd.Series, period: int) -> pd.Series:
-        """Compute Weighted Moving Average.
-
-        WMA weights increase linearly: weight for bar i is (i+1) / (n*(n+1)/2).
-
-        Args:
-            series: Price series.
-            period: WMA period.
-
-        Returns:
-            WMA series.
-        """
-        weights = np.arange(1, period + 1, dtype=float)
-        weights /= weights.sum()
-        return series.rolling(window=period, min_periods=period).apply(
-            lambda x: np.dot(x, weights), raw=True
-        )
-
-    def compute_hma(self, series: pd.Series, period: int) -> pd.Series:
-        """Compute Hull Moving Average (HMA).
-
-        HMA = WMA(2 * WMA(period/2) - WMA(period), sqrt(period))
-
-        Reference: Hull, A.W. (2005). "How to Reduce Lag in a Moving Average."
-
-        Args:
-            series: Price series.
-            period: HMA period.
-
-        Returns:
-            HMA series.
-        """
-        half_period = max(int(period / 2), 1)
-        sqrt_period = max(int(np.sqrt(period)), 1)
-
-        wma_half = self.compute_wma(series, half_period)
-        wma_full = self.compute_wma(series, period)
-        diff = 2 * wma_half - wma_full
-        hma = self.compute_wma(diff, sqrt_period)
-        return hma
-
-    def compute_ma(self, series: pd.Series, period: int) -> pd.Series:
-        """Compute moving average of the configured type.
-
-        Args:
-            series: Price series.
-            period: MA period.
-
-        Returns:
-            Moving average series.
-        """
-        if self.ma_type == "sma":
-            return self.compute_sma(series, period)
-        elif self.ma_type == "ema":
-            return self.compute_ema(series, period)
-        elif self.ma_type == "wma":
-            return self.compute_wma(series, period)
-        elif self.ma_type == "hma":
-            return self.compute_hma(series, period)
-        else:
-            return self.compute_ema(series, period)
-
-    def compute_ts_momentum(self, data: pd.DataFrame) -> tuple[str, float]:
-        """Compute time-series momentum score.
-
-        Aggregates momentum across multiple lookbacks using a
-        weighted voting scheme where shorter lookbacks get more weight
-        (recency bias).
-
-        Reference:
-            Moskowitz, Ooi, & Pedersen (2012). "Time Series Momentum."
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Tuple of (direction, score). direction is 'long'/'short'/'flat',
-            score is the weighted momentum strength.
-        """
-        close = data["close"]
-        total_score = 0.0
-        total_weight = 0.0
-
-        for i, lb in enumerate(self.lookbacks):
-            if len(close) < lb + 1:
-                continue
-            # Momentum = current price / price lb bars ago - 1
-            mom = (close.iloc[-1] / close.iloc[-lb - 1]) - 1.0
-            # Weight: shorter lookbacks get more weight (recency)
-            weight = 1.0 / (i + 1)
-            total_score += np.sign(mom) * weight
-            total_weight += weight
-
-        if total_weight == 0:
-            return "flat", 0.0
-
-        avg_score = total_score / total_weight
-
-        if avg_score > 0.1:
-            return "long", avg_score
-        elif avg_score < -0.1:
-            return "short", abs(avg_score)
-        else:
-            return "flat", abs(avg_score)
-
-    def compute_dual_momentum(self, data: pd.DataFrame) -> tuple[str, float]:
-        """Compute dual momentum (absolute + relative).
-
-        Absolute momentum: Is the asset above its slow MA? (positive trend)
-        Relative momentum: Is the momentum score positive? (outperforming)
-
-        Only go long if BOTH are positive (dual momentum rule).
-        Only go short if BOTH are negative.
-
-        Reference:
-            Antonacci, G. (2014). Dual Momentum Investing.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Tuple of (direction, score).
-        """
-        close = data["close"]
-        slow_ma = self.compute_ma(close, self.slow_period)
-        current_price = close.iloc[-1]
-        current_ma = slow_ma.iloc[-1]
-
-        if np.isnan(current_ma):
-            return "flat", 0.0
-
-        # Absolute momentum: price vs slow MA
-        absolute_momentum = (current_price / current_ma) - 1.0
-
-        # Relative momentum: time-series momentum
-        ts_direction, ts_score = self.compute_ts_momentum(data)
-
-        # Dual momentum logic
-        if absolute_momentum > 0 and ts_direction == "long":
-            combined = (absolute_momentum + ts_score) / 2
-            return "long", min(combined, 1.0)
-        elif absolute_momentum < 0 and ts_direction == "short":
-            combined = (abs(absolute_momentum) + ts_score) / 2
-            return "short", min(combined, 1.0)
-        else:
-            return "flat", 0.0
+        return max(self.lookback, self.slow_lookback) + self.signal_smoothing + 5
 
     def generate_signal(self, data: pd.DataFrame) -> Optional[Signal]:
-        """Generate momentum-based trading signal.
+        """Generate momentum signal.
 
-        Uses the configured mode to determine signal generation logic.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Signal if momentum condition is met, None otherwise.
+        Steps:
+          1. Compute raw signal from the active variant ([-1, 1]).
+          2. Smooth via SMA of last N values.
+          3. Reject if minimum trade interval not met.
+          4. Map smoothed signal to SignalType + confidence.
+          5. Deduct transaction cost from confidence.
         """
         if not self.validate_data(data):
             return None
 
-        close = data["close"]
-        high = data["high"]
-        low = data["low"]
-        current_price = close.iloc[-1]
+        raw = self._compute_raw_signal(data)
+        smoothed = self._smooth(raw)
 
-        # ATR for trailing stop
-        atr = self.compute_atr(high, low, close, self.atr_period)
-        current_atr = atr.iloc[-1] if not np.isnan(atr.iloc[-1]) else current_price * 0.02
-
-        if self.mode == "ts_momentum":
-            direction, score = self.compute_ts_momentum(data)
-        elif self.mode == "dual_momentum":
-            direction, score = self.compute_dual_momentum(data)
-        elif self.mode == "ma_crossover":
-            direction, score = self._ma_crossover_signal(data)
-        elif self.mode == "macd":
-            direction, score = self._macd_signal(data)
-        else:
-            direction, score = self.compute_ts_momentum(data)
-
-        if direction == "flat" or score < 0.05:
+        if not self._can_trade(data):
             return None
 
-        confidence = min(score, 1.0)
+        result = self._classify(smoothed)
+        if result is None:
+            return None
 
-        if direction == "long":
-            # Trailing stop: current_price - atr_multiplier * ATR
-            trailing_stop = current_price - self.atr_multiplier * current_atr
-            stop_loss = min(
-                current_price * (1 - self.stop_loss_pct),
-                trailing_stop,
-            )
-            take_profit = current_price * (1 + self.take_profit_pct)
+        signal_type, confidence = result
+        current_price = data["close"].iloc[-1]
+        cost_penalty = self.transaction_cost_bps / 10000.0
+        net_confidence = max(0.0, confidence - cost_penalty)
 
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.BUY,
-                confidence=round(confidence, 4),
-                price=round(current_price, 6),
-                stop_loss=round(stop_loss, 6),
-                take_profit=round(take_profit, 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=(
-                    f"Momentum BUY ({self.mode}): score={score:.3f}, "
-                    f"ATR={current_atr:.4f}, trailing_stop={trailing_stop:.4f}"
-                ),
-                evidence={
-                    "mode": self.mode,
-                    "score": round(score, 4),
-                    "atr": round(float(current_atr), 4),
-                    "trailing_stop": round(float(trailing_stop), 4),
-                },
-                factors=["momentum", self.mode],
-            )
-        else:  # short
-            trailing_stop = current_price + self.atr_multiplier * current_atr
-            stop_loss = max(
-                current_price * (1 + self.stop_loss_pct),
-                trailing_stop,
-            )
-            take_profit = current_price * (1 - self.take_profit_pct)
+        self._last_trade_bar = len(data) - 1
 
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.SELL,
-                confidence=round(confidence, 4),
-                price=round(current_price, 6),
-                stop_loss=round(stop_loss, 6),
-                take_profit=round(take_profit, 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=(
-                    f"Momentum SELL ({self.mode}): score={score:.3f}, "
-                    f"ATR={current_atr:.4f}, trailing_stop={trailing_stop:.4f}"
-                ),
-                evidence={
-                    "mode": self.mode,
-                    "score": round(score, 4),
-                    "atr": round(float(current_atr), 4),
-                    "trailing_stop": round(float(trailing_stop), 4),
-                },
-                factors=["momentum", self.mode],
-            )
+        return Signal(
+            symbol=self.symbol,
+            signal_type=signal_type,
+            confidence=round(float(net_confidence), 4),
+            price=round(float(current_price), 6),
+            source_agent=self.name,
+            source_strategy=self.name,
+            reasoning=(
+                f"Momentum {signal_type.value} ({self.strategy_type}): "
+                f"raw={raw:.4f} smoothed={smoothed:.4f} "
+                f"cost_penalty={cost_penalty:.4f}"
+            ),
+            evidence={
+                "strategy_type": self.strategy_type,
+                "raw_signal": round(float(raw), 4),
+                "smoothed_signal": round(float(smoothed), 4),
+                "transaction_cost_bps": self.transaction_cost_bps,
+            },
+            factors=["momentum", self.strategy_type],
+        )
 
-    def _ma_crossover_signal(self, data: pd.DataFrame) -> tuple[str, float]:
-        """Generate signal from MA crossover.
+    # ------------------------------------------------------------------
+    # Variant router
+    # ------------------------------------------------------------------
 
-        Bullish: fast MA crosses above slow MA.
-        Bearish: fast MA crosses below slow MA.
+    def _compute_raw_signal(self, data: pd.DataFrame) -> float:
+        """Return raw momentum signal in [-1, 1]; 0 = no conviction."""
+        if self.strategy_type == "ts_momentum":
+            return self._ts_momentum(data)
+        elif self.strategy_type == "dual_momentum":
+            return self._dual_momentum(data)
+        elif self.strategy_type == "ma_crossover":
+            return self._ma_crossover(data)
+        elif self.strategy_type == "macd":
+            return self._macd(data)
+        logger.warning("Unknown strategy_type=%s, returning 0", self.strategy_type)
+        return 0.0
 
-        Returns:
-            Tuple of (direction, score).
-        """
+    # ------------------------------------------------------------------
+    # Time-series momentum  (Moskowitz, Ooi & Pedersen 2012)
+    # ------------------------------------------------------------------
+
+    def _ts_momentum(self, data: pd.DataFrame) -> float:
+        """Buy when return > entry_threshold, sell when < -entry_threshold."""
         close = data["close"]
-        fast_ma = self.compute_ma(close, self.fast_period)
-        slow_ma = self.compute_ma(close, self.slow_period)
+        ret = close.iloc[-1] / close.iloc[-self.lookback - 1] - 1.0
+
+        if abs(ret) < self.exit_threshold:
+            return 0.0
+        if ret > self.entry_threshold:
+            return 1.0
+        if ret < -self.entry_threshold:
+            return -1.0
+        # ponytail: decaying trend zone → proportional signal
+        return float(np.clip(ret / self.entry_threshold, -1.0, 1.0))
+
+    # ------------------------------------------------------------------
+    # Dual momentum  (Antonacci 2014)
+    # ------------------------------------------------------------------
+
+    def _dual_momentum(self, data: pd.DataFrame) -> float:
+        """Require both absolute (price vs slow MA) and relative (fast vs slow MA) aligment."""
+        close = data["close"]
+        slow_ma = self.compute_sma(close, self.slow_lookback)
+        fast_ma = self.compute_sma(close, self.fast_lookback)
+
+        if np.isnan(slow_ma.iloc[-1]) or np.isnan(fast_ma.iloc[-1]):
+            return 0.0
+
+        abs_mom = (close.iloc[-1] / slow_ma.iloc[-1]) - 1.0
+        rel_mom = (fast_ma.iloc[-1] / slow_ma.iloc[-1]) - 1.0
+
+        if abs_mom > 0 and rel_mom > 0:
+            score = (abs_mom + rel_mom) / self.entry_threshold
+            return float(min(score, 1.0))
+        if abs_mom < 0 and rel_mom < 0:
+            score = (abs_mom + rel_mom) / self.entry_threshold
+            return float(max(score, -1.0))
+        return 0.0
+
+    # ------------------------------------------------------------------
+    # MA crossover
+    # ------------------------------------------------------------------
+
+    def _ma_crossover(self, data: pd.DataFrame) -> float:
+        """+1 when fast MA crosses above slow MA, -1 when crosses below."""
+        close = data["close"]
+        fast_ma = self.compute_sma(close, self.fast_lookback)
+        slow_ma = self.compute_sma(close, self.slow_lookback)
 
         if len(fast_ma) < 2 or np.isnan(fast_ma.iloc[-1]) or np.isnan(slow_ma.iloc[-1]):
-            return "flat", 0.0
+            return 0.0
 
-        current_diff = fast_ma.iloc[-1] - slow_ma.iloc[-1]
-        prev_diff = fast_ma.iloc[-2] - slow_ma.iloc[-2]
+        cur = float(fast_ma.iloc[-1] - slow_ma.iloc[-1])
+        prev = float(fast_ma.iloc[-2] - slow_ma.iloc[-2])
 
-        # Crossover detection
-        if prev_diff <= 0 and current_diff > 0:
-            # Bullish crossover
-            score = min(abs(current_diff) / (slow_ma.iloc[-1] + 1e-10) * 100, 1.0)
-            return "long", max(score, 0.3)
+        if prev <= 0 < cur:
+            return 1.0
+        if prev >= 0 > cur:
+            return -1.0
+        if cur > 0:
+            return 0.5
+        if cur < 0:
+            return -0.5
+        return 0.0
 
-        elif prev_diff >= 0 and current_diff < 0:
-            # Bearish crossover
-            score = min(abs(current_diff) / (slow_ma.iloc[-1] + 1e-10) * 100, 1.0)
-            return "short", max(score, 0.3)
+    # ------------------------------------------------------------------
+    # MACD
+    # ------------------------------------------------------------------
 
-        # Trend continuation
-        if current_diff > 0:
-            score = min(abs(current_diff) / (slow_ma.iloc[-1] + 1e-10) * 50, 0.5)
-            return "long", score
-        elif current_diff < 0:
-            score = min(abs(current_diff) / (slow_ma.iloc[-1] + 1e-10) * 50, 0.5)
-            return "short", score
-
-        return "flat", 0.0
-
-    def _macd_signal(self, data: pd.DataFrame) -> tuple[str, float]:
-        """Generate signal from MACD.
-
-        Bullish: MACD line crosses above signal line.
-        Bearish: MACD line crosses below signal line.
-
-        Returns:
-            Tuple of (direction, score).
-        """
+    def _macd(self, data: pd.DataFrame) -> float:
+        """Signal direction from MACD histogram sign and crossover."""
         close = data["close"]
-        macd_line, signal_line, histogram = self.compute_macd(
-            close, self.fast_period, self.slow_period, self.signal_period
+        macd_line, _, histogram = self.compute_macd(
+            close, self.fast_lookback, self.slow_lookback, signal_period=9
         )
 
         if len(macd_line) < 2 or np.isnan(macd_line.iloc[-1]):
-            return "flat", 0.0
+            return 0.0
 
-        current_hist = histogram.iloc[-1]
-        prev_hist = histogram.iloc[-2]
+        cur_h = float(histogram.iloc[-1])
+        prev_h = float(histogram.iloc[-2])
+        denom = abs(macd_line.iloc[-1]) + 1e-10
 
-        # Histogram crossover (MACD - signal)
-        if prev_hist <= 0 and current_hist > 0:
-            score = min(abs(current_hist) / (abs(macd_line.iloc[-1]) + 1e-10), 1.0)
-            return "long", max(score, 0.3)
+        if prev_h <= 0 < cur_h:       # crossover up
+            return float(min(cur_h / denom, 1.0))
+        if prev_h >= 0 > cur_h:       # crossover down
+            return float(-min(abs(cur_h) / denom, 1.0))
+        if cur_h > 0:                 # continuation up
+            return float(min(cur_h / denom * 0.5, 0.5))
+        if cur_h < 0:                 # continuation down
+            return float(-min(abs(cur_h) / denom * 0.5, 0.5))
+        return 0.0
 
-        elif prev_hist >= 0 and current_hist < 0:
-            score = min(abs(current_hist) / (abs(macd_line.iloc[-1]) + 1e-10), 1.0)
-            return "short", max(score, 0.3)
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
 
-        # Trend continuation based on histogram
-        if current_hist > 0:
-            return "long", min(abs(current_hist) / (abs(macd_line.iloc[-1]) + 1e-10) * 0.5, 0.5)
-        elif current_hist < 0:
-            return "short", min(abs(current_hist) / (abs(macd_line.iloc[-1]) + 1e-10) * 0.5, 0.5)
+    def _smooth(self, raw: float) -> float:
+        """Simple FIFO SMA to reduce whipsaw signals."""
+        self._signal_buffer.append(raw)
+        if len(self._signal_buffer) > self.signal_smoothing:
+            self._signal_buffer.pop(0)
+        return float(np.mean(self._signal_buffer))
 
-        return "flat", 0.0
+    def _can_trade(self, data: pd.DataFrame) -> bool:
+        """Enforce minimum gap between consecutive trades."""
+        bars_since_last = (len(data) - 1) - self._last_trade_bar
+        return bars_since_last >= self.min_trade_interval_bars
+
+    def _classify(self, signal: float) -> Optional[tuple]:
+        """Map smoothed signal to (SignalType, confidence) or None if flat."""
+        if abs(signal) < 1e-10:
+            return None
+        confidence = min(abs(signal), 1.0)
+        if signal > 0:
+            return (SignalType.BUY, confidence)
+        return (SignalType.SELL, confidence)

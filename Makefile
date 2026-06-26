@@ -35,59 +35,59 @@ test-agents: ## Run agent tests only
 	$(POETRY) run pytest tests/test_agents/ -v -m agents
 
 test-cov: ## Run tests with coverage
-	$(POETRY) run pytest tests/ --cov=quant_nanggroe_ai --cov-report=term-missing --cov-report=html
+	$(POETRY) run pytest tests/ --cov=quant_nanggroe --cov-report=term-missing --cov-report=html
 
 test-slow: ## Run slow tests
 	$(POETRY) run pytest tests/ -v -m slow
 
 # ── Code Quality ──────────────────────────────────────────────────────
 lint: ## Run linter (ruff)
-	$(POETRY) run ruff check src/ tests/
+	$(POETRY) run ruff check quant_nanggroe/ ai_multicolony/ tests/
 
 format: ## Auto-format code
-	$(POETRY) run ruff format src/ tests/
-	$(POETRY) run ruff check --fix src/ tests/
+	$(POETRY) run ruff format quant_nanggroe/ tests/
+	$(POETRY) run ruff check --fix quant_nanggroe/ tests/
 
 typecheck: ## Run mypy type checking
-	$(POETRY) run mypy src/quant_nanggroe_ai/
+	$(POETRY) run mypy quant_nanggroe/
 
 security: ## Run bandit security scan
-	$(POETRY) run bandit -r src/quant_nanggroe_ai/ -ll
+	$(POETRY) run bandit -r quant_nanggroe/ ai_multicolony/ -ll
 
 check: lint typecheck test ## Run all checks (lint + typecheck + test)
 
 # ── Database ──────────────────────────────────────────────────────────
 db-push: ## Push schema to database
-	$(POETRY) run alembic -c alembic.ini upgrade head
+	$(POETRY) run alembic -c quant_nanggroe/database/alembic.ini upgrade head
 
 db-migrate: ## Create a new migration
-	$(POETRY) run alembic -c alembic.ini revision --autogenerate -m "$(msg)"
+	$(POETRY) run alembic -c quant_nanggroe/database/alembic.ini revision --autogenerate -m "$(msg)"
 
 db-rollback: ## Rollback last migration
-	$(POETRY) run alembic -c alembic.ini downgrade -1
+	$(POETRY) run alembic -c quant_nanggroe/database/alembic.ini downgrade -1
 
 # ── Run ───────────────────────────────────────────────────────────────
 run: ## Start the API server
-	$(POETRY) run uvicorn quant_nanggroe_ai.api.app:create_app --factory --host 0.0.0.0 --port 8000 --reload
+	$(POETRY) run uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000 --reload
 
 run-worker: ## Start the background worker
-	$(POETRY) run python -m quant_nanggroe_ai.worker
+	$(POETRY) run python -m quant_nanggroe.worker
 
 # ── Docker ────────────────────────────────────────────────────────────
 docker-build: ## Build Docker images
-	$(DOCKER_COMPOSE) build
+	$(DOCKER_COMPOSE) -f deploy/docker/docker-compose.yml build
 
 docker-up: ## Start all services
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) -f deploy/docker/docker-compose.yml up -d
 
 docker-down: ## Stop all services
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) -f deploy/docker/docker-compose.yml down
 
 docker-logs: ## Follow logs
-	$(DOCKER_COMPOSE) logs -f api
+	$(DOCKER_COMPOSE) -f deploy/docker/docker-compose.yml logs -f api
 
 docker-dev: ## Start dev stack (with hot reload)
-	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml up
+	$(DOCKER_COMPOSE) -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.dev.yml up
 
 # ── Clean ─────────────────────────────────────────────────────────────
 clean: ## Remove build artifacts

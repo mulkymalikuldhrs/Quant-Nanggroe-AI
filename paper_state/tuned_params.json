@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "metric": "sharpe",
+  "strategies": {
+    "Momentum": {
+      "default_params": {},
+      "default_sharpe": 1.081,
+      "best_params": {},
+      "best_sharpe": 1.081,
+      "improvement_pct": 0.0,
+      "combinations_evaluated": 9
+    },
+    "MeanReversion": {
+      "default_params": {},
+      "default_sharpe": -3.1736,
+      "best_params": {},
+      "best_sharpe": -3.1736,
+      "improvement_pct": 0.0,
+      "combinations_evaluated": 9
+    }
+  }
+}

@@ -1,0 +1,28 @@
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║      Quant-Nanggroe-AI  —  Dev Docker Compose Overrides            ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+
+version: "3.9"
+
+services:
+  api:
+    build:
+      target: builder
+    command: ["uvicorn", "quant_nanggroe.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+      - RELOAD=true
+    volumes:
+      - ../../quant_nanggroe:/app/quant_nanggroe:ro
+      - ../../tests:/app/tests:ro
+
+  worker:
+    build:
+      target: builder
+    command: ["python", "-m", "quant_nanggroe.worker"]
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ../../quant_nanggroe:/app/quant_nanggroe:ro

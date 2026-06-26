@@ -36,7 +36,7 @@ from quant_nanggroe.engine.nvidia_nim.models import (
 def nim_config():
     """Create a test NIMConfig."""
     return NIMConfig(
-        nvidia_nim_api_key="test-api-key-12345",
+        nvidia_nim_api_key="YOUR_API_KEY_HERE",
         nvidia_nim_base_url="https://integrate.api.nvidia.com/v1",
         nvidia_nim_timeout=30,
         nvidia_nim_max_retries=2,

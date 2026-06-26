@@ -1,383 +1,247 @@
 """Statistical Arbitrage Strategy.
 
-Implements production-quality statistical arbitrage using:
-1. PCA-based factor model for residual generation
-2. Mean reversion on residuals (orphan alpha)
-3. Kalman Filter for dynamic factor exposure
-4. Regime detection (simple) for strategy switching
-5. Multi-asset portfolio construction
+PCA-based factor model for statistical arbitrage. Decomposes a universe
+of stock returns into systematic factors via PCA and trades mean reversion
+on the idiosyncratic residuals (orphan alpha).
+
+The strategy:
+1. Builds a cross-sectional universe of stocks from the input data
+2. Computes multi-period returns and standardizes them
+3. Extracts top K principal components via SVD (K = n_factors)
+4. Computes residuals = actual returns - factor-model predicted returns
+5. Z-scores residuals and enters when |z| exceeds entry_threshold
+6. Exits when the residual z-score reverts below exit_threshold
 
 Academic References:
-    - Avellaneda, M. & Lee, J.H. (2010). "Statistical Arbitrage in the US Equities Market."
-      Quantitative Finance, 10(7), 761-782.
-    - Chamberlain, G. & Rothschild, M. (1983). "Arbitrage, Factor Structure, and
-      Mean-Variance Analysis on Large Asset Markets." Econometrica, 51(5), 1281-1304.
-    - Connor, G. & Korajczyk, R.A. (1988). "Risk and Return in an Equilibrium APT."
-      Journal of Financial Economics, 21(2), 255-289.
-    - De Prado, M. (2018). Advances in Financial Machine Learning. Wiley. Ch. 17-18.
+    - Avellaneda, M. & Lee, J.H. (2010). "Statistical Arbitrage in the US
+      Equities Market." Quantitative Finance, 10(7), 761-782.
+    - Chamberlain, G. & Rothschild, M. (1983). "Arbitrage, Factor Structure,
+      and Mean-Variance Analysis on Large Asset Markets." Econometrica,
+      51(5), 1281-1304.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
-from sklearn.decomposition import PCA
 
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
 class StatisticalArbitrageStrategy(BaseStrategy):
-    """Statistical arbitrage strategy using PCA factor model.
+    """Statistical arbitrage via PCA factor model and residual mean reversion.
 
-    Decomposes asset returns into systematic factors (via PCA) and
-    idiosyncratic residuals. Trades mean reversion on residuals
-    (orphan alpha) while hedging systematic exposure.
+    Builds a universe of stocks, extracts common risk factors via PCA on
+    standardized returns, and trades stocks whose residual returns deviate
+    significantly from zero. The systematic factor exposure is hedged out,
+    leaving only the idiosyncratic (orphan) alpha to trade.
 
     Parameters:
+        lookback: Rolling window for PCA estimation (default 60).
         n_factors: Number of PCA factors to extract (default 3).
-        lookback: Rolling window for factor estimation (default 60).
-        entry_z: Z-score threshold for residual entry (default 2.0).
-        exit_z: Z-score threshold for residual exit (default 0.5).
-        stop_loss_pct: Stop loss fraction (default 0.05).
-        take_profit_pct: Take profit fraction (default 0.10).
-        use_kalman: Whether to use Kalman filter for dynamic exposure (default True).
-        kalman_Q: Kalman filter process noise (default 1e-4).
-        kalman_R: Kalman filter measurement noise (default 1e-2).
-        max_positions: Maximum number of concurrent positions (default 5).
+        entry_threshold: Z-score threshold to enter (default 2.0).
+        exit_threshold: Z-score threshold to exit (default 0.5).
+        return_lookback: Period for multi-period return computation (default 20).
+        universe_size: Maximum number of stocks in the universe (default 20).
+        transaction_cost_bps: Estimated transaction cost in basis points (default 10.0).
+        min_trade_interval_bars: Minimum bars between trades (default 10).
         symbol: Primary trading symbol (default "ASSET").
     """
 
     def __init__(self, params: Optional[Dict] = None):
         super().__init__(name="StatisticalArbitrage", params=params)
-        self.n_factors: int = self.params.get("n_factors", 3)
         self.lookback: int = self.params.get("lookback", 60)
-        self.entry_z: float = self.params.get("entry_z", 2.0)
-        self.exit_z: float = self.params.get("exit_z", 0.5)
-        self.stop_loss_pct: float = self.params.get("stop_loss_pct", 0.05)
-        self.take_profit_pct: float = self.params.get("take_profit_pct", 0.10)
-        self.use_kalman: bool = self.params.get("use_kalman", True)
-        self.kalman_Q: float = self.params.get("kalman_Q", 1e-4)
-        self.kalman_R: float = self.params.get("kalman_R", 1e-2)
-        self.max_positions: int = self.params.get("max_positions", 5)
+        self.n_factors: int = self.params.get("n_factors", 3)
+        self.entry_threshold: float = self.params.get("entry_threshold", 2.0)
+        self.exit_threshold: float = self.params.get("exit_threshold", 0.5)
+        self.return_lookback: int = self.params.get("return_lookback", 20)
+        self.universe_size: int = self.params.get("universe_size", 20)
+        self.transaction_cost_bps: float = self.params.get("transaction_cost_bps", 10.0)
+        self.min_trade_interval_bars: int = self.params.get("min_trade_interval_bars", 10)
         self.symbol: str = self.params.get("symbol", "ASSET")
+
+        # Internal state
+        self._has_position: bool = False
+        self._last_trade_bar: int = -self.min_trade_interval_bars  # ponytail: start eligible
 
     def required_columns(self) -> List[str]:
         return ["close"]
 
     def warmup_period(self) -> int:
-        return self.lookback + 30
+        return max(self.lookback, self.return_lookback) + 1
 
-    def compute_pca_factors(
-        self, returns_df: pd.DataFrame
-    ) -> Tuple[np.ndarray, np.ndarray, PCA]:
-        """Extract PCA factors from cross-sectional returns.
-
-        Applies PCA to the returns matrix to extract systematic
-        factor exposures. Residuals are the idiosyncratic component.
-
-        Reference:
-            Chamberlain & Rothschild (1983), Econometrica, 51(5), 1281-1304.
+    @staticmethod
+    def _compute_pca(returns_matrix: np.ndarray, n_components: int) -> tuple[np.ndarray, np.ndarray]:  # ponytail: no sklearn dep
+        """PCA via SVD. Returns (factor_returns, factor_loadings).
 
         Args:
-            returns_df: DataFrame of returns (assets x time).
+            returns_matrix: Centered returns, shape (T, N).
+            n_components: Number of principal components.
 
         Returns:
-            Tuple of (factor_loadings, factor_returns, pca_model).
+            Tuple of (factors, loadings) where factors is (T, K)
+            and loadings is (N, K).
         """
-        # Handle NaN by filling with column mean
-        filled = returns_df.fillna(0)
+        centered = returns_matrix - returns_matrix.mean(axis=0)
+        _U, _S, Vt = np.linalg.svd(centered, full_matrices=False)  # ponytail: U,S unused
+        loadings = Vt[:n_components].T
+        factors = centered @ loadings
+        return factors, loadings
 
-        n_components = min(self.n_factors, min(filled.shape[0], filled.shape[1]) - 1)
-        if n_components < 1:
-            n_components = 1
-
-        pca = PCA(n_components=n_components)
-        factor_returns = pca.fit_transform(filled.T)  # Time x factors
-        factor_loadings = pca.components_.T  # Assets x factors
-
-        return factor_loadings, factor_returns, pca
-
-    def compute_residuals(
-        self,
-        returns: np.ndarray,
-        factor_loadings: np.ndarray,
-        factor_returns: np.ndarray,
-    ) -> np.ndarray:
-        """Compute idiosyncratic residuals.
-
-        residual_i_t = r_i_t - sum_j(factor_loading_ij * factor_return_j_t)
-
-        Args:
-            returns: Asset returns matrix (assets x time).
-            factor_loadings: PCA factor loadings (assets x factors).
-            factor_returns: PCA factor returns (time x factors).
-
-        Returns:
-            Residuals matrix (assets x time).
-        """
-        systematic = factor_loadings @ factor_returns.T  # assets x time
-        residuals = returns - systematic
-        return residuals
-
-    def compute_kalman_exposure(
-        self, asset_returns: np.ndarray, factor_returns: np.ndarray
-    ) -> np.ndarray:
-        """Compute dynamic factor exposure using Kalman Filter.
-
-        State model:   beta_t = beta_{t-1} + w_t, w_t ~ N(0, Q)
-        Observation:   r_t = F_t * beta_t + v_t, v_t ~ N(0, R)
-
-        where F_t is the factor return vector at time t.
-
-        Reference:
-            De Prado (2018), Advances in Financial Machine Learning, Ch. 17-18.
-
-        Args:
-            asset_returns: 1D array of asset returns.
-            factor_returns: 2D array (time x factors).
-
-        Returns:
-            Array of dynamic factor exposures (time x factors).
-        """
-        T, K = factor_returns.shape
-        exposures = np.zeros((T, K))
-
-        # Initialize
-        beta = np.zeros(K)
-        P = np.eye(K) * 1.0
-
-        Q = np.eye(K) * self.kalman_Q
-        R = self.kalman_R
-
-        for t in range(T):
-            # Predict
-            beta_pred = beta
-            P_pred = P + Q
-
-            # Observation
-            F_t = factor_returns[t]
-            y_t = asset_returns[t]
-
-            # Innovation
-            innovation = y_t - F_t @ beta_pred
-
-            # Innovation covariance
-            S = F_t @ P_pred @ F_t + R
-
-            # Kalman gain
-            if abs(S) > 1e-15:
-                K_gain = P_pred @ F_t / S
-            else:
-                K_gain = np.zeros(K)
-
-            # Update
-            beta = beta_pred + K_gain * innovation
-            P = P_pred - np.outer(K_gain, F_t) @ P_pred
-
-            exposures[t] = beta
-
-        return exposures
-
-    def compute_residual_zscore(
-        self, residuals: np.ndarray, lookback: int
-    ) -> np.ndarray:
-        """Compute z-score of residuals for mean reversion signals.
-
-        Args:
-            residuals: Array of residual values.
-            lookback: Rolling window for z-score.
-
-        Returns:
-            Array of z-scores.
-        """
-        n = len(residuals)
-        z_scores = np.full(n, np.nan)
-
-        for t in range(lookback, n):
-            window = residuals[t - lookback:t]
-            mean = np.mean(window)
-            std = np.std(window, ddof=1)
-            if std > 1e-10:
-                z_scores[t] = (residuals[t] - mean) / std
-
-        return z_scores
-
-    def estimate_half_life(self, residuals: np.ndarray) -> float:
-        """Estimate half-life of mean reversion on residuals.
-
-        Args:
-            residuals: Array of residual values.
-
-        Returns:
-            Estimated half-life in bars.
-        """
-        if len(residuals) < 10:
-            return np.inf
-
-        lag = residuals[:-1]
-        delta = np.diff(residuals)
-
-        try:
-            slope, _, _, _, _ = scipy_stats.linregress(lag, delta)
-        except (ValueError, np.linalg.LinAlgError):
-            return np.inf
-
-        if slope >= 0:
-            return np.inf
-
-        return max(-np.log(2) / slope, 1.0)
+    def _select_universe(self, close: pd.DataFrame) -> List[str]:
+        """Select the top stocks by average price for the trading universe."""
+        n = min(self.universe_size, len(close.columns))
+        ranked = close.mean().sort_values(ascending=False)
+        return ranked.index[:n].tolist()
 
     def generate_signal(self, data: pd.DataFrame) -> Optional[Signal]:
-        """Generate statistical arbitrage signal.
+        """Generate statistical arbitrage signal from PCA residuals.
 
-        For single-asset mode, generates signals based on the residual
-        of the asset's returns after removing PCA factors estimated from
-        the asset's own recent history.
+        Expects data["close"] to be a DataFrame with one column per stock
+        in the universe. Computes cross-sectional returns, runs PCA, and
+        trades the primary symbol's residual z-score.
 
-        Multi-asset mode requires passing a returns DataFrame externally
-        via the evidence dict.
+        Signal value (stored in evidence) ranges from -1.0 (short) to
+        +1.0 (long), with 0.0 meaning flat / no position.
 
         Args:
-            data: DataFrame with 'close' column.
+            data: DataFrame with 'close' column (DataFrame of stock prices).
 
         Returns:
-            Signal if residual condition met, None otherwise.
+            Signal if entry/exit condition met, None otherwise.
         """
         if not self.validate_data(data):
             return None
 
         close = data["close"]
-        returns = close.pct_change().dropna()
-
-        if len(returns) < self.warmup_period():
+        if isinstance(close, pd.Series):
             return None
 
-        # For single-asset mode: use rolling PCA on the asset's own returns
-        # to decompose into trend + residual
-        returns_array = returns.values[-self.lookback - 30:]
-
-        # Create a synthetic multi-factor representation
-        # by using lagged returns as "factors"
-        n_lags = min(self.n_factors + 1, 5)
-        T = len(returns_array)
-
-        # Build factor matrix from lagged returns
-        factor_returns = np.zeros((T - n_lags, n_lags))
-        for lag in range(n_lags):
-            factor_returns[:, lag] = returns_array[n_lags - lag - 1:T - lag - 1]
-
-        asset_returns = returns_array[n_lags:]
-
-        # Compute exposures
-        if self.use_kalman:
-            exposures = self.compute_kalman_exposure(asset_returns, factor_returns)
-            # Compute residuals using dynamic exposures
-            residuals = np.zeros(len(asset_returns))
-            for t in range(len(asset_returns)):
-                systematic = factor_returns[t] @ exposures[t]
-                residuals[t] = asset_returns[t] - systematic
-        else:
-            # OLS
-            try:
-                betas = np.linalg.lstsq(factor_returns, asset_returns, rcond=None)[0]
-                systematic = factor_returns @ betas
-                residuals = asset_returns - systematic
-            except np.linalg.LinAlgError:
-                residuals = asset_returns
-
-        # Compute z-score on recent residuals
-        lookback = min(self.lookback, len(residuals) - 1)
-        if lookback < 10:
+        universe = self._select_universe(close)
+        if len(universe) < self.n_factors + 1:
             return None
 
-        recent_residuals = residuals[-lookback:]
-        z_scores = self.compute_residual_zscore(residuals, lookback)
+        returns = close[universe].pct_change(self.return_lookback).dropna()
+        if len(returns) < self.lookback:
+            return None
 
-        current_z = z_scores[-1] if not np.isnan(z_scores[-1]) else 0.0
-        prev_z = z_scores[-2] if len(z_scores) > 1 and not np.isnan(z_scores[-2]) else 0.0
+        # PCA on trailing window
+        returns_window = returns.iloc[-self.lookback:].values
+        n_components = min(self.n_factors, returns_window.shape[1] - 1)
+        if n_components < 1:
+            return None
+
+        factors, loadings = self._compute_pca(returns_window, n_components)
+        predicted = factors @ loadings.T
+        centered = returns_window - returns_window.mean(axis=0)
+        residuals = centered - predicted
+
+        # Z-score each stock's residuals cross-sectionally at the last time step
+        residual_mean = residuals.mean(axis=0)
+        residual_std = residuals.std(axis=0, ddof=1)
+        residual_std = np.where(residual_std < 1e-10, 1.0, residual_std)  # ponytail: div-by-zero guard
+        z_scores = (residuals[-1] - residual_mean) / residual_std
+
+        if self.symbol not in universe:
+            return None
+
+        idx = universe.index(self.symbol)
+        current_z = float(z_scores[idx])
 
         if np.isnan(current_z):
             return None
 
-        # Estimate half-life
-        half_life = self.estimate_half_life(recent_residuals)
+        bar_count = len(data)
+        bars_since_last = bar_count - self._last_trade_bar
+        current_price = round(float(close[self.symbol].iloc[-1]), 6)
+        signal_value = 0.0
 
-        current_price = float(close.iloc[-1])
+        # Exit on reversion
+        if abs(current_z) < self.exit_threshold:
+            if self._has_position:
+                self._has_position = False
+                self._last_trade_bar = bar_count
+                return Signal(
+                    symbol=self.symbol,
+                    signal_type=SignalType.EXIT_ALL,
+                    confidence=0.7,
+                    price=current_price,
+                    source_agent=self.name,
+                    source_strategy=self.name,
+                    reasoning=(
+                        f"StatArb EXIT: residual z={current_z:.2f} reverted "
+                        f"below |{self.exit_threshold}|"
+                    ),
+                    evidence={
+                        "residual_z": round(current_z, 4),
+                        "signal_value": 0.0,
+                        "universe_size": len(universe),
+                        "n_factors": n_components,
+                        "transaction_cost_bps": self.transaction_cost_bps,
+                    },
+                    factors=["statistical_arbitrage", "pca_residual", "mean_reversion"],
+                )
+            return None
 
-        # --- Entry signals ---
-        # Long: residual z-score is very negative (oversold residual)
-        if current_z < -self.entry_z and prev_z >= -self.entry_z:
-            confidence = min(abs(current_z) / self.entry_z, 1.0)
-            if half_life < self.lookback:
-                confidence = min(confidence * 1.2, 1.0)
+        # Trade frequency gate for new entries
+        if bars_since_last < self.min_trade_interval_bars:
+            return None
 
-            return Signal(
-                symbol=self.symbol,
-                signal_type=SignalType.BUY,
-                confidence=round(confidence, 4),
-                price=round(current_price, 6),
-                stop_loss=round(current_price * (1 - self.stop_loss_pct), 6),
-                take_profit=round(current_price * (1 + self.take_profit_pct), 6),
-                source_agent=self.name,
-                source_strategy=self.name,
-                reasoning=(
-                    f"StatArb BUY: residual z={current_z:.2f} < -{self.entry_z}, "
-                    f"half_life={half_life:.1f}, n_factors={self.n_factors}"
-                ),
-                evidence={
-                    "residual_z": round(float(current_z), 4),
-                    "half_life": round(float(half_life), 1),
-                    "n_factors": self.n_factors,
-                    "use_kalman": self.use_kalman,
-                },
-                factors=["statistical_arbitrage", "pca_residual", "mean_reversion"],
-            )
-
-        # Short: residual z-score is very positive (overbought residual)
-        if current_z > self.entry_z and prev_z <= self.entry_z:
-            confidence = min(abs(current_z) / self.entry_z, 1.0)
-            if half_life < self.lookback:
-                confidence = min(confidence * 1.2, 1.0)
-
+        # Entry: short (z > +threshold)
+        if current_z > self.entry_threshold:
+            self._has_position = True
+            self._last_trade_bar = bar_count
+            confidence = min(abs(current_z) / self.entry_threshold, 1.0)
+            signal_value = -confidence
             return Signal(
                 symbol=self.symbol,
                 signal_type=SignalType.SELL,
                 confidence=round(confidence, 4),
-                price=round(current_price, 6),
-                stop_loss=round(current_price * (1 + self.stop_loss_pct), 6),
-                take_profit=round(current_price * (1 - self.take_profit_pct), 6),
+                price=current_price,
                 source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=(
-                    f"StatArb SELL: residual z={current_z:.2f} > {self.entry_z}, "
-                    f"half_life={half_life:.1f}, n_factors={self.n_factors}"
+                    f"StatArb SHORT: residual z={current_z:.2f} > "
+                    f"{self.entry_threshold}, n_factors={n_components}"
                 ),
                 evidence={
-                    "residual_z": round(float(current_z), 4),
-                    "half_life": round(float(half_life), 1),
-                    "n_factors": self.n_factors,
-                    "use_kalman": self.use_kalman,
+                    "residual_z": round(current_z, 4),
+                    "signal_value": round(signal_value, 4),
+                    "universe_size": len(universe),
+                    "n_factors": n_components,
+                    "transaction_cost_bps": self.transaction_cost_bps,
                 },
                 factors=["statistical_arbitrage", "pca_residual", "mean_reversion"],
             )
 
-        # --- Exit signals ---
-        if abs(current_z) < self.exit_z and abs(prev_z) >= self.exit_z:
-            sig_type = SignalType.CLOSE_LONG if prev_z < 0 else SignalType.CLOSE_SHORT
+        # Entry: long (z < -threshold)
+        if current_z < -self.entry_threshold:
+            self._has_position = True
+            self._last_trade_bar = bar_count
+            confidence = min(abs(current_z) / self.entry_threshold, 1.0)
+            signal_value = confidence
             return Signal(
                 symbol=self.symbol,
-                signal_type=sig_type,
-                confidence=0.7,
-                price=round(current_price, 6),
+                signal_type=SignalType.BUY,
+                confidence=round(confidence, 4),
+                price=current_price,
                 source_agent=self.name,
                 source_strategy=self.name,
-                reasoning=f"StatArb EXIT: residual z={current_z:.2f} reverted to exit threshold",
-                evidence={"residual_z": round(float(current_z), 4)},
-                factors=["statistical_arbitrage", "pca_residual"],
+                reasoning=(
+                    f"StatArb LONG: residual z={current_z:.2f} < "
+                    f"{-self.entry_threshold}, n_factors={n_components}"
+                ),
+                evidence={
+                    "residual_z": round(current_z, 4),
+                    "signal_value": round(signal_value, 4),
+                    "universe_size": len(universe),
+                    "n_factors": n_components,
+                    "transaction_cost_bps": self.transaction_cost_bps,
+                },
+                factors=["statistical_arbitrage", "pca_residual", "mean_reversion"],
             )
 
         return None

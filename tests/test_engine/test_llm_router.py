@@ -40,7 +40,7 @@ def router():
 def openai_config():
     return ProviderConfig(
         provider=LLMProvider.OPENAI,
-        api_key="sk-test-key",
+        api_key="YOUR_API_KEY_HERE",
         priority=0,
     )
 
@@ -49,7 +49,7 @@ def openai_config():
 def anthropic_config():
     return ProviderConfig(
         provider=LLMProvider.ANTHROPIC,
-        api_key="sk-ant-test",
+        api_key="YOUR_API_KEY_HERE",
         priority=1,
     )
 
@@ -58,7 +58,7 @@ def anthropic_config():
 def google_config():
     return ProviderConfig(
         provider=LLMProvider.GOOGLE,
-        api_key="google-test",
+        api_key="YOUR_API_KEY_HERE",
         priority=2,
     )
 

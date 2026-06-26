@@ -1,26 +1,21 @@
 """Regime-Based Strategy.
 
-Implements production-quality regime detection and strategy switching using:
-1. Hidden Markov Model (HMM) for regime identification
-2. 3 regimes: trending up, trending down, mean-reverting
-3. Strategy switching based on detected regime
-4. Transition probability estimation
-5. Viterbi algorithm for most likely state sequence
+HMM-driven regime detection with per-regime strategy switching,
+transaction cost modeling, and trade frequency controls.
 
-Academic References:
+Regimes: 0=bull, 1=bear, 2=range_bound, 3=high_vol.
+
+References:
     - Hamilton, J.D. (1989). "A New Approach to the Economic Analysis of
-      Nonstationary Time Series and the Business Cycle." Econometrica, 57(2), 357-384.
-    - Hamilton, J.D. (1990). "Analysis of Time Series Subject to Structural Change."
-      Journal of Policy Modeling, 12(2), 347-365.
-    - Rabiner, L.R. (1989). "A Tutorial on Hidden Markov Models and Selected
-      Applications in Speech Recognition." Proceedings of the IEEE, 77(2), 257-286.
-    - Ang, A. & Bekaert, G. (2002). "Regime Switches in Interest Rates."
-      Journal of Business & Economic Statistics, 20(2), 163-182.
+      Nonstationary Time Series and the Business Cycle." Econometrica.
+    - Rabiner, L.R. (1989). "A Tutorial on Hidden Markov Models."
+      Proceedings of the IEEE, 77(2), 257-286.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+import logging
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,457 +23,244 @@ import pandas as pd
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
+logger = logging.getLogger(__name__)
+
 try:
-    from hmmlearn.hmm import GaussianHMM
-    HAS_HMMLEARN = True
+    from hmmlearn import hmm
+    HMM_AVAILABLE = True
 except ImportError:
-    HAS_HMMLEARN = False
+    HMM_AVAILABLE = False
+
+REGIME_LABELS = {0: "bull", 1: "bear", 2: "range_bound", 3: "high_vol"}
 
 
 class RegimeBasedStrategy(BaseStrategy):
-    """Regime-based strategy using Hidden Markov Models.
+    """HMM-driven regime detection with per-regime switching and cost controls.
 
-    Detects market regimes using HMM on return features, then applies
-    strategy logic appropriate for each regime:
-    - Trending Up: momentum / trend following
-    - Trending Down: short / defensive
-    - Mean-Reverting: mean reversion / contrarian
+    Signal: float in [-1, 1] -> SignalType + confidence. >0 = BUY, <0 = SELL, 0 = flat.
 
     Parameters:
-        n_regimes: Number of HMM regimes (default 3).
-        lookback: Window for feature computation (default 60).
-        hmm_iterations: Max iterations for HMM fitting (default 100).
-        retrain_frequency: How often to retrain HMM, in bars (default 100).
-        stop_loss_pct: Stop loss fraction (default 0.04).
-        take_profit_pct: Take profit fraction (default 0.10).
-        confidence_threshold: Minimum regime probability for signal (default 0.6).
-        symbol: Trading symbol (default "ASSET").
+        n_regimes: 2-4 (default 3). hmm_lookback: training window (default 252).
+        covariance_type: HMM cov type (default "full").
+        regime_stability_bars: min bars before regime switch acted on (default 5).
+        bull_strategy/bear_strategy/range_strategy/high_vol_strategy: per-regime behavior.
+        max_position: max |position| in [-1,1] (default 1.0).
+        transaction_cost_bps: one-way cost bps (default 10.0).
+        min_trade_interval_bars: min bars between trades (default 3).
+        symbol: for Signal (default "ASSET").
     """
-
-    # Regime labels
-    TRENDING_UP = 0
-    TRENDING_DOWN = 1
-    MEAN_REVERTING = 2
 
     def __init__(self, params: Optional[Dict] = None):
         super().__init__(name="RegimeBased", params=params)
-        self.n_regimes: int = self.params.get("n_regimes", 3)
-        self.lookback: int = self.params.get("lookback", 60)
-        self.hmm_iterations: int = self.params.get("hmm_iterations", 100)
-        self.retrain_frequency: int = self.params.get("retrain_frequency", 100)
-        self.stop_loss_pct: float = self.params.get("stop_loss_pct", 0.04)
-        self.take_profit_pct: float = self.params.get("take_profit_pct", 0.10)
-        self.confidence_threshold: float = self.params.get("confidence_threshold", 0.6)
-        self.symbol: str = self.params.get("symbol", "ASSET")
+        p = self.params
+        self.n_regimes: int = max(2, min(int(p.get("n_regimes", 3)), 4))
+        self.hmm_lookback: int = int(p.get("hmm_lookback", 252))
+        self.covariance_type: str = str(p.get("covariance_type", "full"))
+        self.regime_stability_bars: int = int(p.get("regime_stability_bars", 5))
+        self.bull_strategy: str = str(p.get("bull_strategy", "momentum"))
+        self.bear_strategy: str = str(p.get("bear_strategy", "defensive"))
+        self.range_strategy: str = str(p.get("range_strategy", "mean_reversion"))
+        self.high_vol_strategy: str = str(p.get("high_vol_strategy", "reduce"))
+        self.max_position: float = float(p.get("max_position", 1.0))
+        self.transaction_cost_bps: float = float(p.get("transaction_cost_bps", 10.0))
+        self.min_trade_interval_bars: int = int(p.get("min_trade_interval_bars", 3))
+        self.symbol: str = str(p.get("symbol", "ASSET"))
 
-        self._hmm_model: Optional[GaussianHMM] = None
-        self._last_train_idx: int = 0
-        self._current_regime: int = -1
-        self._regime_probs: Optional[np.ndarray] = None
+        self._hmm_model: Optional[hmm.GaussianHMM] = None
+        self._regime_history: List[int] = []
+        self._state_to_regime: Optional[Dict[int, int]] = None
+        self._last_trade_bar: int = -self.min_trade_interval_bars
+        self._current_position: float = 0.0
 
     def required_columns(self) -> List[str]:
-        return ["open", "high", "low", "close", "volume"]
+        return ["close"]
 
     def warmup_period(self) -> int:
-        return self.lookback + 30
-
-    def _compute_features(self, data: pd.DataFrame) -> np.ndarray:
-        """Compute features for HMM regime detection.
-
-        Features:
-        1. Returns (log)
-        2. Realized volatility (rolling)
-        3. Return skewness (rolling)
-        4. Volume change (log)
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Feature matrix (n_samples x n_features).
-        """
-        close = data["close"]
-        returns = close.pct_change().dropna()
-
-        if len(returns) < 20:
-            return np.array([]).reshape(0, 4)
-
-        # Log returns
-        log_returns = np.log(1 + returns)
-
-        # Rolling realized volatility (21-day)
-        rolling_vol = log_returns.rolling(21, min_periods=10).std()
-
-        # Rolling skewness (21-day)
-        rolling_skew = log_returns.rolling(21, min_periods=10).skew()
-
-        # Volume change
-        if "volume" in data.columns:
-            volume = data["volume"]
-            vol_change = np.log(1 + volume.pct_change().clip(-0.99, 10))
-        else:
-            vol_change = pd.Series(0, index=returns.index)
-
-        # Align all features
-        features = pd.DataFrame({
-            "returns": log_returns,
-            "volatility": rolling_vol,
-            "skewness": rolling_skew,
-            "volume_change": vol_change,
-        }).dropna()
-
-        if len(features) < 10:
-            return np.array([]).reshape(0, 4)
-
-        return features.values
-
-    def fit_hmm(self, data: pd.DataFrame) -> bool:
-        """Fit Hidden Markov Model on return features.
-
-        Uses Gaussian HMM with full covariance matrices.
-        Initializes means to encourage separation:
-        - Regime 0 (Trending Up): positive mean return
-        - Regime 1 (Trending Down): negative mean return
-        - Regime 2 (Mean-Reverting): near-zero mean, lower vol
-
-        Reference:
-            Hamilton (1989), Econometrica, 57(2), 357-384.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            True if model was fitted successfully.
-        """
-        if not HAS_HMMLEARN:
-            # Fallback: use simple regime detection
-            return self._fit_simple_regime(data)
-
-        features = self._compute_features(data)
-        if len(features) < 30:
-            return False
-
-        try:
-            model = GaussianHMM(
-                n_components=self.n_regimes,
-                covariance_type="full",
-                n_iter=self.hmm_iterations,
-                random_state=42,
-                tol=1e-4,
-            )
-
-            # Initialize with reasonable starting values
-            n_features = features.shape[1]
-            model.startprob_ = np.ones(self.n_regimes) / self.n_regimes
-            model.transmat_ = np.ones((self.n_regimes, self.n_regimes)) * 0.05
-            np.fill_diagonal(model.transmat_, 0.9)
-            # Normalize rows
-            model.transmat_ /= model.transmat_.sum(axis=1, keepdims=True)
-
-            model.means_ = np.zeros((self.n_regimes, n_features))
-            if n_features >= 1:
-                model.means_[0, 0] = 0.001   # Trending up: positive return
-                model.means_[1, 0] = -0.001  # Trending down: negative return
-                model.means_[2, 0] = 0.0     # Mean-reverting: flat
-            if n_features >= 2:
-                model.means_[2, 1] = float(np.mean(features[:, 1])) * 0.5
-
-            model.fit(features)
-            self._hmm_model = model
-            return True
-
-        except Exception:
-            return self._fit_simple_regime(data)
-
-    def _fit_simple_regime(self, data: pd.DataFrame) -> bool:
-        """Simple regime detection without hmmlearn.
-
-        Uses rolling return and volatility to classify regimes.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            True (always succeeds).
-        """
-        self._hmm_model = None
-        return True
-
-    def detect_regime(self, data: pd.DataFrame) -> Tuple[int, np.ndarray]:
-        """Detect the current market regime.
-
-        Uses Viterbi algorithm to find the most likely state sequence,
-        then returns the current state and state probabilities.
-
-        Reference:
-            Rabiner (1989), Proceedings of the IEEE, 77(2), 257-286.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Tuple of (current_regime, regime_probabilities).
-        """
-        features = self._compute_features(data)
-
-        if len(features) < 10:
-            probs = np.ones(self.n_regimes) / self.n_regimes
-            return 2, probs  # Default: mean-reverting
-
-        if self._hmm_model is not None and HAS_HMMLEARN:
-            try:
-                # Predict current state using Viterbi
-                states = self._hmm_model.predict(features)
-                current_state = int(states[-1])
-
-                # Compute state probabilities using forward algorithm
-                post_probs = self._hmm_model.predict_proba(features)
-                current_probs = post_probs[-1]
-
-                self._current_regime = current_state
-                self._regime_probs = current_probs
-                return current_state, current_probs
-            except Exception:
-                pass
-
-        # Fallback: simple regime detection based on recent returns and volatility
-        close = data["close"]
-        returns = close.pct_change().dropna()
-
-        if len(returns) < 20:
-            return self.n_regimes - 1, np.ones(self.n_regimes) / self.n_regimes
-
-        # Recent return
-        recent_return = float(returns.iloc[-20:].mean()) * 252  # Annualized
-        # Recent volatility
-        recent_vol = float(returns.iloc[-20:].std()) * np.sqrt(252)
-        # Long-term volatility
-        lt_vol = float(returns.std()) * np.sqrt(252) if len(returns) > 50 else recent_vol
-
-        # Classify
-        probs = np.zeros(self.n_regimes)
-
-        if self.n_regimes == 2:
-            # Two regimes: trending up (0) and trending down (1)
-            if recent_return > 0:
-                probs[self.TRENDING_UP] = 0.7
-                probs[self.TRENDING_DOWN] = 0.3
-            else:
-                probs[self.TRENDING_UP] = 0.3
-                probs[self.TRENDING_DOWN] = 0.7
-        else:
-            # Three regimes: trending up, trending down, mean-reverting
-            mr_idx = min(self.MEAN_REVERTING, self.n_regimes - 1)
-            if recent_return > 0.05 and recent_vol < lt_vol * 1.2:
-                # Trending up: positive return, normal or low vol
-                probs[self.TRENDING_UP] = 0.6
-                probs[mr_idx] = 0.3
-                probs[self.TRENDING_DOWN] = 0.1
-            elif recent_return < -0.05 and recent_vol < lt_vol * 1.2:
-                # Trending down: negative return, normal or low vol
-                probs[self.TRENDING_DOWN] = 0.6
-                probs[mr_idx] = 0.3
-                probs[self.TRENDING_UP] = 0.1
-            elif recent_vol > lt_vol * 1.5:
-                # High volatility: mean-reverting regime
-                probs[mr_idx] = 0.5
-                if recent_return > 0:
-                    probs[self.TRENDING_UP] = 0.3
-                    probs[self.TRENDING_DOWN] = 0.2
-                else:
-                    probs[self.TRENDING_DOWN] = 0.3
-                    probs[self.TRENDING_UP] = 0.2
-            else:
-                # Default: mean-reverting
-                probs[mr_idx] = 0.4
-                probs[self.TRENDING_UP] = 0.3
-                probs[self.TRENDING_DOWN] = 0.3
-
-        current_regime = int(np.argmax(probs))
-        self._current_regime = current_regime
-        self._regime_probs = probs
-        return current_regime, probs
+        return self.hmm_lookback + 10
 
     def generate_signal(self, data: pd.DataFrame) -> Optional[Signal]:
-        """Generate regime-based trading signal.
-
-        Applies strategy logic appropriate for the detected regime:
-        - Trending Up: Buy on momentum
-        - Trending Down: Sell / go short
-        - Mean-Reverting: Buy oversold, sell overbought
-
-        Only generates signals when regime probability exceeds threshold.
-
-        Args:
-            data: OHLCV DataFrame.
-
-        Returns:
-            Signal appropriate for the current regime, or None.
-        """
         if not self.validate_data(data):
             return None
 
-        # Retrain HMM periodically
-        if self._hmm_model is None or (
-            len(data) - self._last_train_idx >= self.retrain_frequency
-        ):
-            self.fit_hmm(data)
-            self._last_train_idx = len(data)
+        regime = self.detect_regime(data)
+        raw_signal = self._regime_signal(regime, data)
+        cost = self.transaction_cost_bps / 10000.0
 
-        # Detect current regime
-        regime, probs = self.detect_regime(data)
-
-        # Check confidence threshold
-        max_prob = float(np.max(probs))
-        if max_prob < self.confidence_threshold:
+        if abs(raw_signal) < cost * 2 or abs(raw_signal) < 1e-10:
+            if abs(raw_signal) < 1e-10 and self._current_position != 0.0:
+                return self._exit_signal(data)
             return None
 
+        idx = len(data) - 1
+        if idx - self._last_trade_bar < self.min_trade_interval_bars:
+            return None
+        if abs(raw_signal - self._current_position) < 0.01:
+            return None
+
+        self._last_trade_bar = idx
+        self._current_position = raw_signal
+
+        return Signal(
+            symbol=self.symbol,
+            signal_type=SignalType.BUY if raw_signal > 0 else SignalType.SELL,
+            confidence=round(min(abs(raw_signal), 1.0), 4),
+            price=round(float(data["close"].iloc[-1]), 6),
+            source_agent=self.name,
+            source_strategy=self.name,
+            reasoning=f"Regime {REGIME_LABELS.get(regime, '?')}: signal={raw_signal:.4f} cost={cost:.4f}",
+            evidence={
+                "regime": REGIME_LABELS.get(regime, "unknown"),
+                "raw_signal": round(raw_signal, 4),
+                "transaction_cost_bps": self.transaction_cost_bps,
+            },
+            factors=["regime_based", REGIME_LABELS.get(regime, "unknown")],
+        )
+
+    def detect_regime(self, data: pd.DataFrame) -> int:
+        regime = self._detect_hmm(data) if HMM_AVAILABLE else self._detect_fallback(data)
+        self._regime_history.append(regime)
+
+        limit = 2 * self.regime_stability_bars
+        if len(self._regime_history) > limit:
+            self._regime_history = self._regime_history[-limit:]
+
+        if len(self._regime_history) < self.regime_stability_bars:
+            return regime
+
+        recent = self._regime_history[-self.regime_stability_bars:]
+        if len(set(recent)) == 1:
+            return recent[0]
+        return max(set(recent), key=recent.count)
+
+    def _detect_hmm(self, data: pd.DataFrame) -> int:
+        if self._hmm_model is None and not self._fit_hmm(data):
+            return self._detect_fallback(data)
+
+        features = self._compute_features(data)
+        if len(features) < 10:
+            return 2
+
+        try:
+            state = int(self._hmm_model.predict(features)[-1])
+            return self._state_to_regime.get(state, 2) if self._state_to_regime else state
+        except Exception as exc:
+            logger.warning("HMM predict failed: %s", exc)
+            return self._detect_fallback(data)
+
+    def _detect_fallback(self, data: pd.DataFrame) -> int:
         close = data["close"]
-        current_price = float(close.iloc[-1])
+        returns = close.pct_change().dropna()
+        if len(returns) < 20:
+            return 2
 
-        # Compute indicators based on regime
-        if regime == self.TRENDING_UP:
-            # Trend following: buy if above MA
+        r = float(returns.iloc[-20:].mean()) * 252
+        v = float(returns.iloc[-20:].std()) * np.sqrt(252)
+        lt_v = float(returns.std()) * np.sqrt(252) if len(returns) > 50 else v
+        hv = v > lt_v * 1.5
+
+        if hv and self.n_regimes >= 4:
+            return 3
+        if r > 0.05 and not hv:
+            return 0
+        if r < -0.05 and not hv:
+            return 1
+        return 2
+
+    def _compute_features(self, data: pd.DataFrame) -> np.ndarray:
+        close = data["close"]
+        returns = close.pct_change().dropna()
+        if len(returns) < 20:
+            return np.array([]).reshape(0, 2)
+        log_ret = np.log(1 + returns)
+        vol = log_ret.rolling(21, min_periods=10).std()
+        features = pd.DataFrame({"ret": log_ret, "vol": vol}).dropna()
+        return features.values if len(features) >= 10 else np.array([]).reshape(0, 2)
+
+    def _fit_hmm(self, data: pd.DataFrame) -> bool:
+        features = self._compute_features(data)
+        if len(features) < 30:
+            return False
+        try:
+            model = hmm.GaussianHMM(
+                n_components=self.n_regimes,
+                covariance_type=self.covariance_type,
+                n_iter=100, random_state=42, tol=1e-4,
+            )
+            model.startprob_ = np.ones(self.n_regimes) / self.n_regimes
+            model.transmat_ = np.full((self.n_regimes, self.n_regimes), 0.05)
+            np.fill_diagonal(model.transmat_, 0.9)
+            model.transmat_ /= model.transmat_.sum(axis=1, keepdims=True)
+
+            nf = features.shape[1]
+            model.means_ = np.zeros((self.n_regimes, nf))
+            if nf >= 1:
+                for i in range(self.n_regimes):
+                    t = i / (self.n_regimes - 1) if self.n_regimes > 1 else 0.5
+                    model.means_[i, 0] = -0.001 + t * 0.002
+
+            model.fit(features)
+            self._hmm_model = model
+            self._label_regimes(features)
+            return True
+        except Exception as exc:
+            logger.warning("HMM fit failed: %s", exc)
+            return False
+
+    def _label_regimes(self, features: np.ndarray) -> None:
+        """Map HMM states to semantic regimes by sorting on mean return."""
+        try:
+            states = self._hmm_model.predict(features)
+            state_returns = {s: [] for s in range(self.n_regimes)}
+            for t, s in enumerate(states):
+                state_returns[s].append(features[t, 0])
+            means = {s: np.mean(v) for s, v in state_returns.items() if v}
+            sorted_states = sorted(means, key=means.get, reverse=True)
+
+            m = {sorted_states[0]: 0, sorted_states[-1]: 1}
+            if self.n_regimes >= 3:
+                m[sorted_states[1]] = 2
+            if self.n_regimes >= 4:
+                m[(sorted_states[2:-1] or [sorted_states[2]])[0]] = 3
+            self._state_to_regime = m
+        except Exception as exc:
+            logger.warning("Regime labeling failed: %s", exc)
+            self._state_to_regime = {i: min(i, 3) if i < 4 else 2 for i in range(self.n_regimes)}
+
+    def _regime_signal(self, regime: int, data: pd.DataFrame) -> float:
+        close = data["close"]
+        if regime == 0:
             sma = self.compute_sma(close, 20)
-            ema = self.compute_ema(close, 20)
-
-            if len(sma) > 1 and not np.isnan(sma.iloc[-1]):
-                if current_price > sma.iloc[-1] and close.iloc[-2] <= sma.iloc[-2]:
-                    confidence = max_prob * 0.9
-                    return Signal(
-                        symbol=self.symbol,
-                        signal_type=SignalType.BUY,
-                        confidence=round(confidence, 4),
-                        price=round(current_price, 6),
-                        stop_loss=round(current_price * (1 - self.stop_loss_pct), 6),
-                        take_profit=round(current_price * (1 + self.take_profit_pct), 6),
-                        source_agent=self.name,
-                        source_strategy=self.name,
-                        reasoning=(
-                            f"Regime TRENDING_UP: prob={max_prob:.2f}, "
-                            f"price={current_price:.4f} crossed above SMA20"
-                        ),
-                        evidence={
-                            "regime": "trending_up",
-                            "regime_probs": [round(float(p), 4) for p in probs],
-                            "sma20": round(float(sma.iloc[-1]), 4),
-                        },
-                        factors=["regime_based", "trend_following"],
-                    )
-
-        elif regime == self.TRENDING_DOWN:
-            # Short on downtrend
+            if len(sma) < 2 or np.isnan(sma.iloc[-1]):
+                return 0.0
+            ratio = float(close.iloc[-1]) / sma.iloc[-1]
+            return self.max_position * min((ratio - 1.0) * 10, 1.0) if ratio > 1.0 else 0.0
+        if regime == 1:
             sma = self.compute_sma(close, 20)
-
-            if len(sma) > 1 and not np.isnan(sma.iloc[-1]):
-                if current_price < sma.iloc[-1] and close.iloc[-2] >= sma.iloc[-2]:
-                    confidence = max_prob * 0.9
-                    return Signal(
-                        symbol=self.symbol,
-                        signal_type=SignalType.SELL,
-                        confidence=round(confidence, 4),
-                        price=round(current_price, 6),
-                        stop_loss=round(current_price * (1 + self.stop_loss_pct), 6),
-                        take_profit=round(current_price * (1 - self.take_profit_pct), 6),
-                        source_agent=self.name,
-                        source_strategy=self.name,
-                        reasoning=(
-                            f"Regime TRENDING_DOWN: prob={max_prob:.2f}, "
-                            f"price={current_price:.4f} crossed below SMA20"
-                        ),
-                        evidence={
-                            "regime": "trending_down",
-                            "regime_probs": [round(float(p), 4) for p in probs],
-                            "sma20": round(float(sma.iloc[-1]), 4),
-                        },
-                        factors=["regime_based", "trend_following"],
-                    )
-
-        elif regime == self.MEAN_REVERTING:
-            # Mean reversion: RSI extremes
+            if len(sma) < 2 or np.isnan(sma.iloc[-1]):
+                return 0.0
+            ratio = float(close.iloc[-1]) / sma.iloc[-1]
+            return -self.max_position * min((1.0 - ratio) * 10, 1.0) if ratio < 1.0 else 0.0
+        if regime == 2:
             rsi = self.compute_rsi(close, 14)
+            if len(rsi) < 1 or np.isnan(rsi.iloc[-1]):
+                return 0.0
+            crsi = float(rsi.iloc[-1])
+            if crsi < 30:
+                return self.max_position * 0.5
+            if crsi > 70:
+                return -self.max_position * 0.5
+        return 0.0
 
-            if len(rsi) > 0 and not np.isnan(rsi.iloc[-1]):
-                current_rsi = float(rsi.iloc[-1])
-
-                if current_rsi < 30:
-                    # Oversold: buy
-                    confidence = max_prob * 0.8
-                    return Signal(
-                        symbol=self.symbol,
-                        signal_type=SignalType.BUY,
-                        confidence=round(confidence, 4),
-                        price=round(current_price, 6),
-                        stop_loss=round(current_price * (1 - self.stop_loss_pct), 6),
-                        take_profit=round(current_price * (1 + self.take_profit_pct), 6),
-                        source_agent=self.name,
-                        source_strategy=self.name,
-                        reasoning=(
-                            f"Regime MEAN_REVERTING: prob={max_prob:.2f}, "
-                            f"RSI={current_rsi:.1f} (oversold)"
-                        ),
-                        evidence={
-                            "regime": "mean_reverting",
-                            "regime_probs": [round(float(p), 4) for p in probs],
-                            "rsi": round(current_rsi, 2),
-                        },
-                        factors=["regime_based", "mean_reversion"],
-                    )
-
-                elif current_rsi > 70:
-                    # Overbought: sell
-                    confidence = max_prob * 0.8
-                    return Signal(
-                        symbol=self.symbol,
-                        signal_type=SignalType.SELL,
-                        confidence=round(confidence, 4),
-                        price=round(current_price, 6),
-                        stop_loss=round(current_price * (1 + self.stop_loss_pct), 6),
-                        take_profit=round(current_price * (1 - self.take_profit_pct), 6),
-                        source_agent=self.name,
-                        source_strategy=self.name,
-                        reasoning=(
-                            f"Regime MEAN_REVERTING: prob={max_prob:.2f}, "
-                            f"RSI={current_rsi:.1f} (overbought)"
-                        ),
-                        evidence={
-                            "regime": "mean_reverting",
-                            "regime_probs": [round(float(p), 4) for p in probs],
-                            "rsi": round(current_rsi, 2),
-                        },
-                        factors=["regime_based", "mean_reversion"],
-                    )
-
-        return None
-
-
-import numpy as np
-from typing import Optional
-from dataclasses import dataclass
-
-@dataclass
-class RegimeAllocation:
-    regime: str
-    strategy_weights: dict[str, float]
-    risk_multiplier: float
-    leverage: float
-
-class RegimeAwareStrategy:
-    def __init__(self):
-        self.regime_allocations = {
-            "BULL": RegimeAllocation("BULL", {"momentum": 0.5, "trend": 0.3, "breakout": 0.2}, 1.0, 1.0),
-            "BEAR": RegimeAllocation("BEAR", {"mean_reversion": 0.4, "volatility_arb": 0.3, "defensive": 0.3}, 0.5, 0.5),
-            "SIDEWAYS": RegimeAllocation("SIDEWAYS", {"mean_reversion": 0.4, "pairs_trading": 0.3, "market_making": 0.3}, 0.7, 0.7),
-            "HIGH_VOL": RegimeAllocation("HIGH_VOL", {"volatility_arb": 0.5, "defensive": 0.3, "options": 0.2}, 0.3, 0.3),
-            "CRISIS": RegimeAllocation("CRISIS", {"defensive": 0.6, "volatility_arb": 0.4}, 0.1, 0.1),
-        }
-    
-    def get_allocation(self, regime: str) -> RegimeAllocation:
-        return self.regime_allocations.get(regime, self.regime_allocations["SIDEWAYS"])
-    
-    def get_strategy_weights(self, regime: str) -> dict[str, float]:
-        alloc = self.get_allocation(regime)
-        return alloc.strategy_weights
-    
-    def get_risk_multiplier(self, regime: str) -> float:
-        return self.get_allocation(regime).risk_multiplier
+    def _exit_signal(self, data: pd.DataFrame) -> Signal:
+        exit_type = SignalType.CLOSE_LONG if self._current_position > 0 else SignalType.CLOSE_SHORT
+        prior = self._current_position
+        self._current_position = 0.0
+        self._last_trade_bar = len(data) - 1
+        return Signal(
+            symbol=self.symbol, signal_type=exit_type, confidence=0.7,
+            price=round(float(data["close"].iloc[-1]), 6),
+            source_agent=self.name, source_strategy=self.name,
+            reasoning=f"RegimeBased EXIT (prior={prior:.3f})",
+            evidence={"prior_position": round(float(prior), 4)},
+            factors=["regime_based", "exit"],
+        )

@@ -22,6 +22,7 @@ from quant_nanggroe.engine.execution.fill import FillTracker
 from quant_nanggroe.engine.execution.guards.cooldown import CooldownGuard
 from quant_nanggroe.engine.execution.guards.max_position import MaxPositionGuard
 from quant_nanggroe.engine.execution.guards.whitelist import WhitelistGuard
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class ExecutionManager:
         self._cooldown_guard = CooldownGuard()
         self._max_position_guard = MaxPositionGuard()
         self._whitelist_guard = WhitelistGuard()
+        self._kill_switch: Optional[KillSwitch] = None
         self._audit_log: List[Dict[str, Any]] = []
 
     def add_broker(self, broker: Broker, primary: bool = False) -> None:
@@ -76,7 +78,22 @@ class ExecutionManager:
         if self._primary_broker == name:
             self._primary_broker = next(iter(self._brokers), None)
 
-    async def execute_order(self, order: Order) -> Optional[Fill]:
+    def set_kill_switch(self, kill_switch: KillSwitch) -> None:
+        """Attach a KillSwitch instance for early warning checks.
+
+        Args:
+            kill_switch: KillSwitch instance to query for warnings.
+        """
+        self._kill_switch = kill_switch
+
+    async def execute_order(
+        self,
+        order: Order,
+        daily_pnl_pct: float = 0.0,
+        weekly_pnl_pct: float = 0.0,
+        max_drawdown_pct: float = 0.0,
+        volatility_pct: float = 0.0,
+    ) -> Optional[Fill]:
         """Execute an order through the guard pipeline and broker.
 
         Args:
@@ -108,7 +125,33 @@ class ExecutionManager:
             logger.error("No broker available for order %s", order.id)
             return None
 
-        # 3. Submit order
+        # 3. Kill switch early warning check
+        if self._kill_switch is not None:
+            warning = self._kill_switch.check_warning(
+                daily_pnl_pct=daily_pnl_pct,
+                weekly_pnl_pct=weekly_pnl_pct,
+                max_drawdown_pct=max_drawdown_pct,
+                volatility_pct=volatility_pct,
+            )
+            if warning:
+                logger.warning(
+                    "Kill switch early warning: daily=%.2f%% weekly=%.2f%% "
+                    "drawdown=%.2f%% volatility=%.2f%%",
+                    daily_pnl_pct, weekly_pnl_pct,
+                    max_drawdown_pct, volatility_pct,
+                )
+                self._audit_log.append({
+                    "action": "KILL_SWITCH_WARNING",
+                    "order_id": order.id,
+                    "symbol": order.symbol,
+                    "side": order.side.value,
+                    "daily_pnl_pct": daily_pnl_pct,
+                    "weekly_pnl_pct": weekly_pnl_pct,
+                    "max_drawdown_pct": max_drawdown_pct,
+                    "volatility_pct": volatility_pct,
+                })
+
+        # 4. Submit order
         try:
             updated_order = await broker.submit_order(order)
             self._order_manager.track(updated_order)

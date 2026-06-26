@@ -229,6 +229,8 @@ class BaseEngine(ABC):
         price: float,
     ) -> float:
         """Convert target notional exposure to number of units/contracts."""
+        if price == 0.0:
+            return float('inf')
         return target_notional / price
 
     # ── Main entry ──

@@ -1,0 +1,126 @@
+# =============================================================================
+# Quant Nanggroe AI - Prometheus Configuration
+# Scrapes metrics from the FastAPI app, PostgreSQL, Redis, and Nginx
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+  external_labels:
+    cluster: 'quant-nanggroe'
+    environment: 'production'
+    region: 'default'
+
+scrape_configs:
+  # ── Prometheus Self-Monitoring ─────────────────────────────────────────
+  - job_name: 'prometheus'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          component: 'prometheus'
+          service: 'monitoring'
+
+  # ── Quant Nanggroe FastAPI Application ─────────────────────────────────
+  - job_name: 'qn-ai-app'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['qn-ai:8000']
+        labels:
+          component: 'fastapi-app'
+          service: 'qn-ai'
+          framework: 'fastapi'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'qn-ai-app'
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database Metrics
+  # Requires postgres_exporter sidecar
+  # ---------------------------------------------------------------------------
+  - job_name: 'postgresql'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['postgres:9187']
+        labels:
+          component: 'database'
+          service: 'postgresql'
+          db: 'agentic_db'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'agentic-postgres'
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache Metrics
+  # Requires redis_exporter sidecar
+  # ---------------------------------------------------------------------------
+  - job_name: 'redis'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['redis:9121']
+        labels:
+          component: 'cache'
+          service: 'redis'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'agentic-redis'
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy Metrics
+  # Requires nginx-prometheus-exporter sidecar or stub_status
+  # ---------------------------------------------------------------------------
+  - job_name: 'nginx'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['nginx:9113']
+        labels:
+          component: 'reverse-proxy'
+          service: 'nginx'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'agentic-nginx'
+
+  # ---------------------------------------------------------------------------
+  # Node Exporter (Host System Metrics)
+  # Requires node_exporter sidecar for CPU, memory, disk, network
+  # ---------------------------------------------------------------------------
+  - job_name: 'node'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          component: 'host'
+          service: 'node-exporter'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'agentic-host'
+
+  # ---------------------------------------------------------------------------
+  # Grafana Metrics
+  # ---------------------------------------------------------------------------
+  - job_name: 'grafana'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          component: 'dashboard'
+          service: 'grafana'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'agentic-grafana'

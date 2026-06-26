@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quant Nanggroe AI — Trading Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #0a0e1a;
+  color: #c8d6e5;
+  min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #0d1321 0%, #1a2332 100%);
+  border-bottom: 2px solid #00d4aa;
+  padding: 16px 24px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+}
+.header h1 {
+  font-size: clamp(16px, 3vw, 24px);
+  font-weight: 700;
+  color: #00d4aa;
+  letter-spacing: 0.5px;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.timestamp { font-size: 12px; color: #5a7a9a; }
+.btn-refresh {
+  background: #00d4aa; color: #0a0e1a; border: none; border-radius: 6px;
+  padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-refresh:hover { background: #00f0c0; }
+.btn-refresh:active { transform: scale(0.96); }
+.btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+.container {
+  max-width: 1440px; margin: 0 auto; padding: 20px 16px;
+  display: grid; gap: 16px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .container { grid-template-columns: repeat(2, 1fr); padding: 20px 24px; }
+}
+@media (min-width: 1200px) {
+  .container { grid-template-columns: repeat(3, 1fr); }
+}
+.card {
+  background: #111827; border: 1px solid #1e2d3d; border-radius: 12px;
+  padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.card-full { grid-column: 1 / -1; }
+.card h2 {
+  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  color: #5a7a9a; margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid #1e2d3d;
+}
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { padding: 6px 0; }
+.stat-label { font-size: 11px; color: #5a7a9a; margin-bottom: 2px; }
+.stat-value { font-size: 18px; font-weight: 700; color: #e8edf5; }
+.stat-value.green { color: #00d4aa; }
+.stat-value.red { color: #ff4757; }
+.stat-value.yellow { color: #ffa502; }
+.stat-value.cyan { color: #45aaf2; }
+.status-dot {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 6px;
+}
+.status-dot.green { background: #00d4aa; box-shadow: 0 0 6px #00d4aa88; }
+.status-dot.yellow { background: #ffa502; box-shadow: 0 0 6px #ffa50288; }
+.status-dot.red { background: #ff4757; box-shadow: 0 0 6px #ff475788; }
+.strategy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.strategy-table th {
+  text-align: left; padding: 6px 8px; font-size: 11px; color: #5a7a9a;
+  text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1e2d3d;
+}
+.strategy-table td { padding: 6px 8px; border-bottom: 1px solid #131d2b; }
+.strategy-table tr:hover td { background: #1a2332; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-active { background: #00d4aa22; color: #00d4aa; border: 1px solid #00d4aa44; }
+.badge-disabled { background: #ff475722; color: #ff4757; border: 1px solid #ff475744; }
+.badge-pass { background: #00d4aa22; color: #00d4aa; }
+.badge-fail { background: #ff475722; color: #ff4757; }
+.no-data {
+  text-align: center; padding: 24px; color: #3a5a7a; font-size: 14px;
+}
+.alert-item {
+  padding: 6px 0; font-size: 13px; border-bottom: 1px solid #131d2b;
+}
+.alert-warning { color: #ffa502; }
+.alert-critical { color: #ff4757; }
+.kill-level { font-size: 13px; margin: 4px 0; }
+.kill-level span { font-weight: 600; }
+.footer { text-align: center; padding: 16px; font-size: 11px; color: #3a5a7a; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>Quant Nanggroe AI — Autonomous Trading Dashboard</h1>
+  </div>
+  <div class="header-right">
+    <span class="timestamp" id="refreshTimestamp">—</span>
+    <button class="btn-refresh" id="btnRefresh" onclick="loadState()">Refresh</button>
+  </div>
+</div>
+
+<div class="container" id="dashboard">
+  <div class="card">
+    <h2>System Status</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Daemon PID</div><div class="stat-value" id="stat-pid">—</div></div>
+      <div class="stat"><div class="stat-label">Cycle</div><div class="stat-value" id="stat-cycle">—</div></div>
+      <div class="stat"><div class="stat-label">Uptime</div><div class="stat-value" id="stat-uptime">—</div></div>
+      <div class="stat"><div class="stat-label">Last Cycle</div><div class="stat-value" id="stat-lastcycle">—</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:13px;">
+      <span class="status-dot green" id="killSwitchDot"></span>
+      <span id="killSwitchLabel">Kill Switch: Checking...</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>P&amp;L Snapshot</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Cash Balance</div><div class="stat-value green" id="stat-cash">—</div></div>
+      <div class="stat"><div class="stat-label">Total Value</div><div class="stat-value" id="stat-totalval">—</div></div>
+      <div class="stat"><div class="stat-label">Total P&amp;L</div><div class="stat-value" id="stat-totalpnl">—</div></div>
+      <div class="stat"><div class="stat-label">Drawdown</div><div class="stat-value" id="stat-drawdown">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Anomaly Alerts</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Warnings</div><div class="stat-value yellow" id="stat-warnings">0</div></div>
+      <div class="stat"><div class="stat-label">Critical</div><div class="stat-value red" id="stat-criticals">0</div></div>
+    </div>
+    <div id="anomalyList"><div class="no-data">No data</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Regime</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Market Regime</div><div class="stat-value cyan" id="regime-name">—</div></div>
+      <div class="stat"><div class="stat-label">Confidence</div><div class="stat-value" id="regime-confidence">—</div></div>
+      <div class="stat"><div class="stat-label">Multiplier</div><div class="stat-value" id="regime-multiplier">—</div></div>
+      <div class="stat"><div class="stat-label">Vol Regime</div><div class="stat-value" id="regime-vol">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Risk Status</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Max Drawdown</div><div class="stat-value" id="risk-drawdown">—</div></div>
+      <div class="stat"><div class="stat-label">Auto-Disabled</div><div class="stat-value" id="risk-autodisabled">—</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:13px;" id="killSwitchLevels"></div>
+  </div>
+
+  <div class="card card-full">
+    <h2>Strategy Health</h2>
+    <div style="overflow-x:auto"><table class="strategy-table" id="strategyTable">
+      <thead><tr>
+        <th>Strategy</th><th>Status</th><th>Sharpe</th><th>PSR</th><th>DSR</th><th>Auto-Disable</th><th>Verdict</th>
+      </tr></thead>
+      <tbody id="strategyBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="footer">
+  Quant Nanggroe AI &mdash; Phase 4.5 &mdash; <span id="footerTimestamp"></span>
+</div>
+
+<script>
+const STATE_FILES = [
+  { key: 'state', path: '../paper_state/state.json' },
+  { key: 'pnl', path: '../paper_state/pnl.csv' },
+  { key: 'autoDisable', path: '../paper_state/auto_disable_state.json' },
+  { key: 'tuned', path: '../paper_state/tuned_params.json' },
+  { key: 'killSwitch', path: '../paper_state/kill_switch_state.json' },
+  { key: 'correlation', path: '../paper_state/correlation_state.json' },
+  { key: 'budget', path: '../paper_state/budget_state.json' },
+  { key: 'anomaly', path: '../paper_state/anomaly_state.json' },
+  { key: 'regime', path: '../paper_state/regime_adapted_params.json' },
+  { key: 'alpha', path: '../docs/alpha_report.json' },
+  { key: 'pid', path: '../paper_state/daemon.pid' },
+];
+
+const STRATEGY_NAMES = ['Momentum','RegimeBased','PairsTrading','StatisticalArbitrage','VolatilityArbitrage','MeanReversion','CryptoSpecific','MarketMaking'];
+
+async function fetchFile(path, type) {
+  try {
+    const resp = await fetch(path, { cache: 'no-cache' });
+    if (!resp.ok) return null;
+    if (type === 'csv') return await resp.text();
+    if (type === 'text' || type === 'pid') return await resp.text();
+    return await resp.json();
+  } catch { return null; }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+function getValOr(data, path, fallback) {
+  try {
+    let cur = data;
+    for (const key of path.split('.')) {
+      if (cur == null) return fallback;
+      cur = cur[key];
+    }
+    return cur !== undefined && cur !== null ? cur : fallback;
+  } catch { return fallback; }
+}
+
+function $(id) { return document.getElementById(id); }
+
+async function loadState() {
+  const btn = $('btnRefresh');
+  btn.disabled = true; btn.textContent = 'Loading...';
+
+  const results = {};
+  for (const f of STATE_FILES) {
+    const ext = f.path.split('.').pop();
+    const type = ext === 'csv' ? 'csv' : (ext === 'pid' ? 'pid' : 'json');
+    results[f.key] = await fetchFile(f.path, type);
+  }
+
+  renderDashboard(results);
+
+  $('refreshTimestamp').textContent = new Date().toLocaleString();
+  btn.disabled = false; btn.textContent = 'Refresh';
+}
+
+function renderDashboard(d) {
+  const state = d.state;
+  const pid = d.pid;
+  const pnlRows = d.pnl ? parseCSV(d.pnl) : [];
+  const autoDisable = d.autoDisable;
+  const tuned = d.tuned;
+  const alpha = d.alpha;
+  const anomaly = d.anomaly;
+  const regime = d.regime;
+  const killSwitch = d.killSwitch;
+  const lastRow = pnlRows.length > 0 ? pnlRows[pnlRows.length - 1] : null;
+  const firstRow = pnlRows.length > 0 ? pnlRows[0] : null;
+
+  // System Status
+  $('stat-pid').textContent = pid ? pid.trim() : 'No PID';
+  $('stat-cycle').textContent = state ? getValOr(state, 'cycle_count', '—') : '—';
+  $('stat-lastcycle').textContent = lastRow ? lastRow.timestamp : '—';
+
+  // Uptime estimate from log vs first P&L entry
+  if (firstRow && firstRow.timestamp) {
+    const start = new Date(firstRow.timestamp);
+    const now = new Date();
+    const diffMs = now - start;
+    if (diffMs > 0) {
+      const hrs = Math.floor(diffMs / 3600000);
+      const mins = Math.floor((diffMs % 3600000) / 60000);
+      $('stat-uptime').textContent = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+    } else { $('stat-uptime').textContent = '< 1m'; }
+  } else { $('stat-uptime').textContent = '—'; }
+
+  // Kill Switch
+  const ksDot = $('killSwitchDot');
+  const ksLabel = $('killSwitchLabel');
+  if (killSwitch) {
+    const active = getValOr(killSwitch, 'active', false);
+    const level = getValOr(killSwitch, 'active_level', null);
+    if (active) {
+      ksDot.className = 'status-dot red';
+      ksLabel.textContent = `Kill Switch: ACTIVE (${level || 'level_1'})`;
+    } else {
+      ksDot.className = 'status-dot green';
+      ksLabel.textContent = 'Kill Switch: Inactive';
+    }
+  } else {
+    // Try inferring from daemon.log
+    ksDot.className = 'status-dot green';
+    ksLabel.textContent = 'Kill Switch: Unknown (no state file)';
+  }
+
+  // P&L Snapshot
+  if (lastRow) {
+    $('stat-cash').textContent = '$' + parseFloat(lastRow.cash || 0).toLocaleString(undefined, {minimumFractionDigits:2});
+    $('stat-totalval').textContent = '$' + parseFloat(lastRow.total_value || 0).toLocaleString(undefined, {minimumFractionDigits:2});
+    const totalPnl = parseFloat(lastRow.total_pnl || 0);
+    $('stat-totalpnl').textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toFixed(2);
+    $('stat-totalpnl').className = 'stat-value ' + (totalPnl >= 0 ? 'green' : 'red');
+    $('stat-drawdown').textContent = parseFloat(lastRow.drawdown_pct || 0).toFixed(2) + '%';
+    $('stat-drawdown').className = 'stat-value ' + (parseFloat(lastRow.drawdown_pct || 0) < -5 ? 'red' : (parseFloat(lastRow.drawdown_pct || 0) < -2 ? 'yellow' : 'green'));
+  } else {
+    $('stat-cash').textContent = state ? '$' + getValOr(state, 'initial_capital', '—') : '—';
+    $('stat-totalval').textContent = '—';
+    $('stat-totalpnl').textContent = state ? getValOr(state, 'total_pnl', '—') : '—';
+    $('stat-drawdown').textContent = '—';
+  }
+
+  // Strategy Health
+  const tbody = $('strategyBody');
+  tbody.innerHTML = '';
+  const alphaStrs = alpha ? alpha.strategies || {} : {};
+
+  for (const sname of STRATEGY_NAMES) {
+    const tr = document.createElement('tr');
+    const ad = autoDisable ? (autoDisable.strategies || {})[sname] : null;
+    const alphaStrat = alphaStrs[sname] || null;
+    const tunedStrat = tuned ? (tuned.strategies || {})[sname] : null;
+
+    const disabled = ad ? ad.disabled : false;
+    const sharpe = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_sharpe', null) : (tunedStrat ? tunedStrat.default_sharpe : null);
+    const psr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_psr', null) : null;
+    const dsr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_dsr', null) : null;
+    const verdict = alphaStrat ? getValOr(alphaStrat, 'verdict', '—') : (tunedStrat ? '—' : '—');
+    const reason = ad ? ad.disabled_reason || '' : '';
+
+    tr.innerHTML = `
+      <td><strong>${sname}</strong></td>
+      <td><span class="badge ${disabled ? 'badge-disabled' : 'badge-active'}">${disabled ? 'DISABLED' : 'ACTIVE'}</span></td>
+      <td>${sharpe !== null ? (typeof sharpe === 'number' ? sharpe.toFixed(4) : sharpe) : '—'}</td>
+      <td>${psr !== null ? psr : '—'}</td>
+      <td>${dsr !== null ? dsr : '—'}</td>
+      <td style="font-size:11px;color:#5a7a9a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${reason.replace(/"/g,'&quot;')}">${reason ? reason : (disabled ? 'Auto-disabled' : '—')}</td>
+      <td>${verdict !== '—' ? `<span class="badge ${verdict === 'PASS' ? 'badge-pass' : 'badge-fail'}">${verdict}</span>` : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Anomaly Alerts
+  if (anomaly && anomaly.alerts && Array.isArray(anomaly.alerts)) {
+    const warnings = anomaly.alerts.filter(a => (a.level || '').toUpperCase() === 'WARNING').length;
+    const criticals = anomaly.alerts.filter(a => (a.level || '').toUpperCase() === 'CRITICAL').length;
+    $('stat-warnings').textContent = warnings;
+    $('stat-criticals').textContent = criticals;
+    const list = $('anomalyList');
+    list.innerHTML = '';
+    if (anomaly.alerts.length === 0) {
+      list.innerHTML = '<div class="no-data">No alerts</div>';
+    } else {
+      const last = anomaly.alerts.slice(-3).reverse();
+      last.forEach(a => {
+        const d = document.createElement('div');
+        d.className = 'alert-item alert-' + (a.level || 'warning').toLowerCase();
+        d.textContent = `[${a.level || '?'}] ${a.message || a.reason || a.description || ''}`;
+        list.appendChild(d);
+      });
+    }
+  } else if (anomaly && anomaly.anomalies && Array.isArray(anomaly.anomalies)) {
+    const warnings = anomaly.anomalies.filter(a => (a.severity || a.level || '').toUpperCase() === 'WARNING').length;
+    const criticals = anomaly.anomalies.filter(a => (a.severity || a.level || '').toUpperCase() === 'CRITICAL').length;
+    $('stat-warnings').textContent = warnings;
+    $('stat-criticals').textContent = criticals;
+    const list = $('anomalyList');
+    list.innerHTML = '';
+    if (anomaly.anomalies.length === 0) {
+      list.innerHTML = '<div class="no-data">No alerts</div>';
+    } else {
+      const last = anomaly.anomalies.slice(-3).reverse();
+      last.forEach(a => {
+        const d = document.createElement('div');
+        d.className = 'alert-item alert-' + (a.severity || a.level || 'warning').toLowerCase();
+        d.textContent = `[${a.severity || a.level || '?'}] ${a.message || a.description || a.symbol || ''}`;
+        list.appendChild(d);
+      });
+    }
+  } else {
+    $('stat-warnings').textContent = '0';
+    $('stat-criticals').textContent = '0';
+  }
+
+  // Regime
+  if (regime) {
+    const regimeName = getValOr(regime, 'regime', getValOr(regime, 'current_regime', getValOr(regime, 'state', '—')));
+    const confidence = getValOr(regime, 'confidence', getValOr(regime, 'confidence_score', null));
+    const multiplier = getValOr(regime, 'multiplier', getValOr(regime, 'position_multiplier', getValOr(regime, 'mult', null)));
+    const volRegime = getValOr(regime, 'vol_regime', getValOr(regime, 'volatility_regime', getValOr(regime, 'vol_state', null)));
+    $('regime-name').textContent = regimeName;
+    $('regime-confidence').textContent = confidence !== null ? (typeof confidence === 'number' ? (confidence * 100).toFixed(1) + '%' : confidence) : '—';
+    $('regime-multiplier').textContent = multiplier !== null ? (typeof multiplier === 'number' ? multiplier.toFixed(2) + 'x' : multiplier) : '—';
+    $('regime-vol').textContent = volRegime || '—';
+  } else {
+    $('regime-name').textContent = '—';
+    $('regime-confidence').textContent = '—';
+    $('regime-multiplier').textContent = '—';
+    $('regime-vol').textContent = '—';
+  }
+
+  // Risk Status
+  const maxDd = lastRow ? parseFloat(lastRow.drawdown_pct || 0) : (state ? getValOr(state, 'max_drawdown', null) : null);
+  $('risk-drawdown').textContent = maxDd !== null ? maxDd.toFixed(2) + '%' : '—';
+  $('risk-drawdown').className = 'stat-value ' + (maxDd !== null && maxDd < -10 ? 'red' : (maxDd !== null && maxDd < -5 ? 'yellow' : ''));
+
+  // Count auto-disabled
+  if (autoDisable && autoDisable.strategies) {
+    const disabledCount = Object.values(autoDisable.strategies).filter(s => s.disabled).length;
+    $('risk-autodisabled').textContent = disabledCount + ' / 8';
+  } else {
+    $('risk-autodisabled').textContent = '—';
+  }
+
+  // Kill switch levels
+  const ksLevelDiv = $('killSwitchLevels');
+  if (killSwitch) {
+    let html = '';
+    if (killSwitch.levels && typeof killSwitch.levels === 'object') {
+      for (const [k, v] of Object.entries(killSwitch.levels)) {
+        const active = v.active || false;
+        html += `<div class="kill-level">${k}: <span style="color:${active ? '#ff4757' : '#00d4aa'}">${active ? 'ACTIVE' : 'Inactive'}</span>${v.reason ? ' — ' + v.reason : ''}</div>`;
+      }
+    } else {
+      html = `<div class="kill-level">State: ${killSwitch.active ? 'ACTIVE' : 'Inactive'}</div>`;
+    }
+    ksLevelDiv.innerHTML = html || '<div class="no-data">No kill switch data</div>';
+  } else {
+    ksLevelDiv.innerHTML = '<div class="no-data">No kill switch state file</div>';
+  }
+
+  $('footerTimestamp').textContent = new Date().toISOString();
+}
+
+// Auto-load on page load
+document.addEventListener('DOMContentLoaded', loadState);
+</script>
+</body>
+</html>

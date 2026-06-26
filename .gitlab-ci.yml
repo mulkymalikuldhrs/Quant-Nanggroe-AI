@@ -1,0 +1,66 @@
+image: python:3.12-slim
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - .venv/
+
+before_script:
+  - pip install --upgrade pip
+  - pip install poetry
+  - poetry install --with dev
+
+ruff:
+  stage: lint
+  script:
+    - ruff check quant_nanggroe/
+  only:
+    - main
+    - merge_requests
+
+pytest:
+  stage: test
+  script:
+    - pytest tests/ --cov=quant_nanggroe --cov-report=term --cov-report=xml
+  coverage: '/TOTAL.*\s+(\d+%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  only:
+    - main
+    - merge_requests
+
+docker-build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA -f deploy/docker/Dockerfile .
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying via docker-compose..."
+    - docker-compose -f deploy/docker/docker-compose.yml down || true
+    - docker-compose -f deploy/docker/docker-compose.yml up -d
+  only:
+    - main
+  environment:
+    name: production

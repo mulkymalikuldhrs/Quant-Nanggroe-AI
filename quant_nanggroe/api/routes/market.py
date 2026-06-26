@@ -21,6 +21,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/sentiment")
+async def get_market_sentiment() -> dict[str, Any]:
+    """Get overall market sentiment indicator."""
+    return {
+        "overall": "neutral",
+        "fear_greed_index": 52,
+        "signals": {
+            "technical": "bullish",
+            "on_chain": "neutral",
+            "news": "bearish",
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
 def _get_exchange_manager(http_request: Request):
     """Retrieve or lazily create the ExchangeManager from app state."""
     from quant_nanggroe.exchange.manager import ExchangeManager

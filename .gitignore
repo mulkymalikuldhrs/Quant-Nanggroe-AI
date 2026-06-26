@@ -43,7 +43,7 @@ logs/
 *.log
 
 # ── Data ──────────────────────────────────────────────────────────────
-data/
+/data/
 *.db
 *.sqlite3
 dev_qna.db
@@ -89,3 +89,11 @@ screenshots/
 *.mp4
 *.jpg
 *.docx
+
+# Archived legacy packages
+/archive/
+# Restructured paths (moved to subdirs)
+/quant_nanggroe/scripts/
+/quant_nanggroe/database/alembic.ini
+/docs/worklog.md
+

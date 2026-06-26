@@ -17,10 +17,10 @@ Usage
     factory = ExchangeFactory()
 
     # Create a Binance spot exchange
-    broker = factory.create("binance", api_key="...", api_secret="...", market_type="spot")
+    broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="spot")
 
     # Create an OKX futures exchange
-    broker = factory.create("okx", api_key="...", api_secret="...", passphrase="...", market_type="futures")
+    broker = factory.create("okx", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", passphrase="YOUR_API_PASSPHRASE_HERE", market_type="futures")
 
     # Check capabilities
     caps = factory.get_capabilities("binance")
@@ -254,10 +254,10 @@ class ExchangeFactory:
         factory = ExchangeFactory()
 
         # Create a Binance broker
-        broker = factory.create("binance", api_key="key", api_secret="secret")
+        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
 
         # Create an OKX broker with passphrase
-        broker = factory.create("okx", api_key="key", api_secret="secret", passphrase="pass")
+        broker = factory.create("okx", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", passphrase="YOUR_API_PASSPHRASE_HERE")
 
         # Create a paper broker
         broker = factory.create("paper", initial_capital=100_000)

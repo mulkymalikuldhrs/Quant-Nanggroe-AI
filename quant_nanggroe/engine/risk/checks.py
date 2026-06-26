@@ -286,6 +286,49 @@ class ConstitutionalRiskGuard:
         self._approved_count += 1
         return result
 
+    def evaluate(
+        self,
+        symbol: str = "",
+        direction: str = "",
+        lot_size: float = 0.0,
+        entry: float = 0.0,
+        stop_loss: float = 0.0,
+        account_balance: float = 1_000_000.0,
+        take_profit: Optional[float] = None,
+        daily_pnl: float = 0.0,
+        weekly_pnl: float = 0.0,
+        trade_count_today: int = 0,
+        active_positions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Flat-parameter evaluate (backward compat for RiskManager)."""
+        active_positions = active_positions or []
+        req = TradeRequest(
+            symbol=symbol,
+            action=TradeAction.BUY if direction.upper() in ("BUY", "LONG") else TradeAction.SELL,
+            quantity=lot_size,
+            price=entry,
+            stop_loss_pct=stop_loss,
+        )
+        pf = PortfolioSnapshot(
+            total_equity=account_balance,
+            daily_pnl_pct=daily_pnl,
+            weekly_pnl_pct=weekly_pnl,
+        )
+        result = self.check_trade(req, pf)
+        failed = [w for w in result.warnings + result.reasons if w] if not result.approved else []
+        return {
+            "verdict": "APPROVED" if result.approved else "VETOED",
+            "approved": result.approved,
+            "risk_level": result.risk_level.value if result.risk_level else "unknown",
+            "failed_checkpoints": failed if not result.approved else [],
+            "warnings": result.warnings,
+            "reasons": result.reasons,
+            "proposed_risk_pct": result.proposed_risk_pct,
+            "position_size_adjusted": result.position_size_adjusted,
+            "remaining_daily_budget_pct": result.remaining_daily_budget_pct,
+            "remaining_weekly_budget_pct": result.remaining_weekly_budget_pct,
+        }
+
     def calculate_position_size(
         self,
         equity: float,
@@ -345,3 +388,7 @@ class ConstitutionalRiskGuard:
                 "mandatory_stop_loss_pct": MANDATORY_STOP_LOSS_PCT,
             },
         }
+
+
+# Backward-compat alias
+RiskCheckGate = ConstitutionalRiskGuard
