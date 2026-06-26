@@ -51,16 +51,19 @@ class TestInit(unittest.TestCase):
 class TestFetchOHLCV(unittest.TestCase):
     """fetch_ohlcv behaviour."""
 
-    def test_fetch_returns_dataframe(self):
+    def test_fetch_returns_empty_dataframe_without_sdk(self):
+        """When no SDK and no API key, should return empty DataFrame (graceful degradation)."""
         provider = OpenBBMCPProvider()
         df = provider.fetch_ohlcv("AAPL")
         self.assertIsInstance(df, pd.DataFrame)
+        self.assertTrue(df.empty)
 
-    def test_fetch_has_expected_columns(self):
+    def test_fetch_has_required_columns(self):
+        """Empty DataFrame should still have the required columns."""
         provider = OpenBBMCPProvider()
         df = provider.fetch_ohlcv("AAPL")
-        expected = {"timestamp", "open", "high", "low", "close", "volume"}
-        self.assertTrue(expected.issubset(set(df.columns)))
+        for col in ["timestamp", "open", "high", "low", "close", "volume"]:
+            self.assertIn(col, df.columns, f"Missing column: {col}")
 
     def test_fetch_via_rest_mocked_success(self):
         mock_resp = MagicMock()

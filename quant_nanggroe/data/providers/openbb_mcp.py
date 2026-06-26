@@ -1,19 +1,27 @@
 """OpenBB MCP data provider for Quant Nanggroe AI.
 
 Provides market data via the OpenBB Hub REST API with optional
-OpenBB Python SDK acceleration. Designed for integration with
-DataManager's ``fetch_ohlcv`` interface.
+OpenBB Python SDK acceleration. Per-request SDK→REST fallback.
+Designed for integration with DataManager's ``fetch_ohlcv`` interface.
 """
 
 from __future__ import annotations
 
 import logging
+import time
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _CacheEntry:
+    value: pd.DataFrame
+    expires_at: float
 
 
 class OpenBBMCPProvider:
@@ -31,6 +39,9 @@ class OpenBBMCPProvider:
         OpenBB Hub API base URL.
     """
 
+    REST_TIMEOUT = 30
+    CACHE_TTL = 60
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -39,7 +50,27 @@ class OpenBBMCPProvider:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self._sdk = None
+        self._cache: Dict[str, _CacheEntry] = {}
         self._init_sdk()
+
+    # ------------------------------------------------------------------
+    # Cache
+    # ------------------------------------------------------------------
+
+    def _get_cache(self, key: str) -> Optional[pd.DataFrame]:
+        entry = self._cache.get(key)
+        if entry is None:
+            return None
+        if time.monotonic() > entry.expires_at:
+            del self._cache[key]
+            return None
+        return entry.value.copy()
+
+    def _set_cache(self, key: str, df: pd.DataFrame) -> None:
+        self._cache[key] = _CacheEntry(
+            value=df.copy(),
+            expires_at=time.monotonic() + self.CACHE_TTL,
+        )
 
     # ------------------------------------------------------------------
     # SDK init
@@ -95,9 +126,23 @@ class OpenBBMCPProvider:
             Columns: ``timestamp``, ``open``, ``high``, ``low``,
             ``close``, ``volume``.  Empty DataFrame on error or no data.
         """
+        cache_key = f"{symbol}:{timeframe}:{start.isoformat() if start else ''}:{end.isoformat() if end else ''}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         if self._sdk is not None:
-            return self._fetch_via_sdk(symbol, timeframe, start, end)
-        return self._fetch_via_rest(symbol, timeframe, start, end)
+            try:
+                df = self._fetch_via_sdk(symbol, timeframe, start, end)
+                if df is not None and not df.empty:
+                    self._set_cache(cache_key, df)
+                    return df
+            except Exception as exc:
+                logger.warning("SDK fetch failed, falling back to REST: %s", exc)
+        df = self._fetch_via_rest(symbol, timeframe, start, end)
+        if not df.empty:
+            self._set_cache(cache_key, df)
+        return df
 
     # ------------------------------------------------------------------
     # SDK path
@@ -108,11 +153,11 @@ class OpenBBMCPProvider:
         mapping = {
             "D1": None,
             "H1": "1h",
-            "h4": "4h",
+            "H4": "4h",
             "W1": "1wk",
             "M1": "1mo",
         }
-        return mapping.get(timeframe)
+        return mapping.get(timeframe.upper())
 
     def _fetch_via_sdk(
         self,
@@ -137,8 +182,8 @@ class OpenBBMCPProvider:
             if data is not None and not data.empty:
                 df = data.to_dataframe()
                 return df.reset_index()
-        except Exception as exc:
-            logger.warning("OpenBB SDK fetch failed: %s", exc)
+        except (AttributeError, TypeError, ValueError, KeyError, RuntimeError) as exc:
+            logger.exception("OpenBB SDK fetch failed: %s", exc)
         return pd.DataFrame(columns=["timestamp", "open", "high", "low", "close", "volume"])
 
     # ------------------------------------------------------------------
@@ -172,7 +217,7 @@ class OpenBBMCPProvider:
                 f"{self.base_url}/api/v1/equity/price/historical",
                 params=params,
                 headers=headers,
-                timeout=30,
+                timeout=self.REST_TIMEOUT,
             )
             resp.raise_for_status()
             payload = resp.json()
