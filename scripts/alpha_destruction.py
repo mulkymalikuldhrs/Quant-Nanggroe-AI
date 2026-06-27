@@ -426,7 +426,7 @@ def run_destruction(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Alpha Destruction Protocol v2")
-    parser.add_argument("--symbols", default="BTC,ETH,SOL,XRP",
+    parser.add_argument("--symbols", default="BTC,ETH,SOL,XRP,SPY,QQQ,IWM",
                         help="Comma-separated symbols")
     parser.add_argument("--n", type=int, default=DEFAULT_N_OBS,
                         help="Number of observations")

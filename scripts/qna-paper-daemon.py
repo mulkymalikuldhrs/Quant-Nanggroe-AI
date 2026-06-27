@@ -40,7 +40,7 @@ from quant_nanggroe.types.market import OHLCV
 logger = logging.getLogger("qna-paper-daemon")
 
 DEFAULT_SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT"]
-DEFAULT_STRATEGIES = ["Momentum", "RegimeBased"]
+DEFAULT_STRATEGIES = ["RegimeBased"]
 BASE_PRICES = {"BTC/USDT": 67000.0, "ETH/USDT": 3400.0, "SOL/USDT": 145.0, "XRP/USDT": 0.62}
 VOLATILITIES = {"BTC/USDT": 0.025, "ETH/USDT": 0.03, "SOL/USDT": 0.045, "XRP/USDT": 0.04}
 
