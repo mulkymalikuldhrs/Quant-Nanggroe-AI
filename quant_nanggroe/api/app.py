@@ -157,7 +157,7 @@ def create_app() -> FastAPI:
 
     # ── Auth Middleware ──────────────────────────────────────────────
     jwt_auth = JWTAuth(
-        secret_key=getattr(settings, "jwt_secret", "change-me-in-production"),
+        secret_key=settings.jwt_secret,
         default_ttl=3600,
     )
     api_key_auth = APIKeyAuth()

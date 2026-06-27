@@ -47,6 +47,7 @@ class KillSwitchTrigger(str, Enum):
     SYSTEM_ERROR = "system_error"
     COMPLIANCE_VIOLATION = "compliance_violation"
     DATA_STALE = "data_stale"
+    CORRELATION_HERDING = "correlation_herding"
 
 
 class KillSwitchStatus(str, Enum):

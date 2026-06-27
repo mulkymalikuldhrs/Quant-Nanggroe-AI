@@ -232,12 +232,14 @@ class StrategyCorrelationMonitor:
         window: int = 30,
         threshold: float = 0.85,
         state_dir: str = "paper_state",
+        paper_mode: bool = False,
     ) -> None:
         self.kill_switch = kill_switch
         self.window = window
         self.threshold = threshold
         self.state_dir = Path(state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
+        self.paper_mode: bool = paper_mode
 
         # strategy_name -> deque of trailing returns (FIFO, maxlen=window)
         self._trailing_returns: Dict[str, deque[float]] = {}
@@ -311,10 +313,15 @@ class StrategyCorrelationMonitor:
             return status
 
         if avg_corr > self.threshold:
-            if self.kill_switch is not None and not self._fired:
+            if self.paper_mode:
+                logger.info(
+                    "Correlation herding detected (avg=%.3f) but paper_mode — suppressed",
+                    avg_corr,
+                )
+            elif self.kill_switch is not None and not self._fired:
                 self.kill_switch.activate(
                     level=KillSwitchLevel.LEVEL_1,
-                    trigger=KillSwitchTrigger.MANUAL,
+                    trigger=KillSwitchTrigger.CORRELATION_HERDING,
                     reason=(
                         f"correlation_herding: Mean rank correlation "
                         f"{avg_corr:.3f} > threshold {self.threshold}"

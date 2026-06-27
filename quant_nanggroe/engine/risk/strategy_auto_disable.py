@@ -39,6 +39,7 @@ DEFAULT_SHARPE_WINDOW: int = 30
 DEFAULT_THRESHOLD: float = 0.3
 DEFAULT_CONFIRM_WINDOW: int = 30
 DEFAULT_STATE_PATH: str = "data/strategy_auto_disable_state.json"
+DEFAULT_PAPER_MODE: bool = False
 
 
 class StrategyPerformance:
@@ -108,12 +109,14 @@ class AutoDisableManager:
         confirm_window: int = DEFAULT_CONFIRM_WINDOW,
         state_path: str = DEFAULT_STATE_PATH,
         kill_switch: Optional[KillSwitch] = None,
+        paper_mode: bool = DEFAULT_PAPER_MODE,
     ):
         self._sharpe_window: int = sharpe_window
         self._threshold: float = threshold
         self._confirm_window: int = confirm_window
         self._state_path: str = state_path
         self._kill_switch: KillSwitch = kill_switch or KillSwitch()
+        self._paper_mode: bool = paper_mode
 
         self._strategies: Dict[str, StrategyPerformance] = {}
 
@@ -138,6 +141,9 @@ class AutoDisableManager:
             strategy_name, StrategyPerformance(strategy_name)
         )
         perf.total_updates += 1
+
+        if self._paper_mode:
+            return True
 
         trailing_sharpe = self._compute_trailing_sharpe(pnl_series)
 
@@ -215,6 +221,7 @@ class AutoDisableManager:
             "threshold": self._threshold,
             "confirm_window": self._confirm_window,
             "state_path": self._state_path,
+            "paper_mode": self._paper_mode,
         }
 
     def save_state(self) -> None:

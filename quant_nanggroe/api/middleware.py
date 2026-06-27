@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any, Optional
 
@@ -37,7 +38,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                  api_key_auth: Optional[APIKeyAuth] = None,
                  exclude_paths: Optional[set[str]] = None) -> None:
         super().__init__(app)
-        self._jwt = auth or JWTAuth(secret_key="change-me-in-production")
+        self._jwt = auth or JWTAuth(secret_key=os.environ.get("QNAI_JWT_SECRET", "change-me-in-production"))
         self._apikey = api_key_auth or APIKeyAuth()
         self._exclude_paths = exclude_paths or {"/health", "/metrics", "/docs",
                                                 "/openapi.json", "/favicon.ico"}

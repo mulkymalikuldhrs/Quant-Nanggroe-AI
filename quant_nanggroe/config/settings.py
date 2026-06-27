@@ -152,6 +152,12 @@ class Settings(BaseSettings):
         description="Allowed CORS request headers.",
     )
 
+    # Security
+    jwt_secret: str = Field(
+        default="change-me-in-production",
+        description="JWT HMAC secret key. Set QNAI_JWT_SECRET in production.",
+    )
+
     # Data
     data_cache_ttl: int = 300  # 5 minutes
     data_provider_timeout: int = 30

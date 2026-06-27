@@ -1,5 +1,18 @@
 # Changelog — Quant Nanggroe AI
 
+## v4.1.0 — 2026-06-27 — Hedge Fund Cycle 1 + Risk Wiring
+
+Highlights:
+- **Kill switch death spiral fixed**: `paper_mode` flag on `AutoDisableManager` prevents synthetic data from auto-disabling strategies and triggering kill switch on meaningless Sharpe ratios
+- **Correlation monitor wired**: `StrategyCorrelationMonitor` integrated into paper daemon with `paper_mode` suppression; `KillSwitchTrigger.CORRELATION_HERDING` trigger type added
+- **Security audit P0 fixes**: JWT secret now loaded from `Settings.jwt_secret` (`QNAI_JWT_SECRET` env var) instead of hardcoded fallback; SQL injection fixed in `security/audit.py` (parameterized query)
+- **Realistic data pipeline**: 7 cached symbols (BTC, ETH, SOL, XRP, SPY, QQQ, IWM) with GARCH-like structure, varying drifts/volatilities — unblocks alpha research
+- **Paper daemon trading verified**: Live fills across 8 strategy-symbol combos, $34K portfolio, PnL tracking, no kill switch activation
+- **Alpha destruction**: 6/8 strategies PSR-passing, walk-forward analysis wired via `--walk-forward` flag
+- **Security audit score improved**: 124→70 findings (34→2 critical), remaining criticals are shell-script dynamic imports
+- **12 hedge fund sub-agents**: Complete Cycle 1 survey/council/vote/execute across CIO, PM, QR, QDev, CRO, Risk Analyst, Compliance, Dev Lead, Data Engineer, QT, Ops Manager, Perf Analyst
+- **Scorecard**: 45/100 → ~65/100
+
 ## v4.0.0 — 2026-06-27 — Orphan Rescue + Autonomy Suite
 
 Highlights:

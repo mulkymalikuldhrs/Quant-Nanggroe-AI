@@ -20,6 +20,7 @@ import signal
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -32,6 +33,7 @@ from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 from quant_nanggroe.engine.strategy.strategies import create_strategy
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger
 from quant_nanggroe.engine.risk.strategy_auto_disable import AutoDisableManager
+from quant_nanggroe.engine.risk.correlation import StrategyCorrelationMonitor
 from quant_nanggroe.types.orders import OrderSide, OrderType
 from quant_nanggroe.types.market import OHLCV
 
@@ -156,6 +158,7 @@ async def run_cycle(
     dry_run: bool,
     live_data: bool,
     vol_target: float,
+    correlation_monitor: Optional[StrategyCorrelationMonitor] = None,
 ) -> dict:
     logger.info("=== Cycle %d ===", state["cycle_count"] + 1)
     total_signal_count = 0
@@ -220,10 +223,12 @@ async def run_cycle(
                              sig.signal_type.value if sig else "none")
                 continue
 
-            # Feed returns to AutoDisableManager for trailing Sharpe tracking
+            # Feed returns to AutoDisableManager and correlation monitor
             daily_returns = df.close.pct_change().dropna()
             if len(daily_returns) > 0:
                 auto_disable.update(strat_name, daily_returns)
+                if correlation_monitor is not None:
+                    correlation_monitor.update(strat_name, daily_returns.values)
 
             if not kill_switch.can_trade():
                 logger.warning("  Kill switch active — skipping trades")
@@ -253,6 +258,13 @@ async def run_cycle(
                             order.average_fill_price or 0.0, order.status.value)
             except Exception as e:
                 logger.error("  Order failed %s %s: %s", strat_name, symbol, e)
+
+    if correlation_monitor is not None:
+        corr_status = correlation_monitor.check_and_act()
+        if corr_status.get("avg_correlation") is not None:
+            logger.info("  Correlation: avg=%.3f strategies=%d fired=%s",
+                        corr_status["avg_correlation"], corr_status["num_strategies"],
+                        corr_status["kill_switch_fired"])
 
     portfolio = await broker.get_portfolio()
     state["cycle_count"] += 1
@@ -312,6 +324,13 @@ async def main() -> None:
         sharpe_window=30,
         threshold=0.3,
         state_path=str(state_dir / "auto_disable_state.json"),
+        paper_mode=not args.live_data,
+    )
+
+    correlation_monitor = StrategyCorrelationMonitor(
+        kill_switch=kill_switch,
+        state_dir=str(state_dir),
+        paper_mode=not args.live_data,
     )
 
     stop_event = asyncio.Event()
@@ -336,6 +355,7 @@ async def main() -> None:
             row = await run_cycle(
                 broker, args.strategies, args.symbols, kill_switch, auto_disable,
                 state, log_path, state_path, args.dry_run, args.live_data, args.vol_target,
+                correlation_monitor=correlation_monitor,
             )
             if args.dry_run:
                 break

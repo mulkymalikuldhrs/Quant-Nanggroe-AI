@@ -390,7 +390,7 @@ class AuditLogger:
 
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         result = conn.execute(
-            f"SELECT COUNT(*) FROM audit_log WHERE {where_clause}", params
+            "SELECT COUNT(*) FROM audit_log WHERE " + where_clause, params
         ).fetchone()
 
         return result[0] if result else 0

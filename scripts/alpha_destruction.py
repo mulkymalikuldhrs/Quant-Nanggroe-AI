@@ -279,6 +279,7 @@ def run_destruction(
     n_observations: int = DEFAULT_N_OBS,
     use_real: bool = False,
     export_path: Optional[str] = None,
+    walk_forward: bool = False,
 ) -> Dict[str, dict]:
     """Run the full Alpha Destruction Protocol against every registered strategy.
 
@@ -373,6 +374,31 @@ def run_destruction(
         logger.info("  %s: PSR=%.3f, Sharpe=%.3f, DSR=%.3f → %s",
                      strategy_name, mean_psr, mean_sharpe, mean_dsr, verdict)
 
+    if walk_forward:
+        try:
+            from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
+            logger.info("\n  ── Walk-Forward Validation ──")
+            for strategy_name in strategies:
+                for symbol in symbols:
+                    ohlcv = try_load_real_data(symbol, n_observations) if use_real else generate_realistic_ohlcv(n_observations)
+                    if ohlcv is None or len(ohlcv) < 400:
+                        continue
+                    sigs_df = pd.DataFrame({
+                        "signal": generate_signals(strategy_name, ohlcv, symbol),
+                    }, index=ohlcv.index)
+                    wfa = WalkForwardAnalyzer(
+                        {"prices": ohlcv, "signal": sigs_df},
+                        train_window=252, test_window=63, mode="rolling",
+                    )
+                    wf_results = wfa.analyze(ohlcv, sigs_df)
+                    oos_sharpes = [w.out_of_sample_sharpe for w in wf_results.get("windows", [])]
+                    if oos_sharpes:
+                        avg_oos = float(np.mean(oos_sharpes))
+                        logger.info("    %s/%s: OOS Sharpe=%.3f (%d windows)",
+                                     strategy_name, symbol, avg_oos, len(oos_sharpes))
+        except Exception as e:
+            logger.warning("  Walk-forward skipped: %s", e)
+
     passed = sum(1 for r in results.values() if r["verdict"] == "PASS")
     failed = sum(1 for r in results.values() if r["verdict"] == "FAIL")
 
@@ -408,10 +434,13 @@ def main() -> None:
                         help="Use real market data (falls back to synthetic)")
     parser.add_argument("--export", default=None,
                         help="Export path for JSON report")
+    parser.add_argument("--walk-forward", action="store_true",
+                        help="Run walk-forward analysis after PSR/DSR")
     args = parser.parse_args()
 
     symbols = [s.strip() for s in args.symbols.split(",")]
-    run_destruction(symbols, args.n, use_real=args.real, export_path=args.export)
+    run_destruction(symbols, args.n, use_real=args.real, export_path=args.export,
+                    walk_forward=args.walk_forward)
 
 
 if __name__ == "__main__":
