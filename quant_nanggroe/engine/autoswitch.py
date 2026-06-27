@@ -392,3 +392,7 @@ class AutoSwitcher:
             "cooldown_remaining": self._cooldown_remaining,
             "available_strategies": [s.value for s in StrategyType],
         }
+
+
+# ── Backward-compatible alias ───────────────────────────────────────
+AutoSwitchEngine = AutoSwitcher

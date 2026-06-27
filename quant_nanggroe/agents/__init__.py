@@ -57,6 +57,30 @@ from quant_nanggroe.agents.forex.agent import ForexAgent
 from quant_nanggroe.agents.council.debate import CouncilDebate
 from quant_nanggroe.agents.council.voting import CouncilVoting
 
+# Debate engine
+from quant_nanggroe.agents.debate_engine import DebateEngine
+from quant_nanggroe.agents.debate.reflection import Reflector, SignalProcessor
+from quant_nanggroe.agents.debate.research_debate import BullResearcherNode, BearResearcherNode
+from quant_nanggroe.agents.debate.risk_debate import ConservativeDebatorNode, NeutralDebatorNode, AggressiveDebatorNode
+
+# Geopolitics
+from quant_nanggroe.agents.geopolitics.base import GeopoliticsAgent
+
+# Gold trader
+from quant_nanggroe.agents.gold_trader import GoldTrader
+
+# Marketplace
+from quant_nanggroe.agents.marketplace import AgentMarketplace
+
+# Personas
+from quant_nanggroe.agents.personas.base_investor import BaseInvestorAgent
+
+# Protocols
+from quant_nanggroe.agents.protocols import ProtocolAdapter, MCPAdapter
+
+# Smart Money Concepts
+from quant_nanggroe.agents.smc.enhanced import SmartMoneyAgent, OrderBlockDetector, FairValueGapDetector
+
 __all__ = [
     # Base
     "BaseAgent",
@@ -110,4 +134,28 @@ __all__ = [
     # Council
     "CouncilDebate",
     "CouncilVoting",
+    # Debates
+    "DebateEngine",
+    "Reflector",
+    "SignalProcessor",
+    "BullResearcherNode",
+    "BearResearcherNode",
+    "ConservativeDebatorNode",
+    "NeutralDebatorNode",
+    "AggressiveDebatorNode",
+    # Geopolitics
+    "GeopoliticsAgent",
+    # Gold
+    "GoldTrader",
+    # Marketplace
+    "AgentMarketplace",
+    # Personas
+    "BaseInvestorAgent",
+    # Protocols
+    "ProtocolAdapter",
+    "MCPAdapter",
+    # Smart Money Concepts
+    "SmartMoneyAgent",
+    "OrderBlockDetector",
+    "FairValueGapDetector",
 ]

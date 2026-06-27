@@ -339,3 +339,13 @@ class PressureEngine:
             "total_analyses": len(self._results),
             "direction_distribution": direction_counts,
         }
+
+
+# ── Backward-compatible aliases ──────────────────────────────────────
+PressureNormalizationEngine = PressureEngine
+from dataclasses import dataclass
+@dataclass
+class PressureInput:
+    """Input dataclass for pressure engine analysis."""
+    trend_direction: str = "neutral"
+    trend_strength: float = 0.0

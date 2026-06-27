@@ -382,3 +382,8 @@ class MarketRegimeDetector:
             "regime_distribution": regime_counts,
             "current_regime": self.current_regime.value if self.current_regime else None,
         }
+
+
+# ── Backward-compatible aliases ──────────────────────────────────────
+MarketStateEngine = MarketRegimeDetector
+MarketStateResult = RegimeResult

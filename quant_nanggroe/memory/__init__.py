@@ -35,7 +35,20 @@ from quant_nanggroe.memory.vector import (
     get_vector_store,
 )
 
-from quant_nanggroe.memory.seulanga_bridge import seulanga_learn, seulanga_search
+# Seulanga RAG bridge — standalone degradable
+try:
+    from quant_nanggroe.memory.seulanga_bridge import seulanga_learn, seulanga_search
+    HAS_SEULANGA = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Seulanga RAG bridge unavailable (missing httpx)")
+    HAS_SEULANGA = False
+
+    async def seulanga_learn(content: str, source: str = "qna", tags: list = None) -> dict:
+        return {"error": "Seulanga bridge unavailable"}
+
+    async def seulanga_search(query: str, limit: int = 5) -> dict:
+        return {"error": "Seulanga bridge unavailable"}
 
 __all__ = [
     # Legacy memory
@@ -68,4 +81,5 @@ __all__ = [
     # Seulanga RAG bridge
     "seulanga_learn",
     "seulanga_search",
+    "HAS_SEULANGA",
 ]

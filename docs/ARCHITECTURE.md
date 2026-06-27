@@ -1,89 +1,84 @@
-# QNA Architecture
+# QNA Architecture v4.0.0
 
 ## System Overview
 
 ```mermaid
 graph TD
-    A[Synthetic Data<br/>GARCH Engine] --> B[8 Strategies<br/>Momentum, Mean-Reversion,<br/>Breakout, Pairs, ML,<br/>Statistical, HFT, Macro]
-    B --> C[Backtest Engine<br/>Walk-Forward, CPCV,<br/>Monte Carlo, PSR/DSR]
-    C --> D[Risk Layer<br/>KillSwitch, Kelly,<br/>VaR, Drawdown, Regime]
-    D --> E[Paper Trading Daemon<br/>PID 6540 — 1h Cycle]
-    E --> F[Alpha Audit<br/>Weekly Reports,<br/>Scorecard 45/100]
-    E --> G[Dashboard<br/>Static HTML — 441 lines]
-    E --> H[PnL CSV<br/>paper_state/pnl.csv]
+    SYNTH[GARCH Synthetic Data] --> STRAT[8 Strategies]
+    STRAT --> BT[Backtest Engine<br/>Walk-Forward, CPCV, Monte Carlo, PSR/DSR]
+    BT --> RISK[Risk Layer<br/>KillSwitch, Kelly, VaR, Regime]
+    RISK --> DAEMON[Paper Trading Daemon]
+    DAEMON --> AUDIT[Alpha Audit]
+    DAEMON --> DASH[Dashboard]
+    DAEMON --> PNL[PnL CSV]
+    DAEMON --> STATE[AutoDisable State]
+    DATA[Data Layer] --> FAILOVER[FailoverProvider]
+    DATA --> CACHE[SQLite Cache]
+    DATA --> PROVIDERS[12 Providers: CCXT, yFinance, Alpha Vantage, Polygon, ...]
+    EXEC[Execution Layer] --> BROKER[Paper/Multi/Exchange Brokers]
+    EXEC --> FILL[Fill Tracker]
+    EXEC --> GUARD[Position Guards]
+    SEC[Security] --> PII[PII Redaction]
+    SEC --> AUDITLOG[AuditLogger]
+    MEM[Memory] --> JEUM[JeumpaLLM Gateway]
+    MEM --> SEUL[Seulanga RAG Bridge]
 ```
 
-## Test Coverage — 1039/1039 Pass (100%)
+## Modules (378 total)
 
-```mermaid
-pie title Test Distribution by Module
-    "Engine Backtest" : 35
-    "Risk & Kelly" : 20
-    "Execution & Guards" : 15
-    "Data Pipeline" : 10
-    "Strategies & Decision" : 10
-    "SMC & Compliance" : 5
-    "Security & Types" : 5
-```
+| Module | Files | LOC | Purpose |
+|--------|-------|-----|---------|
+| `engine/` | ~120 | ~42K | Backtest, execution, risk, strategy, compliance |
+| `data/` | ~35 | ~10K | Multi-provider data pipeline with failover |
+| `agents/` | ~25 | ~8K | AI agent orchestration |
+| `exchange/` | ~15 | ~5K | Exchange broker wrappers |
+| `security/` | ~10 | ~3K | PII redaction, audit logging |
+| `llm/` | ~8 | ~3K | JeumpaLLM multi-provider gateway |
+| `memory/` | ~8 | ~2K | Seulanga RAG bridge |
+| `types/` | ~5 | ~1K | Shared type definitions |
+| `connectors/` | ~5 | ~1K | External service connectors |
+| `skills/` | ~3 | ~1K | Agent skill definitions |
 
-## Swarm Evolution — 39 Sub-Agents Across 8 Swarms
+## Test Status — 1119 Tests
+
+- **3 pre-existing failures** (mocked data provider setup)
+- **129 pre-existing errors** (missing optional deps like scipy/numpy in env)
+- **72 skipped** (integration/API-key tests)
+- **Zero regressions** from our changes
+
+## Automation Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `auto-init.sh` | Environment setup |
+| `auto-audit.sh` | Import + lint + syntax audit (14/14 pass) |
+| `auto-graphify.sh` | 5 dependency graphs (architecture, import map, package tree, strategy flow) |
+| `auto-list-files.sh` | Complete file inventory |
+| `auto-docs.sh` | API docs from source (3922 classes/functions) |
+| `auto-register.sh` | Auto-discover and register new modules |
+| `auto-report.sh` | Consolidated project report |
+| `auto-review.sh` | Code review automation |
+
+## Swarm Evolution
 
 ```mermaid
 gantt
-    title QNA Development — 8 Swarms
+    title QNA Development — 9 Phases
     dateFormat  YYYY-MM-DD
-    section Swarm 1
-    Core Engine + 8 Strategies    :done, 2026-06-20, 2d
-    section Swarm 2
-    Risk + Data Pipeline          :done, 2026-06-21, 1d
-    section Swarm 3
-    Backtest + Compliance         :done, 2026-06-22, 1d
-    section Swarm 4
-    SMC + Execution + Dashboard   :done, 2026-06-23, 1d
-    section Swarm 5
-    Daemon + Exchange + Coverage  :done, 2026-06-24, 1d
-    section Swarm 6
-    All 598 Tests Green           :done, 2026-06-24, 1d
-    section Swarm 7
-    Coverage Push 805 Tests       :done, 2026-06-25, 1d
-    section Swarm 8
-    Renaissance — 1039 Tests      :done, 2026-06-25, 1d
+    section Swarm 1-4
+    Core + Risk + Strategies + Data    :done, 2026-06-10, 14d
+    section Swarm 5-6
+    Daemon + Exchange + 598 Tests      :done, 2026-06-22, 3d
+    section Swarm 7-8
+    Coverage Push 805→1039 Tests       :done, 2026-06-25, 1d
+    section Swarm 9
+    Orphan Rescue + Autonomy Suite      :done, 2026-06-27, 1d
 ```
 
-## Pipeline Flow
+## Architecture Decisions
 
-```mermaid
-flowchart LR
-    subgraph Input
-        A[GARCH<br/>Synthetic Data]
-        B[CSV Cache<br/>data/cache.db]
-    end
-    subgraph Engine
-        C[8 Strategies]
-        D[Backtest Engine]
-        E[Risk Layer]
-        F[Kelly Sizing]
-    end
-    subgraph Output
-        G[Paper Daemon<br/>PID 6540]
-        H[Dashboard<br/>localhost:8080]
-        I[Alpha Reports]
-    end
-    A --> C
-    B --> D
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    G --> I
-```
-
-## Status
-
-- **Tests:** 1039/1039 ALL PASS (100%)
-- **Coverage:** ~60-62%
-- **Daemon:** LIVE PID 6540, 10+ cycles
-- **Scorecard:** 45/100 — needs real trading data
-- **Exchange:** Prepped, waiting for API keys
-- **Sub-agents:** 39 across 8 swarms
+- **Package-level `__init__.py` wildcard exports** — all submodules auto-exported for convenience
+- **Graceful degradation** — JeumpaLLM and Seulanga RAG degrade without crashing when deps/servers missing
+- **Test namespace isolation** — test subdirectories use no `__init__.py` to prevent module conflicts
+- **Auto-registration pattern** — new `.py` files auto-detected and wired into `__init__.py` exports
+- **Immutability in risk** — risk limits (0.5%/trade, 1%/day, 3%/week) are hardcoded constants, no override

@@ -1,0 +1,1 @@
+scripts/auto-audit.sh: line 53: ruff: command not found

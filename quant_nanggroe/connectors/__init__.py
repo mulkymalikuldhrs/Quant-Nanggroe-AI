@@ -45,6 +45,14 @@ except ImportError:
             return self.token is not None
 
 try:
+    from .simulated import SimulatedBroker
+except ImportError:
+    class SimulatedBroker:
+        """Simulated broker for paper trading"""
+        def __init__(self):
+            raise ImportError("SimulatedBroker unavailable")
+
+try:
     from .web3_plugin import Web3Plugin
 except ImportError:
     class Web3Plugin:
@@ -60,5 +68,6 @@ __all__ = [
     'AudioStreamProcessor',
     'GoogleIntegration',
     'GitHubIntegration',
-    'Web3Plugin'
+    'Web3Plugin',
+    'SimulatedBroker',
 ]

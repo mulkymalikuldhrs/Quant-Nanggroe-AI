@@ -1,5 +1,20 @@
 # Changelog — Quant Nanggroe AI
 
+## v4.0.0 — 2026-06-27 — Orphan Rescue + Autonomy Suite
+
+Highlights:
+- **48 orphan files wired** into proper package `__init__.py` (agents, engine, data, connectors, skills)
+- **5 pre-existing import bugs fixed**: MarketStateEngine alias, PressureInput creation, AutoSwitchEngine alias, ProviderHealth lazy import, AuditEntry alias
+- **Graceful degradation confirmed**: JeumpaLLM (no deps) & Seulanga (no server) degrade without crashing
+- **16 empty test `__init__.py` removed** to fix namespace collision; 6 non-empty test init files preserved
+- **8 automation scripts** added: `auto-graphify.sh`, `auto-list-files.sh`, `auto-register.sh`, `auto-docs.sh`, `auto-audit.sh`, `auto-report.sh`, `auto-review.sh`, `auto-init.sh`
+- **1119 tests** run in 57s — 3 pre-existing mock failures, 129 pre-existing optional dep errors, 72 skipped — zero regressions
+- **Paper daemon dry-run verified**: full cycle passing (synthetic data, Kelly sizing, AutoDisable, KillSwitch)
+- **14/14 import integrity check** passes
+- **378 Python modules**, 109K LOC, 94 test files
+- Dependency graphs auto-generated: architecture, import map, package tree, strategy flow
+- API docs auto-generated: 3922 classes/functions across 299 module pages
+
 ## v1.0.0 — 2026-06-25 — Renaissance Finale
 
 Highlights:

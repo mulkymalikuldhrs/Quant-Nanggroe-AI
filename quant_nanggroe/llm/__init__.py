@@ -34,6 +34,18 @@ def query_llm(prompt: str, provider: str = "openai") -> dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 
-from quant_nanggroe.llm.jeumpa import get_jeumpa_llm, acheck_jeumpa_health
+# JeumpaLLM bridge — standalone degradable
+try:
+    from quant_nanggroe.llm.jeumpa import get_jeumpa_llm, acheck_jeumpa_health
+    HAS_JEUMPA = True
+except ImportError:
+    logger.warning("JeumpaLLM bridge unavailable (missing deps)")
+    HAS_JEUMPA = False
 
-__all__ = ["get_llm_gateway", "query_llm", "HAS_LLM", "get_jeumpa_llm", "acheck_jeumpa_health"]
+    async def acheck_jeumpa_health() -> bool:
+        return False
+
+    def get_jeumpa_llm(**kwargs):
+        raise ImportError("JeumpaLLM bridge unavailable — install httpx, langchain-openai, langchain-core")
+
+__all__ = ["get_llm_gateway", "query_llm", "HAS_LLM", "HAS_JEUMPA", "get_jeumpa_llm", "acheck_jeumpa_health"]

@@ -1,0 +1,473 @@
+graph TD
+  subgraph agents ["agents"]
+    agents___init___py[__init__.py]
+    agents_bridges___init___py[__init__.py]
+    agents_council___init___py[__init__.py]
+    agents_crypto___init___py[__init__.py]
+    agents_debate___init___py[__init__.py]
+    agents_execution___init___py[__init__.py]
+    agents_forex___init___py[__init__.py]
+    agents_geopolitics___init___py[__init__.py]
+    agents_macro___init___py[__init__.py]
+    agents_personas___init___py[__init__.py]
+    agents_portfolio___init___py[__init__.py]
+    agents_researcher___init___py[__init__.py]
+    agents_risk___init___py[__init__.py]
+    agents_smc___init___py[__init__.py]
+    agents_strategist___init___py[__init__.py]
+    agents_tools___init___py[__init__.py]
+    agents_trader___init___py[__init__.py]
+  end
+  subgraph api ["api"]
+    api___init___py[__init__.py]
+    api_app_py[app.py]
+    api_middleware_py[middleware.py]
+    api_routes___init___py[__init__.py]
+    api_routes_agents_py[agents.py]
+    api_routes_backtest_py[backtest.py]
+    api_routes_colony_py[colony.py]
+    api_routes_ecosystem_py[ecosystem.py]
+    api_routes_market_py[market.py]
+    api_routes_memory_py[memory.py]
+    api_routes_portfolio_py[portfolio.py]
+    api_routes_trading_py[trading.py]
+    api_routes_whatsapp_py[whatsapp.py]
+    api_routes_ws_py[ws.py]
+    api_schemas_py[schemas.py]
+  end
+  api___init___py --> api_schemas_py
+  api___init___py --> api_middleware_py
+  api___init___py --> api_app_py
+  api_app_py --> api_routes___init___py
+  api_app_py --> api_middleware_py
+  api_routes___init___py --> api_routes___init___py
+  api_routes_agents_py --> api_schemas_py
+  api_routes_backtest_py --> api_schemas_py
+  api_routes_market_py --> api_schemas_py
+  api_routes_portfolio_py --> api_schemas_py
+  api_routes_trading_py --> api_schemas_py
+  subgraph config ["config"]
+    config___init___py[__init__.py]
+    config_logging_config_py[logging_config.py]
+    config_settings_py[settings.py]
+  end
+  config___init___py --> config_settings_py
+  subgraph connectors ["connectors"]
+    connectors___init___py[__init__.py]
+    connectors_broker_base_py[broker_base.py]
+    connectors_llm_gateway_py[llm_gateway.py]
+    connectors_simulated_py[simulated.py]
+  end
+  connectors_simulated_py --> connectors_broker_base_py
+  subgraph core ["core"]
+    core___init___py[__init__.py]
+    core_circuit_breaker_py[circuit_breaker.py]
+    core_pii_redaction_py[pii_redaction.py]
+  end
+  core___init___py --> core_pii_redaction_py
+  core___init___py --> core_circuit_breaker_py
+  subgraph data ["data"]
+    data___init___py[__init__.py]
+    data_cache_py[cache.py]
+    data_data_manager_py[data_manager.py]
+    data_failover_provider_py[failover_provider.py]
+    data_models___init___py[__init__.py]
+    data_models_fixed_income_py[fixed_income.py]
+    data_models_metrics_py[metrics.py]
+    data_models_options_py[options.py]
+    data_monitor_py[monitor.py]
+    data_providers___init___py[__init__.py]
+    data_providers_coingecko_provider_py[coingecko_provider.py]
+    data_providers_crypto_provider_py[crypto_provider.py]
+    data_providers_finnhub_provider_py[finnhub_provider.py]
+    data_providers_macro_provider_py[macro_provider.py]
+    data_providers_openbb_mcp_py[openbb_mcp.py]
+    data_providers_twelvedata_py[twelvedata.py]
+    data_survivorship_py[survivorship.py]
+  end
+  data___init___py --> data_models_metrics_py
+  data___init___py --> data_monitor_py
+  data___init___py --> data_failover_provider_py
+  data___init___py --> data_cache_py
+  data___init___py --> data_models_options_py
+  data___init___py --> data_survivorship_py
+  data___init___py --> data_models_fixed_income_py
+  data___init___py --> data_data_manager_py
+  data_providers___init___py --> data_providers_finnhub_provider_py
+  data_providers___init___py --> data_providers_macro_provider_py
+  data_providers___init___py --> data_providers_twelvedata_py
+  data_providers___init___py --> data_providers_coingecko_provider_py
+  data_providers___init___py --> data_providers_openbb_mcp_py
+  data_providers___init___py --> data_providers_crypto_provider_py
+  subgraph database ["database"]
+    database___init___py[__init__.py]
+    database_alembic_env_py[env.py]
+    database_alembic_versions_001_initial_schema_py[001_initial_schema.py]
+    database_alembic_versions___init___py[__init__.py]
+    database_init_db_py[init_db.py]
+    database_migrations_py[migrations.py]
+    database_models_py[models.py]
+  end
+  database_alembic_env_py --> database_models_py
+  subgraph db ["db"]
+    db___init___py[__init__.py]
+    db_models_py[models.py]
+  end
+  db___init___py --> db_models_py
+  subgraph engine ["engine"]
+    engine___init___py[__init__.py]
+    engine_api___init___py[__init__.py]
+    engine_backtest___init___py[__init__.py]
+    engine_backtest_engines___init___py[__init__.py]
+    engine_backtest_loaders___init___py[__init__.py]
+    engine_backtest_optimizers___init___py[__init__.py]
+    engine_backtest_psr_py[psr.py]
+    engine_compliance_py[compliance.py]
+    engine_core___init___py[__init__.py]
+    engine_event_engine_py[event_engine.py]
+    engine_execution___init___py[__init__.py]
+    engine_execution_brokers___init___py[__init__.py]
+    engine_execution_guards___init___py[__init__.py]
+    engine_factors___init___py[__init__.py]
+    engine_factors_academic_py[academic.py]
+    engine_factors_alpha101_py[alpha101.py]
+    engine_factors_gtja191_py[gtja191.py]
+    engine_factors_qlib158_py[qlib158.py]
+    engine_integration___init___py[__init__.py]
+    engine_integration_bh_qna_bridge_py[bh_qna_bridge.py]
+    engine_kelly___init___py[__init__.py]
+    engine_llm_router_py[llm_router.py]
+    engine_microstructure_py[microstructure.py]
+    engine_ml___init___py[__init__.py]
+    engine_ml_feature_engineer_py[feature_engineer.py]
+    engine_ml_model_manager_py[model_manager.py]
+    engine_models___init___py[__init__.py]
+    engine_nvidia_nim___init___py[__init__.py]
+    engine_options___init___py[__init__.py]
+    engine_pattern_recorder___init___py[__init__.py]
+    engine_regime___init___py[__init__.py]
+    engine_risk___init___py[__init__.py]
+    engine_risk_position_sizing_py[position_sizing.py]
+    engine_risk_strategy_auto_disable_py[strategy_auto_disable.py]
+    engine_screener___init___py[__init__.py]
+    engine_shadow___init___py[__init__.py]
+    engine_shadow_extractor_py[extractor.py]
+    engine_simulation___init___py[__init__.py]
+    engine_strategies___init___py[__init__.py]
+    engine_strategy___init___py[__init__.py]
+    engine_strategy_strategies___init___py[__init__.py]
+    engine_stress_testing___init___py[__init__.py]
+    engine_visualization___init___py[__init__.py]
+  end
+  engine_backtest___init___py --> engine_backtest_loaders___init___py
+  engine_backtest___init___py --> engine_backtest_optimizers___init___py
+  engine_backtest___init___py --> engine_backtest_engines___init___py
+  engine_integration_bh_qna_bridge_py --> engine_backtest_loaders___init___py
+  subgraph exchange ["exchange"]
+    exchange___init___py[__init__.py]
+    exchange_clients___init___py[__init__.py]
+    exchange_solana___init___py[__init__.py]
+  end
+  exchange___init___py --> exchange_solana___init___py
+  subgraph llm ["llm"]
+    llm___init___py[__init__.py]
+    llm_jeumpa_py[jeumpa.py]
+  end
+  llm___init___py --> llm_jeumpa_py
+  subgraph mcp ["mcp"]
+    mcp___init___py[__init__.py]
+    mcp_client_py[client.py]
+    mcp_protocol_py[protocol.py]
+    mcp_server_py[server.py]
+    mcp_tools_py[tools.py]
+  end
+  mcp___init___py --> mcp_server_py
+  mcp___init___py --> mcp_tools_py
+  mcp___init___py --> mcp_protocol_py
+  mcp___init___py --> mcp_client_py
+  mcp_client_py --> mcp_protocol_py
+  mcp_server_py --> mcp_protocol_py
+  mcp_tools_py --> mcp_server_py
+  mcp_tools_py --> mcp_protocol_py
+  subgraph memory ["memory"]
+    memory___init___py[__init__.py]
+    memory_journal_py[journal.py]
+    memory_knowledge_py[knowledge.py]
+    memory_knowledge_graph_py[knowledge_graph.py]
+    memory_paging_py[paging.py]
+    memory_session_py[session.py]
+    memory_seulanga_bridge_py[seulanga_bridge.py]
+    memory_vector_py[vector.py]
+  end
+  memory___init___py --> memory_vector_py
+  memory___init___py --> memory_paging_py
+  memory___init___py --> memory_journal_py
+  memory___init___py --> memory_knowledge_graph_py
+  memory___init___py --> memory_session_py
+  memory___init___py --> memory_seulanga_bridge_py
+  memory___init___py --> memory_knowledge_py
+  subgraph root ["root"]
+    __init___py[__init__.py]
+    api_py[api.py]
+    cli_py[cli.py]
+    exceptions_py[exceptions.py]
+    execution_py[execution.py]
+    services_py[services.py]
+    worker_py[worker.py]
+  end
+  worker_py --> exceptions_py
+  subgraph scripts ["scripts"]
+    scripts_bh_cli_py[bh-cli.py]
+    scripts_load_test_py[load_test.py]
+    scripts_port_vibe_factors_py[port_vibe_factors.py]
+    scripts_qna_cli_py[qna-cli.py]
+    scripts_security_audit_py[security_audit.py]
+    scripts_test_almgren_chriss_py[test_almgren_chriss.py]
+    scripts_test_data_fallback_py[test_data_fallback.py]
+    scripts_test_kelly_backtest_py[test_kelly_backtest.py]
+    scripts_test_pattern_recorder_py[test_pattern_recorder.py]
+    scripts_test_qna_imports_py[test_qna_imports.py]
+    scripts_test_regime_strategy_py[test_regime_strategy.py]
+    scripts_test_stress_testing_py[test_stress_testing.py]
+    scripts_test_visualization_py[test_visualization.py]
+  end
+  subgraph security ["security"]
+    security___init___py[__init__.py]
+    security_audit_py[audit.py]
+    security_auth_py[auth.py]
+    security_credential_inference_py[credential_inference.py]
+    security_keyvault_py[keyvault.py]
+  end
+  security___init___py --> security_credential_inference_py
+  security___init___py --> security_keyvault_py
+  security___init___py --> security_audit_py
+  security___init___py --> security_auth_py
+  subgraph skills ["skills"]
+    skills___init___py[__init__.py]
+    skills_registry_py[registry.py]
+    skills_swarm_presets_py[swarm_presets.py]
+    skills_technical_skills_py[technical_skills.py]
+  end
+  subgraph types ["types"]
+    types___init___py[__init__.py]
+    types_decisions_py[decisions.py]
+    types_engine_py[engine.py]
+    types_market_py[market.py]
+    types_orders_py[orders.py]
+    types_positions_py[positions.py]
+    types_risk_py[risk.py]
+    types_signals_py[signals.py]
+  end
+  types___init___py --> types_engine_py
+  types___init___py --> types_positions_py
+  types___init___py --> types_market_py
+  types___init___py --> types_decisions_py
+  types___init___py --> types_signals_py
+  types___init___py --> types_orders_py
+  types___init___py --> types_risk_py
+  subgraph utils ["utils"]
+    utils___init___py[__init__.py]
+    utils_math_py[math.py]
+    utils_time_py[time.py]
+    utils_validation_py[validation.py]
+  end
+  utils___init___py --> utils_time_py
+  utils___init___py --> utils_math_py
+  utils___init___py --> utils_validation_py
+  agents_bridges_kelly_bridge_py -.-> engine_risk_constants_py
+  agents_bridges_kelly_bridge_py -.-> engine_risk_kelly_py
+  agents_bridges_risk_gate_bridge_py -.-> engine_risk_checks_py
+  agents_bridges_risk_gate_bridge_py -.-> engine_risk_constants_py
+  agents_bridges_risk_gate_bridge_py -.-> engine_risk_manager_py
+  agents_crypto_tools_py -.-> engine_screener_dex_intelligence_py
+  agents_execution_tools_py -.-> engine_execution_manager_py
+  agents_execution_tools_py -.-> engine_execution_brokers_paper_py
+  agents_execution_tools_py -.-> engine_execution_base_py
+  agents_forex_tools_py -.-> engine_screener_macro_analysis_py
+  agents_macro_tools_py -.-> engine_risk_correlation_py
+  agents_macro_tools_py -.-> engine_market_state_py
+  agents_macro_tools_py -.-> config_settings_py
+  agents_portfolio_tools_py -.-> engine_risk_risk_parity_py
+  agents_researcher_tools_py -.-> config_settings_py
+  agents_risk_tools_py -.-> engine_risk_kill_switch_py
+  agents_risk_tools_py -.-> engine_risk_var_py
+  agents_risk_tools_py -.-> engine_risk_kelly_py
+  agents_risk_tools_py -.-> engine_risk_drawdown_py
+  agents_state_py -.-> engine_risk_constants_py
+  agents_strategist_tools_py -.-> engine_decision_py
+  agents_strategist_tools_py -.-> engine_pressure_py
+  agents_tools_backtest_py -.-> exceptions_py
+  agents_tools_backtest_py -.-> config_settings_py
+  agents_tools_execution_py -.-> exchange_paper_broker_py
+  agents_tools_execution_py -.-> config_settings_py
+  agents_tools_execution_py -.-> exceptions_py
+  agents_tools_execution_py -.-> types_orders_py
+  agents_tools_execution_py -.-> exchange_alpaca_broker_py
+  agents_tools_market_data_py -.-> core_circuit_breaker_py
+  agents_tools_market_data_py -.-> exceptions_py
+  agents_tools_market_data_py -.-> config_settings_py
+  agents_tools_screener_tool_py -.-> engine_screener_orchestrator_py
+  agents_tools_sentiment_py -.-> config_settings_py
+  agents_tools_technical_py -.-> exceptions_py
+  agents_trader_tools_py -.-> exchange_paper_broker_py
+  agents_trader_tools_py -.-> engine_execution_manager_py
+  agents_trader_tools_py -.-> engine_execution_brokers_paper_py
+  agents_trader_tools_py -.-> engine_execution_base_py
+  api_app_py -.-> config___init___py
+  api_app_py -.-> services_py
+  api_app_py -.-> security_auth_py
+  api_app_py -.-> engine_audit_py
+  api_middleware_py -.-> security_auth_py
+  api_routes_agents_py -.-> agents_graph_py
+  api_routes_agents_py -.-> services_py
+  api_routes_agents_py -.-> config_settings_py
+  api_routes_agents_py -.-> agents_registry_py
+  api_routes_backtest_py -.-> engine_backtest_engine_py
+  api_routes_backtest_py -.-> engine_backtest_loaders_yfinance_loader_py
+  api_routes_market_py -.-> types_market_py
+  api_routes_market_py -.-> exchange_manager_py
+  api_routes_market_py -.-> engine_pressure_py
+  api_routes_market_py -.-> engine_market_state_py
+  api_routes_portfolio_py -.-> services_py
+  api_routes_portfolio_py -.-> engine_risk_var_py
+  api_routes_portfolio_py -.-> exchange_manager_py
+  api_routes_trading_py -.-> services_py
+  api_routes_trading_py -.-> engine_execution_manager_py
+  api_routes_trading_py -.-> exchange_manager_py
+  api_routes_trading_py -.-> engine_execution_base_py
+  api_py -.-> engine_backtest_engine_py
+  api_py -.-> agents_graph_py
+  api_py -.-> engine_risk_manager_py
+  api_py -.-> config_settings_py
+  api_py -.-> agents_state_py
+  cli_py -.-> engine_backtest_engine_py
+  cli_py -.-> agents_graph_py
+  cli_py -.-> config_settings_py
+  cli_py -.-> engine_risk_manager_py
+  cli_py -.-> memory_paging_py
+  cli_py -.-> memory_knowledge_graph_py
+  config_logging_config_py -.-> core_pii_redaction_py
+  data_data_manager_py -.-> types_market_py
+  data_failover_provider_py -.-> engine_core_circuit_breaker_py
+  data_monitor_py -.-> engine_risk_kill_switch_py
+  data_monitor_py -.-> types_market_py
+  data_providers_twelvedata_py -.-> types_market_py
+  database_alembic_env_py -.-> config_settings_py
+  db_models_py -.-> database_models_py
+  engine_api_health_py -.-> security___init___py
+  engine_core_circuit_breaker_py -.-> exceptions_py
+  engine_core_edge_case_handler_py -.-> exceptions_py
+  engine_decision_py -.-> types_engine_py
+  engine_integration_bh_qna_bridge_py -.-> exceptions_py
+  engine_nvidia_nim_client_py -.-> core_circuit_breaker_py
+  engine_strategy_strategies_base_strategy_py -.-> types_signals_py
+  engine_strategy_strategies_crypto_specific_py -.-> types_signals_py
+  engine_strategy_strategies_market_making_py -.-> types_signals_py
+  engine_strategy_strategies_mean_reversion_py -.-> types_signals_py
+  engine_strategy_strategies_momentum_py -.-> types_signals_py
+  engine_strategy_strategies_pairs_trading_py -.-> types_signals_py
+  engine_strategy_strategies_regime_based_py -.-> types_signals_py
+  engine_strategy_strategies_statistical_arbitrage_py -.-> types_signals_py
+  engine_strategy_strategies_volatility_arbitrage_py -.-> types_signals_py
+  engine_strategy_lifecycle_py -.-> types_engine_py
+  exchange_alpaca_broker_py -.-> types_orders_py
+  exchange_alpaca_broker_py -.-> types_market_py
+  exchange_alpaca_broker_py -.-> types_positions_py
+  exchange_base_py -.-> types_orders_py
+  exchange_base_py -.-> types_market_py
+  exchange_base_py -.-> types_positions_py
+  exchange_ccxt_broker_py -.-> types_orders_py
+  exchange_ccxt_broker_py -.-> types_market_py
+  exchange_ccxt_broker_py -.-> types_positions_py
+  exchange_guards_py -.-> types_orders_py
+  exchange_ibkr_broker_py -.-> types_orders_py
+  exchange_ibkr_broker_py -.-> types_market_py
+  exchange_ibkr_broker_py -.-> types_positions_py
+  exchange_manager_py -.-> types_orders_py
+  exchange_manager_py -.-> types_market_py
+  exchange_manager_py -.-> types_positions_py
+  exchange_mt5_broker_py -.-> types_orders_py
+  exchange_mt5_broker_py -.-> types_market_py
+  exchange_mt5_broker_py -.-> types_positions_py
+  exchange_paper_broker_py -.-> types_orders_py
+  exchange_paper_broker_py -.-> types_market_py
+  exchange_paper_broker_py -.-> types_positions_py
+  exchange_polymarket_broker_py -.-> types_orders_py
+  exchange_polymarket_broker_py -.-> types_market_py
+  exchange_polymarket_broker_py -.-> types_positions_py
+  exchange_solana_broker_py -.-> types_positions_py
+  exchange_solana_broker_py -.-> types_market_py
+  exchange_solana_broker_py -.-> types_orders_py
+  execution_py -.-> engine_execution___init___py
+  llm___init___py -.-> connectors_llm_gateway_py
+  mcp_tools_py -.-> engine_risk_checks_py
+  mcp_tools_py -.-> engine_factors_registry_py
+  scripts_qna_cli_py -.-> engine_stress_testing_var_cvar_py
+  scripts_qna_cli_py -.-> engine_backtest_engine_py
+  scripts_qna_cli_py -.-> engine_kelly_fractional_py
+  scripts_qna_cli_py -.-> engine_regime_hmm_detector_py
+  scripts_qna_cli_py -.-> engine_kelly_base_py
+  scripts_test_data_fallback_py -.-> engine_data_provider_interface_py
+  scripts_test_data_fallback_py -.-> engine_data_fallback_chain_py
+  scripts_test_data_fallback_py -.-> engine_data_provider_registry_py
+  scripts_test_kelly_backtest_py -.-> engine_kelly_backtest_integration_py
+  scripts_test_pattern_recorder_py -.-> engine_pattern_recorder_dtw_py
+  scripts_test_pattern_recorder_py -.-> engine_pattern_recorder_matrix_profile_py
+  scripts_test_pattern_recorder_py -.-> engine_pattern_recorder_embedding_py
+  scripts_test_regime_strategy_py -.-> engine_strategy_regime_strategy_py
+  scripts_test_regime_strategy_py -.-> engine_regime_strategy_selector_py
+  scripts_test_stress_testing_py -.-> engine_stress_testing_historical_py
+  scripts_test_stress_testing_py -.-> engine_stress_testing_ewhs_py
+  scripts_test_stress_testing_py -.-> engine_stress_testing_monte_carlo_py
+  scripts_test_visualization_py -.-> engine_visualization_dashboard_py
+  scripts_test_visualization_py -.-> engine_visualization_chart_factory_py
+  security_credential_inference_py -.-> exchange_solana_wallet_py
+  services_py -.-> engine_strategy_lifecycle_py
+  services_py -.-> engine_decision_py
+  services_py -.-> engine_risk_kill_switch_py
+  services_py -.-> engine_risk_manager_py
+  services_py -.-> engine_autoswitch_py
+  services_py -.-> engine_market_state_py
+  services_py -.-> engine_audit_py
+  utils_validation_py -.-> types_market_py
+  worker_py -.-> config___init___py
+  worker_py -.-> agents_graph_py
+  worker_py -.-> agents_state_py
+  style engine_shadow_extractor_py fill:#ff9,stroke:#f90
+  style skills_swarm_presets_py fill:#ff9,stroke:#f90
+  style engine_event_engine_py fill:#ff9,stroke:#f90
+  style scripts_test_kelly_backtest_py fill:#ff9,stroke:#f90
+  style engine_factors_academic_py fill:#ff9,stroke:#f90
+  style scripts_port_vibe_factors_py fill:#ff9,stroke:#f90
+  style worker_py fill:#ff9,stroke:#f90
+  style scripts_test_pattern_recorder_py fill:#ff9,stroke:#f90
+  style execution_py fill:#ff9,stroke:#f90
+  style engine_ml_model_manager_py fill:#ff9,stroke:#f90
+  style scripts_bh_cli_py fill:#ff9,stroke:#f90
+  style scripts_security_audit_py fill:#ff9,stroke:#f90
+  style engine_factors_gtja191_py fill:#ff9,stroke:#f90
+  style engine_backtest_psr_py fill:#ff9,stroke:#f90
+  style scripts_test_visualization_py fill:#ff9,stroke:#f90
+  style scripts_test_almgren_chriss_py fill:#ff9,stroke:#f90
+  style scripts_test_qna_imports_py fill:#ff9,stroke:#f90
+  style engine_risk_position_sizing_py fill:#ff9,stroke:#f90
+  style scripts_test_regime_strategy_py fill:#ff9,stroke:#f90
+  style skills_technical_skills_py fill:#ff9,stroke:#f90
+  style engine_factors_alpha101_py fill:#ff9,stroke:#f90
+  style skills_registry_py fill:#ff9,stroke:#f90
+  style scripts_qna_cli_py fill:#ff9,stroke:#f90
+  style engine_integration_bh_qna_bridge_py fill:#ff9,stroke:#f90
+  style scripts_load_test_py fill:#ff9,stroke:#f90
+  style scripts_test_data_fallback_py fill:#ff9,stroke:#f90
+  style engine_llm_router_py fill:#ff9,stroke:#f90
+  style database_init_db_py fill:#ff9,stroke:#f90
+  style engine_compliance_py fill:#ff9,stroke:#f90
+  style database_alembic_env_py fill:#ff9,stroke:#f90
+  style engine_microstructure_py fill:#ff9,stroke:#f90
+  style engine_risk_strategy_auto_disable_py fill:#ff9,stroke:#f90
+  style database_alembic_versions_001_initial_schema_py fill:#ff9,stroke:#f90
+  style engine_factors_qlib158_py fill:#ff9,stroke:#f90
+  style database_migrations_py fill:#ff9,stroke:#f90
+  style scripts_test_stress_testing_py fill:#ff9,stroke:#f90
+  style engine_ml_feature_engineer_py fill:#ff9,stroke:#f90
+  style connectors_simulated_py fill:#ff9,stroke:#f90

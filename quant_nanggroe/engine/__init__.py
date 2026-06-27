@@ -35,7 +35,7 @@ def __getattr__(name: str):
         "StrategyState": ".strategy_lifecycle",
         # AutoSwitch
         "AutoSwitchEngine": ".autoswitch",
-        "ProviderHealth": ".autoswitch",
+        "ProviderHealth": ".llm_router",
         # Audit
         "AuditLogger": ".audit",
         "AuditEntry": ".audit",
@@ -63,6 +63,31 @@ def __getattr__(name: str):
         "VPINCalculator": ".microstructure",
         "KyleLambdaCalculator": ".microstructure",
         "AmihudCalculator": ".microstructure",
+        # PSR
+        "PSRResult": ".backtest.psr",
+        "DSRResult": ".backtest.psr",
+        "ValidationReport": ".backtest.psr",
+        "estimate_sharpe": ".backtest.psr",
+        "probabilistic_sharpe_ratio": ".backtest.psr",
+        "deflated_sharpe_ratio": ".backtest.psr",
+        # Event Engine
+        "EventType": ".event_engine",
+        "Event": ".event_engine",
+        "EventEngine": ".event_engine",
+        # Factors
+        "get_all_academic_factors": ".factors.academic",
+        "get_all_alpha101_factors": ".factors.alpha101",
+        "get_all_gtja191_factors": ".factors.gtja191",
+        "get_all_qlib158_factors": ".factors.qlib158",
+        # ML
+        "FeatureEngineer": ".ml.feature_engineer",
+        "ModelManager": ".ml.model_manager",
+        # BH-QNA Bridge
+        "BHQnaBridge": ".integration.bh_qna_bridge",
+        # Shadow Strategy Extractor
+        "StrategyExtractor": ".shadow.extractor",
+        "ExtractedRule": ".shadow.extractor",
+        "ExtractedStrategy": ".shadow.extractor",
     }
     if name in _lazy_imports:
         import importlib
@@ -89,7 +114,23 @@ __all__ = [
     "DrawdownMonitor", "CorrelationMonitor", "RiskCheckGate", "KillSwitch",
     # LLM Router
     "LLMRouter", "LLMProvider", "ModelTier", "get_llm_router",
-    # Microstructure
-    "MicrostructureAnalyzer", "MicrostructureMetrics",
-    "VPINCalculator", "KyleLambdaCalculator", "AmihudCalculator",
+        # Microstructure
+        "MicrostructureAnalyzer", "MicrostructureMetrics",
+        "VPINCalculator", "KyleLambdaCalculator", "AmihudCalculator",
+        # Backtest
+        "PSRResult", "DSRResult", "ValidationReport",
+        "estimate_sharpe", "probabilistic_sharpe_ratio", "deflated_sharpe_ratio",
+        # Event Engine
+        "EventType", "Event", "EventEngine",
+        # Factors (loaded by name in practice)
+        "get_all_academic_factors", "get_all_alpha101_factors",
+        "get_all_gtja191_factors", "get_all_qlib158_factors",
+        # ML
+        "FeatureEngineer", "ModelManager",
+        # BH-QNA Bridge
+        "BHQnaBridge",
+        # Shadow Strategy Extractor
+        "StrategyExtractor",
+        "ExtractedRule",
+        "ExtractedStrategy",
 ]

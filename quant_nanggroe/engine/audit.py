@@ -98,3 +98,7 @@ class AuditLogger:
                 "summary": self.get_summary(),
                 "entries": self.entries
             }, f, indent=2)
+
+
+# ── Backward-compatible alias ───────────────────────────────────────
+AuditEntry = dict

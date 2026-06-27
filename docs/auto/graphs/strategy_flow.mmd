@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph Input
+        A[GARCH Synthetic Data]
+        B[CSV Cache]
+    end
+    subgraph Engine
+        C[8 Strategies]
+        D[Backtest Engine]
+        E[Risk Layer]
+        F[Kelly Sizing]
+    end
+    subgraph Output
+        G[Paper Daemon]
+        H[Dashboard]
+        I[Alpha Reports]
+        J[State Files]
+    end
+    A --> C
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    G --> I
+    G --> J
+
