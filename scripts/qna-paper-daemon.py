@@ -169,7 +169,7 @@ def _detect_regime_heuristic(df: pd.DataFrame) -> tuple[str, float]:
         return "sideways", 0.5
 
 
-def _select_strategies_for_regime(df: pd.DataFrame, user_strategies: list[str]) -> tuple[list[dict], float]:
+def _select_strategies_for_regime(df: pd.DataFrame, user_strategies: list[str]) -> tuple[list[dict], float, str, float]:
     all_qna = list_strategies()
     regime, confidence = _detect_regime_heuristic(df)
     rm = _selector.select_strategies(regime, confidence)
@@ -197,7 +197,7 @@ def _select_strategies_for_regime(df: pd.DataFrame, user_strategies: list[str]) 
 
     if not any(s["name"] != "RegimeBased" for s in result):
         result.append({"name": "Momentum", "params": {}, "kelly_fraction": 0.15 * multiplier, "weight": 0.5})
-    return result, multiplier
+    return result, multiplier, regime, confidence
 
 
 async def run_cycle(
@@ -264,8 +264,22 @@ async def run_cycle(
         logger.info("  %s: price=%.2f candles=%d", symbol, current_price, len(df))
 
         if idx == 0:
-            regime_strategies, regime_multiplier = _select_strategies_for_regime(df, strategies)
+            regime_strategies, regime_multiplier, regime_name, regime_conf = _select_strategies_for_regime(df, strategies)
             state["regime"] = regime_strategies[0]["name"] if regime_strategies else "unknown"
+
+            regime_state_path = state_path.parent / "regime_state.json"
+            regime_state = {
+                "regime": regime_name,
+                "confidence": regime_conf,
+                "risk_multiplier": regime_multiplier,
+                "selected_strategies": [s["name"] for s in regime_strategies],
+                "detected_at": datetime.now(timezone.utc).isoformat(),
+            }
+            try:
+                with open(regime_state_path, "w") as f:
+                    json.dump(regime_state, f, indent=2)
+            except Exception as e:
+                logger.debug("Regime state not saved: %s", e)
 
         for strat_cfg in (regime_strategies or [{"name": s, "params": {}, "kelly_fraction": 0.25} for s in strategies]):
             strat_name = strat_cfg["name"]

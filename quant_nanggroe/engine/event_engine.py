@@ -21,7 +21,7 @@ class EventType(Enum):
 @dataclass(order=True)
 class Event:
     timestamp: datetime
-    event_type: EventType
+    event_type: EventType = field(compare=False)
     data: Dict[str, Any] = field(default_factory=dict, compare=False)
     priority: int = 0  # lower = higher priority
 
