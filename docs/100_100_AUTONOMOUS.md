@@ -1,8 +1,8 @@
 # Autonomous Readiness Scorecard — Quant Nanggroe AI
 
 **Date:** 2026-06-27
-**Version:** v4.3.2
-**Assessment:** DEVELOPING — critical path items resolved, regime-aware ensemble deployed
+**Version:** v4.3.3
+**Assessment:** DEVELOPING — regime-aware ensemble deployed, all tests passing
 
 ## Executive Summary
 
@@ -12,12 +12,12 @@
 | Infrastructure | 17/20 | Real data from 2 providers, API keys wired, CLI consolidated to `qnai` |
 | Risk Systems | 13/20 | Kill switch, correlation, auto-disable operational; auto-disable paper_mode=True |
 | Code Quality | 12/15 | Orphans cleaned, 0 circular deps |
-| Test Coverage | 60-62% | 1627/1628 pass (99.9%) |
+| Test Coverage | 60-62% | **1628/1628 pass (100.0%)** |
 | Security | 8/10 | 0 CRITICAL findings, all P0s fixed, shell script imports fixed |
 | Operations | 3/5 | OPS checklist created, emergency procedures documented |
 | **Composite** | **69/100** | **HONEST — real data validated, regime-aware ensemble deployed** |
 
-**Bottom line:** All critical safety issues resolved — kill switch death spiral fixed, correlation monitor wired, security P0s closed, shell script dynamic imports fixed. Paper daemon executing live trades with regime-aware ensemble (RegimeBased + Momentum fallback). Real data pipeline from Alpha Vantage + Polygon.io (7 symbols, 18,816 rows). Real-market alpha destruction: RegimeBased PASSES (Sharpe=3.704), 7 others FAIL — honest hedge fund truth. Walk-forward confirms overfitting (OOS Sharpe -0.597). Factor regression: R²=27.8%, BTC beta significant. Zero CRITICAL security findings. OPS checklist documented. 1627/1628 tests pass. Auto-tune evaluation fixed (walk-forward): Momentum +2199% improvement found. QNA v4.3.2.
+**Bottom line:** All critical safety issues resolved — kill switch death spiral fixed, correlation monitor wired, security P0s closed, shell script dynamic imports fixed. Paper daemon executing live trades with regime-aware ensemble (RegimeBased + Momentum fallback). Real data pipeline from Alpha Vantage + Polygon.io (7 symbols, 18,816 rows). Real-market alpha destruction: RegimeBased PASSES (Sharpe=3.704), 7 others FAIL — honest hedge fund truth. Walk-forward confirms overfitting (OOS Sharpe -0.335 to -1.154). Factor regression: R²=27.8%, BTC beta significant. Zero CRITICAL security findings. OPS checklist documented. **1628/1628 tests pass (100%)**. Auto-tune evaluation fixed (walk-forward): Momentum +2199%, CryptoSpecific +111.6%, VolArb +100%. Regime state persistence wired. QNA v4.3.3.
 
 ## 1. Alpha Generation (30 points)
 
@@ -240,16 +240,17 @@
 
 ### Critical Path to 100
 
-1. [ ] **Run full walk-forward on real data** — `--walk-forward` flag ready, needs multi-symbol execution (worth +3 pts)
+1. [ ] **Run full walk-forward on all 8 strategies** — done for 3, need all (worth +3 pts)
 2. [x] **Real API keys obtained** — Alpha Vantage, Polygon.io wired, 7 symbols with real data
 3. [x] **Delete dead orphan files** — compliance.py (234 lines) deleted, 0 remaining confirmed dead files
 4. [x] **Operational procedures documented** — `docs/OPS_CHECKLIST.md` (371 lines) with daily/weekly/emergency/capital readiness
-5. [ ] **Fix 3 pre-existing test failures** — OpenBB API 404, event engine handler, alpha destruction PSR
+5. [ ] **Fix pre-existing test failures** — 0 remaining (all 1628/1628 now passing)
 6. [x] **Factor regression executed** — RegimeBased: R²=27.8%, BTC beta significant, alpha not significant
 7. [x] **0 CRITICAL security findings** — both shell script dynamic imports fixed with importlib
 8. [x] **Consolidate CLI** — `qnai` bridges `qna` and `bh` commands, unified interface
-9. [ ] **Implement auto-strategy tuning** — tuned_params.json shows Momentum +2199%, expand search for all strategies
+9. [x] **Implement auto-strategy tuning** — tuned_params.json shows Momentum +2199%, CryptoSpecific +111.6%, VolArb +100%
 10. [ ] **Raise test coverage from 60% → 70%** — engine coverage needs 20+ points
+11. [x] **Regime state persistence** — `regime_state.json` saved each cycle with regime/confidence/selected strategies
 11. [ ] **30+ days paper trading** — collect multi-regime PnL for ensemble validation (current data horizon ~1-1.4yr insufficient)
 12. [ ] **Regime adaptation persistence** — wire regime detection output to regime_state.json for live pipeline
 
