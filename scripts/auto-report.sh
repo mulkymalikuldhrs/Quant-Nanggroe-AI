@@ -41,7 +41,7 @@ DOC_COUNT=$(find "$REPO/docs" -name "*.md" | wc -l)
 echo "| Doc files | $DOC_COUNT |"
 
 # QNA version
-VERSION=$(python3 -c "import sys; sys.path.insert(0, '$REPO'); exec(open('$REPO/quant_nanggroe/__init__').read()); print(QNA_VERSION)" 2>/dev/null || echo "unknown")
+VERSION=$(python3 -c "import sys, importlib; sys.path.insert(0, \"$REPO\"); mod = importlib.import_module(\"quant_nanggroe\"); print(mod.QNA_VERSION)" 2>/dev/null || echo "unknown")
 echo "| QNA version | $VERSION |"
 
 echo ""

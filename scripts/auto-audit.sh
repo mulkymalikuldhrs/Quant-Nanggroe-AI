@@ -10,6 +10,7 @@ echo "=== Auto-Audit: Comprehensive Codebase Audit ==="
 echo "--- 1. Import Integrity Check ---"
 python3 -c "
 import sys
+import importlib
 sys.path.insert(0, '$REPO')
 checks = [
     ('quant_nanggroe', '__init__'),
@@ -32,7 +33,7 @@ failed = 0
 results = []
 for module, attr in checks:
     try:
-        mod = __import__(module, fromlist=[attr])
+        mod = importlib.import_module(module)
         if attr == '*' or hasattr(mod, attr):
             results.append(f'✅ {module}.{attr}')
             passed += 1

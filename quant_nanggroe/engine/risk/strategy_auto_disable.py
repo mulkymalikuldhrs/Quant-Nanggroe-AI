@@ -275,7 +275,7 @@ class AutoDisableManager:
             self._set_enabled(perf, reason)
 
     def _set_disabled(self, perf: StrategyPerformance, reason: str) -> None:
-        """Mark strategy as disabled and activate kill switch."""
+        """Mark strategy as disabled (per-strategy, not global kill switch)."""
         perf.disabled = True
         perf.disabled_at = datetime.now(timezone.utc).isoformat()
         perf.disabled_reason = reason
@@ -285,13 +285,6 @@ class AutoDisableManager:
             "Strategy '%s' AUTO-DISABLED: %s",
             perf.name,
             reason,
-        )
-
-        self._kill_switch.activate(
-            level=KillSwitchLevel.LEVEL_1,
-            reason=f"Auto-disable: {perf.name} - {reason}",
-            trigger=KillSwitchTrigger.COMPLIANCE_VIOLATION,
-            auto_activated=True,
         )
 
         self.save_state()

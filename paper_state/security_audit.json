@@ -1,0 +1,870 @@
+{
+  "date": "2026-06-27",
+  "files_scanned": 508,
+  "findings_count": 123,
+  "score": 5,
+  "band": "CRITICAL",
+  "findings": [
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/agents/graph.py",
+      "line": 215,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "return workflow.compile()"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 28,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"\\beyJ[A-Za-z0-9_\\-]+\\.eyJ[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+\\b\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 33,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"\\bsk-[A-Za-z0-9_\\-]{20,}\\b\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 37,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"\\bghp_[A-Za-z0-9]{36,}\\b\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 42,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"\\bapi_key\\s*[=:]\\s*['\\\"]?[A-Za-z0-9_\\-]{8,}['\\\"]?\", re.IGNORECASE),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 47,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 52,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"\\b(?:\\d[ \\-]?){12,18}\\d\\b\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 57,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile(r\"\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/core/pii_redaction.py",
+      "line": 63,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "re.compile("
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/database/migrations.py",
+      "line": 125,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "spec = __import__(f\"database.migrations.{version}\", fromlist=['up', 'down'])"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/database/migrations.py",
+      "line": 158,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "spec = __import__(f\"database.migrations.{version}\", fromlist=['up', 'down'])"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/api/health.py",
+      "line": 98,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "__import__(module)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/api/health.py",
+      "line": 163,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "__import__(mod_path)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 18,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^\\d{6}\\.(SZ|SH|BJ)$\", re.I), \"a_share\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 19,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^(51|15|56)\\d{4}\\.(SZ|SH)$\", re.I), \"a_share\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 20,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]+\\.US$\", re.I), \"us_equity\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 21,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^\\d{3,5}\\.HK$\", re.I), \"hk_equity\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 22,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]+-USDT$\", re.I), \"crypto\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 23,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]+/USDT$\", re.I), \"crypto\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 25,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Za-z]{1,2}\\d{3,4}\\.(ZCE|DCE|SHFE|INE|CFFEX|GFEX)$\", re.I), \"futures\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 27,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]{2,4}[FGHJKMNQUVXZ]\\d{1,2}$\", re.I), \"futures\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 29,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]{2,4}\\d{4}$\", re.I), \"futures\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 31,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]{2,4}\\.(CME|CBOT|NYMEX|COMEX|ICE|EUREX)$\", re.I), \"futures\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 33,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]{3}/[A-Z]{3}$\"), \"forex\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/backtest/engines/market_detection.py",
+      "line": 34,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "(re.compile(r\"^[A-Z]{6}\\.FX$\"), \"forex\"),"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/factors/registry.py",
+      "line": 40,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "_ID_RE = re.compile(r\"^[a-z][a-z0-9_]{0,63}$\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/scripts/bh-cli.py",
+      "line": 360,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "__import__(mod_path)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/scripts/qna-cli.py",
+      "line": 289,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "__import__(mod_path)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/scripts/test_qna_imports.py",
+      "line": 13,
+      "severity": "CRITICAL",
+      "type": "__import__()",
+      "detail": "mod = __import__(module_path, fromlist=[expected_attr] if expected_attr else [])"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/utils/validation.py",
+      "line": 16,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "CRYPTO_PATTERN = re.compile(r\"^[A-Z0-9]{2,10}/[A-Z0-9]{2,10}$\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/utils/validation.py",
+      "line": 17,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "STOCK_PATTERN = re.compile(r\"^[A-Z]{1,5}$\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/utils/validation.py",
+      "line": 18,
+      "severity": "CRITICAL",
+      "type": "compile()",
+      "detail": "FOREX_PATTERN = re.compile(r\"^[A-Z]{3}=X$|^/[A-Z]{3}$\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/llm_router.py",
+      "line": 194,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/alpaca_broker.py",
+      "line": 198,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/alpaca_broker.py",
+      "line": 199,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/ccxt_broker.py",
+      "line": 120,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/ccxt_broker.py",
+      "line": 121,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/factory.py",
+      "line": 20,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"spot\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/factory.py",
+      "line": 23,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"okx\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", passphrase=\"YOUR_API_PASS"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/factory.py",
+      "line": 257,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/factory.py",
+      "line": 260,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"okx\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", passphrase=\"YOUR_API_PASS"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/mt5_broker.py",
+      "line": 156,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/mt5_broker.py",
+      "line": 157,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/polymarket_broker.py",
+      "line": 262,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/polymarket_broker.py",
+      "line": 263,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/solana/broker.py",
+      "line": 78,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\",  # Base58 private key"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/exchange/solana/mempool.py",
+      "line": 47,
+      "severity": "HIGH",
+      "type": "Token",
+      "detail": "METAPLEX_TOKEN = \"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s\""
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/scripts/backup.sh",
+      "line": 26,
+      "severity": "HIGH",
+      "type": "Password",
+      "detail": "DB_PASSWORD=\"${POSTGRES_PASSWORD:-}\""
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/scripts/backup.sh",
+      "line": 72,
+      "severity": "HIGH",
+      "type": "Password",
+      "detail": "PGPASSWORD=\"$DB_PASSWORD\" pg_dump \\"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/security/credential_inference.py",
+      "line": 182,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/security/credential_inference.py",
+      "line": 183,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 94,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 100,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\", priority=25)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 104,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 108,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 116,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 138,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 152,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 164,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 181,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 192,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 203,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 215,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 232,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 243,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 264,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 281,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 292,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 303,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 314,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 330,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 343,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 354,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 369,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 379,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 391,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 407,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 424,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 446,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 450,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 455,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_data/test_twelvedata_provider.py",
+      "line": 462,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "provider = TwelveDataProvider(api_key=\"YOUR_API_KEY_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_engine/test_llm_router.py",
+      "line": 43,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_engine/test_llm_router.py",
+      "line": 52,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_engine/test_llm_router.py",
+      "line": 61,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_alpaca_broker.py",
+      "line": 42,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_alpaca_broker.py",
+      "line": 43,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 89,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 95,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"okx\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", passphrase=\"pass\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 100,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"bybit\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 104,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"bitget\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", passphrase=\"pass\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 108,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"kraken\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 112,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"kucoin\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", passphrase=\"pass\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 116,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"gate\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 120,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"coinbase\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", passphrase=\"pass\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 124,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"BINANCE\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 128,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"  binance  \", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 165,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"spot\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 171,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"futures\""
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 176,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"perps\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 182,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"invalid\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 186,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 193,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "factory.create(\"kraken\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"perps\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 198,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "factory.create(\"coinbase\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"perps\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 208,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory_with_sandbox.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 212,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", sandbox=True)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 216,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", rate_limit=10.0)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 220,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", timeout=60)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 224,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", retries=5)"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 232,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = f.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 238,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 239,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 338,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "factory.create(\"binance\", api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 368,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "broker = factory.create(name, api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\")"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_factory.py",
+      "line": 384,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "name, api_key=\"YOUR_API_KEY_HERE\", api_secret=\"YOUR_API_SECRET_HERE\", market_type=\"spot\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_mt5_broker.py",
+      "line": 59,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_mt5_broker.py",
+      "line": 60,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_secret=\"YOUR_API_SECRET_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_exchange/test_polymarket_broker.py",
+      "line": 55,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "api_key=\"poly-api-key-123\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/tests/test_nvidia_nim/test_client.py",
+      "line": 39,
+      "severity": "HIGH",
+      "type": "API Key",
+      "detail": "nvidia_nim_api_key=\"YOUR_API_KEY_HERE\","
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/api/app.py",
+      "line": 160,
+      "severity": "MEDIUM",
+      "type": "JWT Secret",
+      "detail": "secret_key=settings.jwt_secret,"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/api/middleware.py",
+      "line": 41,
+      "severity": "MEDIUM",
+      "type": "JWT Secret",
+      "detail": "self._jwt = auth or JWTAuth(secret_key=os.environ.get(\"QNAI_JWT_SECRET\", \"change-me-in-production\"))"
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/config/settings.py",
+      "line": 156,
+      "severity": "MEDIUM",
+      "type": "JWT Secret",
+      "detail": "jwt_secret: str = Field("
+    },
+    {
+      "file": "/mnt/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/config/settings.py",
+      "line": 158,
+      "severity": "MEDIUM",
+      "type": "JWT Secret",
+      "detail": "description=\"JWT HMAC secret key. Set QNAI_JWT_SECRET in production.\","
+    }
+  ]
+}

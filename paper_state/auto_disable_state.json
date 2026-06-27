@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "saved_at": "2026-06-27T12:00:56.405196+00:00",
+  "config": {
+    "sharpe_window": 30,
+    "threshold": 0.3,
+    "confirm_window": 30,
+    "state_path": "paper_state/auto_disable_state.json",
+    "paper_mode": false
+  },
+  "strategies": {
+    "Momentum": {
+      "name": "Momentum",
+      "disabled": true,
+      "disabled_at": "2026-06-27T12:00:56.334070+00:00",
+      "disabled_reason": "Trailing Sharpe -5.644 < threshold 0.3 over 30-day window",
+      "consecutive_above_threshold": 0,
+      "total_updates": 1
+    },
+    "RegimeBased": {
+      "name": "RegimeBased",
+      "disabled": true,
+      "disabled_at": "2026-06-27T12:00:56.399636+00:00",
+      "disabled_reason": "Trailing Sharpe -5.644 < threshold 0.3 over 30-day window",
+      "consecutive_above_threshold": 0,
+      "total_updates": 1
+    }
+  }
+}
