@@ -137,37 +137,22 @@ def _run_strategy(strategy_name: str, params: Dict[str, Any], ohlcv: pd.DataFram
     except Exception:
         return 0.0
     data = _prepare_data(strategy_name, ohlcv)
-    n = len(data)
     close = data["close"].values if "close" in data.columns else data.iloc[:, 0].values
-    signals = np.zeros(n)
-    for i in range(n):
-        window = data.iloc[: i + 1]
-        try:
-            result = strategy.generate_signal(window)
-            if result is None:
-                continue
-            if hasattr(result, "confidence"):
-                val = float(result.confidence)
-                if hasattr(result, "signal_type") and hasattr(result.signal_type, "value"):
-                    if result.signal_type.value in ("sell", "close_long"):
-                        val = -val
-                signals[i] = val
-            elif isinstance(result, (int, float, np.floating)):
-                signals[i] = float(result)
-        except Exception:
-            continue
-    returns = np.zeros(n)
-    for i in range(1, n):
-        target = np.clip(float(signals[i]), -1, 1)
-        ret = target * (close[i] - close[i - 1]) / max(close[i - 1], 1e-8)
-        returns[i] = ret
-    nonzero_mask = np.abs(signals) > 1e-6
-    if np.any(nonzero_mask):
-        first_trade = int(np.argmax(nonzero_mask))
-        active_returns = returns[first_trade:]
-    else:
-        active_returns = returns[int(len(returns) * 0.2):]
-    return _compute_sharpe(active_returns)
+    try:
+        result = strategy.generate_signal(data)
+    except Exception:
+        return 0.0
+    if result is None:
+        return 0.0
+    direction = 1
+    if hasattr(result, "signal_type") and hasattr(result.signal_type, "value"):
+        if result.signal_type.value in ("sell", "close_long"):
+            direction = -1
+    confidence = float(result.confidence) if hasattr(result, "confidence") else 0.5
+    rets = np.diff(close) / np.maximum(np.abs(close[:-1]), 1e-10)
+    active = rets[-min(30, len(rets)):]
+    pnl = direction * confidence * active
+    return _compute_sharpe(pnl)
 
 
 def tune_strategy(
