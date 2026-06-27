@@ -2,10 +2,10 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +29,23 @@ class Regime(str, Enum):
 class RegimeState(BaseModel):
     model_config = ConfigDict(frozen=False)
     regime: Regime = Regime.SIDEWAYS
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    confidence: float = Field(default=0.0, ge=0.0)
     transition_probabilities: Dict[str, float] = Field(default_factory=dict)
     regime_index: int = Field(default=2, ge=0, le=3)
     method: str = "simple"
-    features: Dict[str, float] = Field(default_factory=dict)
+    features: Dict[str, Union[float, str]] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     result_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def clamp_confidence(cls, v: Any) -> float:
+        return max(0.0, min(1.0, float(v)))
+
+    @model_validator(mode="after")
+    def _auto_regime_index(self) -> "RegimeState":
+        self.regime_index = _REGIME_INDEX.get(self.regime, 2)
+        return self
 
     @property
     def is_stressed(self) -> bool:
@@ -48,7 +58,7 @@ class RegimeState(BaseModel):
             "transition_probabilities": {k: round(v, 4) for k, v in self.transition_probabilities.items()},
             "regime_index": self.regime_index,
             "method": self.method,
-            "features": {k: round(v, 6) for k, v in self.features.items()},
+            "features": {k: round(v, 6) if isinstance(v, float) else v for k, v in self.features.items()},
             "timestamp": self.timestamp.isoformat(),
             "result_id": self.result_id,
         }
@@ -171,16 +181,16 @@ class HMMRegimeDetector:
                 vol_ratio = float(recent_vol / avg_vol)
         confidence = 0.5
         regime = Regime.SIDEWAYS
-        if min_return < -0.05 or max_drawdown < -0.10:
-            regime = Regime.CRISIS
-            confidence = 0.85 + min(0.15, abs(min_return) * 2)
-        elif volatility > 0.03:
+        if volatility > 0.03:
             if mean_return < -0.005:
                 regime = Regime.BEAR
                 confidence = 0.7 + min(0.2, abs(mean_return) * 10)
             else:
                 regime = Regime.SIDEWAYS
                 confidence = 0.5
+        elif min_return < -0.05 or max_drawdown < -0.10:
+            regime = Regime.CRISIS
+            confidence = 0.85 + min(0.15, abs(min_return) * 2)
         elif mean_return > 0.002 and adx > 25:
             regime = Regime.BULL
             confidence = 0.6 + min(0.3, (adx - 25) / 50)

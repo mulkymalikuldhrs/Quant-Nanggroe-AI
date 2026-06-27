@@ -33,7 +33,7 @@ class VolatilityRegimeDetector:
             mean_vol = np.mean(self.historical_vols)
             std_vol = np.std(self.historical_vols) or 1e-8
             z_score = (current_vol - mean_vol) / std_vol
-            if z_score > 1.5:
+            if z_score > 2.0:
                 regime = Regime.HIGH_VOL
                 confidence = min(0.95, 0.5 + abs(z_score) * 0.1)
             elif z_score < -1.0:

@@ -138,21 +138,36 @@ def _run_strategy(strategy_name: str, params: Dict[str, Any], ohlcv: pd.DataFram
         return 0.0
     data = _prepare_data(strategy_name, ohlcv)
     close = data["close"].values if "close" in data.columns else data.iloc[:, 0].values
-    try:
-        result = strategy.generate_signal(data)
-    except Exception:
+    if len(close) < 60:
         return 0.0
-    if result is None:
+
+    step = max(5, len(close) // 30)
+    positions = list(range(60, len(close), step))
+    if len(positions) < 3:
         return 0.0
-    direction = 1
-    if hasattr(result, "signal_type") and hasattr(result.signal_type, "value"):
-        if result.signal_type.value in ("sell", "close_long"):
-            direction = -1
-    confidence = float(result.confidence) if hasattr(result, "confidence") else 0.5
-    rets = np.diff(close) / np.maximum(np.abs(close[:-1]), 1e-10)
-    active = rets[-min(30, len(rets)):]
-    pnl = direction * confidence * active
-    return _compute_sharpe(pnl)
+
+    forward_rets = []
+    for pos in positions:
+        window = data.iloc[:pos]
+        try:
+            result = strategy.generate_signal(window)
+        except Exception:
+            continue
+        if result is None:
+            continue
+        direction = 1
+        if hasattr(result, "signal_type") and hasattr(result.signal_type, "value"):
+            if result.signal_type.value in ("sell", "close_long"):
+                direction = -1
+        confidence = float(result.confidence) if hasattr(result, "confidence") else 0.5
+        horizon = 1
+        if pos + horizon < len(close):
+            ret = (close[pos + horizon] - close[pos]) / max(abs(close[pos]), 1e-10)
+            forward_rets.append(direction * confidence * ret)
+
+    if len(forward_rets) < 3:
+        return 0.0
+    return _compute_sharpe(np.array(forward_rets))
 
 
 def tune_strategy(

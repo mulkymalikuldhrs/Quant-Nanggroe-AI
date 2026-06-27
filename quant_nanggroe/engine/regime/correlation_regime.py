@@ -16,9 +16,9 @@ class CorrelationRegimeDetector:
             return RegimeState(regime=Regime.SIDEWAYS, confidence=0.0, method="correlation")
         recent = returns_matrix[-self.window:]
         corr = np.corrcoef(recent.T)
-        n_assets = corr.shape[0]
-        if n_assets < 2:
+        if corr.ndim < 2 or corr.shape[0] < 2:
             return RegimeState(regime=Regime.SIDEWAYS, confidence=0.5, method="correlation")
+        n_assets = corr.shape[0]
         upper_tri = corr[np.triu_indices_from(corr, k=1)]
         avg_corr = float(np.mean(upper_tri))
         if avg_corr > 0.7:

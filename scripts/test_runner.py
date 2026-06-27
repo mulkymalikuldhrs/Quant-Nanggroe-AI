@@ -390,6 +390,77 @@ def test_engine_tests():
     return test_results
 
 
+# ── Regime Detection Tests ─────────────────────────────────────────────────
+
+def _run_unittest_file(filepath: str) -> List[TestResult]:
+    """Run a single unittest file and return test results."""
+    loader = unittest.TestLoader()
+    suite = loader.discover(os.path.dirname(filepath),
+                            pattern=os.path.basename(filepath))
+    all_tests = _collect_tests(suite)
+    if not all_tests:
+        return [TestResult(os.path.basename(filepath), False, 0, "no tests found")]
+
+    result = _TimedTestResult()
+    suite.run(result)
+    failure_map = {t: tb for t, tb in result.failures}
+    error_map = {t: tb for t, tb in result.errors}
+
+    test_results = []
+    for t in all_tests:
+        name = t.id()
+        duration = result.test_durations.get(t, 0.0)
+        if t in failure_map:
+            test_results.append(TestResult(name, False, duration, failure_map[t]))
+        elif t in error_map:
+            test_results.append(TestResult(name, False, duration, error_map[t]))
+        else:
+            test_results.append(TestResult(name, True, duration))
+    return test_results
+
+
+@suite("Regime HMM Detector")
+def test_regime_hmm():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_hmm_detector.py"))
+
+
+@suite("Regime Strategy Selector")
+def test_regime_selector():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_strategy_selector.py"))
+
+
+@suite("Regime Ensemble")
+def test_regime_ensemble():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_ensemble.py"))
+
+
+@suite("Regime Correlation Detector")
+def test_regime_corr():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_correlation.py"))
+
+
+@suite("Regime Macro Detector")
+def test_regime_macro():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_macro.py"))
+
+
+@suite("Regime Volatility Detector")
+def test_regime_vol():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_volatility.py"))
+
+
+@suite("Regime Store")
+def test_regime_store():
+    return _run_unittest_file(os.path.join(_REPO_ROOT, "tests", "test_regime_store.py"))
+
+
+@suite("Credential Inference")
+def test_credential_inference():
+    return _run_unittest_file(
+        os.path.join(_REPO_ROOT, "tests", "test_security", "test_credential_inference.py")
+    )
+
+
 # ── Runner ───────────────────────────────────────────────────────────────
 
 def print_report() -> None:

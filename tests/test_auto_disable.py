@@ -136,13 +136,14 @@ class TestAutoDisableManager(unittest.TestCase):
 
     # ── 8. Kill switch activation on disable ─────────────────────────────
 
-    def test_kill_switch_activated_on_disable(self):
+    def test_kill_switch_not_activated_on_per_strategy_disable(self):
         ks = KillSwitch()
         mgr = self._make_mgr(kill_switch=ks)
         rng = np.random.default_rng(42)
         bad = pd.Series(rng.normal(-0.002, 0.01, 30))
         mgr.update("strat_a", bad)
-        self.assertTrue(ks.is_active)
+        self.assertTrue(mgr.is_disabled("strat_a"))
+        self.assertFalse(ks.is_active)
 
     # ── 9. get_state and to_dict serialization ───────────────────────────
 

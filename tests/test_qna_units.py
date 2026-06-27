@@ -974,10 +974,10 @@ class TestRegimeStrategySelector(unittest.TestCase):
 
     def test_selector_init(self):
         try:
-            from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategySelector
+            from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategySelector, _REGIME_LABEL_MAP
             selector = RegimeStrategySelector()
-            self.assertIsNotNone(selector._REGIME_LABEL_MAP)
-            self.assertIn("BULL", selector._REGIME_LABEL_MAP)
+            self.assertIsNotNone(_REGIME_LABEL_MAP)
+            self.assertIn("BULL", _REGIME_LABEL_MAP)
         except ImportError as e:
             self.skipTest(str(e))
 

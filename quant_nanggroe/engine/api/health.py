@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import time
+import importlib
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
@@ -95,7 +96,7 @@ def _check_data_providers() -> ComponentHealth:
     unavailable = []
     for name, module in providers.items():
         try:
-            __import__(module)
+            importlib.import_module(module)
             available.append(name)
         except ImportError:
             unavailable.append(name)
@@ -160,7 +161,7 @@ def _check_engine_modules() -> ComponentHealth:
     failed = []
     for name, mod_path in modules.items():
         try:
-            __import__(mod_path)
+            importlib.import_module(mod_path)
             available.append(name)
         except Exception:
             failed.append(name)

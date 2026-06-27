@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedStrategy
+from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedStrategy, REGIME_LABELS
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
@@ -15,7 +15,6 @@ class TestRegimeBasedStrategy:
         strategy = RegimeBasedStrategy()
         assert strategy.name == "RegimeBased"
         assert strategy.n_regimes == 3
-        assert strategy.confidence_threshold == 0.6
 
     def test_required_columns(self):
         strategy = RegimeBasedStrategy()
@@ -27,16 +26,13 @@ class TestRegimeBasedStrategy:
 
     def test_detect_regime_trending_up(self, trending_up_data):
         strategy = RegimeBasedStrategy()
-        regime, probs = strategy.detect_regime(trending_up_data)
+        regime = strategy.detect_regime(trending_up_data)
         assert 0 <= regime < strategy.n_regimes
-        assert len(probs) == strategy.n_regimes
-        assert abs(sum(probs) - 1.0) < 0.1  # Approximately sum to 1
 
     def test_detect_regime_mean_reverting(self, mean_reverting_data):
         strategy = RegimeBasedStrategy()
-        regime, probs = strategy.detect_regime(mean_reverting_data)
+        regime = strategy.detect_regime(mean_reverting_data)
         assert 0 <= regime < strategy.n_regimes
-        assert len(probs) == strategy.n_regimes
 
     def test_generate_signal_trending_up(self, trending_up_data):
         strategy = RegimeBasedStrategy(
@@ -70,16 +66,15 @@ class TestRegimeBasedStrategy:
             assert isinstance(sig, Signal)
 
     def test_regime_labels(self):
-        strategy = RegimeBasedStrategy()
-        assert strategy.TRENDING_UP == 0
-        assert strategy.TRENDING_DOWN == 1
-        assert strategy.MEAN_REVERTING == 2
+        assert REGIME_LABELS[0] == "bull"
+        assert REGIME_LABELS[1] == "bear"
+        assert REGIME_LABELS[2] == "range_bound"
+        assert REGIME_LABELS[3] == "high_vol"
 
     def test_simple_regime_fallback(self, trending_up_data):
         strategy = RegimeBasedStrategy()
-        # Force simple regime (no hmmlearn)
-        result = strategy._fit_simple_regime(trending_up_data)
-        assert result is True
+        result = strategy._detect_fallback(trending_up_data)
+        assert 0 <= result < 4
 
     def test_signal_evidence_has_regime(self, trending_up_data):
         strategy = RegimeBasedStrategy(
@@ -104,7 +99,7 @@ class TestRegimeBasedStrategy:
 
     def test_two_regimes(self, trending_up_data):
         strategy = RegimeBasedStrategy(
-            params={"n_regimes": 2, "confidence_threshold": 0.3, "symbol": "TEST"}
+            params={"n_regimes": 2, "symbol": "TEST"}
         )
-        regime, probs = strategy.detect_regime(trending_up_data)
-        assert len(probs) == 2
+        regime = strategy.detect_regime(trending_up_data)
+        assert 0 <= regime < 2

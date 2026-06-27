@@ -194,6 +194,9 @@ def _select_strategies_for_regime(df: pd.DataFrame, user_strategies: list[str]) 
         fallback = user_strategies or all_qna
         for s in fallback:
             result.append({"name": s, "params": {}, "kelly_fraction": 0.25 * multiplier, "weight": 1.0})
+
+    if not any(s["name"] != "RegimeBased" for s in result):
+        result.append({"name": "Momentum", "params": {}, "kelly_fraction": 0.15 * multiplier, "weight": 0.5})
     return result, multiplier
 
 
@@ -384,13 +387,13 @@ async def main() -> None:
         sharpe_window=30,
         threshold=0.3,
         state_path=str(state_dir / "auto_disable_state.json"),
-        paper_mode=not args.live_data,
+        paper_mode=True,
     )
 
     correlation_monitor = StrategyCorrelationMonitor(
         kill_switch=kill_switch,
         state_dir=str(state_dir),
-        paper_mode=not args.live_data,
+        paper_mode=True,
     )
 
     stop_event = asyncio.Event()

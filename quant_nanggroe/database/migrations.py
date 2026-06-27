@@ -8,6 +8,7 @@ Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 import os
 import json
 import logging
+import importlib
 from datetime import datetime
 from pathlib import Path
 from sqlalchemy import create_engine, text
@@ -122,7 +123,7 @@ def down(connection):
             raise FileNotFoundError(f"Migration file not found: {migration_file}")
         
         # Load migration module
-        spec = __import__(f"database.migrations.{version}", fromlist=['up', 'down'])
+        spec = importlib.import_module(f"database.migrations.{version}")
         
         with self.engine.connect() as conn:
             trans = conn.begin()
@@ -155,7 +156,7 @@ def down(connection):
                 raise FileNotFoundError(f"Migration file not found: {migration_file}")
             
             # Load migration module
-            spec = __import__(f"database.migrations.{version}", fromlist=['up', 'down'])
+            spec = importlib.import_module(f"database.migrations.{version}")
             
             with self.engine.connect() as conn:
                 trans = conn.begin()
