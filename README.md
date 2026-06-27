@@ -99,3 +99,32 @@ Python 3.12, numpy, pandas, scipy, matplotlib, stable-baselines3. No Docker. No 
 ## License
 
 MIT — Quant Nanggroe AI Team
+
+---
+## Audit Report
+
+**Score: 68/100** | Last audit: 2026-06-27
+
+| Category | Score |
+|----------|-------|
+| Architecture & Structure | 85 |
+| Code Quality & Testing | 75 |
+| Documentation | 80 |
+| CI/CD & DevOps | 90 |
+| Production Readiness | 40 |
+| JeumpaLLM Integration | ✅ Added |
+| Seulanga RAG Integration | ✅ Added |
+| **Overall** | **68/100** |
+
+### Known Gaps
+1. **Paper daemon not running** — stale PID, needs restart
+2. **All data synthetic** — 6/8 strategies pass PSR but no real alpha validated
+3. **Coverage 40-62%** — below 90% target, engine module at 48.3%
+4. **~92 orphan files** (22.1% zero imports) — dead code to prune
+5. **No .env file** — copy .env.example and configure credentials
+
+### Integrated Services
+| Service | Status | Port |
+|---------|--------|------|
+| JeumpaLLM | Adapter added | 3456 |
+| Seulanga RAG | Bridge added | 3100 |

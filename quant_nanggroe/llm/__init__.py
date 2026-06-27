@@ -34,4 +34,6 @@ def query_llm(prompt: str, provider: str = "openai") -> dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 
-__all__ = ["get_llm_gateway", "query_llm", "HAS_LLM"]
+from quant_nanggroe.llm.jeumpa import get_jeumpa_llm, acheck_jeumpa_health
+
+__all__ = ["get_llm_gateway", "query_llm", "HAS_LLM", "get_jeumpa_llm", "acheck_jeumpa_health"]

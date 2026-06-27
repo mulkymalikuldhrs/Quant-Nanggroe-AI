@@ -35,6 +35,8 @@ from quant_nanggroe.memory.vector import (
     get_vector_store,
 )
 
+from quant_nanggroe.memory.seulanga_bridge import seulanga_learn, seulanga_search
+
 __all__ = [
     # Legacy memory
     "SessionMemory",
@@ -63,4 +65,7 @@ __all__ = [
     "SearchResult",
     "VectorStoreStats",
     "get_vector_store",
+    # Seulanga RAG bridge
+    "seulanga_learn",
+    "seulanga_search",
 ]
