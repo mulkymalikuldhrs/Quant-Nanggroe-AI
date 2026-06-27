@@ -71,6 +71,17 @@ DEFAULT_PARAM_RANGES: Dict[str, Dict[str, List[Any]]] = {
 }
 
 
+def _load_real_ohlcv(symbol: str = "BTC", max_bars: int = 500) -> pd.DataFrame | None:
+    path = os.path.join(_REPO_ROOT, "data", "cached_ohlcv", f"{symbol}.csv")
+    if not os.path.isfile(path):
+        return None
+    df = pd.read_csv(path, parse_dates=["date"])
+    if len(df) < 200:
+        return None
+    df = df.iloc[-max_bars:]
+    return df.rename(columns={"date": "index"}).set_index("index")
+
+
 def _generate_ohlcv(n: int = N_OBS, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     returns = rng.standard_t(df=4, size=n) * 0.015
@@ -212,8 +223,9 @@ def save_tuned_params(results: Dict[str, dict]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Auto-Tune: strategy parameter grid search")
+    parser = argparse.ArgumentParser(description="Auto-Tune: strategy parameter grid search on real data")
     parser.add_argument("--strategies", default=None, help="Comma-separated strategy names (default: all)")
+    parser.add_argument("--symbol", default="BTC", help="Symbol for real data tuning (default: BTC)")
     parser.add_argument("--metric", default="sharpe", choices=["sharpe"], help="Optimization metric (default: sharpe)")
     parser.add_argument("--param-ranges", default=None, help="Path to JSON file with custom param ranges")
     args = parser.parse_args()
@@ -236,7 +248,10 @@ def main() -> None:
     existing = load_existing_tuned()
 
     logger.info("Auto-Tune: %d strategies, metric=%s", len(selected), args.metric)
-    ohlcv = _generate_ohlcv()
+    real_data = _load_real_ohlcv(getattr(args, 'symbol', None) or "BTC")
+    ohlcv = real_data if real_data is not None else _generate_ohlcv()
+    if real_data is not None:
+        logger.info("Using real data (%d bars) for tuning", len(real_data))
 
     results: Dict[str, dict] = {}
     improvements = []
