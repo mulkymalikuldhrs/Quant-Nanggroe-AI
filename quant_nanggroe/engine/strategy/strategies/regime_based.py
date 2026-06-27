@@ -64,6 +64,9 @@ class RegimeBasedStrategy(BaseStrategy):
         self.max_position: float = float(p.get("max_position", 1.0))
         self.transaction_cost_bps: float = float(p.get("transaction_cost_bps", 10.0))
         self.min_trade_interval_bars: int = int(p.get("min_trade_interval_bars", 3))
+        self.volatility_threshold: float = float(p.get("volatility_threshold", 1.5))
+        self.feature_ewma_span: int = int(p.get("feature_ewma_span", 21))
+        self.feature_min_periods: int = int(p.get("feature_min_periods", 10))
         self.symbol: str = str(p.get("symbol", "ASSET"))
 
         self._hmm_model: Optional[hmm.GaussianHMM] = None
@@ -156,7 +159,7 @@ class RegimeBasedStrategy(BaseStrategy):
         r = float(returns.iloc[-20:].mean()) * 252
         v = float(returns.iloc[-20:].std()) * np.sqrt(252)
         lt_v = float(returns.std()) * np.sqrt(252) if len(returns) > 50 else v
-        hv = v > lt_v * 1.5
+        hv = v > lt_v * self.volatility_threshold
 
         if hv and self.n_regimes >= 4:
             return 3
@@ -172,7 +175,7 @@ class RegimeBasedStrategy(BaseStrategy):
         if len(returns) < 20:
             return np.array([]).reshape(0, 2)
         log_ret = np.log(1 + returns)
-        vol = log_ret.rolling(21, min_periods=10).std()
+        vol = log_ret.rolling(self.feature_ewma_span, min_periods=self.feature_min_periods).std()
         features = pd.DataFrame({"ret": log_ret, "vol": vol}).dropna()
         return features.values if len(features) >= 10 else np.array([]).reshape(0, 2)
 

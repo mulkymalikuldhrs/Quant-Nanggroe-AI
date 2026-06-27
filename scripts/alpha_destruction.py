@@ -280,6 +280,7 @@ def run_destruction(
     use_real: bool = False,
     export_path: Optional[str] = None,
     walk_forward: bool = False,
+    strategies_filter: Optional[List[str]] = None,
 ) -> Dict[str, dict]:
     """Run the full Alpha Destruction Protocol against every registered strategy.
 
@@ -287,6 +288,8 @@ def run_destruction(
     """
     np.random.seed(42)
     strategies = list_strategies()
+    if strategies_filter:
+        strategies = [s for s in strategies if s in strategies_filter]
 
     if not strategies:
         logger.error("No strategies registered")
@@ -377,25 +380,32 @@ def run_destruction(
     if walk_forward:
         try:
             from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
+            from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig, MarketType, StrategyType
             logger.info("\n  ── Walk-Forward Validation ──")
+            engine = BacktestEngine(BacktestConfig(market=MarketType.CRYPTO))
             for strategy_name in strategies:
                 for symbol in symbols:
                     ohlcv = try_load_real_data(symbol, n_observations) if use_real else generate_realistic_ohlcv(n_observations)
                     if ohlcv is None or len(ohlcv) < 400:
+                        logger.info("    %s/%s: skipping (only %d bars)", strategy_name, symbol, len(ohlcv) if ohlcv is not None else 0)
                         continue
-                    sigs_df = pd.DataFrame({
-                        "signal": generate_signals(strategy_name, ohlcv, symbol),
-                    }, index=ohlcv.index)
+                    sigs = generate_signals(strategy_name, ohlcv, symbol)
+                    prices = ohlcv[["close"]].rename(columns={"close": symbol})
+                    sigs_df = pd.DataFrame({symbol: sigs}, index=ohlcv.index)
                     wfa = WalkForwardAnalyzer(
-                        {"prices": ohlcv, "signal": sigs_df},
+                        engine,
                         train_window=252, test_window=63, mode="rolling",
                     )
-                    wf_results = wfa.analyze(ohlcv, sigs_df)
-                    oos_sharpes = [w.out_of_sample_sharpe for w in wf_results.get("windows", [])]
+                    wf_results = wfa.analyze(prices, sigs_df)
+                    windows = wf_results.get("windows", [])
+                    oos_sharpes = [w.out_of_sample_sharpe for w in windows]
                     if oos_sharpes:
                         avg_oos = float(np.mean(oos_sharpes))
-                        logger.info("    %s/%s: OOS Sharpe=%.3f (%d windows)",
-                                     strategy_name, symbol, avg_oos, len(oos_sharpes))
+                        logger.info("    %s/%s: OOS Sharpe=%.3f (%d windows, IS Sharpe=%.3f)",
+                                     strategy_name, symbol, avg_oos, len(oos_sharpes),
+                                     wf_results.get("aggregate", {}).get("avg_is_sharpe", 0))
+                    else:
+                        logger.info("    %s/%s: 0 windows generated", strategy_name, symbol)
         except Exception as e:
             logger.warning("  Walk-forward skipped: %s", e)
 
@@ -436,11 +446,14 @@ def main() -> None:
                         help="Export path for JSON report")
     parser.add_argument("--walk-forward", action="store_true",
                         help="Run walk-forward analysis after PSR/DSR")
+    parser.add_argument("--strategies", default=None,
+                        help="Comma-separated strategy names (default: all)")
     args = parser.parse_args()
 
     symbols = [s.strip() for s in args.symbols.split(",")]
+    strategies_filter = [s.strip() for s in args.strategies.split(",")] if args.strategies else None
     run_destruction(symbols, args.n, use_real=args.real, export_path=args.export,
-                    walk_forward=args.walk_forward)
+                    walk_forward=args.walk_forward, strategies_filter=strategies_filter)
 
 
 if __name__ == "__main__":

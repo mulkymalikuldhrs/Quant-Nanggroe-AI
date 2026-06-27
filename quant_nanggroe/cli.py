@@ -18,6 +18,9 @@ import sys
 from datetime import datetime
 from typing import Optional
 
+import importlib.util
+import os
+
 import click
 from rich.console import Console
 from rich.panel import Panel
@@ -706,6 +709,175 @@ def memory_graph_stats():
 
     except Exception as e:
         console.print(f"[bold red]✗ Knowledge graph stats error: {e}[/bold red]")
+
+
+# =============================================================================
+# Bridged commands from qna-cli.py and bh-cli.py
+# =============================================================================
+
+_SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts")
+
+
+def _load_bridge(name: str, filename: str):
+    spec = importlib.util.spec_from_file_location(
+        name, os.path.join(_SCRIPTS_DIR, filename)
+    )
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _qna():
+    if "_qna_bridge" not in sys.modules:
+        _load_bridge("_qna_bridge", "qna-cli.py")
+    return sys.modules["_qna_bridge"]
+
+
+def _bh():
+    if "_bh_bridge" not in sys.modules:
+        _load_bridge("_bh_bridge", "bh-cli.py")
+    return sys.modules["_bh_bridge"]
+
+
+# ── Alpha Group (qna-cli bridge: kelly, regime, stress) ───────────────────────
+
+@main.group()
+def alpha():
+    """Alpha strategy commands: kelly, regime, stress testing."""
+    pass
+
+
+@alpha.command("kelly")
+@click.option("--symbol", "-s", required=True, help="Trading symbol (e.g., BTCUSDT)")
+@click.option("--capital", "-c", type=float, default=10000.0, help="Total capital")
+@click.option("--win-rate", type=float, default=0.55, help="Expected win rate")
+@click.option("--avg-win", type=float, default=0.03, help="Average win size (decimal)")
+@click.option("--avg-loss", type=float, default=0.02, help="Average loss size (decimal)")
+@click.option("--fraction", type=float, default=0.5, help="Kelly fraction (0.5 = half-Kelly)")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def alpha_kelly(symbol, capital, win_rate, avg_win, avg_loss, fraction, json):
+    """Run Kelly criterion analysis for optimal position sizing."""
+    import argparse
+    ns = argparse.Namespace(
+        symbol=symbol, capital=capital, win_rate=win_rate,
+        avg_win=avg_win, avg_loss=avg_loss, fraction=fraction,
+        json=json,
+    )
+    _qna().cmd_kelly(ns)
+
+
+@alpha.command("regime")
+@click.option("--symbol", "-s", required=True, help="Trading symbol")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def alpha_regime(symbol, json):
+    """Detect market regime for a symbol."""
+    import argparse
+    ns = argparse.Namespace(symbol=symbol, json=json)
+    _qna().cmd_regime(ns)
+
+
+@alpha.command("stress")
+@click.option("--symbol", "-s", required=True, help="Trading symbol")
+@click.option("--confidence", type=float, default=0.95, help="Confidence level (0-1)")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def alpha_stress(symbol, confidence, json):
+    """Run portfolio stress test (VaR/CVaR)."""
+    import argparse
+    ns = argparse.Namespace(symbol=symbol, confidence=confidence, json=json)
+    _qna().cmd_stress(ns)
+
+
+# ── Config Group ──────────────────────────────────────────────────────────────
+
+@main.group()
+def config():
+    """Configuration and health commands."""
+    pass
+
+
+@config.command("health")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def config_health(json):
+    """Check system health across all modules."""
+    import argparse
+    ns = argparse.Namespace(json=json)
+    _qna().cmd_health(ns)
+
+
+# ── BH Colony Group (bh-cli bridge) ───────────────────────────────────────────
+
+@main.group()
+def bh():
+    """BH Colony — Agent mesh management."""
+    pass
+
+
+@bh.command("status")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def bh_status(json):
+    """Check overall BH colony system status."""
+    import argparse
+    ns = argparse.Namespace(json=json)
+    _bh().cmd_status(ns)
+
+
+@bh.group(name="agents")
+def bh_agents():
+    """BH agent management."""
+    pass
+
+
+@bh_agents.command("list")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def bh_agents_list(json):
+    """List all registered BH agents."""
+    import argparse
+    ns = argparse.Namespace(json=json)
+    _bh().cmd_agents_list(ns)
+
+
+@bh_agents.command("status")
+@click.option("--id", "agent_id", required=True, help="Agent ID")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def bh_agents_status(agent_id, json):
+    """Check status of a specific BH agent."""
+    import argparse
+    ns = argparse.Namespace(id=agent_id, json=json)
+    _bh().cmd_agents_status(ns)
+
+
+@bh.group(name="mesh")
+def bh_mesh():
+    """BH mesh network management."""
+    pass
+
+
+@bh_mesh.command("status")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def bh_mesh_status(json):
+    """Check BH mesh network status."""
+    import argparse
+    ns = argparse.Namespace(json=json)
+    _bh().cmd_mesh_status(ns)
+
+
+@bh.command("radar")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def bh_radar(json):
+    """Check BH radar peers (external agents and services)."""
+    import argparse
+    ns = argparse.Namespace(json=json)
+    _bh().cmd_radar(ns)
+
+
+@bh.command("health")
+@click.option("--json", is_flag=True, help="Output as JSON")
+def bh_health(json):
+    """BH comprehensive system health check."""
+    import argparse
+    ns = argparse.Namespace(json=json)
+    _bh().cmd_health(ns)
 
 
 if __name__ == "__main__":

@@ -30,10 +30,11 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-from quant_nanggroe.engine.strategy.strategies import create_strategy
+from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger
 from quant_nanggroe.engine.risk.strategy_auto_disable import AutoDisableManager
 from quant_nanggroe.engine.risk.correlation import StrategyCorrelationMonitor
+from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategySelector, StrategyConfig
 from quant_nanggroe.types.orders import OrderSide, OrderType
 from quant_nanggroe.types.market import OHLCV
 
@@ -146,6 +147,56 @@ def log_pnl_csv(path: Path, row: dict) -> None:
         w.writerow(row)
 
 
+_selector = RegimeStrategySelector()
+
+
+def _detect_regime_heuristic(df: pd.DataFrame) -> tuple[str, float]:
+    close = df["close"].values
+    n = len(close)
+    if n < 63:
+        return "sideways", 0.4
+    sma_21 = np.mean(close[-21:]) if n >= 21 else np.mean(close)
+    sma_63 = np.mean(close[-63:]) if n >= 63 else np.mean(close)
+    vol_21 = np.std(close[-21:] / np.mean(close[-21:])) if n >= 21 else 0.02
+    last_close = close[-1]
+    if last_close > sma_63 and vol_21 < 0.015:
+        return "bull_trend", min(0.8, 0.5 + (last_close - sma_63) / sma_63 * 5)
+    elif last_close < sma_63 and vol_21 > 0.01:
+        return "bear_trend", min(0.8, 0.5 + vol_21 * 10)
+    elif vol_21 > 0.025:
+        return "high_volatility", min(0.8, 0.5 + vol_21 * 8)
+    else:
+        return "sideways", 0.5
+
+
+def _select_strategies_for_regime(df: pd.DataFrame, user_strategies: list[str]) -> tuple[list[dict], float]:
+    all_qna = list_strategies()
+    regime, confidence = _detect_regime_heuristic(df)
+    rm = _selector.select_strategies(regime, confidence)
+    multiplier = rm.risk_multiplier
+    selected_names = [s.name for s in rm.active_strategies if s.name in all_qna]
+    if user_strategies:
+        selected_names = [n for n in selected_names if n in user_strategies]
+    logger.info("Regime: %s (conf=%.2f) risk_mult=%.2f strategies=%s",
+                regime, confidence, multiplier, selected_names)
+    result = []
+    regime_map = {s.name: s for s in rm.active_strategies}
+    for name in selected_names:
+        sc = regime_map.get(name)
+        if sc:
+            result.append({
+                "name": name,
+                "params": dict(sc.params),
+                "kelly_fraction": min(sc.Kelly.get("fraction", 0.25) * multiplier, 0.25),
+                "weight": sc.weight,
+            })
+    if not result:
+        fallback = user_strategies or all_qna
+        for s in fallback:
+            result.append({"name": s, "params": {}, "kelly_fraction": 0.25 * multiplier, "weight": 1.0})
+    return result, multiplier
+
+
 async def run_cycle(
     broker: PaperExchangeBroker,
     strategies: list[str],
@@ -162,6 +213,8 @@ async def run_cycle(
 ) -> dict:
     logger.info("=== Cycle %d ===", state["cycle_count"] + 1)
     total_signal_count = 0
+    regime_strategies: list[dict] | None = None
+    regime_multiplier: float = 1.0
 
     # Data freshness check (live-data mode only)
     if live_data:
@@ -183,7 +236,7 @@ async def run_cycle(
             logger.critical("Kill switch activated: cached data >48h stale (file mtime=%s)", newest_ts.isoformat())
             return {}
 
-    for symbol in symbols:
+    for idx, symbol in enumerate(symbols):
         if live_data:
             df = load_cached_ohlcv(symbol)
             if df is None:
@@ -192,9 +245,9 @@ async def run_cycle(
                     broker.add_ohlcv(symbol, c)
                 df = ohlcv_to_df(candles)
             else:
-                for idx, row in df.iterrows():
+                for _i, row in df.iterrows():
                     broker.add_ohlcv(symbol, OHLCV(
-                        symbol=symbol, timestamp=idx.to_pydatetime(),
+                        symbol=symbol, timestamp=_i.to_pydatetime(),
                         open=row["open"], high=row["high"],
                         low=row["low"], close=row["close"],
                         volume=row["volume"],
@@ -207,12 +260,19 @@ async def run_cycle(
         current_price = broker.get_price(symbol)
         logger.info("  %s: price=%.2f candles=%d", symbol, current_price, len(df))
 
-        for strat_name in strategies:
+        if idx == 0:
+            regime_strategies, regime_multiplier = _select_strategies_for_regime(df, strategies)
+            state["regime"] = regime_strategies[0]["name"] if regime_strategies else "unknown"
+
+        for strat_cfg in (regime_strategies or [{"name": s, "params": {}, "kelly_fraction": 0.25} for s in strategies]):
+            strat_name = strat_cfg["name"]
             try:
                 if auto_disable.is_disabled(strat_name):
                     logger.debug("  %s on %s: skipped by AutoDisableManager", strat_name, symbol)
                     continue
-                strat = create_strategy(strat_name, {"symbol": symbol})
+                strat_params = dict(strat_cfg.get("params", {}))
+                strat_params["symbol"] = symbol
+                strat = create_strategy(strat_name, strat_params)
                 sig = strat.generate_signal(df)
             except Exception as e:
                 logger.debug("  %s on %s skipped: %s", strat_name, symbol, e)
@@ -237,9 +297,9 @@ async def run_cycle(
             total_signal_count += 1
             side = OrderSide.BUY if sig.signal_type.value == "buy" else OrderSide.SELL
 
-            # Kelly fraction with volatility scaling
             vol = float(df.close.pct_change().std() * np.sqrt(252))
-            fraction = min(sig.confidence * 0.25, 0.25)
+            kelly_frac = strat_cfg.get("kelly_fraction", 0.25)
+            fraction = min(sig.confidence * kelly_frac, kelly_frac)
             denominator = vol * current_price if vol > 0 else current_price
             qty = round(state["initial_capital"] * fraction / denominator, 6)
 
@@ -291,9 +351,9 @@ async def run_cycle(
         log_pnl_csv(log_path, row)
         save_state(state_path, state)
 
-    logger.info("  PnL: total=%.2f cash=%.2f value=%.2f positions=%d",
+    logger.info("  PnL: total=%.2f cash=%.2f value=%.2f positions=%d regime=%s",
                 state["total_pnl"], broker.cash, portfolio.total_value,
-                len(portfolio.positions))
+                len(portfolio.positions), state.get("regime", "unknown"))
     return row
 
 
@@ -344,7 +404,7 @@ async def main() -> None:
             pass
 
     logger.info(
-        "Daemon started: capital=%.2f interval=%ds symbols=%s strategies=%s state=%s live_data=%s vol_target=%.2f",
+        "Daemon started: capital=%.2f interval=%ds symbols=%s strategies=%s state=%s live_data=%s vol_target=%.2f regime_aware=True",
         args.capital, args.interval, args.symbols, args.strategies, state_dir,
         args.live_data, args.vol_target,
     )

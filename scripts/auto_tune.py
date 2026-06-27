@@ -59,7 +59,10 @@ DEFAULT_PARAM_RANGES: Dict[str, Dict[str, List[Any]]] = {
     },
     "RegimeBased": {
         "n_regimes": [2, 3, 4],
-        "hmm_lookback": [126, 252, 378],
+        "hmm_lookback": [10, 20, 30, 50, 100, 252],
+        "volatility_threshold": [0.5, 1.0, 1.5, 2.0, 2.5],
+        "feature_ewma_span": [10, 21, 30, 50],
+        "feature_min_periods": [5, 10, 15, 20],
     },
     "CryptoSpecific": {
         "lookback": [12, 24, 48],
