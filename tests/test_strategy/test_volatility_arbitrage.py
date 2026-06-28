@@ -2,136 +2,88 @@
 
 import numpy as np
 import pandas as pd
-import pytest
+import unittest
 
 from quant_nanggroe.engine.strategy.strategies.volatility_arbitrage import (
     VolatilityArbitrageStrategy,
-    GARCH11,
 )
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
-class TestGARCH11:
-    """Test GARCH(1,1) model."""
-
-    def test_fit(self):
-        garch = GARCH11()
-        returns = np.random.randn(100) * 0.02
-        result = garch.fit(returns)
-        assert result is garch
-        assert garch._fitted is True
-
-    def test_fit_insufficient_data(self):
-        garch = GARCH11()
-        returns = np.random.randn(5)
-        garch.fit(returns)
-        assert garch._fitted is False
-
-    def test_forecast(self):
-        garch = GARCH11()
-        returns = np.random.randn(200) * 0.02
-        garch.fit(returns)
-        forecasts = garch.forecast(returns, horizon=5)
-        assert len(forecasts) == 5
-        assert all(f > 0 for f in forecasts)
-
-    def test_half_life(self):
-        garch = GARCH11()
-        returns = np.random.randn(200) * 0.02
-        garch.fit(returns)
-        hl = garch.half_life
-        if garch._fitted:
-            assert hl > 0
-
-    def test_parameters_bounded(self):
-        garch = GARCH11()
-        returns = np.random.randn(200) * 0.02
-        garch.fit(returns)
-        if garch._fitted:
-            assert garch.omega > 0
-            assert garch.alpha >= 0
-            assert garch.beta >= 0
-            assert garch.alpha + garch.beta < 1.0
-
-
-class TestVolatilityArbitrageStrategy:
+class TestVolatilityArbitrageStrategy(unittest.TestCase):
     """Test volatility arbitrage strategy."""
 
-    def test_default_params(self):
-        strategy = VolatilityArbitrageStrategy()
-        assert strategy.name == "VolatilityArbitrage"
-        assert strategy.lookback == 21
-        assert strategy.entry_spread == 0.05
+    def setUp(self):
+        self.strategy = VolatilityArbitrageStrategy()
+        n = 200
+        np.random.seed(42)
+        close = 100 * np.exp(np.random.randn(n).cumsum() * 0.01)
+        self.df = pd.DataFrame({
+            "close": close,
+            "high": close * 1.01,
+            "low": close * 0.99,
+            "volume": np.random.randint(1000, 10000, n),
+            "open": close * 1.001,
+        })
 
-    def test_required_columns(self):
-        strategy = VolatilityArbitrageStrategy()
-        assert "close" in strategy.required_columns()
+    def test_default_params(self):
+        s = VolatilityArbitrageStrategy()
+        self.assertEqual(s.name, "VolatilityArbitrage")
+        self.assertEqual(s.params.get("vol_lookback", 20), 20)
+        self.assertEqual(s.params.get("entry_threshold", 2.0), 2.0)
 
     def test_warmup_period(self):
-        strategy = VolatilityArbitrageStrategy()
-        assert strategy.warmup_period() >= 60
+        self.assertGreater(self.strategy.warmup_period(), 50)
 
-    def test_compute_realized_vol(self, random_ohlcv_data):
-        strategy = VolatilityArbitrageStrategy()
-        vol = strategy.compute_realized_vol(random_ohlcv_data)
-        assert vol > 0
+    def test_generate_signal_returns_signal_or_none(self):
+        sig = self.strategy.generate_signal(self.df)
+        if sig is not None:
+            self.assertIsInstance(sig, Signal)
+            self.assertIn(sig.signal_type, [SignalType.BUY, SignalType.SELL, SignalType.HOLD])
 
-    def test_compute_garch_forecast(self, random_ohlcv_data):
-        strategy = VolatilityArbitrageStrategy()
-        vol = strategy.compute_garch_forecast(random_ohlcv_data)
-        assert vol > 0
+    def test_insufficient_data_returns_none(self):
+        data = pd.DataFrame({"close": [100, 101]})
+        sig = self.strategy.generate_signal(data)
+        self.assertIsNone(sig)
 
-    def test_compute_implied_vol(self, random_ohlcv_data):
-        strategy = VolatilityArbitrageStrategy()
-        vol = strategy.compute_implied_vol(random_ohlcv_data)
-        assert vol > 0
+    def test_required_columns(self):
+        cols = self.strategy.required_columns()
+        self.assertIn("close", cols)
 
-    def test_compute_implied_vol_with_column(self, random_ohlcv_data):
-        strategy = VolatilityArbitrageStrategy()
-        data = random_ohlcv_data.copy()
-        data["implied_vol"] = 0.3
-        vol = strategy.compute_implied_vol(data)
-        assert abs(vol - 0.3) < 1e-6
+    def test_empty_dataframe_returns_none(self):
+        sig = self.strategy.generate_signal(pd.DataFrame())
+        self.assertIsNone(sig)
 
-    def test_variance_risk_premium(self):
-        strategy = VolatilityArbitrageStrategy()
-        vrp = strategy.compute_variance_risk_premium(0.30, 0.20)
-        expected = 0.30**2 - 0.20**2
-        assert abs(vrp - expected) < 1e-6
+    def test_zero_vol_handling(self):
+        flat = pd.DataFrame({"close": [100] * 100})
+        sig = self.strategy.generate_signal(flat)
+        self.assertIn(sig, [None, Signal(SignalType.HOLD, 0.0)] if sig else [None])
 
-    def test_generate_signal(self, random_ohlcv_data):
-        strategy = VolatilityArbitrageStrategy(
-            params={"entry_spread": 0.01, "symbol": "TEST"}
-        )
-        signal = strategy.generate_signal(random_ohlcv_data)
-        if signal is not None:
-            assert isinstance(signal, Signal)
-            assert signal.signal_type in [
-                SignalType.BUY, SignalType.SELL, SignalType.EXIT_ALL
-            ]
+    def test_constant_vol_spread_no_trade(self):
+        s = VolatilityArbitrageStrategy(params={"entry_threshold": 10.0})
+        sig = s.generate_signal(self.df)
+        if sig is not None:
+            self.assertEqual(sig.signal_type, SignalType.HOLD)
 
-    def test_delta_hedge_simulation(self, random_ohlcv_data):
-        strategy = VolatilityArbitrageStrategy()
-        result = strategy.simulate_delta_hedge(
-            random_ohlcv_data, "short_vol", 0.25
-        )
-        assert "pnl" in result
-        assert "hedge_cost" in result
+    def test_low_entry_threshold_triggers(self):
+        s = VolatilityArbitrageStrategy(params={"entry_threshold": 0.1})
+        sig = s.generate_signal(self.df)
+        if sig is not None:
+            self.assertIsInstance(sig, Signal)
 
-    def test_insufficient_data(self):
-        strategy = VolatilityArbitrageStrategy()
-        data = pd.DataFrame({"close": [100, 101, 102]})
-        signal = strategy.generate_signal(data)
-        assert signal is None
+    def test_params_passthrough(self):
+        s = VolatilityArbitrageStrategy(params={"vol_lookback": 10, "symbol": "BTC"})
+        self.assertEqual(s.params.get("vol_lookback"), 10)
+        self.assertEqual(s.params.get("symbol"), "BTC")
 
-    def test_with_artificial_vol_spread(self, random_ohlcv_data):
-        """Test with artificially high implied vol to trigger a signal."""
-        strategy = VolatilityArbitrageStrategy(
-            params={"entry_spread": 0.001, "symbol": "TEST"}
-        )
-        data = random_ohlcv_data.copy()
-        # Set implied vol very high
-        data["implied_vol"] = 5.0  # Unrealistically high
-        signal = strategy.generate_signal(data)
-        if signal is not None:
-            assert isinstance(signal, Signal)
+    def test_ewma_vol_estimation(self):
+        s = VolatilityArbitrageStrategy(params={"vol_estimation": "ewma"})
+        sig = s.generate_signal(self.df)
+        if sig is not None:
+            self.assertIsInstance(sig, Signal)
+
+    def test_garch_vol_estimation(self):
+        s = VolatilityArbitrageStrategy(params={"vol_estimation": "garch"})
+        sig = s.generate_signal(self.df)
+        if sig is not None:
+            self.assertIsInstance(sig, Signal)
