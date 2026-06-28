@@ -91,21 +91,21 @@ class TestTwelveDataProviderInit:
     """Tests for TwelveDataProvider initialization."""
 
     def test_init_with_api_key(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         assert provider.name == "twelvedata"
         assert provider.priority == 15
-        assert provider._api_key == "YOUR_API_KEY_HERE"
+        assert provider._api_key == "<placeholder>"
 
     def test_init_custom_priority(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE", priority=25)
+        provider = TwelveDataProvider(api_key="<placeholder>", priority=25)
         assert provider.priority == 25
 
     def test_init_default_priority(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         assert provider.priority == 15
 
     def test_repr(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         assert "twelvedata" in repr(provider)
 
 
@@ -113,8 +113,8 @@ class TestTwelveDataGetApiKey:
     """Tests for API key resolution."""
 
     def test_get_api_key_from_param(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
-        assert provider._get_api_key() == "YOUR_API_KEY_HERE"
+        provider = TwelveDataProvider(api_key="<placeholder>")
+        assert provider._get_api_key() == "<placeholder>"
 
     def test_get_api_key_from_env(self):
         with patch.dict("os.environ", {"QNAI_TWELVEDATA_API_KEY": "env-key"}):
@@ -135,7 +135,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_success(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -149,7 +149,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_symbol_preserved(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -161,7 +161,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_ohlcv_values(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -178,7 +178,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_empty_response(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_EMPTY_VALUES
@@ -189,7 +189,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_api_error(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = TwelveDataError("API error")
@@ -200,7 +200,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_timeframe_mapping(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -212,7 +212,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_with_date_range(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -229,7 +229,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_respects_limit(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -240,7 +240,7 @@ class TestTwelveDataGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_zero_price_skipped(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         data = {
             "values": [
@@ -261,7 +261,7 @@ class TestTwelveDataGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_success(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_QUOTE
@@ -278,7 +278,7 @@ class TestTwelveDataGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_no_close(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = {"symbol": "AAPL", "status": "ok"}
@@ -289,7 +289,7 @@ class TestTwelveDataGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_zero_close(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = {"close": "0", "status": "ok"}
@@ -300,7 +300,7 @@ class TestTwelveDataGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_api_error(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = TwelveDataError("API error")
@@ -311,7 +311,7 @@ class TestTwelveDataGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_change_pct(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_QUOTE
@@ -327,7 +327,7 @@ class TestTwelveDataGetForexRate:
 
     @pytest.mark.asyncio
     async def test_get_forex_rate_success(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_FOREX_RATE
@@ -340,7 +340,7 @@ class TestTwelveDataGetForexRate:
 
     @pytest.mark.asyncio
     async def test_get_forex_rate_empty_values(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = {"values": [], "status": "ok"}
@@ -351,7 +351,7 @@ class TestTwelveDataGetForexRate:
 
     @pytest.mark.asyncio
     async def test_get_forex_rate_api_error(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = TwelveDataError("API error")
@@ -366,7 +366,7 @@ class TestTwelveDataGetOrderbook:
 
     @pytest.mark.asyncio
     async def test_get_orderbook_returns_none(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         result = await provider.get_orderbook("AAPL")
         assert result is None
 
@@ -376,7 +376,7 @@ class TestTwelveDataHealthCheck:
 
     @pytest.mark.asyncio
     async def test_health_check_success(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
@@ -388,7 +388,7 @@ class TestTwelveDataHealthCheck:
 
     @pytest.mark.asyncio
     async def test_health_check_failure(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = TwelveDataError("Connection failed")
@@ -404,7 +404,7 @@ class TestTwelveDataErrorHandling:
 
     @pytest.mark.asyncio
     async def test_error_status_in_response(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -421,7 +421,7 @@ class TestTwelveDataErrorHandling:
 
     @pytest.mark.asyncio
     async def test_http_status_error(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
 
         import httpx
         mock_client = MagicMock()
@@ -443,23 +443,23 @@ class TestTwelveDataHealthScore:
     """Tests for health score tracking."""
 
     def test_initial_health_score(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         assert provider.health_score == 1.0
 
     def test_health_score_after_errors(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         provider.mark_error("test error")
         assert provider.health_score < 1.0
 
     def test_health_score_mixed(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         provider.mark_success()
         provider.mark_success()
         provider.mark_error("error")
         assert 0.0 < provider.health_score < 1.0
 
     def test_unavailable_after_many_errors(self):
-        provider = TwelveDataProvider(api_key="YOUR_API_KEY_HERE")
+        provider = TwelveDataProvider(api_key="<placeholder>")
         for _ in range(10):
             provider.mark_error("error")
         assert not provider.is_available

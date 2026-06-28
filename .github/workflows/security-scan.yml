@@ -1,0 +1,37 @@
+name: Security Scan
+
+on:
+  push:
+    branches: ["main", "develop", "master"]
+  pull_request:
+    branches: ["main", "develop", "master"]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run security scan
+        run: |
+          python scripts/security_scan.py --json paper_state/security_scan_report.json
+
+      - name: Upload scan report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-report
+          path: paper_state/security_scan_report.json
+
+      - name: Fail on HIGH findings
+        run: |
+          python scripts/security_scan.py --exit-code

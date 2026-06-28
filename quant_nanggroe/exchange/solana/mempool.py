@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 PUMP_FUN_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 RAYDIUM_AMM_V4 = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
 RAYDIUM_CPMM = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
-METAPLEX_TOKEN = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+METAPLEX_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 
 
 # ---------------------------------------------------------------------------

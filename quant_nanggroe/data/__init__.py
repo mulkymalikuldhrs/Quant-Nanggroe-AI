@@ -21,6 +21,7 @@ from quant_nanggroe.data.failover_provider import FailoverDataProvider
 from quant_nanggroe.data.models.options import OptionsPricer
 from quant_nanggroe.data.models.fixed_income import FixedIncomeCalculator
 from quant_nanggroe.data.models.metrics import PortfolioMetrics
+from quant_nanggroe.data.warehouse import DataWarehouse
 
 __all__ = [
     "CACHE_TTL",
@@ -36,6 +37,7 @@ __all__ = [
     "SurvivorshipBiasDetector",
     "BiasReport",
     "SymbolFreshness",
+    "DataWarehouse",
     "FailoverDataProvider",
     "OptionsPricer",
     "FixedIncomeCalculator",

@@ -53,6 +53,7 @@ except ImportError:
 from quant_nanggroe.agents.base import create_llm
 from quant_nanggroe.agents.bridges.risk_gate_bridge import RiskGateBridge, GateVerdict
 from quant_nanggroe.agents.bridges.kelly_bridge import KellyBridge
+from quant_nanggroe.agents.chinese_wall import ChineseWall, ChineseWallError
 from quant_nanggroe.agents.council.debate import CouncilDebate
 from quant_nanggroe.agents.council.voting import CouncilVoting
 from quant_nanggroe.agents.registry import AgentFactory
@@ -64,8 +65,29 @@ from quant_nanggroe.agents.state import (
     create_initial_state,
 )
 
+try:
+    from quant_nanggroe.engine.audit import AuditLogger
+except ImportError:
+    AuditLogger = None
+
 
 logger = logging.getLogger(__name__)
+
+
+# Node name -> compartment mapping for Chinese Wall checks
+_NODE_COMPARTMENTS: Dict[str, str] = {
+    "market_analysis": "RESEARCH",
+    "signal_generation": "SIGNAL",
+    "risk_assessment": "RISK",
+    "deterministic_risk_gate": "RISK",
+    "kelly_sizing": "RISK",
+    "portfolio_optimization": "RISK",
+    "execution_decision": "EXECUTION",
+    "order_execution": "EXECUTION",
+    "reflection": "EXECUTION",
+    "council_debate": "EXECUTION",
+    "emergency_exit": "EXECUTION",
+}
 
 
 class TradingGraph:
@@ -87,6 +109,7 @@ class TradingGraph:
         max_debate_rounds: int = 2,
         max_risk_rounds: int = 2,
         confidence_threshold: float = CONFIDENCE_THRESHOLD,
+        audit_logger: Optional[Any] = None,
     ) -> None:
         """
         Initialize the trading graph.
@@ -100,6 +123,7 @@ class TradingGraph:
             max_debate_rounds: Maximum debate rounds
             max_risk_rounds: Maximum risk debate rounds
             confidence_threshold: Confidence threshold for council debate
+            audit_logger: Optional AuditLogger instance for Chinese Wall logging
         """
         self._llm_provider = llm_provider
         self._deep_think_model = deep_think_model
@@ -109,6 +133,10 @@ class TradingGraph:
         self._max_debate_rounds = max_debate_rounds
         self._max_risk_rounds = max_risk_rounds
         self._confidence_threshold = confidence_threshold
+        self._audit_logger = audit_logger
+
+        # Create Chinese Wall isolation layer
+        self._wall = ChineseWall()
 
         # Create LLMs
         self._deep_llm = create_llm(
@@ -213,6 +241,54 @@ class TradingGraph:
 
         # Compile
         return workflow.compile()
+
+    def _check_wall(self, source_node: str, target_node: str) -> None:
+        """Check Chinese Wall restrictions between two graph nodes.
+
+        Args:
+            source_node: Name of the source/origin node
+            target_node: Name of the target/destination node
+
+        Raises:
+            ChineseWallError: If the transition violates wall restrictions
+        """
+        source_comp = _NODE_COMPARTMENTS.get(source_node)
+        target_comp = _NODE_COMPARTMENTS.get(target_node)
+
+        if not source_comp or not target_comp:
+            return
+
+        if source_comp == target_comp:
+            return
+
+        if source_comp in self._wall.BRIDGES and target_comp in self._wall.BRIDGES[source_comp]:
+            return
+
+        msg = (
+            f"Chinese Wall violation: '{target_node}' ({target_comp} compartment) "
+            f"cannot read data from '{source_node}' ({source_comp} compartment). "
+            f"No bridge exists from {source_comp} to {target_comp}."
+        )
+        logger.critical(msg)
+        if self._audit_logger is not None:
+            self._audit_logger.log(
+                layer="SYSTEM",
+                severity="CRITICAL",
+                message=f"ChineseWall BLOCKED: {source_node}({source_comp}) -> {target_node}({target_comp})",
+                details={
+                    "source": source_node,
+                    "target": target_node,
+                    "source_compartment": source_comp,
+                    "target_compartment": target_comp,
+                    "violation_type": "bridge_missing",
+                },
+            )
+        raise ChineseWallError(
+            message=msg,
+            source=source_node,
+            target=target_node,
+            access_type="read",
+        )
 
     def _deterministic_risk_conditional(self, state: AgentState) -> str:
         """
@@ -341,6 +417,7 @@ class TradingGraph:
             State updates with generated signals
         """
         logger.info("=== Signal Generation Phase ===")
+        self._check_wall("market_analysis", "signal_generation")
 
         try:
             strategist = self._factory.create_agent("strategist", use_deep_llm=True)
@@ -367,7 +444,7 @@ class TradingGraph:
     def _risk_assessment_node(self, state: AgentState) -> Dict[str, Any]:
         """
         Risk assessment node: runs the LLM-based risk agent for QUALITATIVE analysis.
-
+        
         This provides qualitative risk analysis (sentiment, regime, narrative risk).
         The DETERMINISTIC risk gate runs AFTER this node as the HARD GATE.
 
@@ -378,6 +455,7 @@ class TradingGraph:
             State updates with LLM risk assessment
         """
         logger.info("=== Risk Assessment Phase (LLM — Qualitative) ===")
+        self._check_wall("signal_generation", "risk_assessment")
 
         try:
             risk = self._factory.create_agent("risk", use_deep_llm=True)
@@ -429,6 +507,7 @@ class TradingGraph:
             State updates with deterministic risk gate results
         """
         logger.info("=== Deterministic Risk Gate Phase (HARD GATE — 9 Checkpoints) ===")
+        self._check_wall("risk_assessment", "deterministic_risk_gate")
 
         try:
             result = self._risk_gate_bridge.evaluate_from_state(state)
@@ -483,6 +562,7 @@ class TradingGraph:
             State updates with Kelly position sizing results
         """
         logger.info("=== Kelly Sizing Phase (Deterministic Position Sizing) ===")
+        self._check_wall("deterministic_risk_gate", "kelly_sizing")
 
         try:
             result = self._kelly_bridge.calculate_from_state(state)
@@ -512,6 +592,7 @@ class TradingGraph:
             State updates with portfolio optimization
         """
         logger.info("=== Portfolio Optimization Phase ===")
+        self._check_wall("kelly_sizing", "portfolio_optimization")
 
         try:
             portfolio = self._factory.create_agent("portfolio")
@@ -542,6 +623,7 @@ class TradingGraph:
             State updates with trading decisions
         """
         logger.info("=== Execution Decision Phase ===")
+        self._check_wall("portfolio_optimization", "execution_decision")
 
         try:
             trader = self._factory.create_agent("trader")
@@ -575,6 +657,7 @@ class TradingGraph:
             State updates with executed orders
         """
         logger.info("=== Order Execution Phase ===")
+        self._check_wall("execution_decision", "order_execution")
 
         try:
             execution = self._factory.create_agent("execution")
@@ -607,6 +690,7 @@ class TradingGraph:
             State updates with reflection results
         """
         logger.info("=== Reflection Phase ===")
+        self._check_wall("order_execution", "reflection")
 
         # Run a brief council debate for reflection
         try:
@@ -633,6 +717,7 @@ class TradingGraph:
             State updates with council debate results
         """
         logger.info("=== Council Debate Phase ===")
+        self._check_wall("deterministic_risk_gate", "council_debate")
 
         try:
             # Run the council debate

@@ -38,6 +38,11 @@ from quant_nanggroe.engine.strategy.loader import (
 )
 from quant_nanggroe.engine.strategy.backtest_adapter import StrategyBacktestAdapter
 from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
+from quant_nanggroe.engine.strategy.registry import (
+    StrategyRegistry,
+    StrategyMetadata,
+    WalkForwardResult,
+)
 
 __all__ = [
     # Schema
@@ -63,4 +68,8 @@ __all__ = [
     "StrategyBacktestAdapter",
     # Regime-adaptive
     "RegimeAdaptiveStrategy",
+    # Registry
+    "StrategyRegistry",
+    "StrategyMetadata",
+    "WalkForwardResult",
 ]

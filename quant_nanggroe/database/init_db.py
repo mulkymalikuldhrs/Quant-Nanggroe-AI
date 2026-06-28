@@ -5,12 +5,15 @@ Initializes database schema and seed data
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 """
 
+import logging
 import os
 import asyncio
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     Base, Agent, Task, Memory, Workflow, WorkflowExecution, 
@@ -41,7 +44,7 @@ def initialize_database(database_url: str = None) -> bool:
         engine = create_engine(db_url, echo=False)
         
         # Create all tables
-        print("🏗️ Creating database tables...")
+        logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         
         # Create session
@@ -50,26 +53,26 @@ def initialize_database(database_url: str = None) -> bool:
         
         try:
             # Seed initial data
-            print("🌱 Seeding initial data...")
+            logger.info("Seeding initial data...")
             _seed_agents(session)
             _seed_workflows(session)
             _seed_knowledge_base(session)
             
             # Commit changes
             session.commit()
-            print("✅ Database initialization completed successfully!")
+            logger.info("Database initialization completed successfully!")
             return True
             
         except Exception as e:
             session.rollback()
-            print(f"❌ Error seeding data: {e}")
+            logger.error("Error seeding data: %s", e)
             return False
             
         finally:
             session.close()
             
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+        logger.error("Database initialization failed: %s", e)
         return False
 
 def _seed_agents(session):
@@ -77,7 +80,7 @@ def _seed_agents(session):
     
     # Check if agents already exist
     if session.query(Agent).count() > 0:
-        print("   ⏭️ Agents already exist, skipping...")
+        logger.info("Agents already exist, skipping...")
         return
     
     # Core system agents
@@ -208,14 +211,14 @@ def _seed_agents(session):
         agent = Agent(**agent_data)
         session.add(agent)
     
-    print(f"   ✅ Seeded {len(core_agents)} core agents")
+    logger.info("Seeded %d core agents", len(core_agents))
 
 def _seed_workflows(session):
     """Seed initial workflow templates"""
     
     # Check if workflows already exist
     if session.query(Workflow).count() > 0:
-        print("   ⏭️ Workflows already exist, skipping...")
+        logger.info("Workflows already exist, skipping...")
         return
     
     # Standard workflows
@@ -339,14 +342,14 @@ def _seed_workflows(session):
         workflow = Workflow(**workflow_data)
         session.add(workflow)
     
-    print(f"   ✅ Seeded {len(workflows)} workflow templates")
+    logger.info("Seeded %d workflow templates", len(workflows))
 
 def _seed_knowledge_base(session):
     """Seed initial knowledge base entries"""
     
     # Check if knowledge entries already exist
     if session.query(KnowledgeEntry).count() > 0:
-        print("   ⏭️ Knowledge base already exists, skipping...")
+        logger.info("Knowledge base already exists, skipping...")
         return
     
     # Knowledge base entries
@@ -470,7 +473,7 @@ The Agentic AI System is designed to contribute to this ecosystem by providing a
         entry = KnowledgeEntry(**entry_data)
         session.add(entry)
     
-    print(f"   ✅ Seeded {len(knowledge_entries)} knowledge base entries")
+    logger.info("Seeded %d knowledge base entries", len(knowledge_entries))
 
 def reset_database(database_url: str = None):
     """
@@ -481,17 +484,17 @@ def reset_database(database_url: str = None):
         db_url = database_url or os.getenv('DATABASE_URL', 'sqlite:///data/agentic.db')
         engine = create_engine(db_url, echo=False)
         
-        print("⚠️ Dropping all tables...")
+        logger.warning("Dropping all tables...")
         Base.metadata.drop_all(bind=engine)
-        
-        print("🏗️ Recreating tables...")
+
+        logger.info("Recreating tables...")
         Base.metadata.create_all(bind=engine)
-        
-        print("✅ Database reset completed!")
+
+        logger.info("Database reset completed!")
         return True
-        
+
     except Exception as e:
-        print(f"❌ Database reset failed: {e}")
+        logger.error("Database reset failed: %s", e)
         return False
 
 if __name__ == "__main__":

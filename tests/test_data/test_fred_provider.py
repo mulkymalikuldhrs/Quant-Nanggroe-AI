@@ -119,21 +119,21 @@ class TestFREDProviderInit:
     """Tests for FREDProvider initialization."""
 
     def test_init_with_api_key(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         assert provider.name == "fred"
         assert provider.priority == 30
         assert provider._api_key == "test-key"
 
     def test_init_custom_priority(self):
-        provider = FREDProvider(api_key="test-key", priority=50)
+        provider = FREDProvider(api_key="<placeholder>", priority=50)
         assert provider.priority == 50
 
     def test_init_default_priority(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         assert provider.priority == 30
 
     def test_repr(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         assert "fred" in repr(provider)
 
 
@@ -141,8 +141,8 @@ class TestFREDGetApiKey:
     """Tests for API key resolution."""
 
     def test_get_api_key_from_param(self):
-        provider = FREDProvider(api_key="my-key")
-        assert provider._get_api_key() == "my-key"
+        provider = FREDProvider(api_key="<placeholder>")
+        assert provider._get_api_key() == "<placeholder>"
 
     def test_get_api_key_from_env(self):
         with patch.dict("os.environ", {"QNAI_FRED_API_KEY": "env-key"}):
@@ -164,7 +164,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_success(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         mock_response = _make_mock_response(SAMPLE_OBSERVATIONS_RESPONSE)
 
@@ -182,7 +182,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_uses_raw_series_id(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_OBSERVATIONS_RESPONSE
@@ -196,7 +196,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_skips_missing_values(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_OBSERVATIONS_MISSING
@@ -209,7 +209,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_empty_response(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = {"observations": []}
@@ -220,7 +220,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_api_error(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = FREDError("API error")
@@ -231,7 +231,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_with_date_range(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_OBSERVATIONS_RESPONSE
@@ -248,7 +248,7 @@ class TestFREDGetOHLCV:
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_respects_limit(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_OBSERVATIONS_RESPONSE
@@ -263,7 +263,7 @@ class TestFREDGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_success(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_LATEST_OBSERVATION
@@ -276,7 +276,7 @@ class TestFREDGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_missing_value(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         response = {
             "observations": [
@@ -293,7 +293,7 @@ class TestFREDGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_empty_observations(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = {"observations": []}
@@ -304,7 +304,7 @@ class TestFREDGetTicker:
 
     @pytest.mark.asyncio
     async def test_get_ticker_api_error(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = FREDError("API error")
@@ -319,7 +319,7 @@ class TestFREDGetOrderbook:
 
     @pytest.mark.asyncio
     async def test_get_orderbook_returns_none(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         result = await provider.get_orderbook("FRED:GDP")
         assert result is None
 
@@ -329,7 +329,7 @@ class TestFREDGetSeriesInfo:
 
     @pytest.mark.asyncio
     async def test_get_series_info_success(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_SERIES_INFO
@@ -341,7 +341,7 @@ class TestFREDGetSeriesInfo:
 
     @pytest.mark.asyncio
     async def test_get_series_info_error(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = FREDError("API error")
@@ -356,7 +356,7 @@ class TestFREDHealthCheck:
 
     @pytest.mark.asyncio
     async def test_health_check_success(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_OBSERVATIONS_RESPONSE
@@ -368,7 +368,7 @@ class TestFREDHealthCheck:
 
     @pytest.mark.asyncio
     async def test_health_check_failure(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.side_effect = FREDError("Connection failed")
@@ -383,23 +383,23 @@ class TestFREDHealthScore:
     """Tests for health score tracking."""
 
     def test_initial_health_score(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         assert provider.health_score == 1.0
 
     def test_health_score_after_errors(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         provider.mark_error("test error")
         assert provider.health_score < 1.0
 
     def test_health_score_degrades(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         provider.mark_success()
         provider.mark_success()
         provider.mark_error("error")
         assert 0.0 < provider.health_score < 1.0
 
     def test_unavailable_after_many_errors(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
         for _ in range(10):
             provider.mark_error("error")
         assert not provider.is_available
@@ -410,7 +410,7 @@ class TestFREDErrorHandling:
 
     @pytest.mark.asyncio
     async def test_invalid_value_in_observation(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         response = {
             "observations": [
@@ -428,7 +428,7 @@ class TestFREDErrorHandling:
 
     @pytest.mark.asyncio
     async def test_invalid_date_in_observation(self):
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         response = {
             "observations": [
@@ -447,7 +447,7 @@ class TestFREDErrorHandling:
     @pytest.mark.asyncio
     async def test_negative_value_in_observation(self):
         """FRED can have negative values (e.g., GDP change)."""
-        provider = FREDProvider(api_key="test-key")
+        provider = FREDProvider(api_key="<placeholder>")
 
         response = {
             "observations": [

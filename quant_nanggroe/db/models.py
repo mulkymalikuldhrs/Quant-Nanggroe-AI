@@ -1,11 +1,14 @@
 """Database models — imports legacy ORM + adds QNA-specific models."""
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Text, create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+logger = logging.getLogger(__name__)
 
 # Re-export everything from legacy models
 import sys
@@ -83,7 +86,7 @@ def init_db():
     """Create all tables (legacy + QNA)."""
     _legacy_create_tables()
     Base.metadata.create_all(bind=engine)
-    print("[db] All tables created successfully")
+    logger.info("All tables created successfully")
 
 def get_db_session():
     """Get a database session."""

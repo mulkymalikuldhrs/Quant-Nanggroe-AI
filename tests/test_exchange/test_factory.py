@@ -86,46 +86,46 @@ class TestPaperBrokerCreation:
 class TestCCXTBrokerCreation:
 
     def test_create_binance(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker, CCXTBroker)
         assert isinstance(broker, ExchangeInterface)
         assert broker.name == "binance"
 
     def test_create_okx(self, factory: ExchangeFactory):
-        broker = factory.create("okx", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", passphrase="pass")
+        broker = factory.create("okx", api_key="<placeholder>", api_secret="<placeholder>", passphrase="pass")
         assert isinstance(broker, CCXTBroker)
         assert broker.name == "okx"
 
     def test_create_bybit(self, factory: ExchangeFactory):
-        broker = factory.create("bybit", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory.create("bybit", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_bitget(self, factory: ExchangeFactory):
-        broker = factory.create("bitget", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", passphrase="pass")
+        broker = factory.create("bitget", api_key="<placeholder>", api_secret="<placeholder>", passphrase="pass")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_kraken(self, factory: ExchangeFactory):
-        broker = factory.create("kraken", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory.create("kraken", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_kucoin(self, factory: ExchangeFactory):
-        broker = factory.create("kucoin", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", passphrase="pass")
+        broker = factory.create("kucoin", api_key="<placeholder>", api_secret="<placeholder>", passphrase="pass")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_gate(self, factory: ExchangeFactory):
-        broker = factory.create("gate", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory.create("gate", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_coinbase(self, factory: ExchangeFactory):
-        broker = factory.create("coinbase", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", passphrase="pass")
+        broker = factory.create("coinbase", api_key="<placeholder>", api_secret="<placeholder>", passphrase="pass")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_case_insensitive(self, factory: ExchangeFactory):
-        broker = factory.create("BINANCE", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory.create("BINANCE", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_with_whitespace(self, factory: ExchangeFactory):
-        broker = factory.create("  binance  ", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory.create("  binance  ", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker, CCXTBroker)
 
     def test_create_without_api_key(self, factory: ExchangeFactory):
@@ -162,40 +162,40 @@ class TestMarketTypeRouting:
         assert factory.config.default_market_type == MarketType.SPOT
 
     def test_spot_market_type(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="spot")
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", market_type="spot")
         assert isinstance(broker, CCXTBroker)
         # Check CCXT options
         assert broker._config.options.get("defaultType") == "spot"
 
     def test_futures_market_type(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="futures")
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", market_type="futures")
         assert isinstance(broker, CCXTBroker)
         assert broker._config.options.get("defaultType") == "future"
 
     def test_perps_market_type(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="perps")
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", market_type="perps")
         assert isinstance(broker, CCXTBroker)
         assert broker._config.options.get("defaultType") == "swap"
 
     def test_invalid_market_type_raises(self, factory: ExchangeFactory):
         with pytest.raises(ExchangeFactoryError, match="Invalid market type"):
-            factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="invalid")
+            factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", market_type="invalid")
 
     def test_futures_default_config(self, factory_with_futures_default: ExchangeFactory):
         broker = factory_with_futures_default.create(
-            "binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE",
+            "binance", api_key="<placeholder>", api_secret="<placeholder>",
         )
         assert broker._config.options.get("defaultType") == "future"
 
     def test_unsupported_market_type_for_exchange(self, factory: ExchangeFactory):
         """Kraken doesn't support perps — should raise."""
         with pytest.raises(ExchangeFactoryError, match="does not support perpetual"):
-            factory.create("kraken", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="perps")
+            factory.create("kraken", api_key="<placeholder>", api_secret="<placeholder>", market_type="perps")
 
     def test_coinbase_no_perps(self, factory: ExchangeFactory):
         """Coinbase doesn't support perps."""
         with pytest.raises(ExchangeFactoryError, match="does not support perpetual"):
-            factory.create("coinbase", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="perps")
+            factory.create("coinbase", api_key="<placeholder>", api_secret="<placeholder>", market_type="perps")
 
 
 # ======================================================================
@@ -205,23 +205,23 @@ class TestMarketTypeRouting:
 class TestConfigurationValidation:
 
     def test_sandbox_config(self, factory_with_sandbox: ExchangeFactory):
-        broker = factory_with_sandbox.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = factory_with_sandbox.create("binance", api_key="<placeholder>", api_secret="<placeholder>")
         assert broker._config.sandbox is True
 
     def test_sandbox_override(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", sandbox=True)
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", sandbox=True)
         assert broker._config.sandbox is True
 
     def test_rate_limit_override(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", rate_limit=10.0)
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", rate_limit=10.0)
         assert broker._config.rate_limit == 10.0
 
     def test_timeout_override(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", timeout=60)
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", timeout=60)
         assert broker._config.timeout == 60
 
     def test_retries_override(self, factory: ExchangeFactory):
-        broker = factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", retries=5)
+        broker = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>", retries=5)
         assert broker._config.retries == 5
 
     def test_custom_options(self, factory: ExchangeFactory):
@@ -229,14 +229,14 @@ class TestConfigurationValidation:
             custom_options={"binance": {"testOption": True}},
         )
         f = ExchangeFactory(config=config)
-        broker = f.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        broker = f.create("binance", api_key="<placeholder>", api_secret="<placeholder>")
         assert broker._config.options.get("testOption") is True
 
     def test_extra_options(self, factory: ExchangeFactory):
         broker = factory.create(
             "binance",
-            api_key="YOUR_API_KEY_HERE",
-            api_secret="YOUR_API_SECRET_HERE",
+            api_key="<placeholder>",
+            api_secret="<placeholder>",
             extra_options={"customParam": "value"},
         )
         assert broker._config.options.get("customParam") == "value"
@@ -335,7 +335,7 @@ class TestFactoryState:
 
     def test_created_exchanges_tracks_creation(self, factory: ExchangeFactory):
         factory.create("paper")
-        factory.create("binance", api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+        factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>")
         created = factory.created_exchanges
         assert "paper" in created
         assert "binance" in created
@@ -365,13 +365,13 @@ class TestEdgeCases:
     def test_all_8_exchanges_creatable(self, factory: ExchangeFactory):
         """All 8 supported exchanges should be creatable."""
         for name in SUPPORTED_EXCHANGES:
-            broker = factory.create(name, api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE")
+            broker = factory.create(name, api_key="<placeholder>", api_secret="<placeholder>")
             assert isinstance(broker, CCXTBroker), f"Failed for {name}"
 
     def test_multiple_creations_same_exchange(self, factory: ExchangeFactory):
         """Creating the same exchange twice should work (overwrites in tracking)."""
-        broker1 = factory.create("binance", api_key="test1", api_secret="test1")
-        broker2 = factory.create("binance", api_key="test2", api_secret="test2")
+        broker1 = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>")
+        broker2 = factory.create("binance", api_key="<placeholder>", api_secret="<placeholder>")
         assert isinstance(broker1, CCXTBroker)
         assert isinstance(broker2, CCXTBroker)
         # The second creation overwrites in tracking
@@ -381,7 +381,7 @@ class TestEdgeCases:
         """All exchanges should support spot."""
         for name in SUPPORTED_EXCHANGES:
             broker = factory.create(
-                name, api_key="YOUR_API_KEY_HERE", api_secret="YOUR_API_SECRET_HERE", market_type="spot",
+                name, api_key="<placeholder>", api_secret="<placeholder>", market_type="spot",
             )
             assert isinstance(broker, CCXTBroker), f"Spot failed for {name}"
 

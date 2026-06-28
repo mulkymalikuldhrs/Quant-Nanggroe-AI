@@ -35,6 +35,16 @@ MIN_RISK_REWARD: Final[float] = 2.0             # Minimum 1:2 R:R ratio
 CONFIDENCE_THRESHOLD: Final[float] = 0.65        # Below this, trigger council debate
 MAX_CORRELATED_POSITIONS: Final[int] = 3         # Max correlated positions
 
+# ─── Per-Asset Risk Budgets (P1-26)
+MAX_ASSET_DAILY_LOSS_PCT: Final[float] = 0.01   # 1% max daily loss per asset
+HARD_STOP_ATR_MULTIPLIER: Final[float] = 3.0    # Hard stop is 3x ATR from entry (wider than trailing 2.5x)
+
+# ─── Concentration Limits (P1-32)
+MAX_TOTAL_CONCENTRATION: Final[float] = 0.80    # Max 80% of portfolio in positions total
+
+# ─── Cost-Aware Budget (P1-32)
+TRADING_BUDGET_PCT: Final[float] = 0.001        # 0.1% of initial capital allocated for fees/slippage
+
 # ─── Kill Switch Thresholds (early warning BEFORE hard limits) ──────────────
 # Kill switch triggers BEFORE the constitutional hard limits are hit,
 # providing an early warning buffer. This prevents the system from

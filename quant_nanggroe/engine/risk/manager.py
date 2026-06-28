@@ -31,12 +31,21 @@ from quant_nanggroe.engine.risk.constants import (
     MIN_RISK_REWARD,
     MAX_CORRELATED_POSITIONS,
     MAX_DAILY_TRADES,
+    MAX_POSITION_SIZE_PCT,
+    MAX_ASSET_DAILY_LOSS_PCT,
+    HARD_STOP_ATR_MULTIPLIER,
+    MAX_TOTAL_CONCENTRATION,
+    TRADING_BUDGET_PCT,
 )
 from quant_nanggroe.engine.risk.checks import RiskCheckGate
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
 from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.risk.var import VaRCalculator
+from quant_nanggroe.engine.risk.correlation_regime import (
+    CorrelationRegimeDetector,
+    CrossAssetMarginMonitor,
+)
 from quant_nanggroe.engine.persistence import (
     PersistenceBackend,
     get_persistence_backend,
@@ -102,8 +111,23 @@ class RiskManager:
         self.drawdown_monitor = DrawdownMonitor(max_drawdown=MAX_DRAWDOWN)
         self.kelly = KellyCriterion()
         self.var_calculator = VaRCalculator()
+        self.correlation_regime = CorrelationRegimeDetector(window=30)
+        self.margin_monitor = CrossAssetMarginMonitor()
         self._veto_count: int = 0
         self._approval_count: int = 0
+
+        # Per-asset risk budgets (P1-26)
+        self.asset_budgets: Dict[str, Dict[str, float]] = {}
+        self.asset_daily_pnl: Dict[str, float] = {}
+
+        # Concentration limits (P1-32)
+        self.concentration_limits: Dict[str, float] = {}
+
+        # Cost-aware budget (P1-32)
+        self.trading_budget: float = initial_equity * TRADING_BUDGET_PCT
+
+        # Hard stops at entry (P1-26): symbol -> {entry_price, atr, stop_price}
+        self._hard_stops: Dict[str, Dict[str, float]] = {}
 
         # Persistence layer — optional, defaults to env-configured backend
         self._persistence = persistence or get_persistence_backend()
@@ -189,6 +213,14 @@ class RiskManager:
             logger.warning("TRADE VETOED: %s %s — %s", symbol, direction, result.get("failed_checkpoints", []))
         else:
             self._approval_count += 1
+            margin_mult = self.correlation_regime.get_margin_multiplier()
+            if margin_mult != 1.0:
+                result["margin_multiplier"] = margin_mult
+                result["correlation_regime"] = self.correlation_regime.detect_regime()[0]
+                result["adjusted_lot_size"] = round(lot_size * margin_mult, 2)
+                result["note"] = (
+                    f"Position adjusted by correlation regime multiplier ({margin_mult})"
+                )
 
         return {
             **result,
@@ -357,6 +389,11 @@ class RiskManager:
             "approval_count": self._approval_count,
             "drawdown": dd_info,
             "kill_switch": self.kill_switch.status(),
+            "correlation_regime": {
+                "regime": self.correlation_regime.detect_regime()[0],
+                "margin_multiplier": self.correlation_regime.get_margin_multiplier(),
+            },
+            "margin_monitor": self.margin_monitor.status(),
             "hardcoded_limits": {
                 "max_risk_per_trade": f"{MAX_RISK_PER_TRADE:.2%}",
                 "max_daily_loss": f"{MAX_DAILY_LOSS:.2%}",
@@ -373,6 +410,7 @@ class RiskManager:
         if self.state.last_reset_date is None or today > self.state.last_reset_date:
             self.state.daily_pnl = 0.0
             self.state.trade_count_today = 0
+            self.asset_daily_pnl.clear()
             # Reset weekly on Monday
             if today.weekday() == 0:  # Monday
                 self.state.weekly_pnl = 0.0
@@ -652,3 +690,241 @@ class RiskManager:
         if self.drawdown_monitor.is_breached:
             self.kill_switch.activate("AUTO_MAX_DRAWDOWN")
             logger.critical("KILL SWITCH: Maximum drawdown breached (%.2f%% >= %.2f%%)", self.drawdown_monitor.current_drawdown * 100, MAX_DRAWDOWN * 100)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # Per-Asset Risk Budgets (P1-26)
+    # ═══════════════════════════════════════════════════════════════════
+
+    def set_asset_budget(
+        self,
+        symbol: str,
+        max_position_pct: Optional[float] = None,
+        max_daily_loss_pct: Optional[float] = None,
+    ) -> None:
+        """Set per-asset risk budget parameters.
+
+        Args:
+            symbol: Trading symbol.
+            max_position_pct: Max % of portfolio for this asset (default: MAX_POSITION_SIZE_PCT).
+            max_daily_loss_pct: Max daily loss % for this asset (default: MAX_ASSET_DAILY_LOSS_PCT).
+        """
+        self.asset_budgets[symbol] = {
+            "max_position_pct": max_position_pct if max_position_pct is not None else MAX_POSITION_SIZE_PCT,
+            "max_daily_loss_pct": max_daily_loss_pct if max_daily_loss_pct is not None else MAX_ASSET_DAILY_LOSS_PCT,
+        }
+
+    def check_asset_risk(
+        self,
+        symbol: str,
+        pnl_change: float,
+        current_price: float,
+        entry_price: float,
+        atr: float,
+        direction: str = "LONG",
+    ) -> Dict[str, Any]:
+        """Check per-asset risk limits including hard stop at entry.
+
+        The hard stop at entry is: if price moves against entry by more than
+        HARD_STOP_ATR_MULTIPLIER * ATR, force close regardless of trailing stop.
+        Once set at entry, the hard stop can only tighten (trailing), never widen.
+
+        Args:
+            symbol: Trading symbol.
+            pnl_change: P&L change from this trade action.
+            current_price: Current market price.
+            entry_price: Entry price.
+            atr: Average True Range value.
+            direction: Position direction (LONG/SHORT, default LONG).
+
+        Returns:
+            Dict with verdict, reason, asset_daily_pnl, remaining_budget.
+        """
+        self._reset_daily_if_needed()
+
+        # Initialize budget defaults if not set
+        if symbol not in self.asset_budgets:
+            self.set_asset_budget(symbol)
+
+        budget = self.asset_budgets[symbol]
+
+        # Track daily P&L per asset
+        self.asset_daily_pnl[symbol] = self.asset_daily_pnl.get(symbol, 0.0) + pnl_change
+        asset_pnl = self.asset_daily_pnl[symbol]
+
+        # Check daily loss limit
+        portfolio_value = max(self.state.current_equity, 1)
+        daily_loss_pct = abs(min(0, asset_pnl)) / portfolio_value
+        max_loss = budget["max_daily_loss_pct"]
+        if daily_loss_pct > max_loss:
+            return {
+                "verdict": "REJECTED",
+                "reason": f"ASSET_DAILY_LOSS: {symbol} daily loss {daily_loss_pct:.4%} exceeds {max_loss:.2%}",
+                "asset_daily_pnl": asset_pnl,
+                "remaining_budget": 0.0,
+            }
+
+        # Hard stop at entry check (P1-26)
+        is_long = direction.upper() in ("LONG", "BUY")
+        if entry_price > 0 and atr > 0:
+            hard_stop_distance = HARD_STOP_ATR_MULTIPLIER * atr
+
+            # Initialize hard stop on first call
+            if symbol not in self._hard_stops:
+                stop_price = (
+                    entry_price - hard_stop_distance
+                    if is_long
+                    else entry_price + hard_stop_distance
+                )
+                self._hard_stops[symbol] = {
+                    "entry_price": entry_price,
+                    "atr": atr,
+                    "stop_price": stop_price,
+                }
+
+            hard_stop = self._hard_stops[symbol]
+
+            # Hard stop can only tighten (move closer to entry), never widen
+            if is_long:
+                # Long: stop below entry; tightening = raising stop
+                new_stop = current_price - hard_stop_distance
+                if new_stop > hard_stop["stop_price"]:
+                    hard_stop["stop_price"] = new_stop
+                    hard_stop["atr"] = atr
+            else:
+                # Short: stop above entry; tightening = lowering stop
+                new_stop = current_price + hard_stop_distance
+                if new_stop < hard_stop["stop_price"]:
+                    hard_stop["stop_price"] = new_stop
+                    hard_stop["atr"] = atr
+
+            # Check if hard stop is triggered
+            hit_hard_stop = (
+                is_long and current_price <= hard_stop["stop_price"]
+            ) or (
+                not is_long and current_price >= hard_stop["stop_price"]
+            )
+
+            if hit_hard_stop:
+                return {
+                    "verdict": "REJECTED",
+                    "reason": f"HARD_STOP: {symbol} hit hard stop at {hard_stop['stop_price']:.2f} (entry: {entry_price:.2f}, ATR: {atr:.4f})",
+                    "asset_daily_pnl": asset_pnl,
+                    "remaining_budget": max_loss - daily_loss_pct,
+                }
+
+        return {
+            "verdict": "APPROVED",
+            "reason": f"Asset risk OK for {symbol}",
+            "asset_daily_pnl": asset_pnl,
+            "remaining_budget": max_loss - daily_loss_pct,
+        }
+
+    # ═══════════════════════════════════════════════════════════════════
+    # Concentration Limits (P1-32)
+    # ═══════════════════════════════════════════════════════════════════
+
+    def check_concentration(
+        self,
+        symbol: str,
+        current_value: float,
+        portfolio_value: float,
+    ) -> Dict[str, Any]:
+        """Check if adding a position would exceed the per-asset concentration limit.
+
+        Args:
+            symbol: Trading symbol.
+            current_value: Current position value (including proposed addition).
+            portfolio_value: Total portfolio value.
+
+        Returns:
+            Dict with verdict, reason, limit_pct, current_pct.
+        """
+        limit_pct = self.concentration_limits.get(symbol, MAX_POSITION_SIZE_PCT)
+        current_pct = current_value / portfolio_value if portfolio_value > 0 else 0
+
+        if current_pct > limit_pct:
+            return {
+                "verdict": "REJECTED",
+                "reason": f"CONCENTRATION_LIMIT: {symbol} would be {current_pct:.2%} of portfolio (limit: {limit_pct:.2%})",
+                "limit_pct": limit_pct,
+                "current_pct": current_pct,
+            }
+
+        return {
+            "verdict": "APPROVED",
+            "reason": f"Concentration OK for {symbol}",
+            "limit_pct": limit_pct,
+            "current_pct": current_pct,
+        }
+
+    def check_total_concentration(
+        self,
+        positions: List[Dict[str, Any]],
+        portfolio_value: float,
+    ) -> Dict[str, Any]:
+        """Check if total position value across all assets exceeds max concentration.
+
+        Args:
+            positions: List of dicts with at least {'market_value': float}.
+            portfolio_value: Total portfolio value.
+
+        Returns:
+            Dict with verdict, reason, total_pct, limit_pct.
+        """
+        total_value = sum(p.get("market_value", 0) for p in positions)
+        total_pct = total_value / portfolio_value if portfolio_value > 0 else 0
+
+        if total_pct > MAX_TOTAL_CONCENTRATION:
+            return {
+                "verdict": "REJECTED",
+                "reason": f"TOTAL_CONCENTRATION: All positions total {total_pct:.2%} of portfolio (limit: {MAX_TOTAL_CONCENTRATION:.0%})",
+                "total_pct": total_pct,
+                "limit_pct": MAX_TOTAL_CONCENTRATION,
+            }
+
+        return {
+            "verdict": "APPROVED",
+            "reason": "Total concentration OK",
+            "total_pct": total_pct,
+            "limit_pct": MAX_TOTAL_CONCENTRATION,
+        }
+
+    # ═══════════════════════════════════════════════════════════════════
+    # Cost-Aware Budget (P1-32)
+    # ═══════════════════════════════════════════════════════════════════
+
+    @property
+    def cost_budget_remaining(self) -> float:
+        return self.trading_budget
+
+    def track_cost(self, trade_cost: float) -> Dict[str, Any]:
+        """Deduct a trade cost from the trading budget.
+
+        Args:
+            trade_cost: Cost of the trade (fees, slippage, etc.).
+
+        Returns:
+            Dict with cost, remaining_budget, budget_exhausted flag.
+        """
+        self.trading_budget -= trade_cost
+        budget_exhausted = self.trading_budget <= 0
+
+        if budget_exhausted:
+            logger.warning("Trading budget exhausted: %.2f remaining", self.trading_budget)
+
+        return {
+            "cost": trade_cost,
+            "remaining_budget": self.trading_budget,
+            "budget_exhausted": budget_exhausted,
+        }
+
+    def check_cost_affordable(self, estimated_cost: float) -> bool:
+        """Check if the estimated trade cost is within remaining budget.
+
+        Args:
+            estimated_cost: Estimated cost for the proposed trade.
+
+        Returns:
+            True if affordable, False if budget would be exceeded.
+        """
+        return estimated_cost <= self.trading_budget

@@ -22,7 +22,10 @@ from quant_nanggroe.engine.regime.strategy_selector import (
 
 class TestConstants(unittest.TestCase):
     def test_real_qna_strategies_count(self):
-        self.assertGreaterEqual(len(REAL_QNA_STRATEGIES), 8)
+        self.assertEqual(len(REAL_QNA_STRATEGIES), 3)
+        self.assertIn("RegimeBased", REAL_QNA_STRATEGIES)
+        self.assertIn("MeanReversion", REAL_QNA_STRATEGIES)
+        self.assertIn("TrendFollow", REAL_QNA_STRATEGIES)
 
     def test_regime_strategy_map_keys(self):
         expected = {"bull_trend", "bear_trend", "high_volatility", "low_volatility", "sideways", "crisis", "recovery"}
@@ -197,8 +200,8 @@ class TestRegimeStrategySelectorGetters(unittest.TestCase):
 
     def test_get_strategy_names_bull(self):
         names = self.selector.get_strategy_names("BULL")
-        self.assertIn("Momentum", names)
         self.assertIn("RegimeBased", names)
+        self.assertIn("TrendFollow", names)
 
     def test_get_strategy_names_unknown(self):
         names = self.selector.get_strategy_names("UNKNOWN")

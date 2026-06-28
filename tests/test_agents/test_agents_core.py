@@ -713,14 +713,14 @@ class TestAgentFactory:
             llm_provider="openai",
             deep_think_model="gpt-4o",
             quick_think_model="gpt-4o-mini",
-            api_key="test-key",
+            api_key="<placeholder>",
         )
         assert factory.llm_provider == "openai"
         assert factory.deep_think_model == "gpt-4o"
         assert factory.quick_think_model == "gpt-4o-mini"
 
     def test_create_unregistered_agent_raises(self):
-        factory = AgentFactory(api_key="test-key")
+        factory = AgentFactory(api_key="<placeholder>")
         with pytest.raises(ValueError, match="not registered"):
             factory.create_agent("nonexistent")
 
@@ -737,7 +737,7 @@ class TestAgentFactory:
 
         factory = AgentFactory(
             llm_provider="openai",
-            api_key="test-key",
+            api_key="<placeholder>",
         )
         agent = factory.create_agent("test_agent")
         assert isinstance(agent, BaseAgent)
@@ -753,7 +753,7 @@ class TestAgentFactory:
             llm_provider="openai",
             deep_think_model="gpt-4o",
             quick_think_model="gpt-4o-mini",
-            api_key="test-key",
+            api_key="<placeholder>",
         )
         llm = factory.get_deep_llm()
         assert mock_create_llm.called
@@ -761,7 +761,7 @@ class TestAgentFactory:
             provider="openai",
             model="gpt-4o",
             base_url=None,
-            api_key="test-key",
+            api_key="<placeholder>",
             temperature=0.0,
         )
 
@@ -773,7 +773,7 @@ class TestAgentFactory:
         factory = AgentFactory(
             llm_provider="openai",
             quick_think_model="gpt-4o-mini",
-            api_key="test-key",
+            api_key="<placeholder>",
         )
         llm = factory.get_quick_llm()
         assert mock_create_llm.called
@@ -783,7 +783,7 @@ class TestAgentFactory:
         mock_llm = MagicMock()
         mock_create_llm.return_value = mock_llm
 
-        factory = AgentFactory(api_key="test-key")
+        factory = AgentFactory(api_key="<placeholder>")
         # LLM should not be created until requested
         assert factory._deep_llm is None
         assert factory._quick_llm is None
@@ -793,7 +793,7 @@ class TestAgentFactory:
         mock_llm = MagicMock()
         mock_create_llm.return_value = mock_llm
 
-        factory = AgentFactory(api_key="test-key")
+        factory = AgentFactory(api_key="<placeholder>")
         llm1 = factory.get_deep_llm()
         llm2 = factory.get_deep_llm()
         # Should only call create_llm once
@@ -811,7 +811,7 @@ class TestAgentFactory:
 
         AgentRegistry.register("test_agent", AgentRole.RESEARCHER)(TestAgent)
 
-        factory = AgentFactory(api_key="test-key")
+        factory = AgentFactory(api_key="<placeholder>")
         agent = factory.create_agent("test_agent", use_deep_llm=True)
         assert isinstance(agent, BaseAgent)
 
@@ -1043,7 +1043,7 @@ class TestCreateLLM:
     def test_openai_provider(self, mock_chat_openai):
         mock_instance = MagicMock()
         mock_chat_openai.return_value = mock_instance
-        result = create_llm(provider="openai", model="gpt-4o", api_key="test")
+        result = create_llm(provider="openai", model="gpt-4o", api_key="<placeholder>")
         mock_chat_openai.assert_called_once()
         assert result is mock_instance
 
@@ -1058,21 +1058,21 @@ class TestCreateLLM:
     def test_openrouter_provider(self, mock_chat_openai):
         mock_instance = MagicMock()
         mock_chat_openai.return_value = mock_instance
-        result = create_llm(provider="openrouter", model="auto", api_key="test")
+        result = create_llm(provider="openrouter", model="auto", api_key="<placeholder>")
         mock_chat_openai.assert_called_once()
 
     @patch("quant_nanggroe.agents.base.ChatAnthropic")
     def test_anthropic_provider(self, mock_chat_anthropic):
         mock_instance = MagicMock()
         mock_chat_anthropic.return_value = mock_instance
-        result = create_llm(provider="anthropic", model="claude-3", api_key="test")
+        result = create_llm(provider="anthropic", model="claude-3", api_key="<placeholder>")
         mock_chat_anthropic.assert_called_once()
 
     @patch("quant_nanggroe.agents.base.ChatGoogleGenerativeAI")
     def test_google_provider(self, mock_chat_google):
         mock_instance = MagicMock()
         mock_chat_google.return_value = mock_instance
-        result = create_llm(provider="google", model="gemini-pro", api_key="test")
+        result = create_llm(provider="google", model="gemini-pro", api_key="<placeholder>")
         mock_chat_google.assert_called_once()
 
     def test_unsupported_provider_raises(self):
@@ -1083,7 +1083,7 @@ class TestCreateLLM:
     def test_case_insensitive_provider(self, mock_chat_openai):
         mock_instance = MagicMock()
         mock_chat_openai.return_value = mock_instance
-        result = create_llm(provider="OpenAI", model="gpt-4o", api_key="test")
+        result = create_llm(provider="OpenAI", model="gpt-4o", api_key="<placeholder>")
         mock_chat_openai.assert_called_once()
 
 

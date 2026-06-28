@@ -381,22 +381,26 @@ def run_destruction(
         try:
             from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
             from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig, MarketType, StrategyType
+            from quant_nanggroe.engine.strategy.strategies import _STRATEGY_REGISTRY, STRATEGY_REGISTRY
+            from quant_nanggroe.engine.strategy.registry import WalkForwardResult as RegistryWFResult
             logger.info("\n  ── Walk-Forward Validation ──")
             engine = BacktestEngine(BacktestConfig(market=MarketType.CRYPTO))
             for strategy_name in strategies:
+                strategy_cls = _STRATEGY_REGISTRY.get(strategy_name)
+                if strategy_cls is None:
+                    logger.info("    %s: strategy class not found in registry, skipping", strategy_name)
+                    continue
                 for symbol in symbols:
                     ohlcv = try_load_real_data(symbol, n_observations) if use_real else generate_realistic_ohlcv(n_observations)
                     if ohlcv is None or len(ohlcv) < 400:
                         logger.info("    %s/%s: skipping (only %d bars)", strategy_name, symbol, len(ohlcv) if ohlcv is not None else 0)
                         continue
-                    sigs = generate_signals(strategy_name, ohlcv, symbol)
                     prices = ohlcv[["close"]].rename(columns={"close": symbol})
-                    sigs_df = pd.DataFrame({symbol: sigs}, index=ohlcv.index)
                     wfa = WalkForwardAnalyzer(
                         engine,
                         train_window=252, test_window=63, mode="rolling",
                     )
-                    wf_results = wfa.analyze(prices, sigs_df)
+                    wf_results = wfa.analyze_strategy(prices, strategy_cls, strategy_params={})
                     windows = wf_results.get("windows", [])
                     oos_sharpes = [w.out_of_sample_sharpe for w in windows]
                     if oos_sharpes:
@@ -404,10 +408,33 @@ def run_destruction(
                         logger.info("    %s/%s: OOS Sharpe=%.3f (%d windows, IS Sharpe=%.3f)",
                                      strategy_name, symbol, avg_oos, len(oos_sharpes),
                                      wf_results.get("aggregate", {}).get("avg_is_sharpe", 0))
+                        # Record walk-forward results in registry
+                        for idx, w in enumerate(windows):
+                            registry_result = RegistryWFResult(
+                                window_index=idx,
+                                train_start=str(w.train_start),
+                                train_end=str(w.train_end),
+                                test_start=str(w.test_start),
+                                test_end=str(w.test_end),
+                                train_sharpe=float(w.in_sample_sharpe),
+                                test_sharpe=float(w.out_of_sample_sharpe),
+                                train_return=float(w.in_sample_return),
+                                test_return=float(w.out_of_sample_return),
+                                train_max_dd=float(w.in_sample_max_dd),
+                                test_max_dd=float(w.out_of_sample_max_dd),
+                                parameter_set={},
+                            )
+                            STRATEGY_REGISTRY.record_walk_forward(strategy_name, registry_result)
+                        summary = STRATEGY_REGISTRY.summary(strategy_name)
+                        logger.info("    %s registry: avg IS Sharpe=%.4f, avg OOS Sharpe=%.4f, decay=%.4f",
+                                     strategy_name, summary["avg_train_sharpe"],
+                                     summary["avg_test_sharpe"], summary["decay"])
                     else:
                         logger.info("    %s/%s: 0 windows generated", strategy_name, symbol)
         except Exception as e:
             logger.warning("  Walk-forward skipped: %s", e)
+            import traceback
+            logger.debug(traceback.format_exc())
 
     passed = sum(1 for r in results.values() if r["verdict"] == "PASS")
     failed = sum(1 for r in results.values() if r["verdict"] == "FAIL")

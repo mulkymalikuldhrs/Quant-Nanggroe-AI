@@ -36,7 +36,7 @@ from quant_nanggroe.engine.nvidia_nim.models import (
 def nim_config():
     """Create a test NIMConfig."""
     return NIMConfig(
-        nvidia_nim_api_key="YOUR_API_KEY_HERE",
+        nvidia_nim_api_key="<placeholder>",
         nvidia_nim_base_url="https://integrate.api.nvidia.com/v1",
         nvidia_nim_timeout=30,
         nvidia_nim_max_retries=2,
@@ -201,7 +201,7 @@ class TestRateLimiting:
 
     def test_rate_limit_exceeded(self, nim_config):
         config = NIMConfig(
-            nvidia_nim_api_key="test",
+            nvidia_nim_api_key="<placeholder>",
             nvidia_nim_rate_limit=2,  # Very low limit
         )
         c = NIMClient(config=config)
@@ -217,7 +217,7 @@ class TestRateLimiting:
     def test_sliding_window_pruning(self, nim_config):
         import time
         config = NIMConfig(
-            nvidia_nim_api_key="test",
+            nvidia_nim_api_key="<placeholder>",
             nvidia_nim_rate_limit=2,
         )
         c = NIMClient(config=config)

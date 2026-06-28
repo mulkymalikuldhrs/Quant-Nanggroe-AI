@@ -726,23 +726,24 @@ if __name__ == "__main__":
 
         # Start worker
         started = await worker.start()
-        print(f"Worker started: {started}")
+        logger.info("Worker started: %s", started)
 
         if started:
             # Let it run for a few seconds
             for _ in range(5):
                 health = worker.health_check()
-                print(
-                    f"  State: {health.state.value}, "
-                    f"Running: {health.tasks_running}, "
-                    f"Completed: {health.tasks_completed}, "
-                    f"Failed: {health.tasks_failed}"
+                logger.info(
+                    "  State: %s, Running: %s, Completed: %s, Failed: %s",
+                    health.state.value,
+                    health.tasks_running,
+                    health.tasks_completed,
+                    health.tasks_failed,
                 )
                 await asyncio.sleep(1.0)
 
             # Stop gracefully
             await worker.stop()
-            print(f"Worker stopped. Counter value: {counter['value']}")
-            print(f"Final stats: {worker.stats}")
+            logger.info("Worker stopped. Counter value: %s", counter['value'])
+            logger.info("Final stats: %s", worker.stats)
 
     asyncio.run(demo())

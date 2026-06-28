@@ -195,8 +195,8 @@ class AlpacaBroker(ExchangeInterface):
 
         config = ExchangeConfig(
             exchange_id="alpaca",
-            api_key="YOUR_API_KEY_HERE",
-            api_secret="YOUR_API_SECRET_HERE",
+            api_key="<placeholder>",
+            api_secret="<placeholder>",
             sandbox=True,  # Paper trading
         )
         broker = AlpacaBroker(config)

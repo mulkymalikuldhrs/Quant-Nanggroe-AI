@@ -153,8 +153,8 @@ class MT5Broker(ExchangeInterface):
 
         config = ExchangeConfig(
             exchange_id="mt5",
-            api_key="YOUR_API_KEY_HERE",
-            api_secret="YOUR_API_SECRET_HERE",
+            api_key="<placeholder>",
+            api_secret="<placeholder>",
             options={"server": "MetaQuotes-Demo"},
         )
         broker = MT5Broker(config)

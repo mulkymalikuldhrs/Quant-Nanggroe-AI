@@ -466,10 +466,10 @@ class StrategyLoader:
             path: Path to the file.
 
         Returns:
-            MD5 hex digest of the file contents.
+            SHA-256 hex digest of the file contents.
         """
         try:
-            return hashlib.md5(path.read_bytes()).hexdigest()
+            return hashlib.sha256(path.read_bytes()).hexdigest()
         except OSError:
             return ""
 

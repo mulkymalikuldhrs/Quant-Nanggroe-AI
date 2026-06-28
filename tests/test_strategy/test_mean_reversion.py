@@ -1,4 +1,4 @@
-"""Tests for MeanReversionStrategy."""
+"""Tests for MeanReversionStrategy (Kakushadze #15)."""
 
 import numpy as np
 import pandas as pd
@@ -9,102 +9,114 @@ from quant_nanggroe.types.signals import Signal, SignalType
 
 
 class TestMeanReversionStrategy:
-    """Test mean reversion strategy."""
-
     def test_default_params(self):
         strategy = MeanReversionStrategy()
         assert strategy.name == "MeanReversion"
         assert strategy.lookback == 20
-        assert strategy.entry_z == -2.0
-        assert strategy.exit_z == 0.0
-        assert strategy.bb_std == 2.0
+        assert strategy.bollinger_std == 2.0
+        assert strategy.atr_stop_mult == 1.5
 
     def test_custom_params(self):
-        strategy = MeanReversionStrategy(params={"lookback": 30, "entry_z": -1.5})
+        strategy = MeanReversionStrategy(params={"lookback": 30, "bollinger_std": 2.5, "atr_stop_mult": 2.0})
         assert strategy.lookback == 30
-        assert strategy.entry_z == -1.5
+        assert strategy.bollinger_std == 2.5
+        assert strategy.atr_stop_mult == 2.0
 
     def test_required_columns(self):
         strategy = MeanReversionStrategy()
-        assert "close" in strategy.required_columns()
-        assert "high" in strategy.required_columns()
-        assert "low" in strategy.required_columns()
+        cols = strategy.required_columns()
+        assert "close" in cols
+        assert "high" in cols
+        assert "low" in cols
 
     def test_warmup_period(self):
         strategy = MeanReversionStrategy(params={"lookback": 30})
-        assert strategy.warmup_period() == 40  # lookback + 10
+        assert strategy.warmup_period() == 31
 
     def test_no_signal_insufficient_data(self, random_ohlcv_data):
         strategy = MeanReversionStrategy()
-        # Use only a few rows
-        small_data = random_ohlcv_data.iloc[:10]
+        small_data = random_ohlcv_data.iloc[:5]
         signal = strategy.generate_signal(small_data)
         assert signal is None
 
+    def test_bollinger_entry_below_lower_band(self, random_ohlcv_data):
+        strategy = MeanReversionStrategy(
+            params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"}
+        )
+        df = random_ohlcv_data.copy()
+        price = float(df["close"].iloc[-1])
+        lower = float(df["close"].rolling(20).mean().iloc[-1] - 2.0 * df["close"].rolling(20).std().iloc[-1])
+        if price < lower:
+            signal = strategy.generate_signal(df)
+            if signal is not None:
+                assert signal.signal_type == SignalType.BUY
+
+    def test_bollinger_entry_above_upper_band(self, random_ohlcv_data):
+        strategy = MeanReversionStrategy(
+            params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"}
+        )
+        df = random_ohlcv_data.copy()
+        price = float(df["close"].iloc[-1])
+        upper = float(df["close"].rolling(20).mean().iloc[-1] + 2.0 * df["close"].rolling(20).std().iloc[-1])
+        if price > upper:
+            signal = strategy.generate_signal(df)
+            if signal is not None:
+                assert signal.signal_type == SignalType.SELL
+
+    def test_signal_has_stop_loss(self, mean_reverting_data):
+        strategy = MeanReversionStrategy(
+            params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"}
+        )
+        signal = None
+        for i in range(strategy.warmup_period(), len(mean_reverting_data)):
+            window = mean_reverting_data.iloc[: i + 1]
+            sig = strategy.generate_signal(window)
+            if sig is not None and sig.signal_type in (SignalType.BUY, SignalType.SELL):
+                signal = sig
+                break
+        if signal is not None:
+            assert signal.stop_loss is not None
+            assert signal.stop_loss > 0
+
+    def test_signal_evidence(self, mean_reverting_data):
+        strategy = MeanReversionStrategy(params={"strategy_type": "bollinger", "symbol": "TEST"})
+        for i in range(strategy.warmup_period(), len(mean_reverting_data)):
+            window = mean_reverting_data.iloc[: i + 1]
+            signal = strategy.generate_signal(window)
+            if signal is not None and signal.signal_type in (SignalType.BUY, SignalType.SELL):
+                assert "strategy_type" in signal.evidence
+                assert "target_signal" in signal.evidence
+                break
+
     def test_ou_half_life_estimation(self, mean_reverting_data):
         strategy = MeanReversionStrategy()
-        hl = strategy.estimate_ou_half_life(mean_reverting_data["close"])
+        hl = strategy.estimate_half_life(mean_reverting_data["close"])
         assert hl > 0
-        assert hl < np.inf  # Should be mean-reverting
+        assert hl < np.inf
 
     def test_ou_half_life_non_mean_reverting(self):
         strategy = MeanReversionStrategy()
-        # Pure random walk is not mean-reverting
         random_walk = pd.Series(np.cumsum(np.random.randn(200)))
-        hl = strategy.estimate_ou_half_life(random_walk)
-        # Random walk should have very long or infinite half-life
-        assert hl >= 0  # May be inf
+        hl = strategy.estimate_half_life(random_walk)
+        assert hl >= 0
 
-    def test_generate_signal_with_mean_reverting_data(self, mean_reverting_data):
-        strategy = MeanReversionStrategy(
-            params={"entry_z": -1.5, "exit_z": 0.0, "symbol": "TEST"}
-        )
-        # Run on multiple windows
-        signals = []
-        for i in range(strategy.warmup_period(), len(mean_reverting_data)):
-            window = mean_reverting_data.iloc[: i + 1]
-            signal = strategy.generate_signal(window)
-            if signal is not None:
-                signals.append(signal)
-
-        # Should generate at least some signals on mean-reverting data
-        # (not guaranteed due to randomness, but structure should be valid)
-        for sig in signals:
-            assert isinstance(sig, Signal)
-            assert sig.signal_type in [
-                SignalType.BUY, SignalType.SELL,
-                SignalType.CLOSE_LONG, SignalType.CLOSE_SHORT,
-            ]
-            assert 0 <= sig.confidence <= 1
-
-    def test_signal_has_proper_evidence(self, mean_reverting_data):
-        strategy = MeanReversionStrategy(params={"entry_z": -1.0, "symbol": "TEST"})
-        signals = []
-        for i in range(strategy.warmup_period(), len(mean_reverting_data)):
-            window = mean_reverting_data.iloc[: i + 1]
-            signal = strategy.generate_signal(window)
-            if signal is not None and signal.signal_type in [SignalType.BUY, SignalType.SELL]:
-                signals.append(signal)
-                break
-
-        if signals:
-            sig = signals[0]
-            assert "z_score" in sig.evidence
-            assert "bb_upper" in sig.evidence
-            assert "bb_lower" in sig.evidence
-            assert "position_size" in sig.evidence
-            assert sig.stop_loss is not None or sig.signal_type == SignalType.CLOSE_LONG
-
-    def test_position_sizing(self):
+    def test_insufficient_data_returns_none(self):
         strategy = MeanReversionStrategy()
-        size = strategy._compute_position_size(-3.0, None)
-        assert 0 <= size <= strategy.max_position_size
+        data = pd.DataFrame({
+            "open": [100], "high": [101], "low": [99], "close": [100], "volume": [1000],
+        })
+        signal = strategy.generate_signal(data)
+        assert signal is None
 
-        size_with_hl = strategy._compute_position_size(-3.0, 10.0)
-        assert size_with_hl >= size  # Short half-life boosts size
+    def test_nan_prices_handled(self):
+        strategy = MeanReversionStrategy()
+        data = pd.DataFrame({
+            "open": [np.nan] * 30, "high": [np.nan] * 30, "low": [np.nan] * 30,
+            "close": [np.nan] * 30, "volume": [1000] * 30,
+        })
+        signal = strategy.generate_signal(data)
+        assert signal is None
 
-    def test_zscore_calculation(self, random_ohlcv_data):
-        strategy = MeanReversionStrategy(params={"lookback": 20})
-        zscore = strategy.compute_close_zscore(random_ohlcv_data)
-        assert isinstance(zscore, pd.Series)
-        assert len(zscore) == len(random_ohlcv_data)
+    def test_list_strategies_includes_mean_reversion(self):
+        from quant_nanggroe.engine.strategy.strategies import list_strategies
+        assert "MeanReversion" in list_strategies()

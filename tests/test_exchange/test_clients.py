@@ -34,8 +34,8 @@ class TestRestClientConfig:
     def test_custom(self):
         config = RestClientConfig(
             exchange_id="binance",
-            api_key="test_key",
-            api_secret="test_secret",
+            api_key="<placeholder>",
+            api_secret="<placeholder>",
             base_url="https://api.binance.com",
             rate_limit=20,
         )
@@ -86,7 +86,7 @@ class TestExchangeCapability:
 
 class TestBinanceClient:
     def test_construction(self):
-        config = RestClientConfig(exchange_id="binance", api_key="test", api_secret="test")
+        config = RestClientConfig(exchange_id="binance", api_key="<placeholder>", api_secret="<placeholder>")
         client = BinanceClient(config)
         assert client.exchange_id == "binance"
         assert client.has_spot is True
@@ -105,14 +105,14 @@ class TestBinanceClient:
 
 class TestBybitClient:
     def test_construction(self):
-        config = RestClientConfig(exchange_id="bybit", api_key="test", api_secret="test")
+        config = RestClientConfig(exchange_id="bybit", api_key="<placeholder>", api_secret="<placeholder>")
         client = BybitClient(config)
         assert client.exchange_id == "bybit"
         assert client.has_spot is True
         assert client.has_futures is True
 
     def test_sign_v5(self):
-        config = RestClientConfig(exchange_id="bybit", api_key="test", api_secret="test_secret")
+        config = RestClientConfig(exchange_id="bybit", api_key="<placeholder>", api_secret="<placeholder>")
         client = BybitClient(config)
         headers = client._sign_v5({}, 1700000000000)
         assert "X-BAPI-API-KEY" in headers
@@ -127,9 +127,9 @@ class TestOKXClient:
     def test_construction(self):
         config = RestClientConfig(
             exchange_id="okx",
-            api_key="test",
-            api_secret="test",
-            passphrase="test_pass",
+            api_key="<placeholder>",
+            api_secret="<placeholder>",
+            passphrase="<placeholder>",
         )
         client = OKXClient(config)
         assert client.exchange_id == "okx"
@@ -141,9 +141,9 @@ class TestOKXClient:
     def test_sign(self):
         config = RestClientConfig(
             exchange_id="okx",
-            api_key="test",
-            api_secret="test_secret",
-            passphrase="pass",
+            api_key="<placeholder>",
+            api_secret="<placeholder>",
+            passphrase="<placeholder>",
         )
         client = OKXClient(config)
         sign = client._sign_okx("2024-01-01T00:00:00.000Z", "GET", "/api/v5/account/balance")

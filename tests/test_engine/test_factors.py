@@ -17,6 +17,13 @@ import pytest
 import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.analysis.factors import FactorModel, FactorResult, get_builtin_factors
+from quant_nanggroe.engine.analysis.bootstrap import BootstrapCI
+from quant_nanggroe.engine.strategy.registry import (
+    StrategyRegistry,
+    compute_factor_exposures,
+    sharpe_ci_to_registry,
+)
 from quant_nanggroe.engine.factors.base import (
     AlphaFactor,
     FactorMeta,
@@ -920,3 +927,325 @@ class TestFactorMeta:
     def test_market_enum(self):
         assert Market.EQUITY_US.value == "equity_us"
         assert Market.CRYPTO.value == "crypto"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# P1-28: Factor Regression Framework + Bootstrap CIs
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@pytest.fixture
+def sample_returns():
+    """Synthetic strategy returns for factor regression tests."""
+    np.random.seed(42)
+    n = 500
+    dates = pd.date_range("2023-01-01", periods=n, freq="D")
+    # Strategy returns with known factor exposures
+    market = np.random.normal(0.0005, 0.01, n)
+    momentum = np.random.normal(0.0002, 0.015, n)
+    noise = np.random.normal(0, 0.005, n)
+    # Alpha = 0.05/yr ≈ 0.0002/day, market beta=1.2, momentum beta=0.5
+    daily_alpha = 0.05 / 252
+    returns = pd.Series(
+        daily_alpha + 1.2 * market + 0.5 * momentum + noise,
+        index=dates,
+        name="strategy_returns",
+    )
+    return returns
+
+
+@pytest.fixture
+def sample_factors(sample_returns):
+    """Factor returns (market, momentum) aligned with sample_returns."""
+    np.random.seed(42)
+    n = len(sample_returns)
+    dates = sample_returns.index
+    factors = pd.DataFrame({
+        "Market": np.random.normal(0.0005, 0.01, n),
+        "Momentum": np.random.normal(0.0002, 0.015, n),
+    }, index=dates)
+    return factors
+
+
+@pytest.fixture
+def sample_returns_no_alpha():
+    """Returns with zero alpha (null hypothesis)."""
+    np.random.seed(99)
+    n = 500
+    dates = pd.date_range("2023-01-01", periods=n, freq="D")
+    market = np.random.normal(0.0003, 0.01, n)
+    returns = pd.Series(1.0 * market, index=dates, name="no_alpha")
+    return returns
+
+
+@pytest.fixture
+def empty_registry():
+    """Empty StrategyRegistry for integration tests."""
+    return StrategyRegistry()
+
+
+# ─── 11. FactorModel Tests ──────────────────────────────────────────────
+
+
+class TestFactorModelFit:
+
+    def test_fit_returns_correct_structure(self, sample_returns, sample_factors):
+        model = FactorModel()
+        result = model.fit(sample_returns, sample_factors)
+        assert isinstance(result, FactorResult)
+        assert "Market" in result.factors
+        assert "Momentum" in result.factors
+        assert isinstance(result.alpha, float)
+        assert isinstance(result.r_squared, float)
+        assert isinstance(result.residuals, np.ndarray)
+        assert len(result.residuals) > 0
+
+    def test_fit_produces_non_nan_coefficients(self, sample_returns, sample_factors):
+        model = FactorModel()
+        result = model.fit(sample_returns, sample_factors)
+        for name in result.factors:
+            assert not np.isnan(result.factors[name]), f"{name} coefficient is NaN"
+            assert not np.isnan(result.t_stats[name]), f"{name} t-stat is NaN"
+            assert not np.isnan(result.p_values[name]), f"{name} p-value is NaN"
+
+    def test_alpha_is_returned(self, sample_returns, sample_factors):
+        model = FactorModel()
+        result = model.fit(sample_returns, sample_factors)
+        assert isinstance(result.alpha, float)
+        assert not np.isnan(result.alpha)
+        assert not np.isnan(result.alpha_t_stat)
+
+    def test_alpha_detects_known_alpha(self, sample_returns, sample_factors):
+        """Alpha of 5%/yr should be positive and significant."""
+        model = FactorModel()
+        result = model.fit(sample_returns, sample_factors)
+        # Our synthetic data has 5%/yr alpha, should detect > 0
+        assert result.alpha > 0, f"Expected positive alpha, got {result.alpha}"
+
+    def test_zero_alpha_when_none(self, sample_returns_no_alpha):
+        """Zero-alpha strategy should produce alpha ~ 0."""
+        n = len(sample_returns_no_alpha)
+        market = pd.Series(
+            np.random.normal(0.0003, 0.01, n),
+            index=sample_returns_no_alpha.index,
+        )
+        factors = pd.DataFrame({"Market": market})
+        model = FactorModel()
+        result = model.fit(sample_returns_no_alpha, factors)
+        # Alpha should be close to 0
+        assert abs(result.alpha) < 0.001, f"Expected alpha ~ 0, got {result.alpha}"
+
+    def test_r_squared_in_bounds(self, sample_returns, sample_factors):
+        model = FactorModel()
+        result = model.fit(sample_returns, sample_factors)
+        assert 0.0 <= result.r_squared <= 1.0
+        assert 0.0 <= result.adj_r_squared <= 1.0 or result.adj_r_squared < 0
+
+    def test_fit_no_constant(self, sample_returns, sample_factors):
+        model = FactorModel()
+        result = model.fit(sample_returns, sample_factors, add_constant=False)
+        assert result.alpha == 0.0
+        assert "Market" in result.factors
+
+    def test_fit_too_few_obs_raises(self):
+        returns = pd.Series([0.01, 0.02], index=pd.date_range("2023-01-01", periods=2, freq="D"))
+        factors = pd.DataFrame({"Market": [0.01, 0.02]}, index=returns.index)
+        model = FactorModel()
+        with pytest.raises(ValueError, match="at least 3"):
+            model.fit(returns, factors)
+
+    def test_builtin_factors_exist(self):
+        builtins = get_builtin_factors()
+        assert "Market" in builtins
+        assert "Momentum" in builtins
+        assert "Volatility" in builtins
+        assert "Size" in builtins
+        assert "Trend" in builtins
+
+    def test_add_custom_factor(self, sample_returns):
+        model = FactorModel()
+        custom = pd.Series(np.random.normal(0, 0.01, len(sample_returns)), index=sample_returns.index)
+        model.add_factor("Custom", custom)
+        factors_df = pd.DataFrame({"Custom": custom})
+        result = model.fit(sample_returns, factors_df)
+        assert "Custom" in result.factors
+
+    def test_summary_returns_string(self, sample_returns, sample_factors):
+        model = FactorModel()
+        model.fit(sample_returns, sample_factors)
+        s = model.summary()
+        assert isinstance(s, str)
+        assert "R²" in s
+        assert "Alpha" in s
+        assert "Market" in s
+
+    def test_summary_before_fit(self):
+        model = FactorModel()
+        s = model.summary()
+        assert "No model fitted" in s
+
+    def test_plot_weights(self, sample_returns, sample_factors):
+        model = FactorModel()
+        model.fit(sample_returns, sample_factors)
+        plot = model.plot_weights()
+        assert isinstance(plot, str)
+        assert "Factor Loadings" in plot
+
+    def test_result_accessor(self, sample_returns, sample_factors):
+        model = FactorModel()
+        assert model.result() is None
+        model.fit(sample_returns, sample_factors)
+        assert isinstance(model.result(), FactorResult)
+
+
+# ─── 12. BootstrapCI Tests ──────────────────────────────────────────────
+
+
+class TestBootstrapCI:
+
+    def test_sharpe_ratio_normal_returns(self):
+        """Sharpe of a positive-mean series should be positive."""
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 500))
+        sr = BootstrapCI.sharpe_ratio(returns.to_numpy())
+        assert sr > 0
+
+    def test_sharpe_ratio_zero_vol(self):
+        sr = BootstrapCI.sharpe_ratio(np.array([0.0, 0.0, 0.0]))
+        assert sr == 0.0
+
+    def test_sharpe_ratio_annual_factor(self):
+        returns = pd.Series(np.full(252, 0.001))
+        sr_daily = BootstrapCI.sharpe_ratio(returns.to_numpy(), annual_factor=252)
+        sr_monthly = BootstrapCI.sharpe_ratio(returns.to_numpy(), annual_factor=12)
+        assert sr_daily != sr_monthly
+
+    def test_sharpe_ci_returns_valid_structure(self):
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.0005, 0.02, 500))
+        ci = BootstrapCI()
+        result = ci.sharpe_ci(returns, n_bootstrap=500)
+        assert "lower" in result
+        assert "upper" in result
+        assert "point_estimate" in result
+        assert "std_error" in result
+        assert result["lower"] <= result["point_estimate"] <= result["upper"]
+        assert result["std_error"] >= 0
+
+    def test_sharpe_ci_with_autocorrelated_returns(self):
+        """Autocorrelated returns should still produce valid CI."""
+        np.random.seed(42)
+        n = 500
+        noise = np.random.normal(0.0003, 0.015, n)
+        ar_returns = [noise[0]]
+        for i in range(1, n):
+            ar_returns.append(0.3 * ar_returns[-1] + noise[i])
+        returns = pd.Series(ar_returns)
+        ci = BootstrapCI()
+        result = ci.sharpe_ci(returns, n_bootstrap=500)
+        assert result["lower"] <= result["upper"]
+        assert not np.isnan(result["point_estimate"])
+
+    def test_sharpe_ci_short_series(self):
+        """Very short series should return nan bounds."""
+        returns = pd.Series([0.01, 0.02])
+        ci = BootstrapCI()
+        result = ci.sharpe_ci(returns, n_bootstrap=100)
+        assert np.isnan(result["lower"])
+        assert np.isnan(result["upper"])
+
+    def test_alpha_ci_returns_structure(self, sample_returns, sample_factors):
+        ci = BootstrapCI()
+        result = ci.alpha_ci(sample_returns, sample_factors, n_bootstrap=200)
+        assert "lower" in result
+        assert "upper" in result
+        assert "point_estimate" in result
+        assert "p_value" in result
+
+    def test_compare_strategies_returns_probability(self):
+        np.random.seed(42)
+        # Strategy 1: higher Sharpe
+        r1 = pd.Series(np.random.normal(0.001, 0.02, 500))
+        # Strategy 2: lower Sharpe
+        r2 = pd.Series(np.random.normal(0.0002, 0.02, 500))
+        ci = BootstrapCI()
+        result = ci.compare_strategies(r1, r2, n_bootstrap=500)
+        assert "prob_diff" in result
+        assert "sharpe_diff" in result
+        assert "sharpe_diff_ci" in result
+        assert result["prob_diff"] > 0.5  # R1 should be more likely better
+        assert result["sharpe_diff"] > 0
+
+    def test_compare_strategies_equal(self):
+        np.random.seed(42)
+        r1 = pd.Series(np.random.normal(0.0005, 0.02, 500))
+        r2 = pd.Series(np.random.normal(0.0005, 0.02, 500))
+        ci = BootstrapCI()
+        result = ci.compare_strategies(r1, r2, n_bootstrap=500)
+        assert 0.2 <= result["prob_diff"] <= 0.8  # Should be ~0.5
+
+    def test_compare_strategies_short_series(self):
+        r1 = pd.Series([0.01, 0.02])
+        r2 = pd.Series([0.015, 0.025])
+        ci = BootstrapCI()
+        result = ci.compare_strategies(r1, r2, n_bootstrap=100)
+        assert np.isnan(result["sharpe_diff"])
+
+    def test_stationary_bootstrap_handles_autocorrelation(self):
+        """Stationary bootstrap should produce valid samples."""
+        np.random.seed(42)
+        n = 200
+        noise = np.random.normal(0, 0.01, n)
+        ar = [noise[0]]
+        for i in range(1, n):
+            ar.append(0.5 * ar[-1] + noise[i])
+        data = np.array(ar)
+
+        from quant_nanggroe.engine.analysis.bootstrap import _stationary_bootstrap
+
+        samples = _stationary_bootstrap(data, block_size=20, n_bootstrap=100, rng=np.random.default_rng(42))
+        assert samples.shape == (100, 200)
+        # Mean of bootstrap samples should be close to original mean
+        assert abs(np.mean(samples) - np.mean(data)) < 0.01
+
+
+# ─── 13. Registry Integration Tests ─────────────────────────────────────
+
+
+class TestRegistryIntegration:
+
+    def test_compute_factor_exposures_stores_in_registry(self, empty_registry, sample_returns, sample_factors):
+        empty_registry.register("test_strategy", description="Test strategy for factor regression")
+        result = compute_factor_exposures(empty_registry, "test_strategy", sample_returns, sample_factors)
+        meta = empty_registry.get("test_strategy")
+        assert "factor_exposures" in meta.custom_metrics
+        exposures = meta.custom_metrics["factor_exposures"]
+        assert "alpha" in exposures
+        assert "r_squared" in exposures
+        assert "factors" in exposures
+
+    def test_sharpe_ci_to_registry_stores_ci(self, empty_registry):
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.0005, 0.02, 500))
+        empty_registry.register("test_strategy")
+        result = sharpe_ci_to_registry(empty_registry, "test_strategy", returns, n_bootstrap=500)
+        meta = empty_registry.get("test_strategy")
+        assert "sharpe_ci" in meta.custom_metrics
+        ci_data = meta.custom_metrics["sharpe_ci"]
+        assert "lower" in ci_data
+        assert "upper" in ci_data
+        assert "point_estimate" in ci_data
+
+    def test_unregistered_strategy_raises(self, empty_registry, sample_returns, sample_factors):
+        with pytest.raises(KeyError):
+            compute_factor_exposures(empty_registry, "nonexistent", sample_returns, sample_factors)
+
+    def test_factor_exposures_keys(self, empty_registry, sample_returns, sample_factors):
+        empty_registry.register("strat_a")
+        result = compute_factor_exposures(empty_registry, "strat_a", sample_returns, sample_factors)
+        assert "alpha" in result
+        assert "r_squared" in result
+        assert "adj_r_squared" in result
+        assert "factors" in result
+        assert "factor_t_stats" in result
+        assert "factor_p_values" in result

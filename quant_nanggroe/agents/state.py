@@ -137,6 +137,7 @@ class AgentRole(str, Enum):
     GEOPOLITICS = "geopolitics"
     PERSONAS = "personas"
     PERSONA = "persona"  # Alias for individual persona agents
+    COMPLIANCE = "compliance"
 
 
 # =============================================================================

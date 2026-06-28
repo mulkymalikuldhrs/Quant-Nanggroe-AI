@@ -181,7 +181,7 @@ def create_app() -> FastAPI:
 
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws, memory, ecosystem
-    from quant_nanggroe.api.routes import colony
+    from quant_nanggroe.api.routes import colony, monitor
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
@@ -192,6 +192,7 @@ def create_app() -> FastAPI:
     app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
     app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["Ecosystem"])
     app.include_router(colony.router, prefix="/api", tags=["Colony"])
+    app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")

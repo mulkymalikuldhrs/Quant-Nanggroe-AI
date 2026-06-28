@@ -40,7 +40,7 @@ def router():
 def openai_config():
     return ProviderConfig(
         provider=LLMProvider.OPENAI,
-        api_key="YOUR_API_KEY_HERE",
+        api_key="<placeholder>",
         priority=0,
     )
 
@@ -49,7 +49,7 @@ def openai_config():
 def anthropic_config():
     return ProviderConfig(
         provider=LLMProvider.ANTHROPIC,
-        api_key="YOUR_API_KEY_HERE",
+        api_key="<placeholder>",
         priority=1,
     )
 
@@ -58,7 +58,7 @@ def anthropic_config():
 def google_config():
     return ProviderConfig(
         provider=LLMProvider.GOOGLE,
-        api_key="YOUR_API_KEY_HERE",
+        api_key="<placeholder>",
         priority=2,
     )
 
@@ -153,7 +153,7 @@ class TestProviderConfig:
     def test_custom_values(self):
         config = ProviderConfig(
             provider=LLMProvider.ANTHROPIC,
-            api_key="sk-ant-test",
+            api_key="<placeholder>",
             priority=5,
             enabled=False,
             rate_limit_rpm=100,
@@ -175,7 +175,7 @@ class TestProviderConfig:
     def test_serialization_round_trip(self):
         config = ProviderConfig(
             provider=LLMProvider.OPENAI,
-            api_key="test-key",
+            api_key="<placeholder>",
             priority=1,
         )
         data = config.model_dump()
@@ -935,7 +935,7 @@ class TestRouterModelSelection:
     def test_custom_models_preserved(self, router):
         config = ProviderConfig(
             provider=LLMProvider.OPENAI,
-            api_key="test",
+            api_key="<placeholder>",
             models={ModelTier.STANDARD: "gpt-3.5-turbo"},
         )
         router.add_provider(config)
@@ -947,7 +947,7 @@ class TestRouterModelSelection:
     async def test_tier_with_no_model_skipped(self, router):
         config = ProviderConfig(
             provider=LLMProvider.OPENAI,
-            api_key="test",
+            api_key="<placeholder>",
             models={ModelTier.STANDARD: "gpt-4o"},  # Only STANDARD
         )
         router.add_provider(config)

@@ -75,7 +75,7 @@ class SolanaBroker(ExchangeInterface):
 
         config = ExchangeConfig(
             exchange_id="solana",
-            api_key="YOUR_API_KEY_HERE",  # Base58 private key
+            api_key="<placeholder>",  # Base58 private key
         )
         broker = SolanaBroker(config)
         await broker.connect()

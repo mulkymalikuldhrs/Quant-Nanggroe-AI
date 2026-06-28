@@ -9,6 +9,9 @@ trading decisions and manages the kill switch.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 try:
@@ -42,6 +45,19 @@ from quant_nanggroe.agents.state import (
 )
 
 
+TRADE_VERDICT_APPROVED = "APPROVED"
+TRADE_VERDICT_REJECTED = "REJECTED"
+
+
+@dataclass
+class TradeVerdict:
+    status: str = TRADE_VERDICT_APPROVED
+    reason: str = ""
+    severity: str = "INFO"
+    check_name: str = ""
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,7 +73,7 @@ class RiskAgent(BaseAgent):
 
     def __init__(
         self,
-        llm: BaseChatModel,
+        llm: Optional[BaseChatModel] = None,
         tools: Optional[List] = None,
         system_prompt: Optional[str] = None,
     ) -> None:
@@ -354,3 +370,71 @@ class RiskAgent(BaseAgent):
             if isinstance(data, dict):
                 parts.append(f"  {symbol}: {data}")
         return "\n".join(parts) if parts else "No detailed data"
+
+    # ── Daemon-facing methods (lightweight, no LLM needed) ────────────
+
+    def check_trade(
+        self,
+        symbol: str,
+        side: str,
+        qty: float,
+        strategy: str = "",
+        price: float = 0.0,
+        portfolio_value: float = 100000.0,
+        current_positions: Optional[Dict[str, float]] = None,
+        daily_pnl_pct: float = 0.0,
+        trades_today: int = 0,
+    ) -> TradeVerdict:
+        """Check a proposed trade against the 9-checkpoint risk gate.
+
+        Returns APPROVED or REJECTED with reason. No LLM required.
+        qty is in units (not ratio), price is the current/entry price.
+        """
+        if current_positions is None:
+            current_positions = {}
+
+        notional = qty * price
+        pos_pct = (notional / portfolio_value) if portfolio_value > 0 else 0
+
+        checks: List[TradeVerdict] = []
+
+        if pos_pct > MAX_POSITION_SIZE_PCT:
+            checks.append(TradeVerdict(
+                TRADE_VERDICT_REJECTED,
+                f"Position size {pos_pct:.2%} exceeds max {MAX_POSITION_SIZE_PCT:.0%}",
+                "ERROR", "position_size",
+            ))
+
+        if daily_pnl_pct < 0 and abs(daily_pnl_pct) / 100 >= MAX_DAILY_LOSS:
+            checks.append(TradeVerdict(
+                TRADE_VERDICT_REJECTED,
+                f"Daily loss {abs(daily_pnl_pct):.2f}% >= max {MAX_DAILY_LOSS*100:.0f}%",
+                "CRITICAL", "daily_loss",
+            ))
+
+        if trades_today >= MAX_TRADES_PER_DAY:
+            checks.append(TradeVerdict(
+                TRADE_VERDICT_REJECTED,
+                f"Trades today {trades_today} >= max {MAX_TRADES_PER_DAY}",
+                "WARNING", "trade_count",
+            ))
+
+        total_positions = sum(current_positions.values())
+        total_concentration = (total_positions + notional) / portfolio_value if portfolio_value > 0 else 1
+        if total_concentration > 0.80:
+            checks.append(TradeVerdict(
+                TRADE_VERDICT_REJECTED,
+                f"Total concentration {total_concentration:.2%} exceeds 80% limit",
+                "WARNING", "concentration",
+            ))
+
+        if checks:
+            return checks[0]
+
+        return TradeVerdict()
+
+    def update_pnl(self, realized_pnl: float, unrealized_pnl: float, equity: float) -> None:
+        """Update PnL tracking. Stub for daemon integration; logs the values."""
+        total = realized_pnl + unrealized_pnl
+        logger.debug("RiskAgent PnL update: realized=%.2f unrealized=%.2f total=%.2f equity=%.2f",
+                     realized_pnl, unrealized_pnl, total, equity)

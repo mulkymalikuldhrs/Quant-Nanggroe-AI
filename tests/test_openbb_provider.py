@@ -25,7 +25,7 @@ class TestInit(unittest.TestCase):
     """Provider initialisation."""
 
     def test_provider_initialises(self):
-        provider = OpenBBMCPProvider(api_key="test-key")
+        provider = OpenBBMCPProvider(api_key="<placeholder>")
         self.assertEqual(provider.api_key, "test-key")
         self.assertEqual(provider.base_url, "https://api.openbb.co")
 
@@ -44,7 +44,7 @@ class TestInit(unittest.TestCase):
         fake_mod.obb = MagicMock()
         fake_mod.obb.account.login.side_effect = Exception("login failed")
         with patch.dict("sys.modules", {"openbb": fake_mod}):
-            provider = OpenBBMCPProvider(api_key="test")
+            provider = OpenBBMCPProvider(api_key="<placeholder>")
             self.assertIsNone(provider._sdk)
 
 

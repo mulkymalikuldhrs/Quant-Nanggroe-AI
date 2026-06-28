@@ -39,8 +39,8 @@ def alpaca_config():
     """Create an Alpaca exchange config for paper trading."""
     return ExchangeConfig(
         exchange_id="alpaca",
-        api_key="YOUR_API_KEY_HERE",
-        api_secret="YOUR_API_SECRET_HERE",
+        api_key="<placeholder>",
+        api_secret="<placeholder>",
         sandbox=True,
         rate_limit=10.0,
         retries=2,

@@ -37,6 +37,12 @@ from quant_nanggroe.engine.strategy.strategies.statistical_arbitrage import (
 from quant_nanggroe.engine.strategy.strategies.market_making import MarketMakingStrategy
 from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedStrategy
 from quant_nanggroe.engine.strategy.strategies.crypto_specific import CryptoSpecificStrategy
+from quant_nanggroe.engine.strategy.strategies.trend_follow import TrendFollowStrategy
+from quant_nanggroe.engine.strategy.registry import StrategyRegistry
+
+
+# Global registry instance for all strategies
+STRATEGY_REGISTRY: StrategyRegistry = StrategyRegistry()
 
 
 # Strategy class registry: name -> class
@@ -49,6 +55,7 @@ _STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {
     "MarketMaking": MarketMakingStrategy,
     "RegimeBased": RegimeBasedStrategy,
     "CryptoSpecific": CryptoSpecificStrategy,
+    "TrendFollow": TrendFollowStrategy,
 }
 
 # Strategy metadata for discovery
@@ -100,6 +107,12 @@ _STRATEGY_METADATA: Dict[str, Dict] = {
         "asset_classes": ["crypto"],
         "timeframes": ["5m", "15m", "1h", "4h", "1d"],
         "category": "crypto",
+    },
+    "TrendFollow": {
+        "description": "Dual MA crossover + ADX trend confirmation + trailing ATR stop",
+        "asset_classes": ["stocks", "forex", "crypto", "futures"],
+        "timeframes": ["1d", "4h", "1w"],
+        "category": "trend_following",
     },
 }
 
@@ -180,6 +193,17 @@ def register_strategy(
         _STRATEGY_METADATA[name] = metadata
 
 
+# --- auto-register all strategies with the StrategyRegistry ---
+for _name, _meta in _STRATEGY_METADATA.items():
+    tf = _meta.get("timeframes", [""])
+    STRATEGY_REGISTRY.register(
+        name=_name,
+        description=_meta.get("description", ""),
+        asset_classes=_meta.get("asset_classes", []),
+        timeframe=tf[0] if tf else "",
+        status="active",
+    )
+
 __all__ = [
     # Base
     "BaseStrategy",
@@ -192,9 +216,11 @@ __all__ = [
     "MarketMakingStrategy",
     "RegimeBasedStrategy",
     "CryptoSpecificStrategy",
+    "TrendFollowStrategy",
     # Registry functions
     "create_strategy",
     "list_strategies",
     "get_strategy_metadata",
     "register_strategy",
+    "STRATEGY_REGISTRY",
 ]

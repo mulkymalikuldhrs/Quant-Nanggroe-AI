@@ -2,7 +2,7 @@
 
 Implements three mean reversion approaches:
 1. Z-score — entry/exit on rolling z-score thresholds
-2. Bollinger Band — entry when price crosses band boundaries
+2. Bollinger Band — entry when price crosses band boundaries (Kakushadze #15)
 3. Ornstein-Uhlenbeck — position sizing via half-life estimation
 
 Transaction costs and trade frequency controls prevent overtrading.
@@ -10,6 +10,7 @@ Half-life is estimated per call rather than pre-computed, so walk-forward
 validation re-fits the OU parameters on each fold's training window.
 
 References:
+    - Kakushadze, Z. (2015). "151 Trading Strategies." Algorithmic Finance.
     - Avellaneda, M. & Lee, J.H. (2010). "Statistical Arbitrage in the US
       Equities Market." Quantitative Finance, 10(7), 761-782.
     - De Prado, M. (2018). Advances in Financial Machine Learning. Wiley.
@@ -45,6 +46,8 @@ class MeanReversionStrategy(BaseStrategy):
         Z-score or band threshold for exit (default 0.5).
     bollinger_std : float
         Standard deviations for Bollinger Bands (default 2.0).
+    atr_stop_mult : float
+        ATR multiplier for stop-loss (default 1.5, Kakushadze #15).
     min_signal_strength : float
         Minimum absolute signal value to generate a trade (default 0.1).
     transaction_cost_bps : float
@@ -60,6 +63,7 @@ class MeanReversionStrategy(BaseStrategy):
         self.entry_threshold: float = self.params.get("entry_threshold", 2.0)
         self.exit_threshold: float = self.params.get("exit_threshold", 0.5)
         self.bollinger_std: float = self.params.get("bollinger_std", 2.0)
+        self.atr_stop_mult: float = self.params.get("atr_stop_mult", 1.5)
         self.min_signal_strength: float = self.params.get("min_signal_strength", 0.1)
         self.transaction_cost_bps: float = self.params.get("transaction_cost_bps", 10.0)
         self.min_trade_interval_bars: int = self.params.get("min_trade_interval_bars", 5)
@@ -69,7 +73,7 @@ class MeanReversionStrategy(BaseStrategy):
         self._current_position: float = 0.0  # net target in [-1, 1]
 
     def required_columns(self) -> List[str]:
-        return ["close"]
+        return ["close", "high", "low"]
 
     def warmup_period(self) -> int:
         return self.lookback + 1
@@ -133,7 +137,7 @@ class MeanReversionStrategy(BaseStrategy):
         if target == 0.0 and self._current_position != 0.0:
             return self._exit_signal(price)
         if target != 0.0:
-            return self._entry_signal(target, price)
+            return self._entry_signal(target, price, data)
         return None
 
     def _compute_target(self, close: pd.Series) -> float:
@@ -196,15 +200,28 @@ class MeanReversionStrategy(BaseStrategy):
     # Signal construction helpers
     # ------------------------------------------------------------------
 
-    def _entry_signal(self, target: float, price: float) -> Signal:
+    def _entry_signal(self, target: float, price: float, data: Optional[pd.DataFrame] = None) -> Signal:
         direction = SignalType.BUY if target > 0 else SignalType.SELL
         confidence = min(abs(target), 1.0)
         self._current_position = target
+
+        stop_loss = None
+        if data is not None and "low" in data.columns and "high" in data.columns:
+            atr = self.compute_atr(data["high"], data["low"], data["close"], period=14)
+            if len(atr) > 0 and not np.isnan(atr.iloc[-1]):
+                atr_val = float(atr.iloc[-1])
+                stop_distance = atr_val * self.atr_stop_mult
+                if target > 0:
+                    stop_loss = round(price - stop_distance, 6)
+                else:
+                    stop_loss = round(price + stop_distance, 6)
+
         return Signal(
             symbol=self.name,
             signal_type=direction,
             confidence=round(confidence, 4),
             price=round(price, 6),
+            stop_loss=stop_loss,
             source_agent=self.name,
             source_strategy=self.name,
             reasoning=(

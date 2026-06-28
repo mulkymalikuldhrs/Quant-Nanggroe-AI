@@ -11,11 +11,14 @@ try:
 except ImportError:
     aiohttp = None
 import json
+import logging
 import os
 import time
 from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
 import hashlib
+
+logger = logging.getLogger(__name__)
 
 class LLMGateway:
     """
@@ -96,10 +99,10 @@ class LLMGateway:
                     "last_used": None
                 }
                 self.rate_limits[provider_name] = []
-                print(f"✅ {provider_name.upper()} provider initialized")
+                logger.info("%s provider initialized", provider_name.upper())
             else:
                 self.providers[provider_name]["status"] = "disabled"
-                print(f"⚠️ {provider_name.upper()} provider disabled (no API key)")
+                logger.warning("%s provider disabled (no API key)", provider_name.upper())
     
     async def chat_completion(self, messages: List[Dict], model: str = "auto", 
                              provider: str = "auto", **kwargs) -> Dict[str, Any]:
@@ -120,7 +123,7 @@ class LLMGateway:
         cached_response = self._get_cached_response(cache_key)
         
         if cached_response:
-            print(f"🚀 Cache hit for {selected_provider}/{selected_model}")
+            logger.info("Cache hit for %s/%s", selected_provider, selected_model)
             return cached_response
         
         # Check rate limits
@@ -148,11 +151,11 @@ class LLMGateway:
             
         except Exception as e:
             # Handle errors and retry with fallback
-            print(f"❌ Error with {selected_provider}: {e}")
+            logger.error("Error with %s: %s", selected_provider, e)
             
             fallback_provider = self._get_fallback_provider(selected_provider)
             if fallback_provider:
-                print(f"🔄 Retrying with fallback provider: {fallback_provider}")
+                logger.info("Retrying with fallback provider: %s", fallback_provider)
                 return await self._make_llm_request(
                     fallback_provider, "auto", messages, **kwargs
                 )
@@ -335,7 +338,7 @@ class LLMGateway:
         }
         
         cache_string = json.dumps(cache_data, sort_keys=True)
-        return hashlib.md5(cache_string.encode()).hexdigest()
+        return hashlib.sha256(cache_string.encode()).hexdigest()[:32]
     
     def _get_cached_response(self, cache_key: str) -> Optional[Dict]:
         """Get cached response if available and not expired"""

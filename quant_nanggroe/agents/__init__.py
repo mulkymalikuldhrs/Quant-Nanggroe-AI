@@ -39,6 +39,7 @@ from quant_nanggroe.agents.state import (
     MAX_TRADES_PER_DAY,
     CONFIDENCE_THRESHOLD,
 )
+from quant_nanggroe.agents.chinese_wall import ChineseWall, ChineseWallError
 from quant_nanggroe.agents.graph import TradingGraph
 from quant_nanggroe.agents.registry import AgentFactory, AgentRegistry
 
@@ -52,6 +53,7 @@ from quant_nanggroe.agents.execution.agent import ExecutionAgent
 from quant_nanggroe.agents.macro.agent import MacroAgent
 from quant_nanggroe.agents.crypto.agent import CryptoAgent
 from quant_nanggroe.agents.forex.agent import ForexAgent
+from quant_nanggroe.agents.compliance.agent import ComplianceAgent, ComplianceVerdict
 
 # Council components
 from quant_nanggroe.agents.council.debate import CouncilDebate
@@ -85,6 +87,9 @@ __all__ = [
     # Base
     "BaseAgent",
     "create_llm",
+    # Chinese Wall
+    "ChineseWall",
+    "ChineseWallError",
     # State
     "AgentOutput",
     "AgentRole",
@@ -131,6 +136,8 @@ __all__ = [
     "MacroAgent",
     "CryptoAgent",
     "ForexAgent",
+    "ComplianceAgent",
+    "ComplianceVerdict",
     # Council
     "CouncilDebate",
     "CouncilVoting",

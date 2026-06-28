@@ -78,7 +78,7 @@ def down(connection):
         with open(filepath, 'w') as f:
             f.write(template)
         
-        print(f"✅ Created migration: {filename}")
+        logger.info("Created migration: %s", filename)
         return version
     
     def get_pending_migrations(self) -> list:
@@ -100,19 +100,19 @@ def down(connection):
             pending = self.get_pending_migrations()
             
             if not pending:
-                print("✅ No pending migrations")
+                logger.info("No pending migrations")
                 return True
-            
-            print(f"🔄 Running {len(pending)} pending migrations...")
+
+            logger.info("Running %d pending migrations...", len(pending))
             
             for version in pending:
                 self._apply_migration(version)
             
-            print("✅ All migrations completed successfully")
+            logger.info("All migrations completed successfully")
             return True
             
         except Exception as e:
-            print(f"❌ Migration failed: {e}")
+            logger.error("Migration failed: %s", e)
             return False
     
     def _apply_migration(self, version: str):
@@ -141,7 +141,7 @@ def down(connection):
                 })
                 
                 trans.commit()
-                print(f"   ✅ Applied migration: {version}")
+                logger.info("Applied migration: %s", version)
                 
             except Exception as e:
                 trans.rollback()
@@ -168,7 +168,7 @@ def down(connection):
                     conn.execute(text("DELETE FROM schema_migrations WHERE version = :version"), {"version": version})
                     
                     trans.commit()
-                    print(f"✅ Rolled back migration: {version}")
+                    logger.info("Rolled back migration: %s", version)
                     return True
                     
                 except Exception as e:
@@ -176,7 +176,7 @@ def down(connection):
                     raise Exception(f"Failed to rollback migration {version}: {e}")
                     
         except Exception as e:
-            print(f"❌ Rollback failed: {e}")
+            logger.error("Rollback failed: %s", e)
             return False
     
     def get_migration_status(self) -> dict:
@@ -323,7 +323,7 @@ def create_initial_migrations():
         if not filepath.exists():
             with open(filepath, 'w') as f:
                 f.write(content)
-            print(f"✅ Created initial migration: {filename}.py")
+            logger.info("Created initial migration: %s.py", filename)
 
 def run_migrations(database_url: str = None) -> bool:
     """Run all pending migrations"""

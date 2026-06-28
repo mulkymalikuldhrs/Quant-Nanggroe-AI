@@ -36,7 +36,7 @@ from quant_nanggroe.engine.nvidia_nim.router import (
 def nim_config():
     """Create a test NIMConfig."""
     return NIMConfig(
-        nvidia_nim_api_key="test-api-key",
+        nvidia_nim_api_key="<placeholder>",
         nvidia_nim_base_url="https://integrate.api.nvidia.com/v1",
     )
 

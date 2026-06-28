@@ -52,7 +52,7 @@ def poly_config():
     """Create an ExchangeConfig for Polymarket."""
     return ExchangeConfig(
         exchange_id="polymarket",
-        api_key="poly-api-key-123",
+        api_key="<placeholder>",
         api_secret="0xdeadbeef",
         sandbox=True,
         options={
@@ -212,7 +212,7 @@ class TestPolymarketCLOBClient:
         client = PolymarketCLOBClient(
             base_url=PolymarketCLOBClient.STAGING_URL,
             wallet_config=wc,
-            api_key="my-key",
+            api_key="<placeholder>",
             api_creds={"api_key": "ck1"},
         )
         assert client._base_url == PolymarketCLOBClient.STAGING_URL
@@ -227,7 +227,7 @@ class TestPolymarketCLOBClient:
         assert "POLY_API_KEY" not in headers
 
     def test_build_headers_with_api_key(self):
-        client = PolymarketCLOBClient(api_key="bearer-token")
+        client = PolymarketCLOBClient(api_key="<placeholder>")
         headers = client._build_headers()
         assert headers["Authorization"] == "Bearer bearer-token"
 
