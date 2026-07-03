@@ -98,7 +98,19 @@ export const colonyApi = {
   runTask: (id: string, task: string) => apiRequest<{ result: string }>(`/api/colony/${id}/run`, { method: "POST", body: { task } }),
 };
 
-export { ecosystemApi } from "./ecosystem";
+export const monitorApi = {
+  getSummary: () => apiRequest<any>("/api/monitor/summary"),
+  getHealth: () => apiRequest<any>("/api/monitor/health"),
+  getMetrics: () => apiRequest<any>("/api/monitor/metrics"),
+  getPnl: () => apiRequest<any>("/api/monitor/pnl"),
+  getRegime: () => apiRequest<any>("/api/monitor/regime"),
+  getRisk: () => apiRequest<any>("/api/monitor/risk"),
+};
+
+export const ecosystemApi = {
+  exchangeList: () => apiRequest<any>("/api/exchange/list"),
+  securityEvents: () => apiRequest<any>("/api/security/events"),
+};
 
 export default apiRequest;
 

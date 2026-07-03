@@ -32,6 +32,11 @@ const navItems = [
   { href: "/market", label: "Market", icon: BarChart3 },
   { href: "/factors", label: "Factors", icon: Sigma },
   { href: "/strategies", label: "Strategies", icon: Zap },
+  { href: "/memory", label: "Memory", icon: Zap },
+  { href: "/colony", label: "Colony", icon: Zap },
+  { href: "/security", label: "Security", icon: Shield },
+  { href: "/tools", label: "Tools", icon: Zap },
+  { href: "/channels", label: "Channels", icon: Radio },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

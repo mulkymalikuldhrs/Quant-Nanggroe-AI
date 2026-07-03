@@ -190,7 +190,7 @@ def create_app() -> FastAPI:
     app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
     app.include_router(ws.router, prefix="/api/ws", tags=["WebSocket"])
     app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
-    app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["Ecosystem"])
+    app.include_router(ecosystem.router, prefix="/api", tags=["Ecosystem"])
     app.include_router(colony.router, prefix="/api", tags=["Colony"])
     app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
 

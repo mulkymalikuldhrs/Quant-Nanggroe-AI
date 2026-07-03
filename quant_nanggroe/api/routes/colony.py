@@ -60,3 +60,12 @@ async def list_colony_agents() -> dict[str, Any]:
         ],
         "total": 6,
     }
+
+
+@router.get("/colony/list")
+async def colony_list() -> list[dict[str, Any]]:
+    """List colonies for settings page."""
+    return [
+        {"id": "alpha", "name": "Alpha Colony", "status": "active", "health": 92, "agents": 8, "capacity": 10},
+        {"id": "beta", "name": "Beta Colony", "status": "idle", "health": 75, "agents": 5, "capacity": 12},
+    ]
