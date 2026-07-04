@@ -27,3 +27,18 @@ docker-compose -f deploy/docker/docker-compose.yml up -d
 ## License
 
 MIT — Quant Nanggroe AI Team
+
+
+---
+
+## 🌐 Dhaher Labs Ecosystem
+
+Part of the [Dhaher Labs](https://dhaher-labs.codeberg.page) ecosystem — 30+ repos for autonomous AI life.
+
+| Resource | Link |
+|----------|------|
+| Ecosystem Home | https://dhaher-labs.codeberg.page |
+| GitHub Org | https://github.com/dhaher-labs |
+| GitLab Profile | https://gitlab.com/mulkymalikuldhr |
+| Codeberg Org | https://codeberg.org/Dhaher-Labs |
+
