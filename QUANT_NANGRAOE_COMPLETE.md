@@ -246,7 +246,7 @@ flowchart LR
 - **LIVE paper trading** — $13,924 on $10k capital (39% gain)
 - **Hedge Fund Council P0-P3** — 47/47 deliverables complete
 - **151 catalog strategies** — MeanReversion + TrendFollow uncorrelated to RegimeBased
-- **Real market data** — Alpha Vantage API (QHZWJNDI1TNNLWV3)
+- **Real market data** — Alpha Vantage API
 - **Blocked: P0-6** — Alpaca paper API keys required (register at alpaca.markets)
 
 ### Integrated Services

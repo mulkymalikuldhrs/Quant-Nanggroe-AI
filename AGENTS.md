@@ -1,50 +1,58 @@
-# Quant Nanggroe Ai — AI-Engineering-OS Constitution
+# Quant Nanggroe AI — AI-Engineering-OS Constitution
 
-## Project State: D (Complete docs)
+## Project State: A (Production Live)
 - **Purpose:** Quant Nanggroe AI v4.0.0 — Autonomous Alpha Destruction OS. Regime-based trading strategy with paper trading daemon and live alpha validation.
-- **Language:** Python
-- **Entry points:** run_backtest.py, protocol_daemon.py
+- **Language:** Python 3.11+
+- **Framework:** FastAPI backend, Next.js dashboard, LangGraph agent orchestration
+- **Entry points:** `qna-paper.sh`, `uvicorn quant_nanggroe.api.app:app`
 
 ## Key Files
-- `LICENSE`
-- `Makefile`
-- `QUANT_NANGRAOE_COMPLETE.md`
-- `README.md`
-- `agentic-ai-cover.svg`
-- `install.sh`
-- `metadata.json`
-- `paper_daemon.log`
-- `pyproject.toml`
-- `qna-paper.sh`
-- `qna-status.sh`
-- `qna-stop.sh`
+- `README.md` — Project overview, architecture, quick start
+- `QUANT_NANGRAOE_COMPLETE.md` — Full documentation, API reference, architecture
+- `DHAHER_LABS_MANDATE.md` — Constitutional mandate
+- `CLAUDE.md` — AI agent instructions
+- `SECURITY.md` — Security policies and vulnerability reporting
+- `pyproject.toml` — Project config, dependencies, tool settings
+- `Makefile` — Test, lint, clean commands
+- `install.sh` — One-command installer
+- `deploy/` — Docker, docker-compose, startup scripts
+- `.github/workflows/` — CI/CD pipelines (ci.yml, security-scan.yml, etc.)
+- `.gitlab-ci.yml` — GitLab CI pipeline
 
 ## Commands
 ```bash
 # Install
-# see README
+pip install -e ".[dev]"        # Dev install with test/lint deps
+bash install.sh                  # One-command production install
 
 # Dev
-# see README
+make lint                        # Ruff check
+make test                        # Run all tests (1513+)
+python3 -m uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000
 
-# Test
-# no tests
+# Paper trading
+bash qna-paper.sh                # Start paper daemon
+bash qna-status.sh               # Check daemon status
+bash qna-stop.sh                 # Stop daemon
 ```
 
-## Quick Start
-1. Read README.md first
-2. Check package.json (if JS/TS) or requirements.txt (if Python)
-3. Run install then dev to start
+## Test Suite
+- **1513+ tests** across 65 test directories
+- Run via: `make test`
+- CI runs: `pytest tests/ --cov=quant_nanggroe --cov-report=term --cov-report=xml`
+- Markers: `slow`, `integration`
 
 ## Agent Rules
 - AI-Engineering-OS v1.0 applies: Understand before changing. Never invent requirements.
 - Ponytail: stdlib first, YAGNI, min code.
 - Update this file if you add significant commands or change the project structure.
+- NEVER commit real API keys or secrets. Use `.env.example` with placeholder values.
+- Run `make lint && make test` before any commit affecting Python code.
 
 ## REALIZATION MANDATE
 
 This repository is part of the **DHAHER LABS** autonomous ecosystem.
-It is a REAL production system — not a simulation, not a toy, not a placeholder.
+It is a **REAL production system** — not a simulation, not a toy, not a placeholder.
 
 See the [Autonomous-Organism Manifesto](https://dhaherlabsos.vercel.app/manifesto) for the full declaration.
 See [System Status](https://dhaherlabsos.vercel.app/status) for live health checks.
