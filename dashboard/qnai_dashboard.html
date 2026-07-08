@@ -97,6 +97,23 @@ body {
 .kill-level { font-size: 13px; margin: 4px 0; }
 .kill-level span { font-weight: 600; }
 .footer { text-align: center; padding: 16px; font-size: 11px; color: #3a5a7a; }
+
+/* Module status grid */
+.mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 8px; }
+.mod-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: #0d1520; border: 1px solid #1a2940; border-radius: 8px;
+  font-size: 12px; cursor: default; transition: border-color 0.2s;
+}
+.mod-item:hover { border-color: #2a4a6a; }
+.mod-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.mod-dot.green { background: #00d4aa; box-shadow: 0 0 4px #00d4aa88; }
+.mod-dot.yellow { background: #ffa502; box-shadow: 0 0 4px #ffa50288; }
+.mod-dot.red { background: #ff4757; box-shadow: 0 0 4px #ff475788; }
+.mod-dot.gray { background: #2a3a5a; }
+.mod-label { font-weight: 600; color: #c8d6e5; white-space: nowrap; }
+.mod-cat { font-size: 10px; color: #5a7a9a; padding: 1px 5px; background: #0d1520; border-radius: 4px; }
+.mod-path { font-size: 10px; color: #3a5a7a; margin-left: auto; }
 </style>
 </head>
 <body>
@@ -171,6 +188,11 @@ body {
       </tr></thead>
       <tbody id="strategyBody"></tbody>
     </table></div>
+  </div>
+
+  <div class="card card-full">
+    <h2>API Modules</h2>
+    <div class="mod-grid" id="moduleGrid"></div>
   </div>
 </div>
 
@@ -434,9 +456,47 @@ function renderDashboard(d) {
   $('footerTimestamp').textContent = new Date().toISOString();
 }
 
+// ── API Modules Status — pings every endpoint once ──────────────
+const MODULE_ENDPOINTS = [
+  { path:'/api/geopolitics/list',   label:'Geopolitics',    cat:'Macro' },
+  { path:'/api/personas/list',      label:'Personas',        cat:'Council' },
+  { path:'/api/council/list',       label:'Council',         cat:'Council' },
+  { path:'/api/debate/list',        label:'Debate',          cat:'Council' },
+  { path:'/api/fred/series',        label:'FRED',            cat:'Data' },
+  { path:'/api/sec/edgar/filings',  label:'SEC EDGAR',       cat:'Data' },
+  { path:'/api/signals/list',       label:'Signal Generator',cat:'Alpha' },
+  { path:'/api/options/positions',  label:'Options',         cat:'Alpha' },
+];
+
+async function pingModules() {
+  const container = $('moduleGrid');
+  if (!container) return;
+  container.innerHTML = MODULE_ENDPOINTS.map(m =>
+    `<div class="mod-item" id="mod-${m.label.replace(/\s+/g,'')}">
+       <div class="mod-dot gray"></div>
+       <div class="mod-label">${m.label}</div>
+       <div class="mod-cat">${m.cat}</div>
+       <div class="mod-path">${m.path}</div>
+     </div>`
+  ).join('');
+
+  for (const m of MODULE_ENDPOINTS) {
+    const el = document.getElementById('mod-' + m.label.replace(/\s+/g,''));
+    const dot = el.querySelector('.mod-dot');
+    try {
+      const r = await fetch(m.path, { signal: AbortSignal.timeout(2000) });
+      dot.className = r.ok ? 'mod-dot green' : 'mod-dot yellow';
+      if (!r.ok) dot.title = `${r.status} ${r.statusText}`;
+    } catch {
+      dot.className = 'mod-dot red';
+    }
+  }
+}
+
 // Auto-load on page load + auto-refresh every 30s
-document.addEventListener('DOMContentLoaded', loadState);
+document.addEventListener('DOMContentLoaded', () => { loadState(); pingModules(); });
 setInterval(loadState, 30000);
+setInterval(pingModules, 60000);  // module health every 60s
 </script>
 </body>
 </html>

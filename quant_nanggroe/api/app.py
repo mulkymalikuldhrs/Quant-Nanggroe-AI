@@ -12,17 +12,17 @@ import os
 import signal
 import time
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from starlette.responses import Response
 
-from quant_nanggroe.api.middleware import RateLimitMiddleware, AuthMiddleware, SecurityHeadersMiddleware
-from quant_nanggroe.security.auth import JWTAuth, APIKeyAuth, UserRole
+from quant_nanggroe.api.middleware import AuthMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from quant_nanggroe.config import get_settings
+from quant_nanggroe.security.auth import APIKeyAuth, JWTAuth, UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -180,8 +180,28 @@ def create_app() -> FastAPI:
     app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
-    from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws, memory, ecosystem
-    from quant_nanggroe.api.routes import colony, monitor
+    from quant_nanggroe.api.routes import (
+        agents,
+        backtest,
+        channels,
+        colony,
+        council,
+        debate,
+        ecosystem,
+        fred,
+        geopolitics,
+        market,
+        memory,
+        monitor,
+        options,
+        personas,
+        portfolio,
+        sec_edgar,
+        signal_generator,
+        strategy,
+        trading,
+        ws,
+    )
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
@@ -192,7 +212,17 @@ def create_app() -> FastAPI:
     app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
     app.include_router(ecosystem.router, prefix="/api", tags=["Ecosystem"])
     app.include_router(colony.router, prefix="/api", tags=["Colony"])
+    app.include_router(channels.router, prefix="/api/channels", tags=["Channels"])
+    app.include_router(council.router)
+    app.include_router(debate.router)
+    app.include_router(fred.router, prefix="/api/fred", tags=["FRED"])
+    app.include_router(geopolitics.router)
+    app.include_router(personas.router)
+    app.include_router(sec_edgar.router)
+    app.include_router(signal_generator.router)
+    app.include_router(strategy.router, prefix="/api/strategy", tags=["Strategy"])
     app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
+    app.include_router(options.router)
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")
@@ -232,7 +262,7 @@ def _setup_signal_handlers(app: FastAPI) -> None:
     """Register SIGTERM/SIGINT handlers for graceful shutdown."""
     import asyncio
 
-    def _handle_shutdown_signal(signum: int, frame: Any) -> None:
+    def _handle_shutdown_signal(signum: int, frame: 'Any') -> None:
         sig_name = signal.Signals(signum).name
         logger.info("received_signal: signal=%s", sig_name)
         try:
@@ -251,3 +281,6 @@ def _setup_signal_handlers(app: FastAPI) -> None:
     except (OSError, ValueError):
         # Signals can only be registered in the main thread
         logger.debug("signal_handlers_skipped: not_in_main_thread")
+
+
+app = create_app()
