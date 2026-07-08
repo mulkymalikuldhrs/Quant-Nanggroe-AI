@@ -434,8 +434,9 @@ function renderDashboard(d) {
   $('footerTimestamp').textContent = new Date().toISOString();
 }
 
-// Auto-load on page load
+// Auto-load on page load + auto-refresh every 30s
 document.addEventListener('DOMContentLoaded', loadState);
+setInterval(loadState, 30000);
 </script>
 </body>
 </html>

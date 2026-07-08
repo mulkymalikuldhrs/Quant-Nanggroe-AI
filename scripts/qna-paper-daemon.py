@@ -18,7 +18,7 @@ import logging
 import os
 import signal
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -29,21 +29,21 @@ _project_root = str(Path(__file__).resolve().parent.parent)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from quant_nanggroe.agents.risk.agent import RiskAgent, TradeVerdict
-from quant_nanggroe.agents.compliance.agent import ComplianceAgent, ComplianceVerdict
+from quant_nanggroe.agents.compliance.agent import ComplianceAgent
+from quant_nanggroe.agents.risk.agent import RiskAgent
 from quant_nanggroe.data.warehouse import DataWarehouse
-from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger
-from quant_nanggroe.engine.risk.strategy_auto_disable import AutoDisableManager
-from quant_nanggroe.engine.risk.correlation import StrategyCorrelationMonitor
-from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
-from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN_PCT, MAX_DAILY_LOSS
-from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategySelector, StrategyConfig
 from quant_nanggroe.engine.audit import AuditLogger
 from quant_nanggroe.engine.monitor_hub import MonitorHub
-from quant_nanggroe.types.orders import OrderSide, OrderType
+from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategySelector
+from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN_PCT
+from quant_nanggroe.engine.risk.correlation import StrategyCorrelationMonitor
+from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger
+from quant_nanggroe.engine.risk.strategy_auto_disable import AutoDisableManager
+from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
+from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 from quant_nanggroe.types.market import OHLCV
+from quant_nanggroe.types.orders import OrderSide, OrderType
 
 logger = logging.getLogger("qna-paper-daemon")
 
@@ -90,7 +90,17 @@ Examples:
     return parser.parse_args()
 
 
+_SYNTHETIC_WARNING_LOGGED: set[str] = set()
+
+
 def generate_ohlcv(symbol: str, lookback: int = 300) -> list[OHLCV]:
+    if symbol not in _SYNTHETIC_WARNING_LOGGED:
+        logger.warning(
+            "⚠️  SYNTHETIC DATA for %s — PnL from synthetic candles is MEANINGLESS. "
+            "Use --live-data with a valid QNAI_ALPHA_VANTAGE_API_KEY for real prices.",
+            symbol,
+        )
+        _SYNTHETIC_WARNING_LOGGED.add(symbol)
     base = BASE_PRICES.get(symbol, 100.0)
     vol = VOLATILITIES.get(symbol, 0.03)
     now = datetime.now(timezone.utc)
@@ -128,9 +138,12 @@ def load_cached_ohlcv(symbol: str, days: int = 500) -> pd.DataFrame | None:
 
 
 def fetch_alpha_vantage_ohlcv(symbol: str, days: int = 500) -> pd.DataFrame | None:
-    """Fetch OHLCV from Alpha Vantage API. Uses QNAI_ALPHA_VANTAGE_API_KEY from env."""
+    """Fetch OHLCV from Alpha Vantage API. Requires QNAI_ALPHA_VANTAGE_API_KEY in env."""
     import requests
-    key = os.environ.get("QNAI_ALPHA_VANTAGE_API_KEY", "QHZWJNDI1TNNLWV3")
+    key = os.environ.get("QNAI_ALPHA_VANTAGE_API_KEY")
+    if not key:
+        logger.warning("QNAI_ALPHA_VANTAGE_API_KEY not set — skipping Alpha Vantage fetch for %s", symbol)
+        return None
     base = symbol.split("/")[0]
     url = f"https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol={base}&market=USD&apikey={key}"
     try:
@@ -458,7 +471,7 @@ async def run_cycle(
             if compliance_agent is not None:
                 c_verdict = compliance_agent.check_trade(
                     symbol=symbol, side=side.value, qty=qty,
-                    strategy=strat_name, equity=portfolio.total_value if 'portfolio' in dir() else state.get("initial_capital", 10000.0),
+                    strategy=strat_name, equity=state.get("initial_capital", 10000.0),
                     price=current_price,
                     positions={p.symbol: {"quantity": p.quantity, "current_price": p.current_price}
                                for p in (await broker.get_positions())},
