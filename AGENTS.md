@@ -4,7 +4,7 @@
 - **Purpose:** Quant Nanggroe AI v4.0.0 — Autonomous Alpha Destruction OS. Regime-based trading strategy with paper trading daemon and live alpha validation.
 - **Language:** Python 3.11+
 - **Framework:** FastAPI backend, Next.js dashboard, LangGraph agent orchestration
-- **Entry points:** `qna-paper.sh`, `uvicorn quant_nanggroe.api.app:app`
+- **Entry points:** `scripts/launch_qna.bat`, `uvicorn quant_nanggroe.api.app:app`
 
 ## Key Files
 - `README.md` — Project overview, architecture, quick start
@@ -31,13 +31,12 @@ make test                        # Run all tests (1513+)
 python3 -m uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000
 
 # Paper trading
-bash qna-paper.sh                # Start paper daemon
-bash qna-status.sh               # Check daemon status
-bash qna-stop.sh                 # Stop daemon
+scripts/launch_qna.bat             # One-click launcher
+python scripts/qna-paper-daemon.py --interval 3600  # Manual daemon start
 ```
 
 ## Test Suite
-- **1513+ tests** across 65 test directories
+- **1513+ tests** across 65 test directories (collection: 5244)
 - Run via: `make test`
 - CI runs: `pytest tests/ --cov=quant_nanggroe --cov-report=term --cov-report=xml`
 - Markers: `slow`, `integration`

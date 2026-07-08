@@ -55,17 +55,17 @@ graph TD
 ## Launch Commands
 
 ```bash
-# Paper trading daemon (already running)
-bash qna-paper.sh
+# One-click launcher (seed → daemon → dashboard → browser)
+scripts/launch_qna.bat
 
-# Status check
-bash qna-status.sh
+# Dashboard (auto-started by launcher)
+http://localhost:8080
 
-# API server (requires uvicorn+fastapi)
-python3 -m uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000
+# API server
+python -m uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000
 
-# Dashboard (npm required)
-npm run dev --prefix dashboard
+# Daemon standalone (background)
+python scripts/qna-paper-daemon.py --interval 3600
 ```
 
 ---
@@ -74,25 +74,14 @@ npm run dev --prefix dashboard
 
 ```
 quant-nanggroe-ai/
-├── dashboard/           # Next.js frontend
-│   ├── src/app/         # Pages (all wired to API)
-│   │   ├── page.tsx     → /api/monitor/summary
-│   │   ├── agents/page.tsx → /api/agents/status
-│   │   ├── portfolio/page.tsx → /api/monitor/summary
-│   │   ├── risk/page.tsx → /api/monitor/summary
-│   │   ├── backtest/page.tsx → /api/backtest/run
-│   │   ├── trading/page.tsx → /api/trading/positions
-│   │   ├── market/page.tsx → /api/market/signals
-│   │   ├── factors/page.tsx → /api/monitor/regime
-│   │   ├── strategies/page.tsx → /api/backtest/strategies
-│   │   ├── memory/page.tsx → /api/memory/search
-│   │   ├── colony/page.tsx → /api/colony/list
-│   │   ├── settings/page.tsx → /api/exchange/list
-│   │   ├── security/page.tsx → /api/security/events
-│   │   └── tools/page.tsx → static
-│   └── src/lib/
-│       ├── api-client.ts  # API client
-│       └── data-hook.ts   # React hooks
+├── dashboard/           # Static HTML dashboard (port 8080)
+│   └── qnai_dashboard.html
+├── scripts/
+│   ├── launch_qna.bat   # One-click launcher
+│   ├── qna-paper-daemon.py  # Paper trading daemon
+│   ├── seed_paper_state.py  # Seed state files
+│   └── dashboard_server.py  # Dashboard HTTP server
+├── paper_state/         # Live daemon state (gitignored)
 ├── quant_nanggroe/
 │   └── api/
 │       ├── app.py         # FastAPI entry
@@ -126,8 +115,8 @@ graph TD
    DAEMON --> AUDIT[Alpha Audit]
    DAEMON --> PNL[PnL CSV]
    DATA[Data Layer] --> CACHE[SQLite Cache]
-   DATA --> PROVIDERS[12 Providers]
-   EXEC[Execution Layer] --> BROKER[Paper/Multi/Exchange Brokers]
+   DATA --> PROVIDERS[FRED + fallback providers]
+   EXEC[Execution Layer] --> BROKER[Paper Broker only]
 ```
 
 **Module Structure:**
@@ -151,7 +140,7 @@ MIN_RISK_REWARD = 2.0        # 1:2 minimum — HARDCODED
 
 ## Test Coverage
 
-**1513 tests total** (~393 new for P0-P3)
+**5244 tests total** (pytest collection, exit 0)
 
 | Module | Tests |
 |--------|-------|
