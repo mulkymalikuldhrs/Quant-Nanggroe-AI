@@ -13,6 +13,9 @@ python scripts\seed_paper_state.py >nul 2>&1
 echo [QNAv4] Starting paper daemon...
 powershell -WindowStyle Hidden -Command "Start-Process python -ArgumentList 'scripts\qna-paper-daemon.py', '--interval', '3600' -WindowStyle Hidden"
 
+echo [QNAv4] Registering auto-start on boot...
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "QuantNanggroeAI" /d "%~dp0launch_qna.bat" /f >nul 2>&1
+
 echo [QNAv4] Creating desktop shortcut...
 powershell -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%USERPROFILE%\Desktop\Quant Nanggroe AI.lnk'); $s.TargetPath='%~dp0launch_qna.bat'; $s.WorkingDirectory='%~dp0..'; $s.Save()" >nul
 
