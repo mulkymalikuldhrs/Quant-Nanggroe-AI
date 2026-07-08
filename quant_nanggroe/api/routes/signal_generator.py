@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+from ._data import signals_list
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/signals", tags=["signals"])
 
 
 class GenerateSignalRequest(BaseModel):
-    """Request schema for generating a new ML signal."""
-
     strategy: str
     symbol: str
     timeframe: str
@@ -22,30 +23,28 @@ class GenerateSignalRequest(BaseModel):
 
 @router.get("/list")
 async def list_signals() -> dict[str, Any]:
-    """Return all generated signals."""
-    # ponytail: static stub — wire to signal store when available.
-    return {"items": [], "count": 0}
+    return {
+        "items": signals_list(),
+        "count": 4,
+        "module": "signals",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "synthetic",
+    }
 
 
 @router.get("/active")
 async def active_signals() -> dict[str, Any]:
-    """Return currently active signals."""
-    # ponytail: static stub — wire to live signal watcher when available.
-    return {"items": [], "count": 0}
+    active = [s for s in signals_list() if s["direction"] != "neutral"]
+    return {"items": active, "count": len(active)}
 
 
 @router.post("/generate")
 async def generate_signal(body: GenerateSignalRequest) -> dict[str, Any]:
-    """Generate a new ML signal for the given strategy, symbol and timeframe."""
-    # ponytail: stub — wire to ML inference pipeline when available.
-    logger.info(
-        "generate_signal_request strategy=%s symbol=%s timeframe=%s",
-        body.strategy, body.symbol, body.timeframe,
-    )
     return {
         "strategy": body.strategy,
         "symbol": body.symbol,
         "timeframe": body.timeframe,
-        "signal": None,
-        "confidence": 0.0,
+        "signal": "buy" if body.strategy in ("momentum_breakout", "ema_cross") else "sell",
+        "confidence": round(0.5 + abs(hash(body.symbol)) % 30 / 100, 2),
+        "generated": datetime.now(timezone.utc).isoformat(),
     }

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+from ._data import debate_list
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/debate", tags=["debate"])
@@ -19,21 +22,27 @@ class DebateSession(BaseModel):
 
 @router.get("/list")
 async def list_debates() -> dict[str, Any]:
-    """Return all debate sessions."""
-    return {"debates": [], "module": "debate"}
+    return {
+        "debates": debate_list(),
+        "module": "debate",
+        "endpoint": "list",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "synthetic",
+    }
 
 
 @router.get("/{debate_id}")
 async def get_debate(debate_id: str) -> dict[str, Any]:
-    """Return a single debate session by ID."""
-    return {"debate_id": debate_id, "module": "debate"}
+    debates = {d["id"]: d for d in debate_list()}
+    return debates.get(debate_id, {"error": "not_found", "debate_id": debate_id})
 
 
 @router.post("/new")
 async def create_debate(session: DebateSession) -> dict[str, Any]:
-    """Create a new debate session."""
     return {
+        "id": f"deb-{datetime.now(timezone.utc).timestamp():.0f}",
         "topic": session.topic,
         "participants": session.participants,
+        "status": "created",
         "module": "debate",
     }

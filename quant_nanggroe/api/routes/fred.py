@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Query
+
+from ._data import fred_series
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -13,18 +16,22 @@ router = APIRouter()
 
 @router.get("/series")
 async def list_series() -> dict[str, Any]:
-    """List available FRED economic indicator series."""
-    # ponytail: static stub — wire to FRED API client when available.
-    return {"items": [], "count": 0}
+    return {
+        "items": fred_series(),
+        "count": 5,
+        "module": "fred",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "synthetic",
+    }
 
 
 @router.get("/series/{series_id}")
 async def get_series(series_id: str) -> dict[str, Any]:
-    """Return values for a single FRED series by its ID (e.g. GDP, UNRATE)."""
-    return {"id": series_id, "items": [], "count": 0}
+    series = {s["id"].lower(): s for s in fred_series()}
+    return series.get(series_id.lower(), {"error": "not_found", "id": series_id})
 
 
 @router.get("/search")
 async def search_series(q: str = Query("", description="Search keyword")) -> dict[str, Any]:
-    """Search FRED series by keyword."""
-    return {"query": q, "items": [], "count": 0}
+    results = [s for s in fred_series() if q.lower() in s["title"].lower()] if q else []
+    return {"query": q, "items": results, "count": len(results)}
