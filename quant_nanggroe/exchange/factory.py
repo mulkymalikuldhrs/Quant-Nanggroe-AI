@@ -44,6 +44,12 @@ try:
 except ImportError:
     CCXTBroker = None  # type: ignore[assignment,misc]
 
+# MT5Broker requires the ``MetaTrader5`` package (Windows only, optional)
+try:
+    from quant_nanggroe.exchange.mt5_broker import MT5Broker
+except ImportError:
+    MT5Broker = None  # type: ignore[assignment,misc]
+
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 
 logger = logging.getLogger(__name__)
@@ -331,6 +337,21 @@ class ExchangeFactory:
                 slippage_bps=slippage_bps,
             )
 
+        # Handle MetaTrader 5 (no API key required — uses local MT5 terminal login)
+        if name_lower in ("mt5", "metaquotes", "metatrader5"):
+            if MT5Broker is None:
+                raise ExchangeFactoryError(
+                    "MT5Broker unavailable: install MetaTrader5 "
+                    "(pip install MetaTrader5) and run on Windows with a live MT5 terminal.",
+                    exchange=exchange_name,
+                )
+            return self._create_mt5_broker(
+                login=api_key,
+                password=api_secret,
+                server=passphrase,
+                initial_capital=initial_capital,
+            )
+
         # Validate exchange name
         if name_lower not in SUPPORTED_EXCHANGES:
             raise ExchangeFactoryError(
@@ -415,6 +436,38 @@ class ExchangeFactory:
             slippage_bps=slippage_bps,
         )
         self._created_exchanges["paper"] = broker
+        return broker
+
+    def _create_mt5_broker(
+        self,
+        login: Optional[str] = None,
+        password: Optional[str] = None,
+        server: Optional[str] = None,
+        initial_capital: float = 100_000.0,
+    ) -> "MT5Broker":  # type: ignore[name-defined]  # noqa: F821
+        """Create a MetaTrader 5 broker connection.
+
+        MT5 uses a local terminal login (account + password + server) and
+        requires NO third-party API key — fully free to operate.
+
+        Args:
+            login: MT5 account number (mapped to api_key).
+            password: MT5 account password (mapped to api_secret).
+            server: MT5 broker server name (mapped to passphrase).
+            initial_capital: Starting capital for paper-style sizing.
+
+        Returns:
+            An :class:`~quant_nanggroe.exchange.mt5_broker.MT5Broker`.
+        """
+        config = ExchangeConfig(
+            exchange_id="mt5",
+            api_key=login,
+            api_secret=password,
+            passphrase=server,
+            options={"initial_capital": initial_capital},
+        )
+        broker = MT5Broker(config)  # type: ignore[operator]
+        self._created_exchanges["mt5"] = broker
         return broker
 
     # ------------------------------------------------------------------ #

@@ -125,8 +125,37 @@ class ExecutionManager:
             logger.error("No broker available for order %s", order.id)
             return None
 
-        # 3. Kill switch early warning check
+        # 3. Kill switch — ENFORCED (not just a warning)
         if self._kill_switch is not None:
+            # Auto-activate if thresholds breached, then hard-block the order
+            self._kill_switch.check_auto_activate(
+                daily_pnl_pct=daily_pnl_pct,
+                weekly_pnl_pct=weekly_pnl_pct,
+                max_drawdown_pct=max_drawdown_pct,
+                volatility_pct=volatility_pct,
+            )
+            if not self._kill_switch.can_trade():
+                logger.critical(
+                    "Order %s BLOCKED by kill switch (level=%s, status=%s): "
+                    "daily=%.2f%% weekly=%.2f%% drawdown=%.2f%% volatility=%.2f%%",
+                    order.id, self._kill_switch.current_level.value,
+                    self._kill_switch.status()["status"],
+                    daily_pnl_pct, weekly_pnl_pct,
+                    max_drawdown_pct, volatility_pct,
+                )
+                self._audit_log.append({
+                    "action": "KILL_SWITCH_BLOCKED",
+                    "order_id": order.id,
+                    "symbol": order.symbol,
+                    "side": order.side.value,
+                    "level": self._kill_switch.current_level.value,
+                    "daily_pnl_pct": daily_pnl_pct,
+                    "weekly_pnl_pct": weekly_pnl_pct,
+                    "max_drawdown_pct": max_drawdown_pct,
+                    "volatility_pct": volatility_pct,
+                })
+                return None
+            # Below threshold: still surface early warning for observability
             warning = self._kill_switch.check_warning(
                 daily_pnl_pct=daily_pnl_pct,
                 weekly_pnl_pct=weekly_pnl_pct,
@@ -140,16 +169,6 @@ class ExecutionManager:
                     daily_pnl_pct, weekly_pnl_pct,
                     max_drawdown_pct, volatility_pct,
                 )
-                self._audit_log.append({
-                    "action": "KILL_SWITCH_WARNING",
-                    "order_id": order.id,
-                    "symbol": order.symbol,
-                    "side": order.side.value,
-                    "daily_pnl_pct": daily_pnl_pct,
-                    "weekly_pnl_pct": weekly_pnl_pct,
-                    "max_drawdown_pct": max_drawdown_pct,
-                    "volatility_pct": volatility_pct,
-                })
 
         # 4. Submit order
         try:
@@ -206,6 +225,22 @@ class ExecutionManager:
 
         return False
 
+    def _as_guard_result(self, raw, name: str) -> GuardResult:
+        """Normalize a guard's return value (GuardCheckResult / dict / GuardResult) to GuardResult."""
+        if isinstance(raw, GuardResult):
+            return raw
+        # GuardCheckResult (cooldown guard) — has .allowed / .reason attributes
+        if hasattr(raw, "allowed") and not isinstance(raw, dict):
+            return GuardResult(bool(getattr(raw, "allowed", True)), name, getattr(raw, "reason", ""))
+        if isinstance(raw, dict):
+            return GuardResult(
+                bool(raw.get("allowed", True)),
+                name,
+                raw.get("reason", ""),
+            )
+        # Unknown shape → fail closed
+        return GuardResult(False, name, "invalid guard response")
+
     def _run_guards(self, order: Order) -> GuardResult:
         """Run all guard checks on an order.
 
@@ -216,17 +251,17 @@ class ExecutionManager:
             GuardResult with allow/deny decision.
         """
         # Cooldown guard
-        result = self._cooldown_guard.check(order)
+        result = self._as_guard_result(self._cooldown_guard.check(order), "cooldown")
         if not result.allowed:
             return GuardResult(False, "cooldown", result.reason)
 
         # Max position guard
-        result = self._max_position_guard.check(order)
+        result = self._as_guard_result(self._max_position_guard.check(order), "max_position")
         if not result.allowed:
             return GuardResult(False, "max_position", result.reason)
 
         # Whitelist guard
-        result = self._whitelist_guard.check(order)
+        result = self._as_guard_result(self._whitelist_guard.check(order), "whitelist")
         if not result.allowed:
             return GuardResult(False, "whitelist", result.reason)
 

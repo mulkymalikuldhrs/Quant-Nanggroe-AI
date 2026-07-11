@@ -52,6 +52,10 @@ export const agentsApi = {
   run: (req: AgentRunRequest) => apiRequest<AgentRunResponse>("/api/agents/run", { method: "POST", body: req }),
   getStatus: () => apiRequest<AgentStatusResponse>("/api/agents/status"),
   getDecisions: () => apiRequest<Decision[]>("/api/agents/decisions"),
+  activateKillSwitch: (reason: string) =>
+    apiRequest<KillSwitchStatusResponse>("/api/agents/kill-switch/activate", { method: "POST", body: { reason } }),
+  resetKillSwitch: () =>
+    apiRequest<KillSwitchStatusResponse>("/api/agents/kill-switch/reset", { method: "POST", body: {} }),
 };
 
 export const backtestApi = {
@@ -142,6 +146,7 @@ export interface Position { symbol: string; name: string; quantity: number; avgP
 export interface PositionsResponse { positions: Position[]; }
 export interface Exchange { id: string; name: string; type: ExchangeType; status: ExchangeStatus; }
 export interface Agent { id: string; name: string; status: AgentStatus; emotion: AgentEmotion; action: string; lastDecision: string; icon: string; type?: string; }
+export interface KillSwitchStatusResponse { active: boolean; level: string; reason: string; }
 export interface AgentRunRequest { symbol: string; agentId?: string; }
 export interface AgentRunResponse { success: boolean; result: string; agentId: string; }
 export interface AgentStatusResponse { agents: Agent[]; kill_switch_active: boolean; }
