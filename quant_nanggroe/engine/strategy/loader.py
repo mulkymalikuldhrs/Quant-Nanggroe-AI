@@ -514,7 +514,7 @@ class StrategyLoader:
         return reloaded
 
 
-class StrategyRegistry:
+class StrategyConfigRegistry:
     """Central registry for managing loaded strategies.
 
     Provides strategy lookup, listing, and lifecycle management.

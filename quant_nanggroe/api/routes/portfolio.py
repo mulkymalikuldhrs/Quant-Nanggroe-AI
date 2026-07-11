@@ -140,15 +140,78 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
 
 @router.get("/performance")
 async def get_portfolio_performance(http_request: Request) -> dict[str, Any]:
-    """Get portfolio performance metrics."""
+    """Get portfolio performance metrics from RiskManager state.
+
+    Queries the shared RiskManager singleton for PnL, trade counts,
+    drawdown, and any recorded daily returns. Computes sharpe/sortino
+    when return history is sufficient; returns zeros otherwise.
+    """
+    from quant_nanggroe.services import get_risk_manager
+
+    rm = get_risk_manager(http_request.app)
+    status = rm.status()
+
+    current_equity = status.get("current_equity", 0.0)
+    dd_info = status.get("drawdown", {})
+    trades_today = status.get("trades_today", 0)
+    trades_week = status.get("trades_week", 0)
+    total_trades = trades_today + trades_week + getattr(rm, "_veto_count", 0) + getattr(rm, "_approval_count", 0)
+
+    # Total return from peak-equity proxy (initial equity = peak at t=0)
+    initial_proxy = dd_info.get("peak_equity", current_equity)
+    total_return = ((current_equity - initial_proxy) / initial_proxy) if initial_proxy > 0 else 0.0
+
+    # Max drawdown — DrawdownMonitor uses max_drawdown_observed key
+    max_dd_raw = dd_info.get("max_drawdown_observed", "0.0000")
+    if isinstance(max_dd_raw, str):
+        max_dd = float(max_dd_raw.rstrip("%")) if "%" in max_dd_raw else float(max_dd_raw)
+    else:
+        max_dd = float(max_dd_raw)
+
+    # Compute sharpe, sortino, cagr from daily_returns if available
+    sharpe_ratio = 0.0
+    sortino_ratio = 0.0
+    cagr = 0.0
+    win_rate = 0.0
+    try:
+        daily_returns = status.get("daily_returns", [])
+        if daily_returns and len(daily_returns) >= 5:
+            ret_arr = np.array(daily_returns, dtype=np.float64)
+            n_days = len(daily_returns)
+            rf = 0.02
+
+            mean_daily = ret_arr.mean()
+            std_daily = ret_arr.std()
+            downside = ret_arr[ret_arr < 0]
+            downside_std = downside.std() if len(downside) > 1 else std_daily
+
+            # Annualise
+            ann_return = mean_daily * 365
+            ann_vol = std_daily * np.sqrt(365)
+            ann_downside_vol = downside_std * np.sqrt(365)
+
+            sharpe_ratio = round((ann_return - rf) / ann_vol, 4) if ann_vol > 0 else 0.0
+            sortino_ratio = round((ann_return - rf) / ann_downside_vol, 4) if ann_downside_vol > 0 else 0.0
+
+            # CAGR from cumulative return
+            cumulative = np.cumprod(1 + ret_arr)[-1]
+            years = n_days / 365.0
+            cagr = round(cumulative ** (1.0 / years) - 1, 4) if years > 0 else 0.0
+
+            # Win rate
+            wins = (ret_arr > 0).sum()
+            win_rate = round(wins / n_days, 4) if n_days > 0 else 0.0
+    except Exception:
+        logger.debug("portfolio_performance_metrics incomplete: not enough return data")
+
     return {
-        "total_return": 0.0,
-        "cagr": 0.0,
-        "sharpe_ratio": 0.0,
-        "sortino_ratio": 0.0,
-        "max_drawdown": 0.0,
-        "win_rate": 0.0,
-        "total_trades": 0,
+        "total_return": round(total_return, 6),
+        "cagr": cagr,
+        "sharpe_ratio": sharpe_ratio,
+        "sortino_ratio": sortino_ratio,
+        "max_drawdown": round(max_dd, 6),
+        "win_rate": win_rate,
+        "total_trades": total_trades,
         "timestamp": datetime.now().isoformat(),
     }
 

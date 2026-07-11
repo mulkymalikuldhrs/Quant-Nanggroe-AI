@@ -38,7 +38,7 @@ from quant_nanggroe.engine.strategy.parser import (
 )
 from quant_nanggroe.engine.strategy.loader import (
     StrategyLoader,
-    StrategyRegistry,
+    StrategyConfigRegistry,
     StrategyLoadError,
 )
 from quant_nanggroe.engine.strategy.backtest_adapter import (
@@ -707,11 +707,11 @@ class TestStrategyLoader:
         assert "QQQ" in merged.universe.symbols
 
 
-class TestStrategyRegistry:
-    """Tests for StrategyRegistry."""
+class TestStrategyConfigRegistry:
+    """Tests for StrategyConfigRegistry."""
 
     def test_register_and_get(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -719,7 +719,7 @@ class TestStrategyRegistry:
         assert retrieved.name == "Momentum Alpha"
 
     def test_register_duplicate_fails(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -727,7 +727,7 @@ class TestStrategyRegistry:
             registry.register(config)
 
     def test_unregister(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -736,17 +736,17 @@ class TestStrategyRegistry:
         assert not registry.has("Momentum Alpha")
 
     def test_unregister_not_found(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         with pytest.raises(KeyError):
             registry.unregister("Nonexistent")
 
     def test_get_not_found(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         with pytest.raises(KeyError):
             registry.get("Nonexistent")
 
     def test_has(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -754,7 +754,7 @@ class TestStrategyRegistry:
         assert not registry.has("Nonexistent")
 
     def test_list_names(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config1 = parse_strategy_from_string(VALID_STRATEGY_YAML)
         config2 = parse_strategy_from_string(MINIMAL_STRATEGY_YAML)
         registry.register(config1)
@@ -765,7 +765,7 @@ class TestStrategyRegistry:
         assert "Simple Strategy" in names
 
     def test_list_names_by_tag(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -776,7 +776,7 @@ class TestStrategyRegistry:
         assert len(names) == 0
 
     def test_list_all(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -786,14 +786,14 @@ class TestStrategyRegistry:
     def test_load_from_directory(self, tmp_path):
         (tmp_path / "strategy.yaml").write_text(VALID_STRATEGY_YAML)
 
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         count = registry.load_from_directory(tmp_path)
 
         assert count == 1
         assert registry.has("Momentum Alpha")
 
     def test_validate_all(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -801,7 +801,7 @@ class TestStrategyRegistry:
         assert len(issues) == 0
 
     def test_health(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
 
@@ -810,7 +810,7 @@ class TestStrategyRegistry:
         assert "Momentum Alpha" in health["strategy_names"]
 
     def test_clear(self):
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         config = parse_strategy_from_string(VALID_STRATEGY_YAML)
         registry.register(config)
         registry.clear()
@@ -1119,7 +1119,7 @@ exit_rules:
         yaml_file = tmp_path / "strategy.yaml"
         yaml_file.write_text(VALID_STRATEGY_YAML)
 
-        registry = StrategyRegistry()
+        registry = StrategyConfigRegistry()
         count1 = registry.load_from_directory(tmp_path)
 
         # Load again — should update, not fail

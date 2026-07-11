@@ -456,6 +456,95 @@ function renderDashboard(d) {
   $('footerTimestamp').textContent = new Date().toISOString();
 }
 
+// ── WebSocket Live Updates ────────────────────────────────────
+let ws = null;
+let wsReconnectTimer = null;
+
+function connectWebSocket() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${protocol}//${location.host}/api/ws/stream`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    console.log('[WS] Connected');
+    ws.send(JSON.stringify({
+      action: 'subscribe',
+      channels: ['price', 'regime', 'risk', 'portfolio'],
+      symbols: ['BTC/USDT', 'ETH/USDT'],
+    }));
+    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  };
+
+  ws.onmessage = (evt) => {
+    try {
+      const msg = JSON.parse(evt.data);
+      // Skip control messages
+      if (msg.type === 'subscription' || msg.type === 'pong' || msg.type === 'channels') return;
+
+      // Update P&L / portfolio
+      if (msg.portfolio) {
+        const p = msg.portfolio;
+        if (p.total_value != null) {
+          $('stat-totalval').textContent = '$' + Number(p.total_value).toLocaleString(undefined, {minimumFractionDigits:2});
+        }
+        if (p.daily_pnl != null) {
+          const pnl = Number(p.daily_pnl);
+          $('stat-totalpnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+          $('stat-totalpnl').className = 'stat-value ' + (pnl >= 0 ? 'green' : 'red');
+        }
+        if (p.positions != null && p.positions !== '—') {
+          $('risk-autodisabled').textContent = p.positions + ' / 8';
+        }
+      }
+
+      // Update regime
+      if (msg.regime) {
+        const r = msg.regime;
+        if (r.market) $('regime-name').textContent = r.market;
+        if (r.confidence != null) $('regime-confidence').textContent = (r.confidence * 100).toFixed(1) + '%';
+      }
+
+      // Update risk
+      if (msg.risk) {
+        const r = msg.risk;
+        if (r.drawdown != null) {
+          const dd = r.drawdown * 100;
+          $('stat-drawdown').textContent = dd.toFixed(2) + '%';
+          $('stat-drawdown').className = 'stat-value ' + (dd < -10 ? 'red' : dd < -5 ? 'yellow' : 'green');
+        }
+        if (r.kill_switch != null) {
+          const ksDot = $('killSwitchDot');
+          const ksLabel = $('killSwitchLabel');
+          if (r.kill_switch) {
+            ksDot.className = 'status-dot red';
+            ksLabel.textContent = 'Kill Switch: ACTIVE';
+          } else {
+            ksDot.className = 'status-dot green';
+            ksLabel.textContent = 'Kill Switch: Inactive';
+          }
+        }
+      }
+
+      // Update timestamp
+      $('refreshTimestamp').textContent = new Date().toLocaleString();
+      $('footerTimestamp').textContent = msg.timestamp || new Date().toISOString();
+
+    } catch (e) {
+      console.warn('[WS] parse error:', e);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log('[WS] Disconnected, reconnecting in 5s');
+    wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+  };
+
+  ws.onerror = (err) => {
+    console.warn('[WS] Error:', err);
+    ws.close();
+  };
+}
+
 // ── API Modules Status — pings every endpoint once ──────────────
 const MODULE_ENDPOINTS = [
   { path:'/api/geopolitics/list',   label:'Geopolitics',    cat:'Macro' },

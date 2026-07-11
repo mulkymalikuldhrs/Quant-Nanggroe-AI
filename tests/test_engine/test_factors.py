@@ -20,7 +20,7 @@ import pandas as pd
 from quant_nanggroe.engine.analysis.factors import FactorModel, FactorResult, get_builtin_factors
 from quant_nanggroe.engine.analysis.bootstrap import BootstrapCI
 from quant_nanggroe.engine.strategy.registry import (
-    StrategyRegistry,
+    StrategyMetaRegistry,
     compute_factor_exposures,
     sharpe_ci_to_registry,
 )
@@ -980,8 +980,8 @@ def sample_returns_no_alpha():
 
 @pytest.fixture
 def empty_registry():
-    """Empty StrategyRegistry for integration tests."""
-    return StrategyRegistry()
+    """Empty StrategyMetaRegistry for integration tests."""
+    return StrategyMetaRegistry()
 
 
 # ─── 11. FactorModel Tests ──────────────────────────────────────────────

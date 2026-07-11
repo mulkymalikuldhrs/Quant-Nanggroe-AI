@@ -1,4 +1,4 @@
-"""Tests for the StrategyRegistry with walk-forward framework."""
+"""Tests for the StrategyMetaRegistry with walk-forward framework."""
 
 from __future__ import annotations
 
@@ -9,15 +9,15 @@ from pathlib import Path
 import pytest
 
 from quant_nanggroe.engine.strategy.registry import (
-    StrategyRegistry,
+    StrategyMetaRegistry,
     StrategyMetadata,
     WalkForwardResult,
 )
 
 
 @pytest.fixture
-def registry() -> StrategyRegistry:
-    reg = StrategyRegistry()
+def registry() -> StrategyMetaRegistry:
+    reg = StrategyMetaRegistry()
     reg.register(
         name="Momentum",
         description="Time-series momentum",
@@ -90,8 +90,8 @@ def sample_wf_results() -> list[WalkForwardResult]:
     ]
 
 
-class TestStrategyRegistry:
-    def test_register_and_get(self, registry: StrategyRegistry) -> None:
+class TestStrategyMetaRegistry:
+    def test_register_and_get(self, registry: StrategyMetaRegistry) -> None:
         meta = registry.get("Momentum")
         assert meta is not None
         assert meta.name == "Momentum"
@@ -103,24 +103,24 @@ class TestStrategyRegistry:
         assert meta.created_at != ""
         assert meta.updated_at != ""
 
-    def test_get_nonexistent(self, registry: StrategyRegistry) -> None:
+    def test_get_nonexistent(self, registry: StrategyMetaRegistry) -> None:
         assert registry.get("Nonsense") is None
 
-    def test_list_all(self, registry: StrategyRegistry) -> None:
+    def test_list_all(self, registry: StrategyMetaRegistry) -> None:
         all_strats = registry.list()
         assert len(all_strats) == 3
 
-    def test_list_by_status(self, registry: StrategyRegistry) -> None:
+    def test_list_by_status(self, registry: StrategyMetaRegistry) -> None:
         active = registry.list(status="active")
         assert len(active) == 2
         dev = registry.list(status="development")
         assert len(dev) == 1
 
-    def test_list_no_match(self, registry: StrategyRegistry) -> None:
+    def test_list_no_match(self, registry: StrategyMetaRegistry) -> None:
         assert registry.list(status="disabled") == []
 
     def test_record_walk_forward(
-        self, registry: StrategyRegistry, sample_wf_results: list[WalkForwardResult]
+        self, registry: StrategyMetaRegistry, sample_wf_results: list[WalkForwardResult]
     ) -> None:
         for r in sample_wf_results:
             registry.record_walk_forward("Momentum", r)
@@ -131,11 +131,11 @@ class TestStrategyRegistry:
         assert len(meta.insample_sharpes) == 3
         assert meta.oos_sharpes == [1.5, 1.6, 1.3]
 
-    def test_record_walk_forward_unregistered(self, registry: StrategyRegistry, sample_wf_results: list[WalkForwardResult]) -> None:
+    def test_record_walk_forward_unregistered(self, registry: StrategyMetaRegistry, sample_wf_results: list[WalkForwardResult]) -> None:
         with pytest.raises(KeyError):
             registry.record_walk_forward("Unknown", sample_wf_results[0])
 
-    def test_summary(self, registry: StrategyRegistry, sample_wf_results: list[WalkForwardResult]) -> None:
+    def test_summary(self, registry: StrategyMetaRegistry, sample_wf_results: list[WalkForwardResult]) -> None:
         for r in sample_wf_results:
             registry.record_walk_forward("Momentum", r)
         summary = registry.summary("Momentum")
@@ -144,16 +144,16 @@ class TestStrategyRegistry:
         assert summary["avg_test_sharpe"] == pytest.approx((1.5 + 1.6 + 1.3) / 3, abs=1e-3)
         assert summary["decay"] == pytest.approx(summary["avg_train_sharpe"] - summary["avg_test_sharpe"])
 
-    def test_summary_empty(self, registry: StrategyRegistry) -> None:
+    def test_summary_empty(self, registry: StrategyMetaRegistry) -> None:
         summary = registry.summary("Momentum")
         assert summary["n_windows"] == 0
 
-    def test_summary_nonexistent(self, registry: StrategyRegistry) -> None:
+    def test_summary_nonexistent(self, registry: StrategyMetaRegistry) -> None:
         with pytest.raises(KeyError):
             registry.summary("Nonsense")
 
     def test_best_oos(
-        self, registry: StrategyRegistry, sample_wf_results: list[WalkForwardResult]
+        self, registry: StrategyMetaRegistry, sample_wf_results: list[WalkForwardResult]
     ) -> None:
         for r in sample_wf_results:
             registry.record_walk_forward("Momentum", r)
@@ -161,7 +161,7 @@ class TestStrategyRegistry:
         assert len(best) >= 1
         assert best[0]["name"] == "Momentum"
 
-    def test_best_oos_multiple_strategies(self, registry: StrategyRegistry) -> None:
+    def test_best_oos_multiple_strategies(self, registry: StrategyMetaRegistry) -> None:
         registry.record_walk_forward(
             "Momentum",
             WalkForwardResult(0, "a", "b", "c", "d", 2.0, 1.5, 0.1, 0.1, 0.0, 0.0),
@@ -179,10 +179,10 @@ class TestStrategyRegistry:
         assert best[0]["name"] == "Momentum"
         assert best[1]["name"] == "MeanReversion"
 
-    def test_best_oos_no_results(self, registry: StrategyRegistry) -> None:
+    def test_best_oos_no_results(self, registry: StrategyMetaRegistry) -> None:
         assert registry.best_oos() == []
 
-    def test_decayed_true(self, registry: StrategyRegistry) -> None:
+    def test_decayed_true(self, registry: StrategyMetaRegistry) -> None:
         registry.record_walk_forward(
             "Momentum",
             WalkForwardResult(0, "a", "b", "c", "d", 2.0, 0.5, 0.1, 0.05, 0.0, 0.0),
@@ -193,20 +193,20 @@ class TestStrategyRegistry:
         )
         assert registry.decayed("Momentum", threshold=0.5) is True
 
-    def test_decayed_false(self, registry: StrategyRegistry) -> None:
+    def test_decayed_false(self, registry: StrategyMetaRegistry) -> None:
         registry.record_walk_forward(
             "Momentum",
             WalkForwardResult(0, "a", "b", "c", "d", 1.0, 0.9, 0.1, 0.08, 0.0, 0.0),
         )
         assert registry.decayed("Momentum", threshold=0.5) is False
 
-    def test_decayed_no_results(self, registry: StrategyRegistry) -> None:
+    def test_decayed_no_results(self, registry: StrategyMetaRegistry) -> None:
         assert registry.decayed("Momentum") is False
 
-    def test_decayed_nonexistent(self, registry: StrategyRegistry) -> None:
+    def test_decayed_nonexistent(self, registry: StrategyMetaRegistry) -> None:
         assert registry.decayed("Nonsense") is False
 
-    def test_to_json_roundtrip(self, registry: StrategyRegistry, sample_wf_results: list[WalkForwardResult]) -> None:
+    def test_to_json_roundtrip(self, registry: StrategyMetaRegistry, sample_wf_results: list[WalkForwardResult]) -> None:
         for r in sample_wf_results:
             registry.record_walk_forward("Momentum", r)
         registry.record_walk_forward(
@@ -216,7 +216,7 @@ class TestStrategyRegistry:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             path = f.name
             registry.to_json(f.name)
-        loaded = StrategyRegistry.from_json(path)
+        loaded = StrategyMetaRegistry.from_json(path)
         Path(path).unlink()
         assert loaded.get("Momentum") is not None
         assert loaded.get("MeanReversion") is not None
@@ -230,15 +230,15 @@ class TestStrategyRegistry:
         assert mr.timeframe == "1d"
 
     def test_empty_json_roundtrip(self) -> None:
-        reg = StrategyRegistry()
+        reg = StrategyMetaRegistry()
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             path = f.name
             reg.to_json(f.name)
-        loaded = StrategyRegistry.from_json(path)
+        loaded = StrategyMetaRegistry.from_json(path)
         Path(path).unlink()
         assert loaded.list() == []
 
-    def test_params_schema(self, registry: StrategyRegistry) -> None:
+    def test_params_schema(self, registry: StrategyMetaRegistry) -> None:
         registry.register(
             name="Custom",
             params_schema={"lookback": int, "threshold": float},
@@ -248,7 +248,7 @@ class TestStrategyRegistry:
         assert meta is not None
         assert meta.params_schema == {"lookback": int, "threshold": float}
 
-    def test_params_schema_roundtrip(self, registry: StrategyRegistry) -> None:
+    def test_params_schema_roundtrip(self, registry: StrategyMetaRegistry) -> None:
         registry.register(
             name="Custom",
             params_schema={"lookback": int, "threshold": float, "name": str},
@@ -261,7 +261,7 @@ class TestStrategyRegistry:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             path = f.name
             registry.to_json(f.name)
-        loaded = StrategyRegistry.from_json(path)
+        loaded = StrategyMetaRegistry.from_json(path)
         Path(path).unlink()
         meta = loaded.get("Custom")
         assert meta is not None

@@ -117,8 +117,8 @@ class _RegistryEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class StrategyRegistry:
-    """Central registry for all trading strategies with walk-forward framework."""
+class StrategyMetaRegistry:
+    """Central metadata registry with walk-forward framework for all strategies."""
 
     def __init__(self) -> None:
         self._strategies: Dict[str, StrategyMetadata] = {}
@@ -218,7 +218,7 @@ class StrategyRegistry:
             json.dump(data, f, cls=_RegistryEncoder, indent=2)
 
     @classmethod
-    def from_json(cls, path: str) -> StrategyRegistry:
+    def from_json(cls, path: str) -> StrategyMetaRegistry:
         with open(path) as f:
             raw = json.load(f)
         registry = cls()
@@ -233,7 +233,7 @@ class StrategyRegistry:
 
 
 def compute_factor_exposures(
-    registry: StrategyRegistry,
+    registry: StrategyMetaRegistry,
     strategy_name: str,
     returns: pd.Series,
     factors: pd.DataFrame,
@@ -276,7 +276,7 @@ def compute_factor_exposures(
 
 
 def sharpe_ci_to_registry(
-    registry: StrategyRegistry,
+    registry: StrategyMetaRegistry,
     strategy_name: str,
     returns: pd.Series,
     n_bootstrap: int = 5_000,
