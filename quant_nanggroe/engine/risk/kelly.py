@@ -218,9 +218,7 @@ class KellyCriterion:
         risk_free_rate: float = 0.0,
     ) -> np.ndarray:
         """Multi-asset Kelly via engine/kelly/ delegation."""
-        macro = MultiAssetKelly(
-            max_leverage=self.max_position,
-        )
+        macro = MultiAssetKelly(shrinkage=0.1)
         params = NewKellyParameters(
             win_rate=0.5,
             avg_win=1.0,
@@ -228,6 +226,7 @@ class KellyCriterion:
             mean_returns=expected_returns.tolist() if hasattr(expected_returns, 'tolist') else list(expected_returns),
             cov_matrix=cov_matrix,
             risk_free_rate=risk_free_rate,
+            leverage_max=self.max_position,
         )
         result = macro.compute(params)
         return np.array([result.f_star])

@@ -211,9 +211,17 @@ class TwelveDataProvider:
         return None
 
     async def health_check(self) -> bool:
-        """Check API availability by fetching AAPL daily."""
+        """Check API availability by fetching AAPL daily.
+
+        Calls ``_request`` directly (not ``get_ohlcv``) because ``get_ohlcv``
+        intentionally swallows ``TwelveDataError`` and returns an empty list
+        on failure — which would mask an unavailable API.
+        """
         try:
-            await self.get_ohlcv("AAPL", TimeFrame.D1, limit=1)
+            await self._request(
+                "time_series",
+                {"symbol": "AAPL", "interval": "1day", "outputsize": "1"},
+            )
             self.is_available = True
             return True
         except TwelveDataError:

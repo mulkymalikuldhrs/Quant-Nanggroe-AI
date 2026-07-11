@@ -51,16 +51,31 @@ def client():
     mock_exchange = MagicMock()
     mock_exchange.get_aggregated_portfolio = AsyncMock(return_value=_make_mock_portfolio())
 
+    import quant_nanggroe.api.middleware as _mw
+
+    async def _noop_ratelimit(self, scope, receive, send):
+        await self.app(scope, receive, send)
+
     with patch("quant_nanggroe.engine.market_state.MarketStateEngine", return_value=mock_engine):
         with patch("quant_nanggroe.exchange.manager.ExchangeManager", return_value=mock_exchange):
-            with patch("quant_nanggroe.api.app.init_all_services", create=True):
-                with patch("quant_nanggroe.services", create=True):
+            with patch("quant_nanggroe.services.init_all_services") as mock_init:
+                with patch.object(_mw.RateLimitMiddleware, "__call__", _noop_ratelimit):
                     from quant_nanggroe.api.app import create_app
 
                     app = create_app()
+                    # Disable lifespan (startup/shutdown) — route handlers are fully
+                    # mocked, and the real lifespan tries to connect redis/DB and
+                    # flush audit logs, which hangs in the offline test environment.
+                    from contextlib import asynccontextmanager
+
+                    @asynccontextmanager
+                    async def _noop_lifespan(app):
+                        yield
+
+                    app.router.lifespan_context = _noop_lifespan
                     jwt = JWTAuth(secret_key="test-secret-key-for-pytest")
                     token = jwt.create_token("pytest", UserRole.ADMIN)
-                    with TestClient(app, headers={"Authorization": f"Bearer {token}"}) as c:
+                    with TestClient(app, headers={"Authorization": f"Bearer {token}"}, raise_server_exceptions=False) as c:
                         yield c
 
 

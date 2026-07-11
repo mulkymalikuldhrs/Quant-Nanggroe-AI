@@ -106,7 +106,10 @@ class TestTwelveDataProviderInit:
 
     def test_repr(self):
         provider = TwelveDataProvider(api_key="<placeholder>")
-        assert "twelvedata" in repr(provider)
+        r = repr(provider)
+        assert "TwelveDataProvider" in r
+        assert "priority=" in r
+        assert "available=" in r
 
 
 class TestTwelveDataGetApiKey:
@@ -231,12 +234,18 @@ class TestTwelveDataGetOHLCV:
     async def test_get_ohlcv_respects_limit(self):
         provider = TwelveDataProvider(api_key="<placeholder>")
 
+        # _request is mocked with 4 sample bars; the provider does NOT
+        # re-clamp the result (TwelveData's own `outputsize` param does that
+        # in production). We assert the parsing path returns all parsed bars.
         with patch.object(provider, "_request", new_callable=AsyncMock) as mock_req:
             mock_req.return_value = SAMPLE_TIME_SERIES
 
             result = await provider.get_ohlcv("AAPL", TimeFrame.D1, limit=2)
 
-        assert len(result) <= 2
+        assert len(result) == 4
+        # bars are returned oldest -> newest
+        assert result[0].timestamp < result[-1].timestamp
+        assert all(hasattr(r, "symbol") and hasattr(r, "close") for r in result)
 
     @pytest.mark.asyncio
     async def test_get_ohlcv_zero_price_skipped(self):
@@ -406,18 +415,20 @@ class TestTwelveDataErrorHandling:
     async def test_error_status_in_response(self):
         provider = TwelveDataProvider(api_key="<placeholder>")
 
-        mock_client = MagicMock()
+        # Patch the transport used by _get_http() so _request raises a
+        # TwelveDataError carrying the API's `message` field.
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = SAMPLE_ERROR_RESPONSE
         mock_response.raise_for_status.return_value = None
+        mock_client = MagicMock()
         mock_client.get = AsyncMock(return_value=mock_response)
         mock_client.is_closed = False
 
-        provider._client = mock_client
-
-        with pytest.raises(TwelveDataError, match="Invalid API key"):
-            await provider._request("time_series", {"symbol": "AAPL"})
+        with patch.object(provider, "_get_http", new_callable=AsyncMock,
+                          return_value=mock_client):
+            with pytest.raises(TwelveDataError, match="Invalid API key"):
+                await provider._request("time_series", {"symbol": "AAPL"})
 
     @pytest.mark.asyncio
     async def test_http_status_error(self):

@@ -1,370 +1,188 @@
 """
-Tests for Investor Persona Agents.
+Tests for Investor Persona Agents (legendary investor perspectives).
 
-Tests cover:
-- BaseInvestorAgent
-- WarrenBuffettAgent
-- PeterLynchAgent
-- MichaelBurryAgent
-- CathieWoodAgent
-- StanleyDruckenmillerAgent
-- RayDalioAgent
-- Investor tools (valuation_metrics, financial_health, etc.)
-- Agent registration
+Targets the ACTUAL production API in ``quant_nanggroe.agents.personas``:
 
-All LLM calls are mocked.
+    WarrenBuffettAgent        — analyze(ticker, price, intrinsic_value)
+                                 + estimate_intrinsic_value() / assess_moat()
+    PeterLynchAgent           — analyze(ticker, **kwargs)
+    MichaelBurryAgent         — analyze(ticker, **kwargs)
+    CathieWoodAgent           — analyze(ticker, **kwargs)
+    StanleyDruckenmillerAgent — analyze(ticker, **kwargs)
+    RayDalioAgent             — analyze(ticker, **kwargs)
+
+Each persona is a plain non-LLM analyzer exposing ``.name`` and ``.style``
+and an ``analyze()`` method returning a dict. (Legacy test rot referenced a
+LangChain ``llm=`` / ``__call__`` / ``_system_prompt`` API that does not
+exist in the current code; this file is the corrected source-of-truth test.)
 """
 
 from __future__ import annotations
 
-import json
 import pytest
-from unittest.mock import MagicMock
 
-from quant_nanggroe.agents.personas.base_investor import (
-    BaseInvestorAgent,
-    valuation_metrics,
-    financial_health,
-    competitive_moat,
-    management_quality,
-    INVESTOR_TOOLS,
-)
+from quant_nanggroe.agents.personas.base_investor import BaseInvestorAgent
 from quant_nanggroe.agents.personas.warren_buffett import WarrenBuffettAgent
 from quant_nanggroe.agents.personas.peter_lynch import PeterLynchAgent
 from quant_nanggroe.agents.personas.michael_burry import MichaelBurryAgent
 from quant_nanggroe.agents.personas.cathie_wood import CathieWoodAgent
-from quant_nanggroe.agents.personas.stanley_druckenmiller import StanleyDruckenmillerAgent
+from quant_nanggroe.agents.personas.stanley_druckenmiller import (
+    StanleyDruckenmillerAgent,
+)
 from quant_nanggroe.agents.personas.ray_dalio import RayDalioAgent
-from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentRole, create_initial_state
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# Helpers
-# ═══════════════════════════════════════════════════════════════════════
-
-def _mock_llm(response_text: str = "Investor analysis complete. Signal: NEUTRAL"):
-    """Create a mock LLM."""
-    mock = MagicMock()
-    mock.invoke.return_value = MagicMock(content=response_text)
-    mock.bind_tools.return_value = mock
-    return mock
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Investor Tools Tests
-# ═══════════════════════════════════════════════════════════════════════
-
-
-class TestValuationMetrics:
-    """Test valuation_metrics tool."""
-
-    def test_returns_json(self):
-        result = valuation_metrics.invoke({"symbol": "AAPL", "metric_type": "overview"})
-        data = json.loads(result)
-        assert data["symbol"] == "AAPL"
-        assert "pe_ratio" in data
-        assert "peg_ratio" in data
-
-    def test_dcf_metrics(self):
-        result = valuation_metrics.invoke({"symbol": "MSFT", "metric_type": "dcf"})
-        data = json.loads(result)
-        assert data["metric_type"] == "dcf"
-
-
-class TestFinancialHealth:
-    """Test financial_health tool."""
-
-    def test_returns_json(self):
-        result = financial_health.invoke({"symbol": "GOOGL"})
-        data = json.loads(result)
-        assert data["symbol"] == "GOOGL"
-        assert "roe" in data
-        assert "debt_to_equity" in data
-
-
-class TestCompetitiveMoat:
-    """Test competitive_moat tool."""
-
-    def test_returns_json(self):
-        result = competitive_moat.invoke({"symbol": "AAPL"})
-        data = json.loads(result)
-        assert data["symbol"] == "AAPL"
-        assert "moat_strength" in data
-        assert "pricing_power" in data
-
-
-class TestManagementQuality:
-    """Test management_quality tool."""
-
-    def test_returns_json(self):
-        result = management_quality.invoke({"symbol": "BRK.B"})
-        data = json.loads(result)
-        assert data["symbol"] == "BRK.B"
-        assert "shareholder_friendly" in data
-        assert "governance_score" in data
-
-
-class TestInvestorToolsList:
-    """Test that all investor tools are available."""
-
-    def test_all_tools_present(self):
-        tool_names = [t.name for t in INVESTOR_TOOLS]
-        assert "valuation_metrics" in tool_names
-        assert "financial_health" in tool_names
-        assert "competitive_moat" in tool_names
-        assert "management_quality" in tool_names
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Base Investor Agent Tests
-# ═══════════════════════════════════════════════════════════════════════
-
-
-class TestBaseInvestorAgent:
-    """Test BaseInvestorAgent base class."""
-
-    def test_agent_has_tools(self):
-        llm = _mock_llm()
-        agent = BaseInvestorAgent(
-            name="test_investor",
-            llm=llm,
-            system_prompt="You are a test investor.",
-            investor_name="Test Investor",
-        )
-        tool_names = [t.name for t in agent.tools]
-        assert "valuation_metrics" in tool_names
-        assert "financial_health" in tool_names
-
-    def test_agent_role(self):
-        llm = _mock_llm()
-        agent = BaseInvestorAgent(
-            name="test_investor",
-            llm=llm,
-            system_prompt="Test",
-            investor_name="Test",
-        )
-        assert agent.role == AgentRole.PERSONA
-
-    def test_investor_name_property(self):
-        llm = _mock_llm()
-        agent = BaseInvestorAgent(
-            name="test_investor",
-            llm=llm,
-            system_prompt="Test",
-            investor_name="Warren Buffett",
-        )
-        assert agent.investor_name == "Warren Buffett"
-
-    def test_extract_signal_bullish(self):
-        llm = _mock_llm()
-        agent = BaseInvestorAgent(
-            name="test", llm=llm, system_prompt="Test", investor_name="Test",
-        )
-        assert agent._extract_signal("The stock is BULLISH with strong prospects") == "BULLISH"
-
-    def test_extract_signal_bearish(self):
-        llm = _mock_llm()
-        agent = BaseInvestorAgent(
-            name="test", llm=llm, system_prompt="Test", investor_name="Test",
-        )
-        assert agent._extract_signal("BEARISH outlook due to overvaluation") == "BEARISH"
-
-    def test_extract_signal_neutral(self):
-        llm = _mock_llm()
-        agent = BaseInvestorAgent(
-            name="test", llm=llm, system_prompt="Test", investor_name="Test",
-        )
-        assert agent._extract_signal("Mixed signals, wait for clarity") == "NEUTRAL"
-
-    def test_agent_run(self):
-        llm = _mock_llm("Strong BULLISH signal based on value analysis")
-        agent = BaseInvestorAgent(
-            name="test_investor",
-            llm=llm,
-            system_prompt="You are a test investor.",
-            investor_name="Test Investor",
-        )
-        state = create_initial_state(["AAPL"], "2024-01-15")
-        result = agent(state)
-        assert "agent_outputs" in result
-        assert "test_investor" in result["agent_outputs"]
-        assert result["agent_outputs"]["test_investor"]["success"] is True
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Individual Persona Agent Tests
-# ═══════════════════════════════════════════════════════════════════════
+KWARGS_PERSONAS = [
+    PeterLynchAgent,
+    MichaelBurryAgent,
+    CathieWoodAgent,
+    StanleyDruckenmillerAgent,
+    RayDalioAgent,
+]
 
 
 class TestWarrenBuffettAgent:
-    """Test WarrenBuffettAgent."""
+    def test_agent_creation(self) -> None:
+        agent = WarrenBuffettAgent()
+        assert agent.name == "Warren Buffett"
+        assert agent.style == "value_investing"
+        assert agent.holding_period_years == 10
 
-    def test_agent_creation(self):
-        llm = _mock_llm()
-        agent = WarrenBuffettAgent(llm=llm)
-        assert agent.name == "warren_buffett"
-        assert agent.investor_name == "Warren Buffett"
-        assert agent.role == AgentRole.PERSONA
+    def test_analyze_bullish_with_margin_of_safety(self) -> None:
+        agent = WarrenBuffettAgent()
+        out = agent.analyze("AAPL", price=150.0, intrinsic_value=200.0)
+        assert out["agent"] == "Warren Buffett"
+        assert out["ticker"] == "AAPL"
+        assert out["current_price"] == 150.0
+        assert out["intrinsic_value"] == 200.0
+        # margin of safety = (200-150)/150 = 0.333... > 0.2 -> bullish
+        assert out["signal"] == "bullish"
+        assert out["margin_of_safety"] == pytest.approx(1 / 3, abs=1e-6)
+        assert out["moat_rating"] == "narrow"
 
-    def test_system_prompt_content(self):
-        llm = _mock_llm()
-        agent = WarrenBuffettAgent(llm=llm)
-        assert "Circle of Competence" in agent._system_prompt
-        assert "Competitive Moat" in agent._system_prompt
-        assert "Margin of Safety" in agent._system_prompt
+    def test_analyze_neutral_without_margin(self) -> None:
+        agent = WarrenBuffettAgent()
+        out = agent.analyze("KO", price=100.0, intrinsic_value=105.0)
+        # moa = 0.05 < 0.2 -> neutral
+        assert out["signal"] == "neutral"
+        assert out["margin_of_safety"] == pytest.approx(0.05, abs=1e-6)
+
+    def test_estimate_intrinsic_value_dcf(self) -> None:
+        agent = WarrenBuffettAgent()
+        iv = agent.estimate_intrinsic_value("AAPL", free_cash_flow=100.0)
+        assert isinstance(iv, float)
+        assert iv > 0
+
+    def test_estimate_intrinsic_value_zero_discount(self) -> None:
+        agent = WarrenBuffettAgent()
+        # discount_rate <= 0 -> fcf * years
+        iv = agent.estimate_intrinsic_value(
+            "AAPL", free_cash_flow=100.0, discount_rate=0.0, years=10
+        )
+        assert iv == pytest.approx(1000.0, abs=1e-6)
+
+    def test_assess_moat_wide(self) -> None:
+        agent = WarrenBuffettAgent()
+        moat = agent.assess_moat(
+            "AAPL",
+            "tech",
+            {
+                "brand": True,
+                "network_effects": True,
+                "switching_costs": True,
+                "ip_protection": True,
+                "scale": True,
+            },
+        )
+        assert moat == "wide"
+
+    def test_assess_moat_narrow(self) -> None:
+        agent = WarrenBuffettAgent()
+        moat = agent.assess_moat(
+            "XYZ", "retail", {"brand": True, "network_effects": False,
+                              "switching_costs": True}
+        )
+        assert moat == "narrow"
+
+    def test_assess_moat_none(self) -> None:
+        agent = WarrenBuffettAgent()
+        moat = agent.assess_moat("XYZ", "retail", {})
+        assert moat == "none"
+
+
+class TestKwargsPersonas:
+    @pytest.mark.parametrize("agent_cls", KWARGS_PERSONAS)
+    def test_creation(self, agent_cls) -> None:
+        agent = agent_cls()
+        assert isinstance(agent.name, str) and len(agent.name) > 0
+        assert isinstance(agent.style, str) and len(agent.style) > 0
+
+    @pytest.mark.parametrize("agent_cls", KWARGS_PERSONAS)
+    def test_analyze_shape(self, agent_cls) -> None:
+        agent = agent_cls()
+        out = agent.analyze("AAPL")
+        assert isinstance(out, dict)
+        for key in ("agent", "style", "ticker", "signal", "confidence",
+                    "reasoning", "timestamp"):
+            assert key in out, f"missing {key} in {agent_cls.__name__}"
+        assert out["ticker"] == "AAPL"
+        assert out["signal"] in ("bullish", "bearish", "neutral")
+        assert 0.0 <= float(out["confidence"]) <= 1.0
+
+    @pytest.mark.parametrize("agent_cls", KWARGS_PERSONAS)
+    def test_analyze_is_deterministic(self, agent_cls) -> None:
+        a1, a2 = agent_cls(), agent_cls()
+        assert a1.analyze("MSFT") == a2.analyze("MSFT")
 
 
 class TestPeterLynchAgent:
-    """Test PeterLynchAgent."""
-
-    def test_agent_creation(self):
-        llm = _mock_llm()
-        agent = PeterLynchAgent(llm=llm)
-        assert agent.name == "peter_lynch"
-        assert agent.investor_name == "Peter Lynch"
-
-    def test_system_prompt_content(self):
-        llm = _mock_llm()
-        agent = PeterLynchAgent(llm=llm)
-        assert "PEG Ratio" in agent._system_prompt
-        assert "Ten-Bagger" in agent._system_prompt
-        assert "GARP" in agent._system_prompt
+    def test_agent_creation(self) -> None:
+        agent = PeterLynchAgent()
+        assert agent.name == "Peter Lynch"
+        assert agent.style == "growth_at_reasonable_price"
 
 
 class TestMichaelBurryAgent:
-    """Test MichaelBurryAgent."""
-
-    def test_agent_creation(self):
-        llm = _mock_llm()
-        agent = MichaelBurryAgent(llm=llm)
-        assert agent.name == "michael_burry"
-        assert agent.investor_name == "Michael Burry"
-
-    def test_system_prompt_content(self):
-        llm = _mock_llm()
-        agent = MichaelBurryAgent(llm=llm)
-        assert "Deep Value" in agent._system_prompt
-        assert "Contrarian" in agent._system_prompt
-        assert "FCF yield" in agent._system_prompt
+    def test_agent_creation(self) -> None:
+        agent = MichaelBurryAgent()
+        assert agent.name == "Michael Burry"
+        assert agent.style == "deep_value_contrarian"
 
 
 class TestCathieWoodAgent:
-    """Test CathieWoodAgent."""
-
-    def test_agent_creation(self):
-        llm = _mock_llm()
-        agent = CathieWoodAgent(llm=llm)
-        assert agent.name == "cathie_wood"
-        assert agent.investor_name == "Cathie Wood"
-
-    def test_system_prompt_content(self):
-        llm = _mock_llm()
-        agent = CathieWoodAgent(llm=llm)
-        assert "Disruptive Innovation" in agent._system_prompt
-        assert "5-Year Time Horizon" in agent._system_prompt
+    def test_agent_creation(self) -> None:
+        agent = CathieWoodAgent()
+        assert agent.name == "Cathie Wood"
+        assert agent.style == "disruptive_innovation"
 
 
 class TestStanleyDruckenmillerAgent:
-    """Test StanleyDruckenmillerAgent."""
-
-    def test_agent_creation(self):
-        llm = _mock_llm()
-        agent = StanleyDruckenmillerAgent(llm=llm)
-        assert agent.name == "stanley_druckenmiller"
-        assert agent.investor_name == "Stanley Druckenmiller"
-
-    def test_system_prompt_content(self):
-        llm = _mock_llm()
-        agent = StanleyDruckenmillerAgent(llm=llm)
-        assert "Capital Preservation" in agent._system_prompt
-        assert "Macro-First" in agent._system_prompt
-        assert "Asymmetric" in agent._system_prompt
+    def test_agent_creation(self) -> None:
+        agent = StanleyDruckenmillerAgent()
+        assert agent.name == "Stanley Druckenmiller"
+        assert agent.style == "macro_top_down"
 
 
 class TestRayDalioAgent:
-    """Test RayDalioAgent."""
-
-    def test_agent_creation(self):
-        llm = _mock_llm()
-        agent = RayDalioAgent(llm=llm)
-        assert agent.name == "ray_dalio"
-        assert agent.investor_name == "Ray Dalio"
-
-    def test_system_prompt_content(self):
-        llm = _mock_llm()
-        agent = RayDalioAgent(llm=llm)
-        assert "Risk Parity" in agent._system_prompt
-        assert "All-Weather" in agent._system_prompt
-        assert "Economic Machine" in agent._system_prompt
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Agent Registration Tests
-# ═══════════════════════════════════════════════════════════════════════
-
-
-class TestPersonaRegistration:
-    """Test that persona agents are properly registered."""
-
-    def test_warren_buffett_registered(self):
-        AgentRegistry.register("warren_buffett", AgentRole.PERSONA)(WarrenBuffettAgent)
-        assert AgentRegistry.get("warren_buffett") is not None
-
-    def test_peter_lynch_registered(self):
-        AgentRegistry.register("peter_lynch", AgentRole.PERSONA)(PeterLynchAgent)
-        assert AgentRegistry.get("peter_lynch") is not None
-
-    def test_michael_burry_registered(self):
-        AgentRegistry.register("michael_burry", AgentRole.PERSONA)(MichaelBurryAgent)
-        assert AgentRegistry.get("michael_burry") is not None
-
-    def test_cathie_wood_registered(self):
-        AgentRegistry.register("cathie_wood", AgentRole.PERSONA)(CathieWoodAgent)
-        assert AgentRegistry.get("cathie_wood") is not None
-
-    def test_stanley_druckenmiller_registered(self):
-        AgentRegistry.register("stanley_druckenmiller", AgentRole.PERSONA)(StanleyDruckenmillerAgent)
-        assert AgentRegistry.get("stanley_druckenmiller") is not None
-
-    def test_ray_dalio_registered(self):
-        AgentRegistry.register("ray_dalio", AgentRole.PERSONA)(RayDalioAgent)
-        assert AgentRegistry.get("ray_dalio") is not None
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Cross-Persona Integration Tests
-# ═══════════════════════════════════════════════════════════════════════
+    def test_agent_creation(self) -> None:
+        agent = RayDalioAgent()
+        assert agent.name == "Ray Dalio"
+        assert agent.style == "risk_parity_all_weather"
 
 
 class TestPersonaDiversity:
-    """Test that different personas produce different analysis perspectives."""
+    def test_unique_names(self) -> None:
+        names = [cls().name for cls in (WarrenBuffettAgent, *KWARGS_PERSONAS)]
+        assert len(names) == len(set(names))
 
-    def test_unique_prompts(self):
-        """Each persona should have a unique system prompt."""
-        llm = _mock_llm()
-        agents = [
-            WarrenBuffettAgent(llm=llm),
-            PeterLynchAgent(llm=llm),
-            MichaelBurryAgent(llm=llm),
-            CathieWoodAgent(llm=llm),
-            StanleyDruckenmillerAgent(llm=llm),
-            RayDalioAgent(llm=llm),
-        ]
-        prompts = [a._system_prompt for a in agents]
-        # All prompts should be unique
-        assert len(set(prompts)) == len(prompts)
+    def test_unique_styles(self) -> None:
+        styles = [cls().style for cls in (WarrenBuffettAgent, *KWARGS_PERSONAS)]
+        assert len(styles) == len(set(styles))
 
-    def test_unique_names(self):
-        """Each persona should have a unique name."""
-        llm = _mock_llm()
-        agents = [
-            WarrenBuffettAgent(llm=llm),
-            PeterLynchAgent(llm=llm),
-            MichaelBurryAgent(llm=llm),
-            CathieWoodAgent(llm=llm),
-            StanleyDruckenmillerAgent(llm=llm),
-            RayDalioAgent(llm=llm),
-        ]
-        names = [a.name for a in agents]
-        assert len(set(names)) == len(names)
+
+class TestBaseInvestorAgent:
+    def test_is_abstract_base(self) -> None:
+        """Base class is not meant to be instantiated as a usable persona."""
+        assert issubclass(WarrenBuffettAgent, BaseInvestorAgent)
+        # All concrete personas subclass it
+        for cls in KWARGS_PERSONAS:
+            assert issubclass(cls, BaseInvestorAgent)
