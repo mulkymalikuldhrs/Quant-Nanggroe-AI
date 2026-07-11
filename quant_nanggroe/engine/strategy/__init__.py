@@ -17,8 +17,8 @@ from __future__ import annotations
 from quant_nanggroe.engine.strategy.backtest_adapter import StrategyBacktestAdapter
 from quant_nanggroe.engine.strategy.loader import (
     StrategyLoader,
-    StrategyConfigRegistry,
     StrategyLoadError,
+    StrategyRegistry,
     StrategyWatcher,
 )
 from quant_nanggroe.engine.strategy.parser import (
@@ -29,8 +29,8 @@ from quant_nanggroe.engine.strategy.parser import (
 )
 from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
 from quant_nanggroe.engine.strategy.registry import (
-    StrategyMetaRegistry,
     StrategyMetadata,
+    StrategyRegistry,
     WalkForwardResult,
 )
 from quant_nanggroe.engine.strategy.schema import (
@@ -61,7 +61,7 @@ __all__ = [
     "strategy_to_code",
     # Loader
     "StrategyLoader",
-    "StrategyConfigRegistry",
+    "StrategyRegistry",
     "StrategyWatcher",
     "StrategyLoadError",
     # Adapter
@@ -69,7 +69,7 @@ __all__ = [
     # Regime-adaptive
     "RegimeAdaptiveStrategy",
     # Registry
-    "StrategyMetaRegistry",
+    "StrategyRegistry",
     "StrategyMetadata",
     "WalkForwardResult",
 ]

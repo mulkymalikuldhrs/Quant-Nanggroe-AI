@@ -8,13 +8,13 @@ from quant_nanggroe.engine.kelly.base import BaseKelly, KellyMethod, KellyParame
 from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
 from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
 from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
-from quant_nanggroe.engine.kelly.fractional import FractionalKelly
+from quant_nanggroe.engine.kelly.fractional import FractionalKelly, FullKelly
 from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
 from quant_nanggroe.engine.kelly.optimal_f import OptimalF
 
 __all__ = [
     "BaseKelly", "KellyParameters", "KellyResult", "KellyMethod",
-    "FractionalKelly", "BayesianKelly", "DrawdownControlledKelly",
+    "FractionalKelly", "FullKelly", "BayesianKelly", "DrawdownControlledKelly",
     "CorrelationAwareKelly", "AdaptiveKelly", "MultiAssetKelly", "OptimalF",
     "KellyBacktestBridge", "KellySignal", "StrategyKellyMixin",
 ]

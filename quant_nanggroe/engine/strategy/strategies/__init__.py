@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Type
 
-from quant_nanggroe.engine.strategy.registry import StrategyMetaRegistry
+from quant_nanggroe.engine.strategy.registry import StrategyRegistry
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.engine.strategy.strategies.crypto_specific import CryptoSpecificStrategy
 from quant_nanggroe.engine.strategy.strategies.market_making import MarketMakingStrategy
@@ -40,8 +40,8 @@ from quant_nanggroe.engine.strategy.strategies.volatility_arbitrage import (
     VolatilityArbitrageStrategy,
 )
 
-# Global metadata registry instance for all strategies
-STRATEGY_REGISTRY: StrategyMetaRegistry = StrategyMetaRegistry()
+# Global registry instance for all strategies
+STRATEGY_REGISTRY: StrategyRegistry = StrategyRegistry()
 
 
 # Strategy class registry: name -> class

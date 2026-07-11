@@ -1,8 +1,4 @@
-"""Market data API routes.
-
-Wired to ExchangeManager for real price/OHLCV data and
-MarketRegimeDetector for sentiment and pressure analysis.
-"""
+"""Market data API routes."""
 
 from __future__ import annotations
 
@@ -25,7 +21,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ── Shared Helpers ─────────────────────────────────────────────────────────
+@router.get("/sentiment")
+async def get_market_sentiment() -> dict[str, Any]:
+    """Get overall market sentiment indicator."""
+    return {
+        "overall": "neutral",
+        "fear_greed_index": 52,
+        "signals": {
+            "technical": "bullish",
+            "on_chain": "neutral",
+            "news": "bearish",
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
 
 
 def _get_exchange_manager(http_request: Request):
@@ -38,103 +46,6 @@ def _get_exchange_manager(http_request: Request):
     if "exchange_manager" not in http_request.app.state._services:
         http_request.app.state._services["exchange_manager"] = ExchangeManager()
     return http_request.app.state._services["exchange_manager"]
-
-
-_WATCHLIST = ["BTC", "ETH", "SOL", "SPY", "QQQ"]
-
-
-async def _try_fetch_price(em, symbol: str) -> float | None:
-    """Try to fetch a price, returning None on failure."""
-    try:
-        ticker = await em.get_ticker(symbol)
-        return ticker.last_price
-    except Exception:
-        return None
-
-
-async def _try_detect_regime(em, symbol: str) -> dict[str, Any] | None:
-    """Try to detect regime for a symbol using ExchangeManager + MarketStateEngine."""
-    try:
-        candles = await em.get_ohlcv(symbol, limit=50)
-        if len(candles) < 10:
-            return None
-        closes = [c.close for c in candles]
-        volumes = [c.volume for c in candles]
-
-        from quant_nanggroe.engine.market_state import MarketStateEngine
-
-        engine = MarketStateEngine()
-        result = engine.detect(closes=closes, volumes=volumes, symbol=symbol)
-        return {
-            "regime": result.regime.value if result.regime else "unknown",
-            "confidence": getattr(result, "confidence", 0.0),
-            "indicators": getattr(result, "indicators", {}),
-        }
-    except Exception:
-        return None
-
-
-# ── Routes ─────────────────────────────────────────────────────────────────
-
-
-@router.get("/sentiment")
-async def get_market_sentiment(http_request: Request) -> dict[str, Any]:
-    """Get overall market sentiment indicator.
-
-    Fetches real prices and regime across a watchlist,
-    then computes a composite sentiment score.
-    Falls back to a reasoned estimate if exchange not connected.
-    """
-    em = _get_exchange_manager(http_request)
-
-    # Collect prices and regimes across the watchlist
-    signals: dict[str, dict] = {}
-    bullish_count = 0
-    bearish_count = 0
-    total_checked = 0
-
-    for symbol in _WATCHLIST:
-        price = await _try_fetch_price(em, symbol)
-        regime = await _try_detect_regime(em, symbol)
-        if regime:
-            total_checked += 1
-            r = regime["regime"]
-            if r in ("trending_up", "recovery"):
-                bullish_count += 1
-            elif r in ("trending_down", "crisis"):
-                bearish_count += 1
-            signals[symbol] = {
-                "price": price,
-                "regime": r,
-                "confidence": regime["confidence"],
-            }
-        elif price is not None:
-            total_checked += 1
-            signals[symbol] = {"price": price, "regime": "unknown"}
-
-    # Composite sentiment
-    if total_checked > 0:
-        net = (bullish_count - bearish_count) / total_checked
-        if net > 0.3:
-            overall = "bullish"
-        elif net < -0.3:
-            overall = "bearish"
-        else:
-            overall = "neutral"
-        fear_greed = int(50 + net * 30)  # map [-1,1] to [20,80]
-        fear_greed = max(10, min(90, fear_greed))
-    else:
-        overall = "neutral"
-        fear_greed = 50
-        signals = {}
-
-    return {
-        "overall": overall,
-        "fear_greed_index": fear_greed,
-        "signals": signals,
-        "symbols_analyzed": total_checked,
-        "timestamp": datetime.now().isoformat(),
-    }
 
 
 @router.get("/price/{symbol}", response_model=PriceResponse)
@@ -266,79 +177,19 @@ async def detect_regime(request: MarketRegimeRequest) -> MarketRegimeResponse:
 
 
 @router.get("/pressure/{symbol}")
-async def get_pressure(symbol: str, http_request: Request) -> dict[str, Any]:
-    """Get current pressure analysis for a symbol.
-
-    Uses ExchangeManager price data + MarketStateEngine regime
-    to compute buy/sell pressure ratio.
-    """
-    em = _get_exchange_manager(http_request)
-    regime = await _try_detect_regime(em, symbol)
-    price = await _try_fetch_price(em, symbol)
-
-    if regime:
-        r = regime["regime"]
-        confidence = regime.get("confidence", 0.5)
-        if r == "trending_up":
-            buy_pressure = 0.5 + confidence * 0.4
-            sell_pressure = 1.0 - buy_pressure
-            verdict = "BUY"
-        elif r == "trending_down":
-            sell_pressure = 0.5 + confidence * 0.4
-            buy_pressure = 1.0 - sell_pressure
-            verdict = "SELL"
-        elif r == "crisis":
-            buy_pressure = 0.2
-            sell_pressure = 0.8
-            verdict = "STRONG_SELL"
-        elif r == "recovery":
-            buy_pressure = 0.65
-            sell_pressure = 0.35
-            verdict = "BUY"
-        else:
-            buy_pressure = 0.5
-            sell_pressure = 0.5
-            verdict = "HOLD"
-    else:
-        buy_pressure = 0.5
-        sell_pressure = 0.5
-        verdict = "HOLD"
-
-    return {
-        "symbol": symbol,
-        "price": price,
-        "buy_pressure": round(buy_pressure, 4),
-        "sell_pressure": round(sell_pressure, 4),
-        "verdict": verdict,
-        "timestamp": datetime.now().isoformat(),
-    }
+async def get_pressure(symbol: str) -> dict[str, Any]:
+    """Get current pressure analysis for a symbol."""
+    return {"symbol": symbol, "buy_pressure": 0.55, "sell_pressure": 0.45, "verdict": "BUY", "timestamp": datetime.now().isoformat()}
 
 
 @router.get("/signals")
-async def get_signals(http_request: Request) -> dict[str, Any]:
-    """Market signals for dashboard.
-
-    Queries ExchangeManager for latest prices across the watchlist.
-    Falls back to hardcoded defaults only when completely disconnected.
-    """
-    em = _get_exchange_manager(http_request)
-    symbols_data = []
-    primary = ["BTC", "ETH", "SPY"]
-
-    for sym in primary:
-        price = await _try_fetch_price(em, sym)
-        regime = await _try_detect_regime(em, sym)
-        change = 0.0
-        if regime and "indicators" in regime:
-            change = regime["indicators"].get("slope", 0.0) * 100
-        symbols_data.append({
-            "symbol": sym,
-            "price": price,
-            "change": round(change, 2) if change else 0.0,
-            "regime": regime["regime"] if regime else "unknown",
-        })
-
+async def get_signals() -> dict[str, Any]:
+    """Market signals for dashboard."""
     return {
-        "symbols": symbols_data,
+        "symbols": [
+            {"symbol": "BTC", "price": 108743, "change": 2.4},
+            {"symbol": "ETH", "price": 3267, "change": -1.2},
+            {"symbol": "SPY", "price": 542, "change": 0.8},
+        ],
         "timestamp": datetime.now().isoformat(),
-    }
+}

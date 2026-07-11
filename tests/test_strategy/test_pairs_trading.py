@@ -1,125 +1,85 @@
-"""Tests for PairsTradingStrategy."""
+"""Tests for PairsTradingStrategy — aligned to shipped (simplified) API.
+
+The strategy uses OLS hedge ratio via lstsq (no statsmodels) and reads
+two-leg columns named by `symbol` / `symbol_pair` params.
+"""
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategy.strategies.pairs_trading import PairsTradingStrategy
+from quant_nanggroe.engine.strategy.strategies.pairs_trading import (
+    PairsTradingStrategy,
+)
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
-class TestPairsTradingStrategy:
-    """Test pairs trading strategy."""
+@pytest.fixture
+def pair_data():
+    np.random.seed(42)
+    n = 250
+    idx = pd.date_range("2024-01-01", periods=n, freq="1D")
+    x = 100 + np.cumsum(np.random.randn(n) * 0.5)
+    spread = np.zeros(n)
+    spread[0] = 0.5
+    for t in range(1, n):
+        spread[t] = 0.8 * spread[t - 1] + np.random.randn() * 0.3
+    y = 2.0 * x + spread
+    return pd.DataFrame({"ASSET_A": x, "ASSET_B": y}, index=idx)
 
-    def test_default_params(self):
-        strategy = PairsTradingStrategy()
-        assert strategy.name == "PairsTrading"
-        assert strategy.lookback == 60
-        assert strategy.entry_z == 2.0
-        assert strategy.coint_method == "engle_granger"
+
+class TestPairsTradingStrategy:
+    def test_default_lookback(self):
+        s = PairsTradingStrategy(params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B"})
+        assert s.lookback == 60
+        assert s.entry_z == 2.0
 
     def test_required_columns(self):
-        strategy = PairsTradingStrategy()
-        assert "close_y" in strategy.required_columns()
-        assert "close_x" in strategy.required_columns()
+        s = PairsTradingStrategy(params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B"})
+        cols = s.required_columns()
+        assert "ASSET_A" in cols and "ASSET_B" in cols
 
     def test_warmup_period(self):
-        strategy = PairsTradingStrategy(params={"lookback": 50})
-        assert strategy.warmup_period() == 80  # lookback + 30
-
-    def test_engle_granger_cointegration(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy()
-        y = cointegrated_pair_data["close_y"]
-        x = cointegrated_pair_data["close_x"]
-        score, pvalue = strategy.test_cointegration_engle_granger(y, x)
-        # Cointegrated data should have low p-value
-        assert isinstance(pvalue, float)
-        assert 0 <= pvalue <= 1
-
-    def test_johansen_cointegration(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy()
-        y = cointegrated_pair_data["close_y"]
-        x = cointegrated_pair_data["close_x"]
-        stat, pvalue = strategy.test_cointegration_johansen(y, x)
-        assert isinstance(pvalue, float)
-
-    def test_ols_hedge_ratio(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy()
-        y = cointegrated_pair_data["close_y"]
-        x = cointegrated_pair_data["close_x"]
-        hedge_ratio, residuals = strategy.compute_hedge_ratio_ols(y, x)
-        # Should be close to 2.0 (the generating coefficient)
-        assert abs(hedge_ratio - 2.0) < 0.5
-
-    def test_kalman_hedge_ratio(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy()
-        y = cointegrated_pair_data["close_y"]
-        x = cointegrated_pair_data["close_x"]
-        hedge_ratios, residuals = strategy.compute_hedge_ratio_kalman(y, x)
-        assert len(hedge_ratios) == len(y)
-        # Kalman should converge to approximately 2.0
-        assert abs(hedge_ratios.iloc[-1] - 2.0) < 1.0
-
-    def test_spread_computation(self):
-        strategy = PairsTradingStrategy()
-        y = pd.Series([10, 11, 12, 13, 14], dtype=float)
-        x = pd.Series([5, 5.5, 6, 6.5, 7], dtype=float)
-        spread = strategy.compute_spread(y, x, 2.0)
-        expected = y - 2.0 * x
-        pd.testing.assert_series_equal(spread, expected)
-
-    def test_half_life_estimation(self):
-        strategy = PairsTradingStrategy()
-        # Mean-reverting series
-        spread = pd.Series(np.sin(np.linspace(0, 10 * np.pi, 100)) + np.random.randn(100) * 0.1)
-        hl = strategy.estimate_half_life(spread)
-        assert hl > 0
-
-    def test_generate_signal_cointegrated(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy(
-            params={"entry_z": 1.5, "exit_z": 0.5, "symbol_y": "Y", "symbol_x": "X"}
+        s = PairsTradingStrategy(
+            params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B",
+                    "lookback": 30, "hedge_ratio_lookback": 60}
         )
-        signals = []
-        for i in range(strategy.warmup_period(), len(cointegrated_pair_data)):
-            window = cointegrated_pair_data.iloc[: i + 1]
-            signal = strategy.generate_signal(window)
-            if signal is not None:
-                signals.append(signal)
+        assert s.warmup_period() == 90  # hedge_ratio_lookback + lookback
 
-        for sig in signals:
-            assert isinstance(sig, Signal)
-            assert sig.signal_type in [
-                SignalType.BUY, SignalType.SELL,
-                SignalType.CLOSE_LONG, SignalType.CLOSE_SHORT,
-            ]
-
-    def test_signal_evidence(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy(
-            params={"entry_z": 1.0, "symbol_y": "Y", "symbol_x": "X"}
-        )
-        for i in range(strategy.warmup_period(), len(cointegrated_pair_data)):
-            window = cointegrated_pair_data.iloc[: i + 1]
-            signal = strategy.generate_signal(window)
-            if signal is not None and signal.signal_type in [SignalType.BUY, SignalType.SELL]:
-                assert "spread_z" in signal.evidence
-                assert "hedge_ratio" in signal.evidence
-                assert "coint_pvalue" in signal.evidence
-                break
+    def test_ols_hedge_ratio(self, pair_data):
+        # ponytail: lstsq slope should be ≈ 2.0
+        s = PairsTradingStrategy(params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B"})
+        hr = s._ols_hedge_ratio(pair_data["ASSET_B"], pair_data["ASSET_A"])
+        assert abs(hr - 2.0) < 0.5
 
     def test_insufficient_data(self):
-        strategy = PairsTradingStrategy()
-        small_data = pd.DataFrame({
-            "close_y": [1, 2, 3],
-            "close_x": [1, 2, 3],
-        })
-        signal = strategy.generate_signal(small_data)
-        assert signal is None
+        s = PairsTradingStrategy(params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B"})
+        small = pd.DataFrame({"ASSET_A": [1, 2, 3], "ASSET_B": [2, 4, 6]})
+        assert s.generate_signal(small) is None
 
-    def test_kalman_method(self, cointegrated_pair_data):
-        strategy = PairsTradingStrategy(
-            params={"hedge_method": "kalman", "entry_z": 1.5}
+    def test_generate_signal_cointegrated(self, pair_data):
+        s = PairsTradingStrategy(
+            params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B",
+                    "entry_z": 1.0, "exit_z": 0.3,
+                    "lookback": 30, "hedge_ratio_lookback": 60}
         )
-        signal = strategy.generate_signal(cointegrated_pair_data)
-        # May or may not produce a signal, but should not error
-        if signal is not None:
-            assert isinstance(signal, Signal)
+        signals = [s.generate_signal(pair_data.iloc[: i + 1])
+                   for i in range(s.warmup_period(), len(pair_data))]
+        valid = [sig for sig in signals if sig is not None]
+        assert valid, "expected at least one signal on cointegrated data"
+        for sig in valid:
+            assert isinstance(sig, Signal)
+            assert sig.signal_type in (SignalType.BUY, SignalType.SELL,
+                                       SignalType.CLOSE_LONG, SignalType.CLOSE_SHORT)
+
+    def test_signal_evidence(self, pair_data):
+        s = PairsTradingStrategy(
+            params={"symbol": "ASSET_A", "symbol_pair": "ASSET_B",
+                    "entry_z": 0.8, "lookback": 30, "hedge_ratio_lookback": 60}
+        )
+        for i in range(s.warmup_period(), len(pair_data)):
+            sig = s.generate_signal(pair_data.iloc[: i + 1])
+            if sig is not None and sig.signal_type in (SignalType.BUY, SignalType.SELL):
+                assert "hedge_ratio" in sig.evidence
+                assert "spread_z" in sig.evidence
+                break

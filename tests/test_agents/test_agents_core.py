@@ -1117,7 +1117,7 @@ class TestConstitutionalLimits:
         assert MAX_LEVERAGE == 3.0
 
     def test_max_drawdown_pct(self):
-        assert MAX_DRAWDOWN_PCT == 0.15
+        assert MAX_DRAWDOWN_PCT == 0.10  # engine constants: 10% max drawdown
 
     def test_max_trades_per_day(self):
         assert MAX_TRADES_PER_DAY == 5

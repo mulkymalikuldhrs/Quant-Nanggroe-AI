@@ -58,7 +58,8 @@ class PairsTradingStrategy(BaseStrategy):
         self._position: float = 0.0  # +1.0 long spread, -1.0 short spread, 0.0 flat
 
     def required_columns(self) -> List[str]:
-        return ["close"]
+        # ponytail: pairs strategy needs both legs, not a single 'close'
+        return [self.symbol, self.symbol_pair]
 
     def warmup_period(self) -> int:
         return self.hedge_ratio_lookback + self.lookback

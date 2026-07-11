@@ -6,6 +6,7 @@ test:
 	$(PYTHON) -m pytest \
 		--ignore=tests/test_agents/test_geopolitics.py \
 		--ignore=tests/test_nvidia_nim \
+		--strict-markers \
 		-q --tb=short
 
 lint:

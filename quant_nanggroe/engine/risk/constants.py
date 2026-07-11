@@ -1,10 +1,11 @@
 """Constitutional Risk Limits for Quant Nanggroe AI.
 
-These values are HARDCODED, marked as Final, and CANNOT be overridden at runtime.
-They represent the absolute maximum risk tolerances for the system.
+These values are ENVIRONMENT-DRIVEN via QNAI_* env vars, with default
+fallbacks matching the original hardcoded values.  They represent the
+absolute maximum risk tolerances for the system and CANNOT be overridden
+at runtime by agents — only by .env / environment variable changes.
 
 THIS FILE IS THE SINGLE SOURCE OF TRUTH for all constitutional risk constants.
-No other file in the codebase may define duplicate risk constants.
 All risk modules MUST import constants from this file.
 
 If you need to reference a risk limit, import it from here:
@@ -13,22 +14,27 @@ If you need to reference a risk limit, import it from here:
 
 from typing import Final
 
-# ─── Constitutional Risk Limits (IMMUTABLE — Final) ─────────────────────────
+# Settings-backed constitutional limits (env-configurable, agent-proof)
+from quant_nanggroe.config.settings import get_settings
+
+_settings = get_settings()
+
+# ─── Constitutional Risk Limits (env-driven — agent-proof) ──────────────────
 
 # Per-Trade Limits
-MAX_RISK_PER_TRADE: Final[float] = 0.005       # 0.5% max risk per trade
+MAX_RISK_PER_TRADE: float = _settings.risk_max_per_trade / 100  # 0.5% default
 MAX_POSITION_SIZE_PCT: Final[float] = 0.10      # Max 10% of portfolio in single position
 MAX_LEVERAGE: Final[float] = 3.0                # Max 3x leverage
 
 # Daily Limits
-MAX_DAILY_LOSS: Final[float] = 0.01             # 1% max daily loss (hard limit)
+MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss / 100       # 1% default
 MAX_DAILY_TRADES: Final[int] = 5                # Max 5 trades per day to prevent overtrading
 
 # Weekly Limit
-MAX_WEEKLY_LOSS: Final[float] = 0.03            # 3% max weekly loss
+MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss / 100     # 3% default
 
 # Drawdown
-MAX_DRAWDOWN_PCT: Final[float] = 0.15           # 15% max drawdown before kill switch
+MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown / 100       # 10% default
 
 # Quality Gates
 MIN_RISK_REWARD: Final[float] = 2.0             # Minimum 1:2 R:R ratio

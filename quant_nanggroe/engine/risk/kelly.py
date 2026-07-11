@@ -29,6 +29,7 @@ from quant_nanggroe.engine.kelly import (
     AdaptiveKelly,
     BaseKelly,
     FractionalKelly,
+    FullKelly,
     MultiAssetKelly,
 )
 from quant_nanggroe.engine.kelly import (
@@ -186,15 +187,18 @@ class KellyCriterion:
         return result
 
     def _get_implementation(self, method: NewKellyMethod) -> BaseKelly:
-        if method == NewKellyMethod.ADAPTIVE:
+        if method == NewKellyMethod.FULL:
+            return FullKelly()  # ponytail: was falling to else→Fractional(0.5), broke f*
+        elif method == NewKellyMethod.ADAPTIVE:
             return AdaptiveKelly(
                 max_position=self.max_position,
                 min_position=self.min_position,
             )
-        elif method == NewKellyMethod.FRACTIONAL:
-            return FractionalKelly(fraction=0.5)
+        elif method in (NewKellyMethod.FRACTIONAL, NewKellyMethod.HALF, NewKellyMethod.QUARTER):
+            frac = {NewKellyMethod.HALF: 0.5, NewKellyMethod.QUARTER: 0.25}.get(method, 0.5)
+            return FractionalKelly(fraction=frac)
         else:
-            return FractionalKelly(fraction=0.5)
+            return AdaptiveKelly(max_position=self.max_position, min_position=self.min_position)
 
     def calculate_continuous_kelly(
         self,

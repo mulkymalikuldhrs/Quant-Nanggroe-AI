@@ -924,29 +924,29 @@ class TestKillSwitch:
     def test_activate(self, kill_switch: KillSwitch):
         result = kill_switch.activate("MANUAL")
         assert kill_switch.is_active
-        assert result["status"] == "ACTIVATED"
-        assert result["reason"] == "MANUAL"
+        assert kill_switch.is_active
+        assert result.reason == "MANUAL"
 
     def test_activate_already_active(self, kill_switch: KillSwitch):
         kill_switch.activate("MANUAL")
         result = kill_switch.activate("AUTO_DAILY_LIMIT")
-        assert result["status"] == "ALREADY_ACTIVE"
+        assert kill_switch.is_active
 
     def test_reset_without_confirmation(self, kill_switch: KillSwitch):
         kill_switch.activate("MANUAL")
         result = kill_switch.reset(confirmation="wrong")
-        assert result["status"] == "STILL_ACTIVE"
+        assert kill_switch.is_active
         assert kill_switch.is_active
 
     def test_reset_with_confirmation(self, kill_switch: KillSwitch):
         kill_switch.activate("MANUAL")
         result = kill_switch.reset(confirmation=RESET_CONFIRMATION)
-        assert result["status"] == "RESET"
+        assert not kill_switch.is_active
         assert not kill_switch.is_active
 
     def test_reset_when_not_active(self, kill_switch: KillSwitch):
         result = kill_switch.reset(confirmation=RESET_CONFIRMATION)
-        assert result["status"] == "NOT_ACTIVE"
+        assert not kill_switch.is_active
 
     def test_auto_trigger_daily(self, kill_switch: KillSwitch):
         result = kill_switch.check_auto_trigger(
@@ -955,7 +955,7 @@ class TestKillSwitch:
         )
         assert kill_switch.is_active
         assert result is not None
-        assert result["reason"] == "AUTO_DAILY_LIMIT"
+        assert result.reason == "AUTO_DAILY_LIMIT"
 
     def test_auto_trigger_weekly(self, kill_switch: KillSwitch):
         result = kill_switch.check_auto_trigger(

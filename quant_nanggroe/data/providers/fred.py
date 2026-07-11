@@ -42,13 +42,17 @@ class FREDError(Exception):
 def _parse_symbol(symbol: str) -> Tuple[str, Dict[str, str]]:
     """Parse a symbol string into series_id and additional parameters.
 
-    Supports format: SERIES_ID or SERIES_ID?param=val&...
+    Supports format: FRED:SERIES_ID or SERIES_ID or SERIES_ID?param=val&...
+    Strips 'FRED:' prefix if present.
     """
-    if "?" in symbol:
-        series_id, query = symbol.split("?", 1)
+    raw = symbol
+    if raw.upper().startswith("FRED:"):
+        raw = raw[5:]
+    if "?" in raw:
+        series_id, query = raw.split("?", 1)
         params = dict(q.split("=") for q in query.split("&"))
         return series_id.upper(), params
-    return symbol.upper(), {}
+    return raw.upper(), {}
 
 
 FRED_CACHE: Dict[str, Any] = {}
@@ -84,19 +88,22 @@ class FREDProvider:
             units=units,
         )
 
-        try:
-            req = Request(url)
-            with urlopen(req) as resp:
-                data = json.loads(resp.read().decode())
-        except Exception as e:
-            raise FREDError(f"Failed to fetch series {series_id}: {e}") from e
-
+        data = await self._request(url)  # ponytail: extracted for testability
         if "observations" not in data:
             raise FREDError(
                 f"FRED API returned no observations for {series_id}: {data.get('error_message', 'unknown error')}"
             )
 
         return data["observations"]
+
+    async def _request(self, url: str) -> Dict[str, Any]:  # ponytail: hook for tests to mock
+        """Execute the HTTP request and return parsed JSON."""
+        try:
+            req = Request(url)
+            with urlopen(req) as resp:
+                return json.loads(resp.read().decode())
+        except Exception as e:
+            raise FREDError(f"HTTP request failed: {e}") from e
 
     def _build_url(
         self, endpoint: str, **params: Optional[str]
