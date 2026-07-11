@@ -934,5 +934,5 @@ ain 172c2dda] fix: add missing data providers (finnhub, ecb, world_bank), fix co
  create mode 100755 skills/xlsx/templates/base.py
  create mode 100755 skills/xlsx/templates/palettes.py
  create mode 100755 skills/xlsx/xlsx.py
-To https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI.git
+To https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI.git
    01352ddc..172c2dda  main -> main

@@ -145,6 +145,8 @@ class RiskManager:
         stop_loss: float,
         account_balance: float = 1_000_000.0,
         take_profit: Optional[float] = None,
+        daily_pnl_pct: float = 0.0,
+        weekly_pnl_pct: float = 0.0,
     ) -> Dict[str, Any]:
         """9-checkpoint risk validation.
 
@@ -159,6 +161,9 @@ class RiskManager:
             stop_loss: Stop loss price.
             account_balance: Current account balance.
             take_profit: Optional take profit price.
+            daily_pnl_pct: Real-time daily P&L % from the execution layer
+                (e.g. broker-reported). Feeds the constitutional daily-loss veto.
+            weekly_pnl_pct: Real-time weekly P&L % from the execution layer.
 
         Returns:
             Dict with verdict, checkpoints, and risk metrics.
@@ -183,7 +188,11 @@ class RiskManager:
                 "message": "All trading halted. Manual reset required after review.",
             }
 
-        # Run 9-checkpoint gate
+        # Run 9-checkpoint gate. Real-time P&L % from the execution layer is authoritative
+        # for the constitutional daily/weekly-loss veto. The gate expects absolute equity
+        # fractions, so convert the percent args: daily_pnl = daily_pnl_pct/100 * balance.
+        _daily_abs = (daily_pnl_pct / 100.0) * account_balance
+        _weekly_abs = (weekly_pnl_pct / 100.0) * account_balance
         result = self.check_gate.evaluate(
             symbol=symbol,
             direction=direction,
@@ -192,8 +201,8 @@ class RiskManager:
             stop_loss=stop_loss,
             account_balance=account_balance,
             take_profit=take_profit,
-            daily_pnl=self.state.daily_pnl,
-            weekly_pnl=self.state.weekly_pnl,
+            daily_pnl=_daily_abs,
+            weekly_pnl=_weekly_abs,
             trade_count_today=self.state.trade_count_today,
             active_positions=self.state.active_positions,
         )

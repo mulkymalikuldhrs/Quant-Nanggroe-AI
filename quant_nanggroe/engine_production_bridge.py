@@ -312,9 +312,13 @@ class ProductionExecutionManager:
             try:
                 from quant_nanggroe.engine.execution.manager import ExecutionManager
                 from quant_nanggroe.engine.execution.order import OrderManager
+                from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+                from quant_nanggroe.engine.risk.manager import RiskManager
                 self._exec_mgr = ExecutionManager()
+                self._exec_mgr.set_kill_switch(KillSwitch())
+                self._exec_mgr.set_risk_manager(RiskManager())
                 self._order_mgr = OrderManager()
-                log.info("ExecutionManager loaded")
+                log.info("ExecutionManager loaded (constitutional risk enforced)")
             except Exception as e:
                 log.debug(f"No execution engine: {e}")
         if self._paper is None:

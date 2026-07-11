@@ -884,3 +884,7 @@ class StrategyWatcher:
                 logger.error(f"Strategy watcher error: {e}")
 
             await asyncio.sleep(self._poll_interval)
+
+
+# Backwards-compatible alias used by tests / downstream code.
+StrategyConfigRegistry = StrategyRegistry

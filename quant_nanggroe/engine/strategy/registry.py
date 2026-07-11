@@ -314,3 +314,7 @@ def sharpe_ci_to_registry(
     }
     meta.updated_at = datetime.now(timezone.utc).isoformat()
     return result
+
+
+# Backwards-compatible alias used by tests / downstream code.
+StrategyMetaRegistry = StrategyRegistry

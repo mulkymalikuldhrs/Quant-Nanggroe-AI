@@ -37,9 +37,13 @@ def _get_execution_manager():
     try:
         from quant_nanggroe.engine.execution.brokers.paper import PaperExchangeBroker
         from quant_nanggroe.engine.execution.manager import ExecutionManager
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+        from quant_nanggroe.engine.risk.manager import RiskManager
         em = ExecutionManager()
         paper = PaperExchangeBroker()
         em.add_broker(paper, primary=True)
+        em.set_kill_switch(KillSwitch())
+        em.set_risk_manager(RiskManager())
         return em
     except Exception as exc:
         logger.warning("Failed to load ExecutionManager: %s", exc)

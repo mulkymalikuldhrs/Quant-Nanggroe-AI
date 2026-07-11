@@ -320,8 +320,8 @@ class ConstitutionalRiskGuard:
         )
         pf = PortfolioSnapshot(
             total_equity=account_balance,
-            daily_pnl_pct=daily_pnl,
-            weekly_pnl_pct=weekly_pnl,
+            daily_pnl=daily_pnl,
+            weekly_pnl=weekly_pnl,
         )
         result = self.check_trade(req, pf)
         failed = [w for w in result.warnings + result.reasons if w] if not result.approved else []

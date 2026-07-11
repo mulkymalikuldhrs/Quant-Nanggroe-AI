@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from quant_nanggroe.engine.execution.base import Broker, Fill, Order
 from quant_nanggroe.engine.execution.fill import FillTracker
@@ -23,6 +23,9 @@ from quant_nanggroe.engine.execution.guards.max_position import MaxPositionGuard
 from quant_nanggroe.engine.execution.guards.whitelist import WhitelistGuard
 from quant_nanggroe.engine.execution.order import OrderManager
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+
+if TYPE_CHECKING:
+    from quant_nanggroe.engine.risk.manager import RiskManager
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +62,12 @@ class ExecutionManager:
         self._max_position_guard = MaxPositionGuard()
         self._whitelist_guard = WhitelistGuard()
         self._kill_switch: Optional[KillSwitch] = None
+        self._risk_manager: Optional["RiskManager"] = None
         self._audit_log: List[Dict[str, Any]] = []
+
+    def set_risk_manager(self, risk_manager: "RiskManager") -> None:
+        """Attach a RiskManager; its constitutional limits are enforced on every order."""
+        self._risk_manager = risk_manager
 
     def add_broker(self, broker: Broker, primary: bool = False) -> None:
         """Add a broker connection.
@@ -170,7 +178,42 @@ class ExecutionManager:
                     max_drawdown_pct, volatility_pct,
                 )
 
-        # 4. Submit order
+        # 4. Constitutional RiskManager — ENFORCED (no override possible)
+        if self._risk_manager is not None:
+            account_balance = 0.0
+            try:
+                account = await broker.get_account()
+                account_balance = float(getattr(account, "balance", 0.0) or 0.0)
+            except Exception:
+                account_balance = 0.0
+            verdict = self._risk_manager.check_trade(
+                symbol=order.symbol,
+                direction=order.side.value,
+                lot_size=order.quantity,
+                entry=order.price or 0.0,
+                stop_loss=order.stop_price or 0.0,
+                account_balance=account_balance,
+                # Convert execution-layer percent P&L into the absolute equity fraction
+                # the constitutional gate expects (daily_pnl_pct/100 * balance).
+                daily_pnl_pct=daily_pnl_pct,
+                weekly_pnl_pct=weekly_pnl_pct,
+            )
+            if verdict.get("verdict") == "VETOED":
+                logger.critical(
+                    "Order %s BLOCKED by RiskManager: %s — %s",
+                    order.id, verdict.get("reason"), verdict.get("failed_checkpoints"),
+                )
+                self._audit_log.append({
+                    "action": "RISK_VETOED",
+                    "order_id": order.id,
+                    "symbol": order.symbol,
+                    "side": order.side.value,
+                    "reason": verdict.get("reason"),
+                    "failed_checkpoints": verdict.get("failed_checkpoints"),
+                })
+                return None
+
+        # 5. Submit order
         try:
             updated_order = await broker.submit_order(order)
             self._order_manager.track(updated_order)

@@ -24,14 +24,24 @@ router = APIRouter()
 
 
 def _get_execution_manager(http_request: Request):
-    """Retrieve or lazily create the ExecutionManager from app state."""
+    """Retrieve or lazily create the ExecutionManager from app state.
+
+    The ExecutionManager is ALWAYS wired with the constitutional RiskManager and
+    KillSwitch so every order is enforced (no override path). A trade that breaches
+    the daily/weekly loss budget or a halt is vetoed before it reaches the broker.
+    """
     from quant_nanggroe.engine.execution.manager import ExecutionManager
+    from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+    from quant_nanggroe.engine.risk.manager import RiskManager
 
     if not hasattr(http_request.app.state, "_services"):
         http_request.app.state._services = {}
 
     if "execution_manager" not in http_request.app.state._services:
-        http_request.app.state._services["execution_manager"] = ExecutionManager()
+        em = ExecutionManager()
+        em.set_kill_switch(KillSwitch())
+        em.set_risk_manager(RiskManager())
+        http_request.app.state._services["execution_manager"] = em
     return http_request.app.state._services["execution_manager"]
 
 

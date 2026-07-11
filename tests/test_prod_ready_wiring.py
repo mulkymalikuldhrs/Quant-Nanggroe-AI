@@ -105,5 +105,44 @@ def test_factory_mt5_not_ccxt():
     assert not isinstance(broker, CCXTBroker)
 
 
+def _make_risk_em():
+    """ExecutionManager with a paper broker + RiskManager, NO kill switch (isolate risk path)."""
+    from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
+    from quant_nanggroe.engine.risk.manager import RiskManager
+
+    em = ExecutionManager()
+    em.set_risk_manager(RiskManager(initial_equity=1_000_000.0))
+    em.add_broker(PaperBroker(), primary=True)
+    return em
+
+
+# ── Test C: Constitutional RiskManager enforcement ─────────────────────────
+def test_risk_manager_is_invoked_on_order():
+    """RiskManager.check_trade MUST run on every order (constitutional enforcement wired)."""
+    em = _make_risk_em()
+    # Small order that passes guards but still runs through the risk gate
+    order = _make_order(symbol="BTC/USDT", qty=0.001)
+    order.price = 50_000.0  # 50 USDT notional — within limits, exercises the gate
+    fill = asyncio.run(em.execute_order(order, daily_pnl_pct=0.0))
+    # Risk check ran and did NOT veto a clean small order → order proceeds to broker
+    actions = [e.get("action") for e in em.get_audit_log()]
+    assert "RISK_VETOED" not in actions, "Clean small order must not be risk-vetoed"
+    assert fill is not None, "RiskManager ran but order should still execute"
+
+
+def test_risk_manager_blocks_when_daily_loss_breached():
+    """When real-time daily loss exceeds the constitutional budget, check_trade VETOES
+    and execute_order blocks the order."""
+    em = _make_risk_em()
+    order = _make_order(symbol="BTC/USDT", qty=0.001)
+    order.price = 50_000.0
+    # Pass real-time daily loss of -5% (> MAX_DAILY_LOSS 1%) through the execution layer.
+    # Unit is percent (consistent with the gate's daily_pnl_pct semantics).
+    fill = asyncio.run(em.execute_order(order, daily_pnl_pct=-5.0))
+    assert fill is None, "RiskManager MUST veto order when daily loss budget exhausted"
+    actions = [e.get("action") for e in em.get_audit_log()]
+    assert "RISK_VETOED" in actions, "Audit log missing RISK_VETOED"
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
