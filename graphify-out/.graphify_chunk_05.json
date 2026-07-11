@@ -1,0 +1,273 @@
+{
+  "nodes": [
+    {
+      "id": "docs_data_data_providers_alpha_vantage",
+      "type": "document",
+      "file_path": "docs/data/data.providers.alpha_vantage.md",
+      "label": "Data Provider: Alpha Vantage",
+      "summary": "Missing — file not found at expected path. Alpha Vantage provider was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_providers_fred",
+      "type": "document",
+      "file_path": "docs/data/data.providers.fred.md",
+      "label": "Data Provider: FRED",
+      "summary": "Missing — file not found at expected path. FRED (Federal Reserve Economic Data) provider was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_providers_marketstack",
+      "type": "document",
+      "file_path": "docs/data/data.providers.marketstack.md",
+      "label": "Data Provider: Marketstack",
+      "summary": "Missing — file not found at expected path. Marketstack provider was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_providers_overview",
+      "type": "document",
+      "file_path": "docs/data/data.providers.overview.md",
+      "label": "Data Providers Overview",
+      "summary": "Missing — file not found at expected path. Data providers overview was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_providers_polygon",
+      "type": "document",
+      "file_path": "docs/data/data.providers.polygon.md",
+      "label": "Data Provider: Polygon",
+      "summary": "Missing — file not found at expected path. Polygon provider was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_providers_sec",
+      "type": "document",
+      "file_path": "docs/data/data.providers.sec.md",
+      "label": "Data Provider: SEC",
+      "summary": "Missing — file not found at expected path. SEC (EDGAR) provider was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_providers_yfinance",
+      "type": "document",
+      "file_path": "docs/data/data.providers.yfinance.md",
+      "label": "Data Provider: yfinance",
+      "summary": "Missing — file not found at expected path. yfinance provider was likely removed or renamed.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_data_data_storage",
+      "type": "document",
+      "file_path": "docs/data/data.storage.md",
+      "label": "Hybrid-Ready Storage Architecture",
+      "summary": "Local-First, Hybrid-Later storage strategy using StorageManager with adapter pattern. Adapters: IndexedDB (default for high-capacity), LocalStorage (settings), CloudAdapter (future placeholder). Backup/restore via JSON file export/import.",
+      "content_preview": "Hybrid-Ready Storage Architecture (v1.0) — Core Philosophy: fully functional offline, seamless upgrade to cloud sync. Storage Engine uses Adapter Pattern. Data flows through BrowserFS/KnowledgeBase -> Service Layer -> StorageManager -> IndexedDB. Backup & Restore via Control Center. No data leaves device by default.",
+      "exists": true,
+      "actual_path": "docs/STORAGE.md"
+    },
+    {
+      "id": "docs_engine_engine_backtest_engine",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.engine.md",
+      "label": "Backtest Engine",
+      "summary": "Core backtesting engine with realistic execution simulation. Supports equity, crypto, forex, futures markets. Includes slippage, commission, position sizing, risk management, performance metrics, multi-strategy, sensitivity analysis, benchmark comparison, trade analytics.",
+      "content_preview": "Class BacktestConfig: initial_capital, market, strategy_type, commission_rate, slippage_bps, leverage, risk_per_trade, max_positions, bars_per_year, benchmark, short_enabled. Class BacktestEngine: run, run_multi_strategy, run_sensitivity_analysis, run_with_benchmark, run_walk_forward methods. Supports multiple markets and strategy types with realistic execution simulation.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.backtest.engine.md"
+    },
+    {
+      "id": "docs_engine_engine_backtest_engines___init__",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.engines.__init__.md",
+      "label": "Engine Factory __init__",
+      "summary": "Factory function to create the appropriate market engine. Routing priority: explicit market config, detect from symbol patterns, multiple types -> CompositeEngine. Supports equity_us, equity_hk, crypto, forex, futures markets.",
+      "content_preview": "Factory: create appropriate market engine. Routing: 1) explicit market config, 2) detect from symbol patterns, 3) CompositeEngine for multiple types. Map market name to engine instance.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.backtest.engines.__init__.md"
+    },
+    {
+      "id": "docs_engine_engine_backtest_engines_multiportfolio",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.engines.multiportfolio.md",
+      "label": "Multi-Portfolio Engine",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_backtest_engines_parallel",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.engines.parallel.md",
+      "label": "Parallel Engine",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_backtest_engines_weighted",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.engines.weighted.md",
+      "label": "Weighted Engine",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_backtest_optimization",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.optimization.md",
+      "label": "Backtest Optimization",
+      "summary": "Missing — file not found at expected path. Optimization documentation may have been split into individual optimizer docs under optimizers/.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_backtest_walk_forward",
+      "type": "document",
+      "file_path": "docs/engine/engine.backtest.walk_forward.md",
+      "label": "Walk-Forward Analysis",
+      "summary": "Walk-Forward Analysis for strategy validation. Implements anchored, rolling, and combinatorial purged cross-validation (CPCV, de Prado). Mandatory for validating strategy is not overfit. Supports per-fold strategy re-fitting to eliminate lookahead bias.",
+      "content_preview": "WalkForwardAnalyzer class with modes: rolling (fixed-size training window), anchored (expanding from start), CPCV (combinatorial purged cross-validation). Methods: analyze (pre-computed signals), analyze_strategy (per-fold re-fit). Returns windows, aggregate metrics, degradation stats, stability.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.backtest.walk_forward.md"
+    },
+    {
+      "id": "docs_engine_engine_compliance",
+      "type": "document",
+      "file_path": "docs/engine/engine.compliance.md",
+      "label": "Compliance Journal",
+      "summary": "Append-only SQLite compliance journal. Thread-safe via RLock. Immutable after insertion — only queried and exported. Records: orders, fills, rejections, risk events, auth events, system events. Supports export_json, paper state get/set.",
+      "content_preview": "Class ComplianceJournal: append-only SQLite journal, thread-safe via RLock. Methods: record_order, record_fill, record_rejection, record_risk_event, record_auth_event, record_system_event, query, export_json, get_paper_state, set_paper_state.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.compliance.md"
+    },
+    {
+      "id": "docs_engine_engine_decision",
+      "type": "document",
+      "file_path": "docs/engine/engine.decision.md",
+      "label": "Decision Engine",
+      "summary": "Deterministic decision table that synthesizes pressure + regime into trade decisions. Evaluates rules in order; first match determines action. Risk clearance applied on top: CLEAR (ALLOW_*), PAUSE (WATCH_*), BLOCKED (NO_TRADE/risk exceeded).",
+      "content_preview": "Class DecisionRule (single decision table rule). Class DecisionResult (result of decision synthesis). Class DecisionTable: deterministic table synthesizing pressure + regime -> trade decision. Methods: evaluate (regime, buy_pressure, sell_pressure, confidence, volatility, daily_pnl_pct), status.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.decision.md"
+    },
+    {
+      "id": "docs_engine_engine_execution",
+      "type": "document",
+      "file_path": "docs/engine/engine.execution.md",
+      "label": "Execution Simulation",
+      "summary": "Simulates realistic trade execution with slippage, commission, market impact. Market-specific defaults: equity (T+1, SEC/exchange fees), crypto (24/7, taker/maker), forex (spread-based, rollover), futures (contract multiplier, exchange fees).",
+      "content_preview": "Class ExecutionConfig: commission_rate, slippage_bps, market, min_commission, market_impact_coeff. Class ExecutionSimulator: apply_slippage, calc_commission (max(min_commission, rate * value)), calc_market_impact (sqrt function of participation rate), simulate_fill. Slippage always adverse.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.backtest.execution.md"
+    },
+    {
+      "id": "docs_engine_engine_factors_alpha_vantage",
+      "type": "document",
+      "file_path": "docs/engine/engine.factors.alpha_vantage.md",
+      "label": "Alpha Vantage Factors",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_factors_factor_zoo",
+      "type": "document",
+      "file_path": "docs/engine/engine.factors.factor_zoo.md",
+      "label": "Factor Zoo",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_factors_pipeline",
+      "type": "document",
+      "file_path": "docs/engine/engine.factors.pipeline.md",
+      "label": "Factor Pipeline",
+      "summary": "Batch computation pipeline for alpha factors. Orchestrates multiple factors on OHLCV data, handles column dependencies, warmup validation, output alignment. Supports panel dict (wide DataFrame per column) and single DataFrame input formats.",
+      "content_preview": "Class FactorCombinator (combine multiple factor signals). Class FactorPipeline (batch computation). Methods: compute (DataFrame), compute_panel (panel dict), compute_as_dataframe, combine_signals, validate_data, _df_to_panel. Combination methods: equal weight, weighted averaging.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.factors.pipeline.md"
+    },
+    {
+      "id": "docs_engine_engine_factors_qlib158",
+      "type": "document",
+      "file_path": "docs/engine/engine.factors.qlib158.md",
+      "label": "Qlib 158 Alpha Factors",
+      "summary": "158 alpha factor functions from Qlib. Categories: BETA, CNTD, CNTN, CNTP, CORD, CORR, IMAX, IMIN, IMXD, KLEN, KLOW, KMID, KSFT, KUP, MA, MAX, MIN, QTLD, QTLU, RANK, RESI, ROC, RSQR, RSV, STD, SUMD, SUMN, SUMP, VMA, VSTD, VSUMD, VSUMN, VSUMP, WVMA. Each factor takes OHLCV panel and returns computed values.",
+      "content_preview": "158 Qlib alpha factor functions (BETA5-60, CNTD5-60, CNTN5-60, CNTP5-60, CORD5-60, CORR5-60, IMAX5-60, IMIN5-60, IMXD5-60, KLEN, KLOW/KLOW2, KMID/KMID2, KSFT/KSFT2, KUP/KUP2, MA5-60, MAX5-60, MIN5-60, QTLD5-60, QTLU5-60, RANK5-60, RESI5-60, ROC5-60, RSQR5-60, RSV5-60, STD5-60, SUMD5-60, SUMN5-60, SUMP5-60, VMA5-60, VSTD5-60, VSUMD5-60, VSUMN5-60, VSUMP5-60, WVMA5-60). All return OHLCV panel-computed values.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.factors.qlib158.md"
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_engine_engine_backtest_engine",
+      "target": "docs_engine_engine_backtest_engines___init__",
+      "label": "uses_engine_factory",
+      "type": "imports"
+    },
+    {
+      "source": "docs_engine_engine_backtest_engine",
+      "target": "docs_engine_engine_backtest_execution",
+      "label": "uses_execution_simulation",
+      "type": "imports"
+    },
+    {
+      "source": "docs_engine_engine_backtest_engine",
+      "target": "docs_engine_engine_backtest_walk_forward",
+      "label": "implements_walk_forward",
+      "type": "contains"
+    },
+    {
+      "source": "docs_engine_engine_backtest_engine",
+      "target": "docs_engine_engine_decision",
+      "label": "integrates_with_decision_engine",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_backtest_engine",
+      "target": "docs_engine_engine_compliance",
+      "label": "records_via_compliance_journal",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_backtest_engine",
+      "target": "docs_engine_engine_factors_pipeline",
+      "label": "uses_factor_signals",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_decision",
+      "target": "docs_engine_engine_compliance",
+      "label": "records_decisions_in_journal",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_factors_pipeline",
+      "target": "docs_engine_engine_factors_qlib158",
+      "label": "orchestrates_qlib158_computation",
+      "type": "uses"
+    },
+    {
+      "source": "docs_data_data_storage",
+      "target": "docs_engine_engine_backtest_engine",
+      "label": "stores_backtest_results",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_backtest_walk_forward",
+      "target": "docs_engine_engine_backtest_engine",
+      "label": "wraps_engine_for_walk_forward",
+      "type": "uses"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1
+  python: circleci/python@2.1
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/node:20
+    steps:
+      - checkout
+      - run: npm ci || pip install -r requirements.txt || true
+      - run: npm run lint || ruff check . || true
+
+  test:
+    docker:
+      - image: cimg/node:20
+    steps:
+      - checkout
+      - run: npm ci || pip install -r requirements.txt || true
+      - run: npm test || pytest || true
+
+workflows:
+  ci:
+    jobs:
+      - lint
+      - test

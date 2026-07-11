@@ -1,0 +1,814 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": "docs_auto_api_scripts_load_test",
+        "type": "document",
+        "label": "scripts.load_test",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.load_test" }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test_loadtestworker",
+        "type": "class",
+        "label": "LoadTestWorker",
+        "properties": { "line": 84, "methods": "__init__,_send_request,_get_post_body,_worker,run,_generate_report,_print_report" }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test__send_request",
+        "type": "function",
+        "label": "_send_request",
+        "properties": { "line": 99 }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test__get_post_body",
+        "type": "function",
+        "label": "_get_post_body",
+        "properties": { "line": 139, "description": "Return appropriate POST body for known endpoints." }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test__worker",
+        "type": "function",
+        "label": "_worker",
+        "properties": { "line": 149, "description": "Single worker thread: send requests until stopped." }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test_run",
+        "type": "function",
+        "label": "run",
+        "properties": { "line": 163, "description": "Execute the load test and return a report." }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test__generate_report",
+        "type": "function",
+        "label": "_generate_report",
+        "properties": { "line": 203, "description": "Aggregate results into a structured report." }
+      },
+      {
+        "id": "docs_auto_api_scripts_load_test__print_report",
+        "type": "function",
+        "label": "_print_report",
+        "properties": { "line": 266, "description": "Print human-readable report to stdout." }
+      },
+      {
+        "id": "docs_auto_api_scripts_port_vibe_factors",
+        "type": "document",
+        "label": "scripts.port_vibe_factors",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.port_vibe_factors" }
+      },
+      {
+        "id": "docs_auto_api_scripts_port_vibe_factors_extract_helpers",
+        "type": "function",
+        "label": "extract_helpers",
+        "properties": { "line": 15, "description": "Extract helper functions from a factor source file. Returns (source_without_helpers, [(func_name, func_source), ...])" }
+      },
+      {
+        "id": "docs_auto_api_scripts_port_vibe_factors_transform_factor_file",
+        "type": "function",
+        "label": "transform_factor_file",
+        "properties": { "line": 53, "description": "Transform a Vibe-Trading factor file to use unique names and correct imports. Returns (transformed_source, [(helper_name, helper_source), ...])" }
+      },
+      {
+        "id": "docs_auto_api_scripts_port_vibe_factors_collect_factors",
+        "type": "function",
+        "label": "collect_factors",
+        "properties": { "line": 151, "description": "Collect all factors from a Vibe-Trading zoo directory. Returns ([(stem, transformed_source), ...], {helper_name: helper_source})" }
+      },
+      {
+        "id": "docs_auto_api_scripts_port_vibe_factors_generate_factor_module",
+        "type": "function",
+        "label": "generate_factor_module",
+        "properties": { "line": 179, "description": "Generate a module file from a list of transformed factor sources." }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli",
+        "type": "document",
+        "label": "scripts.qna-cli",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.qna-cli" }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli_run_kelly",
+        "type": "function",
+        "label": "run_kelly",
+        "properties": { "line": 75, "description": "Run Kelly criterion analysis for a symbol." }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli_detect_regime",
+        "type": "function",
+        "label": "detect_regime",
+        "properties": { "line": 133, "description": "Detect market regime for a symbol." }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli_run_stress_test",
+        "type": "function",
+        "label": "run_stress_test",
+        "properties": { "line": 178, "description": "Run portfolio stress test." }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli_run_backtest",
+        "type": "function",
+        "label": "run_backtest",
+        "properties": { "line": 221, "description": "Run a backtest for a strategy." }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli_check_health",
+        "type": "function",
+        "label": "check_health",
+        "properties": { "line": 262, "description": "Check system health across all modules." }
+      },
+      {
+        "id": "docs_auto_api_scripts_qna_cli_start_server",
+        "type": "function",
+        "label": "start_server",
+        "properties": { "line": 333, "description": "Start the FastAPI server." }
+      },
+      {
+        "id": "docs_auto_api_scripts_security_audit",
+        "type": "document",
+        "label": "scripts.security_audit",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.security_audit" }
+      },
+      {
+        "id": "docs_auto_api_scripts_security_audit_securityscanner",
+        "type": "class",
+        "label": "SecurityScanner",
+        "properties": { "line": 34 }
+      },
+      {
+        "id": "docs_auto_api_scripts_security_audit_should_skip",
+        "type": "function",
+        "label": "should_skip",
+        "properties": { "line": 208, "description": "Check if path should be skipped." }
+      },
+      {
+        "id": "docs_auto_api_scripts_security_audit_scan_file",
+        "type": "function",
+        "label": "scan_file",
+        "properties": { "line": 218, "description": "Scan a single file for security issues." }
+      },
+      {
+        "id": "docs_auto_api_scripts_security_audit_run_audit",
+        "type": "function",
+        "label": "run_audit",
+        "properties": { "line": 246, "description": "Run the full security audit." }
+      },
+      {
+        "id": "docs_auto_api_scripts_security_audit_print_report",
+        "type": "function",
+        "label": "print_report",
+        "properties": { "line": 289, "description": "Pretty-print the audit report." }
+      },
+      {
+        "id": "docs_auto_api_scripts_test_data_fallback",
+        "type": "document",
+        "label": "scripts.test_data_fallback",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.test_data_fallback" }
+      },
+      {
+        "id": "docs_auto_api_scripts_test_data_fallback_fallbackfetcher",
+        "type": "class",
+        "label": "FallbackFetcher",
+        "properties": { "line": 41, "methods": "__init__,name,fetch" }
+      },
+      {
+        "id": "docs_auto_api_scripts_test_kelly_backtest",
+        "type": "document",
+        "label": "scripts.test_kelly_backtest",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.test_kelly_backtest" }
+      },
+      {
+        "id": "docs_auto_api_scripts_test_kelly_backtest_kellybacktest",
+        "type": "class",
+        "label": "KellyBacktest",
+        "properties": { "line": 55, "methods": "__init__" }
+      },
+      {
+        "id": "docs_auto_api_scripts_test_qna_imports",
+        "type": "document",
+        "label": "scripts.test_qna_imports",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "scripts.test_qna_imports" }
+      },
+      {
+        "id": "docs_auto_api_scripts_test_qna_imports_test_imports",
+        "type": "function",
+        "label": "test_imports",
+        "properties": { "line": 11 }
+      },
+      {
+        "id": "docs_auto_api_security_audit",
+        "type": "document",
+        "label": "security.audit",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "security.audit" }
+      },
+      {
+        "id": "docs_auto_api_security_audit_auditrecord",
+        "type": "class",
+        "label": "AuditRecord",
+        "properties": { "line": 38, "description": "A single audit trail record.", "attributes": "id,timestamp,agent,event_type,symbol,action,verdict,details,metadata" }
+      },
+      {
+        "id": "docs_auto_api_security_audit_auditsummary",
+        "type": "class",
+        "label": "AuditSummary",
+        "properties": { "line": 76, "description": "Summary report for a single day's audit trail.", "attributes": "date,total_events,events_by_type,events_by_agent,events_by_verdict,symbols_traded,risk_rejections,orders_placed,orders_filled" }
+      },
+      {
+        "id": "docs_auto_api_security_audit_auditlogger",
+        "type": "class",
+        "label": "AuditLogger",
+        "properties": { "line": 118, "description": "Append-only audit logger backed by SQLite.", "methods": "__init__,_ensure_schema,_get_connection,close,_row_to_record,__repr__" }
+      },
+      {
+        "id": "docs_auto_api_security_auth",
+        "type": "document",
+        "label": "security.auth",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "security.auth" }
+      },
+      {
+        "id": "docs_auto_api_security_auth_userrole",
+        "type": "class",
+        "label": "UserRole",
+        "properties": { "line": 42, "description": "User role with hierarchical access levels.", "members": "ADMIN,TRADER,ANALYST,VIEWER" }
+      },
+      {
+        "id": "docs_auto_api_security_auth_tokenpayload",
+        "type": "class",
+        "label": "TokenPayload",
+        "properties": { "line": 84, "description": "JWT token payload data.", "attributes": "user_id,role,issued_at,expires_at,jti" }
+      },
+      {
+        "id": "docs_auto_api_security_auth_authresult",
+        "type": "class",
+        "label": "AuthResult",
+        "properties": { "line": 110, "description": "Result of an authentication attempt.", "attributes": "success,user_id,role,error,token" }
+      },
+      {
+        "id": "docs_auto_api_security_auth_apikeyauth",
+        "type": "class",
+        "label": "APIKeyAuth",
+        "properties": { "line": 140, "description": "API key-based authentication.", "methods": "__init__,add_key,remove_key,authenticate,has_permission,key_count" }
+      },
+      {
+        "id": "docs_auto_api_security_auth_jwtauth",
+        "type": "class",
+        "label": "JWTAuth",
+        "properties": { "line": 251, "description": "JWT token-based authentication with role-based access control.", "methods": "__init__,create_token,validate_token,refresh_token,revoke_token,has_permission,role_has_permission,is_role_at_least,_sign,__repr__" }
+      },
+      {
+        "id": "docs_auto_api_security_credential_inference",
+        "type": "document",
+        "label": "security.credential_inference",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "security.credential_inference" }
+      },
+      {
+        "id": "docs_auto_api_security_credential_inference_exchangetype",
+        "type": "class",
+        "label": "ExchangeType",
+        "properties": { "line": 36, "description": "Supported exchange/broker types.", "members": "ALPACA,BINANCE,COINBASE,OKX,BYBIT,KRAKEN,SOLANA,UNKNOWN" }
+      },
+      {
+        "id": "docs_auto_api_security_credential_inference_credentialcheck",
+        "type": "class",
+        "label": "CredentialCheck",
+        "properties": { "line": 73, "description": "Result of a credential completeness and validity check.", "attributes": "exchange_type,is_complete,is_valid,missing_fields,warnings,error,details" }
+      },
+      {
+        "id": "docs_auto_api_security_credential_inference_credentialinference",
+        "type": "class",
+        "label": "CredentialInference",
+        "properties": { "line": 162, "description": "Smart credential detection and validation.", "methods": "detect_exchange,validate_credentials,get_required_fields,__repr__" }
+      },
+      {
+        "id": "docs_auto_api_security_keyvault",
+        "type": "document",
+        "label": "security.keyvault",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "security.keyvault" }
+      },
+      {
+        "id": "docs_auto_api_security_keyvault_secretnotfounderror",
+        "type": "class",
+        "label": "SecretNotFoundError",
+        "properties": { "line": 37, "description": "Raised when a required secret is not found in environment variables." }
+      },
+      {
+        "id": "docs_auto_api_security_keyvault_keyvault",
+        "type": "class",
+        "label": "KeyVault",
+        "properties": { "line": 48, "description": "Secure secrets manager — environment variables only.", "methods": "__init__,get_secret,get_optional_secret,has_secret,require_secrets,clear_cache,mask_value,__repr__" }
+      },
+      {
+        "id": "docs_auto_api_services",
+        "type": "document",
+        "label": "services",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "services" }
+      },
+      {
+        "id": "docs_auto_api_services_ensure_services",
+        "type": "function",
+        "label": "ensure_services",
+        "properties": { "line": 29, "description": "Ensure app.state has the _services dict initialized." }
+      },
+      {
+        "id": "docs_auto_api_services_get_kill_switch",
+        "type": "function",
+        "label": "get_kill_switch",
+        "properties": { "line": 39, "description": "Return the shared KillSwitch singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_get_risk_manager",
+        "type": "function",
+        "label": "get_risk_manager",
+        "properties": { "line": 59, "description": "Return the shared RiskManager singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_get_market_state_engine",
+        "type": "function",
+        "label": "get_market_state_engine",
+        "properties": { "line": 79, "description": "Return the shared MarketStateEngine singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_get_decision_engine",
+        "type": "function",
+        "label": "get_decision_engine",
+        "properties": { "line": 99, "description": "Return the shared DecisionSynthesisEngine singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_get_strategy_lifecycle",
+        "type": "function",
+        "label": "get_strategy_lifecycle",
+        "properties": { "line": 118, "description": "Return the shared StrategyLifecycleManager singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_get_auto_switch_engine",
+        "type": "function",
+        "label": "get_auto_switch_engine",
+        "properties": { "line": 137, "description": "Return the shared AutoSwitchEngine singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_get_audit_logger",
+        "type": "function",
+        "label": "get_audit_logger",
+        "properties": { "line": 156, "description": "Return the shared AuditLogger singleton from app.state." }
+      },
+      {
+        "id": "docs_auto_api_services_init_services",
+        "type": "function",
+        "label": "init_services",
+        "properties": { "line": 175, "description": "Eagerly initialise all shared singletons and attach them to app.state." }
+      },
+      {
+        "id": "docs_auto_api_skills_registry",
+        "type": "document",
+        "label": "skills.registry",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "skills.registry" }
+      },
+      {
+        "id": "docs_auto_api_skills_registry_skill",
+        "type": "class",
+        "label": "Skill",
+        "properties": { "line": 10 }
+      },
+      {
+        "id": "docs_auto_api_skills_registry_skillcategory",
+        "type": "class",
+        "label": "SkillCategory",
+        "properties": { "line": 20 }
+      },
+      {
+        "id": "docs_auto_api_skills_registry_skillregistry",
+        "type": "class",
+        "label": "SkillRegistry",
+        "properties": { "line": 28, "description": "Registry of composable trading skills.", "methods": "__init__,register,get_by_category,get_dependency_chain,compose" }
+      },
+      {
+        "id": "docs_auto_api_skills_swarm_presets",
+        "type": "document",
+        "label": "skills.swarm_presets",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "skills.swarm_presets" }
+      },
+      {
+        "id": "docs_auto_api_skills_swarm_presets_swarmpreset",
+        "type": "class",
+        "label": "SwarmPreset",
+        "properties": { "line": 7 }
+      },
+      {
+        "id": "docs_auto_api_skills_technical_skills",
+        "type": "document",
+        "label": "skills.technical_skills",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "skills.technical_skills" }
+      },
+      {
+        "id": "docs_auto_api_skills_technical_skills_register_technical_skills",
+        "type": "function",
+        "label": "register_technical_skills",
+        "properties": { "line": 5, "description": "Register 10+ technical analysis skills." }
+      },
+      {
+        "id": "docs_auto_api_types_decisions",
+        "type": "document",
+        "label": "types.decisions",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.decisions" }
+      },
+      {
+        "id": "docs_auto_api_types_decisions_decisionclass",
+        "type": "class",
+        "label": "DecisionClass",
+        "properties": { "line": 16, "description": "Final decision classification." }
+      },
+      {
+        "id": "docs_auto_api_types_decisions_confluencescore",
+        "type": "class",
+        "label": "ConfluenceScore",
+        "properties": { "line": 27, "description": "Confluence scoring across multiple agents. Measures agreement between agents before making a decision. Higher confluence = more confidence.", "methods": "compute_consensus" }
+      },
+      {
+        "id": "docs_auto_api_types_decisions_decisiontable",
+        "type": "class",
+        "label": "DecisionTable",
+        "properties": { "line": 60, "description": "Decision table mapping conditions to actions. Based on Quant-Nanggroe-AI's 5-layer deterministic decision pipeline." }
+      },
+      {
+        "id": "docs_auto_api_types_decisions_tradingdecision",
+        "type": "class",
+        "label": "TradingDecision",
+        "properties": { "line": 80, "description": "Final trading decision from the Trading Graph. Output of the decision pipeline after all agents have contributed." }
+      },
+      {
+        "id": "docs_auto_api_types_engine",
+        "type": "document",
+        "label": "types.engine",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.engine" }
+      },
+      {
+        "id": "docs_auto_api_types_engine_marketregime",
+        "type": "class",
+        "label": "MarketRegime",
+        "properties": { "line": 21, "description": "Market regime classification. Deterministic classification based on ADX, RSI, price change, volume, and ATR. If NO_TRADE, entire system must stop." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_volatilityclass",
+        "type": "class",
+        "label": "VolatilityClass",
+        "properties": { "line": 40, "description": "Market volatility classification." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_liquidityclass",
+        "type": "class",
+        "label": "LiquidityClass",
+        "properties": { "line": 48, "description": "Market liquidity classification." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_marketstate",
+        "type": "class",
+        "label": "MarketState",
+        "properties": { "line": 55, "description": "Current market state summary. Combines regime, volatility, and liquidity for the decision pipeline." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_sensorpressure",
+        "type": "class",
+        "label": "SensorPressure",
+        "properties": { "line": 73, "description": "Normalized pressure state from sensor fusion. All values normalized to 0.0-1.0 for deterministic decision synthesis." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_riskclearance",
+        "type": "class",
+        "label": "RiskClearance",
+        "properties": { "line": 85, "description": "Risk clearance level for trade decisions. CLEAR/PAUSE/BLOCKED." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_decisionaction",
+        "type": "class",
+        "label": "DecisionAction",
+        "properties": { "line": 97, "description": "Action produced by the decision synthesis engine. ALLOW_*/WATCH_*/NO_TRADE." }
+      },
+      {
+        "id": "docs_auto_api_types_engine_strategystate",
+        "type": "class",
+        "label": "StrategyState",
+        "properties": { "line": 117, "description": "Darwinian strategy lifecycle states. ACTIVE/HIBERNATING/KILLED." }
+      },
+      {
+        "id": "docs_auto_api_types_market",
+        "type": "document",
+        "label": "types.market",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.market" }
+      },
+      {
+        "id": "docs_auto_api_types_market_timeframe",
+        "type": "class",
+        "label": "Timeframe",
+        "properties": { "line": 16, "description": "Supported timeframes for OHLCV data." }
+      },
+      {
+        "id": "docs_auto_api_types_market_ohlcv",
+        "type": "class",
+        "label": "OHLCV",
+        "properties": { "line": 29, "description": "Open-High-Low-Close-Volume candlestick data. Fundamental market data type across all analysis engines.", "methods": "high_must_be_highest,low_must_be_lowest" }
+      },
+      {
+        "id": "docs_auto_api_types_market_ticker",
+        "type": "class",
+        "label": "Ticker",
+        "properties": { "line": 59, "description": "Real-time ticker data for a trading symbol. Provides latest price, volume, and bid/ask." }
+      },
+      {
+        "id": "docs_auto_api_types_market_orderbooklevel",
+        "type": "class",
+        "label": "OrderBookLevel",
+        "properties": { "line": 82, "description": "A single price level in an order book." }
+      },
+      {
+        "id": "docs_auto_api_types_market_orderbook",
+        "type": "class",
+        "label": "OrderBook",
+        "properties": { "line": 88, "description": "Order book snapshot for a trading symbol. Bids descending, asks ascending." }
+      },
+      {
+        "id": "docs_auto_api_types_market_marketdata",
+        "type": "class",
+        "label": "MarketData",
+        "properties": { "line": 104, "description": "Aggregated market data container for a symbol. Combines OHLCV, ticker, and order book." }
+      },
+      {
+        "id": "docs_auto_api_types_orders",
+        "type": "document",
+        "label": "types.orders",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.orders" }
+      },
+      {
+        "id": "docs_auto_api_types_orders_ordertype",
+        "type": "class",
+        "label": "OrderType",
+        "properties": { "line": 16, "description": "Order type classification." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_orderdirection",
+        "type": "class",
+        "label": "OrderDirection",
+        "properties": { "line": 27, "description": "Order direction." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_orderstatus",
+        "type": "class",
+        "label": "OrderStatus",
+        "properties": { "line": 33, "description": "Order lifecycle status." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_order",
+        "type": "class",
+        "label": "Order",
+        "properties": { "line": 45, "description": "Base order type with all common fields. Validated by the risk engine before submission." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_marketorder",
+        "type": "class",
+        "label": "MarketOrder",
+        "properties": { "line": 76, "description": "Market order — executes immediately at current market price." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_limitorder",
+        "type": "class",
+        "label": "LimitOrder",
+        "properties": { "line": 81, "description": "Limit order — executes at specified price or better." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_stoporder",
+        "type": "class",
+        "label": "StopOrder",
+        "properties": { "line": 87, "description": "Stop order — triggers market order when stop price is reached." }
+      },
+      {
+        "id": "docs_auto_api_types_orders_stoplimitorder",
+        "type": "class",
+        "label": "StopLimitOrder",
+        "properties": { "line": 93, "description": "Stop-limit order — triggers limit order when stop price is reached." }
+      },
+      {
+        "id": "docs_auto_api_types_positions",
+        "type": "document",
+        "label": "types.positions",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.positions" }
+      },
+      {
+        "id": "docs_auto_api_types_positions_positiondirection",
+        "type": "class",
+        "label": "PositionDirection",
+        "properties": { "line": 16, "description": "Position direction." }
+      },
+      {
+        "id": "docs_auto_api_types_positions_position",
+        "type": "class",
+        "label": "Position",
+        "properties": { "line": 23, "description": "A single trading position with full tracking. Tracks entry, current state, PnL, and risk metrics.", "methods": "update_price" }
+      },
+      {
+        "id": "docs_auto_api_types_positions_portfolio",
+        "type": "class",
+        "label": "Portfolio",
+        "properties": { "line": 73, "description": "Portfolio state with all positions and aggregate metrics. Single source of truth for position state, PnL, and risk.", "methods": "position_value,is_invested,recalculate" }
+      },
+      {
+        "id": "docs_auto_api_types_risk",
+        "type": "document",
+        "label": "types.risk",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.risk" }
+      },
+      {
+        "id": "docs_auto_api_types_risk_riskseverity",
+        "type": "class",
+        "label": "RiskSeverity",
+        "properties": { "line": 16, "description": "Risk severity classification." }
+      },
+      {
+        "id": "docs_auto_api_types_risk_riskassessment",
+        "type": "class",
+        "label": "RiskAssessment",
+        "properties": { "line": 25, "description": "Complete risk assessment produced by the Risk Agent. Contains outcome of all 9 constitutional risk checkpoints. Any checkpoint failure results in a VETO (trade blocked)." }
+      },
+      {
+        "id": "docs_auto_api_types_risk_varcalculation",
+        "type": "class",
+        "label": "VaRCalculation",
+        "properties": { "line": 71, "description": "Value at Risk calculation result. Supports parametric, historical, and Monte Carlo methods. CVaR always computed alongside VaR." }
+      },
+      {
+        "id": "docs_auto_api_types_risk_drawdownanalysis",
+        "type": "class",
+        "label": "DrawdownAnalysis",
+        "properties": { "line": 92, "description": "Drawdown analysis result. Tracks max drawdown, current drawdown, and recovery metrics." }
+      },
+      {
+        "id": "docs_auto_api_types_risk_positionsizing",
+        "type": "class",
+        "label": "PositionSizing",
+        "properties": { "line": 110, "description": "Position sizing calculation result. Supports Kelly Criterion, fixed-fractional, and risk-parity methods." }
+      },
+      {
+        "id": "docs_auto_api_types_signals",
+        "type": "document",
+        "label": "types.signals",
+        "properties": { "file_type": "document|rationale", "doc_type": "api", "module": "types.signals" }
+      },
+      {
+        "id": "docs_auto_api_types_signals_signaldirection",
+        "type": "class",
+        "label": "SignalDirection",
+        "properties": { "line": 16, "description": "Trading signal direction." }
+      },
+      {
+        "id": "docs_auto_api_types_signals_signalstrength",
+        "type": "class",
+        "label": "SignalStrength",
+        "properties": { "line": 26, "description": "Signal confidence/strength classification." }
+      },
+      {
+        "id": "docs_auto_api_types_signals_tradingsignal",
+        "type": "class",
+        "label": "TradingSignal",
+        "properties": { "line": 34, "description": "A trading signal produced by an agent. Carries direction, confidence, target price levels, and supporting evidence.", "methods": "compute_strength" }
+      }
+    ],
+    "edges": [
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test_loadtestworker", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test__send_request", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test__get_post_body", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test__worker", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test_run", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test__generate_report", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test", "target": "docs_auto_api_scripts_load_test__print_report", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_load_test_loadtestworker", "target": "docs_auto_api_scripts_load_test__worker", "label": "HAS_METHOD" },
+      { "source": "docs_auto_api_scripts_load_test_loadtestworker", "target": "docs_auto_api_scripts_load_test__send_request", "label": "HAS_METHOD" },
+      { "source": "docs_auto_api_scripts_load_test_loadtestworker", "target": "docs_auto_api_scripts_load_test__get_post_body", "label": "HAS_METHOD" },
+      { "source": "docs_auto_api_scripts_load_test_loadtestworker", "target": "docs_auto_api_scripts_load_test_run", "label": "HAS_METHOD" },
+      { "source": "docs_auto_api_scripts_load_test_loadtestworker", "target": "docs_auto_api_scripts_load_test__generate_report", "label": "HAS_METHOD" },
+      { "source": "docs_auto_api_scripts_load_test_loadtestworker", "target": "docs_auto_api_scripts_load_test__print_report", "label": "HAS_METHOD" },
+      { "source": "docs_auto_api_scripts_port_vibe_factors", "target": "docs_auto_api_scripts_port_vibe_factors_extract_helpers", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_port_vibe_factors", "target": "docs_auto_api_scripts_port_vibe_factors_transform_factor_file", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_port_vibe_factors", "target": "docs_auto_api_scripts_port_vibe_factors_collect_factors", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_port_vibe_factors", "target": "docs_auto_api_scripts_port_vibe_factors_generate_factor_module", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_port_vibe_factors_collect_factors", "target": "docs_auto_api_scripts_port_vibe_factors_transform_factor_file", "label": "CALLS" },
+      { "source": "docs_auto_api_scripts_port_vibe_factors_generate_factor_module", "target": "docs_auto_api_scripts_port_vibe_factors_collect_factors", "label": "DEPENDS_ON" },
+      { "source": "docs_auto_api_scripts_qna_cli", "target": "docs_auto_api_scripts_qna_cli_run_kelly", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_qna_cli", "target": "docs_auto_api_scripts_qna_cli_detect_regime", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_qna_cli", "target": "docs_auto_api_scripts_qna_cli_run_stress_test", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_qna_cli", "target": "docs_auto_api_scripts_qna_cli_run_backtest", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_qna_cli", "target": "docs_auto_api_scripts_qna_cli_check_health", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_qna_cli", "target": "docs_auto_api_scripts_qna_cli_start_server", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_security_audit", "target": "docs_auto_api_scripts_security_audit_securityscanner", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_security_audit", "target": "docs_auto_api_scripts_security_audit_should_skip", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_security_audit", "target": "docs_auto_api_scripts_security_audit_scan_file", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_security_audit", "target": "docs_auto_api_scripts_security_audit_run_audit", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_security_audit", "target": "docs_auto_api_scripts_security_audit_print_report", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_security_audit_run_audit", "target": "docs_auto_api_scripts_security_audit_scan_file", "label": "CALLS" },
+      { "source": "docs_auto_api_scripts_test_data_fallback", "target": "docs_auto_api_scripts_test_data_fallback_fallbackfetcher", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_test_kelly_backtest", "target": "docs_auto_api_scripts_test_kelly_backtest_kellybacktest", "label": "CONTAINS" },
+      { "source": "docs_auto_api_scripts_test_qna_imports", "target": "docs_auto_api_scripts_test_qna_imports_test_imports", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_audit", "target": "docs_auto_api_security_audit_auditrecord", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_audit", "target": "docs_auto_api_security_audit_auditsummary", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_audit", "target": "docs_auto_api_security_audit_auditlogger", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_audit_auditlogger", "target": "docs_auto_api_security_audit_auditrecord", "label": "CREATES" },
+      { "source": "docs_auto_api_security_auth", "target": "docs_auto_api_security_auth_userrole", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_auth", "target": "docs_auto_api_security_auth_tokenpayload", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_auth", "target": "docs_auto_api_security_auth_authresult", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_auth", "target": "docs_auto_api_security_auth_apikeyauth", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_auth", "target": "docs_auto_api_security_auth_jwtauth", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_auth_apikeyauth", "target": "docs_auto_api_security_auth_authresult", "label": "RETURNS" },
+      { "source": "docs_auto_api_security_auth_jwtauth", "target": "docs_auto_api_security_auth_tokenpayload", "label": "RETURNS" },
+      { "source": "docs_auto_api_security_auth_jwtauth", "target": "docs_auto_api_security_auth_authresult", "label": "RELATED_TO" },
+      { "source": "docs_auto_api_security_credential_inference", "target": "docs_auto_api_security_credential_inference_exchangetype", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_credential_inference", "target": "docs_auto_api_security_credential_inference_credentialcheck", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_credential_inference", "target": "docs_auto_api_security_credential_inference_credentialinference", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_credential_inference_credentialinference", "target": "docs_auto_api_security_credential_inference_exchangetype", "label": "USES" },
+      { "source": "docs_auto_api_security_credential_inference_credentialinference", "target": "docs_auto_api_security_credential_inference_credentialcheck", "label": "RETURNS" },
+      { "source": "docs_auto_api_security_keyvault", "target": "docs_auto_api_security_keyvault_secretnotfounderror", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_keyvault", "target": "docs_auto_api_security_keyvault_keyvault", "label": "CONTAINS" },
+      { "source": "docs_auto_api_security_keyvault_keyvault", "target": "docs_auto_api_security_keyvault_secretnotfounderror", "label": "RAISES" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_ensure_services", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_kill_switch", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_risk_manager", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_market_state_engine", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_decision_engine", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_strategy_lifecycle", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_auto_switch_engine", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_get_audit_logger", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services", "target": "docs_auto_api_services_init_services", "label": "CONTAINS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_kill_switch", "label": "CALLS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_risk_manager", "label": "CALLS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_market_state_engine", "label": "CALLS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_decision_engine", "label": "CALLS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_strategy_lifecycle", "label": "CALLS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_auto_switch_engine", "label": "CALLS" },
+      { "source": "docs_auto_api_services_init_services", "target": "docs_auto_api_services_get_audit_logger", "label": "CALLS" },
+      { "source": "docs_auto_api_services_get_risk_manager", "target": "docs_auto_api_types_risk_riskassessment", "label": "RELATED_TO" },
+      { "source": "docs_auto_api_services_get_market_state_engine", "target": "docs_auto_api_types_engine_marketstate", "label": "RELATED_TO" },
+      { "source": "docs_auto_api_services_get_audit_logger", "target": "docs_auto_api_security_audit_auditlogger", "label": "RELATED_TO" },
+      { "source": "docs_auto_api_skills_registry", "target": "docs_auto_api_skills_registry_skill", "label": "CONTAINS" },
+      { "source": "docs_auto_api_skills_registry", "target": "docs_auto_api_skills_registry_skillcategory", "label": "CONTAINS" },
+      { "source": "docs_auto_api_skills_registry", "target": "docs_auto_api_skills_registry_skillregistry", "label": "CONTAINS" },
+      { "source": "docs_auto_api_skills_registry_skillregistry", "target": "docs_auto_api_skills_registry_skill", "label": "REGISTERS" },
+      { "source": "docs_auto_api_skills_registry_skillregistry", "target": "docs_auto_api_skills_registry_skillcategory", "label": "USES" },
+      { "source": "docs_auto_api_skills_swarm_presets", "target": "docs_auto_api_skills_swarm_presets_swarmpreset", "label": "CONTAINS" },
+      { "source": "docs_auto_api_skills_technical_skills", "target": "docs_auto_api_skills_technical_skills_register_technical_skills", "label": "CONTAINS" },
+      { "source": "docs_auto_api_skills_technical_skills_register_technical_skills", "target": "docs_auto_api_skills_registry_skillregistry", "label": "USES" },
+      { "source": "docs_auto_api_types_decisions", "target": "docs_auto_api_types_decisions_decisionclass", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_decisions", "target": "docs_auto_api_types_decisions_confluencescore", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_decisions", "target": "docs_auto_api_types_decisions_decisiontable", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_decisions", "target": "docs_auto_api_types_decisions_tradingdecision", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_decisions_tradingdecision", "target": "docs_auto_api_types_decisions_decisiontable", "label": "USES" },
+      { "source": "docs_auto_api_types_decisions_tradingdecision", "target": "docs_auto_api_types_decisions_confluencescore", "label": "USES" },
+      { "source": "docs_auto_api_types_decisions_tradingdecision", "target": "docs_auto_api_types_engine_decisionaction", "label": "REFERENCES" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_marketregime", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_volatilityclass", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_liquidityclass", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_marketstate", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_sensorpressure", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_riskclearance", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_decisionaction", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine", "target": "docs_auto_api_types_engine_strategystate", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_engine_marketstate", "target": "docs_auto_api_types_engine_marketregime", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_engine_marketstate", "target": "docs_auto_api_types_engine_volatilityclass", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_engine_marketstate", "target": "docs_auto_api_types_engine_liquidityclass", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_market", "target": "docs_auto_api_types_market_timeframe", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_market", "target": "docs_auto_api_types_market_ohlcv", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_market", "target": "docs_auto_api_types_market_ticker", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_market", "target": "docs_auto_api_types_market_orderbooklevel", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_market", "target": "docs_auto_api_types_market_orderbook", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_market", "target": "docs_auto_api_types_market_marketdata", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_market_marketdata", "target": "docs_auto_api_types_market_ohlcv", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_market_marketdata", "target": "docs_auto_api_types_market_ticker", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_market_marketdata", "target": "docs_auto_api_types_market_orderbook", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_market_orderbook", "target": "docs_auto_api_types_market_orderbooklevel", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_ordertype", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_orderdirection", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_orderstatus", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_order", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_marketorder", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_limitorder", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_stoporder", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders", "target": "docs_auto_api_types_orders_stoplimitorder", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_orders_marketorder", "target": "docs_auto_api_types_orders_order", "label": "EXTENDS" },
+      { "source": "docs_auto_api_types_orders_limitorder", "target": "docs_auto_api_types_orders_order", "label": "EXTENDS" },
+      { "source": "docs_auto_api_types_orders_stoporder", "target": "docs_auto_api_types_orders_order", "label": "EXTENDS" },
+      { "source": "docs_auto_api_types_orders_stoplimitorder", "target": "docs_auto_api_types_orders_order", "label": "EXTENDS" },
+      { "source": "docs_auto_api_types_positions", "target": "docs_auto_api_types_positions_positiondirection", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_positions", "target": "docs_auto_api_types_positions_position", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_positions", "target": "docs_auto_api_types_positions_portfolio", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_positions_portfolio", "target": "docs_auto_api_types_positions_position", "label": "COMPOSED_OF" },
+      { "source": "docs_auto_api_types_risk", "target": "docs_auto_api_types_risk_riskseverity", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_risk", "target": "docs_auto_api_types_risk_riskassessment", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_risk", "target": "docs_auto_api_types_risk_varcalculation", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_risk", "target": "docs_auto_api_types_risk_drawdownanalysis", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_risk", "target": "docs_auto_api_types_risk_positionsizing", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_risk_riskassessment", "target": "docs_auto_api_types_risk_riskseverity", "label": "USES" },
+      { "source": "docs_auto_api_types_risk_riskassessment", "target": "docs_auto_api_types_risk_varcalculation", "label": "USES" },
+      { "source": "docs_auto_api_types_risk_riskassessment", "target": "docs_auto_api_types_risk_drawdownanalysis", "label": "USES" },
+      { "source": "docs_auto_api_types_risk_riskassessment", "target": "docs_auto_api_types_risk_positionsizing", "label": "USES" },
+      { "source": "docs_auto_api_types_signals", "target": "docs_auto_api_types_signals_signaldirection", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_signals", "target": "docs_auto_api_types_signals_signalstrength", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_signals", "target": "docs_auto_api_types_signals_tradingsignal", "label": "CONTAINS" },
+      { "source": "docs_auto_api_types_signals_tradingsignal", "target": "docs_auto_api_types_signals_signaldirection", "label": "HAS_PROPERTY" },
+      { "source": "docs_auto_api_types_signals_tradingsignal", "target": "docs_auto_api_types_signals_signalstrength", "label": "HAS_PROPERTY" },
+      { "source": "docs_auto_api_types_engine_marketregime", "target": "docs_auto_api_types_signals_tradingsignal", "label": "INFLUENCES" }
+    ]
+  }
+}

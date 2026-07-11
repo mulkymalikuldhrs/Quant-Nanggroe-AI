@@ -1,0 +1,338 @@
+{
+  "nodes": [
+    {
+      "id": "docs_engine_engine_models_rl",
+      "type": "document",
+      "file_path": "docs/engine/engine.models.rl.md",
+      "label": "Reinforcement Learning Models",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_models_signal_generator",
+      "type": "document",
+      "file_path": "docs/engine/engine.models.signal_generator.md",
+      "label": "Signal Generator",
+      "summary": "ML Signal Generator that converts ML model predictions into actionable trading signals with risk-adjusted position sizing. Features multi-model signal aggregation, confidence-based position sizing, risk-adjusted signal filtering, and signal strength normalization.",
+      "content_preview": "Class TradingSignal: symbol, direction (1/-1/0), strength (0-1), confidence (0-1), suggested_size, models_agree, metadata. Class SignalGenerator: add_model, generate_signals, _aggregate_predictions. Takes ML model predictions and produces actionable TradingSignal with confidence and position sizing.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.models.signal_generator.md"
+    },
+    {
+      "id": "docs_engine_engine_nvidia_nim_client",
+      "type": "document",
+      "file_path": "docs/engine/engine.nvidia_nim.client.md",
+      "label": "NVIDIA NIM Client",
+      "summary": "Async HTTP client for NVIDIA NIM inference microservices. Supports chat completions (standard and streaming), embeddings, reranking, health checks, model listing. Includes automatic retry with exponential backoff, per-minute rate limiting, circuit breaker, and cost estimation.",
+      "content_preview": "Class NIMRateLimitError, NIMAPIError. Class NIMClient: circuit_breaker, _check_rate_limit, _record_request, _cb_record_success, _cb_record_failure, estimate_cost, estimate_token_count, _parse_chat_response, _parse_stream_chunk, _parse_embedding_response, _parse_rerank_response. Supports NIMConfig from get_nim_config().",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.nvidia_nim.client.md"
+    },
+    {
+      "id": "docs_engine_engine_nvidia_nim_llm_workflows",
+      "type": "document",
+      "file_path": "docs/engine/engine.nvidia_nim.llm_workflows.md",
+      "label": "NVIDIA NIM LLM Workflows",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_performance",
+      "type": "document",
+      "file_path": "docs/engine/engine.performance.md",
+      "label": "Performance Analysis",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_portfolio_optimization",
+      "type": "document",
+      "file_path": "docs/engine/engine.portfolio_optimization.md",
+      "label": "Portfolio Optimization",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_risk_agent",
+      "type": "document",
+      "file_path": "docs/engine/engine.risk.agent.md",
+      "label": "Risk Agent",
+      "summary": "Missing — file not found at expected path under engine.risk.agent. A risk agent exists at agents.risk.agent but it is an agent-level module, not the engine risk manager.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_risk_correlation",
+      "type": "document",
+      "file_path": "docs/engine/engine.risk.correlation.md",
+      "label": "Correlation Risk Monitor",
+      "summary": "Asset Correlation Monitor tracks rolling correlations between assets and alerts on correlation anomalies, regime changes, and market stress. HerdingDetector monitors pairwise strategy return Spearman correlations to detect rank collapse and auto-activates kill switch when threshold breached.",
+      "content_preview": "Class CorrelationAlert. Class AssetCorrelationMonitor: is_correlated, count_correlated_positions, compute_rolling_correlation, compute_diversification_score, detect_stress. Class HerdingDetector: update, compute_correlations, check_and_act, get_status, load_state, save_state. HerdingDetector wraps KillSwitch for auto-activation on mean Spearman correlation > 0.85.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.risk.correlation.md"
+    },
+    {
+      "id": "docs_engine_engine_risk_drawdown",
+      "type": "document",
+      "file_path": "docs/engine/engine.risk.drawdown.md",
+      "label": "Drawdown Monitor",
+      "summary": "Drawdown Monitor with Constitutional Limit (10%). Tracks equity drawdowns and enforces maximum drawdown constitutional limit. When breached, signals for kill switch activation. Includes CVaR-based drawdown estimation, risk of ruin calculation via gambler's ruin formula, and recovery time estimation.",
+      "content_preview": "Class DrawdownInfo. Class DrawdownMonitor: max_drawdown=0.10, current_drawdown, max_drawdown_observed, is_breached, update, get_status, calculate_cvar_drawdown, calculate_risk_of_ruin, estimate_recovery_time. Constitutional limit enforced at 10% max drawdown.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.risk.drawdown.md"
+    },
+    {
+      "id": "docs_engine_engine_risk_kill_switch",
+      "type": "document",
+      "file_path": "docs/engine/engine.risk.kill_switch.md",
+      "label": "Kill Switch",
+      "summary": "Emergency kill switch with auto-activation. Monitors portfolio and market conditions, automatically activating when safety thresholds breached. Supports multiple severity levels (LEVEL_1, etc), auto-trigger from daily P&L, weekly P&L, max drawdown, and volatility breaches. Includes early warning zone at 80% of threshold.",
+      "content_preview": "Class KillSwitchLevel, KillSwitchTrigger, KillSwitchStatus, KillSwitchEvent, KillSwitchConfig. Class KillSwitch: is_active, status, reset, check_auto_trigger, activate, deactivate, check_auto_activate, check_warning, can_trade, can_hold_positions, on_activate, current_level, events, config, stats. Auto-activates on daily/weekly P&L, max drawdown, or volatility threshold breaches. Early warning at 80% threshold.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.risk.kill_switch.md"
+    },
+    {
+      "id": "docs_engine_engine_risk_position_sizing",
+      "type": "document",
+      "file_path": "docs/engine/engine.risk.position_sizing.md",
+      "label": "Position Sizing",
+      "summary": "Position Sizing with Constitutional Limits. All methods enforce MAX_RISK_PER_TRADE as a hard cap. Methods: fixed_fractional (risk % of equity), volatility_based (ATR-based), kelly_based (Kelly Criterion), optimal_f (Ralph Vince Optimal-f from historical trades).",
+      "content_preview": "Class PositionSizeResult. Class PositionSizer: fixed_fractional (equity * risk_pct / |entry - stop|), volatility_based (ATR multiplier stop), kelly_based (win_rate, avg_win, avg_loss, fraction), optimal_f (historical trade P&L for geometric growth maximization). MAX_RISK_PER_TRADE constitutional cap enforced on all methods.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.risk.position_sizing.md"
+    },
+    {
+      "id": "docs_engine_engine_risk_var",
+      "type": "document",
+      "file_path": "docs/engine/engine.risk.var.md",
+      "label": "Value at Risk (VaR/CVaR)",
+      "summary": "Unified VaR Calculator with CVaR as primary risk metric. Three methods: parametric (variance-covariance, normal distribution), historical (empirical percentile), Monte Carlo (simulated scenarios). Includes automatic method selection, z-score lookup table, and bootstrap confidence intervals.",
+      "content_preview": "Class VaRResult. Class VaRCalculator: calculate, _select_method, _get_z_score, _parametric_var (VaR = -μ + z_α * σ, CVaR = -μ + σ * φ(z_α) / (1-α)), _historical_var (percentile + mean tail loss), _monte_carlo_var (random scenarios), _bootstrap_ci. CVaR used as PRIMARY risk metric. Supports 90%, 95%, 99% confidence levels.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.risk.var.md"
+    },
+    {
+      "id": "docs_engine_engine_scheduler",
+      "type": "document",
+      "file_path": "docs/engine/engine.scheduler.md",
+      "label": "Scheduler",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_strategies_arbitrage",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.arbitrage.md",
+      "label": "Arbitrage Strategy",
+      "summary": "Missing — file not found at expected path or alternative location. Related arbitrage strategies exist: statistical_arbitrage and volatility_arbitrage under engine.strategy.strategies.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_strategies_breakout",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.breakout.md",
+      "label": "Breakout Strategy",
+      "summary": "Missing — file not found at expected path or alternative location.",
+      "content_preview": null,
+      "exists": false
+    },
+    {
+      "id": "docs_engine_engine_strategies_crypto_specific",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.crypto_specific.md",
+      "label": "Crypto-Specific Strategy",
+      "summary": "Crypto-specific trading strategy with sub-strategies: funding_rate_arb, liquidation_cascade, on_chain, dex_arb, mev_aware. Detects funding rate arbitrage opportunities between spot and perpetual, liquidation cascades via z-score, on-chain signals from exchange flows/whale activity, DEX-CEX arbitrage, and MEV-aware Solana execution.",
+      "content_preview": "Class CryptoSpecificStrategy: mode (funding_rate_arb/liquidation_cascade/on_chain/dex_arb/mev_aware), compute_funding_rate_signal, detect_liquidation_cascade, compute_on_chain_signal, detect_dex_arb, compute_mev_signal, generate_signal. References Alexander & Dakos (2020), Baur & Dimpfl (2018), Harvey et al. (2021), Daian et al. (2020).",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategy.strategies.crypto_specific.md"
+    },
+    {
+      "id": "docs_engine_engine_strategies_fibonacci",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.fibonacci.md",
+      "label": "Fibonacci Strategy",
+      "summary": "Fibonacci Retracement/Extension Strategy. Identifies key Fibonacci levels and generates signals when price interacts with retracement levels (38.2%, 50%, 61.8%) and extension targets (127.2%, 161.8%, 261.8%). Confluence with other levels strengthens signals.",
+      "content_preview": "Class FibonacciStrategy: generate_signal, _hold. Retracement entries at 38.2%, 50%, 61.8%. Extension targets at 127.2%, 161.8%, 261.8%. Confluence detection for signal strength.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategies.fibonacci.md"
+    },
+    {
+      "id": "docs_engine_engine_strategies_ict",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.ict.md",
+      "label": "ICT Strategy",
+      "summary": "ICT (Inner Circle Trader) Strategy implementing: Kill Zones (London, New York, Asian sessions), Optimal Trade Entry (OTE) at 62-79% Fibonacci retracement, Market Structure shifts, order flow and institutional footprints, Judas Swing (false move before true direction).",
+      "content_preview": "Class ICTStrategy: generate_signal, _hold. ICT concepts: Kill Zones (London/NY/Asian), OTE 62-79% Fibonacci, market structure shifts, order flow, institutional footprints, Judas Swing detection.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategies.ict.md"
+    },
+    {
+      "id": "docs_engine_engine_strategies_market_making",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.market_making.md",
+      "label": "Market Making Strategy",
+      "summary": "Avellaneda-Stoikov market maker with inventory management. Reservation price shifts away from mid-price based on inventory, risk aversion, and volatility. Optimal bid/ask quotes placed symmetrically around reservation price with volatility-governed spread and order arrival rate kappa.",
+      "content_preview": "Class MarketMakingStrategy: gamma (risk aversion 0.1), kappa (order arrival 1.5), sigma (volatility 0.02), inventory_target, max_inventory, order_size, num_levels, spread_multiplier, transaction_cost_bps. Methods: update_inventory, _reservation_price (r = S - gamma * sigma^2 * q * T), _fee_adjustment, _base_spread, _inv_skew, _quote_levels, _estimate_sigma, generate_signal.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategy.strategies.market_making.md"
+    },
+    {
+      "id": "docs_engine_engine_strategies_mean_reversion",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.mean_reversion.md",
+      "label": "Mean Reversion Strategy",
+      "summary": "Mean reversion with configurable variant: zscore, bollinger, or OU (Ornstein-Uhlenbeck). Includes Z-score and Bollinger Band entry/exit thresholds, OU half-life estimation via OLS, transaction cost deduction, and minimum trade interval controls.",
+      "content_preview": "Class MeanReversionStrategy: strategy_type (zscore/bollinger/ou), lookback 20, entry_threshold 2.0, exit_threshold 0.5, bollinger_std 2.0. Methods: estimate_half_life (OLS: X_{t+1} - X_t = alpha + beta * X_t + eps, half-life = -ln(2)/beta), generate_signal, _compute_target, _zscore_target, _bollinger_target, _ou_target, _entry_signal, _exit_signal.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategy.strategies.mean_reversion.md"
+    },
+    {
+      "id": "docs_engine_engine_strategies_momentum",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.momentum.md",
+      "label": "Momentum Strategy",
+      "summary": "Multi-variant momentum strategy: ts_momentum (time series), dual_momentum (absolute + relative), ma_crossover, MACD. Signal format in [-1, 1]. Includes signal smoothing via SMA, transaction cost deduction from confidence, minimum trade interval, and signal classification.",
+      "content_preview": "Class MomentumStrategy: strategy_type (ts_momentum/dual_momentum/ma_crossover/macd), lookback 126, fast_lookback 20, slow_lookback 50, entry_threshold 0.05, exit_threshold 0.01, signal_smoothing 3. Methods: generate_signal, _compute_raw_signal, _ts_momentum, _dual_momentum, _ma_crossover, _macd, _smooth, _can_trade, _classify.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategy.strategies.momentum.md"
+    },
+    {
+      "id": "docs_engine_engine_strategies_pairs_trading",
+      "type": "document",
+      "file_path": "docs/engine/engine.strategies.pairs_trading.md",
+      "label": "Pairs Trading Strategy",
+      "summary": "Pairs trading strategy using OLS hedge ratio and spread z-score. Spread = price_B - hedge_ratio * price_A. Entry when |z-score| > 2.0, exit when |z-score| < 0.5. Includes configurable lookback, hedge ratio estimation, transaction costs, and minimum trade interval.",
+      "content_preview": "Class PairsTradingStrategy: symbol, symbol_pair, lookback 60, entry_z 2.0, exit_z 0.5, hedge_ratio_lookback 252. Methods: _ols_hedge_ratio (regress B on A with intercept, return slope, fallback 1.0), generate_signal.",
+      "exists": true,
+      "actual_path": "docs/auto/api/engine.strategy.strategies.pairs_trading.md"
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_engine_engine_models_signal_generator",
+      "target": "docs_engine_engine_models_rl",
+      "label": "aggregates_predictions_from",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_risk_drawdown",
+      "target": "docs_engine_engine_risk_kill_switch",
+      "label": "triggers_on_breach",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_risk_correlation",
+      "target": "docs_engine_engine_risk_kill_switch",
+      "label": "triggers_on_herding",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_risk_position_sizing",
+      "target": "docs_engine_engine_risk_var",
+      "label": "uses_var_for_risk_caps",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_crypto_specific",
+      "target": "docs_engine_engine_strategies_fibonacci",
+      "label": "references_fibonacci_for_ote",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_crypto_specific",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_fibonacci",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_ict",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_market_making",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_mean_reversion",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_momentum",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_pairs_trading",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "produces_signals_for",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_risk_drawdown",
+      "target": "docs_engine_engine_risk_correlation",
+      "label": "shares_kill_switch_trigger",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_risk_var",
+      "target": "docs_engine_engine_risk_drawdown",
+      "label": "feeds_cvar_into_drawdown_calc",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_risk_kill_switch",
+      "target": "docs_engine_engine_risk_position_sizing",
+      "label": "blocks_sizing_when_active",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_crypto_specific",
+      "target": "docs_engine_engine_strategies_market_making",
+      "label": "complementary_strategy",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_mean_reversion",
+      "target": "docs_engine_engine_strategies_momentum",
+      "label": "contrasting_strategy",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_pairs_trading",
+      "target": "docs_engine_engine_strategies_mean_reversion",
+      "label": "uses_mean_reversion_concept",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_strategies_ict",
+      "target": "docs_engine_engine_strategies_fibonacci",
+      "label": "uses_fibonacci_for_ote",
+      "type": "references"
+    },
+    {
+      "source": "docs_engine_engine_nvidia_nim_client",
+      "target": "docs_engine_engine_models_signal_generator",
+      "label": "provides_ml_inference_for",
+      "type": "references"
+    }
+  ]
+}

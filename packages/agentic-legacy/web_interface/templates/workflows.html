@@ -1,0 +1,745 @@
+{% extends "base.html" %}
+
+{% block title %}Workflows - Agentic AI System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-project-diagram me-2 text-primary"></i>
+        Workflows Management
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshWorkflows()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createWorkflowModal">
+            <i class="fas fa-plus"></i> Create Workflow
+        </button>
+    </div>
+</div>
+
+<!-- Workflow Templates -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-template me-2"></i>
+                    Workflow Templates
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="workflow-templates">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Workflows -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-play-circle me-2"></i>
+                    Active Workflows
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Workflow ID</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Started</th>
+                                <th>ETA</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="active-workflows">
+                            <!-- Active workflows will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflow History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Workflow History
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Workflow ID</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Completed</th>
+                                <th>Results</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workflow-history">
+                            <!-- Workflow history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Workflow Modal -->
+<div class="modal fade" id="createWorkflowModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Create New Workflow
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createWorkflowForm">
+                    <div class="mb-3">
+                        <label for="workflowTemplate" class="form-label">Workflow Template</label>
+                        <select class="form-select" id="workflowTemplate" required>
+                            <option value="">Select a template...</option>
+                            <option value="standard_process">Standard Multi-Agent Process</option>
+                            <option value="software_development">Software Development Workflow</option>
+                            <option value="content_creation">Content Creation Workflow</option>
+                            <option value="data_analysis">Data Analysis Workflow</option>
+                            <option value="design_project">Design Project Workflow</option>
+                            <option value="custom">Custom Workflow</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="workflowName" class="form-label">Workflow Name</label>
+                        <input type="text" class="form-control" id="workflowName" 
+                               placeholder="Enter workflow name..." required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="workflowDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="workflowDescription" rows="3" 
+                                  placeholder="Describe what this workflow should accomplish..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="workflowPriority" class="form-label">Priority</label>
+                        <select class="form-select" id="workflowPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="customStepsContainer" style="display: none;">
+                        <label class="form-label">Custom Workflow Steps</label>
+                        <div id="customSteps">
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">1.</span>
+                                <input type="text" class="form-control" placeholder="Step description...">
+                                <select class="form-select" style="max-width: 200px;">
+                                    <option value="agent_base">Agent Base</option>
+                                    <option value="agent_03_planner">Agent 03 (Planner)</option>
+                                    <option value="agent_04_executor">Agent 04 (Executor)</option>
+                                    <option value="agent_05_designer">Agent 05 (Designer)</option>
+                                    <option value="agent_06_specialist">Agent 06 (Specialist)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCustomStep()">
+                            <i class="fas fa-plus"></i> Add Step
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createWorkflow()">
+                    <i class="fas fa-rocket me-1"></i>
+                    Start Workflow
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflow Details Modal -->
+<div class="modal fade" id="workflowDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="workflowDetailsTitle">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    Workflow Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Workflow Steps</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="workflow-steps">
+                                    <!-- Steps will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Workflow Info</h6>
+                            </div>
+                            <div class="card-body" id="workflow-info">
+                                <!-- Info will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Execution Log</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Timestamp</th>
+                                                <th>Step</th>
+                                                <th>Agent</th>
+                                                <th>Status</th>
+                                                <th>Message</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="execution-log">
+                                            <!-- Log entries will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" onclick="pauseWorkflow()">
+                    <i class="fas fa-pause me-1"></i>
+                    Pause
+                </button>
+                <button type="button" class="btn btn-danger" onclick="stopWorkflow()">
+                    <i class="fas fa-stop me-1"></i>
+                    Stop
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentWorkflowId = null;
+    let customStepCounter = 1;
+    
+    // Initialize workflows page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadWorkflowTemplates();
+        loadActiveWorkflows();
+        loadWorkflowHistory();
+        
+        // Handle template selection
+        document.getElementById('workflowTemplate').addEventListener('change', function() {
+            const customContainer = document.getElementById('customStepsContainer');
+            if (this.value === 'custom') {
+                customContainer.style.display = 'block';
+            } else {
+                customContainer.style.display = 'none';
+            }
+        });
+    });
+    
+    function loadWorkflowTemplates() {
+        const templatesContainer = document.getElementById('workflow-templates');
+        
+        const templates = [
+            {
+                id: 'standard_process',
+                name: 'Standard Process',
+                description: 'Multi-agent coordination workflow',
+                icon: 'fas fa-cogs',
+                steps: ['Planning', 'Execution', 'Review', 'Output'],
+                color: 'primary'
+            },
+            {
+                id: 'software_development',
+                name: 'Software Development',
+                description: 'Complete software development lifecycle',
+                icon: 'fas fa-code',
+                steps: ['Requirements', 'Design', 'Development', 'Testing', 'Deployment'],
+                color: 'success'
+            },
+            {
+                id: 'content_creation',
+                name: 'Content Creation',
+                description: 'Content planning and creation workflow',
+                icon: 'fas fa-pen-fancy',
+                steps: ['Research', 'Planning', 'Writing', 'Review', 'Publishing'],
+                color: 'info'
+            },
+            {
+                id: 'data_analysis',
+                name: 'Data Analysis',
+                description: 'Data collection and analysis pipeline',
+                icon: 'fas fa-chart-bar',
+                steps: ['Collection', 'Cleaning', 'Analysis', 'Visualization', 'Report'],
+                color: 'warning'
+            }
+        ];
+        
+        templatesContainer.innerHTML = '';
+        templates.forEach(template => {
+            const templateCard = document.createElement('div');
+            templateCard.className = 'col-lg-3 col-md-6 mb-3';
+            templateCard.innerHTML = `
+                <div class="card h-100 cursor-pointer" onclick="selectTemplate('${template.id}')">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-${template.color} text-white p-3 me-3">
+                                <i class="${template.icon}"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-1">${template.name}</h6>
+                                <small class="text-muted">${template.description}</small>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">Steps: ${template.steps.join(' → ')}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-${template.color} w-100">
+                            <i class="fas fa-play me-1"></i>
+                            Use Template
+                        </button>
+                    </div>
+                </div>
+            `;
+            templatesContainer.appendChild(templateCard);
+        });
+    }
+    
+    function selectTemplate(templateId) {
+        document.getElementById('workflowTemplate').value = templateId;
+        
+        // Auto-fill name based on template
+        const templateNames = {
+            'standard_process': 'Standard Multi-Agent Process',
+            'software_development': 'Software Development Project',
+            'content_creation': 'Content Creation Campaign',
+            'data_analysis': 'Data Analysis Project'
+        };
+        
+        document.getElementById('workflowName').value = templateNames[templateId] || '';
+        
+        // Show create modal
+        const modal = new bootstrap.Modal(document.getElementById('createWorkflowModal'));
+        modal.show();
+    }
+    
+    function loadActiveWorkflows() {
+        // Simulated active workflows
+        const activeWorkflows = [
+            {
+                id: 'wf_001',
+                name: 'User Data Analysis',
+                status: 'running',
+                progress: 60,
+                started: '10 minutes ago',
+                eta: '5 minutes',
+                currentStep: 'Data Processing'
+            },
+            {
+                id: 'wf_002',
+                name: 'Website Redesign',
+                status: 'paused',
+                progress: 30,
+                started: '2 hours ago',
+                eta: '1 hour',
+                currentStep: 'Design Review'
+            }
+        ];
+        
+        const tbody = document.getElementById('active-workflows');
+        tbody.innerHTML = '';
+        
+        activeWorkflows.forEach(workflow => {
+            const statusClass = workflow.status === 'running' ? 'success' : 
+                               workflow.status === 'paused' ? 'warning' : 'danger';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><code>${workflow.id}</code></td>
+                <td>${workflow.name}</td>
+                <td><span class="badge bg-${statusClass}">${workflow.status}</span></td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${workflow.progress}%">
+                            ${workflow.progress}%
+                        </div>
+                    </div>
+                </td>
+                <td>${workflow.started}</td>
+                <td>${workflow.eta}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="viewWorkflowDetails('${workflow.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="pauseWorkflow('${workflow.id}')">
+                            <i class="fas fa-pause"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="stopWorkflow('${workflow.id}')">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    function loadWorkflowHistory() {
+        // Simulated workflow history
+        const workflowHistory = [
+            {
+                id: 'wf_completed_001',
+                name: 'Customer Report Generation',
+                status: 'completed',
+                duration: '2m 34s',
+                completed: '1 hour ago',
+                results: 'PDF Report Generated'
+            },
+            {
+                id: 'wf_completed_002',
+                name: 'Product Launch Planning',
+                status: 'completed',
+                duration: '1h 23m',
+                completed: '3 hours ago',
+                results: 'Launch Plan & Timeline'
+            },
+            {
+                id: 'wf_failed_001',
+                name: 'API Integration Test',
+                status: 'failed',
+                duration: '45s',
+                completed: '6 hours ago',
+                results: 'Connection timeout error'
+            }
+        ];
+        
+        const tbody = document.getElementById('workflow-history');
+        tbody.innerHTML = '';
+        
+        workflowHistory.forEach(workflow => {
+            const statusClass = workflow.status === 'completed' ? 'success' : 'danger';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><code>${workflow.id}</code></td>
+                <td>${workflow.name}</td>
+                <td><span class="badge bg-${statusClass}">${workflow.status}</span></td>
+                <td>${workflow.duration}</td>
+                <td>${workflow.completed}</td>
+                <td>${workflow.results}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="viewWorkflowDetails('${workflow.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-success" onclick="cloneWorkflow('${workflow.id}')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    function createWorkflow() {
+        const template = document.getElementById('workflowTemplate').value;
+        const name = document.getElementById('workflowName').value;
+        const description = document.getElementById('workflowDescription').value;
+        const priority = document.getElementById('workflowPriority').value;
+        
+        if (!template || !name.trim() || !description.trim()) {
+            showNotification('Please fill in all required fields', 'warning');
+            return;
+        }
+        
+        const workflowData = {
+            workflow_name: template,
+            request: {
+                name: name,
+                description: description,
+                priority: priority,
+                created_via: 'web_interface',
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        // Show loading
+        const submitBtn = event.target;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Starting...';
+        submitBtn.disabled = true;
+        
+        fetch('/api/workflows/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(workflowData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Workflow started successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('createWorkflowModal')).hide();
+                document.getElementById('createWorkflowForm').reset();
+                
+                // Refresh active workflows
+                setTimeout(loadActiveWorkflows, 1000);
+            } else {
+                showNotification(`Error: ${data.error}`, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting workflow:', error);
+            showNotification('Error starting workflow', 'danger');
+        })
+        .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+    
+    function viewWorkflowDetails(workflowId) {
+        currentWorkflowId = workflowId;
+        
+        // Simulated workflow details
+        const workflowDetails = {
+            id: workflowId,
+            name: 'Sample Workflow',
+            status: 'running',
+            steps: [
+                { name: 'Planning', agent: 'Agent 03 (Planner)', status: 'completed', duration: '45s' },
+                { name: 'Execution', agent: 'Agent 04 (Executor)', status: 'running', duration: '2m' },
+                { name: 'Review', agent: 'Agent 06 (Specialist)', status: 'pending', duration: '-' },
+                { name: 'Output', agent: 'Output Handler', status: 'pending', duration: '-' }
+            ],
+            info: {
+                created: '15 minutes ago',
+                priority: 'Medium',
+                estimated_duration: '10 minutes',
+                progress: '60%'
+            }
+        };
+        
+        // Update modal title
+        document.getElementById('workflowDetailsTitle').innerHTML = `
+            <i class="fas fa-project-diagram me-2"></i>
+            ${workflowDetails.name} (${workflowDetails.id})
+        `;
+        
+        // Display workflow steps
+        const stepsContainer = document.getElementById('workflow-steps');
+        stepsContainer.innerHTML = '';
+        
+        workflowDetails.steps.forEach((step, index) => {
+            const stepElement = document.createElement('div');
+            stepElement.className = 'mb-3';
+            
+            const statusIcon = step.status === 'completed' ? 'fas fa-check-circle text-success' :
+                              step.status === 'running' ? 'fas fa-spinner fa-spin text-primary' :
+                              'fas fa-clock text-muted';
+            
+            stepElement.innerHTML = `
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="me-3">
+                        <i class="${statusIcon}"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${index + 1}. ${step.name}</h6>
+                        <small class="text-muted">${step.agent}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${step.status === 'completed' ? 'success' : step.status === 'running' ? 'primary' : 'secondary'}">
+                            ${step.status}
+                        </span>
+                        <div class="small text-muted">${step.duration}</div>
+                    </div>
+                </div>
+            `;
+            stepsContainer.appendChild(stepElement);
+        });
+        
+        // Display workflow info
+        const infoContainer = document.getElementById('workflow-info');
+        infoContainer.innerHTML = `
+            <div class="mb-2">
+                <strong>Status:</strong>
+                <span class="badge bg-primary ms-2">${workflowDetails.status}</span>
+            </div>
+            <div class="mb-2">
+                <strong>Created:</strong> ${workflowDetails.info.created}
+            </div>
+            <div class="mb-2">
+                <strong>Priority:</strong> ${workflowDetails.info.priority}
+            </div>
+            <div class="mb-2">
+                <strong>Estimated Duration:</strong> ${workflowDetails.info.estimated_duration}
+            </div>
+            <div class="mb-2">
+                <strong>Progress:</strong> ${workflowDetails.info.progress}
+            </div>
+        `;
+        
+        // Display execution log
+        loadExecutionLog(workflowId);
+        
+        const modal = new bootstrap.Modal(document.getElementById('workflowDetailsModal'));
+        modal.show();
+    }
+    
+    function loadExecutionLog(workflowId) {
+        // Simulated execution log
+        const logEntries = [
+            { timestamp: '2 minutes ago', step: '1. Planning', agent: 'Agent 03', status: 'completed', message: 'Project plan created successfully' },
+            { timestamp: '1 minute ago', step: '2. Execution', agent: 'Agent 04', status: 'running', message: 'Processing data files...' },
+            { timestamp: '30 seconds ago', step: '2. Execution', agent: 'Agent 04', status: 'info', message: 'API calls completed' }
+        ];
+        
+        const tbody = document.getElementById('execution-log');
+        tbody.innerHTML = '';
+        
+        logEntries.forEach(entry => {
+            const statusClass = entry.status === 'completed' ? 'success' :
+                               entry.status === 'running' ? 'primary' :
+                               entry.status === 'error' ? 'danger' : 'info';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.timestamp}</td>
+                <td>${entry.step}</td>
+                <td>${entry.agent}</td>
+                <td><span class="badge bg-${statusClass}">${entry.status}</span></td>
+                <td>${entry.message}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    function addCustomStep() {
+        customStepCounter++;
+        const container = document.getElementById('customSteps');
+        
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'input-group mb-2';
+        stepDiv.innerHTML = `
+            <span class="input-group-text">${customStepCounter}.</span>
+            <input type="text" class="form-control" placeholder="Step description...">
+            <select class="form-select" style="max-width: 200px;">
+                <option value="agent_base">Agent Base</option>
+                <option value="agent_03_planner">Agent 03 (Planner)</option>
+                <option value="agent_04_executor">Agent 04 (Executor)</option>
+                <option value="agent_05_designer">Agent 05 (Designer)</option>
+                <option value="agent_06_specialist">Agent 06 (Specialist)</option>
+            </select>
+            <button type="button" class="btn btn-outline-danger" onclick="removeCustomStep(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        container.appendChild(stepDiv);
+    }
+    
+    function removeCustomStep(button) {
+        button.closest('.input-group').remove();
+    }
+    
+    function pauseWorkflow(workflowId) {
+        showNotification(`Workflow ${workflowId} paused`, 'warning');
+        loadActiveWorkflows();
+    }
+    
+    function stopWorkflow(workflowId) {
+        if (confirm('Are you sure you want to stop this workflow?')) {
+            showNotification(`Workflow ${workflowId} stopped`, 'danger');
+            loadActiveWorkflows();
+            loadWorkflowHistory();
+        }
+    }
+    
+    function cloneWorkflow(workflowId) {
+        showNotification(`Workflow ${workflowId} cloned`, 'info');
+    }
+    
+    function refreshWorkflows() {
+        loadActiveWorkflows();
+        loadWorkflowHistory();
+        showNotification('Workflows refreshed', 'info');
+    }
+    
+    // Global function for external access
+    window.refreshWorkflows = refreshWorkflows;
+    
+    // Socket.IO event handlers for workflows page
+    socket.on('workflow_started', function(data) {
+        showNotification(`Workflow started: ${data.workflow_name}`, 'success');
+        loadActiveWorkflows();
+    });
+    
+    socket.on('workflow_completed', function(data) {
+        showNotification(`Workflow completed: ${data.workflow_name}`, 'success');
+        loadActiveWorkflows();
+        loadWorkflowHistory();
+    });
+    
+    socket.on('workflow_step_completed', function(data) {
+        if (currentWorkflowId === data.workflow_id) {
+            loadExecutionLog(data.workflow_id);
+        }
+    });
+</script>
+{% endblock %}

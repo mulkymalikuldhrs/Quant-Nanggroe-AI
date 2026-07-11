@@ -1,0 +1,927 @@
+﻿{
+    "edges":  [
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "create_engine returns a BaseEngine subclass instance"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.__init___create_engine",
+                      "relationship":  "returns_instance_of"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "_map_market_to_engine returns an engine instance"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.__init___map_market_to_engine",
+                      "relationship":  "returns_instance_of"
+                  },
+                  {
+                      "confidence":  1,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "CompositeEngine inherits state from BaseEngine with shared capital pool"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.composite_engine_CompositeEngine",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "CryptoEngine is a BaseEngine subclass"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.crypto_engine_CryptoEngine",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "EquityEngine is a BaseEngine subclass"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.equity_engine_EquityEngine",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "ForexEngine is a BaseEngine subclass"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.forex_engine_ForexEngine",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "FuturesEngine is a BaseEngine subclass"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.futures_engine_FuturesEngine",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.composite_engine__create_sub_engines",
+                      "metadata":  {
+                                       "description":  "CompositeEngine uses _create_sub_engines to instantiate sub-engines per market"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.composite_engine_CompositeEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.crypto_engine_calc_funding_fee",
+                      "metadata":  {
+                                       "description":  "CryptoEngine calculates funding fees"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.crypto_engine_CryptoEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.crypto_engine_check_liquidation",
+                      "metadata":  {
+                                       "description":  "CryptoEngine checks liquidation"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.crypto_engine_CryptoEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.crypto_engine_get_maintenance_margin_rate",
+                      "metadata":  {
+                                       "description":  "CryptoEngine uses tiered maintenance margin rates"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.crypto_engine_CryptoEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.forex_engine_calc_swap",
+                      "metadata":  {
+                                       "description":  "ForexEngine calculates swap/rollover"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.forex_engine_ForexEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.engines.forex_engine_pip_size",
+                      "metadata":  {
+                                       "description":  "ForexEngine uses pip size for pricing"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.forex_engine_ForexEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.engines.forex_engine_normalize_symbol",
+                      "metadata":  {
+                                       "description":  "ForexEngine normalizes symbols"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.forex_engine_ForexEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.engines.futures_engine_extract_product_code",
+                      "metadata":  {
+                                       "description":  "FuturesEngine extracts product code from symbol"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.futures_engine_FuturesEngine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.market_detection_detect_market_type",
+                      "metadata":  {
+                                       "description":  "create_engine uses detect_market_type for auto-detection"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.__init___create_engine",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.engines.composite_engine_CompositeEngine",
+                      "metadata":  {
+                                       "description":  "create_engine instantiates CompositeEngine for multiple market types"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.__init___create_engine",
+                      "relationship":  "instantiates"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.optimizers.base_optimizer_BaseOptimizer",
+                      "metadata":  {
+                                       "description":  "EqualVolatilityOptimizer extends BaseOptimizer"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.optimizers.equal_volatility_optimizer_EqualVolatilityOptimizer",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.optimizers.base_optimizer_BaseOptimizer",
+                      "metadata":  {
+                                       "description":  "MeanVarianceOptimizer extends BaseOptimizer"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.optimizers.mean_variance_optimizer_MeanVarianceOptimizer",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.optimizers.base_optimizer_BaseOptimizer",
+                      "metadata":  {
+                                       "description":  "RiskParityOptimizer extends BaseOptimizer"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.optimizers.risk_parity_optimizer_RiskParityOptimizer",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.loaders.base_loader_BaseLoader",
+                      "metadata":  {
+                                       "description":  "CCXTLoader extends BaseLoader"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.loaders.ccxt_loader_CCXTLoader",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.loaders.base_loader_BaseLoader",
+                      "metadata":  {
+                                       "description":  "YFinanceLoader extends BaseLoader"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.loaders.yfinance_loader_YFinanceLoader",
+                      "relationship":  "inherits_from"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.metrics_MetricsContainer",
+                      "metadata":  {
+                                       "description":  "MetricsCalculator produces MetricsContainer"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.metrics_MetricsCalculator",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.monte_carlo_MonteCarloResult",
+                      "metadata":  {
+                                       "description":  "MonteCarloSimulator produces MonteCarloResult"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.monte_carlo_MonteCarloSimulator",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.monte_carlo_MultiMetricMonteCarloResult",
+                      "metadata":  {
+                                       "description":  "MonteCarloSimulator produces MultiMetricMonteCarloResult"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.monte_carlo_MonteCarloSimulator",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.75,
+                      "target":  "docs_auto_api_engine.backtest.monte_carlo_RegimeInfo",
+                      "metadata":  {
+                                       "description":  "MonteCarloSimulator detects regimes using RegimeInfo"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.monte_carlo_MonteCarloSimulator",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.psr_PSRResult",
+                      "metadata":  {
+                                       "description":  "probabilistic_sharpe_ratio returns PSRResult"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.psr_probabilistic_sharpe_ratio",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.psr_DSRResult",
+                      "metadata":  {
+                                       "description":  "deflated_sharpe_ratio returns DSRResult"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.psr_deflated_sharpe_ratio",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.psr_ValidationReport",
+                      "metadata":  {
+                                       "description":  "full_statistical_validation returns ValidationReport"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.psr_full_statistical_validation",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.psr_probabilistic_sharpe_ratio",
+                      "metadata":  {
+                                       "description":  "full_statistical_validation computes PSR"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.psr_full_statistical_validation",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.psr_deflated_sharpe_ratio",
+                      "metadata":  {
+                                       "description":  "full_statistical_validation computes DSR"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.psr_full_statistical_validation",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  1,
+                      "target":  "docs_auto_api_engine.backtest.portfolio_Position",
+                      "metadata":  {
+                                       "description":  "Portfolio tracks multiple Position objects"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.portfolio_Portfolio",
+                      "relationship":  "contains"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.portfolio_TradeRecord",
+                      "metadata":  {
+                                       "description":  "Portfolio produces TradeRecord when closing positions"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.portfolio_Portfolio",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.metrics_MetricsCalculator",
+                      "metadata":  {
+                                       "description":  "BacktestReportGenerator uses MetricsCalculator data"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.report_BacktestReportGenerator",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.85,
+                      "target":  "docs_auto_api_engine.backtest.portfolio_TradeRecord",
+                      "metadata":  {
+                                       "description":  "BacktestReportGenerator processes trade records"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.report_BacktestReportGenerator",
+                      "relationship":  "processes"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.execution_ExecutionConfig",
+                      "metadata":  {
+                                       "description":  "ExecutionSimulator is configured by ExecutionConfig"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.execution_ExecutionSimulator",
+                      "relationship":  "configured_by"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardResult",
+                      "metadata":  {
+                                       "description":  "WalkForwardAnalyzer produces WalkForwardResult per window"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardAnalyzer",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardStability",
+                      "metadata":  {
+                                       "description":  "WalkForwardAnalyzer calculates WalkForwardStability"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardAnalyzer",
+                      "relationship":  "produces"
+                  },
+                  {
+                      "confidence":  0.95,
+                      "target":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "metadata":  {
+                                       "description":  "WalkForwardAnalyzer uses a BaseEngine instance for backtesting"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardAnalyzer",
+                      "relationship":  "uses"
+                  },
+                  {
+                      "confidence":  0.75,
+                      "target":  "docs_auto_api_engine.backtest.engines.market_detection_detect_equity_variant",
+                      "metadata":  {
+                                       "description":  "EquityEngine variants (US/HK/China-A) may use detection"
+                                   },
+                      "source":  "docs_auto_api_engine.backtest.engines.equity_engine_EquityEngine",
+                      "relationship":  "uses"
+                  }
+              ],
+    "nodes":  [
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.__init___create_engine",
+                      "name":  "create_engine",
+                      "metadata":  {
+                                       "description":  "Factory: create the appropriate market engine based on config or symbol detection"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.__init__.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.__init___map_market_to_engine",
+                      "name":  "_map_market_to_engine",
+                      "metadata":  {
+                                       "description":  "Map market name to engine instance"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.__init__.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.base_engine_Position",
+                      "name":  "Position",
+                      "metadata":  {
+                                       "description":  "An open position in a single instrument"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.base_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.base_engine_PortfolioSnapshot",
+                      "name":  "PortfolioSnapshot",
+                      "metadata":  {
+                                       "description":  "Portfolio state at a single point in time"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.base_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.base_engine_EngineConfig",
+                      "name":  "EngineConfig",
+                      "metadata":  {
+                                       "description":  "Configuration for a market engine"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.base_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.base_engine_BaseEngine",
+                      "name":  "BaseEngine",
+                      "metadata":  {
+                                       "description":  "Abstract base for all market engines. Subclasses override market-rule methods"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.base_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.composite_engine_CompositeEngine",
+                      "name":  "CompositeEngine",
+                      "metadata":  {
+                                       "description":  "Cross-market engine with shared capital pool. Delegates to sub-engines"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.composite_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.composite_engine__create_sub_engines",
+                      "name":  "_create_sub_engines",
+                      "metadata":  {
+                                       "description":  "Instantiate one sub-engine per market type detected in codes"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.composite_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.crypto_engine_CryptoEngine",
+                      "name":  "CryptoEngine",
+                      "metadata":  {
+                                       "description":  "Crypto perpetual contract engine with funding fees and liquidation"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.crypto_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.crypto_engine_get_maintenance_margin_rate",
+                      "name":  "get_maintenance_margin_rate",
+                      "metadata":  {
+                                       "description":  "Look up tiered maintenance margin rate"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.crypto_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.crypto_engine_calc_funding_fee",
+                      "name":  "calc_funding_fee",
+                      "metadata":  {
+                                       "description":  "Calculate crypto funding fee for one symbol"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.crypto_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.crypto_engine_check_liquidation",
+                      "name":  "check_liquidation",
+                      "metadata":  {
+                                       "description":  "Check if a crypto position should be liquidated"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.crypto_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.equity_engine_EquityEngine",
+                      "name":  "EquityEngine",
+                      "metadata":  {
+                                       "description":  "US / HK / China-A equity engine with market-specific rule sets"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.equity_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.forex_engine_ForexEngine",
+                      "name":  "ForexEngine",
+                      "metadata":  {
+                                       "description":  "Forex engine for spot / CFD pairs with swap and spread"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.forex_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.forex_engine_pip_size",
+                      "name":  "pip_size",
+                      "metadata":  {
+                                       "description":  "Size of 1 pip for the pair"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.forex_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.forex_engine_normalize_symbol",
+                      "name":  "normalize_symbol",
+                      "metadata":  {
+                                       "description":  "Normalize forex symbol to XXX/YYY format"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.forex_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.forex_engine_calc_swap",
+                      "name":  "calc_swap",
+                      "metadata":  {
+                                       "description":  "Calculate forex swap/rollover for one symbol"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.forex_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.futures_engine_FuturesEngine",
+                      "name":  "FuturesEngine",
+                      "metadata":  {
+                                       "description":  "Futures engine with contract-multiplier support"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.futures_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.futures_engine_extract_product_code",
+                      "name":  "extract_product_code",
+                      "metadata":  {
+                                       "description":  "Extract product code from futures symbol"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.futures_engine.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.market_detection_detect_market_type",
+                      "name":  "detect_market_type",
+                      "metadata":  {
+                                       "description":  "Infer market type from symbol format"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.market_detection.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.market_detection_is_chinese_futures",
+                      "name":  "is_chinese_futures",
+                      "metadata":  {
+                                       "description":  "Check whether a futures code belongs to a Chinese exchange"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.market_detection.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.engines.market_detection_detect_equity_variant",
+                      "name":  "detect_equity_variant",
+                      "metadata":  {
+                                       "description":  "Detect US vs HK vs China-A from symbol suffixes"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.engines.market_detection.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.execution_ExecutionConfig",
+                      "name":  "ExecutionConfig",
+                      "metadata":  {
+                                       "description":  "Configuration for execution simulation"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.execution.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.execution_ExecutionSimulator",
+                      "name":  "ExecutionSimulator",
+                      "metadata":  {
+                                       "description":  "Simulates realistic trade execution with slippage, commission, market impact"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.execution.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.loaders.base_loader_DataNotAvailableError",
+                      "name":  "DataNotAvailableError",
+                      "metadata":  {
+                                       "description":  "Raised when no data source is available for a given market"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.loaders.base_loader.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.loaders.base_loader_BaseLoader",
+                      "name":  "BaseLoader",
+                      "metadata":  {
+                                       "description":  "Abstract base class for all data source loaders"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.loaders.base_loader.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.loaders.ccxt_loader_CCXTLoader",
+                      "name":  "CCXTLoader",
+                      "metadata":  {
+                                       "description":  "CCXT-backed crypto OHLCV loader (100+ exchanges)"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.loaders.ccxt_loader.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.loaders.yfinance_loader_YFinanceLoader",
+                      "name":  "YFinanceLoader",
+                      "metadata":  {
+                                       "description":  "Fetch HK/US equity bars from Yahoo Finance via yfinance"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.loaders.yfinance_loader.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.metrics_MetricsContainer",
+                      "name":  "MetricsContainer",
+                      "metadata":  {
+                                       "description":  "Container for all performance metrics"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.metrics.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.metrics_MetricsCalculator",
+                      "name":  "MetricsCalculator",
+                      "metadata":  {
+                                       "description":  "Comprehensive performance metrics calculator"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.metrics.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.monte_carlo_MonteCarloResult",
+                      "name":  "MonteCarloResult",
+                      "metadata":  {
+                                       "description":  "Result from Monte Carlo simulation"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.monte_carlo.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.monte_carlo_MultiMetricMonteCarloResult",
+                      "name":  "MultiMetricMonteCarloResult",
+                      "metadata":  {
+                                       "description":  "Monte Carlo results across multiple metrics"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.monte_carlo.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.monte_carlo_RegimeInfo",
+                      "name":  "RegimeInfo",
+                      "metadata":  {
+                                       "description":  "Information about a market regime segment"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.monte_carlo.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.monte_carlo_MonteCarloSimulator",
+                      "name":  "MonteCarloSimulator",
+                      "metadata":  {
+                                       "description":  "Monte Carlo simulation for backtest confidence intervals"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.monte_carlo.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.optimizers.base_optimizer_BaseOptimizer",
+                      "name":  "BaseOptimizer",
+                      "metadata":  {
+                                       "description":  "Abstract portfolio optimizer"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.optimizers.base_optimizer.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.optimizers.equal_volatility_optimizer_EqualVolatilityOptimizer",
+                      "name":  "EqualVolatilityOptimizer",
+                      "metadata":  {
+                                       "description":  "Inverse-volatility weights without a full covariance model"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.optimizers.equal_volatility_optimizer.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.optimizers.mean_variance_optimizer_MeanVarianceOptimizer",
+                      "name":  "MeanVarianceOptimizer",
+                      "metadata":  {
+                                       "description":  "Maximize Sharpe ratio subject to long-only simplex using SLSQP"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.optimizers.mean_variance_optimizer.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.optimizers.risk_parity_optimizer_RiskParityOptimizer",
+                      "name":  "RiskParityOptimizer",
+                      "metadata":  {
+                                       "description":  "Risk parity: equalize risk contributions across assets"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.optimizers.risk_parity_optimizer.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.portfolio_Position",
+                      "name":  "Position",
+                      "metadata":  {
+                                       "description":  "An open position in a single instrument"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.portfolio.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.portfolio_TradeRecord",
+                      "name":  "TradeRecord",
+                      "metadata":  {
+                                       "description":  "A completed round-trip trade"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.portfolio.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.portfolio_Portfolio",
+                      "name":  "Portfolio",
+                      "metadata":  {
+                                       "description":  "Portfolio state manager for backtesting"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.portfolio.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.psr_PSRResult",
+                      "name":  "PSRResult",
+                      "metadata":  {
+                                       "description":  "Probabilistic Sharpe Ratio result"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.psr.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.psr_DSRResult",
+                      "name":  "DSRResult",
+                      "metadata":  {
+                                       "description":  "Deflated Sharpe Ratio result"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.psr.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.psr_ValidationReport",
+                      "name":  "ValidationReport",
+                      "metadata":  {
+                                       "description":  "Full statistical validation report"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.psr.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.psr_probabilistic_sharpe_ratio",
+                      "name":  "probabilistic_sharpe_ratio",
+                      "metadata":  {
+                                       "description":  "Compute the Probabilistic Sharpe Ratio (PSR)"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.psr.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.psr_deflated_sharpe_ratio",
+                      "name":  "deflated_sharpe_ratio",
+                      "metadata":  {
+                                       "description":  "Compute the Deflated Sharpe Ratio (DSR)"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.psr.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.psr_full_statistical_validation",
+                      "name":  "full_statistical_validation",
+                      "metadata":  {
+                                       "description":  "Full statistical validation for a backtested strategy"
+                                   },
+                      "type":  "function",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.psr.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.report_BacktestReportGenerator",
+                      "name":  "BacktestReportGenerator",
+                      "metadata":  {
+                                       "description":  "Generates backtest reports (JSON, HTML, text)"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.report.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardResult",
+                      "name":  "WalkForwardResult",
+                      "metadata":  {
+                                       "description":  "Result from a single walk-forward window"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.walk_forward.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardStability",
+                      "name":  "WalkForwardStability",
+                      "metadata":  {
+                                       "description":  "Stability metrics for walk-forward analysis"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.walk_forward.md"
+                  },
+                  {
+                      "id":  "docs_auto_api_engine.backtest.walk_forward_WalkForwardAnalyzer",
+                      "name":  "WalkForwardAnalyzer",
+                      "metadata":  {
+                                       "description":  "Walk-Forward Analysis for strategy validation"
+                                   },
+                      "type":  "class",
+                      "confidence":  1,
+                      "file_type":  "document",
+                      "file":  "docs/auto/api/engine.backtest.walk_forward.md"
+                  }
+              ]
+}

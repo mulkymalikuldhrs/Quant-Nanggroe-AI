@@ -1,0 +1,1029 @@
+{% extends "base_new.html" %}
+
+{% block title %}LLM Provider Management - Agentic AI System{% endblock %}
+
+{% block content %}
+<!-- LLM Provider Management Dashboard -->
+<div class="llm-hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">🧠 LLM Provider Management</h1>
+                <p class="hero-subtitle">Multi-provider AI gateway with automatic failover and cost optimization</p>
+                <div class="hero-badges">
+                    <span class="badge badge-success">🆓 LLM7 Free Priority</span>
+                    <span class="badge badge-info">🔄 Auto-Failover</span>
+                    <span class="badge badge-warning">📊 Cost Optimization</span>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="provider-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="active-providers">0</div>
+                        <div class="stat-label">Active Providers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="total-requests">0</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="total-cost">$0.00</div>
+                        <div class="stat-label">Total Cost</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="testAllProviders()">
+                    <i class="fas fa-check-circle"></i>
+                    <h4>Test All Providers</h4>
+                    <p>Verify all API connections</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="addProvider()">
+                    <i class="fas fa-plus-circle"></i>
+                    <h4>Add API Key</h4>
+                    <p>Configure new provider</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="viewUsageStats()">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Usage Analytics</h4>
+                    <p>View detailed statistics</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="quick-action-card" onclick="chatTest()">
+                    <i class="fas fa-comments"></i>
+                    <h4>Chat Test</h4>
+                    <p>Test AI responses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Provider List -->
+<div class="providers-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🔧 LLM Providers</h3>
+                        <div class="provider-controls">
+                            <select id="priority-filter" class="form-select">
+                                <option value="">All Priorities</option>
+                                <option value="free">Free Providers</option>
+                                <option value="paid">Paid Providers</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshProviders()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="providers-list" class="providers-grid">
+                            <!-- Providers will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <!-- Priority Order -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>📊 Priority Order</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="priority-order" class="priority-list">
+                            <!-- Priority order will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Usage Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💰 Cost Summary</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="cost-summary">
+                            <!-- Cost summary will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Provider Modal -->
+<div class="modal fade" id="addProviderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🔑 Configure LLM Provider</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="provider-form">
+                    <div class="mb-3">
+                        <label class="form-label">Provider</label>
+                        <select class="form-select" id="provider-select" required onchange="updateProviderInfo()">
+                            <option value="">Select Provider</option>
+                            <option value="llm7">LLM7 (Free - Already Configured)</option>
+                            <option value="openrouter">OpenRouter</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="google">Google AI</option>
+                            <option value="huggingface">Hugging Face</option>
+                        </select>
+                    </div>
+                    
+                    <div id="provider-info" class="provider-info mb-3" style="display: none;">
+                        <!-- Provider info will be displayed here -->
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-control" id="api-key" placeholder="Enter API key" required>
+                        <div class="form-text">
+                            <i class="fas fa-lock"></i> API keys are stored securely with AES-256 encryption
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="test-connection">
+                            <label class="form-check-label" for="test-connection">
+                                Test connection after adding
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProvider()">
+                    <i class="fas fa-save"></i> Add Provider
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chat Test Modal -->
+<div class="modal fade" id="chatTestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">💬 AI Chat Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Select Provider</label>
+                    <select class="form-select" id="test-provider">
+                        <option value="auto">Auto (Use Priority Order)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Test Message</label>
+                    <textarea class="form-control" id="test-message" rows="3" placeholder="Enter your test message...">Hello! This is a test message. Please respond briefly.</textarea>
+                </div>
+                
+                <div id="chat-response" class="chat-response" style="display: none;">
+                    <!-- Response will be displayed here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="sendTestMessage()">
+                    <i class="fas fa-paper-plane"></i> Send Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Usage Statistics Modal -->
+<div class="modal fade" id="usageStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📊 Usage Analytics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="usage-stats-content">
+                    <!-- Usage statistics will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* LLM Provider Management Styles */
+.llm-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4rem 0;
+    margin-top: -2rem;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+}
+
+.provider-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.providers-section {
+    padding: 3rem 0;
+}
+
+.providers-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.provider-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.provider-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.provider-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.provider-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+
+.provider-llm7 { background: linear-gradient(45deg, #667eea, #764ba2); }
+.provider-openrouter { background: linear-gradient(45deg, #667eea, #764ba2); }
+.provider-deepseek { background: linear-gradient(45deg, #ff6b6b, #ee5a24); }
+.provider-openai { background: linear-gradient(45deg, #10ac84, #00d2d3); }
+.provider-anthropic { background: linear-gradient(45deg, #5f27cd, #a55eea); }
+.provider-google { background: linear-gradient(45deg, #4285f4, #34a853); }
+.provider-huggingface { background: linear-gradient(45deg, #ff9f43, #feca57); }
+
+.provider-info h4 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.provider-status {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.provider-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.provider-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.priority-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.priority-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.priority-item:last-child {
+    border-bottom: none;
+}
+
+.priority-number {
+    background: var(--primary-color);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.75rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-active { background: #dcfce7; color: #166534; }
+.status-inactive { background: #fef2f2; color: #dc2626; }
+.status-error { background: #fff1f2; color: #e11d48; }
+.status-testing { background: #fef3c7; color: #d97706; }
+
+.health-score {
+    font-weight: 600;
+}
+
+.health-excellent { color: #059669; }
+.health-good { color: #d97706; }
+.health-poor { color: #dc2626; }
+
+.cost-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cost-item:last-child {
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.provider-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.chat-response {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.response-meta {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.model-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.model-tag {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let providersList = [];
+let usageStats = {};
+
+// Initialize LLM providers page
+document.addEventListener('DOMContentLoaded', function() {
+    loadProviders();
+    loadUsageStats();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Provider select change handler
+    document.getElementById('provider-select').addEventListener('change', function() {
+        updateProviderInfo(this.value);
+    });
+    
+    // Priority filter
+    document.getElementById('priority-filter').addEventListener('change', function() {
+        filterProviders(this.value);
+    });
+}
+
+function loadProviders() {
+    showLoading();
+    
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: { type: 'list_providers' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success && data.data) {
+            providersList = data.data.providers || [];
+            displayProviders(providersList);
+            updateStats(data.data);
+            updatePriorityOrder(providersList);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error loading providers:', error);
+    });
+}
+
+function displayProviders(providers) {
+    const container = document.getElementById('providers-list');
+    
+    if (providers.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-brain fa-3x text-muted mb-3"></i>
+                <h4>No providers configured yet</h4>
+                <p class="text-muted">Add your first LLM provider to get started</p>
+                <button class="btn btn-primary" onclick="addProvider()">
+                    <i class="fas fa-plus"></i> Add Provider
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = providers.map(provider => `
+        <div class="provider-card">
+            <div class="provider-header">
+                <div class="provider-icon provider-${provider.id}">
+                    ${getProviderIcon(provider.id)}
+                </div>
+                <div class="provider-info">
+                    <h4>${provider.name}</h4>
+                    <div class="provider-status">
+                        Priority: ${provider.priority} • 
+                        <span class="status-badge status-${provider.status}">${provider.status}</span>
+                        • Health: <span class="health-score ${getHealthClass(provider.health_score)}">${provider.health_score}%</span>
+                    </div>
+                    <div class="provider-details">
+                        <small>
+                            ${provider.cost_per_token > 0 ? `$${provider.cost_per_token}/token` : 'Free'} • 
+                            ${provider.max_tokens} max tokens • 
+                            ${provider.has_api_key ? '🔑 Configured' : '⚠️ No API Key'}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="provider-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="testProvider('${provider.id}')">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-info" onclick="editProvider('${provider.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                ${provider.id !== 'llm7' ? `
+                <button class="btn btn-sm btn-outline-danger" onclick="removeProvider('${provider.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+                ` : ''}
+            </div>
+            <div class="model-list">
+                ${provider.models.slice(0, 3).map(model => `<span class="model-tag">${model}</span>`).join('')}
+                ${provider.models.length > 3 ? `<span class="model-tag">+${provider.models.length - 3} more</span>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function getProviderIcon(providerId) {
+    const icons = {
+        'llm7': '🆓',
+        'openrouter': '🔄',
+        'deepseek': '🧠',
+        'openai': '🤖',
+        'anthropic': '👥',
+        'google': '🔍',
+        'huggingface': '🤗'
+    };
+    return icons[providerId] || '🧠';
+}
+
+function getHealthClass(score) {
+    if (score >= 80) return 'health-excellent';
+    if (score >= 60) return 'health-good';
+    return 'health-poor';
+}
+
+function updateStats(data) {
+    document.getElementById('active-providers').textContent = data.active_providers || 0;
+    document.getElementById('total-requests').textContent = usageStats.total_requests || 0;
+    document.getElementById('total-cost').textContent = `$${(usageStats.total_cost || 0).toFixed(4)}`;
+}
+
+function updatePriorityOrder(providers) {
+    const container = document.getElementById('priority-order');
+    const sortedProviders = providers.sort((a, b) => a.priority - b.priority);
+    
+    container.innerHTML = sortedProviders.map((provider, index) => `
+        <div class="priority-item">
+            <div class="priority-number">${index + 1}</div>
+            <div class="priority-info">
+                <div class="priority-name">${provider.name}</div>
+                <div class="priority-status">
+                    <span class="status-badge status-${provider.status}">${provider.status}</span>
+                    ${provider.cost_per_token > 0 ? `$${provider.cost_per_token}/token` : 'Free'}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadUsageStats() {
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: { type: 'get_usage_stats' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data) {
+            usageStats = data.data.statistics || {};
+            updateCostSummary();
+        }
+    })
+    .catch(error => console.error('Error loading usage stats:', error));
+}
+
+function updateCostSummary() {
+    const container = document.getElementById('cost-summary');
+    
+    container.innerHTML = `
+        <div class="cost-item">
+            <span>Total Requests:</span>
+            <span>${usageStats.total_requests || 0}</span>
+        </div>
+        <div class="cost-item">
+            <span>Successful:</span>
+            <span>${usageStats.successful_requests || 0}</span>
+        </div>
+        <div class="cost-item">
+            <span>Failed:</span>
+            <span>${usageStats.failed_requests || 0}</span>
+        </div>
+        <div class="cost-item">
+            <span>Total Tokens:</span>
+            <span>${usageStats.total_tokens || 0}</span>
+        </div>
+        <div class="cost-item">
+            <span><strong>Total Cost:</strong></span>
+            <span><strong>$${(usageStats.total_cost || 0).toFixed(4)}</strong></span>
+        </div>
+    `;
+}
+
+function addProvider() {
+    const modal = new bootstrap.Modal(document.getElementById('addProviderModal'));
+    modal.show();
+}
+
+function updateProviderInfo(providerId) {
+    const infoDiv = document.getElementById('provider-info');
+    
+    if (!providerId) {
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    const providerData = {
+        'llm7': {
+            name: 'LLM7 (Free)',
+            description: 'Free provider with public API key - already configured!',
+            website: 'https://llm7.com',
+            cost: 'Free',
+            note: 'This provider is already configured with a public API key.'
+        },
+        'openrouter': {
+            name: 'OpenRouter',
+            description: 'Access to multiple AI models through a single API',
+            website: 'https://openrouter.ai',
+            cost: 'Varies by model',
+            note: 'Get your API key from OpenRouter dashboard'
+        },
+        'deepseek': {
+            name: 'DeepSeek',
+            description: 'Advanced AI models focused on reasoning and coding',
+            website: 'https://deepseek.com',
+            cost: '$0.00005/token',
+            note: 'Register at DeepSeek to get your API key'
+        },
+        'openai': {
+            name: 'OpenAI',
+            description: 'GPT models and advanced AI capabilities',
+            website: 'https://openai.com',
+            cost: '$0.002/token',
+            note: 'Get your API key from OpenAI platform'
+        },
+        'anthropic': {
+            name: 'Anthropic',
+            description: 'Claude models for safe and helpful AI',
+            website: 'https://anthropic.com',
+            cost: '$0.008/token',
+            note: 'Get your API key from Anthropic console'
+        },
+        'google': {
+            name: 'Google AI',
+            description: 'Gemini and other Google AI models',
+            website: 'https://ai.google.dev',
+            cost: '$0.00025/token',
+            note: 'Get your API key from Google AI Studio'
+        },
+        'huggingface': {
+            name: 'Hugging Face',
+            description: 'Open source AI models and inference API',
+            website: 'https://huggingface.co',
+            cost: 'Free tier available',
+            note: 'Get your API key from Hugging Face settings'
+        }
+    };
+    
+    const info = providerData[providerId];
+    if (info) {
+        infoDiv.innerHTML = `
+            <h5>${info.name}</h5>
+            <p>${info.description}</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Cost:</strong> ${info.cost}
+                </div>
+                <div class="col-md-6">
+                    <strong>Website:</strong> <a href="${info.website}" target="_blank">${info.website}</a>
+                </div>
+            </div>
+            <div class="alert alert-info mt-2">
+                <i class="fas fa-info-circle"></i> ${info.note}
+            </div>
+        `;
+        infoDiv.style.display = 'block';
+        
+        // Disable API key input for LLM7
+        document.getElementById('api-key').disabled = providerId === 'llm7';
+        if (providerId === 'llm7') {
+            document.getElementById('api-key').value = 'Already configured with free public key';
+        } else {
+            document.getElementById('api-key').value = '';
+        }
+    }
+}
+
+function saveProvider() {
+    const providerId = document.getElementById('provider-select').value;
+    const apiKey = document.getElementById('api-key').value;
+    const testConnection = document.getElementById('test-connection').checked;
+    
+    if (!providerId) {
+        alert('Please select a provider');
+        return;
+    }
+    
+    if (providerId !== 'llm7' && !apiKey) {
+        alert('Please enter an API key');
+        return;
+    }
+    
+    if (providerId === 'llm7') {
+        alert('LLM7 is already configured with a free public API key!');
+        return;
+    }
+    
+    showLoading();
+    
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: {
+                type: 'update_api_key',
+                provider_id: providerId,
+                api_key: apiKey
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            alert('Provider added successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('addProviderModal')).hide();
+            loadProviders();
+            
+            if (testConnection) {
+                setTimeout(() => testProvider(providerId), 1000);
+            }
+        } else {
+            alert('Error adding provider: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        alert('Error: ' + error.message);
+    });
+}
+
+function testProvider(providerId) {
+    showLoading();
+    
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: { type: 'test_providers' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success && data.data) {
+            const result = data.data.test_results[providerId];
+            if (result) {
+                if (result.success) {
+                    alert(`✅ ${providerId} test successful!\nResponse time: ${result.response_time}s\nModel: ${result.model}`);
+                } else {
+                    alert(`❌ ${providerId} test failed:\n${result.error}`);
+                }
+            }
+            loadProviders(); // Refresh to show updated health scores
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        alert('Test error: ' + error.message);
+    });
+}
+
+function testAllProviders() {
+    showLoading();
+    
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: { type: 'test_providers' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success && data.data) {
+            const summary = data.data.summary;
+            alert(`Provider Testing Complete!\n\nTotal Tested: ${summary.total_tested}\nSuccessful: ${summary.successful}\nFailed: ${summary.failed}`);
+            loadProviders();
+        } else {
+            alert('Test failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        alert('Test error: ' + error.message);
+    });
+}
+
+function chatTest() {
+    // Load active providers for selection
+    const select = document.getElementById('test-provider');
+    const activeProviders = providersList.filter(p => p.status === 'active');
+    
+    select.innerHTML = '<option value="auto">Auto (Use Priority Order)</option>' +
+        activeProviders.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    
+    const modal = new bootstrap.Modal(document.getElementById('chatTestModal'));
+    modal.show();
+}
+
+function sendTestMessage() {
+    const provider = document.getElementById('test-provider').value;
+    const message = document.getElementById('test-message').value;
+    
+    if (!message.trim()) {
+        alert('Please enter a test message');
+        return;
+    }
+    
+    showLoading();
+    
+    const task = {
+        type: 'chat_completion',
+        messages: [{ role: 'user', content: message }],
+        max_tokens: 150,
+        temperature: 0.7
+    };
+    
+    if (provider !== 'auto') {
+        task.provider = provider;
+    }
+    
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: task
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        const responseDiv = document.getElementById('chat-response');
+        
+        if (data.success && data.data) {
+            responseDiv.innerHTML = `
+                <div class="response-meta">
+                    Provider: ${data.data.provider} | Model: ${data.data.model || 'auto'} | 
+                    Tokens: ${data.data.tokens_used || 0} | Cost: $${(data.data.cost || 0).toFixed(4)}
+                    ${data.data.cached ? ' | 🔄 Cached Response' : ''}
+                </div>
+                <div class="response-content">
+                    ${data.data.response}
+                </div>
+            `;
+        } else {
+            responseDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> ${data.error || 'Unknown error occurred'}
+                </div>
+            `;
+        }
+        
+        responseDiv.style.display = 'block';
+    })
+    .catch(error => {
+        hideLoading();
+        document.getElementById('chat-response').innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Network Error:</strong> ${error.message}
+            </div>
+        `;
+        document.getElementById('chat-response').style.display = 'block';
+    });
+}
+
+function viewUsageStats() {
+    const modal = new bootstrap.Modal(document.getElementById('usageStatsModal'));
+    
+    // Load detailed stats
+    fetch('/api/task/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_id: 'llm_provider_manager',
+            task: { type: 'get_usage_stats' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data) {
+            displayUsageStats(data.data);
+        }
+    });
+    
+    modal.show();
+}
+
+function displayUsageStats(data) {
+    const container = document.getElementById('usage-stats-content');
+    const stats = data.statistics;
+    
+    container.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>📊 Overall Statistics</h5>
+                <table class="table">
+                    <tr><td>Total Requests:</td><td>${stats.total_requests || 0}</td></tr>
+                    <tr><td>Successful:</td><td>${stats.successful_requests || 0}</td></tr>
+                    <tr><td>Failed:</td><td>${stats.failed_requests || 0}</td></tr>
+                    <tr><td>Total Tokens:</td><td>${stats.total_tokens || 0}</td></tr>
+                    <tr><td><strong>Total Cost:</strong></td><td><strong>$${(stats.total_cost || 0).toFixed(4)}</strong></td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5>🔄 Provider Usage</h5>
+                <table class="table">
+                    ${Object.entries(stats.provider_usage || {}).map(([provider, usage]) => `
+                        <tr>
+                            <td>${provider}:</td>
+                            <td>${usage.requests} req | ${usage.tokens} tokens | $${usage.cost.toFixed(4)}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function refreshProviders() {
+    loadProviders();
+    loadUsageStats();
+}
+
+function filterProviders(filter) {
+    if (!filter) {
+        displayProviders(providersList);
+        return;
+    }
+    
+    let filtered = [];
+    if (filter === 'free') {
+        filtered = providersList.filter(p => p.cost_per_token === 0);
+    } else if (filter === 'paid') {
+        filtered = providersList.filter(p => p.cost_per_token > 0);
+    }
+    
+    displayProviders(filtered);
+}
+
+function editProvider(providerId) {
+    document.getElementById('provider-select').value = providerId;
+    updateProviderInfo(providerId);
+    addProvider();
+}
+
+function removeProvider(providerId) {
+    if (confirm(`Are you sure you want to remove ${providerId} provider?`)) {
+        // Implementation for removing provider
+        alert('Remove provider functionality will be implemented');
+    }
+}
+</script>
+{% endblock %}

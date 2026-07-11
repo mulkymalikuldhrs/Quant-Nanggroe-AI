@@ -1,0 +1,118 @@
+{
+  "name": "Agentic AI System",
+  "short_name": "AgenticAI",
+  "description": "Autonomous Multi-Agent Intelligence System with Voice Interaction",
+  "version": "2.0.0",
+  "author": "Mulky Malikul Dhaher",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "utilities", "ai"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/static/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Voice Chat",
+      "short_name": "Voice",
+      "description": "Start voice interaction with AI agents",
+      "url": "/?voice=true",
+      "icons": [
+        {
+          "src": "/static/icons/voice-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Agent Manager",
+      "short_name": "Agents",
+      "description": "Manage AI agents",
+      "url": "/agents",
+      "icons": [
+        {
+          "src": "/static/icons/agent-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Code Generator",
+      "short_name": "Code",
+      "description": "Generate applications and code",
+      "url": "/?mode=code",
+      "icons": [
+        {
+          "src": "/static/icons/code-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/static/screenshots/mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}

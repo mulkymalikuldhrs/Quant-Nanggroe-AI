@@ -1,0 +1,242 @@
+{
+  "nodes": [
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_regime_based",
+      "type": "document",
+      "file_path": "docs/auto/api/engine.strategy.strategies.regime_based.md",
+      "user_path": "docs/engine/engine.strategies.regime_based.md",
+      "summary": "HMM-driven regime detection strategy with per-regime switching and cost controls. Signal float in [-1,1]. Parameters: n_regimes, hmm_lookback, covariance_type, regime_stability_bars, per-regime strategies, max_position, transaction_cost_bps, min_trade_interval_bars.",
+      "entities": ["HMMRegimeStrategy", "RegimeDetector", "SignalType"]
+    },
+    {
+      "id": "docs_auto_api_engine_regime_strategy_selector",
+      "type": "document",
+      "file_path": "docs/auto/api/engine.regime.strategy_selector.md",
+      "user_path": "docs/engine/engine.strategies.strategy_picker.md",
+      "summary": "Maps regimes to strategy configurations. Selects optimal strategy based on current market regime using ensemble regime detection output. Methods: _normalize_regime, select_strategy, adjust_kelly_for_regime.",
+      "entities": ["StrategyConfig", "RegimeStrategyMap", "StrategySelector"]
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_momentum",
+      "type": "document",
+      "file_path": "docs/auto/api/engine.strategy.strategies.momentum.md",
+      "user_path": "docs/engine/engine.strategies.trend_follow.md",
+      "summary": "Multi-variant momentum strategy with cost and frequency controls. Supports ts_momentum, dual_momentum, ma_crossover, macd. Signal float in [-1,1]. Parameters: strategy_type, lookback, fast_lookback, slow_lookback, entry/exit thresholds, transaction_cost_bps, min_trade_interval_bars, signal_smoothing.",
+      "entities": ["MomentumStrategy", "TimeSeriesMomentum", "DualMomentum", "MACrossover", "MACD"]
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_volatility_arbitrage",
+      "type": "document",
+      "file_path": "docs/auto/api/engine.strategy.strategies.volatility_arbitrage.md",
+      "user_path": "docs/engine/engine.strategies.volatility_arbitrage.md",
+      "summary": "Vol arbitrage via vol-ratio z-score. Shorts vol when z > entry_threshold, longs vol when z < -entry_threshold. Parameters: vol_lookback, vol_long_lookback, entry_threshold, exit_threshold, vol_estimation (historical/ewma/garch), transaction_cost_bps, min_trade_interval_bars. Methods include _garch_vol with GARCH(1,1) conditional vol via MLE.",
+      "entities": ["VolArbitrageStrategy", "GARCHVolEstimator"]
+    },
+    {
+      "id": "docs_auto_api_engine_stress_testing_ewhs",
+      "type": "document",
+      "file_path": "docs/auto/api/engine.stress_testing.ewhs.md",
+      "user_path": "docs/engine/engine.stress_testing.ewhs.md",
+      "summary": "Exponentially Weighted Historical Simulation for VaR and CVaR. Features: configurable half-life for decay factor, rolling window computation, portfolio-level VaR, marginal VaR contribution per asset.",
+      "entities": ["EWHSVarCalculator", "EWHSCvaRCalculator"]
+    },
+    {
+      "id": "docs_auto_api_engine_stress_testing_historical",
+      "type": "document",
+      "file_path": "docs/auto/api/engine.stress_testing.historical.md",
+      "user_path": "docs/engine/engine.stress_testing.historical.md",
+      "summary": "Analyzes portfolio under historical crisis scenarios. Methods: analyze_portfolio, _compute_scenario_impact, _find_worst_period. Computes portfolio impact under specific historical scenarios and finds worst cumulative return periods.",
+      "entities": ["HistoricalStressTester", "ScenarioImpactAnalyzer"]
+    },
+    {
+      "id": "docs_auto_api_exchange_ccxt_broker",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.ccxt_broker.md",
+      "user_path": "docs/exchange/exchange.ccxt.md",
+      "summary": "CCXT-based exchange broker supporting 100+ cryptocurrency exchanges. Wraps ccxt.async_support exchange classes and translates between CCXT data structures and Quant Nanggroe Pydantic domain types. Methods: connect, get_ticker, _ccxt_order_to_order, _ccxt_position_to_position.",
+      "entities": ["CCXTBroker", "ExchangeConfig"]
+    },
+    {
+      "id": "docs_auto_api_exchange_mt5_broker",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.mt5_broker.md",
+      "user_path": "docs/exchange/exchange.mt5_broker.md",
+      "summary": "MetaTrader 5 broker implementing ExchangeInterface. Provides full trading via MetaTrader5 Python API including order placement, position management, market data, account information. Methods: connect, is_connected, state, name, _require_mt5, _get_timeframe_enum.",
+      "entities": ["MT5Broker", "MT5AccountInfo", "MT5SymbolInfo", "MT5PositionInfo", "ExchangeInterface"]
+    },
+    {
+      "id": "docs_auto_api_exchange_order_types",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.order_types.md",
+      "user_path": "docs/exchange/exchange.order_types.md",
+      "summary": "Extended order lifecycle status with full state machine tracking. Defines trailing stop orders, bracket orders (entry + TP + SL as atomic unit), OCO orders (one-cancels-other), and iceberg orders (hidden quantity display). Includes StateTransitionError and TransitionRecord.",
+      "entities": ["OrderLifecycleStatus", "StateTransitionError", "TransitionRecord", "TrailingStopOrder", "BracketOrder", "OCOOrder", "IcebergOrder"]
+    },
+    {
+      "id": "docs_auto_api_exchange_base",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.base.md",
+      "user_path": "docs/exchange/exchange.overview.md",
+      "summary": "Base exchange module defining ExchangeError hierarchy, ExchangeInterface protocol, exchange configuration models, and standard order/position types. Base exception for all exchange-related errors with subclasses for connection failures and order failures.",
+      "entities": ["ExchangeError", "ConnectionFailedError", "OrderFailedError", "ExchangeInterface", "ExchangeConfig"]
+    },
+    {
+      "id": "docs_auto_api_exchange_paper_broker",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.paper_broker.md",
+      "user_path": "docs/exchange/exchange.paper_broker.md",
+      "summary": "Paper trading exchange broker with realistic simulation. Simulates full exchange with order execution, market data generation, position tracking, and portfolio management. Parameters: initial_capital, commission_rate, slippage_bps, min_commission, default_price. Methods: set_price, get_price, add_ohlcv, _update_position, _apply_slippage, check_pending_orders.",
+      "entities": ["PaperExchangeBroker"]
+    },
+    {
+      "id": "docs_auto_api_exchange_manager",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.manager.md",
+      "user_path": "docs/exchange/exchange.unified.md",
+      "summary": "Multi-exchange manager with failover and portfolio aggregation. Parameters: health_check_interval, max_errors. Methods: register, unregister, registered_exchanges, primary_name, get_trading_exchange, get_data_exchange, promote_failover, get_status.",
+      "entities": ["ExchangeManager", "ExchangeRole", "ExchangeRecord"]
+    },
+    {
+      "id": "docs_auto_api_exchange_solana_wallet",
+      "type": "document",
+      "file_path": "docs/auto/api/exchange.solana.wallet.md",
+      "user_path": "docs/exchange/exchange.wallet.md",
+      "summary": "Solana wallet service for SPL token account management, keypair management, and balance queries. Includes SPL token account info (address, mint, owner, amount, decimals, ui_amount).",
+      "entities": ["SPLTokenAccount", "SolanaWalletService"]
+    },
+    {
+      "id": "docs_auto_api_scripts_bh_cli",
+      "type": "document",
+      "file_path": "docs/auto/api/scripts.bh-cli.md",
+      "user_path": "docs/scripts/scripts.bh-cli.md",
+      "summary": "BlackHornet CLI for system status monitoring and agent management. Functions: load_agent_registry, check_bh_system_status, list_agents, check_agent_status, check_mesh_network_status, check_radar_peers, comprehensive_system_health_check.",
+      "entities": ["BHCli", "AgentRegistry"]
+    },
+    {
+      "id": "docs_auto_api_scripts_load_test",
+      "type": "document",
+      "file_path": "docs/auto/api/scripts.load_test.md",
+      "user_path": "docs/scripts/scripts.load_test.md",
+      "summary": "Load testing framework for API endpoints. Uses multi-threaded worker model to send requests and aggregate results. Methods: _send_request, _get_post_body, _worker, run, _generate_report, _print_report.",
+      "entities": ["LoadTestRunner", "LoadTestReport"]
+    },
+    {
+      "id": "docs_auto_api_scripts_qna_cli",
+      "type": "document",
+      "file_path": "docs/auto/api/scripts.qna-cli.md",
+      "user_path": "docs/scripts/scripts.qna-ops.md",
+      "summary": "Quant Nanggroe AI CLI interface for system operations and management.",
+      "entities": ["QnaCli"]
+    },
+    {
+      "id": "docs_auto_api_types_signals",
+      "type": "document",
+      "file_path": "docs/auto/api/types.signals.md",
+      "user_path": "docs/types/types.signals.md",
+      "summary": "Trading signal type definitions. Defines SignalDirection enum, SignalConfidence classification, and TradingSignal model carrying direction, confidence, target price levels, and supporting evidence. Method: compute_strength.",
+      "entities": ["SignalDirection", "SignalConfidence", "TradingSignal"]
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_regime_based",
+      "target": "docs_auto_api_engine_regime_strategy_selector",
+      "label": "uses_strategy_selector"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_regime_based",
+      "target": "docs_auto_api_engine_strategy_strategies_volatility_arbitrage",
+      "label": "references"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_regime_based",
+      "target": "docs_auto_api_engine_strategy_strategies_momentum",
+      "label": "references"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_regime_based",
+      "target": "docs_auto_api_types_signals",
+      "label": "produces_signal"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_volatility_arbitrage",
+      "target": "docs_auto_api_types_signals",
+      "label": "produces_signal"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_momentum",
+      "target": "docs_auto_api_types_signals",
+      "label": "produces_signal"
+    },
+    {
+      "source": "docs_auto_api_engine_stress_testing_ewhs",
+      "target": "docs_auto_api_engine_stress_testing_historical",
+      "label": "complements"
+    },
+    {
+      "source": "docs_auto_api_exchange_ccxt_broker",
+      "target": "docs_auto_api_exchange_base",
+      "label": "extends"
+    },
+    {
+      "source": "docs_auto_api_exchange_mt5_broker",
+      "target": "docs_auto_api_exchange_base",
+      "label": "extends"
+    },
+    {
+      "source": "docs_auto_api_exchange_paper_broker",
+      "target": "docs_auto_api_exchange_base",
+      "label": "extends"
+    },
+    {
+      "source": "docs_auto_api_exchange_ccxt_broker",
+      "target": "docs_auto_api_exchange_order_types",
+      "label": "uses_order_types"
+    },
+    {
+      "source": "docs_auto_api_exchange_mt5_broker",
+      "target": "docs_auto_api_exchange_order_types",
+      "label": "uses_order_types"
+    },
+    {
+      "source": "docs_auto_api_exchange_paper_broker",
+      "target": "docs_auto_api_exchange_order_types",
+      "label": "uses_order_types"
+    },
+    {
+      "source": "docs_auto_api_exchange_manager",
+      "target": "docs_auto_api_exchange_ccxt_broker",
+      "label": "manages"
+    },
+    {
+      "source": "docs_auto_api_exchange_manager",
+      "target": "docs_auto_api_exchange_mt5_broker",
+      "label": "manages"
+    },
+    {
+      "source": "docs_auto_api_exchange_manager",
+      "target": "docs_auto_api_exchange_paper_broker",
+      "label": "manages"
+    },
+    {
+      "source": "docs_auto_api_exchange_manager",
+      "target": "docs_auto_api_exchange_base",
+      "label": "depends_on"
+    },
+    {
+      "source": "docs_auto_api_scripts_bh_cli",
+      "target": "docs_auto_api_scripts_load_test",
+      "label": "references"
+    },
+    {
+      "source": "docs_auto_api_scripts_bh_cli",
+      "target": "docs_auto_api_scripts_qna_cli",
+      "label": "references"
+    },
+    {
+      "source": "docs_auto_api_types_signals",
+      "target": "docs_auto_api_exchange_order_types",
+      "label": "feeds_into"
+    }
+  ]
+}

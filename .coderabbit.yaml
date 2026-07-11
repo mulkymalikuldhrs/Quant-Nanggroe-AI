@@ -1,0 +1,17 @@
+language: en
+tone_instructions: "Be constructive, practical, and friendly. Focus on code quality, security, and maintainability."
+early_access: false
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  auto_review:
+    enabled: true
+    ignore_title_keywords:
+      - "skip review"
+      - "wip"
+      - "draft"
+    drafts: false
+chat:
+  auto_reply: true

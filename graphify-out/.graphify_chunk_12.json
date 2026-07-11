@@ -1,0 +1,1321 @@
+{
+  "nodes": [
+    {
+      "id": "docs_auto_api_engine_risk_drawdown_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.drawdown",
+        "description": "Drawdown analysis and constitutional limit monitoring",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_drawdown_drawdownmonitor",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "DrawdownMonitor",
+        "description": "Drawdown Monitor with Constitutional Limit. Tracks equity drawdowns and enforces the 10% max drawdown constitutional limit. Signals kill switch when breached.",
+        "methods": ["__init__", "current_drawdown", "max_drawdown_observed", "is_breached", "update", "get_status", "calculate_cvar_drawdown", "calculate_risk_of_ruin", "estimate_recovery_time"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_drawdown_drawdownanalysisresult",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "DrawdownAnalysisResult",
+        "description": "Drawdown analysis result",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kelly_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.kelly",
+        "description": "Legacy Kelly Criterion wrappers delegating to engine/kelly/ package",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kelly_kellycriterion",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KellyCriterion",
+        "description": "Legacy Kelly Criterion — delegates to engine/kelly/ package. Maintains full backward compatibility.",
+        "methods": ["__init__", "calculate_kelly", "_get_implementation", "calculate_continuous_kelly", "calculate_multi_asset_kelly", "get_optimal_position_size", "get_summary_statistics"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kelly_kellymethod",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KellyMethod",
+        "description": "Legacy Kelly method names mapped to new engine/kelly/ package",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kelly_kellyparameters",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KellyParameters",
+        "description": "Legacy Kelly parameters — delegates to engine/kelly/ backend",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kelly_kellyresult",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KellyResult",
+        "description": "Legacy Kelly result — wraps engine/kelly/ result",
+        "methods": ["from_new", "_recommendation"],
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.kill_switch",
+        "description": "Emergency kill switch with auto-activation based on safety thresholds",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_killswitch",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KillSwitch",
+        "description": "Emergency kill switch with auto-activation. Monitors portfolio and market conditions, automatically activating when safety thresholds are breached.",
+        "methods": ["__init__", "is_active", "status", "reset", "check_auto_trigger", "activate", "deactivate", "check_auto_activate", "check_warning", "can_trade", "can_hold_positions", "on_activate", "current_level", "events", "config", "stats"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_killswitchlevel",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KillSwitchLevel",
+        "description": "Kill switch severity level",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_killswitchtrigger",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KillSwitchTrigger",
+        "description": "What triggered the kill switch",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_killswitchstatus",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KillSwitchStatus",
+        "description": "Current status of the kill switch",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_killswitchevent",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KillSwitchEvent",
+        "description": "Record of a kill switch activation/deactivation",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_kill_switch_killswitchconfig",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "KillSwitchConfig",
+        "description": "Configuration for the kill switch",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_manager_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.manager",
+        "description": "Risk Manager with 9-checkpoint constitutional limits enforcement",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "RiskManager",
+        "description": "Risk Manager with CONSTITUTIONAL limits. Enforces hardcoded risk limits. All trade proposals pass through 9-checkpoint gate. Kill switch auto-activated on breach.",
+        "methods": ["__init__", "check_trade", "update_pnl", "add_position", "remove_position", "calculate_position_size", "calculate_kelly_size", "status", "_reset_daily_if_needed", "_save_state", "_load_state", "stress_test", "optimal_f_position_size", "atr_position_size", "calculate_position_size_with_var", "_auto_check_kill_switch"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_manager_riskstate",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "RiskState",
+        "description": "Current risk state tracking — daily/weekly P&L, trade counts, drawdown for constitutional limit enforcement",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_position_sizing_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.position_sizing",
+        "description": "Position sizing with constitutional limits — all methods enforce MAX_RISK_PER_TRADE hard cap",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_position_sizing_positionsizer",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "PositionSizer",
+        "description": "Position Sizing with Constitutional Limits. All methods enforce MAX_RISK_PER_TRADE as hard cap.",
+        "methods": ["fixed_fractional", "volatility_based", "kelly_based", "optimal_f"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_position_sizing_positionsizeresult",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "PositionSizeResult",
+        "description": "Result from position sizing calculation",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_risk_parity_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.risk_parity",
+        "description": "Risk parity portfolio optimization — equal risk contribution allocation",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_risk_parity_riskparityoptimizer",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "RiskParityOptimizer",
+        "description": "Risk Parity Portfolio Optimizer. Allocates capital so each asset contributes equally to portfolio risk. Formula: RC_i = w_i * (Σw)_i / (w'Σw) = 1/N.",
+        "methods": ["__init__", "optimize", "get_risk_budget_analysis", "get_portfolio_summary", "_inverse_volatility", "_covariance_based", "_equal_risk_contribution", "_hierarchical_risk_parity", "_risk_contributions"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_risk_parity_riskcontribution",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "RiskContribution",
+        "description": "Risk contribution of an asset — weight, marginal risk, risk contribution, risk budget, deviation",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_risk_parity_riskparityresult",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "RiskParityResult",
+        "description": "Result from risk parity optimization",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_risk_parity_riskparitymethods",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "RiskParityMethods",
+        "description": "Risk parity calculation methods",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_strategy_auto_disable_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.strategy_auto_disable",
+        "description": "Monitors trailing Sharpe per strategy and auto-disables when below threshold",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_strategy_auto_disable_autodisablemanager",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "AutoDisableManager",
+        "description": "Monitors trailing Sharpe per strategy and auto-disables when below threshold (default: 0.3). Re-enables after N consecutive days above threshold (default: 30). Integrates with KillSwitch LEVEL_1.",
+        "methods": ["__init__", "update", "disable", "enable", "is_disabled", "get_disabled_strategies", "get_active_strategies", "get_state", "get_config", "save_state", "_compute_trailing_sharpe", "_check_disable", "_check_re_enable", "_set_disabled", "_set_enabled", "_load_state"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_strategy_auto_disable_strategystate",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "StrategyState",
+        "description": "Internal state for a single strategy's performance tracking",
+        "methods": ["__init__", "to_dict", "from_dict"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_var_module",
+      "file_type": "document",
+      "labels": ["module", "risk"],
+      "properties": {
+        "name": "engine.risk.var",
+        "description": "Unified VaR Calculator with CVaR as primary metric — parametric, historical, Monte Carlo methods",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_var_varcalculator",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "VaRCalculator",
+        "description": "Unified VaR Calculator with CVaR as primary metric. Three methods: parametric, historical, Monte Carlo. Auto-selects based on data availability.",
+        "methods": ["__init__", "calculate", "_select_method", "_get_z_score", "_parametric_var", "_historical_var", "_monte_carlo_var", "_bootstrap_ci"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_risk_var_varresult",
+      "file_type": "document",
+      "labels": ["class", "risk"],
+      "properties": {
+        "name": "VaRResult",
+        "description": "VaR calculation result",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_base_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.base",
+        "description": "Abstract base class for all screener components",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_base_basescreener",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "BaseScreener",
+        "description": "Abstract base class for all screener components. Must implement analyze() returning ScreenerResult.",
+        "methods": ["__init__", "name", "description", "analyze", "configure", "is_configured", "_not_configured_result"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_base_screenerresult",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "ScreenerResult",
+        "description": "Result from a screener component analysis — direction, score (-1 to 1), confidence, details, status",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_base_screenersignal",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "ScreenerSignal",
+        "description": "Screener signal direction (bullish/bearish/neutral)",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_dex_intelligence_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.dex_intelligence",
+        "description": "DEX Intelligence engine analyzing on-chain data, volume, liquidity, token flow, TVL",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_dex_intelligence_dexintelligence",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "DEXIntelligence",
+        "description": "DEX Intelligence Engine. Analyzes DEX volume, liquidity, token flow (whale movements, smart money), protocol TVL changes, on-chain metrics.",
+        "methods": ["__init__", "name", "description", "analyze", "_analyze_dex_volume", "_analyze_liquidity", "_analyze_token_flow", "_analyze_tvl"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_intermarket_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.intermarket",
+        "description": "Intermarket Correlation & Rotation Engine — cross-asset relationships and regime changes",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_intermarket_intermarketcorrelationrotation",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "IntermarketCorrelationRotation",
+        "description": "Intermarket Correlation & Rotation Engine. Analyzes cross-asset relationships and rotation patterns to detect macro regime changes and intermarket divergences.",
+        "methods": ["__init__", "name", "description", "analyze", "_analyze_correlations", "_analyze_rotation"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_liquidity_orderflow_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.liquidity_orderflow",
+        "description": "Liquidity & Order Flow Engine — market depth, order imbalances, VWAP, execution quality",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_liquidity_orderflow_liquidityorderflow",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "LiquidityOrderFlow",
+        "description": "Liquidity & Order Flow Engine. Analyzes market depth, order flow imbalances, bid/ask spread, VWAP, execution quality.",
+        "methods": ["__init__", "name", "description", "analyze", "_analyze_liquidity", "_analyze_orderflow", "_analyze_spread", "_analyze_vwap"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_macro_analysis_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.macro_analysis",
+        "description": "Macro Analysis Engine — regimes, policy stance, economic cycle, geopolitical factors",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_macro_analysis_macroanalysis",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "MacroAnalysis",
+        "description": "Macro Analysis Engine. Analyzes macro regimes (expansion/contraction), policy stance, economic cycle position, geopolitical factors.",
+        "methods": ["__init__", "name", "description", "analyze", "_analyze_regime", "_analyze_policy", "_analyze_cycle", "_analyze_geopolitical"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_market_structure_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.market_structure",
+        "description": "Market Structure Engine — trend/ranging/volatile detection, swing points, structural breaks",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_market_structure_marketstructure",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "MarketStructure",
+        "description": "Market Structure Engine. Detects trending/ranging/volatile regimes, identifies swing points, channels, structural breaks.",
+        "methods": ["__init__", "name", "description", "analyze", "_analyze_trend", "_analyze_volatility_regime", "_analyze_structure", "_classify_regime"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_monetary_fundamental_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.monetary_fundamental",
+        "description": "Monetary & Fundamental Engine — rates, QE/QT, earnings, valuation, sector health",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_monetary_fundamental_monetaryfundamental",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "MonetaryFundamental",
+        "description": "Monetary & Fundamental Engine. Analyzes monetary policy (rates, QE/QT) and fundamental drivers (earnings, valuation, sector health).",
+        "methods": ["__init__", "name", "description", "configure", "analyze", "_analyze_monetary_pressure", "_analyze_fundamental_pressure"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_orchestrator_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.orchestrator",
+        "description": "Screener Orchestrator — runs all screener engines in sequence, produces composite result",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_orchestrator_screenerorchestrator",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "ScreenerOrchestrator",
+        "description": "Screener Orchestrator. Combines all screener engines, runs them in sequence, produces composite screening result with configurable weights.",
+        "methods": ["__init__", "screen", "configure_engine", "list_engines", "get_engine"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_positioning_crowd_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.positioning_crowd",
+        "description": "Positioning & Crowd Sentiment Engine — COT, retail vs institutional, contrarian signals",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_positioning_crowd_positioningcrowdsentiment",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "PositioningCrowdSentiment",
+        "description": "Positioning & Crowd Sentiment Engine. Analyzes COT positioning, retail vs institutional sentiment, contrarian signals, social sentiment.",
+        "methods": ["__init__", "name", "description", "analyze", "_analyze_cot", "_analyze_sentiment", "_analyze_contrarian"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_quant_scoring_module",
+      "file_type": "document",
+      "labels": ["module", "screener"],
+      "properties": {
+        "name": "engine.screener.quant_scoring",
+        "description": "Quant Scoring Engine — objectively scores trade setup quality across 8 dimensions",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_screener_quant_scoring_quantscoring",
+      "file_type": "document",
+      "labels": ["class", "screener"],
+      "properties": {
+        "name": "QuantScoring",
+        "description": "Quant Scoring Engine. Scores trade setup quality by combining macro alignment, fundamental alignment, positioning asymmetry, SMT confirmation, structure quality, liquidity clarity, execution risk, risk/reward quality.",
+        "methods": ["__init__", "name", "description", "analyze", "_score_macro", "_score_fundamental", "_score_positioning", "_score_smt", "_score_structure", "_score_liquidity", "_score_execution_risk", "_score_rr", "_assign_grade"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_shadow_extractor_module",
+      "file_type": "document",
+      "labels": ["module", "shadow"],
+      "properties": {
+        "name": "engine.shadow.extractor",
+        "description": "Strategy Extractor — extracts trading strategies from natural language text descriptions",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_shadow_extractor_strategyextractor",
+      "file_type": "document",
+      "labels": ["class", "shadow"],
+      "properties": {
+        "name": "StrategyExtractor",
+        "description": "Strategy Extractor. Extracts trading strategies from natural language text descriptions. Identifies entry/exit conditions, risk parameters, market preferences. Ported from Vibe-Trading.",
+        "methods": ["extract", "validate_strategy", "_extract_rules", "_extract_markets", "_extract_timeframe", "_extract_risk_tolerance", "_generate_profile"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_shadow_extractor_extractedstrategy",
+      "file_type": "document",
+      "labels": ["class", "shadow"],
+      "properties": {
+        "name": "ExtractedStrategy",
+        "description": "A strategy extracted from text description",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_shadow_extractor_extractedrule",
+      "file_type": "document",
+      "labels": ["class", "shadow"],
+      "properties": {
+        "name": "ExtractedRule",
+        "description": "A rule extracted from a text description",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___module",
+      "file_type": "document",
+      "labels": ["module", "simulation"],
+      "properties": {
+        "name": "engine.simulation.__init__",
+        "description": "Simulation engine — Monte Carlo, stress testing, paper trading",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___montecarlosimulator",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "MonteCarloSimulator",
+        "description": "Monte Carlo simulation engine for portfolio risk analysis. Generates random price paths via geometric Brownian motion (dS = mu*S*dt + sigma*S*dW). Computes VaR, CVaR, max drawdown.",
+        "methods": ["__init__", "run"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___stresstester",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "StressTester",
+        "description": "Stress testing engine for evaluating portfolio resilience",
+        "methods": ["__init__", "run_scenario", "run_all_predefined"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___papertradingsimulator",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "PaperTradingSimulator",
+        "description": "Paper trading simulator for strategy validation. Simulates realistic order execution with slippage, commissions, partial fills.",
+        "methods": ["__init__", "portfolio_value", "unrealized_pnl", "submit_order", "tick", "get_fills", "get_positions", "cancel_order", "reset"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___simulationtype",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "SimulationType",
+        "description": "Types of market simulations",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___marketregime",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "MarketRegime",
+        "description": "Market regime classifications for stress testing",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___simulationconfig",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "SimulationConfig",
+        "description": "Configuration for simulation runs",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___simulationresult",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "SimulationResult",
+        "description": "Results from a simulation run",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_simulation___init___stresstestscenario",
+      "file_type": "document",
+      "labels": ["class", "simulation"],
+      "properties": {
+        "name": "StressTestScenario",
+        "description": "A predefined stress test scenario",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_base_module",
+      "file_type": "document",
+      "labels": ["module", "strategies"],
+      "properties": {
+        "name": "engine.strategies.base",
+        "description": "Abstract base class for all trading strategies",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_base_strategy",
+      "file_type": "document",
+      "labels": ["class", "strategies"],
+      "properties": {
+        "name": "Strategy",
+        "description": "Abstract base class for all trading strategies. Must implement generate_signal(). Optionally override validate() and get_parameters().",
+        "methods": ["__init__", "parameters", "generate_signal", "validate", "get_parameters", "calculate_risk_reward", "__repr__"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_base_strategysignal",
+      "file_type": "document",
+      "labels": ["class", "strategies"],
+      "properties": {
+        "name": "StrategySignal",
+        "description": "A trading signal generated by a strategy",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_base_signaldirection",
+      "file_type": "document",
+      "labels": ["class", "strategies"],
+      "properties": {
+        "name": "SignalDirection",
+        "description": "Signal direction",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_base_signalstrength",
+      "file_type": "document",
+      "labels": ["class", "strategies"],
+      "properties": {
+        "name": "SignalStrength",
+        "description": "Signal strength level",
+        "confidence": 0.95,
+        "source": "INFERRED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_base_strategyparameters",
+      "file_type": "document",
+      "labels": ["class", "strategies"],
+      "properties": {
+        "name": "StrategyParameters",
+        "description": "Strategy parameters container with get/set",
+        "methods": ["get", "set"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_fibonacci_module",
+      "file_type": "document",
+      "labels": ["module", "strategies"],
+      "properties": {
+        "name": "engine.strategies.fibonacci",
+        "description": "Fibonacci Retracement/Extension trading strategy",
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_fibonacci_fibonaccistrategy",
+      "file_type": "document",
+      "labels": ["class", "strategies"],
+      "properties": {
+        "name": "FibonacciStrategy",
+        "description": "Fibonacci Retracement/Extension Strategy. Identifies key Fibonacci levels and generates signals at 38.2%, 50%, 61.8% retracements and 127.2%, 161.8%, 261.8% extensions.",
+        "methods": ["__init__", "generate_signal", "_hold"],
+        "confidence": 1.0,
+        "source": "EXTRACTED"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "docs_auto_api_engine_risk_drawdown_drawdownmonitor",
+      "target_id": "docs_auto_api_engine_risk_drawdown_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_drawdown_drawdownanalysisresult",
+      "target_id": "docs_auto_api_engine_risk_drawdown_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_drawdown_drawdownmonitor",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_killswitch",
+      "relationship": "triggers",
+      "properties": { "description": "Signals kill switch activation when constitutional drawdown limit breached", "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kelly_kellycriterion",
+      "target_id": "docs_auto_api_engine_risk_kelly_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kelly_kellymethod",
+      "target_id": "docs_auto_api_engine_risk_kelly_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kelly_kellyparameters",
+      "target_id": "docs_auto_api_engine_risk_kelly_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kelly_kellyresult",
+      "target_id": "docs_auto_api_engine_risk_kelly_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kill_switch_killswitch",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kill_switch_killswitchlevel",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kill_switch_killswitchtrigger",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kill_switch_killswitchstatus",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kill_switch_killswitchevent",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_kill_switch_killswitchconfig",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "target_id": "docs_auto_api_engine_risk_manager_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskstate",
+      "target_id": "docs_auto_api_engine_risk_manager_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_killswitch",
+      "relationship": "activates",
+      "properties": { "description": "RiskManager auto-activates kill switch when constitutional limits breached", "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "target_id": "docs_auto_api_engine_risk_drawdown_drawdownmonitor",
+      "relationship": "uses",
+      "properties": { "description": "RiskManager uses DrawdownMonitor for constitutional limit enforcement", "confidence": 0.85, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "target_id": "docs_auto_api_engine_risk_position_sizing_positionsizer",
+      "relationship": "delegates_to",
+      "properties": { "description": "RiskManager delegates position sizing calculations to PositionSizer", "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "target_id": "docs_auto_api_engine_risk_var_varcalculator",
+      "relationship": "uses",
+      "properties": { "description": "RiskManager uses VaRCalculator for VaR-based position sizing and stress testing", "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "target_id": "docs_auto_api_engine_risk_kelly_kellycriterion",
+      "relationship": "uses",
+      "properties": { "description": "RiskManager uses KellyCriterion for kelly-based position sizing", "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_position_sizing_positionsizer",
+      "target_id": "docs_auto_api_engine_risk_position_sizing_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_position_sizing_positionsizeresult",
+      "target_id": "docs_auto_api_engine_risk_position_sizing_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_risk_parity_riskparityoptimizer",
+      "target_id": "docs_auto_api_engine_risk_risk_parity_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_risk_parity_riskcontribution",
+      "target_id": "docs_auto_api_engine_risk_risk_parity_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_risk_parity_riskparityresult",
+      "target_id": "docs_auto_api_engine_risk_risk_parity_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_risk_parity_riskparitymethods",
+      "target_id": "docs_auto_api_engine_risk_risk_parity_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_strategy_auto_disable_autodisablemanager",
+      "target_id": "docs_auto_api_engine_risk_strategy_auto_disable_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_strategy_auto_disable_strategystate",
+      "target_id": "docs_auto_api_engine_risk_strategy_auto_disable_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_strategy_auto_disable_autodisablemanager",
+      "target_id": "docs_auto_api_engine_risk_kill_switch_killswitch",
+      "relationship": "activates",
+      "properties": { "description": "Auto-disable integrates with KillSwitch (LEVEL_1 equivalent per strategy)", "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_var_varcalculator",
+      "target_id": "docs_auto_api_engine_risk_var_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_var_varresult",
+      "target_id": "docs_auto_api_engine_risk_var_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_base_basescreener",
+      "target_id": "docs_auto_api_engine_screener_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_base_screenerresult",
+      "target_id": "docs_auto_api_engine_screener_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_base_screenersignal",
+      "target_id": "docs_auto_api_engine_screener_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_dex_intelligence_dexintelligence",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_dex_intelligence_dexintelligence",
+      "target_id": "docs_auto_api_engine_screener_dex_intelligence_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_intermarket_intermarketcorrelationrotation",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_intermarket_intermarketcorrelationrotation",
+      "target_id": "docs_auto_api_engine_screener_intermarket_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_liquidity_orderflow_liquidityorderflow",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_liquidity_orderflow_liquidityorderflow",
+      "target_id": "docs_auto_api_engine_screener_liquidity_orderflow_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_macro_analysis_macroanalysis",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_macro_analysis_macroanalysis",
+      "target_id": "docs_auto_api_engine_screener_macro_analysis_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_market_structure_marketstructure",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_market_structure_marketstructure",
+      "target_id": "docs_auto_api_engine_screener_market_structure_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_monetary_fundamental_monetaryfundamental",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_monetary_fundamental_monetaryfundamental",
+      "target_id": "docs_auto_api_engine_screener_monetary_fundamental_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_orchestrator_screenerorchestrator",
+      "target_id": "docs_auto_api_engine_screener_orchestrator_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_orchestrator_screenerorchestrator",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "orchestrates",
+      "properties": { "description": "ScreenerOrchestrator runs all screener engines in sequence and aggregates results", "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_positioning_crowd_positioningcrowdsentiment",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_positioning_crowd_positioningcrowdsentiment",
+      "target_id": "docs_auto_api_engine_screener_positioning_crowd_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_quant_scoring_quantscoring",
+      "target_id": "docs_auto_api_engine_screener_base_basescreener",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_screener_quant_scoring_quantscoring",
+      "target_id": "docs_auto_api_engine_screener_quant_scoring_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_shadow_extractor_strategyextractor",
+      "target_id": "docs_auto_api_engine_shadow_extractor_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_shadow_extractor_extractedstrategy",
+      "target_id": "docs_auto_api_engine_shadow_extractor_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_shadow_extractor_extractedrule",
+      "target_id": "docs_auto_api_engine_shadow_extractor_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___montecarlosimulator",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___stresstester",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___papertradingsimulator",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___simulationtype",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___marketregime",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___simulationconfig",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___simulationresult",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___stresstestscenario",
+      "target_id": "docs_auto_api_engine_simulation___init___module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_simulation___init___stresstester",
+      "target_id": "docs_auto_api_engine_risk_var_varcalculator",
+      "relationship": "uses",
+      "properties": { "description": "StressTester uses VaRCalculator for scenario analysis", "confidence": 0.85, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_base_strategy",
+      "target_id": "docs_auto_api_engine_strategies_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_base_strategysignal",
+      "target_id": "docs_auto_api_engine_strategies_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_base_signaldirection",
+      "target_id": "docs_auto_api_engine_strategies_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_base_signalstrength",
+      "target_id": "docs_auto_api_engine_strategies_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_base_strategyparameters",
+      "target_id": "docs_auto_api_engine_strategies_base_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_fibonacci_fibonaccistrategy",
+      "target_id": "docs_auto_api_engine_strategies_fibonacci_module",
+      "relationship": "belongs_to",
+      "properties": { "confidence": 1.0, "source": "EXTRACTED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_strategies_fibonacci_fibonaccistrategy",
+      "target_id": "docs_auto_api_engine_strategies_base_strategy",
+      "relationship": "inherits_from",
+      "properties": { "confidence": 0.95, "source": "INFERRED" }
+    },
+    {
+      "source_id": "docs_auto_api_engine_risk_module",
+      "target_id": "docs_auto_api_engine_risk_manager_riskmanager",
+      "relationship": "contains",
+      "properties": { "description": "engine.risk package contains RiskManager as central coordinator", "confidence": 0.85, "source": "INFERRED" }
+    }
+  ],
+  "metadata": {
+    "chunk": 12,
+    "total_files": 22,
+    "source_files": [
+      "docs/auto/api/engine.risk.drawdown.md",
+      "docs/auto/api/engine.risk.kelly.md",
+      "docs/auto/api/engine.risk.kill_switch.md",
+      "docs/auto/api/engine.risk.manager.md",
+      "docs/auto/api/engine.risk.position_sizing.md",
+      "docs/auto/api/engine.risk.risk_parity.md",
+      "docs/auto/api/engine.risk.strategy_auto_disable.md",
+      "docs/auto/api/engine.risk.var.md",
+      "docs/auto/api/engine.screener.base.md",
+      "docs/auto/api/engine.screener.dex_intelligence.md",
+      "docs/auto/api/engine.screener.intermarket.md",
+      "docs/auto/api/engine.screener.liquidity_orderflow.md",
+      "docs/auto/api/engine.screener.macro_analysis.md",
+      "docs/auto/api/engine.screener.market_structure.md",
+      "docs/auto/api/engine.screener.monetary_fundamental.md",
+      "docs/auto/api/engine.screener.orchestrator.md",
+      "docs/auto/api/engine.screener.positioning_crowd.md",
+      "docs/auto/api/engine.screener.quant_scoring.md",
+      "docs/auto/api/engine.shadow.extractor.md",
+      "docs/auto/api/engine.simulation.__init__.md",
+      "docs/auto/api/engine.strategies.base.md",
+      "docs/auto/api/engine.strategies.fibonacci.md"
+    ],
+    "generated_at": "2026-07-09T00:00:00Z",
+    "node_count": 69,
+    "edge_count": 69
+  }
+}

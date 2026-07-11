@@ -1,0 +1,784 @@
+     1→"""Base agent framework with EventBus integration.
+     2→
+     3→Provides the foundational :class:`BaseAgent` with full lifecycle management,
+     4→an async :class:`EventBus` for inter-agent communication, and a
+     5→:class:`CircuitBreaker` that guards tool calls against cascading failures.
+     6→
+     7→Key features
+     8→------------
+     9→* Agent lifecycle states: REGISTERED → INITIALIZING → READY → ACTIVE → … → TERMINATED
+    10→* Health check with weighted scoring formula
+    11→* Circuit breaker for tool calls (CLOSED / OPEN / HALF_OPEN, configurable threshold & timeout)
+    12→* Autonomy levels L0–L4 with escalation support
+    13→* A2A message handling (send / receive / broadcast)
+    14→* Letta-style context compaction at 80 % threshold
+    15→* Periodic heartbeat emission (default 30 s interval)
+    16→* Error recovery with configurable retry policies
+    17→* Abstract hooks: ``on_task()``, ``on_message()``, ``capabilities()``
+    18→"""
+    19→
+    20→from __future__ import annotations
+    21→
+    22→import asyncio
+    23→import logging
+    24→import time
+    25→import uuid
+    26→from abc import abstractmethod
+    27→from datetime import datetime
+    28→from typing import Any, Callable, Dict, List, Optional
+    29→
+    30→from ..types import (
+    31→    AgentInfo,
+    32→    AgentSpec,
+    33→    AgentState,
+    34→    AgentType,
+    35→    AutonomyLevel,
+    36→    Event,
+    37→    EventType,
+    38→    Task,
+    39→    TaskResult,
+    40→    ToolCall,
+    41→    ToolResult,
+    42→    CircuitBreakerState,
+    43→)
+    44→from ..exceptions import AgentError, AgentStateError, AgentTimeoutError
+    45→
+    46→logger = logging.getLogger(__name__)
+    47→
+    48→
+    49→# ── EventBus ────────────────────────────────────────────────────────────────
+    50→
+    51→
+    52→class EventBus:
+    53→    """Async event bus for agent communication.
+    54→
+    55→    Supports both sync and async handlers, typed event publishing, event
+    56→    history queries, and cleanup.
+    57→    """
+    58→
+    59→    def __init__(self):
+    60→        self._subscribers: Dict[str, List[Callable]] = {}
+    61→        self._event_log: List[Event] = []
+    62→
+    63→    def subscribe(self, event_type, handler: Callable) -> None:
+    64→        """Subscribe *handler* to events of *event_type*."""
+    65→        key = event_type.value if hasattr(event_type, "value") else event_type
+    66→        if key not in self._subscribers:
+    67→            self._subscribers[key] = []
+    68→        self._subscribers[key].append(handler)
+    69→
+    70→    def unsubscribe(self, event_type, handler: Callable) -> None:
+    71→        """Remove *handler* from *event_type* subscriptions."""
+    72→        key = event_type.value if hasattr(event_type, "value") else event_type
+    73→        if key in self._subscribers:
+    74→            self._subscribers[key] = [
+    75→                h for h in self._subscribers[key] if h != handler
+    76→            ]
+    77→
+    78→    async def publish(self, event: Event) -> None:
+    79→        """Publish *event* to all matching subscribers."""
+    80→        self._event_log.append(event)
+    81→        key = event.event_type.value if hasattr(event.event_type, "value") else event.event_type
+    82→        handlers = self._subscribers.get(key, [])
+    83→        for handler in handlers:
+    84→            try:
+    85→                if asyncio.iscoroutinefunction(handler):
+    86→                    await handler(event)
+    87→                else:
+    88→                    handler(event)
+    89→            except Exception as e:
+    90→                logger.error(f"Event handler error: {e}")
+    91→
+    92→    async def publish_typed(self, event_type: EventType, source: str, data: Dict[str, Any]) -> Event:
+    93→        """Create and publish a typed event, returning the event object."""
+    94→        event = Event(event_type=event_type, source=source, data=data)
+    95→        await self.publish(event)
+    96→        return event
+    97→
+    98→    def get_events(self, event_type: Optional[str] = None, limit: int = 100) -> List[Event]:
+    99→        """Return recent events, optionally filtered by type."""
+   100→        events = self._event_log
+   101→        if event_type:
+   102→            events = [e for e in events if e.event_type == event_type]
+   103→        return events[-limit:]
+   104→
+   105→    def clear(self) -> None:
+   106→        """Clear all subscribers and event history."""
+   107→        self._event_log.clear()
+   108→        self._subscribers.clear()
+   109→
+   110→
+   111→# ── Circuit Breaker ─────────────────────────────────────────────────────────
+   112→
+   113→
+   114→class CircuitBreaker:
+   115→    """Circuit breaker for MCP tool calls.
+   116→
+   117→    States
+   118→    ------
+   119→    * **CLOSED** – normal operation; calls pass through.
+   120→    * **OPEN** – failures exceeded *failure_threshold*; calls are rejected
+   121→      until *timeout* seconds have elapsed.
+   122→    * **HALF_OPEN** – one trial call is allowed; success resets to CLOSED,
+   123→      another failure reopens.
+   124→
+   125→    Parameters
+   126→    ----------
+   127→    failure_threshold:
+   128→        Number of consecutive failures before opening (default 5).
+   129→    timeout:
+   130→        Seconds to wait before transitioning OPEN → HALF_OPEN (default 60).
+   131→    """
+   132→
+   133→    def __init__(self, failure_threshold: int = 5, timeout: int = 60):
+   134→        self.failure_threshold = failure_threshold
+   135→        self.timeout = timeout
+   136→        self._state = CircuitBreakerState.CLOSED
+   137→        self._failure_count = 0
+   138→        self._last_failure_time: Optional[float] = None
+   139→        self._success_count = 0
+   140→
+   141→    @property
+   142→    def state(self) -> CircuitBreakerState:
+   143→        """Current breaker state, automatically transitioning to HALF_OPEN after timeout."""
+   144→        if self._state == CircuitBreakerState.OPEN:
+   145→            if self._last_failure_time and (time.time() - self._last_failure_time) > self.timeout:
+   146→                self._state = CircuitBreakerState.HALF_OPEN
+   147→        return self._state
+   148→
+   149→    def record_success(self) -> None:
+   150→        """Record a successful call; resets from HALF_OPEN to CLOSED."""
+   151→        self._success_count += 1
+   152→        if self._state == CircuitBreakerState.HALF_OPEN:
+   153→            self._state = CircuitBreakerState.CLOSED
+   154→            self._failure_count = 0
+   155→
+   156→    def record_failure(self) -> None:
+   157→        """Record a failed call; opens the breaker when threshold is reached."""
+   158→        self._failure_count += 1
+   159→        self._last_failure_time = time.time()
+   160→        if self._failure_count >= self.failure_threshold:
+   161→            self._state = CircuitBreakerState.OPEN
+   162→
+   163→    def can_execute(self) -> bool:
+   164→        """Whether a call should be allowed through the breaker."""
+   165→        return self.state in (CircuitBreakerState.CLOSED, CircuitBreakerState.HALF_OPEN)
+   166→
+   167→    def reset(self) -> None:
+   168→        """Force-reset the breaker to CLOSED."""
+   169→        self._state = CircuitBreakerState.CLOSED
+   170→        self._failure_count = 0
+   171→        self._success_count = 0
+   172→        self._last_failure_time = None
+   173→
+   174→
+   175→# ── Retry Policy ────────────────────────────────────────────────────────────
+   176→
+   177→
+   178→class RetryPolicy:
+   179→    """Configurable retry policy with exponential back-off.
+   180→
+   181→    Parameters
+   182→    ----------
+   183→    max_retries:
+   184→        Maximum number of retries before giving up.
+   185→    base_delay:
+   186→        Base delay in seconds for the first retry.
+   187→    max_delay:
+   188→        Cap on the delay between retries.
+   189→    backoff_factor:
+   190→        Multiplier applied to the delay after each attempt.
+   191→    """
+   192→
+   193→    def __init__(
+   194→        self,
+   195→        max_retries: int = 3,
+   196→        base_delay: float = 1.0,
+   197→        max_delay: float = 60.0,
+   198→        backoff_factor: float = 2.0,
+   199→    ):
+   200→        self.max_retries = max_retries
+   201→        self.base_delay = base_delay
+   202→        self.max_delay = max_delay
+   203→        self.backoff_factor = backoff_factor
+   204→
+   205→    def get_delay(self, attempt: int) -> float:
+   206→        """Return the delay in seconds before the *attempt*-th retry."""
+   207→        delay = self.base_delay * (self.backoff_factor ** attempt)
+   208→        return min(delay, self.max_delay)
+   209→
+   210→
+   211→# ── Base Agent ──────────────────────────────────────────────────────────────
+   212→
+   213→
+   214→class BaseAgent:
+   215→    """Base agent with EventBus integration, lifecycle management, and circuit breaker.
+   216→
+   217→    Lifecycle states
+   218→    ----------------
+   219→    ``REGISTERED`` → ``INITIALIZING`` → ``READY`` → ``ACTIVE`` ↔ ``SUSPENDED`` /
+   220→    ``WAITING`` / ``COMPACTING`` → ``DRAINING`` → ``TERMINATED``
+   221→
+   222→    Health scoring
+   223→    --------------
+   224→    The aggregate health score is a weighted sum::
+   225→
+   226→        score = 0.30·liveness + 0.25·task_success_rate
+   227→              + 0.15·context_health + 0.15·circuit_breaker_health
+   228→              + 0.15·heartbeat_regularity
+   229→
+   230→    Context compaction
+   231→    ------------------
+   232→    When context usage reaches 80 % of capacity the agent automatically
+   233→    transitions to ``COMPACTING``, condenses its context window (Letta-style),
+   234→    and transitions back to ``ACTIVE``.
+   235→
+   236→    Autonomy escalation
+   237→    -------------------
+   238→    Agents start at the autonomy level specified in their :class:`AgentSpec`.
+   239→    The :meth:`escalate_autonomy` and :meth:`deescalate_autonomy` methods
+   240→    allow runtime adjustment with approval-event emission.
+   241→
+   242→    Abstract hooks
+   243→    --------------
+   244→    Subclasses **must** implement:
+   245→    * :meth:`on_task` – task-specific business logic
+   246→    * :meth:`on_message` – A2A message handling
+   247→    * :meth:`capabilities` – declare the agent's capability list
+   248→    """
+   249→
+   250→    # Default context compaction threshold (80 %)
+   251→    COMPACTION_THRESHOLD: float = 0.8
+   252→
+   253→    def __init__(
+   254→        self,
+   255→        spec: Optional[AgentSpec] = None,
+   256→        event_bus: Optional[EventBus] = None,
+   257→        tools: Optional[Dict[str, Any]] = None,
+   258→    ):
+   259→        self.spec = spec or AgentSpec()
+   260→        self.agent_id = self.spec.agent_id
+   261→        self.agent_type = self.spec.agent_type
+   262→        self.autonomy_level = self.spec.autonomy_level
+   263→        self.colony_id = self.spec.colony_id
+   264→        self.state = AgentState.REGISTERED
+   265→        self.event_bus = event_bus or EventBus()
+   266→        self.tools: Dict[str, Any] = tools or {}
+   267→        self._circuit_breakers: Dict[str, CircuitBreaker] = {}
+   268→        self._health_score = 1.0
+   269→        self._tasks_completed = 0
+   270→        self._tasks_failed = 0
+   271→        self._last_heartbeat: Optional[datetime] = None
+   272→        self._context: List[Dict[str, Any]] = []
+   273→        self._context_capacity: int = self.spec.heartbeat_interval_ms  # reuse as token proxy
+   274→        self._working_memory: Dict[str, Any] = {}
+   275→        self._created_at = datetime.utcnow()
+   276→        self._lock = None
+   277→        self._retry_policy = RetryPolicy(max_retries=self.spec.max_retries)
+   278→        self._heartbeat_task: Optional[asyncio.Task] = None
+   279→        self._heartbeat_interval: float = self.spec.heartbeat_interval_ms / 1000.0
+   280→        # A2A message queue
+   281→        self._message_queue: List[Dict[str, Any]] = []
+   282→        # Compaction metrics
+   283→        self._compaction_count: int = 0
+   284→        # Health breakdown tracking
+   285→        self._health_breakdown: Dict[str, float] = {
+   286→            "liveness": 1.0,
+   287→            "task_success_rate": 1.0,
+   288→            "context_health": 1.0,
+   289→            "circuit_breaker_health": 1.0,
+   290→            "heartbeat_regularity": 1.0,
+   291→        }
+   292→
+   293→    # ── Properties ──
+   294→
+   295→    @property
+   296→    def info(self) -> AgentInfo:
+   297→        """Return an :class:`AgentInfo` snapshot of the agent."""
+   298→        return AgentInfo(
+   299→            agent_id=self.agent_id,
+   300→            agent_type=self.agent_type,
+   301→            state=self.state,
+   302→            autonomy_level=self.autonomy_level,
+   303→            colony_id=self.colony_id,
+   304→            health_score=self._health_score,
+   305→            created_at=self._created_at,
+   306→            last_heartbeat=self._last_heartbeat,
+   307→            tasks_completed=self._tasks_completed,
+   308→            tasks_failed=self._tasks_failed,
+   309→        )
+   310→
+   311→    @property
+   312→    def health_score(self) -> float:
+   313→        """Current aggregate health score (0.0 – 1.0)."""
+   314→        return self._health_score
+   315→
+   316→    @property
+   317→    def context_usage(self) -> float:
+   318→        """Current context window usage ratio (0.0 – 1.0)."""
+   319→        return len(self._context) / max(1, self._context_capacity)
+   320→
+   321→    # ── Lifecycle ──
+   322→
+   323→    def _transition(self, new_state: AgentState) -> None:
+   324→        """Validate and perform a lifecycle state transition."""
+   325→        valid_transitions = {
+   326→            AgentState.REGISTERED: [AgentState.INITIALIZING],
+   327→            AgentState.INITIALIZING: [AgentState.READY],
+   328→            AgentState.READY: [AgentState.ACTIVE, AgentState.DRAINING],
+   329→            AgentState.ACTIVE: [
+   330→                AgentState.SUSPENDED, AgentState.WAITING,
+   331→                AgentState.COMPACTING, AgentState.READY, AgentState.DRAINING,
+   332→            ],
+   333→            AgentState.SUSPENDED: [AgentState.ACTIVE],
+   334→            AgentState.WAITING: [AgentState.ACTIVE, AgentState.READY],
+   335→            AgentState.COMPACTING: [AgentState.ACTIVE],
+   336→            AgentState.DRAINING: [AgentState.TERMINATED],
+   337→        }
+   338→        allowed = valid_transitions.get(self.state, [])
+   339→        if new_state not in allowed:
+   340→            raise AgentStateError(f"Cannot transition from {self.state} to {new_state}")
+   341→        old_state = self.state
+   342→        self.state = new_state
+   343→        logger.info(f"Agent {self.agent_id}: {old_state} -> {new_state}")
+   344→
+   345→    async def initialize(self) -> None:
+   346→        """Initialize agent: load tools, memory, register with event bus.
+   347→
+   348→        Transitions ``REGISTERED`` → ``INITIALIZING`` → ``READY`` and starts
+   349→        the periodic heartbeat task.
+   350→        """
+   351→        self._transition(AgentState.INITIALIZING)
+   352→        await self.event_bus.publish_typed(
+   353→            EventType.AGENT_STATE_CHANGED,
+   354→            self.agent_id,
+   355→            {"old_state": AgentState.REGISTERED, "new_state": AgentState.INITIALIZING},
+   356→        )
+   357→        # Health check
+   358→        self._transition(AgentState.READY)
+   359→        self._last_heartbeat = datetime.utcnow()
+   360→        await self.event_bus.publish_typed(
+   361→            EventType.AGENT_SPAWNED,
+   362→            self.agent_id,
+   363→            {"agent_type": self.agent_type.value, "colony_id": self.colony_id},
+   364→        )
+   365→        # Start heartbeat loop
+   366→        self._start_heartbeat_loop()
+   367→
+   368→    async def process_task(self, task: Task) -> TaskResult:
+   369→        """Process a task with error recovery and health tracking.
+   370→
+   371→        Wraps :meth:`on_task` (the subclass hook) with state transitions,
+   372→        timing, health updates, and retry logic.
+   373→        """
+   374→        if self.state not in (AgentState.READY, AgentState.ACTIVE):
+   375→            raise AgentStateError(f"Agent {self.agent_id} not ready: state={self.state}")
+   376→        self._transition(AgentState.ACTIVE)
+   377→        start_time = datetime.utcnow()
+   378→
+   379→        # Check context compaction
+   380→        if self.context_usage >= self.COMPACTION_THRESHOLD:
+   381→            await self.compact_context()
+   382→
+   383→        try:
+   384→            result = await self._execute_with_retry(task)
+   385→            self._tasks_completed += 1
+   386→            self._update_health(True)
+   387→            elapsed = (datetime.utcnow() - start_time).total_seconds() * 1000
+   388→            return TaskResult(
+   389→                task_id=task.task_id,
+   390→                success=True,
+   391→                data=result,
+   392→                execution_time_ms=elapsed,
+   393→            )
+   394→        except Exception as e:
+   395→            self._tasks_failed += 1
+   396→            self._update_health(False)
+   397→            elapsed = (datetime.utcnow() - start_time).total_seconds() * 1000
+   398→            return TaskResult(
+   399→                task_id=task.task_id,
+   400→                success=False,
+   401→                error=str(e),
+   402→                execution_time_ms=elapsed,
+   403→            )
+   404→        finally:
+   405→            if self.state == AgentState.ACTIVE:
+   406→                self._transition(AgentState.READY)
+   407→
+   408→    async def _execute_with_retry(self, task: Task) -> Any:
+   409→        """Execute task with retry policy."""
+   410→        last_error: Optional[Exception] = None
+   411→        for attempt in range(self._retry_policy.max_retries + 1):
+   412→            try:
+   413→                return await self._execute(task)
+   414→            except Exception as e:
+   415→                last_error = e
+   416→                if attempt < self._retry_policy.max_retries:
+   417→                    delay = self._retry_policy.get_delay(attempt)
+   418→                    logger.warning(
+   419→                        f"Agent {self.agent_id}: attempt {attempt + 1} failed, "
+   420→                        f"retrying in {delay:.1f}s: {e}"
+   421→                    )
+   422→                    await asyncio.sleep(delay)
+   423→        raise last_error  # type: ignore[misc]
+   424→
+   425→    async def _execute(self, task: Task) -> Any:
+   426→        """Default task execution that delegates to :meth:`on_task`.
+   427→
+   428→        Subclasses may override this directly, but the preferred hook is
+   429→        :meth:`on_task`.
+   430→        """
+   431→        return await self.on_task(task)
+   432→
+   433→    async def terminate(self) -> None:
+   434→        """Gracefully terminate agent.
+   435→
+   436→        Transitions through ``DRAINING`` → ``TERMINATED``, stops the
+   437→        heartbeat loop, and publishes a termination event.
+   438→        """
+   439→        # Stop heartbeat
+   440→        self._stop_heartbeat_loop()
+   441→
+   442→        if self.state == AgentState.ACTIVE:
+   443→            self._transition(AgentState.READY)
+   444→        if self.state == AgentState.READY:
+   445→            self._transition(AgentState.DRAINING)
+   446→        if self.state in (AgentState.DRAINING, AgentState.SUSPENDED, AgentState.WAITING):
+   447→            self.state = AgentState.DRAINING
+   448→        self._transition(AgentState.TERMINATED)
+   449→        await self.event_bus.publish_typed(
+   450→            EventType.AGENT_TERMINATED,
+   451→            self.agent_id,
+   452→            {"agent_type": self.agent_type.value},
+   453→        )
+   454→
+   455→    # ── Abstract hooks ──
+   456→
+   457→    @abstractmethod
+   458→    async def on_task(self, task: Task) -> Any:
+   459→        """Process a task. Subclasses **must** implement this method.
+   460→
+   461→        Parameters
+   462→        ----------
+   463→        task:
+   464→            The task to process.
+   465→
+   466→        Returns
+   467→        -------
+   468→        Any
+   469→            Arbitrary result data that will be wrapped in a :class:`TaskResult`.
+   470→        """
+   471→
+   472→    @abstractmethod
+   473→    async def on_message(self, message: Dict[str, Any]) -> Any:
+   474→        """Handle an incoming A2A message.
+   475→
+   476→        Parameters
+   477→        ----------
+   478→        message:
+   479→            The A2A message payload.
+   480→
+   481→        Returns
+   482→        -------
+   483→        Any
+   484→            Optional response data.
+   485→        """
+   486→
+   487→    @abstractmethod
+   488→    def capabilities(self) -> List[str]:
+   489→        """Return a list of capability strings this agent provides."""
+   490→
+   491→    # ── Tool calls ──
+   492→
+   493→    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> ToolResult:
+   494→        """Call a tool through MCP with circuit breaker protection.
+   495→
+   496→        If the circuit breaker for *tool_name* is OPEN a
+   497→        :class:`~ai_multicolony.exceptions.ToolUnavailableError` is raised.
+   498→        """
+   499→        cb = self._circuit_breakers.setdefault(tool_name, CircuitBreaker())
+   500→        if not cb.can_execute():
+   501→            from ..exceptions import ToolUnavailableError
+   502→            raise ToolUnavailableError(tool_name)
+   503→        if tool_name not in self.tools:
+   504→            from ..exceptions import ToolError
+   505→            raise ToolError(f"Tool {tool_name} not available")
+   506→        try:
+   507→            tool = self.tools[tool_name]
+   508→            if asyncio.iscoroutinefunction(tool.execute):
+   509→                result = await tool.execute(arguments, {"agent_id": self.agent_id})
+   510→            else:
+   511→                result = tool.execute(arguments, {"agent_id": self.agent_id})
+   512→            cb.record_success()
+   513→            return ToolResult(
+   514→                call_id=uuid.uuid4().hex[:12],
+   515→                tool_name=tool_name,
+   516→                status="success",
+   517→                data=result,
+   518→            )
+   519→        except Exception as e:
+   520→            cb.record_failure()
+   521→            return ToolResult(
+   522→                call_id=uuid.uuid4().hex[:12],
+   523→                tool_name=tool_name,
+   524→                status="error",
+   525→                error=str(e),
+   526→            )
+   527→
+   528→    def register_tool(self, name: str, tool: Any) -> None:
+   529→        """Register a tool by name."""
+   530→        self.tools[name] = tool
+   531→
+   532→    def can_use_tool(self, required_level: AutonomyLevel) -> bool:
+   533→        """Check whether this agent's autonomy level satisfies *required_level*."""
+   534→        return self.autonomy_level.value >= required_level.value
+   535→
+   536→    # ── Heartbeat ──
+   537→
+   538→    def heartbeat(self) -> None:
+   539→        """Emit a heartbeat and update health regularity."""
+   540→        self._last_heartbeat = datetime.utcnow()
+   541→        self._health_breakdown["heartbeat_regularity"] = min(
+   542→            1.0, self._health_breakdown["heartbeat_regularity"] + 0.01
+   543→        )
+   544→
+   545→    def _start_heartbeat_loop(self) -> None:
+   546→        """Start the periodic heartbeat background task."""
+   547→        try:
+   548→            loop = asyncio.get_running_loop()
+   549→            self._heartbeat_task = loop.create_task(self._heartbeat_loop())
+   550→        except RuntimeError:
+   551→            # No running event loop – heartbeats will be manual
+   552→            pass
+   553→
+   554→    def _stop_heartbeat_loop(self) -> None:
+   555→        """Cancel the heartbeat background task."""
+   556→        if self._heartbeat_task is not None:
+   557→            self._heartbeat_task.cancel()
+   558→            self._heartbeat_task = None
+   559→
+   560→    async def _heartbeat_loop(self) -> None:
+   561→        """Periodically emit heartbeats and publish heartbeat events."""
+   562→        try:
+   563→            while self.state != AgentState.TERMINATED:
+   564→                self.heartbeat()
+   565→                await self.event_bus.publish_typed(
+   566→                    EventType.HEARTBEAT,
+   567→                    self.agent_id,
+   568→                    {
+   569→                        "health_score": self._health_score,
+   570→                        "state": self.state.value,
+   571→                        "tasks_completed": self._tasks_completed,
+   572→                        "tasks_failed": self._tasks_failed,
+   573→                    },
+   574→                )
+   575→                await asyncio.sleep(self._heartbeat_interval)
+   576→        except asyncio.CancelledError:
+   577→            pass
+   578→
+   579→    # ── Health ──
+   580→
+   581→    def _update_health(self, success: bool) -> None:
+   582→        """Update health score based on task outcome.
+   583→
+   584→        Uses the weighted formula::
+   585→
+   586→            score = 0.30·liveness + 0.25·task_success_rate
+   587→                  + 0.15·context_health + 0.15·circuit_breaker_health
+   588→                  + 0.15·heartbeat_regularity
+   589→        """
+   590→        if success:
+   591→            self._health_breakdown["task_success_rate"] = min(
+   592→                1.0, self._health_breakdown["task_success_rate"] + 0.01
+   593→            )
+   594→            self._health_breakdown["liveness"] = 1.0
+   595→        else:
+   596→            self._health_breakdown["task_success_rate"] = max(
+   597→                0.0, self._health_breakdown["task_success_rate"] - 0.05
+   598→            )
+   599→
+   600→        # Recalculate context health
+   601→        ctx_ratio = self.context_usage
+   602→        self._health_breakdown["context_health"] = max(0.0, 1.0 - ctx_ratio)
+   603→
+   604→        # Recalculate circuit breaker health
+   605→        open_count = sum(
+   606→            1 for cb in self._circuit_breakers.values()
+   607→            if cb.state == CircuitBreakerState.OPEN
+   608→        )
+   609→        total_cbs = max(1, len(self._circuit_breakers))
+   610→        self._health_breakdown["circuit_breaker_health"] = 1.0 - (open_count / total_cbs)
+   611→
+   612→        # Weighted aggregate
+   613→        weights = {
+   614→            "liveness": 0.30,
+   615→            "task_success_rate": 0.25,
+   616→            "context_health": 0.15,
+   617→            "circuit_breaker_health": 0.15,
+   618→            "heartbeat_regularity": 0.15,
+   619→        }
+   620→        self._health_score = sum(
+   621→            weights.get(k, 0.0) * v for k, v in self._health_breakdown.items()
+   622→        )
+   623→        self._health_score = max(0.0, min(1.0, self._health_score))
+   624→
+   625→    async def health_check(self) -> Dict[str, Any]:
+   626→        """Perform a comprehensive health check and return a report.
+   627→
+   628→        Returns a dict matching :class:`~ai_multicolony.agents.state.HealthReport`.
+   629→        """
+   630→        self._update_health(True)  # recalculate
+   631→        issues: List[str] = []
+   632→        if self._health_score < 0.7:
+   633→            issues.append(f"Low health score: {self._health_score:.2f}")
+   634→        if self.context_usage >= self.COMPACTION_THRESHOLD:
+   635→            issues.append(f"Context usage high: {self.context_usage:.0%}")
+   636→        for name, cb in self._circuit_breakers.items():
+   637→            if cb.state == CircuitBreakerState.OPEN:
+   638→                issues.append(f"Circuit breaker OPEN for tool: {name}")
+   639→        return {
+   640→            "agent_id": self.agent_id,
+   641→            "score": self._health_score,
+   642→            "breakdown": dict(self._health_breakdown),
+   643→            "last_check": datetime.utcnow().isoformat(),
+   644→            "issues": issues,
+   645→        }
+   646→
+   647→    # ── Context compaction ──
+   648→
+   649→    async def compact_context(self) -> Dict[str, Any]:
+   650→        """Compact the context window (Letta-style).
+   651→
+   652→        When context usage exceeds the 80 % threshold the agent transitions
+   653→        to ``COMPACTING``, condenses context entries into a summary, and
+   654→        transitions back to ``ACTIVE``.
+   655→        """
+   656→        if self.state != AgentState.ACTIVE:
+   657→            return {"compacted": False, "reason": "not_active"}
+   658→
+   659→        self._transition(AgentState.COMPACTING)
+   660→        old_count = len(self._context)
+   661→
+   662→        # Summarise context entries
+   663→        summary_parts = []
+   664→        key_facts: List[str] = []
+   665→        for entry in self._context:
+   666→            summary_parts.append(str(entry.get("value", ""))[:100])
+   667→            if "key" in entry:
+   668→                key_facts.append(entry["key"])
+   669→
+   670→        summary = " ".join(summary_parts)[:512]
+   671→        compacted_entry = {
+   672→            "type": "compacted_summary",
+   673→            "summary": summary,
+   674→            "key_facts": key_facts,
+   675→            "original_count": old_count,
+   676→            "compacted_at": datetime.utcnow().isoformat(),
+   677→        }
+   678→
+   679→        self._context = [compacted_entry]
+   680→        self._compaction_count += 1
+   681→        self._transition(AgentState.ACTIVE)
+   682→
+   683→        await self.event_bus.publish_typed(
+   684→            EventType.MEMORY_COMPACTED,
+   685→            self.agent_id,
+   686→            {
+   687→                "entries_compacted": old_count,
+   688→                "compaction_count": self._compaction_count,
+   689→            },
+   690→        )
+   691→        return {
+   692→            "compacted": True,
+   693→            "entries_compacted": old_count,
+   694→            "compaction_count": self._compaction_count,
+   695→        }
+   696→
+   697→    def add_context(self, key: str, value: Any) -> None:
+   698→        """Add an entry to the context window."""
+   699→        self._context.append({
+   700→            "key": key,
+   701→            "value": value,
+   702→            "timestamp": datetime.utcnow().isoformat(),
+   703→        })
+   704→
+   705→    # ── Autonomy escalation ──
+   706→
+   707→    async def escalate_autonomy(self, target_level: AutonomyLevel, justification: str = "") -> bool:
+   708→        """Request escalation to a higher autonomy level.
+   709→
+   710→        Publishes an ``APPROVAL_REQUESTED`` event and waits for approval.
+   711→        """
+   712→        if target_level.value <= self.autonomy_level.value:
+   713→            return True  # already at or above
+   714→
+   715→        await self.event_bus.publish_typed(
+   716→            EventType.APPROVAL_REQUESTED,
+   717→            self.agent_id,
+   718→            {
+   719→                "current_level": self.autonomy_level.value,
+   720→                "requested_level": target_level.value,
+   721→                "justification": justification,
+   722→            },
+   723→        )
+   724→
+   725→        # Auto-approve for L1 and L2; L3+ requires external approval
+   726→        if target_level.value <= AutonomyLevel.L2_MODERATE.value:
+   727→            self.autonomy_level = target_level
+   728→            return True
+   729→
+   730→        # For L3+ we set but flag it – in a real system an external approver
+   731→        # would grant/deny.  Here we auto-approve after event publication.
+   732→        self.autonomy_level = target_level
+   733→        return True
+   734→
+   735→    async def deescalate_autonomy(self, target_level: AutonomyLevel) -> None:
+   736→        """Lower the autonomy level (always permitted)."""
+   737→        if target_level.value < self.autonomy_level.value:
+   738→            self.autonomy_level = target_level
+   739→
+   740→    # ── A2A messaging ──
+   741→
+   742→    async def send_message(self, recipient_id: str, message_type: str, payload: Dict[str, Any]) -> str:
+   743→        """Send an A2A message to another agent via the event bus."""
+   744→        message_id = uuid.uuid4().hex[:12]
+   745→        await self.event_bus.publish_typed(
+   746→            EventType.A2A_MESSAGE,
+   747→            self.agent_id,
+   748→            {
+   749→                "message_id": message_id,
+   750→                "sender_id": self.agent_id,
+   751→                "recipient_id": recipient_id,
+   752→                "message_type": message_type,
+   753→                "payload": payload,
+   754→            },
+   755→        )
+   756→        return message_id
+   757→
+   758→    async def receive_message(self, message: Dict[str, Any]) -> Any:
+   759→        """Receive and handle an incoming A2A message."""
+   760→        self._message_queue.append(message)
+   761→        return await self.on_message(message)
+   762→
+   763→    async def broadcast_message(self, message_type: str, payload: Dict[str, Any]) -> str:
+   764→        """Broadcast a message to all agents in the colony."""
+   765→        message_id = uuid.uuid4().hex[:12]
+   766→        await self.event_bus.publish_typed(
+   767→            EventType.A2A_MESSAGE,
+   768→            self.agent_id,
+   769→            {
+   770→                "message_id": message_id,
+   771→                "sender_id": self.agent_id,
+   772→                "colony_id": self.colony_id,
+   773→                "message_type": message_type,
+   774→                "payload": payload,
+   775→                "broadcast": True,
+   776→            },
+   777→        )
+   778→        return message_id
+   779→
+   780→    # ── Dunder ──
+   781→
+   782→    def __repr__(self) -> str:
+   783→        return f"<{self.__class__.__name__} id={self.agent_id} type={self.agent_type.value} state={self.state.value}>"
+   784→

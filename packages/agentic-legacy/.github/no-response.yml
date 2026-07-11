@@ -1,0 +1,7 @@
+# No response bot configuration
+daysUntilClose: 14
+responseRequiredLabel: needs-more-info
+closeComment: >
+  This issue has been automatically closed because there has been no
+  response to our request for more information. If you can provide
+  additional details, feel free to reopen this issue.

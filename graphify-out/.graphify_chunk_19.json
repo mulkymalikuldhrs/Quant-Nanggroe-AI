@@ -1,0 +1,483 @@
+{
+  "graph_fragment": {
+    "nodes": [
+      {
+        "id": "skills_asr_skill",
+        "type": "document",
+        "label": "ASR Skill",
+        "file_path": "skills/ASR/SKILL.md",
+        "description": "Speech-to-text (ASR) implementation using z-ai-web-dev-sdk",
+        "properties": {
+          "framework": "z-ai-web-dev-sdk",
+          "capability": "speech-to-text",
+          "formats": ["WAV", "MP3", "M4A", "FLAC", "OGG"],
+          "cli_available": true,
+          "backend_only": true
+        }
+      },
+      {
+        "id": "skills_llm_license",
+        "type": "document",
+        "label": "LLM License",
+        "file_path": "skills/LLM/LICENSE.txt",
+        "description": "License file for LLM skill",
+        "properties": {}
+      },
+      {
+        "id": "skills_llm_skill",
+        "type": "document",
+        "label": "LLM Skill",
+        "file_path": "skills/LLM/SKILL.md",
+        "description": "Large Language Model chat completions using z-ai-web-dev-sdk",
+        "properties": {
+          "framework": "z-ai-web-dev-sdk",
+          "capability": "chat-completions",
+          "features": ["multi-turn", "system-prompts", "context-management", "streaming"],
+          "cli_available": true,
+          "backend_only": true
+        }
+      },
+      {
+        "id": "skills_tts_license",
+        "type": "document",
+        "label": "TTS License",
+        "file_path": "skills/TTS/LICENSE.txt",
+        "description": "License file for TTS skill",
+        "properties": {}
+      },
+      {
+        "id": "skills_tts_skill",
+        "type": "document",
+        "label": "TTS Skill",
+        "file_path": "skills/TTS/SKILL.md",
+        "description": "Text-to-speech conversion using z-ai-web-dev-sdk",
+        "properties": {
+          "framework": "z-ai-web-dev-sdk",
+          "capability": "text-to-speech",
+          "voices": ["tongtong", "chuichui", "xiaochen", "jam", "kazi", "douji", "luodo"],
+          "formats": ["WAV", "MP3", "PCM"],
+          "max_input_chars": 1024,
+          "speed_range": [0.5, 2.0],
+          "volume_range": [0, 10],
+          "cli_available": true,
+          "backend_only": true
+        }
+      },
+      {
+        "id": "skills_vlm_license",
+        "type": "document",
+        "label": "VLM License",
+        "file_path": "skills/VLM/LICENSE.txt",
+        "description": "License file for VLM skill",
+        "properties": {}
+      },
+      {
+        "id": "skills_vlm_skill",
+        "type": "document",
+        "label": "VLM Skill",
+        "file_path": "skills/VLM/SKILL.md",
+        "description": "Vision-based AI chat using z-ai-web-dev-sdk",
+        "properties": {
+          "framework": "z-ai-web-dev-sdk",
+          "capability": "vision-chat",
+          "content_types": ["image_url", "video_url", "file_url"],
+          "image_formats": ["PNG", "JPEG", "GIF", "WebP", "BMP"],
+          "cli_available": true,
+          "backend_only": true
+        }
+      },
+      {
+        "id": "skills_agent_browser_skill",
+        "type": "document",
+        "label": "Agent Browser Skill",
+        "file_path": "skills/agent-browser/SKILL.md",
+        "description": "Rust-based headless browser automation CLI with Node.js fallback",
+        "properties": {
+          "language": "Rust",
+          "fallback": "Node.js",
+          "capability": "browser-automation",
+          "commands": ["open", "snapshot", "click", "fill", "type", "screenshot", "record"],
+          "installation": "npm install -g agent-browser",
+          "source_repo": "https://github.com/vercel-labs/agent-browser"
+        }
+      },
+      {
+        "id": "skills_ai_news_collectors_skill",
+        "type": "document",
+        "label": "AI News Collector Skill",
+        "file_path": "skills/ai-news-collectors/SKILL.md",
+        "description": "AI news aggregation and trending rank tool with multi-dimension search",
+        "properties": {
+          "capability": "news-aggregation",
+          "language": "Chinese",
+          "search_dimensions": ["newsletter", "community-viral", "product-launch", "funding", "research", "regulation"],
+          "min_searches": 8,
+          "output_count": "15-25"
+        }
+      },
+      {
+        "id": "skills_ai_news_collectors_references_sources",
+        "type": "document",
+        "label": "AI News Sources Reference",
+        "file_path": "skills/ai-news-collectors/references/sources.md",
+        "description": "Curated list of AI news sources across newsletters, media, communities, and research",
+        "properties": {
+          "categories": ["newsletter", "substack", "international-media", "chinese-media", "communities", "security", "academic", "open-source"]
+        }
+      },
+      {
+        "id": "skills_aminer_academic_search_skill",
+        "type": "document",
+        "label": "AMiner Academic Search Skill",
+        "file_path": "skills/aminer-academic-search/SKILL.md",
+        "description": "27 AMiner Open Platform APIs for academic/scholarly search through local gateway",
+        "properties": {
+          "platform": "AMiner",
+          "api_count": 27,
+          "workflows": ["scholar-profile", "paper-deep-dive", "org-analysis", "venue-papers", "patent-analysis"],
+          "gateway_endpoint": "/v1/functions/invoke",
+          "config_file": ".z-ai-config",
+          "script": "scripts/aminer.py"
+        }
+      },
+      {
+        "id": "skills_aminer_daily_paper_readme",
+        "type": "document",
+        "label": "AMiner Daily Paper README",
+        "file_path": "skills/aminer-daily-paper/README.md",
+        "description": "README for AMiner daily paper recommendation",
+        "properties": {}
+      },
+      {
+        "id": "skills_aminer_daily_paper_skill",
+        "type": "document",
+        "label": "AMiner Daily Paper Skill",
+        "file_path": "skills/aminer-daily-paper/SKILL.md",
+        "description": "Personalized academic paper recommendation via AMiner",
+        "properties": {
+          "platform": "AMiner",
+          "capability": "paper-recommendation",
+          "script": "scripts/recommend.py",
+          "config_file": ".z-ai-config",
+          "input_fields": ["topics", "author_name", "author_org", "aminer_author_id", "size", "language_sort"]
+        }
+      },
+      {
+        "id": "skills_aminer_free_academic_skill",
+        "type": "document",
+        "label": "AMiner Free Academic Skill",
+        "file_path": "skills/aminer-free-academic/SKILL.md",
+        "description": "Free-tier AMiner academic search with 7 free APIs",
+        "properties": {
+          "platform": "AMiner",
+          "api_count": 7,
+          "capability": "free-academic-search",
+          "free_apis": ["paper_search", "paper_info", "person_search", "organization_search", "venue_search", "patent_search", "patent_info"],
+          "base_url": "https://datacenter.aminer.cn/gateway/open_platform",
+          "workflows": ["paper-triage", "scholar-identification", "institution-normalization", "venue-normalization", "patent-trend-scan", "free-entity-map"]
+        }
+      },
+      {
+        "id": "skills_aminer_free_academic_references_api_catalog",
+        "type": "document",
+        "label": "AMiner Free API Catalog",
+        "file_path": "skills/aminer-free-academic/references/api-catalog.md",
+        "description": "Detailed API catalog for 7 free AMiner APIs with request/response specs",
+        "properties": {
+          "base_url": "https://datacenter.aminer.cn/gateway/open_platform",
+          "authentication": "Authorization: ${AMINER_API_KEY}",
+          "categories": ["paper", "scholar", "institution", "venue", "patent"]
+        }
+      },
+      {
+        "id": "skills_anti_pua_skill",
+        "type": "document",
+        "label": "Anti-PUA Skill",
+        "file_path": "skills/anti-pua/SKILL.md",
+        "description": "Psychological analysis tool for identifying PUA, emotional manipulation, and toxic relationship patterns",
+        "properties": {
+          "capability": "psychological-analysis",
+          "language": "Chinese",
+          "analysis_types": ["personality-analysis", "psychological-profiling", "emotional-analysis", "behavior-prediction"],
+          "dark_triad": ["narcissism", "machiavellianism", "psychopathy"],
+          "manipulation_patterns": ["gaslighting", "love-bombing", "silent-treatment", "triangulation"]
+        }
+      },
+      {
+        "id": "skills_auto_target_tracker_skill",
+        "type": "document",
+        "label": "Auto Target Tracker Skill",
+        "file_path": "skills/auto-target-tracker/SKILL.md",
+        "description": "Automatic goal progress tracker using VLM for image-based progress detection",
+        "properties": {
+          "capability": "goal-tracking",
+          "language": "Chinese",
+          "integration": "VLM",
+          "target_types": ["learning", "fitness", "work", "creation", "habits"],
+          "privacy": "local-only"
+        }
+      },
+      {
+        "id": "skills_blog_writer_2024_02_17_radical_transparency_sales",
+        "type": "document",
+        "label": "Radical Transparency in Sales",
+        "file_path": "skills/blog-writer/2024-02-17-radical-transparency-sales.md",
+        "description": "Blog article on radical transparency influence methodology in B2B sales",
+        "properties": {
+          "topic": "sales",
+          "date": "2024-02-17",
+          "concepts": ["radical-transparency", "neocortex", "limbic-cortex", "emotional-decision-making"]
+        }
+      },
+      {
+        "id": "skills_blog_writer_2024_02_17_raycast_spotlight_superpowers",
+        "type": "document",
+        "label": "Raycast Spotlight Superpowers",
+        "file_path": "skills/blog-writer/2024-02-17-raycast-spotlight-superpowers.md",
+        "description": "Blog article about Raycast as a Spotlight replacement on Mac",
+        "properties": {
+          "topic": "productivity",
+          "date": "2024-02-17",
+          "concepts": ["raycast", "spotlight", "mac-productivity", "extensions"]
+        }
+      },
+      {
+        "id": "skills_blog_writer_2024_02_17_short_form_content_marketing",
+        "type": "document",
+        "label": "Short-Form Content Marketing",
+        "file_path": "skills/blog-writer/2024-02-17-short-form-content-marketing.md",
+        "description": "Blog article on how short-form content is changing marketing and storytelling",
+        "properties": {
+          "topic": "marketing",
+          "date": "2024-02-17",
+          "concepts": ["short-form-content", "storytelling", "cognitive-overload", "viral-marketing"]
+        }
+      },
+      {
+        "id": "skills_blog_writer_2024_02_17_typing_speed_benefits",
+        "type": "document",
+        "label": "Benefits of Fast Typing",
+        "file_path": "skills/blog-writer/2024-02-17-typing-speed-benefits.md",
+        "description": "Blog article on benefits of improving typing speed",
+        "properties": {
+          "topic": "productivity",
+          "date": "2024-02-17",
+          "concepts": ["typing-speed", "wpm", "productivity", "monkeytype"]
+        }
+      },
+      {
+        "id": "skills_blog_writer_2024_03_14_effective_ai_prompts",
+        "type": "document",
+        "label": "Effective AI Prompts",
+        "file_path": "skills/blog-writer/2024-03-14-effective-ai-prompts.md",
+        "description": "Blog article on writing effective AI prompts and prompt engineering",
+        "properties": {
+          "topic": "ai-prompting",
+          "date": "2024-03-14",
+          "concepts": ["prompt-engineering", "gigo", "context-management", "persona-adoption"]
+        }
+      },
+      {
+        "id": "z_ai_web_dev_sdk",
+        "type": "rationale",
+        "label": "z-ai-web-dev-sdk",
+        "description": "Core SDK used by ASR, LLM, TTS, and VLM skills for AI capabilities",
+        "properties": {
+          "backend_only": true,
+          "usage": "import ZAI from 'z-ai-web-dev-sdk'"
+        }
+      },
+      {
+        "id": "aminer_open_platform",
+        "type": "rationale",
+        "label": "AMiner Open Platform",
+        "description": "Academic research platform providing APIs for paper, scholar, institution, venue, and patent search",
+        "properties": {
+          "base_url": "https://datacenter.aminer.cn/gateway/open_platform",
+          "auth": "AMINER_API_KEY",
+          "total_apis": 27
+        }
+      },
+      {
+        "id": "quant_nanggroe_ai_skills",
+        "type": "rationale",
+        "label": "Quant Nanggroe AI Skills Suite",
+        "description": "Collection of AI skills powering the Quant Nanggroe AI ecosystem",
+        "properties": {
+          "count": 22,
+          "categories": ["ai-capabilities", "academic-research", "automation", "productivity", "wellness"]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "skills_asr_skill",
+        "target": "z_ai_web_dev_sdk",
+        "label": "depends_on",
+        "properties": {"relationship": "SDK dependency"}
+      },
+      {
+        "source": "skills_llm_skill",
+        "target": "z_ai_web_dev_sdk",
+        "label": "depends_on",
+        "properties": {"relationship": "SDK dependency"}
+      },
+      {
+        "source": "skills_tts_skill",
+        "target": "z_ai_web_dev_sdk",
+        "label": "depends_on",
+        "properties": {"relationship": "SDK dependency"}
+      },
+      {
+        "source": "skills_vlm_skill",
+        "target": "z_ai_web_dev_sdk",
+        "label": "depends_on",
+        "properties": {"relationship": "SDK dependency"}
+      },
+      {
+        "source": "skills_aminer_academic_search_skill",
+        "target": "aminer_open_platform",
+        "label": "depends_on",
+        "properties": {"relationship": "API platform dependency"}
+      },
+      {
+        "source": "skills_aminer_daily_paper_skill",
+        "target": "aminer_open_platform",
+        "label": "depends_on",
+        "properties": {"relationship": "API platform dependency"}
+      },
+      {
+        "source": "skills_aminer_free_academic_skill",
+        "target": "aminer_open_platform",
+        "label": "depends_on",
+        "properties": {"relationship": "API platform dependency", "tier": "free"}
+      },
+      {
+        "source": "skills_aminer_free_academic_references_api_catalog",
+        "target": "skills_aminer_free_academic_skill",
+        "label": "references",
+        "properties": {"relationship": "supplementary reference"}
+      },
+      {
+        "source": "skills_aminer_academic_search_skill",
+        "target": "skills_aminer_free_academic_skill",
+        "label": "extends",
+        "properties": {"relationship": "paid tier extends free tier"}
+      },
+      {
+        "source": "skills_ai_news_collectors_references_sources",
+        "target": "skills_ai_news_collectors_skill",
+        "label": "references",
+        "properties": {"relationship": "supplementary reference"}
+      },
+      {
+        "source": "skills_auto_target_tracker_skill",
+        "target": "skills_vlm_skill",
+        "label": "integrates",
+        "properties": {"relationship": "uses VLM for image recognition"}
+      },
+      {
+        "source": "skills_aminer_academic_search_skill",
+        "target": "skills_aminer_daily_paper_skill",
+        "label": "related",
+        "properties": {"relationship": "sibling AMiner skills"}
+      },
+      {
+        "source": "skills_asr_skill",
+        "target": "skills_tts_skill",
+        "label": "related",
+        "properties": {"relationship": "audio processing pair (speech-in/speech-out)"}
+      },
+      {
+        "source": "skills_aminer_free_academic_skill",
+        "target": "skills_aminer_free_academic_references_api_catalog",
+        "label": "documented_by",
+        "properties": {"relationship": "detailed API documentation"}
+      },
+      {
+        "source": "skills_ai_news_collectors_skill",
+        "target": "skills_ai_news_collectors_references_sources",
+        "label": "documented_by",
+        "properties": {"relationship": "source reference list"}
+      },
+      {
+        "source": "skills_blog_writer_2024_03_14_effective_ai_prompts",
+        "target": "skills_llm_skill",
+        "label": "related",
+        "properties": {"relationship": "prompt engineering content relates to LLM skill"}
+      },
+      {
+        "source": "skills_blog_writer_2024_02_17_raycast_spotlight_superpowers",
+        "target": "skills_blog_writer_2024_02_17_typing_speed_benefits",
+        "label": "related",
+        "properties": {"relationship": "both cover Mac productivity"}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_asr_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_llm_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_tts_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_vlm_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_agent_browser_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_ai_news_collectors_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_aminer_academic_search_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_aminer_daily_paper_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_aminer_free_academic_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_anti_pua_skill",
+        "label": "contains",
+        "properties": {}
+      },
+      {
+        "source": "quant_nanggroe_ai_skills",
+        "target": "skills_auto_target_tracker_skill",
+        "label": "contains",
+        "properties": {}
+      }
+    ]
+  }
+}

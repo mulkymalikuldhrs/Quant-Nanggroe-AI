@@ -1,0 +1,111 @@
+# Agentic AI System - Netlify Configuration
+# Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
+
+[build]
+  base = "."
+  publish = "web_interface/static"
+  command = "pip install -r requirements.txt && python build_static.py"
+  
+[build.environment]
+  PYTHON_VERSION = "3.12"
+  FLASK_ENV = "production"
+  NETLIFY_DEPLOYMENT = "true"
+  AGENTIC_ENVIRONMENT = "netlify"
+
+# Function configuration for serverless
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  
+[[functions]]
+  path = "/api/*"
+  function = "agentic-api"
+  
+# Redirects and rewrites
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/agentic-api/:splat"
+  status = 200
+  
+[[redirects]]
+  from = "/"
+  to = "/web_interface/templates/index.html"
+  status = 200
+  
+[[redirects]]
+  from = "/agents"
+  to = "/web_interface/templates/agents.html"
+  status = 200
+  
+[[redirects]]
+  from = "/workflows"
+  to = "/web_interface/templates/workflows.html"
+  status = 200
+  
+[[redirects]]
+  from = "/monitoring"
+  to = "/web_interface/templates/monitoring.html"
+  status = 200
+  
+[[redirects]]
+  from = "/integrations"
+  to = "/web_interface/templates/platform_integrations.html"
+  status = 200
+  
+[[redirects]]
+  from = "/credentials"
+  to = "/web_interface/templates/credentials.html"
+  status = 200
+
+# Headers for security and CORS
+[[headers]]
+  for = "/api/*"
+  
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    X-Powered-By = "Agentic AI System - Made by Mulky Malikul Dhaher 🇮🇩"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/*"
+  
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Environment variables (public)
+[context.production.environment]
+  FLASK_ENV = "production"
+  ENABLE_DYNAMIC_AGENTS = "true"
+  SELENIUM_HEADLESS = "true"
+  LOG_LEVEL = "INFO"
+  
+[context.branch-deploy.environment]
+  FLASK_ENV = "development"
+  FLASK_DEBUG = "true"
+
+# Form handling
+[forms]
+  
+# Plugin configuration
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+  
+  [plugins.inputs.settings]
+    output_path = "reports/lighthouse"
+    
+[[plugins]]
+  package = "netlify-plugin-sitemap"
+  
+  [plugins.inputs]
+    baseUrl = "https://agentic-ai-system.netlify.app"
+
+# Edge functions
+[[edge_functions]]
+  path = "/api/edge/*"
+  function = "agentic-edge"

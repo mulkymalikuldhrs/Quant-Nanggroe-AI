@@ -1,0 +1,713 @@
+{
+  "chunk": 13,
+  "source": ".graphify_chunk_13.txt",
+  "files": [
+    "docs/auto/api/engine.strategies.ict.md",
+    "docs/auto/api/engine.strategies.registry.md",
+    "docs/auto/api/engine.strategies.smc_strategy.md",
+    "docs/auto/api/engine.strategies.unified_retail.md",
+    "docs/auto/api/engine.strategies.wyckoff.md",
+    "docs/auto/api/engine.strategy.backtest_adapter.md",
+    "docs/auto/api/engine.strategy.loader.md",
+    "docs/auto/api/engine.strategy.parser.md",
+    "docs/auto/api/engine.strategy.regime_strategy.md",
+    "docs/auto/api/engine.strategy.schema.md",
+    "docs/auto/api/engine.strategy.strategies.__init__.md",
+    "docs/auto/api/engine.strategy.strategies.base_strategy.md",
+    "docs/auto/api/engine.strategy.strategies.crypto_specific.md",
+    "docs/auto/api/engine.strategy.strategies.market_making.md",
+    "docs/auto/api/engine.strategy.strategies.mean_reversion.md",
+    "docs/auto/api/engine.strategy.strategies.momentum.md",
+    "docs/auto/api/engine.strategy.strategies.pairs_trading.md",
+    "docs/auto/api/engine.strategy.strategies.regime_based.md",
+    "docs/auto/api/engine.strategy.strategies.statistical_arbitrage.md",
+    "docs/auto/api/engine.strategy.strategies.volatility_arbitrage.md",
+    "docs/auto/api/engine.strategy_lifecycle.md",
+    "docs/auto/api/engine.stress_testing.ewhs.md"
+  ],
+  "nodes": [
+    {
+      "id": "docs_auto_api_engine_strategies_ict_strategy",
+      "name": "ICTStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategies.ict.md",
+      "description": "Inner Circle Trader Strategy — implements ICT concepts: Kill Zones, OTE (62-79% Fibonacci retracement), market structure shifts, order flow, institutional footprints, Judas Swing",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_registry_registry",
+      "name": "StrategyRegistry",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategies.registry.md",
+      "description": "Registry for trading strategy implementations. Automatically discovers and registers strategies. Methods: register, get, list_strategies, create, create_all, count",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_smc_strategy_strategy",
+      "name": "SMCStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategies.smc_strategy.md",
+      "description": "Smart Money Concepts Strategy — detects institutional trading patterns: Order Blocks, Fair Value Gaps, Break of Structure, Change of Character, Liquidity Sweeps",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_unified_retail_strategy",
+      "name": "UnifiedRetailStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategies.unified_retail.md",
+      "description": "Unified Retail Strategy — combines ICT, SMC, Wyckoff, Fibonacci, Support & Resistance with weighted consensus",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategies_wyckoff_strategy",
+      "name": "WyckoffStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategies.wyckoff.md",
+      "description": "Wyckoff Method Strategy — detects accumulation/distribution phases: price/volume analysis, springs, upthrusts, sign of strength/weakness, cause and effect",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_backtest_adapter_adapter",
+      "name": "StrategyBacktestAdapter",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.backtest_adapter.md",
+      "description": "Adapts StrategyConfig for BacktestEngine. Converts declarative strategy rules into pandas-based signal DataFrames. Supports indicators, volume ratios, multi-timeframe, trailing stop/take profit",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_loader_loader",
+      "name": "StrategyLoader",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.loader.md",
+      "description": "Loads strategies from YAML files with inheritance support, file-based caching with hash-based invalidation, template auto-discovery",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_loader_registry",
+      "name": "StrategyRegistry",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.loader.md",
+      "description": "Central registry for managing loaded strategies — register/unregister, lookup by name/tag, validate, health monitoring, thread-safe",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_loader_watcher",
+      "name": "StrategyWatcher",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.loader.md",
+      "description": "Watches YAML files for changes and auto-reloads strategies using filesystem polling, async background task",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_parser_parser",
+      "name": "StrategyParser",
+      "type": "module",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.parser.md",
+      "description": "Parses YAML strategy files into validated StrategyConfig. Includes validation, Python code generation, strategy name conversion, indicator expression computation",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_regime_strategy_strategy",
+      "name": "RegimeStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.regime_strategy.md",
+      "description": "Trading strategy that adjusts based on detected market regime — combines regime detection, strategy selection, and Kelly sizing",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "name": "StrategyConfig",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Complete strategy configuration loaded from YAML — entry rules, exit rules, risk rules, universe definition, Pydantic validated",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_entryrule",
+      "name": "EntryRule",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Single entry condition — indicator, operator, threshold, optional timeframe. All rules evaluated with AND logic",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_exitrule",
+      "name": "ExitRule",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Single exit condition — indicator-based or percentage-based (trailing stop, take profit)",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_riskrules",
+      "name": "RiskRules",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Risk management rules enforced as hard limits during backtesting and live trading, cannot be overridden by agent decisions",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_universe",
+      "name": "Universe",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Trading universe — explicit symbol list, exchange filtering, market cap filtering, sector/industry filtering (AND logic)",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_strategytype",
+      "name": "StrategyType",
+      "type": "enum",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Supported production strategy types",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_indicator",
+      "name": "Indicator",
+      "type": "enum",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Supported technical indicators for strategy rules",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_comparator",
+      "name": "Comparator",
+      "type": "enum",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Comparison operators for rule evaluation",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_schema_timeframe",
+      "name": "Timeframe",
+      "type": "enum",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.schema.md",
+      "description": "Supported timeframe strings for strategy rules",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies___init___factory",
+      "name": "StrategyFactory",
+      "type": "module",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.__init__.md",
+      "description": "Creates strategy instances by name, lists registered strategies, gets metadata, registers new strategy classes",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "name": "BaseStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.base_strategy.md",
+      "description": "Base class for all trading strategies. Must implement generate_signal(), required_columns(), warmup_period(). Provides SMA, EMA, RSI, ATR, Bollinger, MACD, Z-score computation",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_crypto_specific_strategy",
+      "name": "CryptoSpecificStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.crypto_specific.md",
+      "description": "Crypto-specific strategy — modes: funding_rate_arb, liquidation_cascade, on_chain, dex_arb, mev_aware",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_market_making_strategy",
+      "name": "MarketMakingStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.market_making.md",
+      "description": "Avellaneda-Stoikov market maker with inventory management. Reservation price shifts from mid-price based on inventory, risk aversion, volatility",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_mean_reversion_strategy",
+      "name": "MeanReversionStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.mean_reversion.md",
+      "description": "Mean reversion strategy — variants: zscore, bollinger, ou (Ornstein-Uhlenbeck). Configurable entry/exit thresholds, trade frequency",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_momentum_strategy",
+      "name": "MomentumStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.momentum.md",
+      "description": "Multi-variant momentum strategy — types: ts_momentum, dual_momentum, ma_crossover, macd. Signal [-1,1] with cost/frequency controls",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_pairs_trading_strategy",
+      "name": "PairsTradingStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.pairs_trading.md",
+      "description": "Pairs trading using OLS hedge ratio and spread z-score. Entry when |z-score| > entry_z, exit when |z-score| < exit_z",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_regime_based_strategy",
+      "name": "RegimeBasedStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.regime_based.md",
+      "description": "HMM-driven regime detection with per-regime switching. 2-4 regimes, covariance_type, regime_stability_bars, per-regime strategies for bull/bear/range/high_vol",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_statistical_arbitrage_strategy",
+      "name": "StatisticalArbitrageStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.statistical_arbitrage.md",
+      "description": "Statistical arbitrage via PCA factor model and residual mean reversion. Hedges systematic factor exposure, trades idiosyncratic alpha",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_strategies_volatility_arbitrage_strategy",
+      "name": "VolatilityArbitrageStrategy",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy.strategies.volatility_arbitrage.md",
+      "description": "Vol arbitrage via vol-ratio z-score. Shorts vol when z > entry, longs vol when z < -entry. Estimation: historical, ewma, garch",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_lifecycle_lifecycle",
+      "name": "StrategyLifecycle",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy_lifecycle.md",
+      "description": "Darwinian strategy evolution — states: ACTIVE, HIBERNATING, KILLED. Auto-evaluation triggers: negative expectancy → KILLED, excessive drawdown → HIBERNATING",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_lifecycle_state",
+      "name": "StrategyState",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.strategy_lifecycle.md",
+      "description": "State of a single strategy in the lifecycle",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_stress_testing_ewhs_ewhs",
+      "name": "ExponentiallyWeightedHistoricalSimulation",
+      "type": "class",
+      "file_type": "document",
+      "file": "docs/auto/api/engine.stress_testing.ewhs.md",
+      "description": "Exponentially Weighted Historical Simulation for VaR and CVaR. Configurable half-life, rolling window, portfolio-level VaR, marginal VaR contribution per asset",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED"
+    },
+    {
+      "id": "docs_auto_api_engine_strategy_backtest_adapter_backtestengine",
+      "name": "BacktestEngine",
+      "type": "class",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "BacktestEngine referenced by StrategyBacktestAdapter as the consumer of generated signal DataFrames, from quant_nanggroe.engine.backtest.engine"
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_auto_api_engine_strategies_ict_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "ICTStrategy extends BaseStrategy (concrete strategy implementing generate_signal)"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_smc_strategy_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "SMCStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_unified_retail_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "UnifiedRetailStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_wyckoff_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "WyckoffStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_crypto_specific_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "CryptoSpecificStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_market_making_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "MarketMakingStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_mean_reversion_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "MeanReversionStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_momentum_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "MomentumStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_pairs_trading_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "PairsTradingStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_regime_based_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "RegimeBasedStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_statistical_arbitrage_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "StatisticalArbitrageStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_volatility_arbitrage_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "VolatilityArbitrageStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_regime_strategy_strategy",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "extends",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "RegimeStrategy extends BaseStrategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_registry_registry",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "registers",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "StrategyRegistry registers BaseStrategy subclasses via register decorator"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_unified_retail_strategy",
+      "target": "docs_auto_api_engine_strategies_ict_strategy",
+      "relationship": "composes",
+      "file_type": "document",
+      "confidence": 0.95,
+      "confidence_label": "INFERRED",
+      "description": "UnifiedRetailStrategy composes ICT methodology as weighted component"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_unified_retail_strategy",
+      "target": "docs_auto_api_engine_strategies_smc_strategy_strategy",
+      "relationship": "composes",
+      "file_type": "document",
+      "confidence": 0.95,
+      "confidence_label": "INFERRED",
+      "description": "UnifiedRetailStrategy composes SMC methodology as weighted component"
+    },
+    {
+      "source": "docs_auto_api_engine_strategies_unified_retail_strategy",
+      "target": "docs_auto_api_engine_strategies_wyckoff_strategy",
+      "relationship": "composes",
+      "file_type": "document",
+      "confidence": 0.95,
+      "confidence_label": "INFERRED",
+      "description": "UnifiedRetailStrategy composes Wyckoff methodology as weighted component"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_backtest_adapter_adapter",
+      "target": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "relationship": "consumes",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyBacktestAdapter consumes StrategyConfig to generate signal DataFrames"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_backtest_adapter_adapter",
+      "target": "docs_auto_api_engine_strategy_backtest_adapter_backtestengine",
+      "relationship": "feeds",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyBacktestAdapter generates signals as input to BacktestEngine.run()"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_parser_parser",
+      "target": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "relationship": "produces",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "Parser produces validated StrategyConfig instances from YAML"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_loader_loader",
+      "target": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "relationship": "produces",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyLoader produces StrategyConfig instances from YAML with inheritance resolution"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_loader_loader",
+      "target": "docs_auto_api_engine_strategy_loader_registry",
+      "relationship": "feeds",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "StrategyLoader feeds loaded strategies into StrategyRegistry for lifecycle management"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_loader_watcher",
+      "target": "docs_auto_api_engine_strategy_loader_registry",
+      "relationship": "updates",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyWatcher monitors YAML changes and auto-reloads into StrategyRegistry"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_loader_watcher",
+      "target": "docs_auto_api_engine_strategy_loader_loader",
+      "relationship": "uses",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyWatcher uses StrategyLoader for reloading changed files"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "target": "docs_auto_api_engine_strategy_schema_entryrule",
+      "relationship": "contains",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyConfig contains EntryRule entries for entry conditions"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "target": "docs_auto_api_engine_strategy_schema_exitrule",
+      "relationship": "contains",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyConfig contains ExitRule entries for exit conditions"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "target": "docs_auto_api_engine_strategy_schema_riskrules",
+      "relationship": "contains",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyConfig contains RiskRules for risk management"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "target": "docs_auto_api_engine_strategy_schema_universe",
+      "relationship": "contains",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyConfig contains Universe definition for trading universe"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_strategyconfig",
+      "target": "docs_auto_api_engine_strategy_schema_strategytype",
+      "relationship": "references",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "StrategyConfig references StrategyType enum for production strategy types"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_entryrule",
+      "target": "docs_auto_api_engine_strategy_schema_indicator",
+      "relationship": "references",
+      "file_type": "document",
+      "confidence": 0.95,
+      "confidence_label": "INFERRED",
+      "description": "EntryRule references Indicator enum for indicator specification"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_entryrule",
+      "target": "docs_auto_api_engine_strategy_schema_comparator",
+      "relationship": "references",
+      "file_type": "document",
+      "confidence": 0.95,
+      "confidence_label": "INFERRED",
+      "description": "EntryRule references Comparator enum for operator specification"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_entryrule",
+      "target": "docs_auto_api_engine_strategy_schema_timeframe",
+      "relationship": "references",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "EntryRule optionally references Timeframe for multi-timeframe strategies"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_schema_exitrule",
+      "target": "docs_auto_api_engine_strategy_schema_indicator",
+      "relationship": "references",
+      "file_type": "document",
+      "confidence": 0.85,
+      "confidence_label": "INFERRED",
+      "description": "ExitRule references Indicator enum for indicator-based exits"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_lifecycle_lifecycle",
+      "target": "docs_auto_api_engine_strategy_lifecycle_state",
+      "relationship": "manages",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyLifecycle manages StrategyState instances for each strategy"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_lifecycle_lifecycle",
+      "target": "docs_auto_api_engine_strategy_loader_registry",
+      "relationship": "depends_on",
+      "file_type": "document",
+      "confidence": 0.75,
+      "confidence_label": "INFERRED",
+      "description": "StrategyLifecycle depends on strategies registered in StrategyRegistry"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies___init___factory",
+      "target": "docs_auto_api_engine_strategy_strategies_base_strategy_base",
+      "relationship": "instantiates",
+      "file_type": "document",
+      "confidence": 1.0,
+      "confidence_label": "EXTRACTED",
+      "description": "StrategyFactory creates BaseStrategy subclass instances from registry"
+    },
+    {
+      "source": "docs_auto_api_engine_strategy_strategies_regime_based_strategy",
+      "target": "docs_auto_api_engine_strategy_regime_strategy_strategy",
+      "relationship": "related_to",
+      "file_type": "document",
+      "confidence": 0.75,
+      "confidence_label": "INFERRED",
+      "description": "RegimeBasedStrategy (HMM-driven) is a concrete implementation related to RegimeStrategy concept"
+    },
+    {
+      "source": "docs_auto_api_engine_stress_testing_ewhs_ewhs",
+      "target": "docs_auto_api_engine_strategy_backtest_adapter_adapter",
+      "relationship": "related_to",
+      "file_type": "document",
+      "confidence": 0.55,
+      "confidence_label": "INFERRED",
+      "description": "EWHS risk metrics may be used in backtest risk assessment within the same engine module"
+    }
+  ]
+}

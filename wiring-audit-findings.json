@@ -1,0 +1,327 @@
+{
+  "audit_metadata": {
+    "repo": "Quant-Nanggroe-AI",
+    "path": "D:\\repositories\\Quant-Nanggroe-AI-worktree",
+    "timestamp": "2026-07-11T21:30:00Z",
+    "scope": "api_routes, frontend_fetch, import_chains, async_stubs, docker_env"
+  },
+  "findings": [
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 88,
+      "description": "Frontend calls GET /api/agents/decisions but no backend route exists. Backend has: POST /run, GET /status, POST /kill-switch/activate, POST /kill-switch/reset, GET /kill-switch/status",
+      "fix": "Add GET /api/agents/decisions route in agents.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 141,
+      "description": "Frontend calls GET /api/backtest/engines but no backend route exists. Backend has: POST /run, GET /result/{id}, GET /list, GET /strategies",
+      "fix": "Add GET /api/backtest/engines route in backtest.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 148,
+      "description": "Frontend calls GET /api/backtest/factors but no backend route exists",
+      "fix": "Add GET /api/backtest/factors route in backtest.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 181,
+      "description": "Frontend calls GET /api/trading/orders but backend only has GET /api/trading/trades (different endpoint name)",
+      "fix": "Change frontend to /api/trading/trades or add /api/trading/orders route"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 187,
+      "description": "Frontend calls DELETE /api/trading/order/{id} but backend only has POST /api/trading/order (no DELETE support)",
+      "fix": "Add DELETE /api/trading/order/{id} route in trading.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 193,
+      "description": "Frontend calls GET /api/trading/exchanges but no backend route exists",
+      "fix": "Add GET /api/trading/exchanges route in trading.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 211,
+      "description": "Frontend calls GET /api/market/candles/{symbol} but backend has POST /api/market/ohlcv (different method and path pattern)",
+      "fix": "Add GET /api/market/candles/{symbol} route in market.py or change frontend to POST /api/market/ohlcv"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 230,
+      "description": "Frontend calls GET /api/portfolio/equity-curve but backend only has: /summary, /performance, /risk, /stress-test",
+      "fix": "Add GET /api/portfolio/equity-curve route in portfolio.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 244,
+      "description": "Frontend calls GET /api/memory/entry/{id} but backend only has: /search and /store (no single-entry GET)",
+      "fix": "Add GET /api/memory/entry/{id} route in memory.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 251,
+      "description": "Frontend calls DELETE /api/memory/entry/{id} but backend has no DELETE support for memory entries",
+      "fix": "Add DELETE /api/memory/entry/{id} route in memory.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 264,
+      "description": "Frontend calls GET /api/colony/{id} but backend only has: colony/status, colony/agents, colony/list (no per-ID route)",
+      "fix": "Add GET /api/colony/{id} route in colony.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 272,
+      "description": "Frontend calls POST /api/colony/create but backend has no colony creation endpoint",
+      "fix": "Add POST /api/colony/create route in colony.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/api-client.ts",
+      "line": 280,
+      "description": "Frontend calls POST /api/colony/{id}/run but backend has no per-colony run endpoint",
+      "fix": "Add POST /api/colony/{id}/run route in colony.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/ecosystem.ts",
+      "line": 95,
+      "description": "Frontend calls GET /api/ecosystem/status but ecosystem.py routes are mounted under /api prefix giving path /api/status not /api/ecosystem/status. Will 404 at runtime",
+      "fix": "Change frontend to /api/status or change ecosystem.py prefix to /api/ecosystem"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/ecosystem.ts",
+      "line": 103,
+      "description": "Frontend calls GET /api/ecosystem/crucix but no backend route exists at any path",
+      "fix": "Add crucix endpoint in ecosystem.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/ecosystem.ts",
+      "line": 108,
+      "description": "Frontend calls GET /api/ecosystem/hermes but no backend route exists at any path",
+      "fix": "Add hermes endpoint in ecosystem.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/ecosystem.ts",
+      "line": 113,
+      "description": "Frontend calls GET /api/ecosystem/organism but no backend route exists at any path",
+      "fix": "Add organism endpoint in ecosystem.py or remove frontend call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "broken_route",
+      "file": "dashboard/src/lib/ecosystem.ts",
+      "line": 118,
+      "description": "Frontend calls GET /api/ecosystem/overview but ecosystem.py routes are mounted under /api prefix giving /api/overview not /api/ecosystem/overview. Will 404",
+      "fix": "Change frontend to /api/overview or change ecosystem.py prefix to /api/ecosystem"
+    },
+    {
+      "severity": "CRITICAL",
+      "type": "broken_import",
+      "file": "quant_nanggroe/api/routes/analytics.py",
+      "line": 39,
+      "description": "Import of 'performance_attribution' from quant_nanggroe.engine.analytics fails at runtime — this function does not exist. analytics/__init__.py exports: PerformanceMetrics, benchmark_returns, compute_metrics, rolling_sharpe, strategy_comparison only",
+      "fix": "Replace call with compute_metrics() from same package or implement performance_attribution()"
+    },
+    {
+      "severity": "CRITICAL",
+      "type": "broken_import",
+      "file": "quant_nanggroe/api/routes/analytics.py",
+      "line": 34,
+      "description": "PerformanceMetrics(returns=req.returns, rfr=req.risk_free_rate) will raise TypeError: PerformanceMetrics is a @dataclass with fields [total_return, annualized_return, sharpe, ...] — it has no 'returns' or 'rfr' fields. The route treats it as a calculator but it is a result container",
+      "fix": "Use compute_metrics(returns=req.returns, risk_free_rate=req.risk_free_rate) instead"
+    },
+    {
+      "severity": "CRITICAL",
+      "type": "broken_import",
+      "file": "quant_nanggroe/api/routes/analytics.py",
+      "line": 37,
+      "description": "pm.all_metrics() does not exist on PerformanceMetrics. Available methods: to_dict(), summary(). This raises AttributeError at runtime",
+      "fix": "Replace pm.all_metrics() with pm.to_dict() or use compute_metrics() which returns populated PerformanceMetrics"
+    },
+    {
+      "severity": "CRITICAL",
+      "type": "broken_import_same_file",
+      "file": "quant_nanggroe/api/routes/analytics.py",
+      "line": 61,
+      "description": "PerformanceMetrics(returns=req.returns_a) — same TypeError as line 34. No 'returns' field exists on dataclass",
+      "fix": "Use compute_metrics(returns=req.returns_a) instead"
+    },
+    {
+      "severity": "CRITICAL",
+      "type": "broken_import_same_file",
+      "file": "quant_nanggroe/api/routes/analytics.py",
+      "line": 63,
+      "description": "pm_a.all_metrics() does not exist — same AttributeError as line 37",
+      "fix": "Replace pm_a.all_metrics() with correct method call"
+    },
+    {
+      "severity": "HIGH",
+      "type": "wrong_module_name",
+      "file": "docker-compose.yml",
+      "line": 49,
+      "description": "Worker command references 'quant_nanggroe_ai.worker' but module 'quant_nanggroe_ai' does not exist. Correct module is 'quant_nanggroe'",
+      "fix": "Change to 'quant_nanggroe.cli' or correct module path"
+    },
+    {
+      "severity": "HIGH",
+      "type": "wrong_module_name",
+      "file": "docker-compose.dev.yml",
+      "line": 11,
+      "description": "Dev command references 'quant_nanggroe_ai.api.app:create_app' but module 'quant_nanggroe_ai' does not exist",
+      "fix": "Change to 'quant_nanggroe.api.app:create_app' or correct path"
+    },
+    {
+      "severity": "HIGH",
+      "type": "wrong_module_name",
+      "file": "docker-compose.dev.yml",
+      "line": 23,
+      "description": "Dev worker command references 'quant_nanggroe_ai.worker' — same broken module name",
+      "fix": "Change to correct module path"
+    },
+    {
+      "severity": "HIGH",
+      "type": "env_var_mismatch",
+      "file": "docker-compose.yml",
+      "line": 21,
+      "description": "docker-compose.yml uses APP_ENV but .env.example defines QNAI_ENV. Variable naming convention mismatch",
+      "fix": "Change compose to use QNAI_ENV or add APP_ENV to .env.example"
+    },
+    {
+      "severity": "HIGH",
+      "type": "env_var_mismatch",
+      "file": "docker-compose.yml",
+      "line": 22,
+      "description": "docker-compose.yml uses DATABASE_URL but .env.example defines QNAI_DATABASE_URL",
+      "fix": "Change compose to use QNAI_DATABASE_URL or add DATABASE_URL to .env.example"
+    },
+    {
+      "severity": "HIGH",
+      "type": "env_var_mismatch",
+      "file": "docker-compose.yml",
+      "line": 23,
+      "description": "docker-compose.yml uses REDIS_URL but .env.example defines QNAI_REDIS_URL",
+      "fix": "Change compose to use QNAI_REDIS_URL or add REDIS_URL to .env.example"
+    },
+    {
+      "severity": "MEDIUM",
+      "type": "env_var_missing",
+      "file": "docker-compose.yml",
+      "line": 24,
+      "description": "docker-compose.yml uses QUESTDB_URL but this variable is not defined in .env.example at all",
+      "fix": "Add QUESTDB_URL to .env.example or hardcode in compose"
+    },
+    {
+      "severity": "MEDIUM",
+      "type": "missing_dependency",
+      "file": "pyproject.toml",
+      "description": "Runtime import of 'ai_multicolony' in colony.py routes but this package is NOT listed in pyproject.toml dependencies",
+      "fix": "Add ai_multicolony to pyproject.toml dependencies"
+    },
+    {
+      "severity": "HIGH",
+      "type": "unreachable_router",
+      "file": "quant_nanggroe/api/routes/whatsapp.py",
+      "line": 39,
+      "description": "WhatsApp router with prefix /whatsapp has full message routing and command handling logic but is NEVER included in app.py via include_router(). The __init__.py imports it conditionally but no app.include_router(whatsapp.router) call exists. All WhatsApp endpoints are unreachable",
+      "fix": "Add app.include_router(whatsapp.router) to app.py"
+    },
+    {
+      "severity": "LOW",
+      "type": "unimplemented_method",
+      "file": "quant_nanggroe/engine/rl/agents.py",
+      "line": 143,
+      "description": "BaseRLAgent.act() raises NotImplementedError — abstract base class method. PPOAgent, DQNAgent, SACAgent should override",
+      "fix": "Verify subclasses implement act() with actual logic"
+    },
+    {
+      "severity": "LOW",
+      "type": "unimplemented_method",
+      "file": "quant_nanggroe/engine/rl/agents.py",
+      "line": 147,
+      "description": "BaseRLAgent.update() raises NotImplementedError — same abstract base pattern",
+      "fix": "Verify subclasses implement update() with actual logic"
+    },
+    {
+      "severity": "LOW",
+      "type": "stub_comment",
+      "file": "quant_nanggroe/api/routes/channels.py",
+      "line": 17,
+      "description": "Channels endpoint returns stub data with explicit comment: 'ponytail: static config likely owned by Telegram/Comms; return stub when wired to real configs'",
+      "fix": "Wire to real channel config or document as synthetic stub"
+    },
+    {
+      "severity": "MEDIUM",
+      "type": "hardcoded_secret",
+      "file": "docker/docker-compose.yml",
+      "line": 74,
+      "description": "PostgreSQL password is hardcoded as 'qnai' in docker/docker-compose.yml. Security concern for any production-like deployment",
+      "fix": "Use ${POSTGRES_PASSWORD:-qnai} with .env override like the main docker-compose.yml does"
+    },
+    {
+      "severity": "LOW",
+      "type": "synthetic_data_generator",
+      "file": "quant_nanggroe/api/routes/_data.py",
+      "line": 1,
+      "description": "Multiple routes (geopolitics, personas, council, debate, sec_edgar, signals, options) use synthetic data from _data.py instead of real data sources. All geopolitical, council, debate, and persona endpoints return static stub data",
+      "fix": "Replace synthetic data with real API integrations or database queries for production"
+    }
+  ],
+  "summary": {
+    "total_findings": 37,
+    "by_severity": {
+      "CRITICAL": 5,
+      "HIGH": 23,
+      "MEDIUM": 3,
+      "LOW": 6
+    },
+    "by_type": {
+      "broken_route": 18,
+      "broken_import": 5,
+      "wrong_module_name": 3,
+      "env_var_mismatch": 3,
+      "env_var_missing": 1,
+      "missing_dependency": 1,
+      "unreachable_router": 1,
+      "hardcoded_secret": 1,
+      "stub_comment": 1,
+      "unimplemented_method": 2,
+      "synthetic_data_generator": 1
+    }
+  }
+}

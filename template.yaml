@@ -1,0 +1,349 @@
+# AWS SAM Template for Agentic AI System
+# Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Agentic AI System
+  Multi-Agent AI System with Web Automation and Credential Management
+  Created by Mulky Malikul Dhaher in Indonesia
+
+# Global configuration
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: python3.12
+    Environment:
+      Variables:
+        FLASK_ENV: production
+        ENABLE_DYNAMIC_AGENTS: true
+        SELENIUM_HEADLESS: true
+        LOG_LEVEL: INFO
+        AGENTIC_ENVIRONMENT: aws
+        
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment stage
+    
+  DomainName:
+    Type: String
+    Default: agentic-ai.example.com
+    Description: Custom domain name
+    
+  DBUsername:
+    Type: String
+    Default: agentic_user
+    NoEcho: true
+    Description: Database username
+    
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: Database password
+
+Resources:
+  # Lambda Function for Main API
+  AgenticAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub agentic-ai-api-${Stage}
+      CodeUri: .
+      Handler: lambda_handler.app
+      Description: Main API for Agentic AI System
+      Environment:
+        Variables:
+          DATABASE_URL: !GetAtt AgenticDatabase.Endpoint
+          REDIS_URL: !GetAtt AgenticRedisCluster.Endpoint
+          STAGE: !Ref Stage
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+      Events:
+        ApiGateway:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref AgenticAPI
+      Policies:
+        - VPCAccessPolicy: {}
+        - Statement:
+          - Effect: Allow
+            Action:
+              - rds:DescribeDBInstances
+              - elasticache:DescribeCacheClusters
+              - secretsmanager:GetSecretValue
+            Resource: '*'
+
+  # API Gateway
+  AgenticAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub agentic-ai-api-${Stage}
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              X-Powered-By: "'Agentic AI System - Made by Mulky Malikul Dhaher 🇮🇩'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              X-Powered-By: "'Agentic AI System - Made by Mulky Malikul Dhaher 🇮🇩'"
+
+  # VPC Configuration
+  AgenticVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub agentic-vpc-${Stage}
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AgenticVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AgenticVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AgenticVPC
+      CidrBlock: 10.0.11.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AgenticVPC
+      CidrBlock: 10.0.12.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref AgenticVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # RDS Database
+  AgenticDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub agentic-db-${Stage}
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      EngineVersion: '15.4'
+      AllocatedStorage: 20
+      StorageType: gp2
+      StorageEncrypted: true
+      DBName: agentic_ai
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      VPCSecurityGroups:
+        - !Ref DatabaseSecurityGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      BackupRetentionPeriod: 7
+      MultiAZ: false
+      PubliclyAccessible: false
+      DeletionProtection: true
+      Tags:
+        - Key: Name
+          Value: !Sub agentic-database-${Stage}
+        - Key: Creator
+          Value: Mulky Malikul Dhaher
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Agentic AI database
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  # ElastiCache Redis
+  AgenticRedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheClusterId: !Sub agentic-redis-${Stage}
+      Engine: redis
+      CacheNodeType: cache.t3.micro
+      NumCacheNodes: 1
+      VpcSecurityGroupIds:
+        - !Ref RedisSecurityGroup
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for Agentic AI Redis
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  # Security Groups
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda functions
+      VpcId: !Ref AgenticVPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS database
+      VpcId: !Ref AgenticVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Redis cluster
+      VpcId: !Ref AgenticVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  # S3 Bucket for Static Assets
+  StaticAssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub agentic-ai-assets-${Stage}-${AWS::AccountId}
+      PublicReadPolicy: true
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedHeaders: ['*']
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref DomainName
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt StaticAssetsBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+          - Id: APIOrigin
+            DomainName: !Sub ${AgenticAPI}.execute-api.${AWS::Region}.amazonaws.com
+            CustomOriginConfig:
+              HTTPPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachingDisabled: true
+        Enabled: true
+        Comment: !Sub Agentic AI System - ${Stage}
+
+Outputs:
+  AgenticAPIUrl:
+    Description: URL for Agentic AI API
+    Value: !Sub https://${AgenticAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
+    Export:
+      Name: !Sub AgenticAPI-${Stage}-URL
+
+  DatabaseEndpoint:
+    Description: RDS Database Endpoint
+    Value: !GetAtt AgenticDatabase.Endpoint.Address
+    Export:
+      Name: !Sub AgenticDB-${Stage}-Endpoint
+
+  RedisEndpoint:
+    Description: Redis Cluster Endpoint
+    Value: !GetAtt AgenticRedisCluster.Endpoint.Address
+    Export:
+      Name: !Sub AgenticRedis-${Stage}-Endpoint
+
+  CloudFrontURL:
+    Description: CloudFront Distribution URL
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub AgenticCF-${Stage}-URL
+
+  S3BucketName:
+    Description: S3 Bucket for Static Assets
+    Value: !Ref StaticAssetsBucket
+    Export:
+      Name: !Sub AgenticS3-${Stage}-Bucket
+
+# Metadata
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Application Configuration"
+        Parameters:
+          - Stage
+          - DomainName
+      - Label:
+          default: "Database Configuration"
+        Parameters:
+          - DBUsername
+          - DBPassword
+    ParameterLabels:
+      Stage:
+        default: "Deployment Stage"
+      DomainName:
+        default: "Domain Name"
+      DBUsername:
+        default: "Database Username"
+      DBPassword:
+        default: "Database Password"
+
+  Author: "Mulky Malikul Dhaher"
+  Country: "Indonesia 🇮🇩"
+  Description: "Multi-Agent AI System with Web Automation and Credential Management"
