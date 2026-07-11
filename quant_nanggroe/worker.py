@@ -33,10 +33,8 @@ import logging
 import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from quant_nanggroe.config import Settings, get_settings
-from quant_nanggroe.exceptions import DataError, KillSwitchActiveError
 
 logger = logging.getLogger(__name__)
 

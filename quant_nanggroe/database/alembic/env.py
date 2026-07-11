@@ -11,7 +11,6 @@ modes. The async engine is used for online migrations with run_async.
 from __future__ import annotations
 
 import asyncio
-import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -19,7 +18,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from quant_nanggroe.config.settings import Settings, get_settings
+from quant_nanggroe.config.settings import get_settings
 from quant_nanggroe.database.models import Base
 
 # Alembic Config object — provides access to values in alembic.ini

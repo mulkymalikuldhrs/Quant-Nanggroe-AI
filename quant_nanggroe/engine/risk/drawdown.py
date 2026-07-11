@@ -16,10 +16,9 @@ The maximum drawdown limit (10%) is a CONSTITUTIONAL limit.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
+from typing import Dict, List
 
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN_PCT as MAX_DRAWDOWN

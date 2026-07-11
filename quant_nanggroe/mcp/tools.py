@@ -15,19 +15,16 @@ type system for consistent validation and serialization.
 
 from __future__ import annotations
 
-import json
 import logging
-import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from quant_nanggroe.mcp.protocol import (
-    ToolCallResult,
     ToolDefinition,
     ToolInputSchema,
     ToolOutputSchema,
 )
-from quant_nanggroe.mcp.server import FunctionToolHandler, ToolHandler
+from quant_nanggroe.mcp.server import FunctionToolHandler
 
 logger = logging.getLogger(__name__)
 
@@ -436,6 +433,7 @@ def _factors_compute(
 
     try:
         import pandas as pd
+
         from quant_nanggroe.engine.factors.registry import get_default_registry
 
         registry = get_default_registry()

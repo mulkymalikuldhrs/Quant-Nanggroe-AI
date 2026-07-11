@@ -6,11 +6,10 @@ in financial returns.
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
-from scipy import stats as sp_stats
 
 from quant_nanggroe.engine.analysis.factors import FactorModel
 

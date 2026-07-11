@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.models.base import BaseModel, PredictionResult
-from quant_nanggroe.engine.models.ensemble import EnsembleModel
 from quant_nanggroe.engine.risk.manager import MAX_RISK_PER_TRADE
 
 logger = logging.getLogger(__name__)

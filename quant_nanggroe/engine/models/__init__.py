@@ -10,8 +10,8 @@ Extracted from ai-hedge-fund's ML ensemble module.
 
 from quant_nanggroe.engine.models.base import BaseModel
 from quant_nanggroe.engine.models.ensemble import EnsembleModel
-from quant_nanggroe.engine.models.signal_generator import SignalGenerator
 from quant_nanggroe.engine.models.feature_store import FeatureStore
+from quant_nanggroe.engine.models.signal_generator import SignalGenerator
 
 __all__ = [
     "BaseModel",

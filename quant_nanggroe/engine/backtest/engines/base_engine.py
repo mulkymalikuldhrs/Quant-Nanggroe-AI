@@ -20,14 +20,14 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.backtest.portfolio import TradeRecord
 from quant_nanggroe.engine.backtest.metrics import PerformanceMetrics
+from quant_nanggroe.engine.backtest.portfolio import TradeRecord
 
 logger = logging.getLogger(__name__)
 

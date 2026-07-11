@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
+
 try:
     from langchain_core.tools import tool
 except ImportError:

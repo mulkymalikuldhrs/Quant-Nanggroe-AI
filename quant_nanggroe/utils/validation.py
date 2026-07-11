@@ -11,7 +11,6 @@ from typing import Optional
 
 from quant_nanggroe.types.market import TimeFrame
 
-
 # Symbol patterns
 CRYPTO_PATTERN = re.compile(r"^[A-Z0-9]{2,10}/[A-Z0-9]{2,10}$")
 STOCK_PATTERN = re.compile(r"^[A-Z]{1,5}$")

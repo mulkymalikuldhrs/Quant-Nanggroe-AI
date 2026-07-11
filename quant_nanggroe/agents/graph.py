@@ -51,15 +51,15 @@ except ImportError:
     ToolNode = None
 
 from quant_nanggroe.agents.base import create_llm
-from quant_nanggroe.agents.bridges.risk_gate_bridge import RiskGateBridge, GateVerdict
 from quant_nanggroe.agents.bridges.kelly_bridge import KellyBridge
+from quant_nanggroe.agents.bridges.risk_gate_bridge import GateVerdict, RiskGateBridge
 from quant_nanggroe.agents.chinese_wall import ChineseWall, ChineseWallError
 from quant_nanggroe.agents.council.debate import CouncilDebate
 from quant_nanggroe.agents.council.voting import CouncilVoting
 from quant_nanggroe.agents.registry import AgentFactory
 from quant_nanggroe.agents.state import (
-    AgentState,
     CONFIDENCE_THRESHOLD,
+    AgentState,
     RiskVerdict,
     TradeAction,
     create_initial_state,

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """security_audit.py — Phase 4.3: scan for hardcoded secrets, dangerous functions, file permission issues."""
-import argparse, datetime, json, re, stat, sys
+import argparse
+import datetime
+import json
+import re
+import stat
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -170,7 +175,7 @@ def print_report(findings, files_scanned, score, band, output_path=None):
             grouped[sev] = []
         grouped[sev].append(f)
 
-    header = f"Security Audit"
+    header = "Security Audit"
     print(f"  {header}")
     print(f"  {'═' * len(header)}")
     print(f"  Date: {date_str}")

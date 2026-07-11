@@ -18,10 +18,10 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.types.engine import (
-    MarketRegime,
-    VolatilityLevel,
-    RiskClearance,
     DecisionAction,
+    MarketRegime,
+    RiskClearance,
+    VolatilityLevel,
 )
 
 

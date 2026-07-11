@@ -1,66 +1,55 @@
-# Kubernetes Deployment for Agentic AI System
-# Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
-
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agentic-ai-system
-  labels:
-    name: agentic-ai-system
-    creator: mulky-malikul-dhaher
-    country: indonesia
+  name: quant-nanggroe
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: agentic-ai-app
-  namespace: agentic-ai-system
+  name: qna-api
+  namespace: quant-nanggroe
   labels:
-    app: agentic-ai
-    component: main-app
+    app: qna
+    component: api
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
-      app: agentic-ai
-      component: main-app
+      app: qna
+      component: api
   template:
     metadata:
       labels:
-        app: agentic-ai
-        component: main-app
+        app: qna
+        component: api
     spec:
       containers:
-      - name: agentic-ai
-        image: agentic-ai:latest
+      - name: api
+        image: quant-nanggroe-api:latest
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
           name: http
         env:
-        - name: FLASK_ENV
-          value: "production"
-        - name: DATABASE_URL
+        - name: QNAI_DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: agentic-secrets
+              name: qna-secrets
               key: database-url
-        - name: REDIS_URL
+        - name: QNAI_REDIS_URL
           valueFrom:
             secretKeyRef:
-              name: agentic-secrets
+              name: qna-secrets
               key: redis-url
-        - name: SECRET_KEY
+        - name: QNAI_JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: agentic-secrets
-              key: secret-key
-        - name: ENABLE_DYNAMIC_AGENTS
-          value: "true"
-        - name: MAX_CONCURRENT_AGENTS
-          value: "20"
-        - name: SELENIUM_HEADLESS
-          value: "true"
+              name: qna-secrets
+              key: jwt-secret
+        - name: QNAI_ENV
+          value: "production"
+        - name: QNAI_LOG_LEVEL
+          value: "INFO"
         resources:
           requests:
             memory: "512Mi"
@@ -70,44 +59,32 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /api/system/status
-            port: 5000
-          initialDelaySeconds: 60
-          periodSeconds: 30
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
         readinessProbe:
           httpGet:
-            path: /api/system/status
-            port: 5000
-          initialDelaySeconds: 30
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
           periodSeconds: 10
-        volumeMounts:
-        - name: data-volume
-          mountPath: /app/data
-        - name: logs-volume
-          mountPath: /app/logs
-      volumes:
-      - name: data-volume
-        persistentVolumeClaim:
-          claimName: agentic-data-pvc
-      - name: logs-volume
-        persistentVolumeClaim:
-          claimName: agentic-logs-pvc
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: agentic-ai-service
-  namespace: agentic-ai-system
+  name: qna-api-service
+  namespace: quant-nanggroe
   labels:
-    app: agentic-ai
+    app: qna
 spec:
   selector:
-    app: agentic-ai
-    component: main-app
+    app: qna
+    component: api
   ports:
   - port: 80
-    targetPort: 5000
+    targetPort: 8000
     name: http
   type: ClusterIP
 
@@ -115,95 +92,60 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: agentic-ai-ingress
-  namespace: agentic-ai-system
+  name: qna-ingress
+  namespace: quant-nanggroe
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   tls:
   - hosts:
-    - agentic-ai.example.com
-    secretName: agentic-ai-tls
+    - api.qna.dhaherlabs.com
+    secretName: qna-tls
   rules:
-  - host: agentic-ai.example.com
+  - host: api.qna.dhaherlabs.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: agentic-ai-service
+            name: qna-api-service
             port:
               number: 80
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: agentic-data-pvc
-  namespace: agentic-ai-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
-  storageClassName: standard
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: agentic-logs-pvc
-  namespace: agentic-ai-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
-  storageClassName: standard
-
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: agentic-secrets
-  namespace: agentic-ai-system
-type: Opaque
-data:
-  # Base64 encoded values - replace with actual values
-  database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzc0Bsb2NhbGhvc3Q6NTQzMi9hZ2VudGljX2Rh
-  redis-url: cmVkaXM6Ly9sb2NhbGhvc3Q6NjM3OQ==
-  secret-key: eW91ci1zdXBlci1zZWNyZXQta2V5LWhlcmU=
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis
-  namespace: agentic-ai-system
+  name: qna-dashboard
+  namespace: quant-nanggroe
+  labels:
+    app: qna
+    component: dashboard
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: redis
+      app: qna
+      component: dashboard
   template:
     metadata:
       labels:
-        app: redis
+        app: qna
+        component: dashboard
     spec:
       containers:
-      - name: redis
-        image: redis:7-alpine
+      - name: dashboard
+        image: node:20-alpine
+        workingDir: /app/dashboard
         ports:
-        - containerPort: 6379
-        command: ["redis-server", "--appendonly", "yes"]
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
+        - containerPort: 3000
+          name: http
+        command: ["sh", "-c", "npm install && npm run build && npm run start"]
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "https://api.qna.dhaherlabs.com"
         resources:
           requests:
             memory: "256Mi"
@@ -211,72 +153,16 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "200m"
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: redis-data-pvc
 
 ---
 apiVersion: v1
-kind: Service
+kind: Secret
 metadata:
-  name: redis-service
-  namespace: agentic-ai-system
-spec:
-  selector:
-    app: redis
-  ports:
-  - port: 6379
-    targetPort: 6379
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: redis-data-pvc
-  namespace: agentic-ai-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
-
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: agentic-config
-  namespace: agentic-ai-system
+  name: qna-secrets
+  namespace: quant-nanggroe
+type: Opaque
 data:
-  AGENTIC_ENVIRONMENT: "kubernetes"
-  LOG_LEVEL: "INFO"
-  ENABLE_DYNAMIC_AGENTS: "true"
-  MAX_CONCURRENT_AGENTS: "20"
-
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: agentic-ai-hpa
-  namespace: agentic-ai-system
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: agentic-ai-app
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+  database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzc0Bsb2NhbGhvc3Q6NTQzMi9xdWFudF9uYW5nZ3JvZQ==
+  redis-url: cmVkaXM6Ly9sb2NhbGhvc3Q6NjM3OS8w
+  jwt-secret: Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24t
+  

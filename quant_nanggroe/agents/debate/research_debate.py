@@ -8,7 +8,7 @@ investment thesis, then the debate outcome feeds into risk assessment.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict

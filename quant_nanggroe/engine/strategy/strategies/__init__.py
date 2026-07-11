@@ -24,22 +24,21 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Type
 
+from quant_nanggroe.engine.strategy.registry import StrategyRegistry
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
+from quant_nanggroe.engine.strategy.strategies.crypto_specific import CryptoSpecificStrategy
+from quant_nanggroe.engine.strategy.strategies.market_making import MarketMakingStrategy
 from quant_nanggroe.engine.strategy.strategies.mean_reversion import MeanReversionStrategy
 from quant_nanggroe.engine.strategy.strategies.momentum import MomentumStrategy
 from quant_nanggroe.engine.strategy.strategies.pairs_trading import PairsTradingStrategy
-from quant_nanggroe.engine.strategy.strategies.volatility_arbitrage import (
-    VolatilityArbitrageStrategy,
-)
+from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedStrategy
 from quant_nanggroe.engine.strategy.strategies.statistical_arbitrage import (
     StatisticalArbitrageStrategy,
 )
-from quant_nanggroe.engine.strategy.strategies.market_making import MarketMakingStrategy
-from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedStrategy
-from quant_nanggroe.engine.strategy.strategies.crypto_specific import CryptoSpecificStrategy
 from quant_nanggroe.engine.strategy.strategies.trend_follow import TrendFollowStrategy
-from quant_nanggroe.engine.strategy.registry import StrategyRegistry
-
+from quant_nanggroe.engine.strategy.strategies.volatility_arbitrage import (
+    VolatilityArbitrageStrategy,
+)
 
 # Global registry instance for all strategies
 STRATEGY_REGISTRY: StrategyRegistry = StrategyRegistry()

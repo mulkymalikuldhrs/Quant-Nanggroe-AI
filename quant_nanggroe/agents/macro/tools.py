@@ -182,7 +182,7 @@ def fetch_macro_data(
         if mdt is not None:
             try:
                 import asyncio
-                import numpy as np
+
 
                 loop = asyncio.get_event_loop()
                 if not loop.is_running():
@@ -223,8 +223,8 @@ def fetch_macro_data(
             settings = get_settings()
             fred_key = getattr(settings, "fred_api_key", None)
             if fred_key:
-                import urllib.request
                 import json as _json
+                import urllib.request
 
                 fred_indicators = {
                     "GDP": "GDP",
@@ -397,6 +397,7 @@ def analyze_correlations(
         if mdt is not None:
             try:
                 import asyncio
+
                 import numpy as np
 
                 loop = asyncio.get_event_loop()
@@ -479,7 +480,7 @@ def analyze_correlations(
         return json.dumps(_mock_correlations(symbols, lookback_days), indent=2)
 
     raise RuntimeError(
-        f"Cannot analyze correlations: real engine unavailable and _MOCK_MODE=False. "
+        "Cannot analyze correlations: real engine unavailable and _MOCK_MODE=False. "
         "Install required dependencies or set _MOCK_MODE=True."
     )
 

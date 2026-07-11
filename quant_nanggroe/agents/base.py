@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Sequence, Type
+from typing import Any, Dict, List, Optional
 
 try:
     from langchain_core.language_models import BaseChatModel
@@ -48,7 +48,6 @@ except ImportError:
     ToolNode = None
 
 from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState
-
 
 logger = logging.getLogger(__name__)
 

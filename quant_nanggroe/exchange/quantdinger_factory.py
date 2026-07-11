@@ -28,17 +28,12 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
-
 from quant_nanggroe.exchange.base import (
-    ExchangeConfig,
     ExchangeError,
-    ExchangeInterface,
-    ExchangeState,
 )
 
 logger = logging.getLogger(__name__)

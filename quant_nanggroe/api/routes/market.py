@@ -9,12 +9,12 @@ from typing import Any
 from fastapi import APIRouter, Request
 
 from quant_nanggroe.api.schemas import (
+    MarketRegimeRequest,
+    MarketRegimeResponse,
     OHLCVCandle,
     OHLCVRequest,
     OHLCVResponse,
     PriceResponse,
-    MarketRegimeRequest,
-    MarketRegimeResponse,
 )
 
 logger = logging.getLogger(__name__)

@@ -6,8 +6,10 @@ Thread-safe singleton that maps providers by name and category.
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+
 from quant_nanggroe.engine.data.provider_interface import (
-    DataCategory, QNAProviderBase,
+    DataCategory,
+    QNAProviderBase,
 )
 
 

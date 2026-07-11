@@ -37,7 +37,6 @@ Each memory item is stored as a MemoryBlock with metadata:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import math

@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, List
-from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+
+from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 """Simulated broker for testing multi-broker abstraction."""
 import uuid
-from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
+
 from quant_nanggroe.connectors.broker_base import BrokerConnector, Order, Position
 
 

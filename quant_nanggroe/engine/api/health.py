@@ -11,15 +11,15 @@ Intended to be mounted into the FastAPI app via include_router.
 
 from __future__ import annotations
 
+import importlib
 import logging
 import time
-import importlib
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
 from fastapi import APIRouter, Response
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)

@@ -17,40 +17,42 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.risk.constants import (
-    MAX_RISK_PER_TRADE,
-    MAX_DAILY_LOSS,
-    MAX_WEEKLY_LOSS,
-    MAX_DRAWDOWN_PCT as MAX_DRAWDOWN,
-    MIN_RISK_REWARD,
-    MAX_CORRELATED_POSITIONS,
-    MAX_DAILY_TRADES,
-    MAX_POSITION_SIZE_PCT,
-    MAX_ASSET_DAILY_LOSS_PCT,
-    HARD_STOP_ATR_MULTIPLIER,
-    MAX_TOTAL_CONCENTRATION,
-    TRADING_BUDGET_PCT,
-)
-from quant_nanggroe.engine.risk.checks import RiskCheckGate
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch
-from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
-from quant_nanggroe.engine.risk.kelly import KellyCriterion
-from quant_nanggroe.engine.risk.var import VaRCalculator
-from quant_nanggroe.engine.risk.correlation_regime import (
-    CorrelationRegimeDetector,
-    CrossAssetMarginMonitor,
-)
+from quant_nanggroe.engine.observability import get_observability, traced
 from quant_nanggroe.engine.persistence import (
     PersistenceBackend,
     get_persistence_backend,
 )
-from quant_nanggroe.engine.observability import get_observability, traced
+from quant_nanggroe.engine.risk.checks import RiskCheckGate
+from quant_nanggroe.engine.risk.constants import (
+    HARD_STOP_ATR_MULTIPLIER,
+    MAX_ASSET_DAILY_LOSS_PCT,
+    MAX_CORRELATED_POSITIONS,
+    MAX_DAILY_LOSS,
+    MAX_DAILY_TRADES,
+    MAX_POSITION_SIZE_PCT,
+    MAX_RISK_PER_TRADE,
+    MAX_TOTAL_CONCENTRATION,
+    MAX_WEEKLY_LOSS,
+    MIN_RISK_REWARD,
+    TRADING_BUDGET_PCT,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DRAWDOWN_PCT as MAX_DRAWDOWN,
+)
+from quant_nanggroe.engine.risk.correlation_regime import (
+    CorrelationRegimeDetector,
+    CrossAssetMarginMonitor,
+)
+from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
+from quant_nanggroe.engine.risk.kelly import KellyCriterion
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+from quant_nanggroe.engine.risk.var import VaRCalculator
 
 logger = logging.getLogger(__name__)
 

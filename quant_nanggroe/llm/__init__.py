@@ -36,7 +36,7 @@ def query_llm(prompt: str, provider: str = "openai") -> dict[str, Any]:
 
 # JeumpaLLM bridge — standalone degradable
 try:
-    from quant_nanggroe.llm.jeumpa import get_jeumpa_llm, acheck_jeumpa_health
+    from quant_nanggroe.llm.jeumpa import acheck_jeumpa_health, get_jeumpa_llm
     HAS_JEUMPA = True
 except ImportError:
     logger.warning("JeumpaLLM bridge unavailable (missing deps)")

@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 
 try:
     from langchain_core.tools import tool
@@ -69,8 +69,8 @@ def _get_settings():
 async def _real_sec_filing(symbol: str, filing_type: str, years: int) -> Optional[Dict]:
     """Fetch real SEC filing data from SEC EDGAR API."""
     try:
-        import urllib.request
         import json as _json
+        import urllib.request
 
         # SEC EDGAR full-text search API
         url = (
@@ -315,8 +315,8 @@ def web_search(query: str, num_results: int = 5) -> str:
         tavily_key = getattr(settings, "tavily_api_key", None) if settings else None
         if tavily_key:
             try:
-                import urllib.request
                 import json as _json
+                import urllib.request
 
                 url = "https://api.tavily.com/search"
                 payload = _json.dumps({
@@ -392,8 +392,8 @@ def sec_filing(symbol: str, filing_type: str = "10-K", years: int = 1) -> str:
             else:
                 # Try synchronous SEC EDGAR request
                 try:
-                    import urllib.request
                     import json as _json
+                    import urllib.request
                     url = (
                         f"https://efts.sec.gov/LATEST/search-index?"
                         f"q=%22{symbol}%22&forms={filing_type}"

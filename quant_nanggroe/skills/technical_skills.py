@@ -1,5 +1,5 @@
 """Vibe-Trading-inspired technical analysis skills."""
-from .registry import SkillRegistry, SkillDef, SkillCategory
+from .registry import SkillCategory, SkillDef, SkillRegistry
 
 
 def register_technical_skills(registry: SkillRegistry):

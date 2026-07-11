@@ -3,11 +3,11 @@ Embedding Similarity for Pattern Matching
 Converts time series windows into embedding vectors and compares them
 using cosine similarity. Enables fast nearest-neighbor search.
 """
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
-import numpy as np
-import pandas as pd
 import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

@@ -10,8 +10,8 @@ References:
 
 from __future__ import annotations
 
-import math
 import logging
+import math
 from typing import Any, Dict, List, Optional
 
 import pandas as pd

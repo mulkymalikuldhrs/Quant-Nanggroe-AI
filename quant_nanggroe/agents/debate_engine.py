@@ -1,10 +1,10 @@
 """TradingAgents-inspired multi-agent debate engine with risk management."""
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
-from enum import Enum
-import statistics
 import logging
+import statistics
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

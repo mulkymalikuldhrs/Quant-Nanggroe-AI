@@ -10,8 +10,8 @@ import time
 from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.exchange.clients.base_rest_client import (
-    BaseRestClient,
     BalanceInfo,
+    BaseRestClient,
     ExchangeCapability,
     KlineBar,
     OrderbookData,

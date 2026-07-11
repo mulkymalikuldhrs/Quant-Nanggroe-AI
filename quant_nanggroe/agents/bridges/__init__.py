@@ -18,7 +18,7 @@ CRITICAL RULES:
   gate provides the FINAL quantitative veto/approval.
 """
 
-from quant_nanggroe.agents.bridges.risk_gate_bridge import RiskGateBridge
 from quant_nanggroe.agents.bridges.kelly_bridge import KellyBridge
+from quant_nanggroe.agents.bridges.risk_gate_bridge import RiskGateBridge
 
 __all__ = ["RiskGateBridge", "KellyBridge"]

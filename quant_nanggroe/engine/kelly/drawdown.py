@@ -1,4 +1,4 @@
-from quant_nanggroe.engine.kelly.base import BaseKelly, KellyParameters, KellyResult, KellyMethod
+from quant_nanggroe.engine.kelly.base import BaseKelly, KellyMethod, KellyParameters, KellyResult
 
 
 class DrawdownControlledKelly(BaseKelly):

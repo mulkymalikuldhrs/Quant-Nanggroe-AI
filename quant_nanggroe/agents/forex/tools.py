@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Optional
 
 try:
     from langchain_core.tools import tool
@@ -157,6 +156,7 @@ def fetch_forex_data(
         if mdt is not None:
             try:
                 import asyncio
+
                 import numpy as np
 
                 loop = asyncio.get_event_loop()
@@ -275,8 +275,6 @@ def analyze_carry(
     if not _MOCK_MODE:
         # Try to fetch real rates from FRED or similar
         try:
-            import urllib.request
-            import json as _json
 
             # Try FRED API for Fed Funds Rate
             base_rate = rates.get(base_currency.upper())

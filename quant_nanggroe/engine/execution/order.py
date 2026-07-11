@@ -7,10 +7,9 @@ for all orders flowing through the execution engine.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from quant_nanggroe.engine.execution.base import Order, OrderStatus, OrderSide, OrderType
+from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
 
 
 class OrderManager:

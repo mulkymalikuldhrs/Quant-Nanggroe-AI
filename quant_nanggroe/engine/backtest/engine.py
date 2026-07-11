@@ -16,16 +16,16 @@ Extracted from Vibe-Trading's BaseEngine with enhancements from ai-hedge-fund.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.backtest.portfolio import Portfolio, Position, TradeRecord
-from quant_nanggroe.engine.backtest.execution import ExecutionSimulator, ExecutionConfig
+from quant_nanggroe.engine.backtest.execution import ExecutionConfig, ExecutionSimulator
 from quant_nanggroe.engine.backtest.metrics import PerformanceMetrics
+from quant_nanggroe.engine.backtest.portfolio import Portfolio, TradeRecord
 
 logger = logging.getLogger(__name__)
 

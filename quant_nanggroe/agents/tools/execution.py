@@ -39,10 +39,9 @@ from quant_nanggroe.exceptions import (
     ExecutionError,
     KillSwitchActiveError,
     OrderRejectedError,
-    RiskVetoError,
 )
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-from quant_nanggroe.types.orders import OrderSide, OrderType, OrderStatus
+from quant_nanggroe.types.orders import OrderSide, OrderStatus, OrderType
 
 logger = logging.getLogger(__name__)
 

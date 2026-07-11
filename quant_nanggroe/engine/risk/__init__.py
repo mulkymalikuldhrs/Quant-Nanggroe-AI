@@ -24,6 +24,7 @@ Extracted from HermesQuantOS's Risk Officer and ai-hedge-fund's risk modules.
 # Import constants first (no circular dependency)
 from quant_nanggroe.engine.risk.constants import *
 
+
 # Lazy imports to avoid circular dependencies
 def __getattr__(name: str):
     """Lazy import to break circular dependencies."""

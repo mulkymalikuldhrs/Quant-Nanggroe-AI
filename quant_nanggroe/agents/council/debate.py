@@ -9,8 +9,7 @@ The debate produces structured arguments that feed into the voting mechanism.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 try:
     from langchain_core.language_models import BaseChatModel
@@ -26,7 +25,6 @@ from quant_nanggroe.agents.state import (
     DebateState,
     RiskDebateState,
 )
-
 
 logger = logging.getLogger(__name__)
 

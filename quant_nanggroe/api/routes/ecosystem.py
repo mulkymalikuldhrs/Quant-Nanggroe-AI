@@ -45,9 +45,9 @@ async def exchange_list() -> list[dict[str, Any]]:
 @router.get("/security/events")
 async def security_events() -> list[dict[str, Any]]:
     """Security events for dashboard."""
-    from pathlib import Path
     import json
     import os
+    from pathlib import Path
     state_dir = Path(os.environ.get("QNAI_STATE_DIR", "/root/paper_runs/qna-paper-run-001"))
     events = []
     audit_path = state_dir / "audit_events.json"

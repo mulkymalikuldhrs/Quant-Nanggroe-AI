@@ -19,8 +19,7 @@ import json
 import logging
 import os
 import sys
-import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
@@ -30,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.backtest.psr import validate_backtest_metrics
-from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
+from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
@@ -379,10 +378,10 @@ def run_destruction(
 
     if walk_forward:
         try:
+            from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine, MarketType
             from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
-            from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig, MarketType, StrategyType
-            from quant_nanggroe.engine.strategy.strategies import _STRATEGY_REGISTRY, STRATEGY_REGISTRY
             from quant_nanggroe.engine.strategy.registry import WalkForwardResult as RegistryWFResult
+            from quant_nanggroe.engine.strategy.strategies import _STRATEGY_REGISTRY, STRATEGY_REGISTRY
             logger.info("\n  ── Walk-Forward Validation ──")
             engine = BacktestEngine(BacktestConfig(market=MarketType.CRYPTO))
             for strategy_name in strategies:

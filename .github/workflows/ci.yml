@@ -1,14 +1,28 @@
-name: CI — Python
+name: CI
 
-on: [push, pull_request]
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
 
 jobs:
-  test:
+  qa:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -r requirements.txt 2>/dev/null || true
-      - run: python -m pytest 2>/dev/null || python -m unittest discover 2>/dev/null || true
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test

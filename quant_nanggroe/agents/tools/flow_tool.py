@@ -179,8 +179,8 @@ class FlowTool:
     async def _fetch_cot_from_provider(self, symbol: str) -> Optional[COTReport]:
         """Fetch COT data from a data provider."""
         try:
-            import urllib.request
             import json as _json
+            import urllib.request
 
             # Try CFTC API or alternative provider
             url = f"https://api.cftc.gov/api/v1/cot?symbol={symbol}"

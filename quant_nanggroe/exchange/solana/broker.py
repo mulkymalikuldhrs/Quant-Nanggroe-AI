@@ -28,26 +28,25 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.exchange.base import (
+    ConnectionError,
     ExchangeConfig,
     ExchangeError,
     ExchangeInterface,
     ExchangeState,
-    ConnectionError,
-    OrderError,
     InsufficientFundsError,
     MarketDataError,
+    OrderError,
     WebSocketCallback,
 )
-from quant_nanggroe.exchange.solana.wallet import SolanaWallet
 from quant_nanggroe.exchange.solana.jupiter import (
-    JupiterV6Client,
-    JupiterQuote,
     SOL_MINT,
     USDC_MINT,
+    JupiterV6Client,
 )
+from quant_nanggroe.exchange.solana.wallet import SolanaWallet
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.positions import Portfolio, Position
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +89,7 @@ class SolanaBroker(ExchangeInterface):
     ) -> None:
         self._config = config
         self._rpc_url = rpc_url
+        self._jupiter_url = jupiter_url
         self._state: ExchangeState = ExchangeState.DISCONNECTED
         self._wallet: Optional[SolanaWallet] = None
         self._jupiter: Optional[JupiterV6Client] = None
@@ -131,7 +131,7 @@ class SolanaBroker(ExchangeInterface):
             # Initialize Jupiter client
             self._jupiter = JupiterV6Client(
                 rpc_url=self._rpc_url,
-                api_url=jupiter_url if jupiter_url else "https://quote-api.jup.ag/v6",
+                api_url=self._jupiter_url,
             )
 
             # Verify connection by getting balance

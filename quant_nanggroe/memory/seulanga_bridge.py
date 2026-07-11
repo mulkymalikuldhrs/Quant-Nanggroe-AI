@@ -2,9 +2,9 @@
 # Connects to Seulanga MCP server at port 3100
 
 import os
-import httpx
-import json
 from typing import Optional
+
+import httpx
 
 SEULANGA_MCP_URL = os.getenv("SEULANGA_MCP_URL", "http://127.0.0.1:3100/mcp")
 

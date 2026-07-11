@@ -16,7 +16,7 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 try:
     from langchain_core.tools import tool
@@ -34,7 +34,6 @@ from quant_nanggroe.core.circuit_breaker import CircuitBreaker
 from quant_nanggroe.exceptions import (
     DataError,
     DataSourceUnavailableError,
-    DataValidationError,
 )
 
 logger = logging.getLogger(__name__)

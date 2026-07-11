@@ -11,16 +11,17 @@ Features:
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any, Callable
+import json
+import logging
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
-import logging
-import json
-import threading
+from typing import Any, Callable, Dict, List, Optional
 
-from .chart_factory import ChartFactory, HAS_PLOTLY
+import numpy as np
+import pandas as pd
+
+from .chart_factory import HAS_PLOTLY, ChartFactory
 
 logger = logging.getLogger(__name__)
 

@@ -21,14 +21,13 @@ except ImportError:
     HumanMessage = SystemMessage = None
 
 from quant_nanggroe.agents.base import BaseAgent
+from quant_nanggroe.agents.registry import AgentRegistry
 from quant_nanggroe.agents.researcher.prompts import (
     RESEARCHER_SYSTEM_PROMPT,
     RESEARCHER_TASK_TEMPLATE,
 )
 from quant_nanggroe.agents.researcher.tools import RESEARCH_TOOLS
-from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState
-
+from quant_nanggroe.agents.state import AgentRole, AgentState
 
 logger = logging.getLogger(__name__)
 

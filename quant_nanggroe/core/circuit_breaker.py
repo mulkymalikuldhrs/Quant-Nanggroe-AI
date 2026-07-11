@@ -248,6 +248,6 @@ class CircuitBreakerMiddleware:
             result = await fn(*args, **kwargs)
             self.breaker.record_success()
             return result
-        except Exception as exc:
+        except Exception:
             self.breaker.record_failure()
             raise

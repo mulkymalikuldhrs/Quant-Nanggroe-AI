@@ -5,19 +5,18 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime
-from typing import Any
 
 from fastapi import APIRouter, Request
 
 from quant_nanggroe.api.schemas import (
     OrderRequest,
     OrderResponse,
-    PositionsResponse,
     PositionResponse,
-    TradeHistoryItem,
-    TradeHistoryResponse,
+    PositionsResponse,
     RiskCheckRequest,
     RiskCheckResponse,
+    TradeHistoryItem,
+    TradeHistoryResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ async def place_order(request: OrderRequest, http_request: Request) -> OrderResp
     Returns:
         OrderResponse with order status.
     """
-    from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
+    from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
 
     # Map direction string to OrderSide enum
     try:

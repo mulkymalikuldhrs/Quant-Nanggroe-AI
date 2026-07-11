@@ -10,13 +10,12 @@ Approved per Theme 5 council decision:
 VETOED: any monetary auto-fix (position close, exposure reduce, trailing stop modify).
 """
 
-import json
 import logging
 import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

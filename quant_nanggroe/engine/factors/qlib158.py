@@ -14,22 +14,16 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.factors.base import (
-    decay_linear,
     delta,
-    rank,
     safe_div,
-    scale,
-    signed_power,
     ts_argmax,
     ts_argmin,
     ts_corr,
-    ts_cov,
     ts_max,
     ts_mean,
     ts_min,
     ts_rank,
     ts_std,
-    vwap,
 )
 
 # Adapted from microsoft/qlib@d5379c520f66a39953bad76234a7019a72796fd0:qlib/contrib/data/handler.py

@@ -17,7 +17,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
@@ -26,12 +26,12 @@ if _REPO_ROOT not in sys.path:
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
 from quant_nanggroe.engine.risk.strategy_auto_disable import (
-    AutoDisableManager,
     DEFAULT_SHARPE_WINDOW,
     DEFAULT_THRESHOLD,
+    AutoDisableManager,
 )
+from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)

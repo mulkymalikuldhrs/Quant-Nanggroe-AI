@@ -3,11 +3,12 @@ Exponentially Weighted Historical Simulation (EWHS)
 Computes VaR and CVaR using exponentially weighted historical returns.
 Gives more weight to recent observations for faster adaptation to market changes.
 """
-from typing import Dict, List, Optional, Tuple, Any
+import logging
 from dataclasses import dataclass
+from typing import Dict, Optional
+
 import numpy as np
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 

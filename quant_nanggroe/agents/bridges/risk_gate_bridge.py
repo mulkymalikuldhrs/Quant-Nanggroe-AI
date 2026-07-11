@@ -35,16 +35,14 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.engine.risk.checks import RiskCheckGate
-from quant_nanggroe.engine.risk.manager import RiskManager
 from quant_nanggroe.engine.risk.constants import (
-    MAX_RISK_PER_TRADE,
     MAX_DAILY_LOSS,
-    MAX_WEEKLY_LOSS,
     MAX_DRAWDOWN_PCT,
+    MAX_RISK_PER_TRADE,
+    MAX_WEEKLY_LOSS,
     MIN_RISK_REWARD,
-    MAX_CORRELATED_POSITIONS,
-    MAX_DAILY_TRADES,
 )
+from quant_nanggroe.engine.risk.manager import RiskManager
 
 logger = logging.getLogger(__name__)
 

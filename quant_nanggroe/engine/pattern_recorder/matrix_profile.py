@@ -6,11 +6,12 @@ Identifies repeated patterns (motifs) and anomalies (discords) in time series.
 Reference: Yeh et al. (2016), "Matrix Profile I: All-Pairs Similarity Joins for
 Time Series" — used by Renaissance Technologies for pattern discovery.
 """
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+import logging
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 

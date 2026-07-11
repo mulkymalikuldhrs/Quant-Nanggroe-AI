@@ -25,9 +25,8 @@ Ported from Vibe-Trading's ``GlobalEquityEngine`` and ``ChinaAEngine``.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.backtest.engines.base_engine import BaseEngine

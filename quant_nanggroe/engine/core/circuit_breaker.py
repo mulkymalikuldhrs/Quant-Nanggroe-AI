@@ -31,10 +31,9 @@ import functools
 import logging
 import random
 import time
-import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, TypeVar
 
 from quant_nanggroe.exceptions import EngineError
 
@@ -403,7 +402,7 @@ class ResilientCaller:
                     )
                     raise
 
-            except Exception as exc:
+            except Exception:
                 self.circuit_breaker.record_failure()
                 raise
 

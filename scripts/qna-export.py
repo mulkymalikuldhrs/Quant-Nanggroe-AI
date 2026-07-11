@@ -15,7 +15,6 @@ import io
 import json
 import sys
 import zipfile
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -168,7 +167,6 @@ def table_warehouse(state_dir: Path, table: str) -> list[dict[str, Any]]:
     if not parquet_path.exists():
         return []
     try:
-        import pandas as pd
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from quant_nanggroe.data.warehouse import _read_parquet
         df = _read_parquet(parquet_path)

@@ -14,10 +14,8 @@ All methods enforce the CONSTITUTIONAL MAX_RISK_PER_TRADE limit.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
-import pandas as pd
 
 from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
 

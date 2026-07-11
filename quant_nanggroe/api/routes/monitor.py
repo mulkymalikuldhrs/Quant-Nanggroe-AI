@@ -11,7 +11,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

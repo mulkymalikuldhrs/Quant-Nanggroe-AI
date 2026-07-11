@@ -5,18 +5,17 @@ Support for LLM7, OpenRouter, CAMEL, and other LLM providers
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 """
 
-import asyncio
 try:
     import aiohttp
 except ImportError:
     aiohttp = None
+import hashlib
 import json
 import logging
 import os
 import time
-from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
-import hashlib
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

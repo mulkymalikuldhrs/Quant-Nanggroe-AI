@@ -24,13 +24,12 @@ Usage::
 
 from __future__ import annotations
 
-import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import structlog
 
-from quant_nanggroe.engine.nvidia_nim.client import NIMClient, NIMAPIError, NIMRateLimitError
+from quant_nanggroe.engine.nvidia_nim.client import NIMAPIError, NIMClient, NIMRateLimitError
 from quant_nanggroe.engine.nvidia_nim.config import NIMConfig, get_nim_config
 from quant_nanggroe.engine.nvidia_nim.models import (
     NIMChatResponse,

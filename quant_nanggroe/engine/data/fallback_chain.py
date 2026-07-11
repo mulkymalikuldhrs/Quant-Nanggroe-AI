@@ -11,7 +11,10 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 from quant_nanggroe.engine.data.provider_interface import (
-    DataCategory, DataRequest, DataResponse, QNAProviderBase,
+    DataCategory,
+    DataRequest,
+    DataResponse,
+    QNAProviderBase,
 )
 
 

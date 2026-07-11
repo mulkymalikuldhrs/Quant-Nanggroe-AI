@@ -16,7 +16,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.factors.base import AlphaFactor, FactorMeta, ts_mean, ts_std, safe_div
+from quant_nanggroe.engine.factors.base import AlphaFactor, FactorMeta
 
 
 class MomentumFactor(AlphaFactor):

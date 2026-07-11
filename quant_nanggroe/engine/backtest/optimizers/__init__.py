@@ -10,14 +10,14 @@ Ported from Vibe-Trading's optimizer architecture.
 """
 
 from quant_nanggroe.engine.backtest.optimizers.base_optimizer import BaseOptimizer
-from quant_nanggroe.engine.backtest.optimizers.risk_parity_optimizer import (
-    RiskParityOptimizer,
+from quant_nanggroe.engine.backtest.optimizers.equal_volatility_optimizer import (
+    EqualVolatilityOptimizer,
 )
 from quant_nanggroe.engine.backtest.optimizers.mean_variance_optimizer import (
     MeanVarianceOptimizer,
 )
-from quant_nanggroe.engine.backtest.optimizers.equal_volatility_optimizer import (
-    EqualVolatilityOptimizer,
+from quant_nanggroe.engine.backtest.optimizers.risk_parity_optimizer import (
+    RiskParityOptimizer,
 )
 
 __all__ = [

@@ -29,11 +29,11 @@ Usage::
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.strategy.parser import strategy_to_code
 from quant_nanggroe.engine.strategy.schema import (
     EntryRule,
     ExitRule,
@@ -41,7 +41,6 @@ from quant_nanggroe.engine.strategy.schema import (
     RiskRules,
     StrategyConfig,
 )
-from quant_nanggroe.engine.strategy.parser import strategy_to_code
 
 logger = logging.getLogger(__name__)
 

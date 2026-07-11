@@ -6,7 +6,7 @@ orders and fills, and computes execution quality metrics.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from quant_nanggroe.engine.execution.base import Fill, OrderSide

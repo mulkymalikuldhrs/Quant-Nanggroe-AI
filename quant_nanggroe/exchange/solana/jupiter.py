@@ -364,9 +364,9 @@ class JupiterV6Client:
 
         # Step 2-4: Decode, sign, and send the transaction
         try:
-            from solders.transaction import VersionedTransaction  # type: ignore[import-untyped]
             from solana.rpc.async_api import AsyncClient  # type: ignore[import-untyped]
             from solana.rpc.commitment import Confirmed  # type: ignore[import-untyped]
+            from solders.transaction import VersionedTransaction  # type: ignore[import-untyped]
 
             # Decode the transaction
             tx_bytes = base64.b64decode(swap_transaction_b64)

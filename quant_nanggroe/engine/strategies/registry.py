@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from quant_nanggroe.engine.strategies.base import Strategy, StrategyParameters
 

@@ -4,8 +4,8 @@ from quant_nanggroe.engine.core.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerError,
     CircuitState,
-    RetryPolicy,
     ResilientCaller,
+    RetryPolicy,
 )
 
 __all__ = [

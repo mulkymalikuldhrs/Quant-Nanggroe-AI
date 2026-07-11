@@ -29,30 +29,25 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 import uuid
 from datetime import datetime, timezone
-from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.exchange.base import (
+    ConnectionError,
     ExchangeConfig,
     ExchangeError,
     ExchangeInterface,
     ExchangeState,
-    ConnectionError,
-    OrderError,
-    RateLimitError,
-    AuthenticationError,
-    InsufficientFundsError,
     MarketDataError,
+    OrderError,
     WebSocketCallback,
 )
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.positions import Portfolio, Position, PositionSide
 
 logger = logging.getLogger(__name__)
 

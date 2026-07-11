@@ -30,7 +30,7 @@ from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.exceptions import EngineError, InvalidParameterError, InsufficientDataError
+from quant_nanggroe.exceptions import InsufficientDataError
 
 logger = logging.getLogger(__name__)
 

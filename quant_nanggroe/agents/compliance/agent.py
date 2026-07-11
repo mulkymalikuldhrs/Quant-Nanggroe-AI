@@ -21,7 +21,6 @@ from quant_nanggroe.agents.base import BaseAgent
 from quant_nanggroe.agents.registry import AgentRegistry
 from quant_nanggroe.agents.state import AgentRole
 
-
 logger = logging.getLogger(__name__)
 
 POSITION_LIMIT_PCT: float = 0.10

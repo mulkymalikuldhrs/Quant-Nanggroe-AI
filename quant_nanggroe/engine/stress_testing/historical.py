@@ -2,12 +2,12 @@
 Historical Scenario Stress Testing
 Uses actual historical market events to stress test portfolios.
 """
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
-from datetime import datetime
+import logging
+from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 

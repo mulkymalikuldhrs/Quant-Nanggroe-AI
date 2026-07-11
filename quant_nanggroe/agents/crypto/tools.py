@@ -311,8 +311,8 @@ def check_contract_risk(
 
         # Try direct block explorer API (Etherscan)
         try:
-            import urllib.request
             import json as _json
+            import urllib.request
 
             if chain.lower() == "ethereum":
                 url = f"https://api.etherscan.io/api?module=contract&action=getabi&address={address}"

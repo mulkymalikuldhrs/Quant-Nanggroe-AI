@@ -35,8 +35,8 @@ _MOCK_MODE = False
 def _get_execution_manager():
     """Lazy-load ExecutionManager from engine."""
     try:
-        from quant_nanggroe.engine.execution.manager import ExecutionManager
         from quant_nanggroe.engine.execution.brokers.paper import PaperExchangeBroker
+        from quant_nanggroe.engine.execution.manager import ExecutionManager
         em = ExecutionManager()
         paper = PaperExchangeBroker()
         em.add_broker(paper, primary=True)
@@ -174,7 +174,8 @@ def submit_order(
         em = _get_execution_manager()
         if em is not None:
             try:
-                from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType as OT
+                from quant_nanggroe.engine.execution.base import Order, OrderSide
+                from quant_nanggroe.engine.execution.base import OrderType as OT
                 side_map = {"BUY": OrderSide.BUY, "SELL": OrderSide.SELL}
                 ot_map = {"market": OT.MARKET, "limit": OT.LIMIT,
                           "stop": OT.STOP, "stop_limit": OT.STOP_LIMIT}

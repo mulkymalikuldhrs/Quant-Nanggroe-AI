@@ -13,9 +13,9 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.kelly.base import KellyParameters, KellyResult
-from quant_nanggroe.engine.kelly.fractional import FractionalKelly
 from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
 from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
+from quant_nanggroe.engine.kelly.fractional import FractionalKelly
 
 logger = logging.getLogger(__name__)
 

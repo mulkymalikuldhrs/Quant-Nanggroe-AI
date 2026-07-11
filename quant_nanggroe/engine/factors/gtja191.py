@@ -20,7 +20,6 @@ from quant_nanggroe.engine.factors.base import (
     delta,
     rank,
     safe_div,
-    scale,
     signed_power,
     ts_argmax,
     ts_argmin,

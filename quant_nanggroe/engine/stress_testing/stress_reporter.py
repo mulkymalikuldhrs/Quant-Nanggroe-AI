@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class StressReporter:
     def __init__(self):
         self.results = []

@@ -21,7 +21,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,7 +31,7 @@ if _REPO_ROOT not in sys.path:
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
+from quant_nanggroe.engine.strategy.strategies import list_strategies
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
@@ -124,7 +124,7 @@ def _generate_ohlcv(n: int = N_OBS, seed: int = 42) -> pd.DataFrame:
 def _detect_regime_hmm(ohlcv: pd.DataFrame) -> tuple:
     """Use HMMRegimeDetector if available, else fallback to trend heuristic."""
     try:
-        from quant_nanggroe.engine.regime.hmm_detector import HMMRegimeDetector, Regime
+        from quant_nanggroe.engine.regime.hmm_detector import HMMRegimeDetector
         detector = HMMRegimeDetector(n_regimes=4, lookback=252)
         returns = ohlcv["close"].pct_change().dropna().tolist()
         volumes = ohlcv["volume"].tolist()

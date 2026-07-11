@@ -1,8 +1,8 @@
 """QuantDinger-inspired multi-broker abstraction layer."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class BrokerType(Enum):

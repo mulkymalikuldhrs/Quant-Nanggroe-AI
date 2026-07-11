@@ -27,7 +27,6 @@ import json
 import logging
 import time
 import uuid
-from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -290,7 +289,7 @@ class JWTAuth:
         role: UserRole,
         ttl: Optional[int] = None,
     ) -> str:
-        """Create a new JWT token.
+        """Create a new JWT token (standard 3-part format).
 
         Parameters
         ----------
@@ -304,7 +303,7 @@ class JWTAuth:
         Returns
         -------
         str
-            Encoded JWT token string.
+            Encoded JWT token string (header.payload.signature).
         """
         now = time.time()
         expires_at = now + (ttl or self._default_ttl)
@@ -316,19 +315,35 @@ class JWTAuth:
             expires_at=expires_at,
         )
 
-        # Encode as JSON, then sign
-        payload_json = payload.model_dump_json()
-        signature = self._sign(payload_json)
-
-        # Format: base64(payload).base64(signature)
         import base64
-        payload_b64 = base64.urlsafe_b64encode(payload_json.encode()).decode()
-        signature_b64 = base64.urlsafe_b64encode(signature).decode()
 
-        return f"{payload_b64}.{signature_b64}"
+        # Standard JWT header
+        header = json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+        payload_json = payload.model_dump_json().encode()
+
+        # Encode without padding (=)
+        header_b64 = base64.urlsafe_b64encode(header).rstrip(b"=").decode()
+        payload_b64 = base64.urlsafe_b64encode(payload_json).rstrip(b"=").decode()
+
+        # Sign header.payload
+        signing_input = f"{header_b64}.{payload_b64}"
+        signature = self._sign(signing_input)
+        signature_b64 = base64.urlsafe_b64encode(signature).rstrip(b"=").decode()
+
+        return f"{signing_input}.{signature_b64}"
+
+    def _decode_b64(self, data: str) -> bytes:
+        """Decode base64url with optional padding."""
+        import base64
+        data = data.rstrip("=")
+        padded = data + "=" * (4 - len(data) % 4) if len(data) % 4 else data
+        return base64.urlsafe_b64decode(padded)
 
     def validate_token(self, token: str) -> TokenPayload:
         """Validate a JWT token and return the payload.
+
+        Accepts both standard 3-part (header.payload.signature)
+        and legacy 2-part (payload.signature) tokens.
 
         Parameters
         ----------
@@ -346,20 +361,24 @@ class JWTAuth:
             If the token is invalid, expired, or revoked.
         """
         parts = token.split(".")
-        if len(parts) != 2:
+        if len(parts) not in (2, 3):
             raise ValueError("Invalid token format")
 
-        import base64
-
         try:
-            payload_b64, signature_b64 = parts
-            payload_json = base64.urlsafe_b64decode(payload_b64.encode()).decode()
-            signature = base64.urlsafe_b64decode(signature_b64.encode())
+            if len(parts) == 3:
+                header_b64, payload_b64, signature_b64 = parts
+                signing_input = f"{header_b64}.{payload_b64}"
+            else:
+                payload_b64, signature_b64 = parts
+                signing_input = self._decode_b64(payload_b64).decode()
+
+            payload_json = self._decode_b64(payload_b64).decode()
+            signature = self._decode_b64(signature_b64)
         except Exception as exc:
             raise ValueError(f"Invalid token encoding: {exc}") from exc
 
         # Verify signature
-        expected_signature = self._sign(payload_json)
+        expected_signature = self._sign(signing_input)
         if not hmac.compare_digest(signature, expected_signature):
             raise ValueError("Invalid token signature")
 

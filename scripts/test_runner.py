@@ -21,7 +21,7 @@ import sys
 import time
 import unittest
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, List
 
 # Ensure repo root is on PYTHONPATH
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -97,7 +97,7 @@ def require(*modules: str) -> bool:
 
 @suite("Auth")
 def test_auth():
-    from quant_nanggroe.security.auth import JWTAuth, APIKeyAuth, UserRole
+    from quant_nanggroe.security.auth import APIKeyAuth, JWTAuth, UserRole
 
     def test_jwt():
         jwt = JWTAuth(secret_key="test-secret")
@@ -123,8 +123,8 @@ def test_auth():
 
 @suite("Risk Engine")
 def test_risk_engine():
-    from quant_nanggroe.engine.risk.kill_switch import KillSwitch, RESET_CONFIRMATION
     from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, RiskCheckGate
+    from quant_nanggroe.engine.risk.kill_switch import RESET_CONFIRMATION, KillSwitch
 
     def test_alias():
         assert RiskCheckGate is ConstitutionalRiskGuard
@@ -170,8 +170,11 @@ def test_psr():
     import numpy as np
     np.random.seed(42)
     from quant_nanggroe.engine.backtest.psr import (
-        probabilistic_sharpe_ratio, deflated_sharpe_ratio,
-        estimate_sharpe, validate_backtest_metrics, psr_vs_sharpe,
+        deflated_sharpe_ratio,
+        estimate_sharpe,
+        probabilistic_sharpe_ratio,
+        psr_vs_sharpe,
+        validate_backtest_metrics,
     )
 
     def test_zero_mean():
@@ -237,6 +240,7 @@ def test_monitor():
 @suite("Survivorship Bias")
 def test_survivorship():
     from datetime import date
+
     from quant_nanggroe.data.survivorship import SurvivorshipBiasDetector
 
     def test_analyze():
@@ -267,7 +271,7 @@ def test_survivorship():
 
 @suite("Strategy Registry")
 def test_strategies():
-    from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
+    from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 
     def test_list():
         names = list_strategies()
@@ -292,6 +296,7 @@ def test_strategies():
 @suite("CLI Alpha Destruction")
 def test_alpha_destruction():
     import numpy as np
+
     from scripts.alpha_destruction import run_destruction
 
     def test_run():
@@ -356,6 +361,7 @@ def test_engine_tests():
         sys.modules['pandas'] = _real_pandas
     # Fix all modules that imported the mock pandas
     import unittest.mock as _mock
+
     import pandas as _pd
     for _mod in sys.modules.values():
         if _mod is None:

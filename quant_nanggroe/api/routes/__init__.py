@@ -1,6 +1,24 @@
 """API Routes — Package initialization."""
 
-from quant_nanggroe.api.routes import market, trading, agents, backtest, portfolio, ws, memory, ecosystem, colony, monitor
+from quant_nanggroe.api.routes import (
+    agents,
+    agentic,
+    analytics,
+    backtest,
+    colony,
+    council,
+    debate,
+    ecosystem,
+    market,
+    memory,
+    monitor,
+    options,
+    personas,
+    portfolio,
+    rl,
+    trading,
+    ws,
+)
 
 # WhatsApp gateway routes (optional - requires bridge service)
 try:
@@ -8,4 +26,8 @@ try:
 except ImportError:
     whatsapp = None  # type: ignore[assignment]
 
-__all__ = ["market", "trading", "agents", "backtest", "portfolio", "ws", "memory", "ecosystem", "colony", "monitor", "whatsapp"]
+__all__ = [
+    "market", "trading", "agents", "backtest", "portfolio", "ws",
+    "memory", "ecosystem", "colony", "council", "debate", "monitor",
+    "options", "personas", "rl", "analytics", "agentic", "whatsapp",
+]

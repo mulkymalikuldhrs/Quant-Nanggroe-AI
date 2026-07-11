@@ -12,8 +12,7 @@ All metrics operate on tick-level or bar-level data.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import List, Optional
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd

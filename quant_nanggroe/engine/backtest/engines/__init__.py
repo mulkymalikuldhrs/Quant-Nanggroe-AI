@@ -20,11 +20,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.engine.backtest.engines.base_engine import BaseEngine
-from quant_nanggroe.engine.backtest.engines.equity_engine import EquityEngine
+from quant_nanggroe.engine.backtest.engines.composite_engine import CompositeEngine
 from quant_nanggroe.engine.backtest.engines.crypto_engine import CryptoEngine
+from quant_nanggroe.engine.backtest.engines.equity_engine import EquityEngine
 from quant_nanggroe.engine.backtest.engines.forex_engine import ForexEngine
 from quant_nanggroe.engine.backtest.engines.futures_engine import FuturesEngine
-from quant_nanggroe.engine.backtest.engines.composite_engine import CompositeEngine
 from quant_nanggroe.engine.backtest.engines.market_detection import (
     detect_market,
     detect_submarket,

@@ -21,11 +21,9 @@ from __future__ import annotations
 
 import json
 import logging
-import math
-import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -232,7 +230,6 @@ class IntermarketTool:
         """Fetch real correlation data from market data provider."""
         try:
             import yfinance as yf
-            import numpy as np
 
             tickers = ["SPY", "TLT", "GLD", "USO", "UUP"]
             data = yf.download(tickers, period="3mo", interval="1d")

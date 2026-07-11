@@ -6,13 +6,12 @@ size, trend) and computes risk-adjusted alpha via OLS.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from scipy import stats as sp_stats
-
 
 # ── Built-in factor constructors ─────────────────────────────────────────
 

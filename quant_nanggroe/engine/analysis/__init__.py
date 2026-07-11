@@ -5,8 +5,8 @@ Components:
     BootstrapCI  — Stationary bootstrap confidence intervals on Sharpe/alpha
 """
 
-from quant_nanggroe.engine.analysis.factors import FactorModel, FactorResult
 from quant_nanggroe.engine.analysis.bootstrap import BootstrapCI
+from quant_nanggroe.engine.analysis.factors import FactorModel, FactorResult
 
 __all__ = [
     "FactorModel",

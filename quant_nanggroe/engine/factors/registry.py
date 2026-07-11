@@ -22,13 +22,12 @@ from __future__ import annotations
 
 import ast
 import importlib
-import inspect
 import logging
 import re
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -218,8 +217,8 @@ class FactorRegistry:
     def _register_builtin_factors(self) -> None:
         """Register all built-in factors from the factor modules."""
         # Register class-based factors (existing pattern)
-        from quant_nanggroe.engine.factors.technical import get_all_technical_factors
         from quant_nanggroe.engine.factors.fundamental import get_all_fundamental_factors
+        from quant_nanggroe.engine.factors.technical import get_all_technical_factors
 
         class_factor_lists = [
             get_all_technical_factors(),

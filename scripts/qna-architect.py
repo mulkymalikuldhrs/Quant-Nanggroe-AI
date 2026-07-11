@@ -120,7 +120,7 @@ def parse_file(filepath: Path, rel_to_qna: Path) -> Optional[FileInfo]:
         return None
     try:
         tree = ast.parse(content, filename=str(filepath))
-    except SyntaxError as e:
+    except SyntaxError:
         return None
 
     lines = len(content.splitlines())
@@ -532,7 +532,7 @@ def generate_report(files: Dict[str, FileInfo], graph: Dict[str, Set[str]],
     # Dead exports
     if dead_exports:
         w("─" * 40)
-        w(f"  DEAD EXPORTS — unused __init__.py symbols")
+        w("  DEAD EXPORTS — unused __init__.py symbols")
         w("─" * 40)
         for path, syms in dead_exports[:10]:
             w(f"  • {path}: {', '.join(syms)}")

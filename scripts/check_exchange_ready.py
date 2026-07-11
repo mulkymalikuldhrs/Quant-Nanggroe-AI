@@ -17,11 +17,9 @@ Usage:
 import importlib
 import json
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PAPER_STATE = PROJECT_ROOT / "paper_state"

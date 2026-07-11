@@ -11,7 +11,7 @@ from typing import Any, Optional
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from quant_nanggroe.security.auth import JWTAuth, APIKeyAuth, UserRole
+from quant_nanggroe.security.auth import APIKeyAuth, JWTAuth, UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +47,24 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._apikey = api_key_auth or APIKeyAuth()
         self._exclude_paths = exclude_paths or {"/health", "/metrics", "/docs",
                                                 "/openapi.json", "/favicon.ico"}
+        # Dev mode: if no API key is configured, allow unauthenticated access
+        self._dev_mode = not bool(os.environ.get("QNAI_API_KEY", ""))
+        if self._dev_mode:
+            logger.warning("Auth in DEV mode — no QNAI_API_KEY set, all requests allowed")
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         path = request.url.path
 
+        # Dev mode: skip auth entirely
+        if self._dev_mode:
+            return await call_next(request)
+
         # Bypass auth for public endpoints
         if path in self._exclude_paths or path.startswith(("/docs", "/redoc", "/openapi.json")):
+            return await call_next(request)
+
+        # Bypass auth for static files (dashboard UI)
+        if not path.startswith("/api/"):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")

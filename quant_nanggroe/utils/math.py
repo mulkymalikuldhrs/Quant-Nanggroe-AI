@@ -7,7 +7,6 @@ No external API calls, no side effects, fully deterministic.
 from __future__ import annotations
 
 import math
-from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd

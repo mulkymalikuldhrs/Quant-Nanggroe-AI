@@ -18,21 +18,28 @@ Usage (preferred)::
 
 from __future__ import annotations
 
-import numpy as np
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
 from quant_nanggroe.engine.kelly import (
-    KellyParameters as NewKellyParameters,
-    KellyResult as NewKellyResult,
-    KellyMethod as NewKellyMethod,
+    AdaptiveKelly,
     BaseKelly,
     FractionalKelly,
-    AdaptiveKelly,
+    FullKelly,
     MultiAssetKelly,
-    OptimalF,
+)
+from quant_nanggroe.engine.kelly import (
+    KellyMethod as NewKellyMethod,
+)
+from quant_nanggroe.engine.kelly import (
+    KellyParameters as NewKellyParameters,
+)
+from quant_nanggroe.engine.kelly import (
+    KellyResult as NewKellyResult,
 )
 
 
@@ -180,15 +187,18 @@ class KellyCriterion:
         return result
 
     def _get_implementation(self, method: NewKellyMethod) -> BaseKelly:
-        if method == NewKellyMethod.ADAPTIVE:
+        if method == NewKellyMethod.FULL:
+            return FullKelly()  # ponytail: previously fell to else → FractionalKelly(0.5), broke f*
+        elif method == NewKellyMethod.ADAPTIVE:
             return AdaptiveKelly(
                 max_position=self.max_position,
                 min_position=self.min_position,
             )
-        elif method == NewKellyMethod.FRACTIONAL:
-            return FractionalKelly(fraction=0.5)
+        elif method in (NewKellyMethod.FRACTIONAL, NewKellyMethod.HALF, NewKellyMethod.QUARTER):
+            frac = {NewKellyMethod.HALF: 0.5, NewKellyMethod.QUARTER: 0.25}.get(method, 0.5)
+            return FractionalKelly(fraction=frac)
         else:
-            return FractionalKelly(fraction=0.5)
+            return AdaptiveKelly(max_position=self.max_position, min_position=self.min_position)
 
     def calculate_continuous_kelly(
         self,

@@ -18,8 +18,8 @@ _project_root = str(Path(__file__).resolve().parent.parent)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from quant_nanggroe.engine.strategy.strategies import list_strategies
 from quant_nanggroe.engine.audit import AuditLogger
+from quant_nanggroe.engine.strategy.strategies import list_strategies
 
 DEFAULT_STATE_DIR = "/root/paper_runs/qna-paper-run-001"
 

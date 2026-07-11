@@ -52,6 +52,11 @@ DEFAULT_STRATEGIES = ["RegimeBased"]
 BASE_PRICES = {"BTC/USDT": 67000.0, "ETH/USDT": 3400.0, "SOL/USDT": 145.0, "XRP/USDT": 0.62}
 VOLATILITIES = {"BTC/USDT": 0.025, "ETH/USDT": 0.03, "SOL/USDT": 0.045, "XRP/USDT": 0.04}
 
+# ponytail: normalize BTCUSDT->BTC/USDT once at intake so BASE_PRICES lookup never
+# silently falls back to 100.0 (670x price distortion). One guard, all callers route through.
+def _norm_symbol(symbol: str) -> str:
+    return symbol.replace("", "").replace("USDT", "/USDT") if "USDT" in symbol and "/" not in symbol else symbol
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -344,6 +349,7 @@ async def run_cycle(
     compliance_agent: Optional[ComplianceAgent] = None,
 ) -> dict:
     logger.info("=== Cycle %d ===", state["cycle_count"] + 1)
+    symbols = [_norm_symbol(s) for s in symbols]  # ponytail: fix symbol format once
     total_signal_count = 0
     regime_strategies: list[dict] | None = None
     regime_multiplier: float = 1.0
@@ -777,4 +783,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    # ponytail: self-check — symbol normalization must never regress (670x price bug)
+    assert _norm_symbol("BTCUSDT") == "BTC/USDT", "symbol normalization broken"
+    assert _norm_symbol("ETH/USDT") == "ETH/USDT", "symbol normalization broke valid fmt"
     asyncio.run(main())

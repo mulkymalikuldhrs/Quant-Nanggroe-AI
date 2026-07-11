@@ -13,20 +13,17 @@ Commands:
 
 from __future__ import annotations
 
-import json
+import importlib.util
+import os
 import sys
 from datetime import datetime
 from typing import Optional
 
-import importlib.util
-import os
-
 import click
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
-from rich import box
 
 console = Console()
 
@@ -277,8 +274,8 @@ def backtest(
 
     try:
         from quant_nanggroe.engine.backtest.engine import (
-            BacktestEngine,
             BacktestConfig,
+            BacktestEngine,
             MarketType,
         )
 
@@ -511,12 +508,12 @@ def risk_check(symbol: str):
 
     try:
         from quant_nanggroe.engine.risk.manager import (
-            RiskManager,
-            MAX_RISK_PER_TRADE,
             MAX_DAILY_LOSS,
-            MAX_WEEKLY_LOSS,
             MAX_DRAWDOWN,
+            MAX_RISK_PER_TRADE,
+            MAX_WEEKLY_LOSS,
             MIN_RISK_REWARD,
+            RiskManager,
         )
 
         rm = RiskManager()

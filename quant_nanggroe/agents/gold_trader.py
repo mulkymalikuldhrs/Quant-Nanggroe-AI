@@ -1,7 +1,8 @@
 """AI-XAUUSD-Trading inspired gold trading agent."""
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
 from datetime import datetime
+from typing import List
+
 import numpy as np
 
 

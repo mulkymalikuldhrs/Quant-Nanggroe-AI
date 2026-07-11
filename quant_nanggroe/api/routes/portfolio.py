@@ -7,12 +7,11 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
-
 from fastapi import APIRouter, Request
 
 from quant_nanggroe.api.schemas import (
-    PortfolioSummaryResponse,
     PortfolioRiskResponse,
+    PortfolioSummaryResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,8 +93,8 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
         PortfolioSummaryResponse with portfolio data.
     """
     try:
-        from quant_nanggroe.services import get_risk_manager
         from quant_nanggroe.api.schemas import PositionResponse
+        from quant_nanggroe.services import get_risk_manager
 
         rm = get_risk_manager(http_request.app)
         status = rm.status()

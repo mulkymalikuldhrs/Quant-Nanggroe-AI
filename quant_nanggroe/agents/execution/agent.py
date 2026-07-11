@@ -22,8 +22,7 @@ from quant_nanggroe.agents.execution.prompts import (
 )
 from quant_nanggroe.agents.execution.tools import EXECUTION_TOOLS
 from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState, TradeAction
-
+from quant_nanggroe.agents.state import AgentRole, AgentState, TradeAction
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +105,7 @@ class ExecutionAgent(BaseAgent):
                 "action": decision.get("action", ""),
                 "quantity": decision.get("quantity", 0),
                 "status": "SUBMITTED",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": __import__('datetime').datetime.now().isoformat(),
             })
 
         output = self.create_output(

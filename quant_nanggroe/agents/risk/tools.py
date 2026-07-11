@@ -15,7 +15,7 @@ import json
 import logging
 import math
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List
 
 try:
     from langchain_core.tools import tool
@@ -29,17 +29,11 @@ except ImportError:
         return decorator
 
 from quant_nanggroe.agents.state import (
-    MAX_CORRELATED_POSITIONS,
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,
-    MAX_LEVERAGE,
     MAX_POSITION_SIZE_PCT,
-    MAX_RISK_PER_TRADE,
-    MAX_TRADES_PER_DAY,
     MAX_WEEKLY_LOSS,
-    MIN_RISK_REWARD,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -369,7 +363,7 @@ def kelly_sizing(
         kelly = _get_kelly_calculator()
         if kelly is not None:
             try:
-                from quant_nanggroe.engine.risk.kelly import KellyParameters, KellyMethod
+                from quant_nanggroe.engine.risk.kelly import KellyMethod, KellyParameters
                 params = KellyParameters(
                     win_rate=win_rate,
                     avg_win=avg_win,

@@ -3,20 +3,18 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Text, create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import JSON, Column, DateTime, Float, Integer, String, Text
 
 logger = logging.getLogger(__name__)
 
 # Re-export everything from legacy models
-import sys
-from pathlib import Path
 from quant_nanggroe.database.models import (
-    Agent, Task, Memory, Workflow, WorkflowExecution, WorkflowStep,
-    Deployment, SystemMetric, KnowledgeEntry, UserSession, APILog,
-    Base, engine, SessionLocal, get_db_session as _legacy_get_db,
+    Base,
+    SessionLocal,
+    engine,
+)
+from quant_nanggroe.database.models import (
     create_tables as _legacy_create_tables,
 )
 

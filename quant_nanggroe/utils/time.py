@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta
 from enum import Enum
-from typing import Optional
 from zoneinfo import ZoneInfo
 
 

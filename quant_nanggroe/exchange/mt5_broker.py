@@ -27,28 +27,25 @@ gracefully raise ConnectionError indicating the platform limitation.
 from __future__ import annotations
 
 import logging
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from quant_nanggroe.exchange.base import (
+    AuthenticationError,
+    ConnectionError,
     ExchangeConfig,
     ExchangeError,
     ExchangeInterface,
     ExchangeState,
-    ConnectionError,
-    OrderError,
-    RateLimitError,
-    AuthenticationError,
-    InsufficientFundsError,
     MarketDataError,
+    OrderError,
     WebSocketCallback,
 )
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.positions import Portfolio, Position, PositionSide
 
 logger = logging.getLogger(__name__)
 

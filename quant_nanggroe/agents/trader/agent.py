@@ -18,14 +18,13 @@ except ImportError:
     BaseChatModel = None
 
 from quant_nanggroe.agents.base import BaseAgent
+from quant_nanggroe.agents.registry import AgentRegistry
+from quant_nanggroe.agents.state import AgentRole, AgentState, TradeAction
 from quant_nanggroe.agents.trader.prompts import (
     TRADER_SYSTEM_PROMPT,
     TRADER_TASK_TEMPLATE,
 )
 from quant_nanggroe.agents.trader.tools import TRADER_TOOLS
-from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState, TradeAction
-
 
 logger = logging.getLogger(__name__)
 

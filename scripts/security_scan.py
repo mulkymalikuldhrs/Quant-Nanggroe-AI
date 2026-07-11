@@ -8,7 +8,6 @@ Output: JSON report with severity/file/line/finding/recommendation.
 
 import argparse
 import json
-import os
 import re
 import sys
 from datetime import datetime

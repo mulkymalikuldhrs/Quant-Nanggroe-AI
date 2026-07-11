@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -31,9 +31,8 @@ from quant_nanggroe.engine.core.edge_case_handler import (
     safe_divide,
     validate_dataframe,
     validate_price_dataframe,
-    validate_returns,
 )
-from quant_nanggroe.exceptions import DataError, EngineError, DataSourceUnavailableError
+from quant_nanggroe.exceptions import EngineError
 
 logger = logging.getLogger(__name__)
 

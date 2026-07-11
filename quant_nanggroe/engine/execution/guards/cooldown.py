@@ -7,10 +7,10 @@ to prevent overtrading and reduce market impact.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Optional
 
-from quant_nanggroe.engine.execution.base import Order, OrderSide
+from quant_nanggroe.engine.execution.base import Order
 
 
 @dataclass

@@ -6,7 +6,6 @@ maximum position size limits as a percentage of portfolio.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Dict, Optional
 
 from quant_nanggroe.engine.execution.base import Order, OrderSide

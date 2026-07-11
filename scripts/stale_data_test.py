@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from quant_nanggroe.data.monitor import DataFreshnessMonitor
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.types.market import TimeFrame
 
 

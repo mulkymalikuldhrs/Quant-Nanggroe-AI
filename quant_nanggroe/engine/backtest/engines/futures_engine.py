@@ -18,8 +18,7 @@ Ported from Vibe-Trading's ``FuturesBaseEngine`` and global futures engine.
 from __future__ import annotations
 
 import logging
-from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import pandas as pd
 

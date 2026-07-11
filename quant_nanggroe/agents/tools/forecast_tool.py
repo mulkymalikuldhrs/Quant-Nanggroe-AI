@@ -310,8 +310,8 @@ class ForecastTool:
         Falls back to NEUTRAL with a warning.
         """
         try:
-            from quant_nanggroe.agents.tools.technical import TechnicalAnalysisTool
             from quant_nanggroe.agents.tools.market_data import MarketDataTool
+            from quant_nanggroe.agents.tools.technical import TechnicalAnalysisTool
             mdt = MarketDataTool()
             tat = TechnicalAnalysisTool(market_data_tool=mdt)
             analysis = await tat.analyze(symbol, "1d")

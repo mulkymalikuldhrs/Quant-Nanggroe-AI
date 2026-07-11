@@ -17,6 +17,7 @@ from typing import Any, AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from starlette.responses import Response
 
@@ -182,6 +183,8 @@ def create_app() -> FastAPI:
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import (
         agents,
+        agentic,
+        analytics,
         backtest,
         channels,
         colony,
@@ -196,11 +199,13 @@ def create_app() -> FastAPI:
         options,
         personas,
         portfolio,
+        rl,
         sec_edgar,
         signal_generator,
         strategy,
         trading,
         ws,
+        whatsapp,
     )
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
@@ -223,11 +228,28 @@ def create_app() -> FastAPI:
     app.include_router(strategy.router, prefix="/api/strategy", tags=["Strategy"])
     app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
     app.include_router(options.router)
+    app.include_router(rl.router)
+    app.include_router(analytics.router)
+    app.include_router(agentic.router)
+    app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")
     async def health_check() -> dict[str, str]:
         return {"status": "healthy", "service": "quant-nanggroe-ai"}
+
+    @app.get("/api/version")
+    async def version() -> dict[str, str]:
+        # ponytail: single source of truth = package __version__
+        from quant_nanggroe import __version__
+        return {"version": __version__}
+
+    # ponytail: dev-only diagnostic to exercise the global exception handler.
+    # Active only in DEV mode (no QNAI_API_KEY set) — never in production.
+    if not os.environ.get("QNAI_API_KEY"):
+        @app.get("/trigger-error")
+        async def trigger_error() -> None:
+            raise RuntimeError("Intentional error for testing the global handler")
 
     # ── Prometheus Metrics ──────────────────────────────────────────
     @app.get("/metrics")
@@ -253,6 +275,11 @@ def create_app() -> FastAPI:
         )
 
     # ── Signal Handlers ─────────────────────────────────────────────
+    # ── Static Files (Dashboard UI) ──────────────────────────────
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    if os.path.isdir(static_dir):
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
     _setup_signal_handlers(app)
 
     return app

@@ -1,6 +1,6 @@
 """
 Pytest Configuration — Shared Fixtures for Quant-Nanggroe-AI Test Suite
-========================================================================
+=======================================================================
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///test_qna.db")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+os.environ.setdefault("QNAI_JWT_SECRET", "test-secret-key-for-pytest")
 
 
 @pytest.fixture

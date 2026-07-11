@@ -1,9 +1,10 @@
 import json
-import sqlite3
 import logging
+import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict, List, Optional
+
 from quant_nanggroe.engine.regime.hmm_detector import RegimeState
 
 logger = logging.getLogger(__name__)

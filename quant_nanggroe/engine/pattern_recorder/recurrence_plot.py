@@ -3,10 +3,11 @@ Recurrence Plot Analysis for Regime Change Detection
 Identifies changes in market dynamics by analyzing recurrence patterns.
 A recurrence plot visualizes when a dynamical system revisits similar states.
 """
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
-import numpy as np
 import logging
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

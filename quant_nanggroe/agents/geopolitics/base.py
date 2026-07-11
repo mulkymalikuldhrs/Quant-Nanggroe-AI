@@ -197,6 +197,28 @@ class GeopoliticsAgent(BaseAgent):
             system_prompt=system_prompt,
         )
 
+    def analyze_geopolitics(self, method: str, region: str) -> Dict[str, Any]:
+        """
+        Analyze geopolitical situation for a region using a specified method.
+
+        Args:
+            method: Analysis method (e.g., sanctions, trade_flow, currency, commodity)
+            region: Target geographic region
+
+        Returns:
+            Analysis results dict
+        """
+        dispatch = {
+            "sanctions": lambda: json.loads(sanctions_checker(region)),
+            "trade_flow": lambda: json.loads(trade_flow_analyzer(region, "global")),
+            "currency": lambda: json.loads(currency_impact("USD", region)),
+            "commodity": lambda: json.loads(commodity_exposure(region)),
+        }
+        result = dispatch.get(method, lambda: {"method": method, "region": region, "status": "unknown_method"})()
+        result["method"] = method
+        result["analyzed_by"] = self.name
+        return result
+
     def run(self, state: AgentState) -> Dict[str, Any]:
         """
         Execute geopolitical analysis.

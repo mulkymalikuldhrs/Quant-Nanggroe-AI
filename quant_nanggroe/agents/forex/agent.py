@@ -20,8 +20,7 @@ from quant_nanggroe.agents.base import BaseAgent
 from quant_nanggroe.agents.forex.prompts import FOREX_SYSTEM_PROMPT, FOREX_TASK_TEMPLATE
 from quant_nanggroe.agents.forex.tools import FOREX_TOOLS
 from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState
-
+from quant_nanggroe.agents.state import AgentRole, AgentState
 
 logger = logging.getLogger(__name__)
 

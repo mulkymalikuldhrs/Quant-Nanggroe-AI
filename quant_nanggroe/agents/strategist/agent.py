@@ -18,14 +18,13 @@ except ImportError:
     BaseChatModel = None
 
 from quant_nanggroe.agents.base import BaseAgent
+from quant_nanggroe.agents.registry import AgentRegistry
+from quant_nanggroe.agents.state import AgentRole, AgentState, SignalDirection, TradeAction
 from quant_nanggroe.agents.strategist.prompts import (
     STRATEGIST_SYSTEM_PROMPT,
     STRATEGIST_TASK_TEMPLATE,
 )
 from quant_nanggroe.agents.strategist.tools import STRATEGIST_TOOLS
-from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState, Signal, SignalDirection, TradeAction
-
 
 logger = logging.getLogger(__name__)
 
@@ -163,21 +162,21 @@ class StrategistAgent(BaseAgent):
                     pass
 
             # Try to extract prices
-            entry_match = re.search(rf"entry[:\s]+\$?([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
+            entry_match = re.search(r"entry[:\s]+\$?([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
             if entry_match:
                 try:
                     signal["entry_price"] = float(entry_match.group(1))
                 except ValueError:
                     pass
 
-            sl_match = re.search(rf"stop[\s-]?loss[:\s]+\$?([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
+            sl_match = re.search(r"stop[\s-]?loss[:\s]+\$?([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
             if sl_match:
                 try:
                     signal["stop_loss"] = float(sl_match.group(1))
                 except ValueError:
                     pass
 
-            tp_match = re.search(rf"take[\s-]?profit[:\s]+\$?([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
+            tp_match = re.search(r"take[\s-]?profit[:\s]+\$?([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
             if tp_match:
                 try:
                     signal["take_profit"] = float(tp_match.group(1))

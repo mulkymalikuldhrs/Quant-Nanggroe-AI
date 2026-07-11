@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from quant_nanggroe.engine.strategies.base import (
     SignalDirection,
@@ -51,10 +51,10 @@ class UnifiedRetailStrategy(Strategy):
 
     def generate_signal(self, data: Any, **kwargs) -> StrategySignal:
         """Generate unified signal from all methodologies."""
+        from quant_nanggroe.engine.strategies.fibonacci import FibonacciStrategy
         from quant_nanggroe.engine.strategies.ict import ICTStrategy
         from quant_nanggroe.engine.strategies.smc_strategy import SMCStrategy
         from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
-        from quant_nanggroe.engine.strategies.fibonacci import FibonacciStrategy
 
         weights = self._parameters.get("weights", {})
         min_confidence = self._parameters.get("min_confidence", 0.5)

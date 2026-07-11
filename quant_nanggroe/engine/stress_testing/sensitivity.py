@@ -2,11 +2,12 @@
 Sensitivity Analysis for Portfolio Stress Testing
 Analyzes how portfolio value changes under various market condition shifts.
 """
-from typing import Dict, List, Optional, Tuple, Any, Callable
-from dataclasses import dataclass, field
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 

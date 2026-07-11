@@ -34,12 +34,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
 from quant_nanggroe.engine.risk.constants import (
-    MAX_RISK_PER_TRADE,
     MAX_POSITION_SIZE_PCT,
-    MAX_LEVERAGE,
+    MAX_RISK_PER_TRADE,
 )
+from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
 
 logger = logging.getLogger(__name__)
 

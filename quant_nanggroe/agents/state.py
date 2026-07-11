@@ -14,8 +14,36 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import Annotated, TypedDict
+
+from quant_nanggroe.engine.risk.constants import (
+    CONFIDENCE_THRESHOLD as _ENGINE_CONFIDENCE_THRESHOLD,
+)
+from quant_nanggroe.engine.risk.constants import (
+    KILL_SWITCH_DAILY_PNL as _ENGINE_KILL_SWITCH_DAILY_PNL,
+)
+from quant_nanggroe.engine.risk.constants import (
+    KILL_SWITCH_WEEKLY_PNL as _ENGINE_KILL_SWITCH_WEEKLY_PNL,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_CORRELATED_POSITIONS as _ENGINE_MAX_CORRELATED_POSITIONS,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DAILY_LOSS as _ENGINE_MAX_DAILY_LOSS,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DAILY_TRADES as _ENGINE_MAX_DAILY_TRADES,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DRAWDOWN_PCT as _ENGINE_MAX_DRAWDOWN_PCT,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_LEVERAGE as _ENGINE_MAX_LEVERAGE,
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_POSITION_SIZE_PCT as _ENGINE_MAX_POSITION_SIZE_PCT,
+)
 
 # =============================================================================
 # CONSTITUTIONAL RISK LIMITS — Single Source of Truth
@@ -26,17 +54,12 @@ from typing_extensions import Annotated, TypedDict
 # =============================================================================
 from quant_nanggroe.engine.risk.constants import (
     MAX_RISK_PER_TRADE as _ENGINE_MAX_RISK_PER_TRADE,
-    MAX_DAILY_LOSS as _ENGINE_MAX_DAILY_LOSS,
+)
+from quant_nanggroe.engine.risk.constants import (
     MAX_WEEKLY_LOSS as _ENGINE_MAX_WEEKLY_LOSS,
+)
+from quant_nanggroe.engine.risk.constants import (
     MIN_RISK_REWARD as _ENGINE_MIN_RISK_REWARD,
-    MAX_CORRELATED_POSITIONS as _ENGINE_MAX_CORRELATED_POSITIONS,
-    MAX_POSITION_SIZE_PCT as _ENGINE_MAX_POSITION_SIZE_PCT,
-    MAX_LEVERAGE as _ENGINE_MAX_LEVERAGE,
-    MAX_DRAWDOWN_PCT as _ENGINE_MAX_DRAWDOWN_PCT,
-    MAX_DAILY_TRADES as _ENGINE_MAX_DAILY_TRADES,
-    CONFIDENCE_THRESHOLD as _ENGINE_CONFIDENCE_THRESHOLD,
-    KILL_SWITCH_DAILY_PNL as _ENGINE_KILL_SWITCH_DAILY_PNL,
-    KILL_SWITCH_WEEKLY_PNL as _ENGINE_KILL_SWITCH_WEEKLY_PNL,
 )
 
 # Re-export with the names expected by the agent layer

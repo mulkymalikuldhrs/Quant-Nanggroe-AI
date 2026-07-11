@@ -36,21 +36,18 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from quant_nanggroe.exchange.base import (
-    ExchangeConfig,
     ExchangeError,
     ExchangeInterface,
-    ExchangeState,
-    ConnectionError,
     MarketDataError,
     OrderError,
     WebSocketCallback,
 )
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
-from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, Portfolio
+from quant_nanggroe.types.orders import Order, OrderSide, OrderType
+from quant_nanggroe.types.positions import Portfolio, Position
 
 logger = logging.getLogger(__name__)
 
@@ -697,7 +694,8 @@ class ExchangeManager:
         agg = Portfolio(
             name="aggregated",
             currency="USDT",
-            initial_capital=total_initial or total_cash,
+            # ponytail: gt=0 constraint — fall back to 1.0 when no capital booked yet
+            initial_capital=max(total_initial or total_cash, 1.0),
             cash=total_cash,
             total_realized_pnl=total_realized_pnl,
         )

@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +125,8 @@ class SolanaWallet:
                 raise ValueError(f"Invalid Base58 private key: {exc}") from exc
         elif mnemonic:
             try:
-                from solders.keypair import Keypair
                 import mnemonic  # type: ignore[import-untyped]
+                from solders.keypair import Keypair
                 # Derive keypair from mnemonic using BIP44
                 seed = mnemonic.Mnemonic.to_seed(mnemonic)
                 self._keypair = Keypair.from_seed_and_derivation_path(

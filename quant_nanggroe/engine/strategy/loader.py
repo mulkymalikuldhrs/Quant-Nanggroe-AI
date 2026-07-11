@@ -49,11 +49,11 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set
 
-from quant_nanggroe.engine.strategy.schema import StrategyConfig, StrategyType
 from quant_nanggroe.engine.strategy.parser import (
     parse_strategy,
     validate_strategy,
 )
+from quant_nanggroe.engine.strategy.schema import StrategyConfig
 
 # Lazy import for strategy implementations to avoid circular imports
 _strategy_module = None

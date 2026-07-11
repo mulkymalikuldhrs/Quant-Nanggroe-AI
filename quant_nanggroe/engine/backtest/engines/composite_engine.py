@@ -16,12 +16,12 @@ from typing import Any, Dict, List, Optional, Set
 import pandas as pd
 
 from quant_nanggroe.engine.backtest.engines.base_engine import BaseEngine
-from quant_nanggroe.engine.backtest.engines.equity_engine import EquityEngine
 from quant_nanggroe.engine.backtest.engines.crypto_engine import (
     CryptoEngine,
     calc_crypto_funding_fee,
     check_crypto_liquidation,
 )
+from quant_nanggroe.engine.backtest.engines.equity_engine import EquityEngine
 from quant_nanggroe.engine.backtest.engines.forex_engine import (
     ForexEngine,
     calc_forex_swap,
@@ -29,8 +29,6 @@ from quant_nanggroe.engine.backtest.engines.forex_engine import (
 from quant_nanggroe.engine.backtest.engines.futures_engine import FuturesEngine
 from quant_nanggroe.engine.backtest.engines.market_detection import (
     detect_market,
-    detect_submarket,
-    is_china_futures,
 )
 
 logger = logging.getLogger(__name__)

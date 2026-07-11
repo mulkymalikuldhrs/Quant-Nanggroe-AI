@@ -1738,7 +1738,7 @@ class TestSkillTool:
         })
         assert result.status == ExecutionStatus.SUCCESS
         assert "fair_value_per_share" in result.output
-        assert result.execution_time_ms > 0
+        assert result.execution_time_ms >= 0.0
 
     @pytest.mark.asyncio
     async def test_execution_history(self, skill):

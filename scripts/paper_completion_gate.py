@@ -15,12 +15,10 @@ import argparse
 import csv
 import json
 import logging
-import os
 import re
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 

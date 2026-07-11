@@ -241,7 +241,7 @@ def generate_report(results: dict[str, Any], trades: pd.DataFrame, data_source: 
         lines.append("### Current PaperBroker Defaults")
         lines.append(f"- `slippage_bps`: {broker_defaults['current_slippage_bps']}")
         lines.append(f"- `commission_rate`: {comm_pct} ({comm_bps} bps)")
-        lines.append(f"- Source: `quant_nanggroe/exchange/paper_broker.py`")
+        lines.append("- Source: `quant_nanggroe/exchange/paper_broker.py`")
         lines.append("")
 
     lines.append("## Slippage by Symbol")

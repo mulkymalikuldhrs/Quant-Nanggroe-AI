@@ -5,11 +5,12 @@ Defines database schema for the Agentic AI System
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, JSON, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime, timezone
 import os
+from datetime import datetime, timezone
+
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
 
 Base = declarative_base()
 

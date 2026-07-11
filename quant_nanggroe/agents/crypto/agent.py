@@ -19,8 +19,7 @@ from quant_nanggroe.agents.base import BaseAgent
 from quant_nanggroe.agents.crypto.prompts import CRYPTO_SYSTEM_PROMPT, CRYPTO_TASK_TEMPLATE
 from quant_nanggroe.agents.crypto.tools import CRYPTO_TOOLS
 from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState
-
+from quant_nanggroe.agents.state import AgentRole, AgentState
 
 logger = logging.getLogger(__name__)
 

@@ -32,9 +32,9 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, Dict, FrozenSet, List, Optional, Set
+from typing import Any, Dict, FrozenSet, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeInterface
 

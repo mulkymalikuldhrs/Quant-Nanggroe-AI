@@ -5,15 +5,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter
 
 from quant_nanggroe.api.schemas import (
     BacktestRequest,
-    BacktestSubmissionResponse,
     BacktestResultResponse,
+    BacktestSubmissionResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,7 +37,7 @@ def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
         import numpy as np
         import pandas as pd
 
-        from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig, MarketType
+        from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine, MarketType
         from quant_nanggroe.engine.backtest.loaders.yfinance_loader import YFinanceLoader
 
         # Mark as running

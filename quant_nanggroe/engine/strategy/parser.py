@@ -17,17 +17,13 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List
 
 import yaml
 from pydantic import ValidationError
 
 from quant_nanggroe.engine.strategy.schema import (
-    EntryRule,
-    ExitRule,
-    RiskRules,
     StrategyConfig,
-    UniverseDefinition,
 )
 
 logger = logging.getLogger(__name__)
@@ -248,7 +244,7 @@ def strategy_to_code(config: StrategyConfig) -> str:
     lines.append(f'    """Strategy: {config.name}')
     if config.description:
         lines.append(f"    {config.description}")
-    lines.append(f'    """')
+    lines.append('    """')
     lines.append("")
 
     # Config

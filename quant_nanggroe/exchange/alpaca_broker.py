@@ -34,24 +34,22 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
-
 from quant_nanggroe.exchange.base import (
+    AuthenticationError,
+    ConnectionError,
     ExchangeConfig,
     ExchangeError,
     ExchangeInterface,
     ExchangeState,
-    ConnectionError,
-    OrderError,
-    RateLimitError,
-    AuthenticationError,
     InsufficientFundsError,
     MarketDataError,
+    OrderError,
+    RateLimitError,
     WebSocketCallback,
 )
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.positions import Portfolio, Position, PositionSide
 
 logger = logging.getLogger(__name__)
 
@@ -240,8 +238,8 @@ class AlpacaBroker(ExchangeInterface):
 
         self._state = ExchangeState.CONNECTING
         try:
-            from alpaca.trading.client import TradingClient  # type: ignore[import-untyped]
             from alpaca.data.historical.stock import StockHistoricalDataClient  # type: ignore[import-untyped]
+            from alpaca.trading.client import TradingClient  # type: ignore[import-untyped]
 
             self._trading_client = TradingClient(
                 api_key=self._config.api_key or "",
@@ -373,7 +371,7 @@ class AlpacaBroker(ExchangeInterface):
                 pos = self._alpaca_position_to_position(ap)
                 if pos:
                     positions.append(pos)
-                    self._local_positions[symbol] = pos  # type: ignore[name-defined]
+                    self._local_positions[pos.symbol] = pos
             return positions
         except Exception as exc:
             self._circuit_breaker.record_error()
@@ -471,8 +469,15 @@ class AlpacaBroker(ExchangeInterface):
         self._check_circuit_breaker()
 
         try:
-            from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, StopLimitOrderRequest, TrailingStopOrderRequest  # type: ignore[import-untyped]
-            from alpaca.trading.enums import OrderSide as AlpacaOrderSide, TimeInForce  # type: ignore[import-untyped]
+            from alpaca.trading.enums import OrderSide as AlpacaOrderSide  # type: ignore[import-untyped]
+            from alpaca.trading.enums import TimeInForce
+            from alpaca.trading.requests import (  # type: ignore[import-untyped]
+                LimitOrderRequest,
+                MarketOrderRequest,
+                StopLimitOrderRequest,
+                StopOrderRequest,
+                TrailingStopOrderRequest,
+            )
 
             alpaca_side = (
                 AlpacaOrderSide.BUY if side == OrderSide.BUY

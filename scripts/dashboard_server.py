@@ -9,10 +9,8 @@ No dependencies beyond Python stdlib (http.server).
 """
 
 import http.server
-import json
 import mimetypes
 import os
-import sys
 from pathlib import Path
 
 # Auto-detect repo root (this file lives in scripts/)
@@ -102,10 +100,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     server = http.server.HTTPServer(("0.0.0.0", PORT), DashboardHandler)
-    print(f"Quant Nanggroe AI Dashboard Server")
+    print("Quant Nanggroe AI Dashboard Server")
     print(f"  URL:      http://localhost:{PORT}")
     print(f"  Repo:     {REPO_ROOT}")
-    print(f"  Press Ctrl+C to stop")
+    print("  Press Ctrl+C to stop")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

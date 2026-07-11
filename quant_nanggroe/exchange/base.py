@@ -22,14 +22,13 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from pydantic import BaseModel, Field
 
-from quant_nanggroe.types.market import OHLCV, Ticker, OrderBook, TimeFrame
-from quant_nanggroe.types.orders import Order, OrderSide, OrderType, OrderStatus
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
+from quant_nanggroe.types.orders import Order, OrderSide, OrderType
+from quant_nanggroe.types.positions import Portfolio, Position
 
 logger = logging.getLogger(__name__)
 

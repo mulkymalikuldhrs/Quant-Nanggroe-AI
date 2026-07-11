@@ -1,7 +1,9 @@
 import logging
+from typing import List
+
 import numpy as np
-from typing import List, Optional
-from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+
+from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
 
 logger = logging.getLogger(__name__)
 

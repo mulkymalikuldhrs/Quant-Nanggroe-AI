@@ -31,7 +31,6 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.factors.base import AlphaFactor
 from quant_nanggroe.engine.factors.registry import FactorRegistry, get_default_registry
 
 logger = logging.getLogger(__name__)

@@ -6,10 +6,9 @@ Per Theme 5 council decision, P1 priority.
 
 import json
 import logging
-import os
 import time
 from collections import deque
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any

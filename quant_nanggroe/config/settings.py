@@ -7,7 +7,6 @@ API keys, database URLs, and other secrets MUST be set via environment variables
 
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 from typing import Optional
 

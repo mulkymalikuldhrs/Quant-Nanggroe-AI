@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 try:
@@ -20,19 +19,13 @@ except ImportError:
     BaseChatModel = None
 
 from quant_nanggroe.agents.base import BaseAgent
+from quant_nanggroe.agents.registry import AgentRegistry
 from quant_nanggroe.agents.risk.prompts import (
     RISK_SYSTEM_PROMPT,
     RISK_TASK_TEMPLATE,
 )
 from quant_nanggroe.agents.risk.tools import RISK_TOOLS, _is_correlated
-from quant_nanggroe.agents.registry import AgentRegistry
 from quant_nanggroe.agents.state import (
-    AgentOutput,
-    AgentRole,
-    AgentState,
-    RiskAssessment,
-    RiskCheckpoint,
-    RiskVerdict,
     MAX_CORRELATED_POSITIONS,
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,
@@ -42,8 +35,12 @@ from quant_nanggroe.agents.state import (
     MAX_TRADES_PER_DAY,
     MAX_WEEKLY_LOSS,
     MIN_RISK_REWARD,
+    AgentRole,
+    AgentState,
+    RiskAssessment,
+    RiskCheckpoint,
+    RiskVerdict,
 )
-
 
 TRADE_VERDICT_APPROVED = "APPROVED"
 TRADE_VERDICT_REJECTED = "REJECTED"

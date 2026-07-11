@@ -25,6 +25,6 @@ Constitutional Risk Limits (HARDCODED — no override):
     Max trades/day:        5
 """
 
-__version__ = "4.0.0"
+__version__ = "4.3.4"  # ponytail: keep in sync with pyproject.toml
 __author__ = "Quant Nanggroe AI Team"
 QNA_VERSION = __version__

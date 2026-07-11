@@ -2,18 +2,17 @@
 Chart Factory — Unified chart creation for QNA dashboard.
 Uses Plotly for interactive charts with matplotlib as fallback.
 """
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
-from datetime import datetime
+import logging
+from typing import Any, Dict, List
+
 import numpy as np
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
     from plotly.subplots import make_subplots
     HAS_PLOTLY = True
 except ImportError:

@@ -9,8 +9,8 @@ import time
 from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.exchange.clients.base_rest_client import (
-    BaseRestClient,
     BalanceInfo,
+    BaseRestClient,
     ExchangeCapability,
     KlineBar,
     OrderbookData,
@@ -139,7 +139,7 @@ class BybitClient(BaseRestClient):
         )
 
     def _is_futures_symbol(self, symbol: str) -> bool:
-        return not "/" in symbol and symbol.endswith("USDT")
+        return "/" not in symbol and symbol.endswith("USDT")
 
     async def cancel_order(self, symbol: str, order_id: str) -> bool:
         """Cancel order on Bybit."""

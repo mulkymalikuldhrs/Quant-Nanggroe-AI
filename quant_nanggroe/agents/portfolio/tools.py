@@ -87,6 +87,7 @@ def optimize_portfolio(
         if optimizer is not None and method == "risk_parity":
             try:
                 import asyncio
+
                 import numpy as np
 
                 # Fetch real price data for volatility estimation
@@ -149,6 +150,7 @@ def optimize_portfolio(
         if mdt is not None:
             try:
                 import asyncio
+
                 import numpy as np
 
                 loop = asyncio.get_event_loop()
@@ -215,7 +217,7 @@ def optimize_portfolio(
         }, indent=2)
 
     raise RuntimeError(
-        f"Cannot optimize portfolio: real engine unavailable and _MOCK_MODE=False. "
+        "Cannot optimize portfolio: real engine unavailable and _MOCK_MODE=False. "
         "Install required dependencies or set _MOCK_MODE=True."
     )
 

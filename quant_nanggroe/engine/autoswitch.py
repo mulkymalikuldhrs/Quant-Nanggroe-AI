@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from .market_state import MarketRegimeDetector, MarketRegime, RegimeResult
+from .market_state import MarketRegime, MarketRegimeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -394,5 +395,79 @@ class AutoSwitcher:
         }
 
 
-# ── Backward-compatible alias ───────────────────────────────────────
-AutoSwitchEngine = AutoSwitcher
+# ── Provider Health ─────────────────────────────────────────────────────
+
+
+@dataclass
+class ProviderHealth:
+    """Tracks health metrics for an external data/LLM provider."""
+
+    name: str
+    success_count: int = 0
+    failure_count: int = 0
+    avg_latency_ms: float = 0.0
+    cooldown_until: Optional[datetime] = None
+    _last_error: str = ""
+
+    @property
+    def score(self) -> float:
+        """Health score: success rate minus latency penalty."""
+        total = self.success_count + self.failure_count
+        if total == 0:
+            return 0.5  # default no-data score
+        success_rate = self.success_count / total
+        latency_penalty = min(self.avg_latency_ms / 10000.0, 0.2)
+        return max(0.0, success_rate - latency_penalty)
+
+    @property
+    def is_available(self) -> bool:
+        """Provider is available when not on cooldown."""
+        if self.cooldown_until is None:
+            return True
+        return datetime.now(timezone.utc) > self.cooldown_until
+
+
+class AutoSwitchEngine(AutoSwitcher):
+    """Extended auto-switcher with provider health tracking."""
+
+    def __init__(self, config: Optional[AutoSwitchConfig] = None, regime_detector: Optional[MarketRegimeDetector] = None):
+        super().__init__(config, regime_detector)
+        self.providers: Dict[str, ProviderHealth] = {}
+
+    def register_provider(self, name: str) -> ProviderHealth:
+        """Register a provider for health tracking."""
+        if name not in self.providers:
+            self.providers[name] = ProviderHealth(name=name)
+        return self.providers[name]
+
+    def record_failure(self, name: str, error: str = "") -> None:
+        """Record a provider failure and optionally set cooldown."""
+        if name not in self.providers:
+            self.register_provider(name)
+        ph = self.providers[name]
+        ph.failure_count += 1
+        ph._last_error = error
+        # Set cooldown: exponential backoff based on consecutive failures
+        cooldown_minutes = min(2 ** (ph.failure_count - 1), 60)
+        ph.cooldown_until = datetime.now(timezone.utc) + timedelta(minutes=cooldown_minutes)
+
+    def record_success(self, name: str, latency_ms: float = 0.0) -> None:
+        """Record a successful provider call."""
+        if name not in self.providers:
+            self.register_provider(name)
+        ph = self.providers[name]
+        ph.success_count += 1
+        # Exponential moving average for latency
+        if ph.avg_latency_ms == 0:
+            ph.avg_latency_ms = latency_ms
+        else:
+            ph.avg_latency_ms = 0.9 * ph.avg_latency_ms + 0.1 * latency_ms
+        # Clear cooldown on success
+        ph.cooldown_until = None
+
+    def get_provider_order(self) -> List[str]:
+        """Return provider names sorted by health score (best first).
+        Excludes providers currently on cooldown.
+        """
+        available = {n: p for n, p in self.providers.items() if p.is_available}
+        return sorted(available.keys(), key=lambda n: available[n].score, reverse=True)

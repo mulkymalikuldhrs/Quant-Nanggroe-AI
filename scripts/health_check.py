@@ -6,7 +6,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 
 PAPER_STATE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "paper_state")
 SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts")

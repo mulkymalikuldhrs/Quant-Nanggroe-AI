@@ -1,26 +1,25 @@
 """
 Strategy that dynamically adapts to detected market regimes.
 """
-from typing import Dict, List, Optional, Any
-import numpy as np
-import pandas as pd
 import logging
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 from quant_nanggroe.engine.regime.strategy_selector import (
+    RegimeStrategyMap,
     RegimeStrategySelector,
     StrategyConfig,
-    RegimeStrategyMap,
 )
-from quant_nanggroe.engine.regime.hmm_detector import Regime
 
 logger = logging.getLogger(__name__)
 
 try:
+    from quant_nanggroe.engine.regime.correlation_regime import CorrelationRegimeDetector
     from quant_nanggroe.engine.regime.ensemble import RegimeEnsemble
     from quant_nanggroe.engine.regime.hmm_detector import HMMRegimeDetector
-    from quant_nanggroe.engine.regime.volatility_clustering import VolatilityRegimeDetector
     from quant_nanggroe.engine.regime.macro_regime import MacroRegimeDetector
-    from quant_nanggroe.engine.regime.correlation_regime import CorrelationRegimeDetector
+    from quant_nanggroe.engine.regime.volatility_clustering import VolatilityRegimeDetector
     _CAN_ENSEMBLE = True
 except ImportError:
     _CAN_ENSEMBLE = False

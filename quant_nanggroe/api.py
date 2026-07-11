@@ -483,7 +483,6 @@ def create_app() -> FastAPI:
             # Attempt to run actual backtest engine
             try:
                 from quant_nanggroe.engine.backtest.engine import (
-                    BacktestEngine,
                     BacktestConfig,
                     MarketType,
                 )
@@ -551,12 +550,12 @@ def create_app() -> FastAPI:
         try:
             try:
                 from quant_nanggroe.engine.risk.manager import (
-                    RiskManager,
-                    MAX_RISK_PER_TRADE,
                     MAX_DAILY_LOSS,
-                    MAX_WEEKLY_LOSS,
                     MAX_DRAWDOWN,
+                    MAX_RISK_PER_TRADE,
+                    MAX_WEEKLY_LOSS,
                     MIN_RISK_REWARD,
+                    RiskManager,
                 )
 
                 rm = RiskManager()

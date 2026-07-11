@@ -27,11 +27,9 @@ from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.exchange.base import (
     ExchangeConfig,
-    ExchangeError,
     ExchangeInterface,
     ExchangeState,
     InsufficientFundsError,
-    MarketDataError,
     OrderError,
     WebSocketCallback,
 )
@@ -43,7 +41,7 @@ from quant_nanggroe.types.market import (
     TimeFrame,
 )
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.positions import Portfolio, Position, PositionSide
 
 logger = logging.getLogger(__name__)
 

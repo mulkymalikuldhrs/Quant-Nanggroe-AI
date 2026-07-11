@@ -26,10 +26,7 @@ service that handles the browser automation.
 
 from __future__ import annotations
 
-import json
 import logging
-import re
-import time
 import uuid
 from datetime import datetime, timezone
 from enum import Enum

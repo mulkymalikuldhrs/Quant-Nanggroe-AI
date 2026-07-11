@@ -13,10 +13,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
-from quant_nanggroe.types.signals import Signal, SignalType
+from quant_nanggroe.types.signals import Signal
 
 
 class BaseStrategy(ABC):

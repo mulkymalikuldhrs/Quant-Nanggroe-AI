@@ -24,15 +24,24 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DAILY_LOSS as _MAX_DAILY_LOSS_FRAC,  # 0.01 (fraction)
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_LEVERAGE as _MAX_LEVERAGE,  # 3.0
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_POSITION_SIZE_PCT as _MAX_POSITION_SIZE_FRAC,  # 0.10 (fraction)
+)
 
 # ── Import from the SINGLE SOURCE OF TRUTH ──────────────────────────────────
 from quant_nanggroe.engine.risk.constants import (
-    MAX_RISK_PER_TRADE as _MAX_RISK_PER_TRADE_FRAC,     # 0.005 (fraction)
-    MAX_DAILY_LOSS as _MAX_DAILY_LOSS_FRAC,               # 0.01 (fraction)
-    MAX_WEEKLY_LOSS as _MAX_WEEKLY_LOSS_FRAC,             # 0.03 (fraction)
-    MAX_POSITION_SIZE_PCT as _MAX_POSITION_SIZE_FRAC,     # 0.10 (fraction)
-    MAX_LEVERAGE as _MAX_LEVERAGE,                         # 3.0
+    MAX_RISK_PER_TRADE as _MAX_RISK_PER_TRADE_FRAC,  # 0.005 (fraction)
+)
+from quant_nanggroe.engine.risk.constants import (
+    MAX_WEEKLY_LOSS as _MAX_WEEKLY_LOSS_FRAC,  # 0.03 (fraction)
 )
 
 # Convert fractions to percentages for this module's API (backward compat)

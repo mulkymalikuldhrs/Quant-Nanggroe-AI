@@ -1,4 +1,4 @@
 from .chart_factory import ChartFactory
-from .dashboard import QNADashboard, DashboardMetrics
+from .dashboard import DashboardMetrics, QNADashboard
 
 __all__ = ["ChartFactory", "QNADashboard", "DashboardMetrics"]

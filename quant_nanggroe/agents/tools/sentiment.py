@@ -15,11 +15,10 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 try:
     from langchain_core.tools import tool
@@ -356,8 +355,8 @@ class SentimentTool:
 
     async def _fetch_alpha_vantage_news(self, symbol: str) -> List[Dict[str, str]]:
         """Fetch news from Alpha Vantage."""
-        import urllib.request
         import json as _json
+        import urllib.request
 
         api_key = self._settings.alpha_vantage_api_key
         if not api_key:
@@ -382,8 +381,8 @@ class SentimentTool:
 
     async def _fetch_polygon_news(self, symbol: str) -> List[Dict[str, str]]:
         """Fetch news from Polygon.io."""
-        import urllib.request
         import json as _json
+        import urllib.request
 
         api_key = self._settings.polygon_api_key
         if not api_key:

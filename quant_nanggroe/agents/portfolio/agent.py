@@ -22,8 +22,7 @@ from quant_nanggroe.agents.portfolio.prompts import (
 )
 from quant_nanggroe.agents.portfolio.tools import PORTFOLIO_TOOLS
 from quant_nanggroe.agents.registry import AgentRegistry
-from quant_nanggroe.agents.state import AgentOutput, AgentRole, AgentState
-
+from quant_nanggroe.agents.state import AgentRole, AgentState
 
 logger = logging.getLogger(__name__)
 

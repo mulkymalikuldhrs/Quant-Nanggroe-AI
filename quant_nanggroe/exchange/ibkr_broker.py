@@ -28,28 +28,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.exchange.base import (
+    ConnectionError,
     ExchangeConfig,
     ExchangeError,
     ExchangeInterface,
     ExchangeState,
-    ConnectionError,
-    OrderError,
-    RateLimitError,
-    AuthenticationError,
-    InsufficientFundsError,
     MarketDataError,
+    OrderError,
     WebSocketCallback,
 )
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide, Portfolio
+from quant_nanggroe.types.positions import Portfolio, Position, PositionSide
 
 logger = logging.getLogger(__name__)
 
@@ -420,7 +416,8 @@ class IBKRBroker(ExchangeInterface):
         """
         self._require_ib()
         try:
-            from ib_insync import Stock, Contract, Order as IBOrder  # type: ignore[import-untyped]
+            from ib_insync import Contract, Stock  # type: ignore[import-untyped]
+            from ib_insync import Order as IBOrder
 
             # Create contract
             contract = Stock(symbol, "SMART", "USD")
@@ -673,7 +670,7 @@ class IBKRBroker(ExchangeInterface):
         """
         self._require_ib()
         try:
-            from ib_insync import Stock, util  # type: ignore[import-untyped]
+            from ib_insync import Stock  # type: ignore[import-untyped]
 
             contract = Stock(symbol, "SMART", "USD")
 

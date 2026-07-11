@@ -1,6 +1,6 @@
-from quant_nanggroe.engine.kelly.base import BaseKelly, KellyParameters, KellyResult, KellyMethod
 from scipy import stats
-import numpy as np
+
+from quant_nanggroe.engine.kelly.base import BaseKelly, KellyMethod, KellyParameters, KellyResult
 
 
 class BayesianKelly(BaseKelly):

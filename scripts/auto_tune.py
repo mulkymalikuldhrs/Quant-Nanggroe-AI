@@ -24,7 +24,7 @@ if _REPO_ROOT not in sys.path:
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
+from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)

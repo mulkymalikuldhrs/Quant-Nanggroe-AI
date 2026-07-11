@@ -30,7 +30,6 @@ from quant_nanggroe.engine.factors.base import (
     ts_min,
     ts_rank,
     ts_std,
-    vwap,
 )
 
 # ─── Shared Helper Functions ────────────────────────────────────────────

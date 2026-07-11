@@ -3,10 +3,10 @@
 # Falls back to openrouter/ollama if JeumpaLLM unavailable
 
 import os
+
 import httpx
-from typing import Optional
-from langchain_openai import ChatOpenAI
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_openai import ChatOpenAI
 
 JEUMPA_BASE_URL = os.getenv("JEUMPA_LLM_URL", "http://127.0.0.1:3456/v1")
 JEUMPA_API_KEY = os.getenv("JEUMPA_LLM_KEY", "sk-jeumpa")

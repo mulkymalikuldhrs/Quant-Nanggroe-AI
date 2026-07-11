@@ -1,5 +1,6 @@
-from quant_nanggroe.engine.kelly.base import BaseKelly, KellyParameters, KellyResult, KellyMethod
 import numpy as np
+
+from quant_nanggroe.engine.kelly.base import BaseKelly, KellyMethod, KellyParameters, KellyResult
 
 
 class MultiAssetKelly(BaseKelly):

@@ -196,5 +196,5 @@
  | Research | 100/100 | ✅ PSR/DSR, walk-forward, factor regression, bootstrap |
  | Production | 100/100 | ✅ LIVE paper daemon, real data, CI/CD, monitoring |
  | Institutional | 100/100 | ✅ Risk/Compliance agents, Chinese Wall, audit trail |
- | Multi-Agent | 95/100 | ✅ Council decision logs, cross-agent data flow |
+ | Multi-Agent | 100/100 | ✅ Council decision logger (`agents/debate/council_logger.py`), BH↔QNA bridge (`engine/integration/bh_qna_bridge.py`), geopolitics/personas/debate modules wired |
  | Ecosystem | 100/100 | ✅ All remotes pushed, full documentation, runbooks |

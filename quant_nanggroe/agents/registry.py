@@ -18,7 +18,6 @@ except ImportError:
 from quant_nanggroe.agents.base import BaseAgent, create_llm
 from quant_nanggroe.agents.state import AgentRole
 
-
 logger = logging.getLogger(__name__)
 
 

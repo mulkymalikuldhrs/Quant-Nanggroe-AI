@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """CI compliance gate — env vars, .gitignore, no print() in prod code."""
 
-import os
 import re
 import sys
 from pathlib import Path

@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 try:
     from langchain_core.tools import tool
@@ -37,8 +37,8 @@ _MOCK_MODE = False
 def _get_technical_tool():
     """Lazy-load TechnicalAnalysisTool from shared tools."""
     try:
-        from quant_nanggroe.agents.tools.technical import TechnicalAnalysisTool
         from quant_nanggroe.agents.tools.market_data import MarketDataTool
+        from quant_nanggroe.agents.tools.technical import TechnicalAnalysisTool
         mdt = MarketDataTool()
         return TechnicalAnalysisTool(market_data_tool=mdt)
     except Exception as exc:
