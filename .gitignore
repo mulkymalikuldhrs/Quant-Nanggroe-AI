@@ -104,3 +104,13 @@ screenshots/
 
 # Graphify knowledge-graph artifacts (regenerable via: graphify update .)
 graphify-out/
+
+# Legacy backup from integration cleanup
+_removed_legacy/
+
+# Dhaher Labs external backup
+_dhaher_backups/
+D:/_dhaher_backups/
+# Windows artifacts
+nul
+dashboard/nul
