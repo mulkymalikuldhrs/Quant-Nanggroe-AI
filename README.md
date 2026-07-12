@@ -56,6 +56,7 @@ docker-compose -f deploy/docker/docker-compose.yml up -d
 | **Risk** | 0.5% max per trade, 1% daily loss limit, 3% weekly |
 | **Execution** | Paper broker, Alpaca, Binance, Bybit, IBKR, CCXT |
 | **Data** | 12 providers auto-failover, SQLite/PostgreSQL, Redis cache |
+| **OSINT** | Crucix package — 27 intelligence sources, ACLED conflict, ADSB tracking |
 | **Security** | JWT auth, encryption at rest, audit log, Chinese Wall |
 | **ML** | XGBoost, PyTorch, scikit-learn, GARCH synthetic data |
 | **DRL** | PPO, DQN, SAC agents — numpy-only, no GPU |
@@ -102,17 +103,20 @@ quant_nanggroe/
 ├── database/         — SQLAlchemy models, migrations (Alembic)
 ├── connectors/       — Exchange connectors (CCXT, Alpaca, etc.)
 ├── docker/           — Docker Compose, Dockerfiles
+├── nginx/            — Production reverse proxy config
 ├── scripts/          — Paper daemon, launcher, utilities
 ├── docs/             — Architecture, API reference, runbooks, reports
-└── tests/            — 26 test directories, 400+ tests
+└── tests/            — 26 test directories, 468+ tests
 
 ai_multicolony/       — Multi-agent swarm framework (delegated)
+packages/crucix/      — OSINT intelligence: 27 sources, ACLED, ADSB, briefing system
+packages/agentic-legacy/ — Archived multi-agent reference
 ```
 
 ## Test Suite
 
-- **400+ tests** across 26 test directories
-- Smoke tests: 11/11 pass
+- **468+ tests** across 26 test directories
+- Hedge-fund critical: 265 tests, 0 failed
 - Coverage: engine, agents, API, data, exchange, risk
 - CI: GitHub Actions + GitLab CI pipelines
 
@@ -143,6 +147,7 @@ ai_multicolony/       — Multi-agent swarm framework (delegated)
 ## Ecosystem
 
 - [DhaHer Labs](https://dhaher-labs.codeberg.page) — Ecosystem home
+- [Crucix — OSINT intelligence terminal](https://crucix.live)
 - [Autonomous Organism Manifesto](https://dhaherlabsos.vercel.app/manifesto)
 - [System Status](https://dhaherlabsos.vercel.app/status)
 - [GitHub: dhaher-labs](https://github.com/dhaher-labs)
