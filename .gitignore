@@ -114,3 +114,11 @@ D:/_dhaher_backups/
 # Windows artifacts
 nul
 dashboard/nul
+
+# ── Generated / Copied (from other repos) ──────────────────────────
+graphify-out/
+skills/
+packages/
+ai_multicolony/
+docs/
+node_modules/

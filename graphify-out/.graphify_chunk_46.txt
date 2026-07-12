@@ -1,6 +1,0 @@
-C:\Users\Hi\dhaherlabs\repositories\Quant-Nanggroe-AI-worktree\skills\xlsx\scenes\create.md
-C:\Users\Hi\dhaherlabs\repositories\Quant-Nanggroe-AI-worktree\skills\xlsx\scenes\edit-patterns.md
-C:\Users\Hi\dhaherlabs\repositories\Quant-Nanggroe-AI-worktree\skills\xlsx\scenes\edit.md
-C:\Users\Hi\dhaherlabs\repositories\Quant-Nanggroe-AI-worktree\skills\xlsx\scenes\finance.md
-C:\Users\Hi\dhaherlabs\repositories\Quant-Nanggroe-AI-worktree\skills\xlsx\scenes\finance_lite.md
-C:\Users\Hi\dhaherlabs\repositories\Quant-Nanggroe-AI-worktree\skills\xlsx\scenes\vba.md
