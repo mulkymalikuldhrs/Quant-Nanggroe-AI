@@ -101,3 +101,6 @@ screenshots/
 /quant_nanggroe/database/alembic.ini
 /docs/worklog.md
 
+
+# Graphify knowledge-graph artifacts (regenerable via: graphify update .)
+graphify-out/

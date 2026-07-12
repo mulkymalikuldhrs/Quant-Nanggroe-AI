@@ -20,7 +20,7 @@ FastAPI Backend (port 8000)
 ├── Governance      — council voting, debate, investor personas
 ├── Monitoring      — health, metrics, PnL attribution, risk, audit, regime
 ├── Memory          — knowledge graph storage & retrieval
-└── Dashboard       — vanilla HTML/CSS/JS SPA at /
+└── Dashboard       — Next.js SPA in /dashboard (served on :3000)
 ```
 
 ## Quick Start
@@ -29,11 +29,14 @@ FastAPI Backend (port 8000)
 # Dev install
 pip install -e ".[dev]"
 
-# Start server
+# Backend
 uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000
 
-# Dashboard
-open http://localhost:8000
+# Frontend (dashboard)
+cd dashboard && npm install && npm run build && npx next start -p 3000
+
+# Or boot BOTH with one click:
+launch.bat        # Windows: starts backend + frontend, opens http://localhost:3000
 
 # Paper trading daemon
 python scripts/qna-paper-daemon.py --interval 3600
@@ -130,10 +133,11 @@ ai_multicolony/       — Multi-agent swarm framework (delegated)
 ## Status
 
 - **Server**: Up, 85 routes, auth protected
-- **Dashboard**: Accessible at / (no build step)
+- **Dashboard**: Next.js SPA in `dashboard/` served on :3000 (build: `cd dashboard && npm install && npm run build && npx next start -p 3000`, or use `launch.bat`)
+- **Single Launcher**: `launch.bat` boots backend + frontend + opens browser
 - **Paper Trading**: Autonomous daemon running
-- **Memory**: Graphify'd (1433 source files), Hermes memory saved
-- **Graph**: `graphify-out/graph.json` (35MB, all modules)
+- **Memory**: Graphify'd, Hermes memory saved
+- **Graph**: `graphify-out/graph.json` (regenerated via `graphify update .`)
 - **Graphify commands**: `graphify query "?"`, `graphify path "A" "B"`, `graphify update .`
 
 ## Ecosystem
