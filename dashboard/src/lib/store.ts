@@ -54,6 +54,7 @@ interface AppState {
   // UI state
   sidebarOpen: boolean;
   killSwitch: boolean;
+  autoTrade: boolean;
   activeAgents: string[];
   selectedSymbol: string;
   selectedExchange: string;
@@ -73,6 +74,7 @@ interface AppState {
   // Actions
   toggleSidebar: () => void;
   toggleKillSwitch: () => void;
+  toggleAutoTrade: () => void;
   setActiveAgents: (agents: string[]) => void;
   setSelectedSymbol: (symbol: string) => void;
   setSelectedExchange: (exchange: string) => void;
@@ -92,6 +94,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   sidebarOpen: true,
   killSwitch: false,
+  autoTrade: false,
   activeAgents: [],
   selectedSymbol: "BTC",
   selectedExchange: "binance",
@@ -108,6 +111,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleKillSwitch: () => set((s) => ({ killSwitch: !s.killSwitch })),
+  toggleAutoTrade: () => set((s) => ({ autoTrade: !s.autoTrade })),
   setActiveAgents: (agents) => set({ activeAgents: agents }),
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
   setSelectedExchange: (exchange) => set({ selectedExchange: exchange }),

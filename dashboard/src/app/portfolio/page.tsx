@@ -1,56 +1,67 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
+import { StatusCard } from "@/components/shared/status-card";
+import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatCurrency, formatPercent, cn } from "@/lib/utils";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { TrendingUp, DollarSign } from "lucide-react";
+import { PieChart, Wallet, TrendingUp, Activity } from "lucide-react";
+import { portfolioApi, type PortfolioSummary, type PerformanceMetrics, type RiskData, type PortfolioPosition } from "@/lib/api-client";
 
 export default function PortfolioPage() {
-  const [data, setData] = useState<any>(null);
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
+  const [perf, setPerf] = useState<PerformanceMetrics | null>(null);
+  const [risk, setRisk] = useState<RiskData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/monitor/summary").then(r => r.json()).then(setData);
+    (async () => {
+      const [s, p, r] = await Promise.allSettled([
+        portfolioApi.getSummary(),
+        portfolioApi.getPerformance(),
+        portfolioApi.getRisk(),
+      ]);
+      if (s.status === "fulfilled") setSummary(s.value);
+      if (p.status === "fulfilled") setPerf(p.value);
+      if (r.status === "fulfilled") setRisk(r.value);
+      setLoading(false);
+    })();
   }, []);
-
-  const pnl = data?.pnl || {};
-  const allocation = data?.health?.state?.allocation || [
-    { name: "Crypto", value: 35 },
-    { name: "Equities", value: 30 },
-    { name: "Cash", value: 35 },
-  ];
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <ChartCard title="Total P&L" subtitle="Real-time from monitor">
-          <p className="text-2xl font-mono font-bold text-emerald-400">{formatCurrency(pnl?.total_pnl || 0)}</p>
-          <p className="text-xs text-white/40">24h: {formatCurrency(pnl?.last_24h || 0)}</p>
-        </ChartCard>
-        <ChartCard title="Total Cycles" subtitle="Engine runs">
-          <p className="text-2xl font-mono font-bold">{pnl?.total_cycles || 0}</p>
-        </ChartCard>
-        <ChartCard title="Status" subtitle="Paper run">
-          <Badge variant="success">ACTIVE</Badge>
-        </ChartCard>
+      <h1 className="text-xl font-bold text-white flex items-center gap-2">
+        <Wallet className="w-5 h-5 text-emerald-400" /> Portfolio
+      </h1>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatusCard title="Total Value" value={summary?.totalValue ?? 0} icon={<Wallet className="w-4 h-4" />} variant="success" />
+        <StatusCard title="Day P&L" value={summary?.dayPnl ?? 0} change={summary?.dayPnlPercent} icon={<TrendingUp className="w-4 h-4" />} variant={(summary?.dayPnl ?? 0) >= 0 ? "success" : "danger"} />
+        <StatusCard title="Total P&L" value={summary?.totalPnl ?? 0} icon={<Activity className="w-4 h-4" />} variant={(summary?.totalPnl ?? 0) >= 0 ? "success" : "danger"} />
+        <StatusCard title="Cash" value={summary?.cashBalance ?? 0} icon={<PieChart className="w-4 h-4" />} />
       </div>
 
-      <ChartCard title="Allocation" subtitle="Asset distribution">
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={allocation} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100}>
-                {allocation.map((entry: any, i: number) => (
-                  <Cell key={i} fill={["#10b981", "#3b82f6", "#f59e0b"][i % 3]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      <ChartCard title="Positions" subtitle="Live from /api/portfolio/summary">
+        <DataTable<PortfolioPosition>
+          data={summary?.positions || []}
+          emptyMessage={loading ? "Loading…" : "No open positions"}
+          columns={[
+            { key: "symbol", header: "Symbol", render: (r) => <span className="font-mono text-cyan-400">{r.symbol}</span> },
+            { key: "side", header: "Side", render: (r) => <Badge variant={r.side === "long" ? "success" : "danger"} className="text-[10px]">{r.side}</Badge> },
+            { key: "quantity", header: "Qty" },
+            { key: "avgPrice", header: "Avg", render: (r) => <span className="font-mono">{r.avgPrice}</span> },
+            { key: "currentPrice", header: "Price", render: (r) => <span className="font-mono">{r.currentPrice}</span> },
+            { key: "pnlPercent", header: "P&L%", render: (r) => <span className={r.pnlPercent >= 0 ? "text-emerald-400" : "text-red-400"}>{r.pnlPercent}%</span> },
+          ]}
+        />
       </ChartCard>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatusCard title="Sharpe" value={perf?.sharpe ?? "—"} icon={<Activity className="w-4 h-4" />} />
+        <StatusCard title="Max DD" value={perf?.maxDrawdown ?? "—"} variant="warning" />
+        <StatusCard title="Win Rate" value={perf?.winRate ?? "—"} variant="success" />
+        <StatusCard title="VaR95" value={risk?.var95 ?? "—"} variant="warning" />
+      </div>
     </div>
   );
 }

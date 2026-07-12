@@ -17,7 +17,7 @@ interface DataTableProps<T> {
   emptyMessage?: string;
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T>({
   columns,
   data,
   className,
@@ -61,7 +61,7 @@ export function DataTable<T extends Record<string, unknown>>({
               >
                 {columns.map((col) => (
                   <td key={col.key} className={cn("px-3 py-2.5 text-sm", col.className)}>
-                    {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
+                    {col.render ? col.render(row) : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
                   </td>
                 ))}
               </tr>
