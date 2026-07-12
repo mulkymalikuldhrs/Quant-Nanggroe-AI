@@ -1,12 +1,11 @@
 'use client';
-import AppLayout from '@/components/layout/app-layout';
+
 import { GlassCard } from '@/components/shared/cards';
 import { mockColonies, mockAgents } from '@/lib/mock-data';
 
 export default function ColonyPage() {
   return (
-    <AppLayout title="Colony">
-      <div className="relative z-10 space-y-6">
+    <div className="relative z-10 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Colony Network Topology */}
           <GlassCard title="Network Topology" className="col-span-2">
@@ -21,7 +20,7 @@ export default function ColonyPage() {
                     agent.status === 'active' ? 'bg-cyan-500/20 text-cyan-400' :
                     agent.status === 'error' ? 'bg-red-500/20 text-red-400' :
                     'bg-white/5 text-white/30'
-                  }`}>{agent.type[0].toUpperCase()}</div>
+                  }`}>{agent.name[0].toUpperCase()}</div>
                   <div className="text-white/70 text-[10px] truncate">{agent.name}</div>
                   <div className="text-white/30 text-[9px]">{agent.status}</div>
                 </div>
@@ -56,6 +55,6 @@ export default function ColonyPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+
   );
 }

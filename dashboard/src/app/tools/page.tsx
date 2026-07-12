@@ -1,5 +1,5 @@
 'use client';
-import AppLayout from '@/components/layout/app-layout';
+
 import { GlassCard } from '@/components/shared/cards';
 import { mockTools } from '@/lib/mock-data';
 import { useState } from 'react';
@@ -12,8 +12,7 @@ export default function ToolsPage() {
   const categoryIcons: Record<string, string> = { web: '🌐', dev: '💻', infra: '🏗️', system: '📁', protocol: '🔗', cognitive: '🧠', media: '🎙️', comms: '📡' };
 
   return (
-    <AppLayout title="Tools">
-      <div className="relative z-10 space-y-6">
+    <div className="relative z-10 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="col-span-2 space-y-4">
             {categories.map(cat => (
@@ -62,6 +61,6 @@ export default function ToolsPage() {
           </GlassCard>
         </div>
       </div>
-    </AppLayout>
+
   );
 }

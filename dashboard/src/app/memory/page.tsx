@@ -1,5 +1,5 @@
 'use client';
-import AppLayout from '@/components/layout/app-layout';
+
 import { GlassCard } from '@/components/shared/cards';
 import { mockMemoryEntries } from '@/lib/mock-data';
 import { useState } from 'react';
@@ -18,8 +18,7 @@ export default function MemoryPage() {
   };
 
   return (
-    <AppLayout title="Memory">
-      <div className="relative z-10 space-y-6">
+    <div className="relative z-10 space-y-6">
         <div className="flex items-center gap-4">
           <input type="text" placeholder="Search memory..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm flex-1 max-w-md focus:outline-none focus:border-cyan-500/50" />
@@ -79,6 +78,6 @@ export default function MemoryPage() {
           </GlassCard>
         </div>
       </div>
-    </AppLayout>
+
   );
 }

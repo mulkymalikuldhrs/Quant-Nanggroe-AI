@@ -1,5 +1,4 @@
 'use client';
-import AppLayout from '@/components/layout/app-layout';
 import { GlassCard } from '@/components/shared/cards';
 import { mockChannels } from '@/lib/mock-data';
 import { useState } from 'react';
@@ -11,8 +10,7 @@ export default function ChannelsPage() {
   const channel = mockChannels.find(c => c.id === selectedChannel) || mockChannels[0];
 
   return (
-    <AppLayout title="Channels">
-      <div className="relative z-10 space-y-6">
+    <div className="relative z-10 space-y-6">
         {/* Channel Selector */}
         <div className="flex gap-3">
           {mockChannels.map(ch => (
@@ -82,6 +80,6 @@ export default function ChannelsPage() {
           </GlassCard>
         </div>
       </div>
-    </AppLayout>
+
   );
 }

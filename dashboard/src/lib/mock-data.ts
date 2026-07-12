@@ -213,3 +213,19 @@ export const mockDataProviders = [
   { name: "CoinGecko", status: "connected", type: "Crypto Data", latency: "95ms" },
   { name: "TwelveData", status: "disconnected", type: "Market Data", latency: "N/A" },
 ];
+
+export const mockMemoryEntries: { id: string; type: string; content: string; timestamp: string; key: string; relevance: number }[] = [
+  { id: "mem_1", type: "decision", content: "Portfolio rebalanced", timestamp: "2026-07-12T10:00:00Z", key: "portfolio.rebalance", relevance: 87 },
+];
+export const mockSecurityEvents: { id: string; type: string; severity: string; message: string; timestamp: string; detail: string; agent: string }[] = [
+  { id: "sec_1", type: "access", severity: "low", message: "API key rotated", timestamp: "2026-07-12T09:00:00Z", detail: "Access key for trading agent was rotated", agent: "trader-alpha" },
+];
+export const mockTools: { id: string; name: string; description: string; status: string; category: string; executions: number; lastUsed: string }[] = [
+  { id: "tool_1", name: "Web Search", description: "Search the web", status: "active", category: "web", executions: 42, lastUsed: "2m ago" },
+];
+export const mockChannels: { id: string; name: string; type: string; status: string; config: Record<string, string>; messages: number }[] = [
+  { id: "discord", name: "Discord", type: "social", status: "connected", config: { webhook: "https://discord.com/api/webhooks/xxx", channel: "#general" }, messages: 128 },
+];
+export const mockColonies: { id: string; name: string; agents: number; capacity: number; health: number; status: string; schedule: string }[] = [
+  { id: "alpha", name: "Alpha Colony", agents: 3, capacity: 10, health: 95, status: "active", schedule: "*/15 * * * *" },
+];

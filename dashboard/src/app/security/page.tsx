@@ -1,5 +1,5 @@
 'use client';
-import AppLayout from '@/components/layout/app-layout';
+
 import { GlassCard } from '@/components/shared/cards';
 import { mockSecurityEvents } from '@/lib/mock-data';
 
@@ -14,8 +14,7 @@ export default function SecurityPage() {
   };
 
   return (
-    <AppLayout title="Security">
-      <div className="relative z-10 space-y-6">
+    <div className="relative z-10 space-y-6">
         <div className="grid grid-cols-3 gap-4">
           <GlassCard>
             <div className="text-center">
@@ -103,6 +102,6 @@ export default function SecurityPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+
   );
 }
