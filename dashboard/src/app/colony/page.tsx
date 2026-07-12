@@ -1,99 +1,61 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { ChartCard } from "@/components/shared/chart-card";
-import { DataTable } from "@/components/shared/data-table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Boxes, Plus, Play } from "lucide-react";
-import { colonyApi, type Colony, type ColonyDetail } from "@/lib/api-client";
+'use client';
+import AppLayout from '@/components/layout/app-layout';
+import { GlassCard } from '@/components/shared/cards';
+import { mockColonies, mockAgents } from '@/lib/mock-data';
 
 export default function ColonyPage() {
-  const [colonies, setColonies] = useState<Colony[]>([]);
-  const [detail, setDetail] = useState<ColonyDetail | null>(null);
-  const [name, setName] = useState("");
-  const [task, setTask] = useState("");
-  const [taskOut, setTaskOut] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  async function refresh() {
-    try {
-      setColonies(await colonyApi.list());
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { refresh(); }, []);
-
-  async function create() {
-    if (!name) return;
-    try {
-      await colonyApi.create({ name });
-      setName("");
-      refresh();
-    } catch { /* ignore */ }
-  }
-
-  async function open(id: string) {
-    try { setDetail(await colonyApi.getDetail(id)); } catch { /* ignore */ }
-  }
-
-  async function runTask(id: string) {
-    if (!task) return;
-    try {
-      const r = await colonyApi.runTask(id, task);
-      setTaskOut(r.result);
-    } catch (e: any) { setTaskOut(e?.message || "error"); }
-  }
-
   return (
-    <div className="space-y-4 animate-slide-up">
-      <h1 className="text-xl font-bold text-white flex items-center gap-2">
-        <Boxes className="w-5 h-5 text-purple-400" /> Agent Colonies
-      </h1>
+    <AppLayout title="Colony">
+      <div className="relative z-10 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Colony Network Topology */}
+          <GlassCard title="Network Topology" className="col-span-2">
+            <div className="grid grid-cols-4 gap-3">
+              {mockAgents.map((agent, i) => (
+                <div key={agent.id} className={`p-3 rounded-lg border text-center transition-all hover:scale-105 ${
+                  agent.status === 'active' ? 'bg-cyan-500/5 border-cyan-500/20' :
+                  agent.status === 'error' ? 'bg-red-500/5 border-red-500/20' :
+                  'bg-white/[0.02] border-white/5'
+                }`}>
+                  <div className={`w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center text-xs font-bold ${
+                    agent.status === 'active' ? 'bg-cyan-500/20 text-cyan-400' :
+                    agent.status === 'error' ? 'bg-red-500/20 text-red-400' :
+                    'bg-white/5 text-white/30'
+                  }`}>{agent.type[0].toUpperCase()}</div>
+                  <div className="text-white/70 text-[10px] truncate">{agent.name}</div>
+                  <div className="text-white/30 text-[9px]">{agent.status}</div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
 
-      <ChartCard title="Create Colony" subtitle="POST /api/colony/create">
-        <div className="flex gap-2 p-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="colony name" className="w-48" />
-          <Button onClick={create} className="bg-purple-600 hover:bg-purple-500"><Plus className="w-4 h-4 mr-1" />CREATE</Button>
-        </div>
-      </ChartCard>
-
-      <ChartCard title="Colonies" subtitle="From /api/colony/list">
-        <DataTable<Colony>
-          data={colonies}
-          emptyMessage={loading ? "Loading…" : "No colonies"}
-          onRowClick={(c) => open(c.id)}
-          columns={[
-            { key: "name", header: "Name", render: (r) => <span className="text-purple-400">{r.name}</span> },
-            { key: "status", header: "Status", render: (r) => <Badge variant={r.status === "active" ? "success" : "warning"} className="text-[10px]">{r.status}</Badge> },
-            { key: "health", header: "Health", render: (r) => <span className="font-mono">{r.health}%</span> },
-            { key: "agents", header: "Agents", render: (r) => <span className="font-mono">{r.agents}/{r.capacity}</span> },
-            { key: "schedule", header: "Schedule", render: (r) => <span className="text-white/50 text-xs">{r.schedule}</span> },
-          ]}
-        />
-      </ChartCard>
-
-      {detail && (
-        <ChartCard title={`${detail.name} — Detail`} subtitle="Member agents">
-          <DataTable
-            data={detail.memberAgents || []}
-            emptyMessage="No member agents"
-            columns={[
-              { key: "name", header: "Agent", render: (r: any) => <span className="text-cyan-400">{r.name}</span> },
-              { key: "role", header: "Role", render: (r: any) => <span className="text-white/60 text-xs">{r.role}</span> },
-              { key: "status", header: "Status", render: (r: any) => <Badge variant={r.status === "active" ? "success" : "default"} className="text-[10px]">{r.status}</Badge> },
-            ]}
-          />
-          <div className="flex gap-2 mt-3">
-            <Input value={task} onChange={(e) => setTask(e.target.value)} placeholder="task for colony" className="flex-1" />
-            <Button onClick={() => runTask(detail.id)} className="bg-purple-600 hover:bg-purple-500"><Play className="w-4 h-4 mr-1" />RUN</Button>
+          {/* Colony Details */}
+          <div className="space-y-4">
+            {mockColonies.map(colony => (
+              <GlassCard key={colony.id}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-white font-medium text-sm">{colony.name}</h3>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      colony.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
+                    }`}>{colony.status}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[10px]"><span className="text-white/30">Health</span><span className="text-white/60">{colony.health}%</span></div>
+                    <div className="h-2 rounded-full bg-white/5"><div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500" style={{ width: `${colony.health}%` }} /></div>
+                    <div className="flex justify-between text-[10px]"><span className="text-white/30">Capacity</span><span className="text-white/60">{colony.agents}/{colony.capacity}</span></div>
+                    <div className="h-2 rounded-full bg-white/5"><div className="h-full rounded-full bg-purple-500/60" style={{ width: `${(colony.agents/colony.capacity)*100}%` }} /></div>
+                  </div>
+                  <div className="text-white/30 text-[10px]">Schedule: {colony.schedule}</div>
+                </div>
+              </GlassCard>
+            ))}
+            <button className="w-full py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/20 transition">
+              + Create Colony
+            </button>
           </div>
-          {taskOut && <pre className="text-xs text-white/60 font-mono mt-2 p-2 rounded bg-black/30 whitespace-pre-wrap">{taskOut}</pre>}
-        </ChartCard>
-      )}
-    </div>
+        </div>
+      </div>
+    </AppLayout>
   );
 }

@@ -606,7 +606,7 @@ class Agent04Executor(BaseAgent):
                 end = request.rfind('}') + 1
                 if start != -1 and end != 0:
                     return json.loads(request[start:end])
-            except Exception:
+            except:
                 pass
         
         return {'message': 'Generated request data'}

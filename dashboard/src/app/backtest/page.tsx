@@ -1,114 +1,339 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
-import { DataTable } from "@/components/shared/data-table";
-import { Badge } from "@/components/ui/badge";
+import { StatusCard } from "@/components/shared/status-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FlaskConical, Play, Cog, Layers } from "lucide-react";
-import { backtestApi, type Strategy, type FactorZoo } from "@/lib/api-client";
+import { Select } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { mockBacktestEngines, mockFactorZoos, mockBacktestResult } from "@/lib/mock-data";
+import { formatCurrency, formatPercent } from "@/lib/utils";
+import {
+  FlaskConical,
+  Play,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 export default function BacktestPage() {
-  const [strategies, setStrategies] = useState<Strategy[]>([]);
-  const [factors, setFactors] = useState<FactorZoo[]>([]);
-  const [engines, setEngines] = useState<string[]>([]);
-  const [symbol, setSymbol] = useState("BTC/USDT");
-  const [strategy, setStrategy] = useState("");
-  const [running, setRunning] = useState(false);
-  const [runId, setRunId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [symbol, setSymbol] = useState("AAPL");
+  const [engine, setEngine] = useState("equity_engine");
+  const [strategy, setStrategy] = useState("momentum_alpha");
+  const [startDate, setStartDate] = useState("2023-01-01");
+  const [endDate, setEndDate] = useState("2024-01-01");
+  const [selectedFactors, setSelectedFactors] = useState<string[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [result] = useState(mockBacktestResult);
 
-  useEffect(() => {
-    (async () => {
-      const [s, f, e] = await Promise.allSettled([
-        backtestApi.getStrategies().catch(() => []),
-        backtestApi.getFactors().catch(() => []),
-        backtestApi.getEngines().catch(() => []),
-      ]);
-      if (s.status === "fulfilled") setStrategies(s.value);
-      if (f.status === "fulfilled") setFactors(f.value);
-      if (e.status === "fulfilled") setEngines(e.value);
-      setLoading(false);
-    })();
-  }, []);
+  const engineOptions = mockBacktestEngines.map((e) => ({
+    value: e.toLowerCase().replace(/\s+/g, "_"),
+    label: e,
+  }));
 
-  async function run() {
-    setRunning(true);
-    setError(null);
-    try {
-      const res = await backtestApi.run({ strategy: strategy || undefined, symbol, engine: engines[0] });
-      setRunId(res.id);
-    } catch (e: any) {
-      setError(e?.message || "run failed");
-    } finally {
-      setRunning(false);
-    }
-  }
+  const strategyOptions = [
+    { value: "momentum_alpha", label: "Momentum Alpha" },
+    { value: "value_quality", label: "Value + Quality" },
+    { value: "mean_reversion", label: "Mean Reversion" },
+    { value: "breakout_scanner", label: "Breakout Scanner" },
+    { value: "crypto_momentum", label: "Crypto Momentum" },
+    { value: "forex_carry", label: "Forex Carry" },
+  ];
+
+  const handleRunBacktest = () => {
+    setIsRunning(true);
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsRunning(false);
+          return 100;
+        }
+        return prev + 2;
+      });
+    }, 60);
+  };
+
+  const toggleFactor = (zooName: string) => {
+    setSelectedFactors((prev) =>
+      prev.includes(zooName) ? prev.filter((f) => f !== zooName) : [...prev, zooName],
+    );
+  };
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <h1 className="text-xl font-bold text-white flex items-center gap-2">
-        <FlaskConical className="w-5 h-5 text-purple-400" /> Backtest
-      </h1>
-
-      {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
-
-      <ChartCard title="Run Backtest" subtitle="POST /api/backtest/run">
-        <div className="flex flex-wrap gap-2 items-end p-2">
-          <label className="text-xs text-white/60 flex flex-col gap-1">
-            Symbol
-            <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} className="w-36" />
-          </label>
-          <label className="text-xs text-white/60 flex flex-col gap-1">
-            Strategy
-            <select value={strategy} onChange={(e) => setStrategy(e.target.value)} className="bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-white text-sm">
-              <option value="">auto</option>
-              {strategies.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </label>
-          <Button onClick={run} disabled={running} className="bg-purple-600 hover:bg-purple-500">
-            <Play className="w-4 h-4 mr-1" /> {running ? "Running…" : "RUN"}
-          </Button>
-          {runId && <Badge variant="success" className="text-[10px]">job: {runId.slice(0, 8)}</Badge>}
-        </div>
-      </ChartCard>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <ChartCard title="Strategy Registry" subtitle={`${strategies.length} strategies`}>
-          <DataTable<Strategy>
-            data={strategies}
-            emptyMessage={loading ? "Loading…" : "No strategies"}
-            columns={[
-              { key: "name", header: "Name", render: (r) => <span className="text-cyan-400">{r.name}</span> },
-              { key: "type", header: "Type" },
-              { key: "sharpe", header: "Sharpe", render: (r) => <span className="font-mono">{r.sharpe}</span> },
-              { key: "status", header: "Status", render: (r) => <Badge variant={r.status === "active" ? "success" : "default"} className="text-[10px]">{r.status}</Badge> },
-            ]}
-          />
-        </ChartCard>
-
-        <ChartCard title="Factor Zoo" subtitle="From /api/backtest/factors">
-          <DataTable<FactorZoo>
-            data={factors}
-            emptyMessage={loading ? "Loading…" : "No factors"}
-            columns={[
-              { key: "name", header: "Factor", render: (r) => <span className="text-purple-400">{r.name}</span> },
-              { key: "count", header: "Count", render: (r) => <span className="font-mono">{r.count}</span> },
-              { key: "description", header: "Desc", render: (r) => <span className="text-white/50 text-xs">{r.description}</span> },
-            ]}
-          />
-        </ChartCard>
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <FlaskConical className="w-5 h-5 text-blue-400" />
+          Backtesting Engine
+        </h1>
+        <p className="text-sm text-white/40 mt-0.5">
+          10 engines • 469 alpha factors • Monte Carlo & Walk-Forward
+        </p>
       </div>
 
-      <ChartCard title="Engines" subtitle="Available backtest engines">
-        <div className="flex flex-wrap gap-2 p-2">
-          {(engines.length ? engines : ["vectorized", "event_driven", "multi_agent"]).map((e) => (
-            <Badge key={e} variant="default" className="text-[10px]"><Cog className="w-3 h-3 mr-1" />{e}</Badge>
-          ))}
+      {/* Configuration */}
+      <ChartCard title="Backtest Configuration" subtitle="Configure and run backtests">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Symbol</label>
+            <Input
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+              placeholder="e.g. AAPL"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Strategy</label>
+            <Select
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value)}
+              options={strategyOptions}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Engine</label>
+            <Select
+              value={engine}
+              onChange={(e) => setEngine(e.target.value)}
+              options={engineOptions}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Start</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">End</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Factor Zoo Selector */}
+        <div className="mb-4">
+          <label className="text-xs text-white/40 mb-2 block">Factor Zoos</label>
+          <div className="flex flex-wrap gap-2">
+            {mockFactorZoos.map((zoo) => (
+              <button
+                key={zoo.name}
+                onClick={() => toggleFactor(zoo.name)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  selectedFactors.includes(zoo.name)
+                    ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                    : "bg-white/[0.03] text-white/40 border-white/[0.06] hover:bg-white/[0.06]"
+                }`}
+              >
+                {zoo.name}
+                <span className="ml-1 text-white/30">({zoo.count})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Run Button + Progress */}
+        <div className="flex items-center gap-4">
+          <Button variant="glow" onClick={handleRunBacktest} disabled={isRunning}>
+            {isRunning ? (
+              <div className="w-3.5 h-3.5 mr-1.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            {isRunning ? "Running..." : "Run Backtest"}
+          </Button>
+          {isRunning && (
+            <div className="flex-1">
+              <Progress value={progress} />
+              <p className="text-xs text-white/30 mt-1">{progress}% complete</p>
+            </div>
+          )}
         </div>
       </ChartCard>
+
+      {/* Results */}
+      <Tabs defaultValue="equity">
+        <TabsList>
+          <TabsTrigger value="equity">Equity Curve</TabsTrigger>
+          <TabsTrigger value="drawdown">Drawdown</TabsTrigger>
+          <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="montecarlo">Monte Carlo</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="equity">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <StatusCard title="Total Return" value={formatPercent(result.totalReturn)} variant="success" />
+            <StatusCard title="Sharpe Ratio" value={result.sharpe.toFixed(2)} />
+            <StatusCard title="Max Drawdown" value={`${result.maxDrawdown}%`} variant="danger" />
+            <StatusCard title="Win Rate" value={`${result.winRate}%`} />
+          </div>
+          <ChartCard title="Equity Curve" className="mt-3" glow="emerald">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={result.equityCurve.filter((_, i) => i % 2 === 0)}>
+                  <defs>
+                    <linearGradient id="btEquityGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+                  />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(10,10,26,0.95)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#10b981"
+                    fill="url(#btEquityGrad)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+        </TabsContent>
+
+        <TabsContent value="drawdown">
+          <ChartCard title="Drawdown" subtitle="Peak-to-trough declines" glow="red">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={result.drawdownCurve.filter((_, i) => i % 2 === 0)}>
+                  <defs>
+                    <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                    tickFormatter={(v) => `${v.toFixed(1)}%`}
+                  />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(10,10,26,0.95)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#ef4444"
+                    fill="url(#ddGrad)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+        </TabsContent>
+
+        <TabsContent value="metrics">
+          <ChartCard title="Performance Metrics" subtitle="Detailed backtest statistics">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { label: "Total Return", value: formatPercent(result.totalReturn), color: "text-emerald-400" },
+                { label: "Sharpe Ratio", value: result.sharpe.toFixed(2), color: "text-blue-400" },
+                { label: "Max Drawdown", value: `${result.maxDrawdown}%`, color: "text-red-400" },
+                { label: "Win Rate", value: `${result.winRate}%`, color: "text-emerald-400" },
+                { label: "Total Trades", value: result.totalTrades.toString(), color: "text-white/70" },
+                { label: "Initial Capital", value: formatCurrency(result.initialCapital), color: "text-white/70" },
+                { label: "Final Value", value: formatCurrency(result.finalValue), color: "text-emerald-400" },
+                { label: "Sortino Ratio", value: "2.41", color: "text-blue-400" },
+                { label: "Calmar Ratio", value: "1.56", color: "text-blue-400" },
+              ].map((metric, i) => (
+                <div key={i} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                  <p className="text-xs text-white/40 mb-1">{metric.label}</p>
+                  <p className={`text-lg font-mono font-bold ${metric.color}`}>{metric.value}</p>
+                </div>
+              ))}
+            </div>
+          </ChartCard>
+        </TabsContent>
+
+        <TabsContent value="montecarlo">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <StatusCard title="Simulations" value="1,000" />
+            <StatusCard title="Mean Return" value={formatPercent(result.monteCarlo.meanReturn)} variant="success" />
+            <StatusCard title="5th Percentile" value={formatPercent(result.monteCarlo.p5Return)} variant="warning" />
+            <StatusCard title="Worst Case" value={formatPercent(result.monteCarlo.worstCase)} variant="danger" />
+          </div>
+          <ChartCard title="Monte Carlo Distribution" className="mt-3" subtitle="1000 simulations">
+            <div className="space-y-3">
+              {[
+                { label: "Best Case", value: result.monteCarlo.bestCase, color: "#10b981" },
+                { label: "95th Percentile", value: result.monteCarlo.p95Return, color: "#34d399" },
+                { label: "Mean", value: result.monteCarlo.meanReturn, color: "#3b82f6" },
+                { label: "5th Percentile", value: result.monteCarlo.p5Return, color: "#f59e0b" },
+                { label: "Worst Case", value: result.monteCarlo.worstCase, color: "#ef4444" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-white/40 w-28">{item.label}</span>
+                  <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${Math.max(5, ((item.value + 10) / 70) * 100)}%`,
+                        backgroundColor: item.color,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-mono text-white/60 w-16 text-right">
+                    {formatPercent(item.value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </ChartCard>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -314,7 +314,7 @@ class IntelligentKnowledgeOrchestrator:
                 number_fact = await self.connector.fetch_number_fact(number)
                 if number_fact:
                     knowledge_result['sources']['numbers'] = number_fact
-            except Exception:
+            except:
                 # Fallback to random number fact
                 number_fact = await self.connector.fetch_number_fact()
                 if number_fact:

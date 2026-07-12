@@ -1,0 +1,143 @@
+# CTO Watch — Event Monitor
+# Embedded in each repository for automated auditing and safe-fix
+# Part of: cto-watchdog — Dhaher Labs
+# Author: Mulky Malikul Dhaher
+
+name: CTO Watch
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  create:
+  delete:
+  release:
+    types: [published, edited, deleted]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  audit:
+    name: Audit & Fix
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.CTO_WATCHDOG_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Run CTO Audit
+        run: |
+          echo "🔍 CTO Watchdog Audit: ${{ github.repository }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          
+          ISSUES=0
+          FIXES=0
+          
+          # Check 1: Required files
+          for f in README.md LICENSE .gitignore; do
+            if [ ! -f "$f" ]; then
+              echo "⚠️ Missing: $f"
+              ISSUES=$((ISSUES + 1))
+            fi
+          done
+          
+          # Check 2: Branding consistency
+          if grep -rq "mulkymalikuldhrs\|mulkymalikuldhr" --include="*.md" --include="*.py" --include="*.ts" --include="*.tsx" --include="*.json" --include="*.yml" . 2>/dev/null; then
+            echo "⚠️ BRANDING: Old account names found"
+            ISSUES=$((ISSUES + 1))
+            # Auto-fix branding
+            find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.yml" \) \
+              ! -path "./.git/*" ! -path "./node_modules/*" ! -path "./dist/*" ! -path "./.next/*" \
+              -exec sed -i 's/mulkymalikuldhrs/mulkymalikuldhaher/g; s/mulkymalikuldhr/mulkymalikuldhaher/g' {} + 2>/dev/null
+            FIXES=$((FIXES + 1))
+            echo "✅ Fixed: Old account names replaced"
+          fi
+          
+          # Check 3: Overclaim
+          if grep -rq "AI Powered Grade\|AI-Powered Grade" --include="*.md" --include="*.tsx" --include="*.ts" --include="*.jsx" --include="*.html" . 2>/dev/null; then
+            echo "⚠️ OVERCLAIM: 'AI Powered Grade' detected"
+            ISSUES=$((ISSUES + 1))
+            # Auto-fix overclaim
+            find . -type f \( -name "*.md" -o -name "*.tsx" -o -name "*.ts" -o -name "*.jsx" -o -name "*.html" \) \
+              ! -path "./.git/*" ! -path "./node_modules/*" \
+              -exec sed -i 's/AI Powered Grade/Intelligent Systems/g; s/AI-Powered Grade/Intelligent Systems/g' {} + 2>/dev/null
+            FIXES=$((FIXES + 1))
+            echo "✅ Fixed: Overclaim replaced with 'Intelligent Systems'"
+          fi
+          
+          # Check 4: Empty files
+          EMPTY=$(find . -type f -size 0 -not -path "./.git/*" -not -path "./node_modules/*" 2>/dev/null | head -5)
+          if [ -n "$EMPTY" ]; then
+            echo "⚠️ EMPTY FILES: Found empty files"
+            echo "$EMPTY"
+            ISSUES=$((ISSUES + 1))
+          fi
+          
+          # Check 5: SEO — README meta description
+          if [ -f "README.md" ]; then
+            if ! head -5 README.md | grep -q "description:"; then
+              echo "ℹ️ SEO: README missing meta description"
+              ISSUES=$((ISSUES + 1))
+            fi
+          fi
+          
+          # Summary
+          echo ""
+          echo "📊 Audit Summary for ${{ github.repository }}"
+          echo "   Issues found: $ISSUES"
+          echo "   Auto-fixes applied: $FIXES"
+          
+          # Commit fixes if any
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "CTO Watchdog"
+            git config user.email "dhaher-labs@email.com"
+            git add -A
+            git commit -m "[cto-watchdog] safe-fix: branding and overclaim fixes
+
+Auto-fixed by CTO Watchdog on $(date -u +%Y-%m-%d)
+Risk level: LOW
+Category: branding|overclaim"
+            git push
+            echo "✅ Fixes committed and pushed"
+          fi
+          
+          # Create issue for high-severity findings
+          if [ "$ISSUES" -gt 3 ]; then
+            echo "📋 Creating issue for review..."
+          fi
+
+      - name: Send Notification
+        if: env.CTO_WATCHDOG_SMTP_SERVER != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.CTO_WATCHDOG_SMTP_SERVER }}
+          server_port: ${{ secrets.CTO_WATCHDOG_SMTP_PORT }}
+          username: ${{ secrets.CTO_WATCHDOG_SMTP_USER }}
+          password: ${{ secrets.CTO_WATCHDOG_SMTP_PASS }}
+          from: ${{ secrets.CTO_WATCHDOG_SMTP_FROM }}
+          to: ${{ github.repository_owner == 'mulkymalikuldhaher' && 'mulkymalikuldhaher@mail.com' || 'dhaher-labs@email.com' }}
+          subject: "[CTO-Watchdog] ${{ github.repository }}: Event audit"
+          body: |
+            CTO Watchdog Audit Report
+            
+            Repository: ${{ github.repository }}
+            Event: ${{ github.event_name }}
+            Actor: ${{ github.actor }}
+            Branch: ${{ github.ref }}
+            
+            See GitHub Actions run for full details.
+            
+            — CTO Watchdog, Dhaher Labs
+        env:
+          CTO_WATCHDOG_SMTP_SERVER: ${{ secrets.CTO_WATCHDOG_SMTP_SERVER }}

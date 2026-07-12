@@ -135,7 +135,7 @@ class DynamicAIAgent(BaseAgent):
                 )
                 if knowledge and 'summary' in knowledge:
                     knowledge_context = f"\n📚 Knowledge Context: {knowledge['summary']}\n"
-            except Exception:
+            except:
                 pass
         
         # Build comprehensive response
