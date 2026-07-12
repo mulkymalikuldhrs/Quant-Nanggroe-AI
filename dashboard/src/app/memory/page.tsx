@@ -1,13 +1,28 @@
-'use client';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { GlassCard } from '@/components/shared/cards';
-import { mockMemoryEntries } from '@/lib/mock-data';
-import { useState } from 'react';
+
+import { memoryApi } from '@/lib/api-client';
+import type { MemoryEntry } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
 
 export default function MemoryPage() {
+  const [entries, setEntries] = useState<MemoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
-  const filtered = mockMemoryEntries.filter(m => (filter === 'all' || m.type === filter) && m.content.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  useEffect(() => {
+    memoryApi.search('')
+      .then(res => { setEntries(res.entries); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
+
+  const filtered = entries.filter(m => (filter === 'all' || m.type === filter) && m.content.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if (loading) return <div className="relative z-10"><p className="text-white/40">Loading memory entries...</p></div>;
+  if (error) return <div className="relative z-10"><p className="text-red-400">Error: {error}</p></div>;
 
   const typeColors: Record<string, string> = {
     knowledge: 'bg-purple-500/20 text-purple-400',

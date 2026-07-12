@@ -116,6 +116,25 @@ export const ecosystemApi = {
   securityEvents: () => apiRequest<any>("/api/security/events"),
 };
 
+export const channelsApi = {
+  list: () => apiRequest<Channel[]>("/api/channels/list"),
+  sendMessage: (channelId: string, content: string) =>
+    apiRequest<{ success: boolean }>(`/api/channels/${channelId}/send`, { method: "POST", body: { content } }),
+  updateConfig: (channelId: string, config: Record<string, string>) =>
+    apiRequest<{ success: boolean }>(`/api/channels/${channelId}/config`, { method: "PUT", body: config }),
+};
+
+export const securityApi = {
+  getEvents: () => apiRequest<SecurityEvent[]>("/api/security/events"),
+  getStatus: () => apiRequest<SecurityStatus>("/api/security/status"),
+};
+
+export const toolsApi = {
+  list: () => apiRequest<Tool[]>("/api/tools/list"),
+  execute: (toolId: string, params: Record<string, unknown>) =>
+    apiRequest<ExecuteToolResponse>(`/api/tools/${toolId}/execute`, { method: "POST", body: { toolId, params } }),
+};
+
 export default apiRequest;
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -173,3 +192,8 @@ export interface Colony { id: string; name: string; status: ColonyStatus; health
 export interface ColonyAgent { id: string; name: string; role: string; type: string; status: AgentStatus; lastActive: string; }
 export interface ColonyDetail extends Colony { memberAgents: ColonyAgent[]; topology: string; }
 export interface ColonyCreateRequest { name: string; description?: string; capacity?: number; schedule?: string; }
+export interface Channel { id: string; name: string; type: string; status: string; config: Record<string, string>; messages: number; }
+export interface SecurityEvent { id: string; type: string; severity: string; message: string; timestamp: string; detail: string; agent: string; }
+export interface SecurityStatus { sandboxRunning: boolean; permissions: number; activeRules: number; }
+export interface Tool { id: string; name: string; description: string; status: string; category: string; executions: number; lastUsed: string; }
+export interface ExecuteToolResponse { success: boolean; result: string; }

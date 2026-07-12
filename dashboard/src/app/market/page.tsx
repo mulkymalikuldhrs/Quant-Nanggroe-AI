@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
@@ -29,12 +30,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { createChart, CandlestickSeries } from "lightweight-charts";
 
 export default function MarketPage() {
   const [selectedSymbol, setSelectedSymbol] = useState("BTC");
   const [chartType, setChartType] = useState<"area" | "candle">("area");
   const chartContainerRef = useRef<HTMLDivElement>(null);
-
+  const [timeframe, setTimeframe] = useState("1D");
 
   const symbols = [
     { value: "BTC", label: "BTC/USDT" },
@@ -63,6 +65,24 @@ export default function MarketPage() {
     }, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (chartType !== "candle" || !chartContainerRef.current) return;
+    const chart = createChart(chartContainerRef.current, {
+      layout: { background: { color: "transparent" }, textColor: "rgba(255,255,255,0.5)" },
+      grid: { vertLines: { color: "rgba(255,255,255,0.04)" }, horzLines: { color: "rgba(255,255,255,0.04)" } },
+      crosshair: { mode: 0 },
+      timeScale: { borderColor: "rgba(255,255,255,0.08)" },
+      rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
+    });
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: "#10b981", downColor: "#ef4444", borderUpColor: "#10b981", borderDownColor: "#ef4444",
+      wickUpColor: "#10b981", wickDownColor: "#ef4444",
+    });
+    series.setData(mockCandlestickData.map((c) => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close })));
+    chart.timeScale().fitContent();
+    return () => { chart.remove(); };
+  }, [chartType]);
 
   const sentiment = mockMarketData.sentiment;
 
@@ -148,6 +168,12 @@ export default function MarketPage() {
                 >
                   OHLC
                 </Button>
+                <div className="w-px h-5 bg-white/10" />
+                {["15m", "1h", "4h", "1D"].map((i) => (
+                  <Button key={i} variant={timeframe === i ? "default" : "ghost"} size="sm" onClick={() => setTimeframe(i)}>
+                    {i}
+                  </Button>
+                ))}
               </div>
             }
           >
@@ -186,21 +212,7 @@ export default function MarketPage() {
                     <Line yAxisId="price" type="monotone" dataKey="low" stroke="rgba(239,68,68,0.3)" strokeWidth={0.5} dot={false} strokeDasharray="3,3" />
                   </ComposedChart>
                 </ResponsiveContainer>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData.filter((_, i) => i % 2 === 0)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
-                    <YAxis yAxisId="price" axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} domain={["auto", "auto"]} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}K`} />
-                    <YAxis yAxisId="vol" axisLine={false} tickLine={false} tick={false} orientation="right" />
-                    <RechartsTooltip contentStyle={{ backgroundColor: "rgba(10,10,26,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }} />
-                    <Bar yAxisId="vol" dataKey="volume" fill="rgba(59,130,246,0.15)" radius={[2, 2, 0, 0]} />
-                    <Line yAxisId="price" type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                    <Line yAxisId="price" type="monotone" dataKey="high" stroke="rgba(16,185,129,0.4)" strokeWidth={1} dot={false} />
-                    <Line yAxisId="price" type="monotone" dataKey="low" stroke="rgba(239,68,68,0.4)" strokeWidth={1} dot={false} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              )}
+              ) : null}
             </div>
           </ChartCard>
         </TabsContent>

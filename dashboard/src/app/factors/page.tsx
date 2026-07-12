@@ -1,40 +1,42 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import React, { useState } from "react";
+
 import { ChartCard } from "@/components/shared/chart-card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockFactorZoos } from "@/lib/mock-data";
+import { backtestApi } from "@/lib/api-client";
+import type { FactorZoo } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { Sigma, Search, FlaskConical, Plus, Minus, ChevronRight } from "lucide-react";
 
-// Full factor data for each zoo
+// Full factor data for each zoo — deterministic values (no Math.random)
 const factorDetails: Record<string, { name: string; category: string; ic: number; returns: number }[]> = {
   Alpha101: Array.from({ length: 20 }, (_, i) => ({
     name: `Alpha#${i + 1}`,
     category: i < 7 ? "Momentum" : i < 14 ? "Reversal" : "Volume",
-    ic: (Math.random() * 0.1 - 0.02).toFixed(3) as unknown as number,
-    returns: (Math.random() * 20 - 5).toFixed(2) as unknown as number,
+    ic: 0.05 + (i % 4) * 0.015,
+    returns: 8.0 + (i % 5) * 2.5,
   })),
   GTJA191: Array.from({ length: 20 }, (_, i) => ({
     name: `GTJA_${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26) || ""}`,
     category: i < 5 ? "Value" : i < 10 ? "Growth" : i < 15 ? "Quality" : "Volatility",
-    ic: (Math.random() * 0.08 - 0.01).toFixed(3) as unknown as number,
-    returns: (Math.random() * 15 - 3).toFixed(2) as unknown as number,
+    ic: 0.03 + (i % 5) * 0.012,
+    returns: 4.0 + (i % 6) * 2.0,
   })),
   Qlib158: Array.from({ length: 20 }, (_, i) => ({
     name: `Qlib_F${i + 1}`,
     category: i < 6 ? "Technical" : i < 12 ? "Fundamental" : "Alternative",
-    ic: (Math.random() * 0.12 - 0.03).toFixed(3) as unknown as number,
-    returns: (Math.random() * 18 - 4).toFixed(2) as unknown as number,
+    ic: 0.04 + (i % 4) * 0.02,
+    returns: 6.0 + (i % 7) * 1.8,
   })),
   Barra: Array.from({ length: 10 }, (_, i) => ({
     name: ["MKT", "SMB", "HML", "RMW", "CMA", "MOM", "VOL", "LIQ", "SIZE", "BETA"][i],
     category: "Risk Factor",
-    ic: (Math.random() * 0.06).toFixed(3) as unknown as number,
-    returns: (Math.random() * 10 - 2).toFixed(2) as unknown as number,
+    ic: 0.02 + i * 0.004,
+    returns: 3.0 + i * 0.8,
   })),
   Technical: [
     { name: "RSI_14", category: "Momentum", ic: 0.045, returns: 8.2 },
@@ -54,9 +56,18 @@ const factorDetails: Record<string, { name: string; category: string; ic: number
 };
 
 export default function FactorsPage() {
+  const [factorZoos, setFactorZoos] = useState<FactorZoo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZoo, setSelectedZoo] = useState<string | null>(null);
   const [pipelineFactors, setPipelineFactors] = useState<string[]>([]);
+
+  useEffect(() => {
+    backtestApi.getFactors()
+      .then(d => { setFactorZoos(d); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
 
   const filteredFactors = selectedZoo && factorDetails[selectedZoo]
     ? factorDetails[selectedZoo].filter((f) =>
@@ -76,6 +87,11 @@ export default function FactorsPage() {
     );
   };
 
+  if (loading) return <div className="space-y-4 animate-slide-up"><p className="text-white/40">Loading factor zoo data...</p></div>;
+  if (error) return <div className="space-y-4 animate-slide-up"><p className="text-red-400">Error: {error}</p></div>;
+
+  const totalFactors = factorZoos.reduce((sum, z) => sum + z.count, 0);
+
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Header */}
@@ -84,12 +100,12 @@ export default function FactorsPage() {
           <Sigma className="w-5 h-5 text-purple-400" />
           Alpha Factor Explorer
         </h1>
-        <p className="text-sm text-white/40 mt-0.5">7 factor zoos • 469 alpha factors • Custom pipelines</p>
+        <p className="text-sm text-white/40 mt-0.5">{factorZoos.length} factor zoos • {totalFactors} alpha factors • Custom pipelines</p>
       </div>
 
       {/* Factor Zoo Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        {mockFactorZoos.map((zoo) => (
+        {factorZoos.map((zoo) => (
           <button
             key={zoo.name}
             onClick={() => setSelectedZoo(selectedZoo === zoo.name ? null : zoo.name)}
@@ -231,7 +247,8 @@ export default function FactorsPage() {
                         {rowFactor.name.slice(0, 8)}
                       </td>
                       {topFactors.map((_, j) => {
-                        const val = i === j ? 1 : Math.random() * 1.4 - 0.4;
+                        // Deterministic correlation: stronger for similar-index factors
+                        const val = i === j ? 1 : 0.4 / (Math.abs(i - j) + 0.5) - 0.1;
                         const clamped = Math.max(-1, Math.min(1, val));
                         const absVal = Math.abs(clamped);
                         const color =

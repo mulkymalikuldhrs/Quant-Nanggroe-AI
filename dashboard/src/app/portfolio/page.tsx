@@ -1,6 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import React, { useState } from "react";
+
 import { ChartCard } from "@/components/shared/chart-card";
 import { StatusCard } from "@/components/shared/status-card";
 import { DataTable } from "@/components/shared/data-table";
@@ -18,6 +19,8 @@ import {
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
@@ -31,6 +34,13 @@ import {
 export default function PortfolioPage() {
   const [optimizer, setOptimizer] = useState("mean_variance");
   const equityData = mockEquityCurve.map((d) => ({ ...d, date: d.date.slice(5) }));
+  const drawdownData = (() => {
+    let peak = -Infinity;
+    return mockEquityCurve.map(d => {
+      peak = Math.max(peak, d.value);
+      return { date: d.date.slice(5), dd: ((d.value - peak) / peak) * 100 };
+    }).filter((_, i) => i % 3 === 0);
+  })();
 
   const positionColumns = [
     {
@@ -172,6 +182,18 @@ export default function PortfolioPage() {
                     <RechartsTooltip contentStyle={{ backgroundColor: "rgba(10,10,26,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }} />
                     <Area type="monotone" dataKey="value" stroke="#10b981" fill="url(#portGrad)" strokeWidth={2} />
                   </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="h-20 mt-1">
+                <p className="text-[10px] text-white/30 mb-1">Drawdown %</p>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={drawdownData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} tickFormatter={(v) => `${v.toFixed(1)}%`} domain={["auto", "auto"]} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: "rgba(10,10,26,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "11px" }} formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                    <Line type="monotone" dataKey="dd" stroke="#ef4444" strokeWidth={1.5} dot={false} />
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             </ChartCard>

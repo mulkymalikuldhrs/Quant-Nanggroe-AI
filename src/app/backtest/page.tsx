@@ -20,6 +20,7 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart3,
+  Settings2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,8 +30,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MetricCard, StatusBadge, SectionHeader, Skeleton } from "@/components/dashboard/shared";
+import { MetricCard, StatusBadge, SectionHeader, Skeleton, AnimatedNumber } from "@/components/dashboard/shared";
 import { useAppStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 const STRATEGIES = [
   "sma_crossover",
@@ -110,46 +112,47 @@ export default function BacktestPage() {
     })) || [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FlaskConical className="w-6 h-6 text-amber" />
-            Backtest Engine
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-slide-up">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black gradient-text flex items-center gap-3 tracking-tight">
+            <FlaskConical className="w-8 h-8 text-amber animate-pulse-glow" />
+            Simulation Engine
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Test strategies against historical data with full simulation
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest pl-11">
+            Backtest & Validate Trading Strategies
           </p>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => fetchBacktests()} className="cursor-pointer">
+        <Button variant="outline" size="icon" onClick={() => fetchBacktests()} className="cursor-pointer scale-tap bg-background/50 backdrop-blur-sm border-border/50 hover:border-amber/50 hover:bg-amber/10 hover:text-amber transition-colors">
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
         {/* Config Panel */}
         <div className="space-y-6">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-cyan" />
-                Configuration
+          <Card variant="flat" className="border-t-4 border-t-amber relative overflow-hidden group">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-amber/5 rounded-bl-full translate-x-16 -translate-y-16 group-hover:bg-amber/10 transition-colors pointer-events-none" />
+            <CardHeader className="relative z-10">
+              <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                <Settings2 className="w-4 h-4 text-amber" />
+                Parameters
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Symbol</label>
+            <CardContent className="space-y-4 relative z-10">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Symbol</label>
                 <Input
                   value={symbol}
                   onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                  className="font-mono"
+                  className="font-mono bg-secondary/20 focus-visible:ring-amber/50"
                 />
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Strategy</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Strategy</label>
                 <Select value={strategy} onValueChange={setStrategy}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-secondary/20 focus:ring-amber/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -161,67 +164,74 @@ export default function BacktestPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Start Date</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Start Date</label>
                   <Input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-secondary/20 focus-visible:ring-amber/50 font-mono text-xs"
                   />
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">End Date</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">End Date</label>
                   <Input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-secondary/20 focus-visible:ring-amber/50 font-mono text-xs"
                   />
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Initial Capital</label>
-                <Input
-                  type="number"
-                  value={initialCapital}
-                  onChange={(e) => setInitialCapital(e.target.value)}
-                />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Initial Capital</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+                  <Input
+                    type="number"
+                    value={initialCapital}
+                    onChange={(e) => setInitialCapital(e.target.value)}
+                    className="tabular-nums font-mono pl-6 bg-secondary/20 focus-visible:ring-amber/50"
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Commission</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Commission</label>
                   <Input
                     type="number"
                     value={commission}
                     onChange={(e) => setCommission(e.target.value)}
                     step="0.0001"
+                    className="tabular-nums font-mono bg-secondary/20 focus-visible:ring-amber/50"
                   />
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Slippage</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Slippage</label>
                   <Input
                     type="number"
                     value={slippage}
                     onChange={(e) => setSlippage(e.target.value)}
                     step="0.0001"
+                    className="tabular-nums font-mono bg-secondary/20 focus-visible:ring-amber/50"
                   />
                 </div>
               </div>
               <Button
-                variant="cyan"
-                className="w-full cursor-pointer"
+                className="w-full cursor-pointer h-12 font-bold text-base tracking-wide bg-amber hover:bg-amber/90 text-primary-foreground shadow-[0_4px_20px_rgba(245,158,11,0.3)] hover-lift mt-2"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                    Submitting...
+                    <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                    SIMULATING...
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 mr-2" />
-                    Run Backtest
+                    <Play className="w-5 h-5 mr-2" />
+                    RUN BACKTEST
                   </>
                 )}
               </Button>
@@ -229,24 +239,25 @@ export default function BacktestPage() {
           </Card>
 
           {/* Previous Backtests */}
-          <Card className="glass-card">
+          <Card variant="flat">
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                Previous Backtests
+              <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan" />
+                History
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="max-h-64">
+              <ScrollArea className="max-h-64 pr-3">
                 {backtests.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3 stagger-children">
                     {backtests.map((bt) => (
                       <button
                         key={bt.id}
                         onClick={() => fetchBacktestResult(bt.id)}
-                        className="w-full p-2 rounded-lg bg-secondary/20 border border-border/30 hover:border-primary/30 transition-all text-left cursor-pointer"
+                        className="w-full p-3 rounded-xl bg-secondary/20 border border-border/40 hover:border-cyan/40 hover:bg-cyan/5 transition-all text-left cursor-pointer group"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-mono text-foreground">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-bold font-mono text-foreground tracking-tight">
                             {bt.symbol}
                           </span>
                           <StatusBadge
@@ -254,21 +265,22 @@ export default function BacktestPage() {
                               bt.status === "COMPLETED"
                                 ? "active"
                                 : bt.status === "RUNNING"
-                                ? "busy"
+                                ? "processing"
                                 : bt.status === "FAILED"
                                 ? "error"
                                 : "idle"
                             }
                           />
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {bt.strategy} • {bt.id.slice(0, 8)}
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest flex items-center justify-between">
+                          <span>{bt.strategy.replace(/_/g, " ")}</span>
+                          <span className="font-mono opacity-50">#{bt.id.slice(0, 8)}</span>
                         </p>
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6 text-muted-foreground text-xs">
+                  <div className="text-center py-6 text-muted-foreground text-xs font-medium">
                     No backtests yet
                   </div>
                 )}
@@ -281,160 +293,174 @@ export default function BacktestPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Progress indicator when running */}
           {pollingId && backtestResult?.status === "RUNNING" && (
-            <Card className="glass-card p-4">
-              <div className="flex items-center gap-3">
-                <RefreshCw className="w-5 h-5 text-cyan animate-spin" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Backtest Running...
+            <Card className="glass-card p-6 border-amber/30 bg-amber/5 animate-pulse relative overflow-hidden">
+              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(245,158,11,0.05)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-shimmer" />
+              <div className="flex items-center gap-4 relative z-10">
+                <RefreshCw className="w-8 h-8 text-amber animate-spin drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-foreground uppercase tracking-widest mb-1">
+                    Simulation Running
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground font-mono">
                     {symbol} — {strategy}
                   </p>
                 </div>
-                <Progress value={50} className="flex-1 ml-4" />
+                <div className="w-1/2">
+                  <Progress value={75} className="h-2" indicatorClassName="bg-gradient-to-r from-amber to-cyan animate-pulse" />
+                </div>
               </div>
             </Card>
           )}
 
           {/* Results Display */}
           {backtestResult && backtestResult.status === "COMPLETED" ? (
-            <>
+            <div className="space-y-6 animate-slide-up">
               {/* Metrics Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 stagger-children">
                 <MetricCard
                   title="Total Return"
-                  value={`${(backtestResult.total_return * 100).toFixed(2)}%`}
-                  icon={<TrendingUp className="w-4 h-4" />}
+                  value={backtestResult.total_return * 100}
+                  formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`}
+                  icon={<TrendingUp className="w-5 h-5" />}
                   color={backtestResult.total_return >= 0 ? "emerald" : "rose"}
                 />
                 <MetricCard
                   title="Sharpe Ratio"
-                  value={backtestResult.sharpe_ratio.toFixed(2)}
-                  icon={<BarChart3 className="w-4 h-4" />}
+                  value={backtestResult.sharpe_ratio}
+                  formatter={(v) => v.toFixed(2)}
+                  icon={<BarChart3 className="w-5 h-5" />}
                   color={backtestResult.sharpe_ratio >= 1 ? "emerald" : "amber"}
                 />
                 <MetricCard
                   title="Max Drawdown"
-                  value={`${(backtestResult.max_drawdown * 100).toFixed(2)}%`}
-                  icon={<TrendingDown className="w-4 h-4" />}
+                  value={backtestResult.max_drawdown * 100}
+                  formatter={(v) => `${v.toFixed(2)}%`}
+                  icon={<TrendingDown className="w-5 h-5" />}
                   color="rose"
                 />
                 <MetricCard
                   title="Win Rate"
-                  value={`${(backtestResult.win_rate * 100).toFixed(1)}%`}
-                  icon={<CheckCircle2 className="w-4 h-4" />}
+                  value={backtestResult.win_rate * 100}
+                  formatter={(v) => `${v.toFixed(1)}%`}
+                  icon={<CheckCircle2 className="w-5 h-5" />}
                   color={backtestResult.win_rate >= 0.5 ? "emerald" : "amber"}
                 />
                 <MetricCard
                   title="Total Trades"
                   value={backtestResult.total_trades}
-                  icon={<BarChart3 className="w-4 h-4" />}
+                  icon={<BarChart3 className="w-5 h-5" />}
                   color="cyan"
                 />
                 <MetricCard
                   title="Profit Factor"
-                  value={backtestResult.profit_factor.toFixed(2)}
-                  icon={<TrendingUp className="w-4 h-4" />}
+                  value={backtestResult.profit_factor}
+                  formatter={(v) => v.toFixed(2)}
+                  icon={<TrendingUp className="w-5 h-5" />}
                   color={backtestResult.profit_factor >= 1 ? "emerald" : "rose"}
                 />
                 <MetricCard
                   title="Avg Win"
-                  value={`$${backtestResult.avg_win.toFixed(2)}`}
-                  icon={<TrendingUp className="w-4 h-4" />}
+                  value={backtestResult.avg_win}
+                  formatter={(v) => `$${v.toFixed(2)}`}
+                  icon={<TrendingUp className="w-5 h-5" />}
                   color="emerald"
                 />
                 <MetricCard
                   title="Avg Loss"
-                  value={`$${backtestResult.avg_loss.toFixed(2)}`}
-                  icon={<TrendingDown className="w-4 h-4" />}
+                  value={backtestResult.avg_loss}
+                  formatter={(v) => `$${v.toFixed(2)}`}
+                  icon={<TrendingDown className="w-5 h-5" />}
                   color="rose"
                 />
               </div>
 
               {/* Equity Curve */}
-              <Card className="glass-card">
+              <Card variant="gradient">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <LineChart className="w-4 h-4 text-emerald" />
                     Equity Curve
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-72">
+                  <div className="h-[360px] w-full">
                     {equityData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={equityData}>
+                        <AreaChart data={equityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <defs>
                             <linearGradient id="backtestGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                             </linearGradient>
+                            <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+                              <feGaussianBlur stdDeviation="4" result="blur" />
+                              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                          <XAxis dataKey="day" stroke="#64748b" fontSize={10} />
-                          <YAxis stroke="#64748b" fontSize={10} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,41,59,0.5)" vertical={false} />
+                          <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickMargin={10} axisLine={false} tickLine={false} />
+                          <YAxis stroke="#64748b" fontSize={10} tickMargin={10} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
                           <Tooltip
                             contentStyle={{
-                              background: "#0d1117",
-                              border: "1px solid #1e293b",
+                              background: "rgba(10, 15, 26, 0.95)",
+                              backdropFilter: "blur(10px)",
+                              border: "1px solid rgba(16, 185, 129, 0.3)",
                               borderRadius: "8px",
-                              fontSize: "11px",
+                              boxShadow: "0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(16,185,129,0.1)",
+                              fontSize: "12px",
+                              fontWeight: 600,
                             }}
+                            itemStyle={{ color: "#10b981" }}
                             formatter={(value: number) => [
-                              `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                              `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                               "Equity",
                             ]}
+                            cursor={{ stroke: 'rgba(16, 185, 129, 0.5)', strokeWidth: 1, strokeDasharray: '4 4' }}
                           />
                           <Area
                             type="monotone"
                             dataKey="equity"
                             stroke="#10b981"
+                            strokeWidth={3}
                             fill="url(#backtestGrad)"
-                            strokeWidth={2}
+                            activeDot={{ r: 6, fill: "#10b981", stroke: "#030712", strokeWidth: 2, filter: "url(#glowGreen)" }}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm font-medium">
                         No equity curve data
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
-            </>
+            </div>
           ) : backtestResult?.status === "FAILED" ? (
-            <Card className="glass-card p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-rose" />
+            <Card className="glass-card p-8 border-rose/30 bg-rose/5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-rose/20 rounded-full">
+                  <AlertTriangle className="w-8 h-8 text-rose drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-rose">Backtest Failed</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {backtestResult.error || "Unknown error"}
+                  <p className="text-lg font-black tracking-tight text-rose uppercase mb-1">Simulation Failed</p>
+                  <p className="text-sm font-medium text-rose/80">
+                    {backtestResult.error || "An unknown error occurred during execution."}
                   </p>
                 </div>
               </div>
             </Card>
           ) : backtestResult?.status === "RUNNING" || backtestResult?.status === "QUEUED" ? (
-            <Card className="glass-card p-6">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-amber animate-pulse" />
-                <p className="text-sm text-foreground">
-                  Backtest {backtestResult.status.toLowerCase()}...
-                </p>
-              </div>
-            </Card>
+            null
           ) : (
-            <Card className="glass-card p-12">
-              <div className="text-center">
-                <FlaskConical className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground">
-                  Configure and run a backtest to see results
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Select a symbol, strategy, and date range to get started
-                </p>
+            <Card className="glass-card p-16 flex flex-col items-center justify-center h-[500px]">
+              <div className="w-24 h-24 rounded-full bg-secondary/30 flex items-center justify-center mb-6 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]">
+                <FlaskConical className="w-10 h-10 text-muted-foreground/50" />
               </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Awaiting Parameters</h3>
+              <p className="text-sm text-muted-foreground text-center max-w-sm">
+                Configure a simulation in the left panel to validate your trading strategies against historical market data.
+              </p>
             </Card>
           )}
         </div>

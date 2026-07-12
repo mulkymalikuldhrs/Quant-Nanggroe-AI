@@ -1,9 +1,25 @@
-'use client';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { GlassCard } from '@/components/shared/cards';
-import { mockSecurityEvents } from '@/lib/mock-data';
+
+import { securityApi } from '@/lib/api-client';
+import type { SecurityEvent } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
 
 export default function SecurityPage() {
+  const [events, setEvents] = useState<SecurityEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    securityApi.getEvents()
+      .then(d => { setEvents(d); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="relative z-10"><p className="text-white/40">Loading security events...</p></div>;
+  if (error) return <div className="relative z-10"><p className="text-red-400">Error: {error}</p></div>;
+
   const severityStyles: Record<string, string> = {
     info: 'border-cyan-500/20 bg-cyan-500/5',
     warning: 'border-amber-500/20 bg-amber-500/5',
@@ -18,19 +34,19 @@ export default function SecurityPage() {
         <div className="grid grid-cols-3 gap-4">
           <GlassCard>
             <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-400">{mockSecurityEvents.filter(e => e.severity === 'info').length}</div>
+              <div className="text-3xl font-bold text-cyan-400">{events.filter(e => e.severity === 'info').length}</div>
               <div className="text-white/30 text-xs mt-1">Info Events</div>
             </div>
           </GlassCard>
           <GlassCard>
             <div className="text-center">
-              <div className="text-3xl font-bold text-amber-400">{mockSecurityEvents.filter(e => e.severity === 'warning').length}</div>
+              <div className="text-3xl font-bold text-amber-400">{events.filter(e => e.severity === 'warning').length}</div>
               <div className="text-white/30 text-xs mt-1">Warnings</div>
             </div>
           </GlassCard>
           <GlassCard>
             <div className="text-center">
-              <div className="text-3xl font-bold text-red-400">{mockSecurityEvents.filter(e => e.severity === 'critical').length}</div>
+              <div className="text-3xl font-bold text-red-400">{events.filter(e => e.severity === 'critical').length}</div>
               <div className="text-white/30 text-xs mt-1">Critical</div>
             </div>
           </GlassCard>
@@ -40,7 +56,7 @@ export default function SecurityPage() {
           {/* Audit Log */}
           <GlassCard title="Audit Log" className="col-span-2">
             <div className="space-y-2">
-              {mockSecurityEvents.map(event => (
+              {events.map(event => (
                 <div key={event.id} className={`p-3 rounded-lg border ${severityStyles[event.severity] || 'border-white/5'}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">

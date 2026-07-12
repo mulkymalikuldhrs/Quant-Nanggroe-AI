@@ -1,16 +1,41 @@
-'use client';
+"use client";
+export const dynamic = "force-dynamic";
 
+
+import { colonyApi, agentsApi } from '@/lib/api-client';
+import type { Colony, Agent } from '@/lib/api-client';
 import { GlassCard } from '@/components/shared/cards';
-import { mockColonies, mockAgents } from '@/lib/mock-data';
+import { useEffect, useState } from 'react';
 
 export default function ColonyPage() {
+  const [colonies, setColonies] = useState<Colony[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      colonyApi.list(),
+      agentsApi.getStatus(),
+    ])
+      .then(([coloniesData, agentsData]) => {
+        setColonies(coloniesData);
+        setAgents(agentsData.agents);
+        setLoading(false);
+      })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="relative z-10"><p className="text-white/40">Loading colony data...</p></div>;
+  if (error) return <div className="relative z-10"><p className="text-red-400">Error: {error}</p></div>;
+
   return (
     <div className="relative z-10 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Colony Network Topology */}
           <GlassCard title="Network Topology" className="col-span-2">
             <div className="grid grid-cols-4 gap-3">
-              {mockAgents.map((agent, i) => (
+              {agents.map((agent, i) => (
                 <div key={agent.id} className={`p-3 rounded-lg border text-center transition-all hover:scale-105 ${
                   agent.status === 'active' ? 'bg-cyan-500/5 border-cyan-500/20' :
                   agent.status === 'error' ? 'bg-red-500/5 border-red-500/20' :
@@ -30,7 +55,7 @@ export default function ColonyPage() {
 
           {/* Colony Details */}
           <div className="space-y-4">
-            {mockColonies.map(colony => (
+            {colonies.map(colony => (
               <GlassCard key={colony.id}>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

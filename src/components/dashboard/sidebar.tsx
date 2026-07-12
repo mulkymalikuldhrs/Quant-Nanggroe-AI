@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, color: "text-cyan" },
@@ -39,60 +40,78 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-border/50 transition-all duration-300 flex flex-col",
+        "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-border/50 transition-all duration-300 flex flex-col glass-card !border-t-0 !border-l-0 !border-b-0 !rounded-none",
         sidebarOpen ? "w-64" : "w-16"
       )}
     >
       {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-border/50">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan/20 to-purple/20 border border-cyan/30">
-          <Activity className="w-4 h-4 text-cyan" />
+      <div className="flex items-center gap-3 px-4 h-16 border-b border-border/50 shrink-0">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan/20 to-purple/20 border border-cyan/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+          <Activity className="w-4 h-4 text-cyan animate-pulse" />
         </div>
         {sidebarOpen && (
-          <div className="overflow-hidden">
-            <h1 className="text-sm font-bold text-foreground whitespace-nowrap">
+          <div className="overflow-hidden animate-slide-in-right">
+            <h1 className="text-sm font-bold text-foreground whitespace-nowrap gradient-text">
               Quant Nanggroe
             </h1>
-            <p className="text-[10px] text-muted-foreground whitespace-nowrap">
-              Trading Intelligence OS
+            <p className="text-[10px] text-muted-foreground whitespace-nowrap uppercase tracking-widest mt-0.5">
+              Trading OS
             </p>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto custom-scroll relative">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href));
-          return (
+          
+          const NavContent = (
             <Link
-              key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
                 isActive
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  ? "bg-secondary/40 text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
               )}
             >
+              {isActive && <div className="nav-active-bar" />}
               <item.icon
                 className={cn(
-                  "w-5 h-5 shrink-0 transition-colors",
-                  isActive ? "text-primary" : item.color
+                  "w-5 h-5 shrink-0 transition-all duration-300 group-hover:scale-110",
+                  isActive ? item.color : "text-muted-foreground group-hover:text-foreground"
                 )}
               />
-              {sidebarOpen && <span className="whitespace-nowrap">{item.label}</span>}
+              {sidebarOpen && (
+                <span className="whitespace-nowrap transition-transform duration-200 group-hover:translate-x-1">
+                  {item.label}
+                </span>
+              )}
             </Link>
           );
+
+          if (!sidebarOpen) {
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>{NavContent}</TooltipTrigger>
+                <TooltipContent side="right" className="border-border/50 bg-card/90 backdrop-blur-md">
+                  {item.label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return <React.Fragment key={item.href}>{NavContent}</React.Fragment>;
         })}
       </nav>
 
       {/* Footer */}
-      <div className="px-2 pb-4 space-y-2">
+      <div className="p-3 space-y-3 shrink-0 border-t border-border/50 bg-background/20">
         {/* WebSocket status */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30">
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card-flat border border-border/30">
           <span
             className={cn(
               "status-dot",
@@ -100,19 +119,27 @@ export function Sidebar() {
             )}
           />
           {sidebarOpen && (
-            <span className="text-xs text-muted-foreground">
-              {wsConnected ? "WS Connected" : "WS Disconnected"}
-            </span>
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
+                {wsConnected ? "System Online" : "Connection Lost"}
+              </span>
+              <span className="text-[9px] text-muted-foreground whitespace-nowrap font-mono">
+                WS // DHAHER LABS
+              </span>
+            </div>
           )}
         </div>
 
         {/* Toggle button */}
         <button
           onClick={toggleSidebar}
-          className="flex items-center justify-center w-full py-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="flex items-center justify-center w-full py-2.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer scale-tap border border-transparent hover:border-border/50"
         >
           {sidebarOpen ? (
-            <ChevronLeft className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <ChevronLeft className="w-4 h-4" />
+              Collapse Sidebar
+            </div>
           ) : (
             <ChevronRight className="w-4 h-4" />
           )}

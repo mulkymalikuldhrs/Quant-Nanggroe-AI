@@ -1,104 +1,103 @@
-# Changelog — Quant Nanggroe AI
+# Changelog — Quant Nanggroe AI (QNA)
 
-## v4.1.0 — 2026-06-27 — Hedge Fund Cycle 1 + Risk Wiring
+## [2026-07-12] — Hedge-Fund Audit + C:→D: Merge (v0.9.2)
 
-Highlights:
-- **Kill switch death spiral fixed**: `paper_mode` flag on `AutoDisableManager` prevents synthetic data from auto-disabling strategies and triggering kill switch on meaningless Sharpe ratios
-- **Correlation monitor wired**: `StrategyCorrelationMonitor` integrated into paper daemon with `paper_mode` suppression; `KillSwitchTrigger.CORRELATION_HERDING` trigger type added
-- **Security audit P0 fixes**: JWT secret now loaded from `Settings.jwt_secret` (`QNAI_JWT_SECRET` env var) instead of hardcoded fallback; SQL injection fixed in `security/audit.py` (parameterized query)
-- **Realistic data pipeline**: 7 cached symbols (BTC, ETH, SOL, XRP, SPY, QQQ, IWM) with GARCH-like structure, varying drifts/volatilities — unblocks alpha research
-- **Paper daemon trading verified**: Live fills across 8 strategy-symbol combos, $34K portfolio, PnL tracking, no kill switch activation
-- **Alpha destruction**: 6/8 strategies PSR-passing, walk-forward analysis wired via `--walk-forward` flag
-- **Security audit score improved**: 124→70 findings (34→2 critical), remaining criticals are shell-script dynamic imports
-- **12 hedge fund sub-agents**: Complete Cycle 1 survey/council/vote/execute across CIO, PM, QR, QDev, CRO, Risk Analyst, Compliance, Dev Lead, Data Engineer, QT, Ops Manager, Perf Analyst
-- **Scorecard**: 45/100 → ~65/100
+### Fixed
+- **Kelly criterion**: fractional methods (HALF/FRACTIONAL/ADAPTIVE) no longer silently halved; ADAPTIVE_KELLY no longer crashes
+- **Diversification score**: degenerate 0 for both corr=1 and corr=-1 → fixed with correlation-based normalization
+- **Order→broker bridge**: ExecutionManager never reached ExchangeManager → fixed via ExchangeBrokerAdapter
+- **Broker sell error msg**: test matched wrong regex
+- **Test half-kelly assertion**: encoded old bug (expected ≤0.1 instead of 0.2)
 
-## v4.0.0 — 2026-06-27 — Orphan Rescue + Autonomy Suite
+### Added
+- **Crucix OSINT package** (packages/crucix): 27-source intelligence terminal, ACLED conflict, ADSB flight tracking
+- **Agentic-legacy archive** (packages/agentic-legacy): preserved for reference
+- **nginx/nginx.conf**: production reverse proxy (WebSocket, SSL, security headers)
+- **Comprehensive Makefile**: 29 targets (was 3) — test-cov, typecheck, security, docker, db migrations, CI pipeline
+- **Agentic_AI_System_Prompts.docx**: 1.3MB system prompt document
+- `.dockerignore`, `DOC_GAPS.md`, `GRAPHIFY.md`, `mock-data.ts`, GitHub CI workflow
 
-Highlights:
-- **48 orphan files wired** into proper package `__init__.py` (agents, engine, data, connectors, skills)
-- **5 pre-existing import bugs fixed**: MarketStateEngine alias, PressureInput creation, AutoSwitchEngine alias, ProviderHealth lazy import, AuditEntry alias
-- **Graceful degradation confirmed**: JeumpaLLM (no deps) & Seulanga (no server) degrade without crashing
-- **16 empty test `__init__.py` removed** to fix namespace collision; 6 non-empty test init files preserved
-- **8 automation scripts** added: `auto-graphify.sh`, `auto-list-files.sh`, `auto-register.sh`, `auto-docs.sh`, `auto-audit.sh`, `auto-report.sh`, `auto-review.sh`, `auto-init.sh`
-- **1119 tests** run in 57s — 3 pre-existing mock failures, 129 pre-existing optional dep errors, 72 skipped — zero regressions
-- **Paper daemon dry-run verified**: full cycle passing (synthetic data, Kelly sizing, AutoDisable, KillSwitch)
-- **14/14 import integrity check** passes
-- **378 Python modules**, 109K LOC, 94 test files
-- Dependency graphs auto-generated: architecture, import map, package tree, strategy flow
-- API docs auto-generated: 3922 classes/functions across 299 module pages
+### Removed
+- `C:\Users\Hi\Quant-Nanggroe-AI` stale clone (179MB) — merged unique assets to D: worktree
 
-## v1.0.0 — 2026-06-25 — Renaissance Finale
+### Changed
+- Consolidation: C:→D: merge commit `42b3b5a`
+- Makefile: 101-line build system replaces 19-line stub
 
-Highlights:
-- 805/805 tests ALL PASS (100%) — up from 31/31
-- Coverage ~58% (from 24 inline tests, 41.2% baseline)
-- 35 sub-agents across 7 swarms (ai_multicolony)
-- Paper daemon LIVE at PID 6540, 10+ cycles
-- 76 test files covering all core modules (engine, data, security, types)
-- Health check passes 6/6 (daemon, PnL, dashboard, test_runner, exchange prep, state files)
-- All scripts present and verified: test_runner.py, weekly_alpha_report.py, health_check.py, dashboard_server.py, check_exchange_ready.py
-- `docs/COVERAGE_REPORT.md` rewritten with `sys.settrace` methodology (AST line counting)
-- `docs/100_100_AUTONOMOUS.md` scorecard updated from 40→45/100
-- README/docs all synced
-- New test files: `tests/test_coverage_execution.py`, `tests/test_coverage_report_walkforward.py` (+207 new tests)
+### Tests
+- 468 hedge-fund-critical tests: 0 failed (API, risk, kelly, correlation, brokers, pipeline)
+- 265 targeted regression: 0 failed (risk kritis post-fix)
 
-### Scoring delta (100_100_AUTONOMOUS)
-- Code Quality: 8/15 → 11/15 (805 tests pass, coverage 58%)
-- Infrastructure: 13/20 → 15/20 (health check 6/6, all scripts, coverage tooling)
-- Composite: 40/100 → 45/100
+## [2026-06-22] — Documentation Consolidation (v0.9.1)
 
-## v1.0.1 — 2026-06-25 — Coverage Expansion
+### Added
+- Consolidated docs into `DOCUMENTATION.md`.
+- Generated architecture diagram via `scripts/graphify.py`.
+- Added `FILE_INDEX.md` with concise repository file list.
+- Updated `README.md` to link to consolidated docs and file index.
 
-- 1039/1039 tests ALL PASS (100%) — up from 805/805
-- Coverage ~60-62% (from ~58%)
-- 39 sub-agents across 8 swarms (from 35 across 7)
-- 14 test files (11 original + 3 new coverage files: test_coverage_engines2.py, test_coverage_portfolio.py, test_coverage_loaders.py)
-- Scorecard: 45/100 (unchanged)
-- Daemon: PID 6540, 10+ cycles, PnL $0.00
+### Fixed
+- Updated `docs/architecture.md` (graphify output) to reflect latest components.
 
-## v0.5.0 — 2026-06-24 — Alpha Destruction Pipeline
-- All 598 tests pass (unittest discovery phase)
-- Coverage 51.9%
-- `scripts/test_runner.py` auto-discovers all test files across Python versions
-- `scripts/weekly_alpha_report.py` template created (206 lines)
-- `scripts/health_check.py` created (131 lines, 6 checks)
-- `tests/test_coverage_execution.py` covers loaders/, optimizers/, guards/, execution/manager.py
 
-## v0.4.0 — 2026-06-23 — Paper Trading LIVE
-- Daemon at PID 6540 (`qna-paper.sh` → `scripts/qna-paper-daemon.py`)
-- Dashboard static HTML (`dashboard/qnai_dashboard.html`, 441 lines)
-- Exchange wiring prepped (18/20 checks in `scripts/check_exchange_ready.py`)
-- Roadmap finalized (65/65 items in `docs/ROADWAY.md`)
-- `docs/COVERAGE_REPORT.md` created with per-file coverage breakdown
+## [2026-06-22] — Production Hardening + 15 Strategies (v0.9.0)
 
-## v0.3.0 — 2026-06-22 — Cleanup & Wiring
-- Deleted 12 orphan/dead files: web_interface/, main.py, cli.py, start_system.py, 8 root scripts
-- Deleted root src/ (old Next.js frontend, consolidated into dashboard/)
-- Archived 5 legacy packages: agentic-legacy, hermes-quant, autonomous-organism, config, examples
-- Moved database/ → quant_nanggroe/database/ (SQLAlchemy ORM)
-- Moved connectors/ → quant_nanggroe/connectors/ (LLM gateway)
-- Created quant_nanggroe/db/ — QNA-specific ORM models
-- Created quant_nanggroe/llm/ — Multi-provider LLM gateway wrapper
-- Created quant_nanggroe/api/routes/ — colony, memory, ecosystem endpoints
-- Added ai_multicolony, database, connectors to ruff lint, pytest coverage, bandit scan
-- Reduced coverage threshold to 50%
+### Added
+- **6 new strategies** (total 15): SMC, ICT, S/R, SnD, Wyckoff, COT, Fundamental
+- **COT Data Provider** (`engine/data/cot_provider.py`): CFTC fetcher, COT index (0-100), commercial divergence detection
+- **Economic Calendar** (`engine/data/economic_calendar.py`): event provider with impact scoring, surprise detection, market risk analysis
+- **Multi-Timeframe Framework** (`engine/strategy/multi_timeframe.py`): HTF (D1) trend → MTF (H1) confirm → LTF (M5) entry alignment
+- **Auto Fine-Tuning** (`engine/backtest/auto_tune.py`): grid search + walk-forward validation, auto-deploy best params
+- **Adaptive Strategy Selector** (`engine/strategy/strategy_selector.py`): regime→strategy compatibility matrix, rolling Sharpe tracking, weighted execution
+- **Strategy API routes** (`api/routes/strategies.py`): 5 endpoints (list, detail, toggle, selector, toggles)
+- **Portable launcher** (`qna.sh`): start/stop/status/dashboard/backtest on Linux/Mac/Windows/Termux
+- **Trailing Stop** (`engine/risk/trailing_stop.py`): 2% activation, 1% trail from peak
 
-## v0.2.0 — 2026-06-18 — Core Engine & Production Release
-- 12 Data Providers (yfinance, Alpha Vantage, Polygon, Binance/CCXT, CoinGecko, etc.)
-- Data Fallback Chain with circuit breaker pattern
-- Kelly Criterion (Fractional, Bayesian, Drawdown, Multi-Asset)
-- Regime Detection (HMM, Macro, Volatility Clustering, Strategy Selector)
-- Stress Testing (Monte Carlo, Historical, EWHS VaR/CVaR, Sensitivity)
-- Pattern Recorder (Matrix Profile, DTW, Embedding Similarity, Recurrence Plots)
-- Almgren-Chriss Execution (TWAP, VWAP, IS, Adaptive)
-- Deployment: E2B, VPS (systemd), Docker Compose, monitoring stack (Prometheus/Grafana)
-- Backup system (`scripts/backup.sh`), load testing (`scripts/load_test.py`)
-- Security hardening (`scripts/harden.sh`)
-- 187 unit tests across 35 test classes
+### Fixed
+- **Strategy lifecycle**: changed class-level `_cum_wins/_cum_losses` to `PrivateAttr` (was shared across instances)
+- **Kill switch thresholds**: 0.8%/2.5%/10% (was 1.5%/4%/5% — too loose)
+- **Emotional lockout**: 0.8% from peak (was 5%)
+- **avg_loss calculation**: uses `total_losses` instead of `total_pnl`
+- **httpx timeouts**: connect=5s prevents hanging on blocked endpoints
+- **Daemon persistence**: PPID=1 via `setsid`, survives TTY detach
+- **Wyckoff numpy array ambiguity**: fixed `close[-N:] - close[0]` → `close[-1] - close[-N]`
+- **DataFrame symbol access**: `data.get("symbol")` → `str(data["symbol"].iloc[-1])` in all 6 pattern strategies
 
-## v0.1.0 — 2026-06-10 — Initial Scaffold
-- Basic Kelly implementation
-- HMM regime detection
-- Initial stress testing stubs
-- Basic data layer
+### Infrastructure
+- **SSH relay routing chain**: direct (5s) → WARP HTTP proxy (3s) → SSH relay (15s)
+- **WARP integration**: Cloudflare API registration, auto-detect OS, config generation
+- **Portable config** (`qna_config.py`): auto-detects OS/paths/Python/SSH
+- **Secret management**: all API keys → env vars (QNA_TELEGRAM_BOT_TOKEN, etc.)
+- **HTTP proxy**: WARP HTTP proxy (172.16.0.1:2480) auto-detected via socket check
+
+### Strategy Selector — Regime Mapping
+| Regime | Best Strategies |
+|--------|----------------|
+| Bullish | Momentum, CryptoSpecific, Wyckoff |
+| Bearish | Momentum, RegimeBased, Wyckoff |
+| Ranging | MeanReversion, MarketMaking, S/R |
+| Volatile | VolatilityArbitrage, Fundamental, CryptoSpecific |
+
+### Architecture
+```
+Data Layer → Strategy Layer → Analysis Layer → Decision Synthesis → Risk → Execution → API/UI
+```
+
+## [2026-06-21] — Exchange Layer Unlocked + Production Bridge (v0.8.0)
+
+### Added
+- Exchange type modules: market, orders, positions (pydantic v1 compatible)
+- All 8 exchange clients import: Binance, Bybit, OKX, Coinbase, KuCoin, Bitget, Kraken, Gate
+- Production Bridge V2: 6 components with SyncPaperBroker
+- Full pipeline verified: BULL regime → Momentum → risk filter → execution
+
+## [2026-06-20] — Foundation (v0.7.0)
+
+### Added
+- Core engine architecture with 8 strategies
+- Backtest system with SQLite persistence
+- Regime detection: HMM, correlation, macro, volatility, ensemble
+- Screener system: macro, fundamental, intermarket, sentiment
+- Next.js dashboard with Recharts
+- Flask web interface
+- 45 MACD/SMA backtest-passed strategies deployed

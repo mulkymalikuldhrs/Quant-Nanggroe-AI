@@ -28,6 +28,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionHeader } from "@/components/dashboard/shared";
+import { cn } from "@/lib/utils";
 
 interface LLMProvider {
   id: string;
@@ -131,589 +132,618 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Settings className="w-6 h-6 text-muted-foreground" />
-            System Settings
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-slide-up">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black gradient-text flex items-center gap-3 tracking-tight">
+            <Settings className="w-8 h-8 text-foreground animate-pulse-glow" />
+            System Configuration
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Configure Quant Nanggroe AI trading system
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest pl-11">
+            Global Parameters & Integrations
           </p>
         </div>
         <div className="flex items-center gap-3">
           {saveMessage && (
-            <Badge variant="emerald" className="text-xs">
+            <Badge variant="emerald" className="px-3 py-1 text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-fade-in">
               {saveMessage}
             </Badge>
           )}
           <Button
-            variant="cyan"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold tracking-widest uppercase cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_4px_25px_rgba(var(--primary-rgb),0.5)] transition-all hover-lift"
             onClick={handleSave}
             disabled={saving}
-            className="gap-2 cursor-pointer"
           >
             {saving ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Saving...
+                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                SAVING...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
-                Save Changes
+                <Save className="w-4 h-4 mr-2" />
+                APPLY CHANGES
               </>
             )}
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="llm">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="llm">LLM Providers</TabsTrigger>
-          <TabsTrigger value="trading">Trading</TabsTrigger>
-          <TabsTrigger value="risk">Risk Limits</TabsTrigger>
-          <TabsTrigger value="data">Data Providers</TabsTrigger>
-          <TabsTrigger value="system">System</TabsTrigger>
-        </TabsList>
+      <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+        <Tabs defaultValue="llm" className="w-full">
+          <TabsList className="bg-secondary/20 p-1 mb-6 border border-border/50 backdrop-blur-md flex-wrap h-auto">
+            <TabsTrigger value="llm" className="font-bold tracking-widest uppercase text-xs py-2">Providers</TabsTrigger>
+            <TabsTrigger value="trading" className="font-bold tracking-widest uppercase text-xs py-2">Trading</TabsTrigger>
+            <TabsTrigger value="risk" className="font-bold tracking-widest uppercase text-xs py-2">Risk Limits</TabsTrigger>
+            <TabsTrigger value="data" className="font-bold tracking-widest uppercase text-xs py-2">Data APIs</TabsTrigger>
+            <TabsTrigger value="system" className="font-bold tracking-widest uppercase text-xs py-2">Core System</TabsTrigger>
+          </TabsList>
 
-        {/* LLM Providers */}
-        <TabsContent value="llm">
-          <div className="mt-4 space-y-4">
-            {llmProviders.map((provider) => (
-              <Card key={provider.id} className="glass-card">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-lg ${
-                          provider.enabled
-                            ? "bg-cyan/10 border border-cyan/20"
-                            : "bg-secondary/30 border border-border/30"
-                        }`}
-                      >
-                        <span className="text-lg">{provider.icon}</span>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-semibold text-foreground">
-                            {provider.name}
-                          </h3>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px]"
-                          >
+          {/* LLM Providers */}
+          <TabsContent value="llm" className="m-0">
+            <div className="space-y-5 stagger-children">
+              {llmProviders.map((provider) => (
+                <Card 
+                  key={provider.id} 
+                  variant="flat"
+                  className={cn(
+                    "transition-all border-l-4",
+                    provider.enabled ? "border-l-emerald bg-emerald/5" : "border-l-border/50 hover:border-l-primary/50"
+                  )}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm transition-colors",
+                            provider.enabled ? "bg-emerald/20 border border-emerald/30 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-secondary/40 border border-border/40"
+                          )}
+                        >
+                          {provider.icon}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-base font-black text-foreground uppercase tracking-tight">
+                              {provider.name}
+                            </h3>
+                            {provider.enabled && (
+                              <Badge variant="emerald" className="text-[9px] font-bold uppercase tracking-widest shadow-sm">
+                                Online
+                              </Badge>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground bg-background">
                             {provider.model}
                           </Badge>
-                          {provider.enabled && (
-                            <Badge variant="emerald" className="text-[9px]">
-                              Active
-                            </Badge>
-                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground font-mono">
-                          {provider.baseUrl}
-                        </p>
                       </div>
+                      <Switch
+                        checked={provider.enabled}
+                        onCheckedChange={() => toggleProvider(provider.id)}
+                        className={provider.enabled ? "shadow-[0_0_10px_rgba(16,185,129,0.5)]" : ""}
+                      />
                     </div>
-                    <Switch
-                      checked={provider.enabled}
-                      onCheckedChange={() => toggleProvider(provider.id)}
-                    />
-                  </div>
 
-                  {provider.enabled && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                          Model
-                        </label>
-                        <Input
-                          value={provider.model}
-                          onChange={(e) =>
-                            setLlmProviders((prev) =>
-                              prev.map((p) =>
-                                p.id === provider.id
-                                  ? { ...p, model: e.target.value }
-                                  : p
-                              )
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                          API Key
-                        </label>
-                        <div className="relative">
+                    {provider.enabled && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-border/30 animate-fade-in">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                            Active Model
+                          </label>
                           <Input
-                            type={
-                              showApiKeys[provider.id] ? "text" : "password"
-                            }
-                            value={provider.apiKey}
+                            value={provider.model}
                             onChange={(e) =>
                               setLlmProviders((prev) =>
                                 prev.map((p) =>
                                   p.id === provider.id
-                                    ? { ...p, apiKey: e.target.value }
+                                    ? { ...p, model: e.target.value }
                                     : p
                                 )
                               )
                             }
-                            placeholder="sk-..."
-                            className="pr-10"
+                            className="bg-background/50 focus-visible:ring-emerald/50 border-border/40 font-mono text-sm h-10"
                           />
-                          <button
-                            onClick={() => toggleApiKeyVisibility(provider.id)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                          >
-                            {showApiKeys[provider.id] ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                            API Authorization Key
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type={
+                                showApiKeys[provider.id] ? "text" : "password"
+                              }
+                              value={provider.apiKey}
+                              onChange={(e) =>
+                                setLlmProviders((prev) =>
+                                  prev.map((p) =>
+                                    p.id === provider.id
+                                      ? { ...p, apiKey: e.target.value }
+                                      : p
+                                  )
+                                )
+                              }
+                              placeholder="sk-..."
+                              className="pr-10 bg-background/50 focus-visible:ring-emerald/50 border-border/40 font-mono text-sm h-10"
+                            />
+                            <button
+                              onClick={() => toggleApiKeyVisibility(provider.id)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-emerald transition-colors cursor-pointer"
+                            >
+                              {showApiKeys[provider.id] ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                            Endpoint Base URL
+                          </label>
+                          <Input
+                            value={provider.baseUrl}
+                            onChange={(e) =>
+                              setLlmProviders((prev) =>
+                                prev.map((p) =>
+                                  p.id === provider.id
+                                    ? { ...p, baseUrl: e.target.value }
+                                    : p
+                                )
+                              )
+                            }
+                            className="bg-background/50 focus-visible:ring-emerald/50 border-border/40 font-mono text-sm h-10"
+                          />
                         </div>
                       </div>
-                      <div className="sm:col-span-2">
-                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                          Base URL
-                        </label>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Trading Configuration */}
+          <TabsContent value="trading" className="m-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card variant="flat">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-cyan" />
+                    Neural Execution Logic
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Primary Engine
+                    </label>
+                    <Select
+                      value={systemConfig.defaultProvider}
+                      onValueChange={(v) =>
+                        setSystemConfig({ ...systemConfig, defaultProvider: v })
+                      }
+                    >
+                      <SelectTrigger className="bg-secondary/20 h-10 focus:ring-cyan/50 font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {llmProviders
+                          .filter((p) => p.enabled)
+                          .map((p) => (
+                            <SelectItem key={p.id} value={p.id} className="font-bold">
+                              {p.icon} {p.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Inference Model
+                    </label>
+                    <Input
+                      value={systemConfig.defaultModel}
+                      onChange={(e) =>
+                        setSystemConfig({
+                          ...systemConfig,
+                          defaultModel: e.target.value,
+                        })
+                      }
+                      className="font-mono bg-secondary/20 h-10 focus-visible:ring-cyan/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block flex justify-between">
+                      <span>Creativity / Temperature</span>
+                      <span className="text-cyan">{systemConfig.temperature.toFixed(1)}</span>
+                    </label>
+                    <Input
+                      type="range"
+                      value={systemConfig.temperature}
+                      onChange={(e) =>
+                        setSystemConfig({
+                          ...systemConfig,
+                          temperature: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      step="0.1"
+                      min="0"
+                      max="2"
+                      className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-cyan"
+                    />
+                    <div className="flex justify-between text-[9px] text-muted-foreground mt-1 uppercase tracking-widest">
+                      <span>Deterministic (0.0)</span>
+                      <span>Creative (2.0)</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card variant="flat">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Database className="w-4 h-4 text-purple" />
+                    Simulation Parameters
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                        Base Commission
+                      </label>
+                      <Input
+                        type="number"
+                        value={systemConfig.backtestCommission}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            backtestCommission: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.0001"
+                        className="tabular-nums font-mono bg-secondary/20 focus-visible:ring-purple/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                        Est. Slippage
+                      </label>
+                      <Input
+                        type="number"
+                        value={systemConfig.backtestSlippage}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            backtestSlippage: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.0001"
+                        className="tabular-nums font-mono bg-secondary/20 focus-visible:ring-purple/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                        Starting Capital
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
                         <Input
-                          value={provider.baseUrl}
+                          type="number"
+                          value={systemConfig.backtestInitialCapital}
                           onChange={(e) =>
-                            setLlmProviders((prev) =>
-                              prev.map((p) =>
-                                p.id === provider.id
-                                  ? { ...p, baseUrl: e.target.value }
-                                  : p
-                              )
-                            )
+                            setSystemConfig({
+                              ...systemConfig,
+                              backtestInitialCapital: parseInt(e.target.value) || 100000,
+                            })
                           }
-                          className="font-mono text-xs"
+                          className="tabular-nums font-mono pl-6 bg-secondary/20 focus-visible:ring-purple/50"
                         />
                       </div>
                     </div>
-                  )}
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                        Cache TTL (sec)
+                      </label>
+                      <Input
+                        type="number"
+                        value={systemConfig.dataCacheTTL}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            dataCacheTTL: parseInt(e.target.value) || 300,
+                          })
+                        }
+                        className="tabular-nums font-mono bg-secondary/20 focus-visible:ring-purple/50"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
+            </div>
+          </TabsContent>
 
-        {/* Trading Configuration */}
-        <TabsContent value="trading">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-            <Card className="glass-card">
+          {/* Risk Limits */}
+          <TabsContent value="risk" className="m-0">
+            <Card variant="gradient" className="border-rose/20">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-cyan" />
-                  Default LLM Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    Default Provider
-                  </label>
-                  <Select
-                    value={systemConfig.defaultProvider}
-                    onValueChange={(v) =>
-                      setSystemConfig({ ...systemConfig, defaultProvider: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {llmProviders
-                        .filter((p) => p.enabled)
-                        .map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.icon} {p.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    Default Model
-                  </label>
-                  <Input
-                    value={systemConfig.defaultModel}
-                    onChange={(e) =>
-                      setSystemConfig({
-                        ...systemConfig,
-                        defaultModel: e.target.value,
-                      })
-                    }
-                    className="font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    Temperature
-                  </label>
-                  <Input
-                    type="number"
-                    value={systemConfig.temperature}
-                    onChange={(e) =>
-                      setSystemConfig({
-                        ...systemConfig,
-                        temperature: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    step="0.1"
-                    min="0"
-                    max="2"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Database className="w-4 h-4 text-purple" />
-                  Backtest Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Default Commission
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.backtestCommission}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          backtestCommission: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      step="0.0001"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Default Slippage
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.backtestSlippage}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          backtestSlippage: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      step="0.0001"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Initial Capital
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.backtestInitialCapital}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          backtestInitialCapital:
-                            parseInt(e.target.value) || 100000,
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Data Cache TTL (s)
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.dataCacheTTL}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          dataCacheTTL: parseInt(e.target.value) || 300,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Risk Limits */}
-        <TabsContent value="risk">
-          <div className="mt-4">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
                   <Shield className="w-4 h-4 text-rose" />
-                  Constitutional Risk Limits
+                  Hardcoded Risk Constitution
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3 rounded-lg border border-amber/20 bg-amber/5">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-amber">
-                        Constitutional Limits
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        These limits cannot be overridden by agents. They are
-                        enforced at the execution level and are the final
-                        safeguard against excessive risk.
-                      </p>
+              <CardContent className="space-y-6">
+                <div className="p-4 rounded-xl border border-rose/30 bg-rose/10 flex items-start gap-4 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
+                  <AlertCircle className="w-6 h-6 text-rose shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-rose uppercase tracking-widest">
+                      Immutable Safeguards
+                    </p>
+                    <p className="text-xs text-rose/80 mt-1 font-medium leading-relaxed">
+                      These thresholds supersede all autonomous agent decisions. They are enforced synchronously at the execution core to guarantee portfolio survival during extreme volatility.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 bg-background/30 rounded-xl border border-border/30">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Max Exposure Per Trade
+                    </label>
+                    <div className="relative">
+                       <Input
+                        type="number"
+                        value={systemConfig.riskMaxPerTrade}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            riskMaxPerTrade: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.1"
+                        min="0.1"
+                        max="2.0"
+                        className="font-mono bg-secondary/30 focus-visible:ring-rose/50 text-rose font-bold"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-rose/50 font-mono">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Max Daily Drawdown
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={systemConfig.riskMaxDailyLoss}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            riskMaxDailyLoss: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.1"
+                        min="0.5"
+                        max="5.0"
+                        className="font-mono bg-secondary/30 focus-visible:ring-rose/50 text-rose font-bold"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-rose/50 font-mono">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Max Weekly Drawdown
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={systemConfig.riskMaxWeeklyLoss}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            riskMaxWeeklyLoss: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.1"
+                        min="1.0"
+                        max="10.0"
+                        className="font-mono bg-secondary/30 focus-visible:ring-rose/50 text-rose font-bold"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-rose/50 font-mono">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Absolute Max Drawdown
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={systemConfig.riskMaxDrawdown}
+                        onChange={(e) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            riskMaxDrawdown: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.1"
+                        min="5.0"
+                        max="20.0"
+                        className="font-mono bg-secondary/30 focus-visible:ring-rose/50 text-rose font-bold"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-rose/50 font-mono">%</span>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Max Risk Per Trade (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.riskMaxPerTrade}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          riskMaxPerTrade: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      step="0.1"
-                      min="0.1"
-                      max="2.0"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Max Daily Loss (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.riskMaxDailyLoss}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          riskMaxDailyLoss: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      step="0.1"
-                      min="0.5"
-                      max="5.0"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Max Weekly Loss (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.riskMaxWeeklyLoss}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          riskMaxWeeklyLoss: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      step="0.1"
-                      min="1.0"
-                      max="10.0"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Max Drawdown (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={systemConfig.riskMaxDrawdown}
-                      onChange={(e) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          riskMaxDrawdown: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      step="0.1"
-                      min="5.0"
-                      max="20.0"
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* Data Providers */}
-        <TabsContent value="data">
-          <div className="mt-4">
-            <Card className="glass-card">
+          {/* Data Providers */}
+          <TabsContent value="data" className="m-0">
+             <Card variant="flat">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
                   <Globe className="w-4 h-4 text-sky" />
-                  Data Provider Configuration
+                  Telemetry Oracles
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
                   {[
                     { name: "Alpha Vantage", key: "alpha_vantage", free: true, desc: "25 req/day free" },
-                    { name: "Polygon.io", key: "polygon", free: false, desc: "Real-time & historical" },
-                    { name: "FRED", key: "fred", free: true, desc: "Economic data, 120/min" },
-                    { name: "CoinGecko", key: "coingecko", free: true, desc: "Crypto data" },
+                    { name: "Polygon.io", key: "polygon", free: false, desc: "Real-time feeds" },
+                    { name: "FRED", key: "fred", free: true, desc: "Economic series" },
+                    { name: "CoinGecko", key: "coingecko", free: true, desc: "Crypto metrics" },
                     { name: "Finnhub", key: "finnhub", free: true, desc: "60 calls/min free" },
                     { name: "Twelve Data", key: "twelvedata", free: true, desc: "800 credits/day" },
-                    { name: "SEC EDGAR", key: "sec_edgar", free: true, desc: "No key needed" },
+                    { name: "SEC EDGAR", key: "sec_edgar", free: true, desc: "Filing parsing" },
                     { name: "ECB", key: "ecb", free: true, desc: "FX reference rates" },
                   ].map((provider) => (
                     <div
                       key={provider.key}
-                      className="p-3 rounded-lg bg-secondary/20 border border-border/30"
+                      className="p-4 rounded-xl bg-secondary/10 border border-border/30 hover:border-sky/30 hover:bg-secondary/20 transition-all hover-lift"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-foreground">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold text-foreground font-mono truncate">
                           {provider.name}
                         </span>
                         <Badge
                           variant={provider.free ? "emerald" : "amber"}
-                          className="text-[9px]"
+                          className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0"
                         >
-                          {provider.free ? "Free Tier" : "Paid"}
+                          {provider.free ? "FREE" : "PRO"}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mb-3 h-4">
                         {provider.desc}
                       </p>
                       <Input
-                        placeholder={`Enter ${provider.name} API key...`}
+                        placeholder="sk-..."
                         type="password"
-                        className="mt-2 text-xs"
+                        className="text-xs bg-background/50 h-8 border-border/40 focus-visible:ring-sky/50"
                       />
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* System */}
-        <TabsContent value="system">
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Server className="w-4 h-4 text-cyan" />
-                  System Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    Log Level
-                  </label>
-                  <Select
-                    value={systemConfig.logLevel}
-                    onValueChange={(v) =>
-                      setSystemConfig({ ...systemConfig, logLevel: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DEBUG">Debug</SelectItem>
-                      <SelectItem value="INFO">Info</SelectItem>
-                      <SelectItem value="WARNING">Warning</SelectItem>
-                      <SelectItem value="ERROR">Error</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-purple" />
-                  Feature Toggles
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  {
-                    key: "enableWebSocket",
-                    label: "WebSocket Server",
-                    desc: "Real-time updates via WebSocket",
-                    icon: <Globe className="w-4 h-4" />,
-                  },
-                  {
-                    key: "enableAuditLog",
-                    label: "Audit Logging",
-                    desc: "Track all system actions",
-                    icon: <Shield className="w-4 h-4" />,
-                  },
-                  {
-                    key: "autoRestart",
-                    label: "Auto Restart",
-                    desc: "Restart failed agents automatically",
-                    icon: <RefreshCw className="w-4 h-4" />,
-                  },
-                  {
-                    key: "notificationsEnabled",
-                    label: "Notifications",
-                    desc: "Push notifications for events",
-                    icon: <Bell className="w-4 h-4" />,
-                  },
-                ].map((toggle) => (
-                  <div
-                    key={toggle.key}
-                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/20"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-muted-foreground">{toggle.icon}</div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {toggle.label}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {toggle.desc}
-                        </p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={
-                        systemConfig[
-                          toggle.key as keyof typeof systemConfig
-                        ] as boolean
+          {/* System */}
+          <TabsContent value="system" className="m-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card variant="flat">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Server className="w-4 h-4 text-emerald" />
+                    Process Parameters
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                      Diagnostic Output Level
+                    </label>
+                    <Select
+                      value={systemConfig.logLevel}
+                      onValueChange={(v) =>
+                        setSystemConfig({ ...systemConfig, logLevel: v })
                       }
-                      onCheckedChange={(checked) =>
-                        setSystemConfig({
-                          ...systemConfig,
-                          [toggle.key]: checked,
-                        })
-                      }
-                    />
+                    >
+                      <SelectTrigger className="bg-secondary/20 h-10 font-mono font-bold focus:ring-emerald/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DEBUG" className="font-mono">DEBUG</SelectItem>
+                        <SelectItem value="INFO" className="font-mono">INFO</SelectItem>
+                        <SelectItem value="WARNING" className="font-mono">WARNING</SelectItem>
+                        <SelectItem value="ERROR" className="font-mono text-rose">ERROR</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+                </CardContent>
+              </Card>
+
+              <Card variant="flat">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-purple" />
+                    Module Activation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 stagger-children">
+                  {[
+                    {
+                      key: "enableWebSocket",
+                      label: "WebSocket Server",
+                      desc: "Stream live telemetry data",
+                      icon: <Globe className="w-5 h-5 text-sky" />,
+                      color: "sky"
+                    },
+                    {
+                      key: "enableAuditLog",
+                      label: "Cryptographic Audit Log",
+                      desc: "Append-only tracking of all decisions",
+                      icon: <Shield className="w-5 h-5 text-emerald" />,
+                      color: "emerald"
+                    },
+                    {
+                      key: "autoRestart",
+                      label: "Autonomous Process Resurrection",
+                      desc: "Daemon restarts failed agent threads",
+                      icon: <RefreshCw className="w-5 h-5 text-purple" />,
+                      color: "purple"
+                    },
+                    {
+                      key: "notificationsEnabled",
+                      label: "High Priority Alerts",
+                      desc: "Push OS-level notifications",
+                      icon: <Bell className="w-5 h-5 text-amber" />,
+                      color: "amber"
+                    },
+                  ].map((toggle) => (
+                    <div
+                      key={toggle.key}
+                      className="flex items-center justify-between p-4 rounded-xl bg-secondary/10 border border-border/30 hover:bg-secondary/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-lg bg-background/50 border border-border/50 shadow-sm">
+                          {toggle.icon}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-foreground">
+                            {toggle.label}
+                          </p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
+                            {toggle.desc}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={
+                          systemConfig[
+                            toggle.key as keyof typeof systemConfig
+                          ] as boolean
+                        }
+                        onCheckedChange={(checked) =>
+                          setSystemConfig({
+                            ...systemConfig,
+                            [toggle.key]: checked,
+                          })
+                        }
+                        className={systemConfig[toggle.key as keyof typeof systemConfig] ? `shadow-[0_0_10px_rgba(var(--${toggle.color}-rgb),0.5)]` : ""}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

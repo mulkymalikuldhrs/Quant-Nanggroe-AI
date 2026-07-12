@@ -1,6 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import React, { useState, useEffect, useCallback } from "react";
+
 import { ChartCard } from "@/components/shared/chart-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1,6 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import React from "react";
+
 import { ChartCard } from "@/components/shared/chart-card";
 import { RiskGauge } from "@/components/shared/risk-gauge";
 import { Badge } from "@/components/ui/badge";

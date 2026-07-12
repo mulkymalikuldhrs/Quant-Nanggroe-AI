@@ -1,14 +1,28 @@
-'use client';
+"use client";
+export const dynamic = "force-dynamic";
 
-import { GlassCard } from '@/components/shared/cards';
-import { mockTools } from '@/lib/mock-data';
-import { useState } from 'react';
+
+import { toolsApi } from '@/lib/api-client';
+import type { Tool } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
 
 export default function ToolsPage() {
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [params, setParams] = useState('{}');
 
-  const categories = [...new Set(mockTools.map(t => t.category))];
+  useEffect(() => {
+    toolsApi.list()
+      .then(d => { setTools(d); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="relative z-10"><p className="text-white/40">Loading tools...</p></div>;
+  if (error) return <div className="relative z-10"><p className="text-red-400">Error: {error}</p></div>;
+
+  const categories = [...new Set(tools.map(t => t.category))];
   const categoryIcons: Record<string, string> = { web: '🌐', dev: '💻', infra: '🏗️', system: '📁', protocol: '🔗', cognitive: '🧠', media: '🎙️', comms: '📡' };
 
   return (
@@ -18,7 +32,7 @@ export default function ToolsPage() {
             {categories.map(cat => (
               <GlassCard key={cat} title={`${categoryIcons[cat] || '🔧'} ${cat.toUpperCase()}`}>
                 <div className="grid grid-cols-2 gap-3">
-                  {mockTools.filter(t => t.category === cat).map(tool => (
+                  {tools.filter(t => t.category === cat).map(tool => (
                     <div key={tool.id} onClick={() => setSelectedTool(tool.id)}
                       className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] ${
                         selectedTool === tool.id ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-white/[0.02] border-white/5'

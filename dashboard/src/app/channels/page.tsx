@@ -1,19 +1,37 @@
 'use client';
+export const dynamic = 'force-dynamic';
 import { GlassCard } from '@/components/shared/cards';
-import { mockChannels } from '@/lib/mock-data';
-import { useState } from 'react';
+import { channelsApi } from '@/lib/api-client';
+import type { Channel } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
 
 export default function ChannelsPage() {
-  const [selectedChannel, setSelectedChannel] = useState('discord');
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState('');
+
+  useEffect(() => {
+    channelsApi.list()
+      .then(d => {
+        setChannels(d);
+        if (d.length > 0) setSelectedChannel(d[0].id);
+        setLoading(false);
+      })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="relative z-10"><p className="text-white/40">Loading channels...</p></div>;
+  if (error) return <div className="relative z-10"><p className="text-red-400">Error: {error}</p></div>;
 
   const channelIcons: Record<string, string> = { discord: '🎮', slack: '💼', telegram: '✈️', whatsapp: '📱' };
-  const channel = mockChannels.find(c => c.id === selectedChannel) || mockChannels[0];
+  const channel = channels.find(c => c.id === selectedChannel) || channels[0];
 
   return (
     <div className="relative z-10 space-y-6">
         {/* Channel Selector */}
         <div className="flex gap-3">
-          {mockChannels.map(ch => (
+          {channels.map(ch => (
             <button key={ch.id} onClick={() => setSelectedChannel(ch.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                 selectedChannel === ch.id ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-white/[0.02] border-white/5 text-white/40 hover:bg-white/5'
