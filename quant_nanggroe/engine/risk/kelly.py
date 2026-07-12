@@ -82,7 +82,10 @@ class KellyParameters:
             volatility=self.volatility,
             risk_free_rate=0.0,
             leverage_max=1.0,
-            regime_multiplier=self.confidence,
+            # ponytail: legacy `confidence` is a 0..1 trust weight, NOT a regime
+            # multiplier. Mapping it to regime_multiplier silently halved every
+            # fractional Kelly (HALF 0.1 instead of 0.2). No regime signal here → 1.0.
+            regime_multiplier=1.0,
         )
 
 
@@ -191,8 +194,8 @@ class KellyCriterion:
             return FullKelly()  # ponytail: was falling to else→Fractional(0.5), broke f*
         elif method == NewKellyMethod.ADAPTIVE:
             return AdaptiveKelly(
-                max_position=self.max_position,
-                min_position=self.min_position,
+                base_fraction=self.max_position,
+                window=60,
             )
         elif method in (NewKellyMethod.FRACTIONAL, NewKellyMethod.HALF, NewKellyMethod.QUARTER):
             frac = {NewKellyMethod.HALF: 0.5, NewKellyMethod.QUARTER: 0.25}.get(method, 0.5)

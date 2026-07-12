@@ -18,9 +18,91 @@ from quant_nanggroe.api.schemas import (
     TradeHistoryItem,
     TradeHistoryResponse,
 )
+from quant_nanggroe.engine.execution.base import (
+    AccountInfo,
+    Broker,
+    Fill,
+    Order as ExecOrder,
+    OrderSide,
+    OrderType,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+class ExchangeBrokerAdapter(Broker):
+    """Bridge the live ExchangeManager (paper/MT5/crypto) into ExecutionManager.
+
+    ExecutionManager expects an ``execution.base.Broker``; the live brokers in
+    ExchangeManager implement a different ``exchange.base.ExchangeInterface``. This
+    adapter delegates every execution call to the ExchangeManager's failover path,
+    so a POST /api/trading/order actually reaches a real broker after passing the
+    kill-switch + constitutional risk-manager guards.
+    """
+
+    def __init__(self, exchange_manager) -> None:
+        self._em = exchange_manager
+
+    @property
+    def name(self) -> str:
+        return "exchange_manager"
+
+    @property
+    def is_connected(self) -> bool:
+        return True  # ExchangeManager handles per-broker health internally
+
+    async def connect(self) -> bool:
+        return True
+
+    async def disconnect(self) -> None:
+        return None
+
+    async def get_account(self) -> AccountInfo:
+        try:
+            portfolio = await self._em.get_aggregated_portfolio()
+            return AccountInfo(
+                balance=portfolio.cash,
+                equity=portfolio.cash + portfolio.total_market_value,
+                buying_power=portfolio.cash,
+            )
+        except Exception:
+            return AccountInfo(balance=0.0, equity=0.0, buying_power=0.0)
+
+    async def get_positions(self):
+        portfolio = await self._em.get_aggregated_portfolio()
+        return [
+            type("_P", (), {"symbol": s, "quantity": p.quantity})()
+            for s, p in portfolio.positions.items()
+        ]
+
+    async def get_price(self, symbol: str) -> float:
+        return await self._em.get_price(symbol)
+
+    async def get_order(self, order_id: str):
+        return None
+
+    async def submit_order(self, order: ExecOrder):
+        from quant_nanggroe.types.orders import OrderSide as EmSide, OrderType as EmType
+        # execution.base uses UPPERCASE enum values ("BUY"); exchange.types uses
+        # lowercase ("buy"). Normalize to the exchange convention.
+        side = EmSide(order.side.value.lower())
+        otype = EmType(order.order_type.value.lower())
+        placed = await self._em.place_order(
+            symbol=order.symbol,
+            side=side,
+            order_type=otype,
+            quantity=order.quantity,
+            price=order.price,
+            stop_price=order.stop_price,
+        )
+        status_val = placed.status.value if hasattr(placed.status, "value") else str(placed.status)
+        order.status = type(order.status)(status_val.upper())
+        order.metadata = getattr(placed, "metadata", {}) or {}
+        return order
+
+    async def cancel_order(self, order_id: str) -> bool:
+        return False
 
 
 def _get_execution_manager(http_request: Request):
@@ -29,7 +111,13 @@ def _get_execution_manager(http_request: Request):
     The ExecutionManager is ALWAYS wired with the constitutional RiskManager and
     KillSwitch so every order is enforced (no override path). A trade that breaches
     the daily/weekly loss budget or a halt is vetoed before it reaches the broker.
+
+    The ExecutionManager is also bridged to the live ExchangeManager (paper / MT5 /
+    crypto), so executes_order actually reaches a real broker instead of a phantom
+    "paper" default. Without this bridge, execute_order routes to a broker that was
+    never registered and silently returns None (no fill, no error).
     """
+    from quant_nanggroe.engine.execution.base import Order as ExecOrder
     from quant_nanggroe.engine.execution.manager import ExecutionManager
     from quant_nanggroe.engine.risk.kill_switch import KillSwitch
     from quant_nanggroe.engine.risk.manager import RiskManager
@@ -41,6 +129,9 @@ def _get_execution_manager(http_request: Request):
         em = ExecutionManager()
         em.set_kill_switch(KillSwitch())
         em.set_risk_manager(RiskManager())
+        # Bridge: wrap the live ExchangeManager as the ExecutionManager's broker.
+        # Pass the execution Order through so account-balance lookup works.
+        em.add_broker(ExchangeBrokerAdapter(_get_exchange_manager(http_request)))
         http_request.app.state._services["execution_manager"] = em
     return http_request.app.state._services["execution_manager"]
 

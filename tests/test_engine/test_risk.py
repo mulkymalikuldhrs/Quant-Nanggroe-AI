@@ -61,8 +61,9 @@ class TestKellyBasic:
         p = KellyParameters(win_rate=0.6, avg_win=100.0, avg_loss=50.0)
         full = k.calculate_kelly(p, KellyMethod.FULL_KELLY)
         half = k.calculate_kelly(p, KellyMethod.HALF_KELLY)
-        # half is a fraction of full, and the engine caps at max_position (0.1)
-        assert 0.0 < half.optimal_fraction <= 0.1
+        # HALF_KELLY = 0.5 * full (corrected: legacy shim previously halved again to 0.1).
+        assert abs(full.optimal_fraction - 0.4) < 1e-9
+        assert abs(half.optimal_fraction - 0.2) < 1e-9
         assert full.optimal_fraction > half.optimal_fraction
 
     def test_negative_edge_rejected(self):

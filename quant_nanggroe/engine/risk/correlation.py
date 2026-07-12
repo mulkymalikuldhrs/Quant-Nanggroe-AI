@@ -151,18 +151,29 @@ class CorrelationMonitor:
         weighted_avg_vol = np.sum(weights * vols)
 
         cov = returns.cov().values
-        port_vol = np.sqrt(weights @ cov @ weights)
+        port_vol = np.sqrt(max(weights @ cov @ weights, 0.0))
+
+        # Max diversification ratio (theoretical, perfectly anticorrelated) = n.
+        # Used both as the cap for the div-by-zero case and the normalization max.
+        max_div = float(n)
 
         if weighted_avg_vol <= 0:
             return 0.0
 
-        # Diversification ratio
-        div_ratio = weighted_avg_vol / port_vol if port_vol > 0 else 0.0
+        # Diversification ratio. When assets are anticorrelated, portfolio variance
+        # collapses toward 0 (real diversification benefit) — that is MAXIMUM
+        # diversification, not zero. Guard against the div-by-zero collapse that
+        # previously returned 0.0 for both corr=1 and corr=-1 (degenerate output).
+        if port_vol <= 1e-12:
+            div_ratio = max_div  # perfect diversification → score 1.0
+        else:
+            div_ratio = weighted_avg_vol / port_vol
 
-        # Normalize to 0-1 range
-        # Perfect diversification: div_ratio = sqrt(n)
-        # No diversification: div_ratio = 1.0
-        max_div = np.sqrt(n)
+        # Normalize to 0-1 range.
+        # Diversification ratio DR = Σ(wi·σi) / σp.
+        #   No diversification (perfectly correlated): DR = 1 → score 0
+        #   Uncorrelated, equal vol, 2 assets: DR = √2 → score ≈ 0.41
+        #   Max diversification (perfectly anticorrelated): DR = n → score 1
         score = (div_ratio - 1.0) / (max_div - 1.0) if max_div > 1 else 0.0
         return float(np.clip(score, 0.0, 1.0))
 
@@ -183,6 +194,13 @@ class CorrelationMonitor:
         Returns:
             Dict with stress detection results.
         """
+        # Accept DataFrame, dict-of-series, or dict-of-lists — coerce to DataFrame
+        # so the stress path never crashes on a dict input.
+        if isinstance(returns, dict):
+            returns = pd.DataFrame(returns)
+        if not isinstance(returns, pd.DataFrame):
+            returns = pd.DataFrame(returns)
+
         corr = self.compute_rolling_correlation(returns, window)
 
         # Average off-diagonal correlation

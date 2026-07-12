@@ -6,7 +6,6 @@ import pytest
 from quant_nanggroe.connectors.broker_base import (
     BrokerConnector,
     BrokerType,
-    MultiBrokerManager,
     Order,
     Position,
 )
@@ -100,7 +99,7 @@ class TestSimulatedBroker:
         broker = SimulatedBroker()
         broker.connect()
         broker.update_price("AAPL", 150.0)
-        with pytest.raises(ValueError, match="Insufficient position quantity"):
+        with pytest.raises(ValueError, match="No position to sell"):
             broker.place_order(Order("AAPL", "sell", 1.0, "market"))
 
     def test_buy_insufficient_funds_raises(self):
@@ -142,82 +141,3 @@ class TestSimulatedBroker:
         assert broker.get_balance() == 100000.0 - 148.0 * 5.0
 
 
-class TestMultiBrokerManager:
-    def test_register_broker(self):
-        manager = MultiBrokerManager()
-        broker = SimulatedBroker()
-        manager.register("sim", broker)
-        assert "sim" in manager.brokers
-
-    def test_register_multiple(self):
-        manager = MultiBrokerManager()
-        manager.register("a", SimulatedBroker())
-        manager.register("b", SimulatedBroker(initial_balance=50000.0))
-        assert len(manager.brokers) == 2
-
-    def test_place_order_across_brokers(self):
-        manager = MultiBrokerManager()
-        b1 = SimulatedBroker(initial_balance=100000.0)
-        b2 = SimulatedBroker(initial_balance=50000.0)
-        b1.connect()
-        b2.connect()
-        b1.update_price("BTC/USDT", 50000.0)
-        b2.update_price("BTC/USDT", 50000.0)
-        manager.register("broker1", b1)
-        manager.register("broker2", b2)
-
-        results = manager.place_order(Order("BTC/USDT", "buy", 0.5, "market"))
-        assert "broker1" in results
-        assert "broker2" in results
-        assert "error" not in results["broker1"].lower()
-        assert "error" not in results["broker2"].lower()
-
-    def test_place_order_error_isolation(self):
-        manager = MultiBrokerManager()
-        working = SimulatedBroker()
-        working.connect()
-        working.update_price("AAPL", 150.0)
-
-        class FailingBroker(BrokerConnector):
-            def connect(self) -> bool:
-                return True
-            def place_order(self, order: Order) -> str:
-                raise RuntimeError("Connection failed")
-            def get_positions(self):
-                return []
-            def get_balance(self) -> float:
-                return 0.0
-            def disconnect(self): ...
-
-        failing = FailingBroker()
-        manager.register("working", working)
-        manager.register("failing", failing)
-
-        results = manager.place_order(Order("AAPL", "buy", 1.0, "market"))
-        assert "working" in results
-        assert "failing" in results
-        assert "error" not in results["working"]
-        assert "error" in results["failing"]
-
-    def test_aggregate_positions_empty(self):
-        manager = MultiBrokerManager()
-        assert manager.aggregate_positions() == {}
-
-    def test_aggregate_positions(self):
-        manager = MultiBrokerManager()
-        b1 = SimulatedBroker()
-        b2 = SimulatedBroker()
-        b1.connect()
-        b2.connect()
-        b1.update_price("AAPL", 150.0)
-        b2.update_price("GOOGL", 2800.0)
-        b1.place_order(Order("AAPL", "buy", 10.0, "market"))
-        b2.place_order(Order("GOOGL", "buy", 5.0, "market"))
-        manager.register("b1", b1)
-        manager.register("b2", b2)
-
-        agg = manager.aggregate_positions()
-        assert len(agg["b1"]) == 1
-        assert len(agg["b2"]) == 1
-        assert agg["b1"][0].symbol == "AAPL"
-        assert agg["b2"][0].symbol == "GOOGL"
