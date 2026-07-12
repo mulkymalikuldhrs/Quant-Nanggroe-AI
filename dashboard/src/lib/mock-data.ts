@@ -5,19 +5,19 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ── Proxy helper ─────────────────────────────────────────────────────────
-function live<T>(defaults: T, endpoint: string, mapper?: (d: unknown) => T): T {
+function live<T extends object>(defaults: T, endpoint: string, mapper?: (d: unknown) => T): T {
   let value = defaults;
   fetch(`${API_BASE}${endpoint}`)
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => { if (d != null) value = mapper ? mapper(d) : (d as T); })
     .catch(() => {});
-  return new Proxy(defaults as Record<string, unknown>, {
-    get(_, p) { return (value as Record<string, unknown>)[p]; },
-    set(_, p, v) { (value as Record<string, unknown>)[p] = v; return true; },
-    has(_, p) { return p in value; },
+  return new Proxy(defaults, {
+    get(target, prop: string | symbol) { return (value as Record<string | symbol, unknown>)[prop]; },
+    set(target, prop: string | symbol, v) { (value as Record<string | symbol, unknown>)[prop] = v; return true; },
+    has(target, prop: string | symbol) { return prop in value; },
     ownKeys() { return Reflect.ownKeys(value); },
-    getOwnPropertyDescriptor(_, p) { return Object.getOwnPropertyDescriptor(value, p); },
-  }) as unknown as T;
+    getOwnPropertyDescriptor(target, prop: string | symbol) { return Object.getOwnPropertyDescriptor(value, prop); },
+  }) as T;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
