@@ -48,23 +48,3 @@ class BrokerConnector(ABC):
     @abstractmethod
     def disconnect(self): ...
 
-
-class MultiBrokerManager:
-    def __init__(self):
-        self.brokers: Dict[str, BrokerConnector] = {}
-
-    def register(self, name: str, broker: BrokerConnector):
-        self.brokers[name] = broker
-
-    def place_order(self, order: Order) -> Dict[str, str]:
-        results = {}
-        for name, broker in self.brokers.items():
-            try:
-                order_id = broker.place_order(order)
-                results[name] = order_id
-            except Exception as e:
-                results[name] = f"error: {e}"
-        return results
-
-    def aggregate_positions(self) -> Dict[str, List[Position]]:
-        return {name: b.get_positions() for name, b in self.brokers.items()}

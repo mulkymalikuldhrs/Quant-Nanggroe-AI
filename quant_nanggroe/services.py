@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
+from quant_nanggroe.config import get_settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -169,6 +171,73 @@ def get_audit_logger(app: FastAPI):
 
 
 # ══════════════════════════════════════════════════════════════════════
+# ExchangeManager (multi-broker: MT5 multi-account + crypto + paper)
+# ══════════════════════════════════════════════════════════════════════
+
+def get_exchange_manager(app: FastAPI):
+    """Build (once) the multi-broker ExchangeManager and register exchanges
+    from environment config: MT5 accounts (multi), Binance (if keyed), paper.
+
+    MT5 needs the ``MetaTrader5`` package + a live terminal; if absent the
+    broker is registered but ``connect_all`` marks it unhealthy — never crashes.
+    """
+    import json
+    import os
+
+    from quant_nanggroe.exchange.factory import ExchangeFactory
+    from quant_nanggroe.exchange.manager import ExchangeManager
+
+    _ensure_state(app)
+    if "exchange_manager" in app.state._services:
+        return app.state._services["exchange_manager"]
+
+    settings = get_settings()
+    em = ExchangeManager()
+    factory = ExchangeFactory()
+
+    # MT5 multi-account
+    raw = os.environ.get("QNAI_MT5_ACCOUNTS") or (settings.mt5_accounts or "")
+    if raw:
+        try:
+            for i, acc in enumerate(json.loads(raw)):
+                broker = factory.create(
+                    "mt5",
+                    api_key=str(acc["login"]),
+                    api_secret=acc["password"],
+                    passphrase=acc.get("server", ""),
+                )
+                em.register(f"mt5_{i}", broker, role="primary" if i == 0 else "failover")
+            logger.info("exchange_manager: registered %d MT5 account(s)", len(json.loads(raw)))
+        except Exception as exc:
+            logger.warning("exchange_manager: MT5 config parse failed: %s", exc)
+
+    # Binance (if keys present)
+    if settings.binance_api_key and settings.binance_api_secret:
+        try:
+            em.register(
+                "binance",
+                factory.create(
+                    "binance",
+                    api_key=settings.binance_api_key,
+                    api_secret=settings.binance_api_secret,
+                ),
+                role="failover",
+            )
+        except Exception as exc:
+            logger.warning("exchange_manager: Binance register failed: %s", exc)
+
+    # Paper fallback (always available, no network)
+    try:
+        em.register("paper", factory.create("paper"), role="failover")
+    except Exception as exc:
+        logger.warning("exchange_manager: paper register failed: %s", exc)
+
+    app.state._services["exchange_manager"] = em
+    app.state.exchange_manager = em  # alias for shutdown handler
+    return em
+
+
+# ══════════════════════════════════════════════════════════════════════
 # Convenience: initialise all singletons at once (called from lifespan)
 # ══════════════════════════════════════════════════════════════════════
 
@@ -186,4 +255,5 @@ def init_all_services(app: FastAPI) -> None:
     get_strategy_lifecycle(app)
     get_autoswitch_engine(app)
     get_audit_logger(app)
+    get_exchange_manager(app)
     logger.info("services_all_initialized")

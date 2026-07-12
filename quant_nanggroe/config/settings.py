@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     binance_api_key: Optional[str] = None
     binance_api_secret: Optional[str] = None
 
+    # MetaTrader 5 (multi-account). QNAI_MT5_ACCOUNTS = JSON list of
+    # {"login":<int>,"password":<str>,"server":<str>,"role":<"primary"|"failover">}
+    mt5_accounts: Optional[str] = None
+    mt5_enabled: bool = False
+
     # Data Provider API Keys (free tiers available)
     alpha_vantage_api_key: Optional[str] = None
     polygon_api_key: Optional[str] = None

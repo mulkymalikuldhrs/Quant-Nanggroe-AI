@@ -52,6 +52,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         from quant_nanggroe.services import init_all_services
         init_all_services(app)
         logger.info("startup_services_initialized")
+
+        # Connect registered exchanges (MT5/crypto/paper). Failures are
+        # per-broker and non-fatal — manager marks unhealthy and keeps running.
+        try:
+            em = app.state._services.get("exchange_manager")
+            if em is not None:
+                results = await em.connect_all()
+                logger.info("startup_exchanges_connected: %s", results)
+        except Exception as exc:
+            logger.warning("startup_exchange_connect_failed", extra={"error": str(exc)})
     except Exception as exc:
         logger.warning(
             "startup_services_unavailable",
