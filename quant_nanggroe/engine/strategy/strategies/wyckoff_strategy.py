@@ -3,6 +3,28 @@
 Detects accumulation/distribution phases using Wyckoff principles:
 preliminary support, selling climax, automatic rally, secondary test,
 spring, upthrust, LPS.
+
+The strategy identifies institutional accumulation (buying) and
+distribution (selling) phases using volume-price analysis:
+
+Accumulation detection:
+1. Preliminary Support (PS) — first high-volume bar after downtrend
+2. Selling Climax (SC) — highest volume, widest range
+3. Automatic Rally (AR) — bounce from SC with declining volume
+4. Secondary Test (ST) — retest of SC area with lower volume
+5. Spring — final shakeout below SC before markup
+
+Distribution detection:
+1. Preliminary Supply (PSY) — first high-volume after uptrend
+2. Buying Climax (BC) — highest volume climax
+3. Automatic Decline (AD) — drop from BC
+4. Secondary Test (ST) — retest of BC area
+5. Upthrust (UT) — final push above BC before markdown
+
+References:
+    - Wyckoff, R.D. (1931). Studies in Tape Reading.
+    - Wyckoff, R.D. (1933). The Richard D. Wyckoff Method of Trading
+      and Investing in Stocks.
 """
 
 from __future__ import annotations

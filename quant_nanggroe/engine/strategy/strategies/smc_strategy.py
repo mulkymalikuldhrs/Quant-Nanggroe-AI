@@ -1,7 +1,23 @@
-"""Smart Money Concept (SMC) trading strategy.
+"""Smart Money Concepts (SMC) trading strategy.
 
-Generates signals based on institutional order flow analysis:
-order blocks, liquidity sweeps, fair value gaps, and market structure.
+Implements institutional order-flow concepts developed by
+Michael Huddleston ("Inner Circle Trader"):
+
+- Order Blocks (OB) — consolidation zones before major moves where
+  institutional orders were absorbed
+- Liquidity Sweeps — false-breakouts above swing highs or below
+  swing lows designed to trigger retail stop-losses
+- Fair Value Gaps (FVG) — price inefficiencies between candle
+  bodies where price tends to return
+- Market Structure Shifts (MSS / CHOCH) — break of structure
+  indicating trend reversal
+
+Signals require min_confluence patterns to align before entering.
+
+References:
+    - Huddleston, M. "Inner Circle Trader" (ICT) concepts.
+    - "Smart Money Concepts" — institutional FX methodology adapted
+      from ICT and Wyckoff principles.
 """
 
 from __future__ import annotations

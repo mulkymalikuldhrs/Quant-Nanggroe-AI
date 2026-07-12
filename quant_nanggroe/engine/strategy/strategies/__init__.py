@@ -1,13 +1,41 @@
 """Strategy registry and factory for Quant Nanggroe AI.
 
-Provides a central registry for all strategy implementations and
+Provides a central registry for all 16 strategy implementations and
 a factory function for creating strategy instances by name.
 
 All strategies extend BaseStrategy and implement generate_signal(),
 required_columns(), and warmup_period().
 
-Usage::
+Registered strategies:
+  Statistical / Mean-Reversion:
+    - MeanReversion       — Z-score / Bollinger / OU mean reversion
+    - PairsTrading        — Cointegration-based pairs trading
+    - StatisticalArbitrage — PCA factor model residual reversion
+    - VolatilityArbitrage — GARCH/EWMA vol-ratio z-score
 
+  Momentum / Trend:
+    - Momentum            — TS / dual / MA crossover / MACD
+    - TrendFollow         — Dual MA + ADX + trailing ATR
+
+  Market Structure:
+    - MarketMaking        — Avellaneda-Stoikov optimal quoting
+    - RegimeBased         — HMM regime detection + switching
+
+  Crypto:
+    - CryptoSpecific      — Funding arb / cascade / on-chain / DEX arb / MEV
+
+  Price Action:
+    - Wyckoff             — Accumulation/distribution phases
+    - SupportResistance   — S/R swing points and zone clusters
+    - SupplyDemand        — Institutional supply/demand zones
+    - SMC                 — Order blocks, liquidity, FVG, market structure
+    - ICT                 — Displacement, OTE, FVG, kill zones
+
+  Fundamental / Sentiment:
+    - Fundamental         — Economic calendar, macro surprises
+    - COT                 — Commitment of Traders extremes
+
+Usage::
     from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 
     # List available strategies
@@ -35,10 +63,19 @@ from quant_nanggroe.engine.strategy.strategies.regime_based import RegimeBasedSt
 from quant_nanggroe.engine.strategy.strategies.statistical_arbitrage import (
     StatisticalArbitrageStrategy,
 )
-from quant_nanggroe.engine.strategy.strategies.trend_follow import TrendFollowStrategy
 from quant_nanggroe.engine.strategy.strategies.volatility_arbitrage import (
     VolatilityArbitrageStrategy,
 )
+from quant_nanggroe.engine.strategy.strategies.trend_follow import TrendFollowStrategy
+from quant_nanggroe.engine.strategy.strategies.wyckoff_strategy import WyckoffStrategy
+from quant_nanggroe.engine.strategy.strategies.support_resistance_strategy import (
+    SupportResistanceStrategy,
+)
+from quant_nanggroe.engine.strategy.strategies.supply_demand_strategy import SupplyDemandStrategy
+from quant_nanggroe.engine.strategy.strategies.smc_strategy import SMCStrategy
+from quant_nanggroe.engine.strategy.strategies.ict_strategy import ICTStrategy
+from quant_nanggroe.engine.strategy.strategies.fundamental_strategy import FundamentalStrategy
+from quant_nanggroe.engine.strategy.strategies.cot_strategy import COTStrategy
 
 # Global registry instance for all strategies
 STRATEGY_REGISTRY: StrategyRegistry = StrategyRegistry()
@@ -55,6 +92,13 @@ _STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {
     "RegimeBased": RegimeBasedStrategy,
     "CryptoSpecific": CryptoSpecificStrategy,
     "TrendFollow": TrendFollowStrategy,
+    "Wyckoff": WyckoffStrategy,
+    "SupportResistance": SupportResistanceStrategy,
+    "SupplyDemand": SupplyDemandStrategy,
+    "SMC": SMCStrategy,
+    "ICT": ICTStrategy,
+    "Fundamental": FundamentalStrategy,
+    "COT": COTStrategy,
 }
 
 # Strategy metadata for discovery
@@ -112,6 +156,48 @@ _STRATEGY_METADATA: Dict[str, Dict] = {
         "asset_classes": ["stocks", "forex", "crypto", "futures"],
         "timeframes": ["1d", "4h", "1w"],
         "category": "trend_following",
+    },
+    "Wyckoff": {
+        "description": "Wyckoff accumulation/distribution phase detection (PS, SC, AR, ST, spring, upthrust)",
+        "asset_classes": ["stocks", "crypto", "futures"],
+        "timeframes": ["1h", "4h", "1d"],
+        "category": "price_action",
+    },
+    "SupportResistance": {
+        "description": "S/R level detection via swing points, zone clustering, bounce/breakout signals",
+        "asset_classes": ["stocks", "forex", "crypto", "futures"],
+        "timeframes": ["15m", "1h", "4h", "1d"],
+        "category": "price_action",
+    },
+    "SupplyDemand": {
+        "description": "Institutional supply/demand zone detection with strength scoring and volume confirmation",
+        "asset_classes": ["stocks", "forex", "crypto", "futures"],
+        "timeframes": ["15m", "1h", "4h", "1d"],
+        "category": "price_action",
+    },
+    "SMC": {
+        "description": "Smart Money Concepts: order blocks, liquidity sweeps, fair value gaps, market structure",
+        "asset_classes": ["stocks", "forex", "crypto"],
+        "timeframes": ["15m", "1h", "4h", "1d"],
+        "category": "price_action",
+    },
+    "ICT": {
+        "description": "Inner Circle Trader: displacement, FVG, optimal trade entry, order blocks, kill zones",
+        "asset_classes": ["forex", "crypto"],
+        "timeframes": ["15m", "1h", "4h"],
+        "category": "price_action",
+    },
+    "Fundamental": {
+        "description": "Economic calendar events, macro data surprises, central bank policy, sentiment analysis",
+        "asset_classes": ["forex", "stocks", "futures"],
+        "timeframes": ["1d", "1w"],
+        "category": "fundamental",
+    },
+    "COT": {
+        "description": "Commitment of Traders positioning extremes and divergence trading",
+        "asset_classes": ["futures"],
+        "timeframes": ["1w"],
+        "category": "sentiment",
     },
 }
 
@@ -216,6 +302,13 @@ __all__ = [
     "RegimeBasedStrategy",
     "CryptoSpecificStrategy",
     "TrendFollowStrategy",
+    "WyckoffStrategy",
+    "SupportResistanceStrategy",
+    "SupplyDemandStrategy",
+    "SMCStrategy",
+    "ICTStrategy",
+    "FundamentalStrategy",
+    "COTStrategy",
     # Registry functions
     "create_strategy",
     "list_strategies",

@@ -1,4 +1,23 @@
-"""COT-based trading strategy using Commitment of Traders data."""
+"""COT-based trading strategy using Commitment of Traders data.
+
+Trades futures contracts based on extreme commercial / non-commercial
+positioning and divergence signals. Uses the COT index (0-100) to
+identify overbought/oversold sentiment extremes.
+
+Core logic:
+1. Load COT data via COTProvider + COTAnalyzer.
+2. Compute COT index percentile over lookback.
+3. When index < extreme_buy_threshold -> buy (oversold commercial longs).
+4. When index > extreme_sell_threshold -> sell (overextended commercial shorts).
+5. Optional divergence confirmation over divergence_period.
+
+Best suited for weekly-timeframe futures trading using CFTC reports.
+
+References:
+    - CFTC Commitments of Traders reports.
+    - Briese, S. (1994). "The COT Index: Using the Commitment
+      of Traders as a Contrarian Indicator."
+"""
 
 from __future__ import annotations
 

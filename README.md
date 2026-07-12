@@ -128,11 +128,15 @@ packages/agentic-legacy/ — Archived multi-agent reference
 | `QUANT_NANGRAOE_COMPLETE.md` | Complete API reference |
 | `DHAHER_LABS_MANDATE.md` | Constitutional mandate |
 | `AGENTS.md` | AI-Engineering-OS constitution |
-| `docs/API.md` | API documentation |
+| `docs/WORKFLOW_PIPELINE.md` | End-to-end pipeline: data→signal→risk→execution→monitor→report |
+| `STRATEGY_CATALOG.md` | Complete strategy catalog with RR, winrate, parameters, market conditions |
+| `docs/RESEARCH.md` | Research sources, benchmarking, academic references |
 | `docs/RUNBOOK.md` | Operations runbook |
 | `docs/OPS_CHECKLIST.md` | Deployment checklist |
 | `docs/CHANGELOG.md` | Release history |
 | `docs/SECURITY.md` | Security policies |
+| `docs/CREDENTIALS.md` | Credential management UI guide |
+| `EXTERNAL_RESEARCH.md` | External research comparisons (TradingAgents, ai-hedge-fund, etc.) |
 
 ## Status
 

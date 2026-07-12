@@ -199,6 +199,7 @@ def create_app() -> FastAPI:
         channels,
         colony,
         council,
+        credentials,
         debate,
         ecosystem,
         fred,
@@ -216,6 +217,7 @@ def create_app() -> FastAPI:
         trading,
         ws,
         whatsapp,
+        wiring_compat,
     )
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
@@ -228,6 +230,7 @@ def create_app() -> FastAPI:
     app.include_router(ecosystem.router, prefix="/api", tags=["Ecosystem"])
     app.include_router(colony.router, prefix="/api", tags=["Colony"])
     app.include_router(channels.router, prefix="/api/channels", tags=["Channels"])
+    app.include_router(credentials.router)
     app.include_router(council.router)
     app.include_router(debate.router)
     app.include_router(fred.router, prefix="/api/fred", tags=["FRED"])
@@ -242,6 +245,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router)
     app.include_router(agentic.router)
     app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
+    app.include_router(wiring_compat.router)
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")

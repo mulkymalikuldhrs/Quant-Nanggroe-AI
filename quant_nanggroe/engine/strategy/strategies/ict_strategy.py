@@ -1,6 +1,22 @@
 """ICT (Inner Circle Trader) trading strategy.
 
-Uses ICT concepts: displacement, order blocks, FVG, OTE, kill zones.
+Implements Michael Huddleston's ICT concepts:
+
+- Displacement — directional candle with body >= displacement_atr_mult × ATR,
+  identifying institutional-driven moves
+- Fair Value Gaps (FVG) — price inefficiency between two candles where
+  retail liquidity was taken
+- Optimal Trade Entry (OTE) — retracement into the 61.8%-70.2% Fibonacci
+  zone of the displacement range
+- Order Blocks — consolidation before a displacement move
+- Kill Zones — London (2-5am EST), New York (7-10am EST), Asian (7pm-2am EST)
+
+When require_killzone is True, only trade during active kill zone sessions.
+
+References:
+    - Huddleston, M. "Inner Circle Trader" (ICT) — 2016-2022 concepts.
+    - ICT mentorship materials on displacement, FVG, OTE, and
+      silver bullet methodologies.
 """
 
 from __future__ import annotations

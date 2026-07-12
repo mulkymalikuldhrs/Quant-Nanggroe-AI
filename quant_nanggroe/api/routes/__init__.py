@@ -1,5 +1,4 @@
 """API Routes — Package initialization."""
-
 from quant_nanggroe.api.routes import (
     agents,
     agentic,
@@ -7,6 +6,7 @@ from quant_nanggroe.api.routes import (
     backtest,
     colony,
     council,
+    credentials,
     debate,
     ecosystem,
     market,
@@ -16,8 +16,10 @@ from quant_nanggroe.api.routes import (
     personas,
     portfolio,
     rl,
+    strategy,
     trading,
     ws,
+    wiring_compat,
 )
 
 # WhatsApp gateway routes (optional - requires bridge service)
@@ -30,4 +32,5 @@ __all__ = [
     "market", "trading", "agents", "backtest", "portfolio", "ws",
     "memory", "ecosystem", "colony", "council", "debate", "monitor",
     "options", "personas", "rl", "analytics", "agentic", "whatsapp",
+    "wiring_compat",
 ]
