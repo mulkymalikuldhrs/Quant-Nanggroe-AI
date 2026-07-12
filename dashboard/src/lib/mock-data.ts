@@ -1,6 +1,33 @@
-// Mock data for when the Python backend is unavailable
+// Live proxy mock-data — fetches from real API, falls back to inline defaults.
+// ALL 14 dashboard pages continue to import from this file — zero page changes.
+// Uses Proxy so all property reads forward to the current (possibly API-refreshed) value.
 
-export const mockAgents = [
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// ── Proxy helper ─────────────────────────────────────────────────────────
+function live<T>(defaults: T, endpoint: string, mapper?: (d: unknown) => T): T {
+  let value = defaults;
+  fetch(`${API_BASE}${endpoint}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => { if (d != null) value = mapper ? mapper(d) : (d as T); })
+    .catch(() => {});
+  return new Proxy(defaults as Record<string, unknown>, {
+    get(_, p) { return (value as Record<string, unknown>)[p]; },
+    set(_, p, v) { (value as Record<string, unknown>)[p] = v; return true; },
+    has(_, p) { return p in value; },
+    ownKeys() { return Reflect.ownKeys(value); },
+    getOwnPropertyDescriptor(_, p) { return Object.getOwnPropertyDescriptor(value, p); },
+  }) as unknown as T;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+const pick = <T, K extends keyof T>(...keys: K[]) => (obj: T) => {
+  const out: Partial<T> = {};
+  keys.forEach((k) => (out[k] = obj[k]));
+  return out as Pick<T, K>;
+};
+
+const defaultAgents = [
   { id: "research", name: "Research Agent", status: "active", emotion: "curious", action: "Scanning SEC filings for AAPL", lastDecision: "Buy signal on AAPL", icon: "🔍" },
   { id: "market_intel", name: "Market Intelligence", status: "active", emotion: "focused", action: "Monitoring order flow", lastDecision: "High buy pressure detected", icon: "📊" },
   { id: "portfolio", name: "Portfolio Manager", status: "active", emotion: "confident", action: "Rebalancing positions", lastDecision: "Reduce NVDA to 8%", icon: "💼" },
@@ -14,14 +41,9 @@ export const mockAgents = [
   { id: "trader", name: "Trader Agent", status: "active", emotion: "decisive", action: "Placing stop-loss orders", lastDecision: "SL set at -2% for TSLA", icon: "📈" },
 ];
 
-export const mockPortfolio = {
-  totalValue: 284750.32,
-  dayPnl: 3241.56,
-  dayPnlPercent: 1.15,
-  totalPnl: 34750.32,
-  totalPnlPercent: 13.9,
-  cashBalance: 42850.0,
-  investedAmount: 241900.32,
+const defaultPortfolio = {
+  totalValue: 284750.32, dayPnl: 3241.56, dayPnlPercent: 1.15, totalPnl: 34750.32,
+  totalPnlPercent: 13.9, cashBalance: 42850.0, investedAmount: 241900.32,
   positions: [
     { symbol: "AAPL", name: "Apple Inc.", quantity: 50, avgPrice: 178.5, currentPrice: 189.84, pnl: 566.7, pnlPercent: 6.35, weight: 3.33, side: "long" },
     { symbol: "NVDA", name: "NVIDIA Corp.", quantity: 25, avgPrice: 450.2, currentPrice: 875.28, pnl: 10627.0, pnlPercent: 94.4, weight: 7.68, side: "long" },
@@ -33,49 +55,43 @@ export const mockPortfolio = {
     { symbol: "SOL", name: "Solana", quantity: 40, avgPrice: 95.5, currentPrice: 148.32, pnl: 2112.8, pnlPercent: 55.32, weight: 2.08, side: "long" },
   ],
   allocation: [
-    { name: "Crypto", value: 35, color: "#f59e0b" },
-    { name: "Equities", value: 30, color: "#10b981" },
-    { name: "ETFs", value: 15, color: "#3b82f6" },
-    { name: "Forex", value: 10, color: "#8b5cf6" },
+    { name: "Crypto", value: 35, color: "#f59e0b" }, { name: "Equities", value: 30, color: "#10b981" },
+    { name: "ETFs", value: 15, color: "#3b82f6" }, { name: "Forex", value: 10, color: "#8b5cf6" },
     { name: "Cash", value: 10, color: "#6b7280" },
   ],
 };
 
-export const mockEquityCurve = Array.from({ length: 90 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (89 - i));
-  const value = 250000 + Math.sin(i / 10) * 10000 + i * 400 + Math.random() * 3000;
-  return { date: date.toISOString().split("T")[0], value: Math.round(value * 100) / 100 };
+const eqCurve = (n: number) => Array.from({ length: n }, (_, i) => {
+  const d = new Date(); d.setDate(d.getDate() - (n - 1 - i));
+  return { date: d.toISOString().split("T")[0], value: Math.round((250000 + Math.sin(i / 10) * 10000 + i * 400 + Math.random() * 3000) * 100) / 100 };
+});
+const candles = (n: number) => Array.from({ length: n }, (_, i) => {
+  const d = new Date(); d.setDate(d.getDate() - (n - 1 - i));
+  const base = 67000 + Math.sin(i / 15) * 3000;
+  return { time: d.toISOString().split("T")[0], open: +(base + (Math.random() - 0.5) * 500).toFixed(2), high: +(base + Math.random() * 500).toFixed(2), low: +(base - Math.random() * 500).toFixed(2), close: +(base + (Math.random() - 0.5) * 200).toFixed(2) };
 });
 
-export const mockMarketData = {
+// ── Live exports (all 14 dashboard pages read these) ─────────────────────
+export const mockAgents = live(defaultAgents, "/api/agents/status");
+export const mockPortfolio = live(defaultPortfolio, "/api/portfolio/summary");
+export const mockEquityCurve = live(eqCurve(90), "/api/portfolio/equity-curve", (d) => (Array.isArray(d) ? d : eqCurve(90)));
+export const mockMarketData = live({
   symbols: [
     { symbol: "BTC", price: 67250.5, change: 2.34, volume: "28.5B" },
     { symbol: "ETH", price: 3520.8, change: 1.87, volume: "15.2B" },
     { symbol: "SPY", price: 528.75, change: 0.42, volume: "89.3M" },
     { symbol: "EUR/USD", price: 1.0872, change: -0.15, volume: "1.2T" },
   ],
-  sentiment: {
-    overall: 0.65,
-    fear_greed: 72,
-    sectors: [
-      { name: "Technology", sentiment: 0.78 },
-      { name: "Finance", sentiment: 0.55 },
-      { name: "Healthcare", sentiment: 0.62 },
-      { name: "Energy", sentiment: 0.45 },
-      { name: "Crypto", sentiment: 0.82 },
-    ],
-  },
-};
+  sentiment: { overall: 0.65, fear_greed: 72, sectors: [
+    { name: "Technology", sentiment: 0.78 }, { name: "Finance", sentiment: 0.55 },
+    { name: "Healthcare", sentiment: 0.62 }, { name: "Energy", sentiment: 0.45 },
+    { name: "Crypto", sentiment: 0.82 },
+  ]},
+}, "/api/market/sentiment");
 
 export const mockRiskData = {
-  var95: -4250.32,
-  var99: -8920.15,
-  cvar95: -6830.45,
-  maxDrawdown: -12.3,
-  currentDrawdown: -2.1,
-  kellyFraction: 0.18,
-  riskScore: 42,
+  var95: -4250.32, var99: -8920.15, cvar95: -6830.45, maxDrawdown: -12.3,
+  currentDrawdown: -2.1, kellyFraction: 0.18, riskScore: 42,
   checks: [
     { id: 1, name: "Position Size Limit", status: "pass", value: "8% of portfolio", limit: "10%" },
     { id: 2, name: "Sector Concentration", status: "pass", value: "28% tech", limit: "40%" },
@@ -88,20 +104,19 @@ export const mockRiskData = {
     { id: 9, name: "Kill Switch", status: "pass", value: "Off", limit: "N/A" },
   ],
   correlationMatrix: [
-    [1.0, 0.82, 0.45, 0.38, -0.12],
-    [0.82, 1.0, 0.51, 0.42, -0.08],
-    [0.45, 0.51, 1.0, 0.28, -0.15],
-    [0.38, 0.42, 0.28, 1.0, -0.05],
+    [1.0, 0.82, 0.45, 0.38, -0.12], [0.82, 1.0, 0.51, 0.42, -0.08],
+    [0.45, 0.51, 1.0, 0.28, -0.15], [0.38, 0.42, 0.28, 1.0, -0.05],
     [-0.12, -0.08, -0.15, -0.05, 1.0],
   ],
   correlationLabels: ["BTC", "ETH", "SPY", "AAPL", "EUR/USD"],
 };
 
-export const mockBacktestEngines = [
+const defaultEngines = [
   "Equity Engine", "Crypto Engine", "Forex Engine", "Futures Engine",
   "Composite Engine", "Market Detection", "Walk Forward", "Monte Carlo",
   "Mean Variance Optimizer", "Risk Parity Optimizer",
 ];
+export const mockBacktestEngines = live(defaultEngines as unknown[], "/api/backtest/engines", (d) => (Array.isArray(d) ? d : defaultEngines));
 
 export const mockFactorZoos = [
   { name: "Alpha101", count: 101, description: "WorldQuant 101 Alpha factors" },
@@ -113,7 +128,7 @@ export const mockFactorZoos = [
   { name: "Academic", count: 1, description: "Academic research factors" },
 ];
 
-export const mockExchanges = [
+const defaultExchanges = [
   { id: "alpaca", name: "Alpaca", type: "Equity", status: "connected" },
   { id: "binance", name: "Binance", type: "Crypto", status: "connected" },
   { id: "coinbase", name: "Coinbase", type: "Crypto", status: "connected" },
@@ -125,6 +140,7 @@ export const mockExchanges = [
   { id: "polymarket", name: "Polymarket", type: "Prediction", status: "connected" },
   { id: "solana", name: "Solana/Jupiter", type: "DeFi", status: "connected" },
 ];
+export const mockExchanges = live(defaultExchanges, "/api/trading/exchanges", (d) => (Array.isArray(d) ? d : defaultExchanges));
 
 export const mockSignals = [
   { id: 1, time: "2m ago", agent: "Research", symbol: "AAPL", signal: "BUY", confidence: 0.85, reason: "Strong earnings beat" },
@@ -135,80 +151,40 @@ export const mockSignals = [
   { id: 6, time: "20m ago", agent: "Macro", symbol: "SPY", signal: "BUY", confidence: 0.78, reason: "Fed pivot expected" },
 ];
 
-export const mockRecentDecisions = [
+const defaultDecisions = [
   { id: 1, time: "1m ago", agent: "Trader", decision: "Placed BUY limit order for NVDA at $870", impact: "high" },
   { id: 2, time: "3m ago", agent: "Risk", decision: "Reduced position size for TSLA to 3%", impact: "medium" },
   { id: 3, time: "7m ago", agent: "Portfolio", decision: "Rebalanced: +2% BTC, -2% AAPL", impact: "medium" },
   { id: 4, time: "12m ago", agent: "Strategy", decision: "Switched to momentum+value hybrid", impact: "high" },
   { id: 5, time: "18m ago", agent: "Crypto", decision: "Set stop-loss for ETH at $3,400", impact: "low" },
 ];
+export const mockRecentDecisions = live(defaultDecisions, "/api/agents/decisions", (d) => (Array.isArray(d) ? d : defaultDecisions));
 
 export const mockPerformanceMetrics = {
-  sharpe: 1.84,
-  sortino: 2.31,
-  calmar: 1.56,
-  maxDrawdown: -12.3,
-  winRate: 58.2,
-  profitFactor: 1.72,
-  avgWin: 345.6,
-  avgLoss: -201.4,
-  totalTrades: 247,
-  avgHoldingPeriod: "3.2 days",
+  sharpe: 1.84, sortino: 2.31, calmar: 1.56, maxDrawdown: -12.3,
+  winRate: 58.2, profitFactor: 1.72, avgWin: 345.6, avgLoss: -201.4,
+  totalTrades: 247, avgHoldingPeriod: "3.2 days",
 };
 
-export const mockCandlestickData = Array.from({ length: 100 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (99 - i));
-  const base = 67000 + Math.sin(i / 15) * 3000;
-  const open = base + (Math.random() - 0.5) * 500;
-  const close = open + (Math.random() - 0.5) * 800;
-  const high = Math.max(open, close) + Math.random() * 300;
-  const low = Math.min(open, close) - Math.random() * 300;
-  return {
-    time: date.toISOString().split("T")[0],
-    open: Math.round(open * 100) / 100,
-    high: Math.round(high * 100) / 100,
-    low: Math.round(low * 100) / 100,
-    close: Math.round(close * 100) / 100,
-  };
-});
+export const mockCandlestickData = live(candles(100), "/api/market/candles/BTC", (d) => (Array.isArray(d) ? d : candles(100)));
 
 export const mockBacktestResult = {
-  id: "bt_001",
-  strategy: "Momentum Alpha",
-  symbol: "AAPL",
-  startDate: "2023-01-01",
-  endDate: "2024-01-01",
-  initialCapital: 100000,
-  finalValue: 128450,
-  totalReturn: 28.45,
-  sharpe: 1.92,
-  maxDrawdown: -8.7,
-  winRate: 61.5,
-  totalTrades: 156,
+  id: "bt_001", strategy: "Momentum Alpha", symbol: "AAPL",
+  startDate: "2023-01-01", endDate: "2024-01-01",
+  initialCapital: 100000, finalValue: 128450, totalReturn: 28.45,
+  sharpe: 1.92, maxDrawdown: -8.7, winRate: 61.5, totalTrades: 156,
   equityCurve: Array.from({ length: 252 }, (_, i) => {
-    const date = new Date(2023, 0, 1);
-    date.setDate(date.getDate() + i);
-    const value = 100000 + Math.sin(i / 20) * 5000 + i * 110 + Math.random() * 2000;
-    return { date: date.toISOString().split("T")[0], value: Math.round(value * 100) / 100 };
+    const d = new Date(2023, 0, 1); d.setDate(d.getDate() + i);
+    return { date: d.toISOString().split("T")[0], value: Math.round((100000 + Math.sin(i / 20) * 5000 + i * 110 + Math.random() * 2000) * 100) / 100 };
   }),
   drawdownCurve: Array.from({ length: 252 }, (_, i) => {
-    const date = new Date(2023, 0, 1);
-    date.setDate(date.getDate() + i);
-    const dd = Math.sin(i / 30) * 5 + Math.random() * 3;
-    return { date: date.toISOString().split("T")[0], value: -Math.abs(dd) };
+    const d = new Date(2023, 0, 1); d.setDate(d.getDate() + i);
+    return { date: d.toISOString().split("T")[0], value: -Math.abs(Math.sin(i / 30) * 5 + Math.random() * 3) };
   }),
-  monteCarlo: {
-    simulations: 1000,
-    meanReturn: 26.8,
-    p5Return: 12.3,
-    p95Return: 42.1,
-    worstCase: -5.2,
-    bestCase: 58.4,
-  },
+  monteCarlo: { simulations: 1000, meanReturn: 26.8, p5Return: 12.3, p95Return: 42.1, worstCase: -5.2, bestCase: 58.4 },
 };
 
-export const mockStrategies = [
+const defaultStrategies = [
   { id: "strat_1", name: "Momentum Alpha", type: "Momentum", performance: 28.45, sharpe: 1.92, status: "active" },
   { id: "strat_2", name: "Value + Quality", type: "Value", performance: 18.23, sharpe: 1.45, status: "active" },
   { id: "strat_3", name: "Mean Reversion", type: "Statistical", performance: -2.15, sharpe: 0.82, status: "paused" },
@@ -216,14 +192,16 @@ export const mockStrategies = [
   { id: "strat_5", name: "Crypto Momentum", type: "Crypto", performance: 42.1, sharpe: 1.78, status: "active" },
   { id: "strat_6", name: "Forex Carry", type: "Forex", performance: 8.9, sharpe: 1.12, status: "paused" },
 ];
+export const mockStrategies = live(defaultStrategies, "/api/strategy/list", (d) => (Array.isArray(d) ? d : defaultStrategies));
 
-export const mockOrders = [
+const defaultOrders = [
   { id: "ord_1", symbol: "NVDA", side: "buy", type: "limit", quantity: 10, price: 870.0, status: "pending", time: "2m ago", exchange: "Alpaca" },
   { id: "ord_2", symbol: "BTC", side: "buy", type: "market", quantity: 0.1, price: 67250.5, status: "filled", time: "5m ago", exchange: "Binance" },
   { id: "ord_3", symbol: "TSLA", side: "sell", type: "stop", quantity: 5, price: 175.0, status: "active", time: "15m ago", exchange: "Alpaca" },
   { id: "ord_4", symbol: "ETH", side: "sell", type: "limit", quantity: 1.5, price: 3600.0, status: "pending", time: "22m ago", exchange: "Coinbase" },
   { id: "ord_5", symbol: "SPY", side: "buy", type: "market", quantity: 5, price: 528.75, status: "filled", time: "1h ago", exchange: "Alpaca" },
 ];
+export const mockOrders = live(defaultOrders, "/api/trading/orders", (d) => (Array.isArray(d) ? d : defaultOrders));
 
 export const mockDataProviders = [
   { name: "Alpaca", status: "connected", type: "Market Data", latency: "45ms" },
