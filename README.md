@@ -223,30 +223,30 @@ docker compose up -d --build
 
 ### ✅ Ready
 - **1766/1766 tests passing (100%)** — 154 test files, 106 strategies, 29 API routes, 7 brokers — **zero mock** (all tests exercise real code)
-|- Multi-agent orchestration (20+ agents in a unified system)
-|- Risk management engine (Kelly, VaR, drawdown, kill switch)
-|- Exchange API integrations (CCXT, Alpaca, yfinance, IBKR, MT5, Polymarket)
-|- WebSocket real-time data streaming with auto-reconnect (4 channels)
-|- Paper trading with state dumps to `paper_state/`
-|- Docker Compose deployment
-|- CLI, API, and daemon entry points
-|- Complete documentation (49 docs + agent-specific .md files)
-|- **Zero fragmentation** — all code lives in one unified structure
-|- **No orphan modules** — all Python packages have proper `__init__.py`
-|- **Apple macOS Liquid Glass Design System** — glassmorphism, blur effects, double-bezel cards
-|- **Live Multi-Broker Trading UI** — MT5, Binance, IBKR, Paper, Polymarket with cross-broker aggregation
-|- **15 Production-Ready Dashboard Pages** — all with real API, error handling, loading states
-|- **Real-time WebSocket** — 4 channels (price, regime, risk, portfolio) with exponential backoff
-|- **API Client** — retry logic, request dedup, timeout, 30+ typed endpoints
-|- **Auto Day/Night Theme** — system preference + localStorage + manual override
-|- **Bloomberg-Style Data Cells** — compact, color-coded, high-density financial UI
-|
-|### 🔄 In Progress
-|- Backtesting engine enhancements
-|- Reinforcement learning signal pipeline
-|- Live trading bridge (planned for v5.x)
-|- API routing unification (/api/ vs /api/v1/ mismatch)
-|- Security hardening
+- Multi-agent orchestration (20+ agents in a unified system)
+- Risk management engine (Kelly, VaR, drawdown, kill switch)
+- Exchange API integrations (CCXT, Alpaca, yfinance, IBKR, MT5, Polymarket)
+- WebSocket real-time data streaming with auto-reconnect (4 channels)
+- Paper trading with state dumps to `paper_state/`
+- Docker Compose deployment
+- CLI, API, and daemon entry points
+- Complete documentation (49 docs + agent-specific .md files)
+- **Zero fragmentation** — all code lives in one unified structure
+- **No orphan modules** — all Python packages have proper `__init__.py`
+- **Apple macOS Liquid Glass Design System** — glassmorphism, blur effects, double-bezel cards
+- **Live Multi-Broker Trading UI** — MT5, Binance, IBKR, Paper, Polymarket with cross-broker aggregation
+- **15 Production-Ready Dashboard Pages** — all with real API, error handling, loading states
+- **Real-time WebSocket** — 4 channels (price, regime, risk, portfolio) with exponential backoff
+- **API Client** — retry logic, request dedup, timeout, 30+ typed endpoints
+- **Auto Day/Night Theme** — system preference + localStorage + manual override
+- **Bloomberg-Style Data Cells** — compact, color-coded, high-density financial UI
+
+### 🔄 In Progress
+- Backtesting engine enhancements
+- Reinforcement learning signal pipeline
+- Live trading bridge (planned for v5.x)
+- API routing unification (/api/ vs /api/v1/ mismatch)
+- Security hardening
 
 ### Tech Stack
 - **Backend:** Python 3.11+, FastAPI, LangGraph, SQLAlchemy, Redis
@@ -266,7 +266,7 @@ The following research and documentation directories on the `D:\` drive contain 
 |----------|------|---------|-----------------|
 | AI Multicolony Docs | `D:\ai-multicolony-worktree\docs` | AGENT_ARCHITECTURE.md, MEMORY_ARCHITECTURE.md, BLUEPRINT.md | 🔥 Agent architecture patterns, decision logs |
 | Deer Flow Backend | `D:\ai-multicolony-worktree\packages\deer-flow\backend\docs` | API.md, AUTH design, ARCHITECTURE docs | 🔥 Backend patterns, auth, encryption |
-| Research Foundation | `D:\docs\research` | Research.md, bh-cyberbee-philosophy, DhaHer-Research-Queue | 🔥 Research methodology, philosophy, queue |
+| Research Foundation | `D:\docs\research` | Research.md, bh-cyberbee-philosophy, Dhaher-Research-Queue | 🔥 Research methodology, philosophy, queue |
 | Autonomous Organism | `D:\repositories\Autonomous-Organism\docs` | VISION, ARCHITECTURE, PRD | 🧠 Autonomous systems philosophy |
 | Trading Plan AI | `D:\repositories\archived\Trading-Plan-AI-Interactive-worktree\docs` | Trading plan templates, advanced UI | 📊 Trading strategy references |
 | Market Research Skills | `D:\ai-multicolony-worktree\skills\market-research-reports` | Market research automation | 📈 Automated market research |
