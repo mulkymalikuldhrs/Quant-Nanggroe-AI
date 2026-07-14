@@ -60,11 +60,15 @@ _strategy_module = None
 
 
 def _get_strategy_module():
-    """Lazy import of the strategies module."""
+    """Lazy import of the strategies module.
+
+    Returns a callable that creates strategy instances by name.
+    Uses a proper import path instead of circular self-reference.
+    """
     global _strategy_module
     if _strategy_module is None:
-        from quant_nanggroe.engine.strategy.strategies import create_strategy as _create
-        _strategy_module = _create
+        from quant_nanggroe.engine.strategies.registry import StrategyRegistry as _Reg
+        _strategy_module = lambda name, params=None: _Reg.create(name, parameters=params)
     return _strategy_module
 
 logger = logging.getLogger(__name__)
@@ -888,3 +892,26 @@ class StrategyWatcher:
 
 # Backwards-compatible alias used by tests / downstream code.
 StrategyConfigRegistry = StrategyRegistry
+
+
+def create_strategy(name: str):
+    """
+    Create a strategy instance by name.
+
+    Standalone convenience wrapper around ``StrategyRegistry.create_strategy_instance``.
+    Creates a temporary registry (with templates loaded) and returns the
+    strategy instance.
+
+    Args:
+        name: Strategy name to instantiate.
+
+    Returns:
+        A BaseStrategy subclass instance.
+
+    Raises:
+        KeyError: If the strategy is not found.
+        ValueError: If the strategy has no strategy_type.
+    """
+    registry = StrategyRegistry()
+    registry.load_templates()
+    return registry.create_strategy_instance(name)

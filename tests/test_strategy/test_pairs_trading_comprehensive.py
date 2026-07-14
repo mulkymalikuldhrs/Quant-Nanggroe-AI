@@ -47,7 +47,9 @@ class TestPairsTradingStrategyColumns(unittest.TestCase):
     def test_required_columns(self):
         strategy = PairsTradingStrategy()
         cols = strategy.required_columns()
-        self.assertIn("close", cols)
+        self.assertIn("ASSET_A", cols)
+        self.assertIn("ASSET_B", cols)
+        self.assertEqual(cols, ["ASSET_A", "ASSET_B"])
 
     def test_warmup_period(self):
         strategy = PairsTradingStrategy()
@@ -111,16 +113,16 @@ class TestPairsTradingStrategySignalGeneration(unittest.TestCase):
             "symbol": "ASSET_A",
             "symbol_pair": "ASSET_B",
         })
-        # Without proper symbol columns
-        data = pd.DataFrame({"close": [100, 101, 102]})
-        signal = strategy.generate_signal(data)
-        self.assertIsNone(signal)
+        # Without proper symbol columns — validate_data raises ValueError
+        data = pd.DataFrame({"close": [100, 101, 102], "high": [101, 102, 103], "low": [99, 100, 101]})
+        with self.assertRaises(ValueError):
+            strategy.generate_signal(data)
 
     def test_insufficient_data_returns_none(self):
         strategy = PairsTradingStrategy()
         small_data = pd.DataFrame({
-            "close": [100, 101, 102],
-            "symbol_pair": [50, 51, 52],
+            "ASSET_A": [100, 101, 102],
+            "ASSET_B": [50, 51, 52],
         })
         signal = strategy.generate_signal(small_data)
         self.assertIsNone(signal)
@@ -213,7 +215,7 @@ class TestPairsTradingStrategyEvidence(unittest.TestCase):
         self.data["TEST_B"] = y
 
     def test_entry_signal_evidence(self):
-        strategy = PairsTradingStrategy(params={"entry_z": 0.01})
+        strategy = PairsTradingStrategy(params={"symbol": "TEST_A", "symbol_pair": "TEST_B", "entry_z": 0.01})
         strategy._last_trade_bar = -50
         signal = strategy.generate_signal(self.data)
         if signal is not None:

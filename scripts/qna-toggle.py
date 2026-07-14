@@ -56,12 +56,31 @@ def _log_audit(state_dir: str, message: str) -> None:
 
 # ── Core API (testable via importlib) ────────────────────────────────────
 
+def _normalize(name: str) -> str:
+    """CamelCase/PascalCase → snake_case for strategy name matching."""
+    import re
+    s = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', name)
+    s = re.sub(r'([a-z\d])([A-Z])', r'\1_\2', s)
+    return s.lower()
+
+def _find_strategy(name: str, all_strats: list) -> str | None:
+    """Find strategy by exact match or normalized match."""
+    if name in all_strats:
+        return name
+    norm = _normalize(name)
+    for s in all_strats:
+        if _normalize(s) == norm:
+            return s
+    return None
+
 def enable_strategy(state_dir: str, strategy: str) -> dict:
     all_strats = list_strategies()
-    if strategy not in all_strats:
+    found = _find_strategy(strategy, all_strats)
+    if found is None:
         raise ValueError(
             f"Unknown strategy '{strategy}'. Available: {', '.join(all_strats)}"
         )
+    strategy = found
     config = read_config(state_dir)
     enabled = set(config.get("enabled", []))
     disabled = set(config.get("disabled", []))
@@ -78,10 +97,12 @@ def enable_strategy(state_dir: str, strategy: str) -> dict:
 
 def disable_strategy(state_dir: str, strategy: str) -> dict:
     all_strats = list_strategies()
-    if strategy not in all_strats:
+    found = _find_strategy(strategy, all_strats)
+    if found is None:
         raise ValueError(
             f"Unknown strategy '{strategy}'. Available: {', '.join(all_strats)}"
         )
+    strategy = found
     config = read_config(state_dir)
     enabled = set(config.get("enabled", []))
     disabled = set(config.get("disabled", []))

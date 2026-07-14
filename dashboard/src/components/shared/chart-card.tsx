@@ -1,7 +1,10 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface ChartCardProps {
   title: string;
@@ -9,31 +12,63 @@ interface ChartCardProps {
   children: React.ReactNode;
   className?: string;
   action?: React.ReactNode;
-  glow?: "emerald" | "red" | "blue" | "amber" | "purple" | "none";
+  loading?: boolean;
+  fullscreen?: boolean;
+  glow?: "emerald" | "amber" | "purple" | "cyan";
 }
 
-export function ChartCard({ title, subtitle, children, className, action, glow = "none" }: ChartCardProps) {
-  const glowStyles = {
-    emerald: "shadow-[0_0_30px_rgba(16,185,129,0.08)] border-emerald-500/10",
-    red: "shadow-[0_0_30px_rgba(239,68,68,0.08)] border-red-500/10",
-    blue: "shadow-[0_0_30px_rgba(59,130,246,0.08)] border-blue-500/10",
-    amber: "shadow-[0_0_30px_rgba(245,158,11,0.08)] border-amber-500/10",
-    purple: "shadow-[0_0_30px_rgba(168,85,247,0.08)] border-purple-500/10",
-    none: "",
-  };
+export function ChartCard({
+  title,
+  subtitle,
+  children,
+  className,
+  action,
+  loading = false,
+  fullscreen: allowFullscreen = false,
+  glow,
+}: ChartCardProps) {
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <Card className={cn(glowStyles[glow], className)}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <Card
+      className={cn(
+        "relative",
+        expanded && "fixed inset-4 z-50 overflow-auto",
+        glow === "emerald" && "shadow-[0_0_30px_rgba(16,185,129,0.06)]",
+        glow === "amber" && "shadow-[0_0_30px_rgba(245,158,11,0.06)]",
+        glow === "purple" && "shadow-[0_0_30px_rgba(168,85,247,0.06)]",
+        glow === "cyan" && "shadow-[0_0_30px_rgba(6,182,212,0.06)]",
+        className,
+      )}
+    >
+      <CardHeader>
         <div>
           <CardTitle>{title}</CardTitle>
-          {subtitle && (
-            <p className="text-xs text-white/40 mt-0.5">{subtitle}</p>
+          {subtitle && <CardDescription>{subtitle}</CardDescription>}
+        </div>
+        <div className="flex items-center gap-2">
+          {action}
+          {allowFullscreen && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+            </Button>
           )}
         </div>
-        {action}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+
+      {loading ? (
+        <div className="space-y-3">
+          <div className="h-4 w-3/4 animate-shimmer rounded" />
+          <div className="h-[200px] animate-shimmer rounded-lg" />
+        </div>
+      ) : (
+        <div>{children}</div>
+      )}
     </Card>
   );
 }

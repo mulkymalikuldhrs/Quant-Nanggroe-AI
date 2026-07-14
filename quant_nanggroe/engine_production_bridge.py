@@ -56,9 +56,8 @@ class ProductionStrategyRunner:
     
     def _load_strategies(self):
         try:
-            from quant_nanggroe.engine.strategy.strategies import (
-                create_strategy, list_strategies
-            )
+            from quant_nanggroe.engine.strategy.loader import create_strategy
+            from quant_nanggroe.engine.strategies.registry import list_strategies
             self.available = list_strategies()
             to_load = [
                 ("MeanReversion", {"lookback": 20, "entry_z": 2.0, "exit_z": 0.5}),

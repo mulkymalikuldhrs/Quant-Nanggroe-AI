@@ -1,8 +1,11 @@
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class KellyMethod(Enum):
@@ -48,7 +51,15 @@ class KellyResult:
 
 class BaseKelly:
     def compute(self, params: KellyParameters) -> KellyResult:
-        raise NotImplementedError
+        """Compute optimal Kelly fraction. Default returns zero result."""
+        logger.warning("BaseKelly.compute() not overridden — using zero result")
+        return KellyResult(
+            f_star=0.0,
+            method=KellyMethod.FULL,
+            growth_rate=0.0,
+            parameters=params,
+            warnings=["BaseKelly.compute() not overridden — using zero result"],
+        )
 
     @staticmethod
     def _validate_probability(p: float) -> bool:

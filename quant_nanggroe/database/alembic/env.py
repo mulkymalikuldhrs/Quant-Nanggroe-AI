@@ -6,6 +6,10 @@ from quant_nanggroe database models.
 
 Supports both offline (SQL script generation) and online (live migration)
 modes. The async engine is used for online migrations with run_async.
+
+NOTE: This file is executed by the Alembic CLI, not imported directly.
+Top-level code is guarded to prevent import errors when pkgutil or
+other tools scan the package.
 """
 
 from __future__ import annotations
@@ -21,23 +25,32 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from quant_nanggroe.config.settings import get_settings
 from quant_nanggroe.database.models import Base
 
-# Alembic Config object — provides access to values in alembic.ini
-config = context.config
+# ── Guard: Module-level Alembic config ────────────────────────────
+# This file is designed to be run by the Alembic CLI, not imported directly.
+# When imported as a regular Python module (e.g. by pkgutil), config may
+# not be available. All top-level code is guarded accordingly.
+_IS_ALEMBIC_RUN = False
+try:
+    # alembic.context.config is only set when running via the Alembic CLI
+    config = context.config
+    _IS_ALEMBIC_RUN = config is not None
+except (AttributeError, TypeError):
+    config = None
 
-# ── Logging Setup ───────────────────────────────────────────────────
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
-# ── MetaData Target ─────────────────────────────────────────────────
-# This is the MetaData object that Autogenerate will compare against.
-target_metadata = Base.metadata
-
-# ── Override sqlalchemy.url from settings ───────────────────────────
-# Use the sync URL for migrations (Alembic runs synchronously for offline mode,
-# but we use the async engine for online mode via run_async).
-settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.db.sync_url)
-
+if _IS_ALEMBIC_RUN:
+    # ── Logging Setup ───────────────────────────────────────────────────
+    if config.config_file_name is not None:
+        fileConfig(config.config_file_name)
+    
+    # ── MetaData Target ─────────────────────────────────────────────────
+    target_metadata = Base.metadata
+    
+    # ── Override sqlalchemy.url from settings ───────────────────────────
+    settings = get_settings()
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+else:
+    config = None
+    target_metadata = None
 
 def run_migrations_offline() -> None:
     """
@@ -129,7 +142,9 @@ def run_migrations_online() -> None:
 
 
 # ── Entry Point ─────────────────────────────────────────────────────
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+# Only run migrations when executing via Alembic CLI (not when imported as module)
+if _IS_ALEMBIC_RUN:
+    if context.is_offline_mode():
+        run_migrations_offline()
+    else:
+        run_migrations_online()

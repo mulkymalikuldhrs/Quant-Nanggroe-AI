@@ -8,7 +8,8 @@ All exchange implementations use CCXT as the underlying library.
 
 Supported Exchanges
 -------------------
-binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase
+binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase,
+ibkr, alpaca, mt5, paper
 
 Usage
 -----
@@ -49,6 +50,18 @@ try:
     from quant_nanggroe.exchange.mt5_broker import MT5Broker
 except ImportError:
     MT5Broker = None  # type: ignore[assignment,misc]
+
+# IBKRBroker requires the ``ib_insync`` package (optional)
+try:
+    from quant_nanggroe.exchange.ibkr_broker import IBKRBroker
+except ImportError:
+    IBKRBroker = None  # type: ignore[assignment,misc]
+
+# AlpacaBroker requires the ``alpaca-py`` package (optional)
+try:
+    from quant_nanggroe.exchange.alpaca_broker import AlpacaBroker
+except ImportError:
+    AlpacaBroker = None  # type: ignore[assignment,misc]
 
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 
@@ -250,8 +263,9 @@ class ExchangeFactoryError(Exception):
 class ExchangeFactory:
     """Factory for creating exchange clients dynamically.
 
-    Supports creating CCXT-backed exchange clients for 8 major exchanges
-    with automatic configuration validation and capability detection.
+    Supports creating CCXT-backed exchange clients for major exchanges
+    with automatic configuration validation and capability detection,
+    plus IBKR, Alpaca, MT5, and paper trading brokers.
 
     Usage
     -----
@@ -350,6 +364,30 @@ class ExchangeFactory:
                 password=api_secret,
                 server=passphrase,
                 initial_capital=initial_capital,
+            )
+
+        # Handle Interactive Brokers (uses TWS/Gateway socket connection)
+        if name_lower in ("ibkr", "interactivebrokers"):
+            if IBKRBroker is None:
+                raise ExchangeFactoryError(
+                    "IBKRBroker unavailable: install ib_insync (pip install ib_insync)",
+                    exchange=exchange_name,
+                )
+            return self._create_ibkr_broker(
+                client_id=api_key,
+                host=passphrase,
+            )
+
+        # Handle Alpaca (requires API key + secret)
+        if name_lower == "alpaca":
+            if AlpacaBroker is None:
+                raise ExchangeFactoryError(
+                    "AlpacaBroker unavailable: install alpaca-py (pip install alpaca-py)",
+                    exchange=exchange_name,
+                )
+            return self._create_alpaca_broker(
+                api_key=api_key,
+                api_secret=api_secret,
             )
 
         # Validate exchange name
@@ -468,6 +506,69 @@ class ExchangeFactory:
         )
         broker = MT5Broker(config)  # type: ignore[operator]
         self._created_exchanges["mt5"] = broker
+        return broker
+
+    def _create_ibkr_broker(
+        self,
+        client_id: Optional[str] = None,
+        host: Optional[str] = None,
+    ) -> "IBKRBroker":  # type: ignore[name-defined]  # noqa: F821
+        """Create an Interactive Brokers broker connection.
+
+        IBKR uses a local TWS/Gateway socket connection requiring no
+        third-party API key.
+
+        Args:
+            client_id: TWS client ID (mapped to api_key).
+            host: TWS/Gateway host address (mapped to passphrase).
+
+        Returns:
+            An :class:`~quant_nanggroe.exchange.ibkr_broker.IBKRBroker`.
+        """
+        options: Dict[str, Any] = {}
+        if client_id is not None:
+            options["client_id"] = int(client_id)
+        if host is not None:
+            options["host"] = host
+
+        config = ExchangeConfig(
+            exchange_id="ibkr",
+            api_key=client_id,
+            api_secret=None,
+            passphrase=None,
+            sandbox=self._config.sandbox,
+            options=options,
+        )
+        broker = IBKRBroker(config)  # type: ignore[operator]
+        self._created_exchanges["ibkr"] = broker
+        return broker
+
+    def _create_alpaca_broker(
+        self,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+    ) -> "AlpacaBroker":  # type: ignore[name-defined]  # noqa: F821
+        """Create an Alpaca broker connection.
+
+        Alpaca requires API key + secret for both paper and live trading.
+
+        Args:
+            api_key: Alpaca API key.
+            api_secret: Alpaca API secret.
+
+        Returns:
+            An :class:`~quant_nanggroe.exchange.alpaca_broker.AlpacaBroker`.
+        """
+        config = ExchangeConfig(
+            exchange_id="alpaca",
+            api_key=api_key,
+            api_secret=api_secret,
+            passphrase=None,
+            sandbox=self._config.sandbox,
+            options={},
+        )
+        broker = AlpacaBroker(config)  # type: ignore[operator]
+        self._created_exchanges["alpaca"] = broker
         return broker
 
     # ------------------------------------------------------------------ #

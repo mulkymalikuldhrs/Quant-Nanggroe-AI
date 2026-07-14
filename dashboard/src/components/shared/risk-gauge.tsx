@@ -3,82 +3,103 @@
 import { cn } from "@/lib/utils";
 
 interface RiskGaugeProps {
-  value: number;
-  maxValue?: number;
-  label: string;
-  sublabel?: string;
-  className?: string;
+  value: number; // 0 to 1 (or absolute value for maxValue mode)
+  label?: string;
   size?: "sm" | "md" | "lg";
-  variant?: "default" | "danger" | "warning" | "safe";
+  className?: string;
+  showValue?: boolean;
+  sublabel?: string;
+  maxValue?: number;
+  variant?: string;
 }
+
+const sizeMap = {
+  sm: { width: 80, height: 44, stroke: 4, fontSize: "text-xs" },
+  md: { width: 120, height: 64, stroke: 6, fontSize: "text-sm" },
+  lg: { width: 160, height: 84, stroke: 8, fontSize: "text-lg" },
+};
 
 export function RiskGauge({
   value,
-  maxValue = 100,
   label,
-  sublabel,
-  className,
   size = "md",
-  variant = "default",
+  className,
+  showValue = true,
+  sublabel,
+  maxValue,
+  variant,
 }: RiskGaugeProps) {
-  const percentage = Math.min(100, Math.max(0, (value / maxValue) * 100));
-  const radius = size === "sm" ? 40 : size === "md" ? 56 : 72;
-  const strokeWidth = size === "sm" ? 6 : size === "md" ? 8 : 10;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const config = sizeMap[size];
+  // If maxValue is provided, normalize value to 0-1 range
+  const normalizedValue = maxValue ? Math.max(0, Math.min(1, value / maxValue)) : value;
+  const clampedValue = Math.max(0, Math.min(1, normalizedValue));
+  const cx = config.width / 2;
+  const cy = config.height * 0.85;
+  const radius = Math.min(cx, cy) - config.stroke;
+  const arcLength = Math.PI * radius;
+  const offset = arcLength * (1 - clampedValue);
 
-  const getGaugeColor = () => {
-    if (variant === "danger" || percentage > 75) return "#ef4444";
-    if (variant === "warning" || percentage > 50) return "#f59e0b";
-    if (variant === "safe" || percentage <= 25) return "#10b981";
-    return "#3b82f6";
-  };
+  // Color based on value
+  const color =
+    clampedValue < 0.3 ? "#34d399" :
+    clampedValue < 0.6 ? "#fbbf24" :
+    "#f87171";
 
-  const color = getGaugeColor();
-  const fontSize = size === "sm" ? "text-lg" : size === "md" ? "text-2xl" : "text-3xl";
+  const label_text =
+    clampedValue < 0.3 ? "Low Risk" :
+    clampedValue < 0.6 ? "Medium Risk" :
+    "High Risk";
 
   return (
-    <div className={cn("flex flex-col items-center gap-2", className)}>
-      <div className="relative">
-        <svg
-          width={(radius + strokeWidth) * 2}
-          height={(radius + strokeWidth) * 2}
-          className="-rotate-90"
-        >
-          <circle
-            cx={radius + strokeWidth}
-            cy={radius + strokeWidth}
-            r={radius}
-            fill="none"
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth={strokeWidth}
-          />
-          <circle
-            cx={radius + strokeWidth}
-            cy={radius + strokeWidth}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-1000 ease-out"
-            style={{ filter: `drop-shadow(0 0 6px ${color}40)` }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn("font-mono font-bold text-white", fontSize)}>
-            {typeof value === "number" ? value.toFixed(1) : value}
+    <div className={cn("flex flex-col items-center", className)}>
+      <svg width={config.width} height={config.height} viewBox={`0 0 ${config.width} ${config.height}`}>
+        {/* Background arc */}
+        <path
+          d={`M ${config.stroke},${cy} A ${cx - config.stroke},${cy - config.stroke} 0 0,1 ${config.width - config.stroke},${cy}`}
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={config.stroke}
+          strokeLinecap="round"
+        />
+        {/* Value arc */}
+        <path
+          d={`M ${config.stroke},${cy} A ${cx - config.stroke},${cy - config.stroke} 0 0,1 ${config.width - config.stroke},${cy}`}
+          fill="none"
+          stroke={color}
+          strokeWidth={config.stroke}
+          strokeLinecap="round"
+          strokeDasharray={arcLength}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1)" }}
+        />
+        {/* Glow dot */}
+        <circle
+          cx={cx + (radius * Math.cos(Math.PI * (1 - clampedValue)))}
+          cy={cy + (-radius * Math.sin(Math.PI * (1 - clampedValue)))}
+          r={config.stroke * 0.6}
+          fill={color}
+          filter={`drop-shadow(0 0 6px ${color}80)`}
+        />
+      </svg>
+
+      {showValue && (
+        <div className="text-center -mt-1">
+          <span className={cn(
+            "font-mono font-bold",
+            config.fontSize,
+          )}
+          style={{ color }}
+          >
+            {maxValue ? value.toLocaleString() : `${(clampedValue * 100).toFixed(0)}%`}
           </span>
-          {sublabel && (
-            <span className="text-[10px] text-white/40">{sublabel}</span>
+          {label && (
+            <p className="text-[10px] text-white/30 mt-0.5">{label}</p>
+          )}
+          {sublabel && !maxValue && (
+            <p className="text-[9px] text-white/20 mt-0.5">{sublabel}</p>
           )}
         </div>
-      </div>
-      <div className="text-center">
-        <p className="text-xs font-medium text-white/60">{label}</p>
-      </div>
+      )}
     </div>
   );
 }

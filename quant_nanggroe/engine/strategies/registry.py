@@ -69,3 +69,35 @@ class StrategyRegistry:
 
 
 __all__ = ["StrategyRegistry"]
+
+
+# Module-level convenience functions (delegate to class methods)
+
+_registry_instance = StrategyRegistry()
+
+
+def list_strategies() -> list[str]:
+    """List all registered strategy names. Convenience function."""
+    return _registry_instance.list_strategies()
+
+
+def get_strategy_metadata(name: str) -> dict:
+    """Get metadata for a strategy. Convenience function.
+
+    Args:
+        name: Strategy name.
+
+    Returns:
+        Dict with strategy metadata.
+
+    Raises:
+        ValueError: If the strategy is not registered.
+    """
+    strategy_class = StrategyRegistry.get(name)
+    if strategy_class is None:
+        raise ValueError(f"Strategy '{name}' not found in registry")
+    return {
+        "name": name,
+        "category": getattr(strategy_class, "name", name),
+        "description": getattr(strategy_class, "description", ""),
+    }

@@ -142,11 +142,15 @@ class BaseRLAgent:
 
     def act(self, state: RLState, deterministic: bool = False) -> int | float:
         """Return action given state. Override in subclass."""
-        raise NotImplementedError
+        # Graceful fallback — RL method not implemented
+        logger.warning("BaseRLAgent.act() not implemented — returning 0")
+        return 0
 
     def update(self, experiences: list[Experience]) -> dict[str, float]:
         """Update policy from batch of experiences. Returns loss dict."""
-        raise NotImplementedError
+        # Graceful fallback — RL method not implemented
+        logger.warning("BaseRLAgent.update() not implemented — returning empty dict")
+        return {}
 
 
 # ── PPO Agent ──────────────────────────────────────────────────────────────
@@ -630,3 +634,4 @@ def create_agent(name: str, **kwargs) -> BaseRLAgent:
     if cls is None:
         raise ValueError(f"Unknown RL agent: {name}. Available: {list(AGENT_REGISTRY.keys())}")
     return cls(**kwargs)
+

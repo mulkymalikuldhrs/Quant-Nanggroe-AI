@@ -1,30 +1,139 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: #0a0a1a;
-  --color-foreground: #ffffff;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ═══════════════════════════════════════════════════════════════════
+   QUANT NANGGROE AI — Design System
+   Apple macOS Liquid Glass × Bloomberg Terminal × Quant Hedge Fund
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Brand Colors ─────────────────────────────── */
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+  --color-brand-900: #064e3b;
+
+  /* ── Surface Colors (Dark) ────────────────────── */
+  --color-surface-base: #0a0a1a;
+  --color-surface-elevated: #12122a;
+  --color-surface-glass: rgba(18, 18, 42, 0.72);
+  --color-surface-card: rgba(255, 255, 255, 0.03);
+  --color-surface-hover: rgba(255, 255, 255, 0.06);
+  --color-surface-active: rgba(255, 255, 255, 0.09);
+
+  /* ── Border Colors ────────────────────────────── */
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
+  --color-border-default: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-border-glass: rgba(255, 255, 255, 0.12);
+
+  /* ── Text Colors ──────────────────────────────── */
+  --color-text-primary: rgba(255, 255, 255, 0.92);
+  --color-text-secondary: rgba(255, 255, 255, 0.56);
+  --color-text-tertiary: rgba(255, 255, 255, 0.32);
+  --color-text-quaternary: rgba(255, 255, 255, 0.16);
+
+  /* ── Semantic Colors ──────────────────────────── */
+  --color-profit: #34d399;
+  --color-loss: #f87171;
+  --color-warning: #fbbf24;
+  --color-info: #60a5fa;
+  --color-neutral: #9ca3af;
+
+  /* ── Bloomberg Colors ─────────────────────────── */
+  --color-bbg-bg: #0a0a1a;
+  --color-bbg-cell: #0d0d20;
+  --color-bbg-positive: #00c853;
+  --color-bbg-negative: #ff1744;
+  --color-bbg-neutral: #90a4ae;
+  --color-bbg-highlight: rgba(16, 185, 129, 0.08);
+
+  /* ── Font Families ────────────────────────────── */
+  --font-sans: "Geist", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+  --font-display: "Geist", "SF Pro Display", sans-serif;
+
+  /* ── Border Radius ────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ──────────────────────────────────── */
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.28);
+  --shadow-glass-lg: 0 16px 48px rgba(0, 0, 0, 0.36);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 10px 40px rgba(0, 0, 0, 0.24);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* ── Animations ───────────────────────────────── */
+  --animate-shimmer: shimmer 2.5s ease-in-out infinite;
+  --animate-slide-up: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-down: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-pulse-soft: pulseSoft 3s ease-in-out infinite;
+  --animate-ticker: ticker 30s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
 }
 
-:root {
-  --background: #0a0a1a;
-  --foreground: #ffffff;
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-.light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px rgba(16, 185, 129, 0.1); }
+  to { box-shadow: 0 0 40px rgba(16, 185, 129, 0.2); }
+}
+
+/* ── Base Styles ────────────────────────────────────────────────── */
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 *::-webkit-scrollbar-track {
@@ -32,73 +141,186 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background-color: #0a0a1a;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.font-mono {
-  font-family: var(--font-mono), 'SF Mono', 'Fira Code', monospace;
+/* ── Glassmorphism Utilities ────────────────────────────────────── */
+
+.glass {
+  background: rgba(18, 18, 42, 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Glassmorphism utility */
-.glass {
+.glass-strong {
+  background: rgba(18, 18, 42, 0.85);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-light {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Glow effects */
-.glow-emerald {
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.1);
+/* ── Card with Double-Bezel Architecture ─────────────────────────── */
+
+.double-bezel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-inner), var(--shadow-card);
 }
 
-.glow-red {
-  box-shadow: 0 0 30px rgba(239, 68, 68, 0.1);
+.double-bezel::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius-xl) - 1px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.glow-blue {
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.1);
+/* ── Bloomberg Data Cell ─────────────────────────────────────────── */
+
+.bbg-cell {
+  background: rgba(13, 13, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  transition: background 0.2s ease;
 }
 
-/* Animation keyframes */
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.bbg-cell:hover {
+  background: rgba(13, 13, 32, 0.9);
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ── Ticker Tape ─────────────────────────────────────────────────── */
+
+.ticker-tape {
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+}
+
+.ticker-tape-inner {
+  display: inline-flex;
+  gap: 3rem;
+  animation: ticker 30s linear infinite;
+}
+
+.ticker-tape:hover .ticker-tape-inner {
+  animation-play-state: paused;
+}
+
+/* ── Market Data Colors ──────────────────────────────────────────── */
+
+.text-profit { color: #34d399; }
+.text-loss { color: #f87171; }
+.text-bid { color: #34d399; }
+.text-ask { color: #f87171; }
+.text-flash { color: #fbbf24; }
+.bg-profit { background: rgba(52, 211, 153, 0.08); }
+.bg-loss { background: rgba(248, 113, 113, 0.08); }
+.bg-flash { background: rgba(251, 191, 36, 0.08); }
+
+/* ── Animations ──────────────────────────────────────────────────── */
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.06) 37%,
+    rgba(255, 255, 255, 0.02) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.3s ease-out;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Skeleton / shimmer loading */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out both;
 }
 
-.animate-shimmer {
-  animation: shimmer 1.5s infinite linear;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
-/* Light mode adjustments */
-.light .glass {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(0, 0, 0, 0.08);
+/* ── Reduced Motion ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ticker-tape-inner {
+    animation: none !important;
+  }
+}
+
+/* ── Noise / Grain Overlay ───────────────────────────────────────── */
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Transitions ─────────────────────────────────────────────────── */
+
+.transition-glass {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Custom Scrollbar for Sidebar ────────────────────────────────── */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+}
+
+/* ── Selection ───────────────────────────────────────────────────── */
+
+::selection {
+  background: rgba(16, 185, 129, 0.3);
+  color: white;
 }

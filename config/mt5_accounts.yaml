@@ -1,0 +1,19 @@
+# MT5 Accounts — Exness / Valutrades / broker retail lain
+# Setiap akun = 1 instance MetaTrader 5 terminal (login + password + server).
+# Broker ini TIDAK punya API publik, jadi eksekusi lewat MT5 terminal lokal.
+#
+# server: lihat di MT5 terminal (File -> Login).
+# role: primary | failover | data_only
+
+accounts:
+  - name: exness_trial
+    login: "414016058"
+    password: "@15September"
+    server: "Exness-MT5Trial6"
+    role: primary
+
+#  - name: valutrades_1
+#    login: "87654321"
+#    password: "YOUR_VALUTRADES_PASSWORD"
+#    server: "Valutrades-Live"
+#    role: failover

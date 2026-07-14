@@ -70,8 +70,8 @@ class AdaptiveSignalPipeline:
     def _load_strategies(self):
         """Load all 15 strategies from the engine registry."""
         try:
-            from quant_nanggroe.engine.strategy.strategies import (
-                create_strategy,
+            from quant_nanggroe.engine.strategy.loader import create_strategy
+            from quant_nanggroe.engine.strategies.registry import (
                 list_strategies,
                 get_strategy_metadata,
             )

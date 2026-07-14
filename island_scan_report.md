@@ -1,0 +1,538 @@
+# Island / Split / Orphan Scan — Quant-Nanggroe-AI
+
+Modules scanned: 639
+Entry points: 6
+Reachable from entry points: 2
+
+## Orphaned / Undocumented Modules
+
+- `quant_nanggroe.agents.bridges.kelly_bridge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.bridges.risk_gate_bridge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.browser` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.chinese_wall` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.coder` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.colony` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.compliance.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.council.debate` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.council.voting` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.crypto.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.crypto.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.crypto.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate.council_logger` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate.engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate.graph` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate.reflection` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate.research_debate` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate.risk_debate` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.debate_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.execution.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.execution.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.execution.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.executor` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.forex.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.forex.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.forex.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.geopolitics.american_order` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.geopolitics.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.geopolitics.chinese_order` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.geopolitics.european_order` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.geopolitics.islamic_finance` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.geopolitics.multipolar` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.gold_trader` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.graph` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.macro.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.macro.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.macro.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.manus` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.marketplace` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.base_investor` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.cathie_wood` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.michael_burry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.peter_lynch` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.ray_dalio` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.stanley_druckenmiller` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.personas.warren_buffett` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.planner` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.portfolio.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.portfolio.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.portfolio.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.protocols` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.registry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.researcher` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.researcher.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.researcher.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.researcher.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.risk.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.risk.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.risk.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.security` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.smc.enhanced` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.strategist.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.strategist.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.strategist.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.telegram_bot` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.backtest` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.competition_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.emotional_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.execution` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.flow_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.forecast_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.geopolitical_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.intermarket_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.market_data` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.screener_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.sentiment` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.skill_tool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.tools.technical` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.trader.agent` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.trader.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.trader.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.agents.voice` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.middleware` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.agentic` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.agents` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.analytics` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.backtest` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.brokers` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.channels` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.colony` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.council` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.credentials` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.debate` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.ecosystem` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.fred` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.geopolitics` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.api.routes.market` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.memory` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.monitor` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.options` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.personas` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.portfolio` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.rl` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.sec_edgar` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.signal_generator` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.strategies` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.trading` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.whatsapp` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.wiring_compat` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.routes.ws` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.api.schemas` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.auto_aware` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.bridge.data_bridge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.cli` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.config.logging_config` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.connectors.broker_base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.core.circuit_breaker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.core.pii_redaction` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.cache` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.data_manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.failover_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.models.fixed_income` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.data.models.metrics` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.data.models.options` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.data.monitor` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.alpaca` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.alpha_vantage` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.binance` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.coingecko` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.coingecko_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.crypto_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.finnhub_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.fred` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.macro_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.openbb_mcp` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.polygon` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.sec_edgar` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.twelvedata` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.providers.yahoo` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.survivorship` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.data.warehouse` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.database.alembic.env` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.database.alembic.versions.001_initial_schema` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.db.models` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.agentic_trading` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.analysis.bootstrap` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.analysis.factors` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.analytics.metrics` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.api.health` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.audit` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.autoswitch` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.auto_tune` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.benchmarks` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.cpcv` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.base_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.composite_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.crypto_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.equity_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.forex_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.futures_engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.engines.market_detection` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.execution` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.fama_french` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.hermes_backtest` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.hermes_portfolio` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.loaders.base_loader` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.loaders.ccxt_loader` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.loaders.yfinance_loader` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.metrics` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.monte_carlo` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.nautilus_adapter` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.optimizers.base_optimizer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.optimizers.equal_volatility_optimizer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.optimizers.mean_variance_optimizer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.optimizers.risk_parity_optimizer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.persistence` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.portfolio` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.psr` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.report` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.risk_models` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.backtest.walk_forward` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.colony.message_bus` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.colony.orchestrator` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.colony.tasks` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.colony.worker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.core.circuit_breaker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.core.edge_case_handler` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.core.edge_cases` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.data.fallback_chain` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.data.provider_interface` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.data.provider_registry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.decision` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.almgren_chriss` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.brokers.paper` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.fill` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.guards.cooldown` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.guards.max_position` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.guards.whitelist` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.hermes_execution` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.execution.order` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.academic` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.alpha101` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.fundamental` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.gtja191` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.hermes_ta` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.pipeline` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.qlib158` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.registry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.factors.technical` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.fundamental.calendar` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.fundamental.cot` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.fundamental.sentiment` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.grounding` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_auditor` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_chart` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_decision` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_journal` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_macro` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_market_state` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_math` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_news` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_pressure` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.hermes_shared_state` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.integration.bh_qna_bridge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.kelly.adaptive` — UNDOCUMENTED (no docstring, unreachable) [no docstring]
+- `quant_nanggroe.engine.kelly.backtest_integration` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.kelly.base` — UNDOCUMENTED (no docstring, unreachable) [no docstring]
+- `quant_nanggroe.engine.kelly.bayesian` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.kelly.correlation` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.kelly.drawdown` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.kelly.fractional` — UNDOCUMENTED (no docstring, unreachable) [no docstring]
+- `quant_nanggroe.engine.kelly.multi_asset` — UNDOCUMENTED (no docstring, unreachable) [no docstring]
+- `quant_nanggroe.engine.kelly.optimal_f` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.live.adaptive_integration` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.llm_router` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.microstructure` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.ml.feature_engineer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.ml.model_manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.ml.signal_generator` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.model_registry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.models.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.models.ensemble` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.models.feature_store` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.models.signal_generator` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.monitor_hub` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.nim_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.nvidia_nim.client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.nvidia_nim.config` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.nvidia_nim.models` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.nvidia_nim.prompts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.nvidia_nim.router` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.observability` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.options.analyzer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.options.strategies` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.options.vol_surface` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.pattern_recorder.dtw` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.pattern_recorder.dtw_matcher` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.pattern_recorder.embedding` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.pattern_recorder.matrix_profile` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.pattern_recorder.recurrence_plot` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.pattern_recorder.registry` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.persistence` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.pressure` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.regime.correlation_regime` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.regime.ensemble` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.regime.hmm_detector` — UNDOCUMENTED (no docstring, unreachable) [no docstring]
+- `quant_nanggroe.engine.regime.macro_regime` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.regime.regime_store` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.regime.strategy_selector` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.regime.volatility_clustering` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.regime_detector` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.atr_sl` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.checks` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.constants` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.correlation` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.correlation_regime` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.drawdown` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.emotional_lockout` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.hermes_kill_switch` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.hermes_risk_officer` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.kelly` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.kill_switch` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.position_sizing` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.risk_parity` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.sizing` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.strategy_auto_disable` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.trailing_stop` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.risk.var` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.rl.agents` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.dex_intelligence` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.intermarket` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.liquidity_orderflow` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.macro_analysis` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.market_structure` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.monetary_fundamental` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.orchestrator` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.positioning_crowd` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.screener.quant_scoring` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.shadow.account` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.shadow.codegen` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.shadow.extractor` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.shadow.scanner` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.fibonacci` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.hermes_smc` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.ict` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.market_profile` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.registry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.smc_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.unified_retail` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.volume_delta` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategies.wyckoff` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.backtest_adapter` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.hermes_lifecycle` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.loader` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.multi_timeframe` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.parser` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.regime_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.registry` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.schema` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.adaptive_moving_average` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.adx_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.aroon_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.atr_breakout` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.bayesian_ridge` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.bollinger_squeeze` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.camarilla_pivot` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.carry_trade` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.cci_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.choppiness_index` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.commodity_trend` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.cot_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.crypto_funding` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.crypto_specific` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.dark_cloud` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.dark_pool_flow` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.dema_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.dmi_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.doji_pattern` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.dxy_momentum` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.elder_ray` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.elder_triple_screen` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.em_carry` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.engulfing_pattern` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.entropy_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.evening_star` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.ewma_vol` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.fibonacci_arc` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.fibonacci_extension` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.fibonacci_fan` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.fibonacci_retracement` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.fibonacci_time` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.fundamental_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.garch_vol` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.gold_inflation` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.half_life_mean_reversion` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.hammer_pattern` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.harami_pattern` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.hull_ma` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.hurst_exponent` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.ichimoku_cloud` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.ict_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.inverted_hammer` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.kalman_filter` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.kaufman_ama` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.kelly_optimal` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.keltner_squeeze` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.kmeans_regime` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.linear_regression_channel` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.macro_fx` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.macro_rates` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.market_making` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.mean_reversion` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.mean_reversion_stat` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.mfi_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.momentum` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.momentum_crash_filter` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.momentum_factor` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.monte_carlo_barrier` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.morning_star` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.multi_indicator_voting` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.obv_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.on_chain_momentum` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.options_put_call` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.options_straddle` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.pairs_cointegration` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.pairs_trading` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.parabolic_sar` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.particle_filter` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.pca_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.piercing_line` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.pivot_points` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.polynomial_regression` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.quality_factor` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.regime_based` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.regime_hmm` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.relative_vigor` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.risk_parity` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.rsi_divergence_macd` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.shooting_star` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.size_factor` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.smc_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.social_sentiment` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.stat_arb_zscore` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.statistical_arbitrage` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.stochastic_oscillator` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.supply_demand_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.support_resistance_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.t3_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.tema_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.three_black_crows` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.three_white_soldiers` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.trend_follow` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.trend_following_cta` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.trix_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.value_factor` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.vix_term_structure` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.vol_surface_arb` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.volatility_arbitrage` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.volatility_regime` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.volatility_selling` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.vortex_strategy` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.williams_r` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.woodie_pivot` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategies.wyckoff_strategy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy.strategies.yield_curve` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.strategy.strategy_selector` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.strategy_lifecycle` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.stress_testing.ewhs` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.stress_testing.historical` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.stress_testing.historical_scenarios` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.stress_testing.monte_carlo` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.stress_testing.scenario_generator` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.stress_testing.sensitivity` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine.stress_testing.stress_reporter` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.stress_testing.var_cvar` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.visualization.charts` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.engine.worker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine_bridge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.engine_production_bridge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exceptions` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.alpaca_broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.base` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.ccxt_broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.base_rest_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.binance_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.bitfinex_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.bitget_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.bybit_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.coinbase_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.gate_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.kraken_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.kucoin_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.longbridge_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.clients.okx_client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.factory` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.guards` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.ibkr_broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.mt5_accounts` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.mt5_broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.order_types` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.paper_broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.polymarket_broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.quantdinger_factory` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.solana.broker` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.solana.jupiter` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.solana.mempool` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.solana.rugcheck` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.exchange.solana.wallet` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.execution` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.llm.jeumpa` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.mcp.client` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.mcp.protocol` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.mcp.server` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.mcp.tools` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.memory.journal` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.memory.knowledge` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.memory.knowledge_graph` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.memory.paging` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.memory.session` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.memory.seulanga_bridge` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.memory.vector` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.notifier` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.providers.coingecko_provider` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.providers.data_manager` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.providers.warp` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.proxy` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.qna_config` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.qna_prod` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.schemas.market` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.schemas.orders` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.schemas.positions` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.schemas.signals` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.security.audit` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.security.auth` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.security.credential_inference` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.security.encryption` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.security.keyvault` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.strategies.pairs_trade` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.strategies.trend_follow` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.strategies.tsmom` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.strategies.xgboost_alpha` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.tests.test_engine_price_provider` — ORPHAN (no importers, not reachable) [no docstring]
+- `quant_nanggroe.types.agent` — UNDOCUMENTED (no docstring, unreachable) [no docstring]
+- `quant_nanggroe.types.decisions` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.types.engine` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.types.market` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.types.orders` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.types.positions` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.types.risk` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.types.signals` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.utils.math` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.utils.time` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.utils.validation` — ORPHAN (no importers, not reachable)
+- `quant_nanggroe.worker` — ORPHAN (no importers, not reachable)
+
+## Dangling Imports (imported but module not found)
+
+_none_

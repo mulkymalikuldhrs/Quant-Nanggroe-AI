@@ -13,6 +13,22 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+class StrategyType(str, Enum):
+    """Types of trading strategies."""
+    TREND_FOLLOW = "trend_follow"
+    MEAN_REVERSION = "mean_reversion"
+    MOMENTUM = "momentum"
+    MARKET_PROFILE = "market_profile"
+    VOLUME_DELTA = "volume_delta"
+    WYCKOFF = "wyckoff"
+    ICT = "ict"
+    SMC = "smc"
+    FIBONACCI = "fibonacci"
+    REGIME_BASED = "regime_based"
+    STATISTICAL_ARBITRAGE = "statistical_arbitrage"
+    PAIRS_TRADING = "pairs_trading"
+
+
 class SignalDirection(str, Enum):
     """Signal direction."""
     BUY = "BUY"
@@ -27,6 +43,14 @@ class SignalStrength(str, Enum):
     MODERATE = "moderate"
     STRONG = "strong"
     VERY_STRONG = "very_strong"
+
+
+class SignalAction(str, Enum):
+    """Trading signal action."""
+    BUY = "BUY"
+    SELL = "SELL"
+    HOLD = "HOLD"
+    EXIT = "EXIT"
 
 
 class StrategySignal(BaseModel):
@@ -129,7 +153,9 @@ class Strategy(ABC):
 __all__ = [
     "SignalDirection",
     "SignalStrength",
+    "SignalAction",
     "StrategySignal",
     "StrategyParameters",
     "Strategy",
+    "StrategyType",
 ]

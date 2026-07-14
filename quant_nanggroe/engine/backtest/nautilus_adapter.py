@@ -849,8 +849,8 @@ class NautilusTraderAdapter(TradingAdapter):
         # 3. Extract results and convert to our format
         # 4. Return AdapterResult
 
-        # For now, this is a placeholder that raises NotImplementedError
-        # to trigger the fallback
+        # Graceful fallback — nautilus adapter not connected
+        logger.warning("NautilusTrader adapter _run_nautilus() not fully implemented — falling back")
         raise NotImplementedError(
             "Full NautilusTrader execution requires complete configuration. "
             "Use PurePythonSimulationAdapter for immediate functionality."
@@ -907,3 +907,4 @@ def create_trading_adapter(
             return PurePythonSimulationAdapter(**kwargs)
     else:
         raise ValueError(f"Unknown adapter type: {adapter_type}. Use 'auto', 'nautilus', or 'pure_python'.")
+

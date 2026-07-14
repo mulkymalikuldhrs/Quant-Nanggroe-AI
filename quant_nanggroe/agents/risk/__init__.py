@@ -1,5 +1,11 @@
-"""Risk Agent package for Quant Nanggroe AI."""
+# Package init
 
-from quant_nanggroe.agents.risk.agent import RiskAgent
+__all__ = [
+    'agent',
+    'prompts',
+    'tools',
+]
 
-__all__ = ["RiskAgent"]
+from . import agent
+from . import prompts
+from . import tools

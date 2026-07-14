@@ -19,7 +19,8 @@ import pandas as pd
 
 from quant_nanggroe.backtest.backtester import Backtester
 from quant_nanggroe.engine.backtest.persistence import save_run
-from quant_nanggroe.engine.strategy.strategies import BaseStrategy, create_strategy
+from quant_nanggroe.engine.strategy.strategies import BaseStrategy
+from quant_nanggroe.engine.strategy.loader import create_strategy
 
 log = logging.getLogger("QNA.AutoTune")
 

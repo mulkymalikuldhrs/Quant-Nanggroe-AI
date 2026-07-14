@@ -46,27 +46,40 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
 
     # ── Startup ─────────────────────────────────────────────────────
-    # Initialize shared engine singletons eagerly so import errors
-    # surface immediately rather than on the first request.
-    try:
-        from quant_nanggroe.services import init_all_services
-        init_all_services(app)
-        logger.info("startup_services_initialized")
+    # Ensure _services dict is ready for lazy getter pattern.
+    from quant_nanggroe.services import _ensure_state
+    _ensure_state(app)
 
-        # Connect registered exchanges (MT5/crypto/paper). Failures are
-        # per-broker and non-fatal — manager marks unhealthy and keeps running.
+    # ponytail: get_* functions are already lazy singletons.  Run init +
+    # exchange connect in background so /health responds immediately.
+    app.state._services["startup_complete"] = False
+
+    async def _background_init() -> None:
         try:
+            from quant_nanggroe.services import init_all_services
+            init_all_services(app)
+            logger.info("startup_services_initialized")
+
             em = app.state._services.get("exchange_manager")
             if em is not None:
+                try:
+                    from quant_nanggroe.exchange.mt5_accounts import load_mt5_accounts
+                    loaded = load_mt5_accounts(em)
+                    if loaded:
+                        logger.info("startup_mt5_accounts_loaded: %s", loaded)
+                except Exception as exc:
+                    logger.warning("startup_mt5_accounts_failed: %s", exc)
                 results = await em.connect_all()
                 logger.info("startup_exchanges_connected: %s", results)
         except Exception as exc:
-            logger.warning("startup_exchange_connect_failed", extra={"error": str(exc)})
-    except Exception as exc:
-        logger.warning(
-            "startup_services_unavailable",
-            extra={"error": str(exc), "msg": "Services not available — running without persistence"},
-        )
+            logger.warning(
+                "startup_services_unavailable",
+                extra={"error": str(exc), "msg": "Services not available — running without persistence"},
+            )
+        finally:
+            app.state._services["startup_complete"] = True
+
+    asyncio.create_task(_background_init())
 
     logger.info("qnai_starting", extra={"app": settings.app_name, "env": "development"})
 
@@ -191,11 +204,13 @@ def create_app() -> FastAPI:
     app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
+    from quant_nanggroe.api.routes.brokers import router as brokers_router
     from quant_nanggroe.api.routes import (
         agents,
         agentic,
         analytics,
         backtest,
+        brokers,
         channels,
         colony,
         council,
@@ -213,6 +228,7 @@ def create_app() -> FastAPI:
         rl,
         sec_edgar,
         signal_generator,
+        strategies,
         strategy,
         trading,
         ws,
@@ -230,6 +246,7 @@ def create_app() -> FastAPI:
     app.include_router(ecosystem.router, prefix="/api", tags=["Ecosystem"])
     app.include_router(colony.router, prefix="/api", tags=["Colony"])
     app.include_router(channels.router, prefix="/api/channels", tags=["Channels"])
+    app.include_router(brokers_router, prefix="/api/brokers", tags=["Brokers"])
     app.include_router(credentials.router)
     app.include_router(council.router)
     app.include_router(debate.router)
@@ -239,6 +256,7 @@ def create_app() -> FastAPI:
     app.include_router(sec_edgar.router)
     app.include_router(signal_generator.router)
     app.include_router(strategy.router, prefix="/api/strategy", tags=["Strategy"])
+    app.include_router(strategies.router, prefix="/api/strategies", tags=["Strategies"])
     app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
     app.include_router(options.router)
     app.include_router(rl.router)
@@ -249,8 +267,9 @@ def create_app() -> FastAPI:
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")
-    async def health_check() -> dict[str, str]:
-        return {"status": "healthy", "service": "quant-nanggroe-ai"}
+    async def health_check():
+        ready = app.state._services.get("startup_complete", False)
+        return {"status": "healthy", "startup_complete": str(ready), "service": "quant-nanggroe-ai"}
 
     @app.get("/api/version")
     async def version() -> dict[str, str]:

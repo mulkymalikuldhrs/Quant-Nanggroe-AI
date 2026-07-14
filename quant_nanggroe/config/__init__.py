@@ -1,5 +1,10 @@
-"""Configuration module for Quant Nanggroe AI."""
+# Package init
 
-from quant_nanggroe.config.settings import Settings, get_settings
+__all__ = [
+    'logging_config',
+    'settings',
+]
 
-__all__ = ["Settings", "get_settings"]
+from . import logging_config
+from . import settings
+from .settings import Settings, get_settings

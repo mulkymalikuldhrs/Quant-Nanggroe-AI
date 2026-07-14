@@ -119,4 +119,4 @@ class TestMeanReversionStrategy:
 
     def test_list_strategies_includes_mean_reversion(self):
         from quant_nanggroe.engine.strategy.strategies import list_strategies
-        assert "MeanReversion" in list_strategies()
+        assert "mean_reversion" in list_strategies()

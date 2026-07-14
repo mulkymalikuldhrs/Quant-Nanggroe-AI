@@ -1,7 +1,8 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-
+import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { memoryApi } from '@/lib/api-client';
 import type { MemoryEntry } from '@/lib/api-client';
 import { useEffect, useState } from 'react';
@@ -50,7 +51,7 @@ export default function MemoryPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="col-span-2 space-y-3">
             {filtered.map(entry => (
-              <GlassCard key={entry.id}>
+              <Card key={entry.id}>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -62,13 +63,16 @@ export default function MemoryPage() {
                   <p className="text-white/50 text-xs leading-relaxed">{entry.content}</p>
                   <div className="text-white/20 text-[10px]">{new Date(entry.timestamp).toLocaleString()}</div>
                 </div>
-              </GlassCard>
+              </Card>
             ))}
           </div>
 
           {/* Store Memory Panel */}
-          <GlassCard title="Store Memory" className="sticky top-20">
-            <div className="space-y-4">
+          <Card className="sticky top-20">
+            <div className="px-4 pt-4 pb-2">
+              <h3 className="text-sm font-medium text-white/70">Store Memory</h3>
+            </div>
+            <div className="px-4 pb-4 space-y-4">
               <div>
                 <label className="text-white/40 text-xs block mb-1">Key</label>
                 <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500/50" />
@@ -90,7 +94,7 @@ export default function MemoryPage() {
                 Store
               </button>
             </div>
-          </GlassCard>
+          </Card>
         </div>
       </div>
 

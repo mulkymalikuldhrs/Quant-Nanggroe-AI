@@ -52,7 +52,9 @@ class TestMeanReversionStrategyColumns(unittest.TestCase):
         strategy = MeanReversionStrategy()
         cols = strategy.required_columns()
         self.assertIn("close", cols)
-        self.assertEqual(cols, ["close"])
+        self.assertIn("high", cols)
+        self.assertIn("low", cols)
+        self.assertEqual(cols, ["close", "high", "low"])
 
     def test_warmup_period(self):
         strategy = MeanReversionStrategy()
@@ -142,7 +144,7 @@ class TestMeanReversionStrategySignalGeneration(unittest.TestCase):
 
     def test_insufficient_data_returns_none(self):
         strategy = MeanReversionStrategy()
-        small_data = pd.DataFrame({"close": [100, 101, 102]})
+        small_data = pd.DataFrame({"close": [100, 101, 102], "high": [101, 102, 103], "low": [99, 100, 101]})
         signal = strategy.generate_signal(small_data)
         self.assertIsNone(signal)
 

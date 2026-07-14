@@ -1,17 +1,15 @@
-"""Core utilities for Quant-Nanggroe-AI.
-
-Provides shared infrastructure including circuit-breaker protection
-and PII redaction.
-"""
-
-from quant_nanggroe.core.circuit_breaker import CircuitBreaker, CircuitBreakerMiddleware, CircuitState
-from quant_nanggroe.core.pii_redaction import PIIRedactionFilter, pii_redaction_processor, redact_pii
-
+# Package init - lazy imports to avoid circular deps
+# Import modules explicitly when needed, not via __init__
 __all__ = [
-    "CircuitBreaker",
-    "CircuitBreakerMiddleware",
-    "CircuitState",
-    "PIIRedactionFilter",
-    "pii_redaction_processor",
-    "redact_pii",
+    'circuit_breaker',
+    'pii_redaction',
 ]
+
+# Lazy imports for submodules
+def __getattr__(name):
+    import importlib
+    try:
+        module = importlib.import_module(f".{name}", __package__)
+        return module
+    except ImportError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

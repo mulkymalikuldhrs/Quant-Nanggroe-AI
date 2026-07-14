@@ -1,5 +1,11 @@
-"""Forex Agent package for Quant Nanggroe AI."""
+# Package init
 
-from quant_nanggroe.agents.forex.agent import ForexAgent
+__all__ = [
+    'agent',
+    'prompts',
+    'tools',
+]
 
-__all__ = ["ForexAgent"]
+from . import agent
+from . import prompts
+from . import tools

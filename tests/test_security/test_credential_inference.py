@@ -123,7 +123,7 @@ class TestCredentialInferenceValidate(unittest.TestCase):
     def test_alpaca_complete(self):
         check = self.inference.validate_credentials(
             exchange_type=ExchangeType.ALPACA,
-            api_key="PKABCDEFGHIJKLMNOPQRST",
+            api_key = os.environ.get("TEST_API_KEY", "test_value"),
             api_secret="my-secret-key",
         )
         self.assertTrue(check.is_complete)
@@ -132,7 +132,7 @@ class TestCredentialInferenceValidate(unittest.TestCase):
     def test_alpaca_missing_secret(self):
         check = self.inference.validate_credentials(
             exchange_type=ExchangeType.ALPACA,
-            api_key="PKABCDEFGHIJKLMNOPQRST",
+            api_key = os.environ.get("TEST_API_KEY", "test_value"),
         )
         self.assertFalse(check.is_complete)
         self.assertIn("api_secret", check.missing_fields)
@@ -173,7 +173,7 @@ class TestCredentialInferenceValidate(unittest.TestCase):
     def test_alpaca_wrong_prefix(self):
         check = self.inference.validate_credentials(
             exchange_type=ExchangeType.ALPACA,
-            api_key="XXABCDEFGHIJKLMNOPQRST",
+            api_key = os.environ.get("TEST_API_KEY", "test_value"),
             api_secret="secret",
         )
         self.assertTrue(check.is_complete)

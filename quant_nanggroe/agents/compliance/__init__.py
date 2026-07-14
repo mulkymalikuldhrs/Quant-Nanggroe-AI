@@ -1,5 +1,7 @@
-"""Compliance Agent package for Quant Nanggroe AI."""
+# Package init
 
-from quant_nanggroe.agents.compliance.agent import ComplianceAgent, ComplianceVerdict
+__all__ = [
+    'agent',
+]
 
-__all__ = ["ComplianceAgent", "ComplianceVerdict"]
+from . import agent

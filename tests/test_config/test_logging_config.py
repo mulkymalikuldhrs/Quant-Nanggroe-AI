@@ -72,7 +72,10 @@ class TestSetupLogging(unittest.TestCase):
                 content = f.read()
             self.assertIn("test log message", content)
         finally:
-            os.unlink(log_path)
+            try:
+                os.unlink(log_path)
+            except PermissionError:
+                pass  # Windows: file may still be locked by handler
 
     @patch("quant_nanggroe.config.logging_config.structlog", None)
     def test_setup_different_levels(self):
@@ -135,7 +138,10 @@ class TestSetupLoggingWithStructlog(unittest.TestCase):
             # Should not raise
             self.assertTrue(mock_structlog.configure.called)
         finally:
-            os.unlink(log_path)
+            try:
+                os.unlink(log_path)
+            except PermissionError:
+                pass  # Windows: file may still be locked by handler
 
 
 class TestGetLogger(unittest.TestCase):

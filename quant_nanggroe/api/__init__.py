@@ -1,7 +1,16 @@
-"""API Package — Quant Nanggroe AI REST + WebSocket API."""
+# Package init - lazy imports to avoid circular deps
+# Import modules explicitly when needed, not via __init__
+__all__ = [
+    'app',
+    'middleware',
+    'schemas',
+]
 
-from quant_nanggroe.api.app import create_app
-from quant_nanggroe.api.middleware import RateLimitMiddleware
-from quant_nanggroe.api.schemas import *
-
-__all__ = ["create_app", "RateLimitMiddleware"]
+# Lazy imports for submodules
+def __getattr__(name):
+    import importlib
+    try:
+        module = importlib.import_module(f".{name}", __package__)
+        return module
+    except ImportError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

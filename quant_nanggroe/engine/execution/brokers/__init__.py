@@ -1,5 +1,7 @@
-"""Broker implementations."""
+# Package init
 
-from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
+__all__ = [
+    'paper',
+]
 
-__all__ = ["PaperBroker"]
+from . import paper

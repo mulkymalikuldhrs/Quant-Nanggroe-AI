@@ -410,6 +410,7 @@ class TestPaperExchangeBrokerOHLCV(unittest.TestCase):
     def test_add_ohlcv(self):
         broker = PaperExchangeBroker()
         candle = OHLCV(
+            symbol="BTC/USDT",
             timestamp=pd.Timestamp.now(),
             open=40000.0,
             high=40100.0,
@@ -515,7 +516,7 @@ class TestPaperExchangeBrokerCheckPendingOrders(unittest.TestCase):
             created_at=datetime.now(tz=timezone.utc),
         )
         broker._pending_orders[order.id] = order
-        broker.set_price("BTC/USDT", 42000.0)  # Price crosses limit
+        broker.set_price("BTC/USDT", 40000.0)  # BUY limit fills when price <= limit_price
         filled = broker.check_pending_orders()
         self.assertGreater(filled, 0)
 

@@ -16,11 +16,10 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.strategy.strategies import (
-    BaseStrategy,
-    create_strategy,
-    list_strategies,
+from quant_nanggroe.engine.strategy.loader import create_strategy
+from quant_nanggroe.engine.strategies.registry import (
     get_strategy_metadata,
+    list_strategies,
 )
 
 log = logging.getLogger("QNA.StrategySelector")
@@ -316,8 +315,6 @@ class AdaptiveStrategyEngine:
         """
         regime = self.get_regime(data)
         selected = self.selector.select(regime)
-
-        from quant_nanggroe.engine.strategy.strategies import create_strategy
 
         signals = {}
         for name, score in selected:

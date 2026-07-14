@@ -214,9 +214,26 @@ async def list_backtests() -> dict[str, Any]:
 
 @router.get("/strategies")
 async def list_strategies() -> list[dict[str, Any]]:
-    """List available strategies."""
-    return [
-        {"id": "regimebased", "name": "RegimeBased", "status": "active", "sharpe": 1.8},
-        {"id": "meanrev", "name": "MeanReversion", "status": "idle", "sharpe": 1.2},
-        {"id": "trend", "name": "TrendFollow", "status": "idle", "sharpe": 1.5},
-    ]
+    """List available strategies from the live registry."""
+    from quant_nanggroe.engine.strategy.strategies import list_strategies as _list, create_strategy
+    from quant_nanggroe.api.routes.strategies import get_strategy_metadata
+
+    result = []
+    for name in _list():
+        meta = get_strategy_metadata(name)
+        # Try to get default sharpe from strategy's backtest results if available
+        try:
+            s = create_strategy(name)
+            required = s.required_columns() if hasattr(s, "required_columns") else []
+        except Exception:
+            required = []
+        result.append({
+            "id": name.replace("_", ""),
+            "name": name.replace("_", " ").title(),
+            "status": "idle",
+            "sharpe": 0.0,
+            "category": meta.get("category", ""),
+            "asset_classes": meta.get("asset_classes", []),
+            "required_columns": required,
+        })
+    return result

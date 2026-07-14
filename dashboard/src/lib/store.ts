@@ -1,5 +1,7 @@
 import { create } from "zustand";
-import apiRequest from "./api-client";
+import { apiRequest } from "./api-client";
+
+// ── Types ───────────────────────────────────────────────────────────
 
 interface AgentInfo {
   name: string;
@@ -50,6 +52,43 @@ interface SystemHealth {
   service: string;
 }
 
+// ── Granular loading & error tracking ──────────────────────────────
+
+interface EndpointState {
+  loading: boolean;
+  error: string | null;
+  lastUpdated: number | null;
+}
+
+type EndpointName =
+  | "agents" | "portfolio" | "risk" | "positions"
+  | "health" | "killSwitch" | "market" | "strategies";
+
+// ── Real-time data from WebSocket ──────────────────────────────────
+
+interface RealtimePrices {
+  [symbol: string]: { price: number; change_24h: number };
+}
+
+interface RealtimeRegime {
+  market: string;
+  confidence: number;
+}
+
+interface RealtimeRisk {
+  var_95: number;
+  drawdown: number;
+  kill_switch: boolean;
+}
+
+interface RealtimePortfolio {
+  total_value: number;
+  daily_pnl: number;
+  positions: number;
+}
+
+// ── Store Interface ────────────────────────────────────────────────
+
 interface AppState {
   // UI state
   sidebarOpen: boolean;
@@ -59,7 +98,7 @@ interface AppState {
   selectedSymbol: string;
   selectedExchange: string;
   notifications: Notification[];
-  
+
   // Data state
   agents: AgentInfo[];
   portfolio: PortfolioSummary | null;
@@ -67,11 +106,21 @@ interface AppState {
   positions: PositionInfo[];
   systemHealth: SystemHealth | null;
   killSwitchStatus: KillSwitchStatus | null;
-  
-  // Loading state
-  loading: boolean;
-  
-  // Actions
+
+  // WebSocket real-time data
+  realtimePrices: RealtimePrices;
+  realtimeRegime: RealtimeRegime | null;
+  realtimeRisk: RealtimeRisk | null;
+  realtimePortfolio: RealtimePortfolio | null;
+  wsConnected: boolean;
+
+  // Granular loading states
+  loadingStates: Record<EndpointName, EndpointState>;
+
+  // Aggregate loading
+  globalLoading: boolean;
+
+  // Actions — UI
   toggleSidebar: () => void;
   toggleKillSwitch: () => void;
   toggleAutoTrade: () => void;
@@ -80,8 +129,15 @@ interface AppState {
   setSelectedExchange: (exchange: string) => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
-  
-  // API actions
+
+  // Actions — WebSocket real-time updates
+  updateRealtimePrices: (prices: RealtimePrices) => void;
+  updateRealtimeRegime: (regime: RealtimeRegime) => void;
+  updateRealtimeRisk: (risk: RealtimeRisk) => void;
+  updateRealtimePortfolio: (portfolio: RealtimePortfolio) => void;
+  setWsConnected: (connected: boolean) => void;
+
+  // Actions — API calls
   fetchAgents: () => Promise<void>;
   fetchPortfolio: () => Promise<void>;
   fetchPortfolioRisk: () => Promise<void>;
@@ -91,7 +147,20 @@ interface AppState {
   refreshAll: () => Promise<void>;
 }
 
+// ── Helpers ────────────────────────────────────────────────────────
+
+const defaultEndpointState = (): EndpointState => ({
+  loading: false,
+  error: null,
+  lastUpdated: null,
+});
+
+const MAX_NOTIFICATIONS = 50;
+
+// ── Store ──────────────────────────────────────────────────────────
+
 export const useAppStore = create<AppState>((set, get) => ({
+  // ── Initial UI state ──────────────────────────────────────────
   sidebarOpen: true,
   killSwitch: false,
   autoTrade: false,
@@ -99,86 +168,290 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedSymbol: "BTC",
   selectedExchange: "binance",
   notifications: [],
-  
+
+  // ── Initial data state ────────────────────────────────────────
   agents: [],
   portfolio: null,
   portfolioRisk: null,
   positions: [],
   systemHealth: null,
   killSwitchStatus: null,
-  
-  loading: false,
-  
+
+  // ── Initial real-time state ───────────────────────────────────
+  realtimePrices: {},
+  realtimeRegime: null,
+  realtimeRisk: null,
+  realtimePortfolio: null,
+  wsConnected: false,
+
+  // ── Initial loading states ────────────────────────────────────
+  loadingStates: {
+    agents: defaultEndpointState(),
+    portfolio: defaultEndpointState(),
+    risk: defaultEndpointState(),
+    positions: defaultEndpointState(),
+    health: defaultEndpointState(),
+    killSwitch: defaultEndpointState(),
+    market: defaultEndpointState(),
+    strategies: defaultEndpointState(),
+  },
+
+  globalLoading: false,
+
+  // ── UI Actions ────────────────────────────────────────────────
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleKillSwitch: () => set((s) => ({ killSwitch: !s.killSwitch })),
   toggleAutoTrade: () => set((s) => ({ autoTrade: !s.autoTrade })),
   setActiveAgents: (agents) => set({ activeAgents: agents }),
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
   setSelectedExchange: (exchange) => set({ selectedExchange: exchange }),
+
   addNotification: (notification) =>
-    set((s) => ({ notifications: [...s.notifications, notification] })),
+    set((s) => ({
+      notifications: [
+        ...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)),
+        notification,
+      ],
+    })),
+
   clearNotifications: () => set({ notifications: [] }),
-  
+
+  // ── WebSocket real-time actions ───────────────────────────────
+  updateRealtimePrices: (prices) =>
+    set((s) => ({
+      realtimePrices: { ...s.realtimePrices, ...prices },
+    })),
+
+  updateRealtimeRegime: (regime) =>
+    set({ realtimeRegime: regime }),
+
+  updateRealtimeRisk: (risk) =>
+    set({
+      realtimeRisk: risk,
+      // Auto-update kill switch from WS data
+      killSwitch: risk.kill_switch,
+    }),
+
+  updateRealtimePortfolio: (portfolio) =>
+    set({
+      realtimePortfolio: portfolio,
+      // Auto-derive portfolio summary from WS data
+      portfolio: portfolio
+        ? {
+            total_value: portfolio.total_value,
+            unrealized_pnl: portfolio.daily_pnl,
+            position_count: portfolio.positions,
+            cash_balance: portfolio.total_value * 0.3,
+          }
+        : get().portfolio,
+    }),
+
+  setWsConnected: (connected) => set({ wsConnected: connected }),
+
+  // ── API actions with granular loading/error tracking ──────────
   fetchAgents: async () => {
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        agents: { ...s.loadingStates.agents, loading: true, error: null },
+      },
+    }));
     try {
-      const data: any = await apiRequest("/api/agents/status");
-      set({ agents: data.agents || [], killSwitch: data.kill_switch_active });
-    } catch {}
+      const data = await apiRequest<{ agents: AgentInfo[]; kill_switch_active: boolean }>(
+        "/api/agents/status",
+      );
+      set((s) => ({
+        agents: data.agents || [],
+        killSwitch: data.kill_switch_active,
+        loadingStates: {
+          ...s.loadingStates,
+          agents: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          agents: {
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load agents",
+            lastUpdated: s.loadingStates.agents.lastUpdated,
+          },
+        },
+      }));
+    }
   },
 
   fetchPortfolio: async () => {
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        portfolio: { ...s.loadingStates.portfolio, loading: true, error: null },
+      },
+    }));
     try {
-      const data: any = await apiRequest("/api/portfolio/summary");
-      set({ portfolio: {
-        total_value: data.total_value,
-        unrealized_pnl: data.unrealized_pnl,
-        position_count: data.position_count,
-        cash_balance: data.cash_balance,
-      }});
-    } catch {}
+      const data = await apiRequest<PortfolioSummary>("/api/portfolio/summary");
+      set((s) => ({
+        portfolio: {
+          total_value: data.total_value || 0,
+          unrealized_pnl: data.unrealized_pnl || 0,
+          position_count: data.position_count || 0,
+          cash_balance: data.cash_balance || 0,
+        },
+        loadingStates: {
+          ...s.loadingStates,
+          portfolio: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          portfolio: {
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load portfolio",
+            lastUpdated: s.loadingStates.portfolio.lastUpdated,
+          },
+        },
+      }));
+    }
   },
 
   fetchPortfolioRisk: async () => {
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        risk: { ...s.loadingStates.risk, loading: true, error: null },
+      },
+    }));
     try {
-      const data: any = await apiRequest("/api/portfolio/risk");
-      set({ portfolioRisk: {
-        var_95: data.var_95,
-        max_drawdown: data.max_drawdown,
-        current_drawdown: data.current_drawdown,
-        daily_pnl_pct: data.daily_pnl_pct,
-        risk_status: data.risk_status,
-      }});
-    } catch {}
+      const data = await apiRequest<PortfolioRisk>("/api/portfolio/risk");
+      set((s) => ({
+        portfolioRisk: {
+          var_95: data.var_95 || 0,
+          max_drawdown: data.max_drawdown || 0,
+          current_drawdown: data.current_drawdown || 0,
+          daily_pnl_pct: data.daily_pnl_pct || 0,
+          risk_status: data.risk_status || "unknown",
+        },
+        loadingStates: {
+          ...s.loadingStates,
+          risk: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          risk: {
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load risk",
+            lastUpdated: s.loadingStates.risk.lastUpdated,
+          },
+        },
+      }));
+    }
   },
 
   fetchPositions: async () => {
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        positions: { ...s.loadingStates.positions, loading: true, error: null },
+      },
+    }));
     try {
-      const data: any = await apiRequest("/api/trading/positions");
-      set({ positions: data.positions || [] });
-    } catch {}
+      const data = await apiRequest<{ positions: PositionInfo[] }>("/api/trading/positions");
+      set((s) => ({
+        positions: data.positions || [],
+        loadingStates: {
+          ...s.loadingStates,
+          positions: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          positions: {
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load positions",
+            lastUpdated: s.loadingStates.positions.lastUpdated,
+          },
+        },
+      }));
+    }
   },
 
   fetchHealth: async () => {
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        health: { ...s.loadingStates.health, loading: true, error: null },
+      },
+    }));
     try {
-      const data: any = await apiRequest("/health");
-      set({ systemHealth: { status: data.status, service: data.service } });
-    } catch {}
+      const data = await apiRequest<{ status: string; service: string }>("/health");
+      set((s) => ({
+        systemHealth: { status: data.status, service: data.service },
+        loadingStates: {
+          ...s.loadingStates,
+          health: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          health: {
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load health",
+            lastUpdated: s.loadingStates.health.lastUpdated,
+          },
+        },
+      }));
+    }
   },
 
   fetchKillSwitchStatus: async () => {
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        killSwitch: { ...s.loadingStates.killSwitch, loading: true, error: null },
+      },
+    }));
     try {
-      const data: any = await apiRequest("/api/agents/kill-switch/status");
-      set({ killSwitchStatus: {
-        is_active: data.is_active,
-        activated_at: data.activated_at,
-        activation_reason: data.activation_reason,
-        message: data.message,
-      }});
-    } catch {}
+      const data = await apiRequest<KillSwitchStatus>("/api/agents/kill-switch/status");
+      set((s) => ({
+        killSwitchStatus: {
+          is_active: data.is_active,
+          activated_at: data.activated_at,
+          activation_reason: data.activation_reason,
+          message: data.message,
+        },
+        killSwitch: data.is_active,
+        loadingStates: {
+          ...s.loadingStates,
+          killSwitch: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          killSwitch: {
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load kill switch",
+            lastUpdated: s.loadingStates.killSwitch.lastUpdated,
+          },
+        },
+      }));
+    }
   },
-  
+
+  // ── Refresh all with parallel execution ──────────────────────
   refreshAll: async () => {
-    set({ loading: true });
+    set({ globalLoading: true });
     await Promise.allSettled([
       get().fetchAgents(),
       get().fetchPortfolio(),
@@ -187,6 +460,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().fetchHealth(),
       get().fetchKillSwitchStatus(),
     ]);
-    set({ loading: false });
+    set({ globalLoading: false });
   },
 }));

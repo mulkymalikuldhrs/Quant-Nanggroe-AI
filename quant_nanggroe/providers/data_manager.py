@@ -59,7 +59,7 @@ class DataManager:
 
     def _polygon_crypto_price(self) -> Dict[str, float]:
         """Fetch crypto prices from Polygon.io (free: 5 calls/min)."""
-        api_key = "EDpwwAxMscUJ7_og3OnxZQVrToEWw7MR"
+        api_key = os.environ.get("QNAI_API_KEY", "")
         self._init_polygon()
         result = {}
         from .proxy import get_json

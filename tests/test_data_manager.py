@@ -127,7 +127,7 @@ class TestDataManagerGetOhlcv(unittest.TestCase):
         self.symbol = "BTC/USDT"
         self.timeframe = TimeFrame.H1
         self.candle_data = pd.DataFrame({
-            "timestamp": pd.date_range("2024-01-01", periods=5, freq="H"),
+            "timestamp": pd.date_range("2024-01-01", periods=5, freq="h"),
             "open": [100.0] * 5,
             "high": [101.0] * 5,
             "low": [99.0] * 5,

@@ -20,6 +20,9 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+from dataclasses import dataclass
+
+
 class ExchangeCapability(Flag):
     """Exchange capability flags."""
     SPOT = auto()
@@ -28,6 +31,28 @@ class ExchangeCapability(Flag):
     MARGIN = auto()
     WEBSOCKET = auto()
     OPTIONS = auto()
+
+
+@dataclass
+class ClientCapabilities:
+    """Human-readable capabilities descriptor for an exchange client.
+
+    Attributes:
+        spot: Supports spot trading.
+        futures: Supports futures trading.
+        perps: Supports perpetual contracts.
+        margin: Supports margin trading.
+        websocket: Supports WebSocket streaming.
+        max_leverage: Maximum leverage allowed.
+        requires_passphrase: Whether API requires a passphrase.
+    """
+    spot: bool = False
+    futures: bool = False
+    perps: bool = False
+    margin: bool = False
+    websocket: bool = False
+    max_leverage: float = 1.0
+    requires_passphrase: bool = False
 
 
 class RestClientConfig(BaseModel):

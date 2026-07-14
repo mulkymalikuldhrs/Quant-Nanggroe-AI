@@ -1,15 +1,9 @@
-"""Strategy performance analysis — factor regression & bootstrap inference.
-
-Components:
-    FactorModel  — Multi-factor OLS regression for returns attribution
-    BootstrapCI  — Stationary bootstrap confidence intervals on Sharpe/alpha
-"""
-
-from quant_nanggroe.engine.analysis.bootstrap import BootstrapCI
-from quant_nanggroe.engine.analysis.factors import FactorModel, FactorResult
+# Package init
 
 __all__ = [
-    "FactorModel",
-    "FactorResult",
-    "BootstrapCI",
+    'bootstrap',
+    'factors',
 ]
+
+from . import bootstrap
+from . import factors

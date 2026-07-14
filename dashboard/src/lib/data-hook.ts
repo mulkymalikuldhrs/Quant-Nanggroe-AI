@@ -1,4 +1,4 @@
-import { monitorApi, tradingApi, backtestApi, colonyApi, ecosystemApi } from "./api-client";
+import { monitorApi, tradingApi, backtestApi, colonyApi } from "./api-client";
 
 export async function fetchMonitorSummary() {
   try {
@@ -66,7 +66,7 @@ export async function fetchColonies() {
 
 export async function fetchExchanges() {
   try {
-    return await ecosystemApi.exchangeList();
+    return await tradingApi.getExchanges();
   } catch {
     return [];
   }

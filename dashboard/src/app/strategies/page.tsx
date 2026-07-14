@@ -1,14 +1,16 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-
+import React, { useState, useEffect } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
 import { StatusCard } from "@/components/shared/status-card";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { mockStrategies } from "@/lib/mock-data";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { apiRequest } from "@/lib/api-client";
+import type { Strategy } from "@/lib/api-client";
 import { cn, formatPercent } from "@/lib/utils";
 import {
   Zap,
@@ -19,10 +21,33 @@ import {
   Upload,
   FileJson,
   Settings,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 export default function StrategiesPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStrategies = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiRequest<Strategy[]>("/api/backtest/strategies");
+      setStrategies(data);
+    } catch (err) {
+      // Fallback to mock data if backend unavailable
+      const { mockStrategies } = await import("@/lib/mock-data");
+      setStrategies(mockStrategies as unknown as Strategy[]);
+      setError(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadStrategies(); }, []);
 
   const strategyColumns = [
     {
@@ -120,7 +145,7 @@ export default function StrategiesPage() {
           <ChartCard title="Strategies" subtitle="All trading strategies" className="mt-3">
             <DataTable
               columns={strategyColumns}
-              data={mockStrategies as unknown as Record<string, unknown>[]}
+              data={strategies as unknown as Record<string, unknown>[]}
               onRowClick={(row) => setSelectedStrategy(row.id as string)}
             />
           </ChartCard>
@@ -129,12 +154,12 @@ export default function StrategiesPage() {
           {selectedStrategy && (
             <ChartCard
               title="Strategy Detail"
-              subtitle={mockStrategies.find((s) => s.id === selectedStrategy)?.name}
+              subtitle={strategies.find((s) => s.id === selectedStrategy)?.name}
               className="mt-3"
               glow="emerald"
             >
               {(() => {
-                const strat = mockStrategies.find((s) => s.id === selectedStrategy);
+                const strat = strategies.find((s) => s.id === selectedStrategy);
                 if (!strat) return null;
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -144,23 +169,23 @@ export default function StrategiesPage() {
                         <div className="space-y-1.5">
                           <div className="flex justify-between">
                             <span className="text-xs text-white/30">Type</span>
-                            <span className="text-xs text-white/70">{strat.type}</span>
+                            <span className="text-xs text-white/70">{strat.category || "N/A"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-xs text-white/30">Status</span>
-                            <Badge variant={strat.status === "active" ? "success" : "warning"} className="text-[10px]">
-                              {strat.status}
+                            <Badge variant={(strat as any).backtest?.verdict === "KEEP" ? "success" : "warning"} className="text-[10px]">
+                              {(strat as any).backtest?.verdict || "UNTESTED"}
                             </Badge>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-xs text-white/30">Total Return</span>
-                            <span className={cn("text-xs font-mono", strat.performance >= 0 ? "text-emerald-400" : "text-red-400")}>
-                              {formatPercent(strat.performance)}
+                            <span className={cn("text-xs font-mono", ((strat as any).backtest?.btc_return || 0) >= 0 ? "text-emerald-400" : "text-red-400")}>
+                              {formatPercent(((strat as any).backtest?.btc_return || 0))}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-xs text-white/30">Sharpe Ratio</span>
-                            <span className="text-xs font-mono text-blue-400">{strat.sharpe.toFixed(2)}</span>
+                            <span className="text-xs font-mono text-blue-400">{((strat as any).backtest?.btc_sharpe || 0).toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
@@ -180,7 +205,7 @@ export default function StrategiesPage() {
                         <p className="text-xs text-white/40 mb-2">Performance History</p>
                         <div className="h-32 flex items-end gap-1">
                           {Array.from({ length: 12 }, (_, i) => {
-                            const val = Math.random() * 5 + (strat.performance > 0 ? 1 : -1);
+                            const val = Math.random() * 5 + (((strat as any).backtest?.btc_return || 0) > 0 ? 1 : -1);
                             return (
                               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                                 <div
@@ -313,32 +338,32 @@ export default function StrategiesPage() {
         </TabsContent>
 
         <TabsContent value="adapter">
-          <ChartCard title="Backtest Adapter Configuration" subtitle="Connect strategies to backtest engines" className="mt-3">
-            <div className="space-y-3">
-              {mockStrategies.map((strat) => (
+          <ChartCard title="Strategy Arsenal" subtitle={`${strategies.length} strategies — backtested on BTC-USD & EURUSD`} className="mt-3">
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              {strategies.map((strat) => {
+                const bt = (strat as any).backtest || {};
+                const verdict = bt.verdict || "UNTESTED";
+                const vColor = verdict === "KEEP" ? "success" : verdict === "ELIMINATE" ? "destructive" : verdict === "MARGINAL" ? "warning" : "secondary";
+                const sharpe = bt.btc_sharpe ?? bt.eur_sharpe ?? null;
+                return (
                 <div key={strat.id} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white/80">{strat.name}</span>
-                    <Badge variant={strat.status === "active" ? "success" : "warning"} className="text-[10px]">
-                      {strat.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] text-white/30 mb-1">Engine</p>
-                      <p className="text-xs text-white/60">
-                        {strat.type === "Crypto" ? "Crypto Engine" : strat.type === "Forex" ? "Forex Engine" : "Equity Engine"}
-                      </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white/80">{strat.name}</span>
+                      <Badge variant="default" className="text-[9px] text-white/40">{(strat as any).category || ""}</Badge>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-white/30 mb-1">Data Loader</p>
-                      <p className="text-xs text-white/60">
-                        {strat.type === "Crypto" ? "CCXT Loader" : "YFinance Loader"}
-                      </p>
-                    </div>
+                    <Badge variant={vColor as any} className="text-[10px]">{verdict}</Badge>
                   </div>
+                  <div className="flex items-center gap-4 text-[10px] text-white/40">
+                    {sharpe !== null && <span>Sharpe: <span className={sharpe > 0 ? "text-green-400" : "text-red-400"}>{sharpe.toFixed(2)}</span></span>}
+                    {bt.btc_return !== undefined && <span>BTC: <span className={bt.btc_return > 0 ? "text-green-400" : "text-red-400"}>{bt.btc_return.toFixed(1)}%</span></span>}
+                    {bt.eur_return !== undefined && <span>EUR: <span className={bt.eur_return > 0 ? "text-green-400" : "text-red-400"}>{bt.eur_return.toFixed(1)}%</span></span>}
+                    {(strat as any).asset_classes?.length > 0 && <span>{(strat as any).asset_classes.join(", ")}</span>}
+                  </div>
+                  {bt.reason && <p className="text-[9px] text-white/30 mt-1">{bt.reason}</p>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </ChartCard>
         </TabsContent>

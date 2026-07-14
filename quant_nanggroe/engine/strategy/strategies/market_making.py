@@ -1,19 +1,10 @@
-"""Market Making Strategy using the Avellaneda-Stoikov model.
-
-Computes optimal bid and ask quotes that account for inventory
-risk, order arrival dynamics, and market volatility.
-
-References:
-    Avellaneda, M. & Stoikov, S. (2008). High-Frequency Trading
-    in a Limit Order Book. *Quantitative Finance*, 8(3), 217-224.
-"""
-
 from __future__ import annotations
 
 import logging
 import math
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
+import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy

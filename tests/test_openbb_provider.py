@@ -25,7 +25,7 @@ class TestInit(unittest.TestCase):
     """Provider initialisation."""
 
     def test_provider_initialises(self):
-        provider = OpenBBMCPProvider(api_key="<placeholder>")
+        provider = OpenBBMCPProvider(api_key="test-key")
         self.assertEqual(provider.api_key, "test-key")
         self.assertEqual(provider.base_url, "https://api.openbb.co")
 

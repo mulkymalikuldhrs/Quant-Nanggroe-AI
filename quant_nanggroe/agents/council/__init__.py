@@ -1,6 +1,9 @@
-"""Council package for Quant Nanggroe AI Trading Framework."""
+# Package init
 
-from quant_nanggroe.agents.council.debate import CouncilDebate
-from quant_nanggroe.agents.council.voting import CouncilVoting
+__all__ = [
+    'debate',
+    'voting',
+]
 
-__all__ = ["CouncilDebate", "CouncilVoting"]
+from . import debate
+from . import voting

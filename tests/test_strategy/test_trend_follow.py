@@ -92,7 +92,7 @@ class TestTrendFollowStrategy:
 
     def test_list_strategies_includes_trend_follow(self):
         from quant_nanggroe.engine.strategy.strategies import list_strategies
-        assert "TrendFollow" in list_strategies()
+        assert "trend_follow" in list_strategies()
 
     def test_adx_strong_trend_produces_signal(self, trending_up_data):
         strategy = TrendFollowStrategy(

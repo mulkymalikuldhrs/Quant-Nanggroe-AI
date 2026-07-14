@@ -1,23 +1,27 @@
-"""Exchange REST Clients — Multi-exchange REST API client implementations.
-
-Provides exchange-specific REST clients for 11+ cryptocurrency
-exchanges, with unified interface, rate limiting, and error handling.
-"""
-
-from quant_nanggroe.exchange.clients.base_rest_client import (
-    BaseRestClient,
-    ExchangeCapability,
-    RestClientConfig,
-)
-from quant_nanggroe.exchange.clients.binance_client import BinanceClient
-from quant_nanggroe.exchange.clients.bybit_client import BybitClient
-from quant_nanggroe.exchange.clients.okx_client import OKXClient
+# Package init
 
 __all__ = [
-    "BaseRestClient",
-    "ExchangeCapability",
-    "RestClientConfig",
-    "BinanceClient",
-    "BybitClient",
-    "OKXClient",
+    'base_rest_client',
+    'binance_client',
+    'bitfinex_client',
+    'bitget_client',
+    'bybit_client',
+    'coinbase_client',
+    'gate_client',
+    'kraken_client',
+    'kucoin_client',
+    'longbridge_client',
+    'okx_client',
 ]
+
+from . import base_rest_client
+from . import binance_client
+from . import bitfinex_client
+from . import bitget_client
+from . import bybit_client
+from . import coinbase_client
+from . import gate_client
+from . import kraken_client
+from . import kucoin_client
+from . import longbridge_client
+from . import okx_client

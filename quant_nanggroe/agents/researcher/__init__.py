@@ -1,5 +1,11 @@
-"""Research Agent package for Quant Nanggroe AI."""
+# Package init
 
-from quant_nanggroe.agents.researcher.agent import ResearcherAgent
+__all__ = [
+    'agent',
+    'prompts',
+    'tools',
+]
 
-__all__ = ["ResearcherAgent"]
+from . import agent
+from . import prompts
+from . import tools
