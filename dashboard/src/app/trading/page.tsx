@@ -57,9 +57,7 @@ interface PositionUI {
 
 // ── Mock accounts (will be replaced with real API data) ────────────
 
-const MOCK_ACCOUNTS: BrokerAccountUI[] = [];
 
-const MOCK_POSITIONS: PositionUI[] = [];
 
 function TradingDashboardContent() {
   useRealtimeData(); // Subscribe to real-time WebSocket channels
@@ -67,8 +65,6 @@ function TradingDashboardContent() {
 
   // State
   const [activeAccount, setActiveAccount] = useState("");
-  const [accounts, setAccounts] = useState<BrokerAccountUI[]>(MOCK_ACCOUNTS);
-  const [positions, setPositions] = useState<PositionUI[]>(MOCK_POSITIONS);
   const [orderSymbol, setOrderSymbol] = useState("BTC/USDT");
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState("market");

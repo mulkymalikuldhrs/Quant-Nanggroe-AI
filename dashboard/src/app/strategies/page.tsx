@@ -39,8 +39,6 @@ export default function StrategiesPage() {
       setStrategies(data);
     } catch (err) {
       // Fallback to mock data if backend unavailable
-      const { mockStrategies } = await import("@/lib/mock-data");
-      setStrategies(mockStrategies as unknown as Strategy[]);
       setError(null);
     } finally {
       setLoading(false);
@@ -127,10 +125,10 @@ export default function StrategiesPage() {
 
       {/* Strategy Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatusCard title="Active Strategies" value="4" variant="success" />
-        <StatusCard title="Paused" value="2" variant="warning" />
-        <StatusCard title="Avg Return" value="21.9%" variant="success" />
-        <StatusCard title="Avg Sharpe" value="1.71" />
+        <StatusCard title="Active Strategies" value={String(strategies.filter(s => { const bt = (s as any).backtest; return bt && bt.verdict === "KEEP"; }).length)} variant="success" />
+        <StatusCard title="Total" value={String(strategies.length)} variant="info" />
+        <StatusCard title="Avg Return" value={(() => { const avg = strategies.reduce((s, st) => { const bt = (st as any).backtest; return s + (bt?.btc_return || 0); }, 0) / (strategies.length || 1); return avg.toFixed(1) + "%"; })()} variant="success" />
+        <StatusCard title="Avg Sharpe" value={(() => { const avg = strategies.reduce((s, st) => { const bt = (st as any).backtest; return s + (bt?.btc_sharpe || 0); }, 0) / (strategies.length || 1); return avg.toFixed(2); })()} />
       </div>
 
       <Tabs defaultValue="list">

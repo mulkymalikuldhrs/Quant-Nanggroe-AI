@@ -5,3 +5,4 @@ __all__ = [
 ]
 
 from . import agents
+from .agents import create_agent

@@ -24,6 +24,13 @@ from . import auto_tune
 from . import benchmarks
 from . import cpcv
 from . import engine
+from .engine import BacktestEngine, BacktestConfig
+from .engine import MarketType, StrategyType
+from .metrics import MetricsResult
+from .portfolio import TradeRecord
+from quant_nanggroe.engine.backtest.monte_carlo import MonteCarloSimulator, MonteCarloResult
+
+__all__ = ['BacktestEngine', 'BacktestConfig', 'MarketType', 'StrategyType', 'MetricsResult', 'TradeRecord', 'MonteCarloSimulator', 'MonteCarloResult']
 from . import execution
 from . import fama_french
 from . import hermes_backtest

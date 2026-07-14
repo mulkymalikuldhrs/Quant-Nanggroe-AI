@@ -192,4 +192,36 @@ async def get_signals() -> dict[str, Any]:
             {"symbol": "SPY", "price": 542, "change": 0.8},
         ],
         "timestamp": datetime.now().isoformat(),
-}
+    }
+
+
+@router.get("/mt5/{symbol}")
+async def mt5_market_data(symbol: str) -> dict[str, Any]:
+    """Live market data from MT5 terminal — price, OHLCV, orderbook."""
+    try:
+        from quant_nanggroe.exchange.mt5_broker import MT5Broker
+        from quant_nanggroe.exchange.base import ExchangeConfig
+
+        config = ExchangeConfig(exchange_id="mt5")
+        broker = MT5Broker(config)
+        await broker.connect()
+
+        ticker = await broker.get_ticker(symbol)
+        ohlcv = await broker.get_ohlcv(symbol, limit=5)
+        ob = await broker.get_orderbook(symbol)
+        await broker.disconnect()
+
+        return {
+            "symbol": symbol,
+            "price": ticker.price,
+            "bid": ticker.bid,
+            "ask": ticker.ask,
+            "candles": [{"t": c.timestamp.isoformat(), "o": c.open, "h": c.high, "l": c.low, "c": c.close, "v": c.volume} for c in ohlcv],
+            "bids": [[p.price, p.size] for p in ob.bids[:5]],
+            "asks": [[p.price, p.size] for p in ob.asks[:5]],
+            "source": "mt5",
+        }
+    except ImportError:
+        return {"error": "MetaTrader5 not installed", "source": "mt5"}
+    except Exception as e:
+        return {"error": str(e), "source": "mt5"}

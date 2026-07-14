@@ -243,8 +243,12 @@ class SelfCorrection:
         Use this to inject lessons into the agent's context so it can
         avoid repeating mistakes.
         """
+        # ponytail: severity order for string-safe filtering
+        _SEVERITY_ORDER = {"critical": 4, "error": 3, "warning": 2, "info": 1}
+        min_level = _SEVERITY_ORDER.get(severity_min.value, 2)
+
         unresolved = [l for l in self._lessons if not l.resolved]
-        filtered = [l for l in unresolved if LessonSeverity._value2member_map_.get(l.severity.value, LessonSeverity.INFO) >= severity_min]
+        filtered = [l for l in unresolved if _SEVERITY_ORDER.get(l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity, 1) >= min_level]
         recent = sorted(filtered, key=lambda l: l.occurred_at, reverse=True)[:max_lessons]
 
         if not recent:
@@ -281,7 +285,8 @@ class SelfCorrection:
         if unresolved_only:
             items = [l for l in items if not l.resolved]
         items.sort(key=lambda l: l.occurred_at, reverse=True)
-        return [{"id": l.id, "category": l.category, "severity": l.severity.value,
+        return [{"id": l.id, "category": l.category,
+                 "severity": l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity,
                  "summary": l.summary, "detail": l.detail[:200],
                  "occurred_at": l.occurred_at, "resolved": l.resolved}
                 for l in items[:limit]]
@@ -303,12 +308,16 @@ class SelfCorrection:
         try:
             raw = json.loads(self._path.read_text(encoding="utf-8"))
             self._lessons = [Lesson(**item) for item in raw]
+            # Ensure severity is an enum, not a string from JSON
+            for l in self._lessons:
+                if isinstance(l.severity, str):
+                    l.severity = LessonSeverity(l.severity)
         except Exception as exc:
             logger.warning("Failed to load lessons: %s", exc)
             self._lessons = []
 
     def _save(self) -> None:
-        raw = [{"id": l.id, "category": l.category, "severity": l.severity.value,
+        raw = [{"id": l.id, "category": l.category, "severity": l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity,
                 "summary": l.summary, "detail": l.detail, "context": l.context,
                 "occurred_at": l.occurred_at, "resolved": l.resolved, "resolution": l.resolution}
                for l in self._lessons]

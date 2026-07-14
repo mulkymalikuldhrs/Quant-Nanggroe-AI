@@ -11,6 +11,7 @@ __all__ = [
 
 from . import council_logger
 from . import engine
+from .engine import Signal, AgentOpinion, RiskMetrics, RiskManager, DebateResult, DebateEngine
 from . import graph
 from . import reflection
 from . import research_debate

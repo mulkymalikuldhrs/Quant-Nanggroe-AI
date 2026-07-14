@@ -5,3 +5,4 @@ __all__ = [
 ]
 
 from . import metrics
+from .metrics import compute_metrics, rolling_sharpe, PerformanceMetrics

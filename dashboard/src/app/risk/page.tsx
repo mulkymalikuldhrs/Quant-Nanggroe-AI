@@ -63,8 +63,6 @@ export default function RiskPage() {
       setRiskData(data);
     } catch {
       // Fallback to mock data if backend unavailable
-      const { mockRiskData } = await import("@/lib/mock-data");
-      setRiskData(mockRiskData as unknown as RiskData);
     } finally {
       setLoading(false);
     }

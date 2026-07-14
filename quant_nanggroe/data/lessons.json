@@ -1,0 +1,46 @@
+[
+  {
+    "id": "d0e87be8-58e",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "No data returned",
+    "context": {},
+    "occurred_at": "2026-07-14T03:44:11.552851+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "a63ffb9b-cb7",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "No data returned",
+    "context": {},
+    "occurred_at": "2026-07-14T03:44:54.422032+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "9c17bd14-f0a",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "No data returned",
+    "context": {},
+    "occurred_at": "2026-07-14T03:46:03.737365+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "5be1d511-006",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "No data returned",
+    "context": {},
+    "occurred_at": "2026-07-14T03:46:25.670991+00:00",
+    "resolved": false,
+    "resolution": ""
+  }
+]

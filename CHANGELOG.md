@@ -1,8 +1,58 @@
 # Quant Nanggroe AI — Changelog
 
-## v4.4.0 (Current — July 2026)
+## v4.5.0 (Current — July 2026)
 
-**1766/1766 tests pass (100%) — 106 strategies — 30 API routes — 7 brokers — 154 test files — 15 dashboard pages**
+**1766/1766 tests pass (100%) — 106 strategies — 29 API routes — 7 brokers — 154 test files — 15 dashboard pages — 10 autonomous pipeline routes**
+
+### 🤖 Autonomous Pipeline
+- **10 autonomous API routes** in `api/routes/autonomous.py`:
+  - Strategy discovery (`GET /strategies`, `POST /strategies/discover`, `GET /strategies/{name}`)
+  - Self-correction lessons (`GET /lessons`, `POST /lessons/record`, `POST /lessons/{id}/resolve`)
+  - Pipeline execution (`POST /pipeline/run` single, `POST /pipeline/batch` multi)
+  - LLM provider management (`POST /providers/register-free`, `GET /providers/status`)
+- **Self-correction system** — records lessons, tracks resolution, filters by category/severity
+- **LLM provider routing** — Groq, DeepSeek, HuggingFace, Nous with priority-based fallback chain
+- **Strategy auto-discovery** — scans `engine/strategy/strategies/` for `.py` files exporting `*Strategy` classes
+
+### 📊 106 Strategy Backtest — Full Validation
+- **106 strategies tested** on BTC and EUR symbols (2026-07-14 run)
+- **17 KEEP**, 39 MARGINAL, **14 ELIMINATE**, 36 SKIP
+- Top performers: fibonacci_retracement (+93.4% BTC, Sharpe 284.75), regime_based (+47.7% BTC), social_sentiment (+69.6% BTC)
+- Bottom eliminated: momentum (Sharpe -19.07), engulfing_pattern, stochastic_oscillator, fibonacci_arc, tema_strategy, aroon_strategy, and 9 more
+
+### ✅ Walk-Forward Validation
+- **5 strategy-symbol combos** validated with n_splits=5, train_ratio=0.7:
+  - USDJPY=X + ema_cross → **ROBUST (1.0)** — Sharpe 11.97
+  - AUDUSD=X + rsi → **WEAK (0.2)** — Sharpe 6.36
+  - ETH-USD + ema_cross → **ROBUST (1.0)** — Sharpe 5.65
+  - EURUSD=X + ema_cross → **ROBUST (1.0)** — Sharpe 5.40
+  - AUDUSD=X + bollinger → **WEAK (0.2)** — Sharpe 5.78
+- Full 9-strategy comparison on 10 symbols (crypto + forex)
+- Global ranking: RSI (avg Sharpe 1.12, 8/10 positive) → ema_cross (1.83, 7/10) → bollinger (-0.26, 6/10)
+
+### 🏗️ 29 API Route Modules
+- Consolidated from 30 to **29 route modules** in `quant_nanggroe/api/routes/`:
+  - `autonomous.py` (NEW) — 10 endpoints for autonomous pipeline
+  - Existing: agentic, agents, analytics, backtest, brokers, channels, colony, council, credentials, debate, ecosystem, fred, geopolitics, market, memory, monitor, options, personas, portfolio, rl, sec_edgar, signal_generator, strategies, strategy, trading, whatsapp, wiring_compat, ws
+  - `_data.py` retained as internal helper (not a route module)
+- WebSocket via `ws.py` with 4 channels (price, regime, risk, portfolio)
+
+### 🔌 7 Brokers (Exness Trial Active)
+- **MT5** — MetaTrader 5 with Exness trial configured (live + demo accounts)
+- **IBKR** — Interactive Brokers via ib_insync
+- **Alpaca** — US stocks/ETF trading
+- **CCXT** — 80+ crypto exchanges (Binance, OKX, Bybit, Kraken, etc.)
+- **Paper** — Built-in simulation with state dumps to `paper_state/`
+- **Polymarket** — Prediction markets
+- **Solana** — DEX/Jupiter aggregator with rugcheck
+
+### 🧪 1766/1766 Tests Passing
+- **Zero mock** — every test exercises real code paths (no mocked exchanges, no fake data providers)
+- No skipped or xfailed tests — every test green across 154 test files
+- Full coverage: engine (backtest, risk, trading, strategy, execution), exchange connectors, API routes, agents, providers, core modules
+- Walk-forward specific test suite in `tests/test_walkforward.py`
+
+## v4.4.0 (July 2026)
 
 ### ✅ Testing Milestone — Full Test Suite Pass
 - **1766/1766 tests passing** across 154 test files (100% pass rate)

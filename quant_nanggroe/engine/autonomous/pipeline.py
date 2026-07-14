@@ -87,19 +87,48 @@ class AutonomousPipeline:
         return results
 
     def _fetch_data(self, symbols: List[str]) -> Dict[str, Any]:
-        """Fetch market data with provider failover."""
+        """Fetch market data with provider failover: MT5 -> yfinance."""
         import yfinance as yf
 
         data = {}
         ticker_map = {
             "BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD",
-            "EURUSD=X": "EURUSD=X", "AUDUSD=X": "AUDUSD=X",
-            "USDJPY=X": "USDJPY=X", "GBPUSD=X": "GBPUSD=X",
+            "EURUSD=X": "EURUSD", "AUDUSD=X": "AUDUSD",
+            "USDJPY=X": "USDJPY", "GBPUSD=X": "GBPUSD",
         }
 
         for sym in symbols:
-            yf_sym = ticker_map.get(sym, sym)
+            mt5_sym = ticker_map.get(sym, sym)
+            df = None
+
+            # Try MT5 first (realtime, live ticks)
             try:
+                from quant_nanggroe.exchange.mt5_broker import MT5Broker
+                from quant_nanggroe.exchange.base import ExchangeConfig
+                import pandas as pd
+                from datetime import datetime
+
+                config = ExchangeConfig(exchange_id="mt5")
+                broker = MT5Broker(config)
+                await broker.connect() if hasattr(broker, 'connect') else None
+                mt5_ohlcv = await broker.get_ohlcv(mt5_sym, limit=500)
+                await broker.disconnect() if hasattr(broker, 'disconnect') else None
+
+                if mt5_ohlcv and len(mt5_ohlcv) > 50:
+                    records = [{"open": c.open, "high": c.high, "low": c.low, "close": c.close, "volume": c.volume, "timestamp": c.timestamp} for c in mt5_ohlcv]
+                    df = pd.DataFrame(records).set_index("timestamp")
+                    df.index = pd.to_datetime(df.index)
+                    df.columns = [c.lower() for c in df.columns]
+                    data[sym] = df
+                    continue
+            except Exception:
+                pass
+
+            # Fallback to yfinance
+            try:
+                yf_sym = ticker_map.get(sym, sym)
+                if "=" not in yf_sym and sym not in ["BTC-USD", "ETH-USD", "SOL-USD"]:
+                    yf_sym = sym
                 df = yf.Ticker(yf_sym).history(period="6mo")
                 if isinstance(df.columns, pd.MultiIndex):
                     df.columns = df.columns.get_level_values(0)

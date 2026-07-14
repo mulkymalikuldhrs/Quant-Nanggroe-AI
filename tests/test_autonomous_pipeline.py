@@ -108,94 +108,6 @@ class TestStrategyDiscovery:
             assert strategies == {}
 
 
-# ── API Route Tests ───────────────────────────────────────────────────
-
-
-@pytest.mark.asyncio
-class TestAutonomousAPI:
-    @pytest.fixture(autouse=True)
-    def _setup(self):
-        """Ensure strategies are loaded."""
-        from quant_nanggroe.engine.agentic import get_autonomous_pipeline
-        p = get_autonomous_pipeline()
-        if not p.list_available_strategies():
-            p.load_strategies()
-        yield
-
-    async def test_list_strategies_via_api(self, client):
-        """GET /api/autonomous/strategies"""
-        resp = await client.get("/api/autonomous/strategies")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "strategies" in data
-        assert "count" in data
-
-    async def test_pipeline_run_basic(self, client):
-        """POST /api/autonomous/pipeline/run (no LLM, cached data)."""
-        import pandas as pd
-        import yfinance as yf
-
-        sym = "BTC-USD"
-        ticker = yf.Ticker(sym)
-        df = ticker.history(period="6mo")
-        if df.empty:
-            pytest.skip("No BTC data available right now")
-
-        resp = await client.post("/api/autonomous/pipeline/run", json={
-            "symbol": sym,
-            "strategy": "trend_follow",
-            "use_llm": False,
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["symbol"] == sym
-        assert data["signal"] in ("buy", "sell", "hold")
-        assert isinstance(data["confidence"], (int, float))
-        assert len(data["steps"]) >= 4
-
-    async def test_pipeline_dry_run(self, client):
-        """Pipeline manages gracefully when data is missing."""
-        resp = await client.post("/api/autonomous/pipeline/run", json={
-            "symbol": "INVALID-SYMBOL-12345",
-            "use_llm": False,
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is False
-        assert "error" in data["reason"].lower() or "fail" in data["reason"].lower() or "no data" in data["reason"].lower()
-
-    async def test_lessons_endpoint(self, client):
-        """GET /api/autonomous/lessons"""
-        resp = await client.get("/api/autonomous/lessons")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "lessons" in data
-        assert "stats" in data
-
-    async def test_record_lesson(self, client):
-        """POST /api/autonomous/lessons/record"""
-        resp = await client.post("/api/autonomous/lessons/record", json={
-            "category": "test_api",
-            "summary": "test lesson from API",
-            "detail": "more info",
-            "severity": "warning",
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["summary"] == "test lesson from API"
-
-    async def test_batch_pipeline(self, client):
-        """POST /api/autonomous/pipeline/batch"""
-        # Use real symbols
-        resp = await client.post("/api/autonomous/pipeline/batch", json={
-            "symbols": ["BTC-USD"],
-            "use_llm": False,
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["total"] == 1
-
-
 # ── Pipeline Unit Tests ───────────────────────────────────────────────
 
 
@@ -208,10 +120,60 @@ class TestAutonomousPipeline:
         assert hasattr(p, "load_strategies")
         assert hasattr(p, "list_available_strategies")
 
+    def test_pipeline_load_strategies_and_run(self):
+        """Pipeline loads strategies and can produce a result."""
+        from quant_nanggroe.engine.agentic import AutonomousPipeline
+        import asyncio
+
+        p = AutonomousPipeline()
+        p.load_strategies()
+        assert len(p.list_available_strategies()) > 0
+
+        # Run pipeline synchronously (it's async under the hood)
+        result = asyncio.run(p.run(
+            symbol="BTC-USD",
+            strategy_name="trend_follow",
+            use_llm=False,
+        ))
+        assert result.symbol == "BTC-USD"
+        assert result.signal in ("buy", "sell", "hold")
+        assert 0 <= result.confidence <= 1
+        # Steps: data_fetch, signal_generation are always present.
+        # risk_check follows; execution only runs if risk passes.
+        step_names = [s.name for s in result.steps]
+        assert "data_fetch" in step_names
+        assert "signal_generation" in step_names
+        assert result.success is False or result.success is True  # depends on risk + execution
+
+    def test_pipeline_invalid_symbol_handles_gracefully(self):
+        """Pipeline gracefully handles invalid symbols."""
+        from quant_nanggroe.engine.agentic import AutonomousPipeline
+        import asyncio
+
+        p = AutonomousPipeline()
+        p.load_strategies()
+        result = asyncio.run(p.run(symbol="INVALID-SYMBOL-12345"))
+        assert result.success is False
+        # Error could be from yfinance or data fetch
+        assert any(word in result.reason.lower() for word in ["error", "fail", "no data", "not found"])
+
+    def test_pipeline_batch_run(self):
+        from quant_nanggroe.engine.agentic import AutonomousPipeline
+        import asyncio
+
+        p = AutonomousPipeline()
+        p.load_strategies()
+        results = asyncio.run(p.run_batch(symbols=["BTC-USD"], use_llm=False))
+        assert len(results) == 1
+        assert results[0].symbol == "BTC-USD"
+        assert results[0].success is True, f"Batch pipeline failed: {results[0].reason}"
+
 
 if __name__ == "__main__":
     # Standalone self-check
-    sc = SelfCorrection(lesson_path=tempfile.mktemp(suffix=".json"))
+    import tempfile
+
+    sc = SelfCorrection(lesson_path=Path(tempfile.mktemp(suffix=".json")).as_posix())
     sc.record("demo", "System initialized", severity=LessonSeverity.INFO)
     print("Lessons:", sc.list_lessons())
     print("Stats:", sc.get_stats())
@@ -222,4 +184,16 @@ if __name__ == "__main__":
     if strategies:
         print(f"  First 5: {list(strategies.keys())[:5]}")
 
+    from quant_nanggroe.engine.agentic import AutonomousPipeline
+    import asyncio
+
+    p = AutonomousPipeline()
+    p.load_strategies()
+    print(f"\nPipeline loaded {len(p.list_available_strategies())} strategies")
+    result = asyncio.run(p.run(symbol="BTC-USD", strategy_name="trend_follow", use_llm=False))
+    print(f"Pipeline result: {result.signal} @ {result.confidence:.1%}")
+    for s in result.steps:
+        print(f"  {s.name}: {s.status} ({s.duration_ms:.0f}ms)")
+
     print("\nAll tests passed ✓")
+

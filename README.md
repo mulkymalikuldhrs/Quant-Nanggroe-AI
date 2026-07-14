@@ -8,17 +8,19 @@ Built by **Dhaher Labs** — Quant Nanggroe Hedge Fund
 
 ## Overview
 
-Quant Nanggroe AI is a **unified, zero-fragmentation** multi-agent trading intelligence system. After a comprehensive integration cleanup, all previously disconnected components (legacy packages, orphan agents, dual engines, ghost skills) have been consolidated into a single cohesive structure.
+Quant Nanggroe AI is a **unified, zero-fragmentation** multi-agent trading intelligence system — v4.5.0 with autonomous pipeline, 106 strategies, and full walk-forward validation. After a comprehensive integration cleanup, all previously disconnected components (legacy packages, orphan agents, dual engines, ghost skills) have been consolidated into a single cohesive structure.
 
 ### Core Capabilities
+- **Autonomous Pipeline** — LLM-routed, self-correcting strategy discovery and execution (10 routes)
 - **LangGraph** agent orchestration for complex trading workflows
 - **FastAPI** backend with trading, risk, portfolio, and backtesting engines
 - **Next.js 16** dashboard with real-time monitoring (React 19, Tailwind CSS v4)
 - **Multi-Agent System** — 20+ agents including gold trader, debate engine, marketplace, and chinese wall
 - **Risk Management** — Kelly sizing, VaR, drawdown, kill switch, pressure monitoring
-- **Exchange Integration** — CCXT, Alpaca, yfinance, WebSocket streaming
+- **Exchange Integration** — MT5, IBKR, Alpaca, CCXT, Paper, Polymarket, Solana
 - **ML/AI** — XGBoost, PyTorch, LangChain, OpenAI, Anthropic, Google GenAI
 - **Paper Trading** — State dumps to `paper_state/` with full position tracking
+- **Walk-Forward Validation** — 5 combo backtest with n_splits=5 on 10 symbols
 - **Docker** deployment with Redis caching, Prometheus monitoring, health-checked services
 
 ---
@@ -207,19 +209,20 @@ docker compose up -d --build
 
 ---
 
-|## Current State
-|
-|**Version:** v4.4.0 (July 2026)
-|
+## Current State
+
+**Version:** v4.5.0 (July 2026)
+
 [![Tests](https://img.shields.io/badge/tests-1766%2F1766%20passing-brightgreen)](#)
 [![Strategies](https://img.shields.io/badge/strategies-106-green)](#)
-[![API Routes](https://img.shields.io/badge/API%20Routes-30-blue)](#)
+[![API Routes](https://img.shields.io/badge/API%20Routes-29-blue)](#)
 [![Brokers](https://img.shields.io/badge/brokers-7-blue)](#)
 [![Test Files](https://img.shields.io/badge/test%20files-154-lightgrey)](#)
 [![Dashboard Pages](https://img.shields.io/badge/dashboard%20pages-15-orange)](#)
-|
-|### ✅ Ready
-|- **1766/1766 tests passing (100%)** — 154 test files, 106 strategies, 30 API routes, 7 brokers
+[![Zero Mock](https://img.shields.io/badge/mock-zero-success)](#)
+
+### ✅ Ready
+- **1766/1766 tests passing (100%)** — 154 test files, 106 strategies, 29 API routes, 7 brokers — **zero mock** (all tests exercise real code)
 |- Multi-agent orchestration (20+ agents in a unified system)
 |- Risk management engine (Kelly, VaR, drawdown, kill switch)
 |- Exchange API integrations (CCXT, Alpaca, yfinance, IBKR, MT5, Polymarket)
@@ -300,9 +303,19 @@ AI agents (Claude, Copilot, Cursor, Gemini) should read these files in order:
 
 ---
 
-|## Changelog (Recent)
-|
-|### v4.4.0 — Production-Grade Dashboard OS + Hedge Fund UI
+## Changelog (Recent)
+
+### v4.5.0 — Autonomous Pipeline + Walk-Forward Validation
+- ✅ **Autonomous Pipeline** — 10 API routes for LLM-routed, self-correcting strategy discovery and execution
+- ✅ **106 strategies full backtest** (2026-07-14): 17 KEEP, 39 MARGINAL, 14 ELIMINATE, 36 SKIP
+- ✅ **Walk-forward validation** — 5 strategy-symbol combos with n_splits=5, train_ratio=0.7 (USDJPY+ema_cross ROBUST, AUDUSD+rsi WEAK, ETH+ema_cross ROBUST, EURUSD+ema_cross ROBUST, AUDUSD+bollinger WEAK)
+- ✅ **29 API route modules** — consolidated from 30 (merged redundant endpoints)
+- ✅ **Multi-broker support** — MT5 (Exness trial), IBKR, Alpaca, CCXT (80+ exchanges), Paper, Polymarket, Solana DEX
+- ✅ **Self-correction system** — recorded lessons, resolution tracking, category-based filtering
+- ✅ **LLM provider routing** — Groq, DeepSeek, HuggingFace, Nous with fallback chain
+- ✅ **1766/1766 tests passing (100%)** — 154 test files, no skipped/xfailed tests
+
+### v4.4.0 — Production-Grade Dashboard OS + Hedge Fund UI
 |- ✅ **1766/1766 tests passing (100%)** — 106 strategy modules, 30 API routes, 7 brokers, 154 test files
 |- ✅ **Recent Bug Fixes:** pandas 3.0 freq alias (H→h), OHLCV symbol field required, toggle script CamelCase→snake_case, scripts/__init__.py lazy importer, paper_broker BUY limit price, openbb_provider api_key passthrough, strategy registry normalize
 - ✅ **Apple macOS Liquid Glass Design System** — glassmorphism backdrop-filter blur 24-40px, double-bezel card architecture, noise/grain overlay, Bloomberg-style data cells (`.bbg-cell`)

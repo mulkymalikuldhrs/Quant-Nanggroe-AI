@@ -16,7 +16,7 @@ from quant_nanggroe.engine.agentic import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/api/autonomous", tags=["Autonomous"])
 
 
 def _get_pipeline() -> AutonomousPipeline:

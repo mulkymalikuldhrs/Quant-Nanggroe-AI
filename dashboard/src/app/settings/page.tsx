@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockExchanges } from "@/lib/mock-data";
+
 import {
   Settings,
   Key,
@@ -213,7 +213,7 @@ export default function SettingsPage() {
         }>
           <ScrollArea className="max-h-64">
             <div className="space-y-2">
-              {(exchanges.length ? exchanges : mockExchanges).map((exchange) => (
+              {(exchanges || []).map((exchange) => (
                 <div key={exchange.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                   <div className="flex items-center gap-3">
                     <Server className="w-3.5 h-3.5 text-white/30" />
