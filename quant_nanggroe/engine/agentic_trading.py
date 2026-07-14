@@ -52,7 +52,7 @@ class AgentSignal:
     role: AgentRole
     action: DecisionAction
     confidence: float          # 0.0 - 1.0
-    reasoning: str
+    reasoning: str = ""        # ponytail: optional — not all callers (e.g. API, quick signals) supply it
     metrics: dict[str, Any] = field(default_factory=dict)
     timestamp: str = ""
 
@@ -120,6 +120,7 @@ class ValueMetrics:
     ev_ebitda: float = 0.0
     dividend_yield: float = 0.0
     free_cashflow_yield: float = 0.0
+    market_cap: float = 0.0  # ponytail: absolute market cap — needed by valuation/fundamental callers
 
     # Financial Health
     debt_to_equity: float = 0.0

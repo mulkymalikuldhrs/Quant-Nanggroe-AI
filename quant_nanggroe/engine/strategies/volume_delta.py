@@ -21,6 +21,7 @@ from quant_nanggroe.engine.strategies.base import (
     StrategySignal,
     StrategyType,
 )
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class VolumeDeltaParameters(StrategyParameters):
     min_confidence: float = 0.55
 
 
+@StrategyRegistry.register
 class VolumeDeltaStrategy(Strategy):
     """Volume Delta / CVD Analysis Strategy.
 
@@ -43,12 +45,10 @@ class VolumeDeltaStrategy(Strategy):
     phases.
     """
 
-    def __init__(self, params: Optional[VolumeDeltaParameters] = None) -> None:
-        self._params = params or VolumeDeltaParameters()
+    name = "volume_delta"
 
-    @property
-    def name(self) -> str:
-        return "volume_delta"
+    def __init__(self, parameters: Optional[VolumeDeltaParameters] = None) -> None:
+        self._params = parameters or VolumeDeltaParameters()
 
     @property
     def strategy_type(self) -> StrategyType:

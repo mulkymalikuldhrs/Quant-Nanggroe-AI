@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { apiRequest } from "@/lib/api-client";
 
 import {
   Settings,
@@ -71,9 +72,10 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch("/api/credentials");
-      if (!r.ok) throw new Error("API unavailable");
-      const d = await r.json();
+      const d = await apiRequest<{
+        apiKeys?: ApiKeyEntry[]; brokers?: BrokerEntry[]; exchanges?: ExchangeEntry[];
+        llmKeys?: LlmKeyEntry[]; riskLimits?: Record<string, number>; systemToggles?: Record<string, boolean>;
+      }>("/api/credentials");
       setApiKeys(d.apiKeys ?? []);
       setBrokers(d.brokers ?? []);
       setExchanges(d.exchanges ?? []);
@@ -100,12 +102,7 @@ export default function SettingsPage() {
     setSaving(section);
     setSaveMsg(null);
     try {
-      const r = await fetch("/api/credentials", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!r.ok) throw new Error(await r.text());
+      await apiRequest("/api/credentials", { method: "PUT", body: data });
       setSaveMsg({ ok: true, text: `${section} saved` });
     } catch (e: unknown) {
       setSaveMsg({ ok: false, text: `${section}: ${e instanceof Error ? e.message : 'error'}` });

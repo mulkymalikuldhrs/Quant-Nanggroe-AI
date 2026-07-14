@@ -54,11 +54,15 @@ def _make_paper_em():
 
 # ── Test A: Kill switch enforcement ────────────────────────────────────────
 def test_kill_switch_blocks_order_when_active():
-    """When daily loss breaches threshold, execute_order must return None (blocked)."""
+    """When daily loss breaches threshold, execute_order must return None (blocked).
+
+    daily_pnl_pct is PERCENT (0-100); execute_order converts to the kill switch's
+    fraction contract internally. -5.0 == 5% loss > 1.5% auto-activate threshold.
+    """
     em = _make_paper_em()
-    # Breach daily loss threshold (config default 1.5%); pass -0.05 = -5%
+    # Breach daily loss threshold (config default 1.5%); pass -5.0 = -5% (PERCENT)
     fill = asyncio.run(
-        em.execute_order(_make_order(), daily_pnl_pct=-0.05)
+        em.execute_order(_make_order(), daily_pnl_pct=-5.0)
     )
     assert fill is None, "Kill switch MUST block order when daily loss breached"
     # Audit log should record the block
@@ -142,6 +146,69 @@ def test_risk_manager_blocks_when_daily_loss_breached():
     assert fill is None, "RiskManager MUST veto order when daily loss budget exhausted"
     actions = [e.get("action") for e in em.get_audit_log()]
     assert "RISK_VETOED" in actions, "Audit log missing RISK_VETOED"
+
+
+# ── Test D: COMBINED production path (kill switch + RiskManager both attached) ──
+def _make_combined_em():
+    """The REAL production wiring: both KillSwitch and RiskManager are attached,
+    so BOTH must be satisfied for an order to execute."""
+    from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
+    from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchConfig
+    from quant_nanggroe.engine.risk.manager import RiskManager
+
+    em = ExecutionManager()
+    em.set_kill_switch(KillSwitch(KillSwitchConfig(auto_daily_loss_pct=0.015)))
+    em.set_risk_manager(RiskManager(initial_equity=1_000_000.0))
+    em.add_broker(PaperBroker(), primary=True)
+    return em
+
+
+def _clean_order():
+    order = _make_order(symbol="BTC/USDT", qty=0.001)
+    order.price = 50_000.0
+    return order
+
+
+def test_combined_clean_order_executes():
+    """Healthy order (0% pnl) passes kill switch AND risk manager, reaches broker."""
+    em = _make_combined_em()
+    fill = asyncio.run(em.execute_order(_clean_order(), daily_pnl_pct=0.0))
+    assert fill is not None, "Clean order must execute when both guards pass"
+    actions = [e.get("action") for e in em.get_audit_log()]
+    assert "KILL_SWITCH_BLOCKED" not in actions
+    assert "RISK_VETOED" not in actions
+
+
+def test_combined_kill_switch_blocks_before_risk():
+    """Large loss (5%) trips the kill switch (1.5% threshold) — blocks on kill switch.
+
+    daily_pnl_pct is PERCENT; execute_order converts to the kill switch's fraction
+    contract, so -5.0 == 5% loss trips auto-activation. Without that conversion the
+    switch would read 5.0 as 500% and over-fire; with a fraction value it would never
+    fire. Either way the order must be blocked.
+    """
+    em = _make_combined_em()
+    fill = asyncio.run(em.execute_order(_clean_order(), daily_pnl_pct=-5.0))
+    assert fill is None, "Combined path must block a 5% daily loss"
+    actions = [e.get("action") for e in em.get_audit_log()]
+    assert any(a.startswith("KILL_SWITCH") for a in actions), (
+        f"Expected kill-switch block, got {actions}")
+
+
+def test_combined_risk_veto_blocks_without_kill_switch_preempt():
+    """Loss inside 1-1.5% band: RiskManager constitutional veto fires, kill switch silent.
+
+    This isolates the RiskManager daily-loss veto on the COMBINED path. daily_pnl_pct=-1.2
+    is > MAX_DAILY_LOSS (1%) so risk vetoes, but < kill switch threshold (1.5%) so the
+    kill switch does NOT preempt. Before the units fix this band could fall through.
+    """
+    em = _make_combined_em()
+    fill = asyncio.run(em.execute_order(_clean_order(), daily_pnl_pct=-1.2))
+    assert fill is None, "RiskManager constitutional veto must block at -1.2% daily loss"
+    actions = [e.get("action") for e in em.get_audit_log()]
+    assert "RISK_VETOED" in actions, f"Expected RISK_VETOED, got {actions}"
+    assert not any(a.startswith("KILL_SWITCH") for a in actions), (
+        f"Kill switch must stay silent at -1.2%, got {actions}")
 
 
 if __name__ == "__main__":

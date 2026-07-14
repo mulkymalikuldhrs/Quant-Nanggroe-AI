@@ -72,6 +72,8 @@ function TradingDashboardContent() {
   const [orderPrice, setOrderPrice] = useState("");
   const [loading, setLoading] = useState(true);
   const [orderMsg, setOrderMsg] = useState("");
+  const [accounts, setAccounts] = useState<BrokerAccountUI[]>([]);
+  const [positions, setPositions] = useState<PositionUI[]>([]);
 
   // Fetch real data from backend
   useEffect(() => {

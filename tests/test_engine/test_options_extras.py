@@ -7,6 +7,8 @@ import pytest
 
 from quant_nanggroe.engine.options.vol_surface import SABRModel, VolSurface
 from quant_nanggroe.engine.options.strategies import OptionStrategy
+from quant_nanggroe.engine.options.vol_surface import forward_price, black_implied_vol
+from quant_nanggroe.engine.options.strategies import analyze_strategy
 
 
 class TestSABRModel:
@@ -90,3 +92,31 @@ class TestOptionStrategy:
         result = strat.covered_call(strike=105, T=1.0)
         assert result.net_premium < 0  # short call receives premium
         assert "Covered" in result.name
+
+
+class TestForwardAndBlackIV:
+    def test_forward_price(self):
+        # F = S * exp((r - q) * T)
+        F = forward_price(100.0, 0.05, 0.01, 1.0)
+        assert F > 100.0
+        assert abs(F - 100.0 * np.exp(0.04)) < 1e-6
+
+    def test_black_implied_vol(self):
+        iv = black_implied_vol(forward=100, strike=100, T=0.5, price=7.0, is_call=True)
+        assert 0 < iv < 2
+
+    def test_black_iv_zero_price(self):
+        assert black_implied_vol(100, 100, 0.5, 0.0) == 0.0
+
+
+class TestAnalyzeStrategy:
+    def test_from_dict_legs(self):
+        res = analyze_strategy(
+            "custom", spot=100,
+            legs=[{"side": "call", "position": "long", "strike": 100, "expiration": 1.0, "quantity": 1}],
+            sigma=0.3,
+        )
+        assert res.name == "custom"
+        assert len(res.legs) == 1
+        assert res.net_premium > 0
+

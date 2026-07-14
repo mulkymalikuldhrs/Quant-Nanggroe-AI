@@ -35,7 +35,9 @@ def load_mt5_accounts(em) -> List[str]:
         return []
 
     with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+        raw = f.read()
+    # ponytail: expand ${VAR} from env so tracked config holds no real secrets
+    data = yaml.safe_load(os.path.expandvars(raw)) or {}
 
     accounts = data.get("accounts") or []
     if not accounts:

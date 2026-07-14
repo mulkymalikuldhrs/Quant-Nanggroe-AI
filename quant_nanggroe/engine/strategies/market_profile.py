@@ -24,6 +24,7 @@ from quant_nanggroe.engine.strategies.base import (
     StrategySignal,
     StrategyType,
 )
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class MarketProfileParameters(StrategyParameters):
     min_confidence: float = 0.55
 
 
+@StrategyRegistry.register
 class MarketProfileStrategy(Strategy):
     """Market Profile / Volume Profile Strategy.
 
@@ -44,12 +46,10 @@ class MarketProfileStrategy(Strategy):
     high-volume nodes (POC), value areas, and auction types.
     """
 
-    def __init__(self, params: Optional[MarketProfileParameters] = None) -> None:
-        self._params = params or MarketProfileParameters()
+    name = "market_profile"
 
-    @property
-    def name(self) -> str:
-        return "market_profile"
+    def __init__(self, parameters: Optional[MarketProfileParameters] = None) -> None:
+        self._params = parameters or MarketProfileParameters()
 
     @property
     def strategy_type(self) -> StrategyType:

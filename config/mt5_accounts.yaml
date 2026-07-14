@@ -1,78 +1,32 @@
 # MT5 Accounts — Semua broker di Indonesia (MT5)
 # Cukup login + password + server, MT5 terminal connect langsung.
 # role: primary | failover | data_only
+# SECURITY: real credentials di .secrets-local/ (gitignored). Tracked file pakai ${ENV}.
+# Loader (quant_nanggroe/exchange/mt5_accounts.py) expand ${VAR} via os.expandvars.
 
 accounts:
   - name: exness_trial
-    login: "414016058"
-    password: "@15September"
+    login: "${MT5_LOGIN_EXNESS}"
+    password: "${MT5_PASS_EXNESS}"
     server: "Exness-MT5Trial6"
     role: primary
 
   - name: exness_real
-    login: "414016058"
-    password: "@15September"
+    login: "${MT5_LOGIN_EXNESS}"
+    password: "${MT5_PASS_EXNESS}"
     server: "Exness-MT5Real"
     role: failover
 
   - name: exness_real2
-    login: "414016058"
-    password: "@15September"
+    login: "${MT5_LOGIN_EXNESS}"
+    password: "${MT5_PASS_EXNESS}"
     server: "Exness-MT5Real2"
     role: failover
 
-# Uncomment dan isi credentials masing-masing akun:
+# Uncomment dan isi credentials masing-masing akun (pakai ${ENV}):
 #
 #  - name: valutrades_1
-#    login: "7654321"
-#    password: "PASSWORD"
+#    login: "${MT5_LOGIN_VALUTRADES}"
+#    password: "${MT5_PASS_VALUTRADES}"
 #    server: "Valutrades-Live"
-#    role: failover
-#
-#  - name: tickmill_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "Tickmill-Live"
-#    role: failover
-#
-#  - name: icmarkets_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "ICMarkets-Live"
-#    role: failover
-#
-#  - name: fbs_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "FBS-Real"
-#    role: failover
-#
-#  - name: xm_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "XMTrade-Real"
-#    role: failover
-#
-#  - name: hotforex_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "HotForex-Real"
-#    role: failover
-#
-#  - name: octafx_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "OctaFX-Real"
-#    role: failover
-#
-#  - name: fxopen_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "FXOpen-Real"
-#    role: failover
-#
-#  - name: roboforex_1
-#    login: "1234567"
-#    password: "PASSWORD"
-#    server: "RoboForex-Real"
 #    role: failover

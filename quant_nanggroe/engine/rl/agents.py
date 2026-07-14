@@ -55,7 +55,7 @@ class RLState:
 
         Total array length = state_dim: prices(2) + volumes(2) + indicators(state_dim-7) + 3.
         """
-        n_ind = max(1, state_dim - 7)
+        n_ind = max(0, state_dim - 7)  # ponytail: state_dim<7 unsat (2+2+3 fixed)→clamp min 7
         return cls(
             prices=np.random.randn(2),
             volumes=np.random.randn(2),
@@ -409,11 +409,14 @@ class SACAgent(BaseRLAgent):
     """Soft Actor-Critic — continuous action, max entropy RL for market-making."""
 
     def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 64, **kwargs):
+        # ponytail: SAC-specific kwargs must not leak to the base ctor
+        batch_size = kwargs.pop("batch_size", 64)
+        alpha = kwargs.pop("alpha", 0.2)
         super().__init__(state_dim, action_dim, action_space=ActionSpace.CONTINUOUS, **kwargs)
         self.hidden_dim = hidden_dim
         self.buffer = ReplayBuffer()
-        self.batch_size = kwargs.get("batch_size", 64)
-        self.alpha = kwargs.get("alpha", 0.2)  # temperature
+        self.batch_size = batch_size
+        self.alpha = alpha
         self._init_networks()
 
     def _init_networks(self) -> None:

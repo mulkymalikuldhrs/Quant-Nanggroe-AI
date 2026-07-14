@@ -64,17 +64,26 @@ class SABRModel:
         logFK = np.log(F / K)
         z = self.nu / self.alpha * (F * K) ** ((1 - self.beta) / 2) * logFK
         x_z = np.log((np.sqrt(1 - 2 * self.rho * z + z**2) + z - self.rho) / (1 - self.rho))
-        x_z = max(x_z, 1e-8)
+        # ponytail: z/x_z → 1 as K→F (Hagan 2002). Do NOT clamp x_z — clamping a
+        # negative log to a tiny positive collapses the denominator → OTM blowup.
 
-        # Ponytail: Hagan formula truncated to O(T^2)
-        denom = (F * K) ** ((1 - self.beta) / 2) * (1 + (1 - self.beta)**2 / 24 * logFK**2 + (1 - self.beta)**4 / 1920 * logFK**4) * x_z  # noqa: E501
-        num = self.alpha * (1 + (
+        # Hagan 2002 lognormal expansion
+        pre_fac = (F * K) ** ((1 - self.beta) / 2) * (
+            1 + (1 - self.beta)**2 / 24 * logFK**2
+            + (1 - self.beta)**4 / 1920 * logFK**4
+        )
+        correction = (
             (1 - self.beta)**2 / 24 * self.alpha**2 / (F * K)**(1 - self.beta)
             + 1 / 4 * self.rho * self.beta * self.nu * self.alpha / (F * K)**((1 - self.beta) / 2)
             + (2 - 3 * self.rho**2) / 24 * self.nu**2
-        ) * T)
-
-        return float(num / denom) if denom > 1e-12 else self._atm_vol(F, T)
+        )
+        denom = pre_fac * x_z
+        if abs(denom) < 1e-12:
+            return self._atm_vol(F, T)
+        vol = self.alpha * (z / x_z) * (1 + correction * T) / denom
+        # ponytail: Hagan expansion goes slightly negative for extreme strikes;
+        # a negative IV is invalid for downstream pricing → floor at small positive.
+        return float(max(vol, 1e-4))
 
     def _atm_vol(self, F: float, T: float) -> float:
         """ATM vol when F == K."""

@@ -84,3 +84,55 @@ class TestConsensusEngine:
         decision = engine.reach_consensus(symbol="AAPL", signals=[])
         assert decision.action == DecisionAction.NOTHING
         assert decision.confidence == 0.0
+
+
+class TestAgentSignalRegression:
+    def test_reasoning_default(self):
+        """Regression: AgentSignal must be constructible without `reasoning`
+        (API/quick-signal callers omit it)."""
+        sig = AgentSignal(role=AgentRole.RESEARCH, action=DecisionAction.HOLD, confidence=0.5)
+        assert sig.reasoning == ""
+        assert sig.timestamp  # auto-filled
+
+    def test_to_dict_serializes(self):
+        sig = AgentSignal(role=AgentRole.RISK, action=DecisionAction.SELL,
+                          confidence=0.9, reasoning="risk")
+        d = sig.__dict__
+        assert d["role"] == AgentRole.RISK
+        assert d["reasoning"] == "risk"
+
+
+class TestValueMetricsRegression:
+    def test_has_market_cap(self):
+        """Regression: ValueMetrics must expose `market_cap` for valuation callers."""
+        m = ValueMetrics(roe=0.2, market_cap=3.0e12)
+        assert hasattr(m, "market_cap")
+        assert m.market_cap == 3.0e12
+        assert m.buffett_score >= 0
+
+    def test_default_market_cap_zero(self):
+        assert ValueMetrics().market_cap == 0.0
+
+
+class TestConsensusEngineEdge:
+    def test_weighted_consensus(self):
+        engine = ConsensusEngine()
+        signals = [
+            AgentSignal(role=AgentRole.BERKSHIRE, action=DecisionAction.BUY, confidence=0.9, reasoning="r"),
+            AgentSignal(role=AgentRole.VALUATION, action=DecisionAction.SELL, confidence=0.8, reasoning="v"),
+        ]
+        decision = engine.reach_consensus(
+            symbol="AAPL", signals=signals,
+            weights={"berkshire": 0.9, "valuation": 0.1},
+        )
+        assert decision.action == DecisionAction.BUY  # berkshire dominates
+        assert 0 < decision.position_size_pct <= 0.25
+
+    def test_strong_sell_veto(self):
+        engine = ConsensusEngine(veto_roles=[AgentRole.RISK])
+        signals = [
+            AgentSignal(role=AgentRole.BERKSHIRE, action=DecisionAction.BUY, confidence=0.9, reasoning="b"),
+            AgentSignal(role=AgentRole.RISK, action=DecisionAction.STRONG_SELL, confidence=0.99, reasoning="bad"),
+        ]
+        decision = engine.reach_consensus(symbol="AAPL", signals=signals)
+        assert decision.action == DecisionAction.NOTHING

@@ -42,5 +42,38 @@
     "occurred_at": "2026-07-14T03:46:25.670991+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "5fa98fcd-725",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2163293685712'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2163293950544'>).",
+    "context": {},
+    "occurred_at": "2026-07-14T20:48:58.535546+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "5e5bf71f-cec",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
+    "context": {},
+    "occurred_at": "2026-07-14T20:49:01.608855+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "bf5e7ee5-069",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2163293685712'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2163293950544'>).",
+    "context": {},
+    "occurred_at": "2026-07-14T20:49:01.961050+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

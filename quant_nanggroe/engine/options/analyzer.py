@@ -75,19 +75,29 @@ class BlackScholes:
             return (self.K * math.exp(-self.r * self.T) * stats.norm.cdf(-d2)
                     - self.S * stats.norm.cdf(-d1))
 
-    def greeks(self) -> OptionGreeks:
-        """Calculate all option Greeks."""
+    def greeks(self, option_type: OptionType = OptionType.CALL) -> OptionGreeks:
+        """Calculate option Greeks for the given option type."""
+        if self.T <= 0:
+            # ponytail: at expiry only delta (a step function) is well-defined
+            g = OptionGreeks()
+            if option_type == OptionType.CALL:
+                g.delta = 1.0 if self.S > self.K else (0.0 if self.S < self.K else 0.5)
+            else:
+                g.delta = -1.0 if self.S < self.K else (0.0 if self.S > self.K else -0.5)
+            return g
+
         d1 = self._d1()
         d2 = self._d2()
         phi_d1 = stats.norm.pdf(d1)
+        mult = 1 if option_type == OptionType.CALL else -1
 
         greeks = OptionGreeks()
-        greeks.delta = stats.norm.cdf(d1)
+        greeks.delta = mult * stats.norm.cdf(mult * d1)
         greeks.gamma = phi_d1 / (self.S * self.sigma * math.sqrt(self.T))
         greeks.theta = (-self.S * phi_d1 * self.sigma / (2 * math.sqrt(self.T))
-                        - self.r * self.K * math.exp(-self.r * self.T) * stats.norm.cdf(d2))
+                        - mult * self.r * self.K * math.exp(-self.r * self.T) * stats.norm.cdf(mult * d2))
         greeks.vega = self.S * phi_d1 * math.sqrt(self.T)
-        greeks.rho = self.K * self.T * math.exp(-self.r * self.T) * stats.norm.cdf(d2)
+        greeks.rho = mult * self.K * self.T * math.exp(-self.r * self.T) * stats.norm.cdf(mult * d2)
         return greeks
 
     def _d1(self) -> float:

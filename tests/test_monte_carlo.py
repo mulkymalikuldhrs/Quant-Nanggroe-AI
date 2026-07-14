@@ -19,8 +19,8 @@ import pandas as pd
 from quant_nanggroe.engine.backtest import (
     MonteCarloSimulator,
     MonteCarloResult,
-    MultiMetricMonteCarloResult,
 )
+from quant_nanggroe.engine.simulation import MultiMetricMonteCarloResult
 
 
 class TestMonteCarloSimulatorInit(unittest.TestCase):

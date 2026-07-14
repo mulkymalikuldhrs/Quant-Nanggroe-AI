@@ -133,14 +133,26 @@ class ExecutionManager:
             logger.error("No broker available for order %s", order.id)
             return None
 
+        # KillSwitch.check_auto_activate / check_warning take FRACTION pnl
+        # (config thresholds: 0.015 == 1.5%), but execute_order's contract and
+        # RiskManager.check_trade use PERCENT (0-100). Convert once at this
+        # boundary so both layers read the same incoming percent values in
+        # their correct units — otherwise the constitutional risk veto is dead
+        # on the combined path (pitfall #11: kill switch over-fires as 100x
+        # fraction, or risk never sees the loss).
+        ks_daily = daily_pnl_pct / 100.0
+        ks_weekly = weekly_pnl_pct / 100.0
+        ks_drawdown = max_drawdown_pct / 100.0
+        ks_volatility = volatility_pct / 100.0
+
         # 3. Kill switch — ENFORCED (not just a warning)
         if self._kill_switch is not None:
             # Auto-activate if thresholds breached, then hard-block the order
             self._kill_switch.check_auto_activate(
-                daily_pnl_pct=daily_pnl_pct,
-                weekly_pnl_pct=weekly_pnl_pct,
-                max_drawdown_pct=max_drawdown_pct,
-                volatility_pct=volatility_pct,
+                daily_pnl_pct=ks_daily,
+                weekly_pnl_pct=ks_weekly,
+                max_drawdown_pct=ks_drawdown,
+                volatility_pct=ks_volatility,
             )
             if not self._kill_switch.can_trade():
                 logger.critical(
@@ -165,10 +177,10 @@ class ExecutionManager:
                 return None
             # Below threshold: still surface early warning for observability
             warning = self._kill_switch.check_warning(
-                daily_pnl_pct=daily_pnl_pct,
-                weekly_pnl_pct=weekly_pnl_pct,
-                max_drawdown_pct=max_drawdown_pct,
-                volatility_pct=volatility_pct,
+                daily_pnl_pct=ks_daily,
+                weekly_pnl_pct=ks_weekly,
+                max_drawdown_pct=ks_drawdown,
+                volatility_pct=ks_volatility,
             )
             if warning:
                 logger.warning(

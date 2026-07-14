@@ -122,3 +122,6 @@ packages/
 ai_multicolony/
 docs/
 node_modules/
+
+# local secrets (real creds, never commit)
+.secrets-local/
