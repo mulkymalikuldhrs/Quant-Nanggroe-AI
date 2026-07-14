@@ -210,6 +210,7 @@ def create_app() -> FastAPI:
         agentic,
         analytics,
         backtest,
+        autonomous,
         brokers,
         channels,
         colony,
@@ -262,6 +263,7 @@ def create_app() -> FastAPI:
     app.include_router(rl.router)
     app.include_router(analytics.router)
     app.include_router(agentic.router)
+    app.include_router(autonomous.router)
     app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
     app.include_router(wiring_compat.router)
 

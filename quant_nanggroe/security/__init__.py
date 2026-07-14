@@ -4,6 +4,7 @@ __all__ = [
     'audit',
     'auth',
     'credential_inference',
+    'credential_manager',
     'encryption',
     'keyvault',
 ]

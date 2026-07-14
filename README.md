@@ -201,7 +201,9 @@ docker compose up -d --build
 | 19 | RISK_REGISTER | Known risks, severity, mitigation |
 | 20 | RELEASE_PLAN | Stages, gates, rollback policy |
 | 21 | CONTRIBUTING | How to contribute, PR expectations |
-| 22-49 | Extended Docs | Requirements, validation, ADR process, etc. |
+|| 18-49 | Extended Docs | Requirements, validation, ADR process, etc. |
+|| **Broker** | BROKER_SETUP | MT5 Exness setup, broker config guides |
+|| **UI** | UI_GUIDE | Dashboard pages, components, design system |
 
 ---
 
@@ -209,15 +211,15 @@ docker compose up -d --build
 |
 |**Version:** v4.4.0 (July 2026)
 |
-|[![Tests](https://img.shields.io/badge/tests-1766%2F1766%20passing-brightgreen)](#)
-|[![Strategies](https://img.shields.io/badge/strategies-18-blue)](#)
-|[![API Routes](https://img.shields.io/badge/API%20Routes-30-blue)](#)
-|[![Brokers](https://img.shields.io/badge/brokers-7-blue)](#)
-|[![Test Files](https://img.shields.io/badge/test%20files-154-lightgrey)](#)
-|[![Dashboard Pages](https://img.shields.io/badge/dashboard%20pages-15-orange)](#)
+[![Tests](https://img.shields.io/badge/tests-1766%2F1766%20passing-brightgreen)](#)
+[![Strategies](https://img.shields.io/badge/strategies-106-green)](#)
+[![API Routes](https://img.shields.io/badge/API%20Routes-30-blue)](#)
+[![Brokers](https://img.shields.io/badge/brokers-7-blue)](#)
+[![Test Files](https://img.shields.io/badge/test%20files-154-lightgrey)](#)
+[![Dashboard Pages](https://img.shields.io/badge/dashboard%20pages-15-orange)](#)
 |
 |### ✅ Ready
-|- **1766/1766 tests passing (100%)** — 154 test files, 18 strategies, 30 API routes, 7 brokers
+|- **1766/1766 tests passing (100%)** — 154 test files, 106 strategies, 30 API routes, 7 brokers
 |- Multi-agent orchestration (20+ agents in a unified system)
 |- Risk management engine (Kelly, VaR, drawdown, kill switch)
 |- Exchange API integrations (CCXT, Alpaca, yfinance, IBKR, MT5, Polymarket)
@@ -301,7 +303,7 @@ AI agents (Claude, Copilot, Cursor, Gemini) should read these files in order:
 |## Changelog (Recent)
 |
 |### v4.4.0 — Production-Grade Dashboard OS + Hedge Fund UI
-|- ✅ **1766/1766 tests passing (100%)** — 18 strategy modules, 30 API routes, 7 brokers, 154 test files
+|- ✅ **1766/1766 tests passing (100%)** — 106 strategy modules, 30 API routes, 7 brokers, 154 test files
 |- ✅ **Recent Bug Fixes:** pandas 3.0 freq alias (H→h), OHLCV symbol field required, toggle script CamelCase→snake_case, scripts/__init__.py lazy importer, paper_broker BUY limit price, openbb_provider api_key passthrough, strategy registry normalize
 - ✅ **Apple macOS Liquid Glass Design System** — glassmorphism backdrop-filter blur 24-40px, double-bezel card architecture, noise/grain overlay, Bloomberg-style data cells (`.bbg-cell`)
 - ✅ **Design Tokens** — CSS custom properties for brand colors (emerald/amber/purple), surface layers (white/2% → 8%), semantic colors (profit/loss/bid/ask), 12+ animations (shimmer, slide-up, float, glow, ticker)

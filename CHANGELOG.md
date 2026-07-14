@@ -2,7 +2,7 @@
 
 ## v4.4.0 (Current — July 2026)
 
-**1766/1766 tests pass (100%) — 106 strategies — 16 API routes — 5 brokers — 154 test files — 15 dashboard pages**
+**1766/1766 tests pass (100%) — 106 strategies — 30 API routes — 7 brokers — 154 test files — 15 dashboard pages**
 
 ### ✅ Testing Milestone — Full Test Suite Pass
 - **1766/1766 tests passing** across 154 test files (100% pass rate)
@@ -10,10 +10,11 @@
 - No skipped or xfailed tests — every test green across the board
 - Test suite includes: unit tests, integration tests, regression tests
 
-### 🏗️ 18 Strategy Modules
-- 14 concrete strategies in `engine/strategy/strategies/`: mean_reversion, momentum, pairs_trading, trend_follow, statistical_arbitrage, supply_demand, support_resistance, ICT/SMC, Wyckoff, COT, regime_based, volatility_arbitrage, market_making, crypto_specific, fundamental
-- 4 legacy strategies in `quant_nanggroe/strategies/`: pairs_trade, trend_follow, tsmom, xgboost_alpha
+### 🏗️ 106 Strategy Modules
+- **102 concrete strategies** in `engine/strategy/strategies/`: adaptive_moving_average, adx_strategy, aroon_strategy, atr_breakout, bayesian_ridge, bollinger_squeeze, camarilla_pivot, carry_trade, cci_strategy, choppiness_index, commodity_trend, cot_strategy, crypto_funding, crypto_specific, dark_cloud, dark_pool_flow, dema_strategy, dmi_strategy, doji_pattern, dxy_momentum, elder_ray, elder_triple_screen, em_carry, engulfing_pattern, entropy_strategy, evening_star, ewma_vol, fibonacci_arc, fibonacci_extension, fibonacci_fan, fibonacci_retracement, fibonacci_time, fundamental_strategy, garch_vol, gold_inflation, half_life_mean_reversion, hammer_pattern, harami_pattern, hull_ma, hurst_exponent, ichimoku_cloud, ict_strategy, inverted_hammer, kalman_filter, kaufman_ama, kelly_optimal, keltner_squeeze, kmeans_regime, linear_regression_channel, macro_fx, macro_rates, market_making, mean_reversion, mean_reversion_stat, mfi_strategy, momentum, momentum_crash_filter, momentum_factor, monte_carlo_barrier, morning_star, multi_indicator_voting, obv_strategy, on_chain_momentum, options_put_call, options_straddle, pairs_cointegration, pairs_trading, parabolic_sar, particle_filter, pca_strategy, piercing_line, pivot_points, polynomial_regression, quality_factor, regime_based, regime_hmm, relative_vigor, risk_parity, rsi_divergence_macd, shooting_star, size_factor, smc_strategy, social_sentiment, stat_arb_zscore, statistical_arbitrage, stochastic_oscillator, supply_demand_strategy, support_resistance_strategy, t3_strategy, tema_strategy, three_black_crows, three_white_soldiers, trend_follow, trend_following_cta, trix_strategy, value_factor, vix_term_structure, vol_surface_arb, volatility_arbitrage, volatility_regime, volatility_selling, vortex_strategy, williams_r, woodie_pivot, wyckoff_strategy, yield_curve
+- **4 legacy strategies** in `quant_nanggroe/strategies/`: pairs_trade, trend_follow, tsmom, xgboost_alpha
 - Strategy registry with snake_case module names, CamelCase alias support via `create_strategy()`
+- 106-strategy backtest run completed (2026-07-14): 17 KEEP, 39 MARGINAL, 14 ELIMINATE, 36 SKIP across BTC and EUR pairs
 
 ### 🌐 30 API Routes
 - Full FastAPI route suite in `quant_nanggroe/api/routes/`:
@@ -23,15 +24,19 @@
   - `monitor.py`, `options.py`, `personas.py`, `portfolio.py`, `rl.py`
   - `sec_edgar.py`, `signal_generator.py`, `strategies.py`, `strategy.py`
   - `trading.py`, `whatsapp.py`, `wiring_compat.py`, `ws.py`
+- Modular route architecture in `quant_nanggroe/api/app.py` with lifespan events, CORS, auth middleware, Prometheus metrics
+- WebSocket support via `ws.py` with 4 channels (price, regime, risk, portfolio)
+- Consistent JSON response envelope: `{"success": true, "data": {...}, "error": null}`
 
 ### 🔌 7 Broker Integrations
 - **alpaca** — AlpacaBroker via `exchange/alpaca_broker.py`
-- **ccxt** — CCXTBroker via `exchange/ccxt_broker.py`
+- **ccxt** — CCXTBroker via `exchange/ccxt_broker.py` (80+ exchange support)
 - **ibkr** — IBKRBroker via `exchange/ibkr_broker.py`
-- **mt5** — MT5Broker via `exchange/mt5_broker.py`
+- **mt5** — MT5Broker via `exchange/mt5_broker.py` + auto-load from `config/mt5_accounts.yaml`
 - **paper** — PaperExchangeBroker via `exchange/paper_broker.py` + PaperBroker via `engine/execution/brokers/paper.py`
 - **polymarket** — PolymarketBroker via `exchange/polymarket_broker.py`
-- **factory/manager** — BrokerFactory via `exchange/factory.py` + ExchangeBrokerAdapter in `api/routes/trading.py`
+- **solana** — Solana/Jupiter broker via `exchange/solana/` (DEX trading, rugcheck, wallet)
+- **factory/manager** — BrokerFactory via `exchange/factory.py` + ExchangeBrokerAdapter + ExchangeManager
 
 ### 🐛 Recent Bug Fixes (2026-07-13)
 - **pandas 3.0 freq alias** — `H` → `h` throughout (deprecated frequency string migration)
@@ -40,15 +45,52 @@
 - **scripts/__init__.py lazy importer** — Fixed circular imports via lazy loading in scripts package
 - **paper_broker BUY limit price logic** — Corrected limit price handling for BUY orders in paper broker
 - **openbb_provider api_key passthrough** — Fixed API key forwarding in OpenBB data provider
-- **Strategy registry normalize** — `list_strategies()` returns 16 snake_case names; `create_strategy()` handles CamelCase→snake_case mapping
+- **Strategy registry normalize** — `list_strategies()` returns 106 snake_case names; `create_strategy()` handles CamelCase→snake_case mapping
 
 ### 🖥️ Dashboard & UI
-- 15 Next.js App Router pages (main, trading, portfolio, agents, risk, strategies, backtest, market, memory, colony, factors, security, channels, tools, settings)
-- Apple macOS Liquid Glass Design System with glassmorphism
-- WebSocket real-time (4 channels: price, regime, risk, portfolio)
-- API client with retry, dedup, timeout, 30+ typed endpoints
-- Zustand store with granular loading/error states
+- 15 Next.js App Router pages (main, trading, portfolio, agents, risk, strategies, backtest, market, memory, colony, factors, security, channels, tools, settings, brokers)
+- Apple macOS Liquid Glass Design System with glassmorphism, double-bezel cards, Bloomberg-style data cells
+- WebSocket real-time (4 channels: price, regime, risk, portfolio) with exponential backoff reconnection
+- API client with retry (3 retries), request dedup, 30s timeout, 30+ typed endpoints
+- Zustand store with granular loading/error states per endpoint
+- ErrorBoundary + 7 LoadingSkeleton variants
+- Auto day/night theme with system preference + localStorage persistence
+- Cross-broker portfolio aggregation and multi-account trading page
 
 ### 🧪 154 Test Files
 - 154 Python test files across `tests/` directory
 - Full coverage for: engine, exchange, API, strategies, risk, backtest, execution, connectors
+- Comprehensive per-strategy tests (momentum, mean_reversion, pairs_trading, statistical_arbitrage, trend_follow, volatility_arbitrage, market_making, crypto_specific, regime_based)
+- Security test suite (auth, audit, credential_inference, keyvault)
+- Integration tests (kelly pipeline, data fallback, BH QNA)
+- MCP, memory, vector store tests
+
+### 📚 Documentation
+- 49-numbered docs in `docs/` (00-49) plus new operational docs
+- ARCHITECTURE.md, API reference, broker setup guide, UI pages guide
+- Backtest results (106 strategies, 2 pairs) in `backtest_all_results.md`
+- Broker audit report (`broker-audit-report.md`)
+- Agent-specific instruction files (AGENTS.md, CLAUDE.md, COPILOT.md, CURSOR.md, GEMINI.md)
+
+### 🛠️ Infrastructure
+- Docker Compose (api, worker, redis) with health checks
+- Prometheus metrics endpoint (`GET /metrics`)
+- Kubernetes deployment manifests
+- Multi-platform deployment (Vercel, Railway, Render, Railway)
+- CLI entry points (`cli.py`, `cli_click.py`, `qna.py`)
+- Makefile with test, lint, build, deploy targets
+
+## v4.3.4 — Zero Fragmentation Restructure
+- Removed legacy packages: packages/agentic-legacy, packages/hermes-quant, packages/autonomous-organism, packages/crucix
+- Removed orphan ai_multicolony/ (agents merged to quant_nanggroe/agents/)
+- Removed dual engine: root engine/ archived (moved to external backup)
+- Archived 60 non-essential skills (only pdf/pptx/xlsx retained for trading reports)
+- Cleaned docs_backup directories and runtime logs
+- Fixed `__all__` in all `__init__.py` (string literals instead of undefined identifiers)
+- Unified Python package: quant_nanggroe/ (24 subpackages, 542+ .py files)
+
+## v4.3.0 — Initial Restructure
+- Initial consolidation of multi-repo into single worktree
+- Agent merging from ai_multicolony to quant_nanggroe/agents/
+- CI/CD pipeline setup
+- Documentation structure created

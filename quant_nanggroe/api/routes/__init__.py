@@ -5,6 +5,7 @@ __all__ = [
     'agentic',
     'agents',
     'analytics',
+    'autonomous',
     'backtest',
     'brokers',
     'channels',
@@ -36,6 +37,7 @@ from . import _data
 from . import agentic
 from . import agents
 from . import analytics
+from . import autonomous
 from . import backtest
 from . import brokers
 from . import channels
