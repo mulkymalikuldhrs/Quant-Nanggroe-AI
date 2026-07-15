@@ -323,6 +323,7 @@ class ProductionExecutionManager:
         self._exec_mgr = None
         self._order_mgr = None
         self._paper = None
+        self._mt5 = None
 
     def _lazy_init(self):
         if self._exec_mgr is None:
@@ -380,6 +381,31 @@ class ProductionExecutionManager:
         self._lazy_init()
         size = balance * 0.01 if balance > 0 else 10.0
         qty = size / price if price > 0 else 0
+
+        # ponytail: LIVE MT5 takes priority over paper when explicitly enabled
+        # (QNA_MT5_LIVE=1) and connected. Paper is the FALLBACK, not the silent
+        # default. Fail-open bug (#9) was: paper returned first, _mt5 never used.
+        if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is not None:
+            try:
+                from quant_nanggroe.connectors.broker_base import Order
+                from quant_nanggroe.engine.execution.base import OrderSide
+                order = Order(
+                    symbol=signal.symbol,
+                    side=OrderSide.BUY if signal.side == "buy" else OrderSide.SELL,
+                    order_type=OrderType.MARKET,
+                    quantity=qty,
+                )
+                ticket = self._mt5.place_order(order)
+                result = {
+                    "symbol": signal.symbol, "side": signal.side, "qty": qty,
+                    "price": price, "ticket": ticket,
+                    "strategy": signal.strategy, "mode": "mt5-live",
+                }
+                log.info(f"MT5 LIVE order placed: {result}")
+                return result
+            except Exception as e:
+                log.error(f"MT5 live exec failed (falling back to paper/engine): {e}")
+                _record_lesson(e, f"mt5_live {signal.symbol}")
 
         # Primary: exchange paper broker
         if self._paper is not None:
