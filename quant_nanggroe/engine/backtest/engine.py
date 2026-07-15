@@ -76,6 +76,7 @@ class BacktestConfig:
     bars_per_year: int = 252
     benchmark: Optional[str] = None
     short_enabled: bool = False
+    vol_target_ann: float = 0.30  # ponytail: target annualized vol; notional scaled down for high-vol assets
 
 
 class BacktestEngine:
@@ -147,6 +148,20 @@ class BacktestEngine:
 
         symbols = list(prices.columns)
 
+        # ponytail: precompute annualized vol per symbol once (O(n)); notional scaled to vol_target
+        # infer bars/year from actual index spacing (1h -> ~8760, daily -> 252)
+        if len(prices) > 1:
+            med_delta = prices.index.to_series().diff().median()
+            bars_per_year = max(1, int(pd.Timedelta(days=365) / med_delta)) if med_delta is not None and med_delta.total_seconds() > 0 else self.config.bars_per_year
+        else:
+            bars_per_year = self.config.bars_per_year
+        ann_factor = np.sqrt(bars_per_year)
+        vol_by_symbol = {}
+        for sym in symbols:
+            if sym in prices.columns:
+                rets = prices[sym].pct_change().dropna()
+                vol_by_symbol[sym] = rets.std() * ann_factor if len(rets) > 1 else 0.0
+
         for i, (timestamp, price_row) in enumerate(prices.iterrows()):
             if timestamp not in shifted_signals.index:
                 continue
@@ -198,12 +213,14 @@ class BacktestEngine:
                         continue
 
                     equity = portfolio.equity
-                    target_notional = abs(target_weight) * equity * self.config.leverage
 
                     if position_sizer:
                         size = position_sizer(target_weight, equity, price)
                     else:
-                        size = target_notional / price
+                        # ponytail: scale notional by target vol so high-vol assets (SOL) don't get 1.0 leverage blowups
+                        sym_vol = vol_by_symbol.get(symbol, 0.0)
+                        vol_mult = 1.0 if sym_vol <= 0 else min(1.0, self.config.vol_target_ann / sym_vol)
+                        size = (abs(target_weight) * equity * self.config.leverage * vol_mult) / price
 
                     # Apply risk limit
                     max_risk_amount = equity * self.config.risk_per_trade
