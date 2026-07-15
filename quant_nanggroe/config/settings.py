@@ -157,9 +157,12 @@ class Settings(BaseSettings):
     )
 
     # Security
+    # Sentinel default. NOT a usable secret — booting with this value raises
+    # (see create_app / boot_security_check). Set QNAI_JWT_SECRET in production.
     jwt_secret: str = Field(
-        default="change-me-in-production",
-        description="JWT HMAC secret key. Set QNAI_JWT_SECRET in production.",
+        default="__UNSET_QNAI_JWT_SECRET__",
+        description="JWT HMAC secret key. MUST be set via QNAI_JWT_SECRET; "
+                    "refusing to boot with the unset sentinel.",
     )
 
     # Data

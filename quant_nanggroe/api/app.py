@@ -142,6 +142,19 @@ def create_app() -> FastAPI:
     """
     settings = get_settings()
 
+    # ── Boot security guard (fail-closed, #20) ──────────────────────
+    # Refuse to start with the unset sentinel secret or any known-weak default.
+    # In tests, conftest.py sets QNAI_JWT_SECRET, so this passes there.
+    import os as _os
+    _jwt = _os.environ.get("QNAI_JWT_SECRET", "") or settings.jwt_secret
+    _WEAK = {"__UNSET_QNAI_JWT_SECRET__", "change-me-in-production", ""}
+    if _jwt in _WEAK:
+        raise RuntimeError(
+            "REFUSING TO BOOT: QNAI_JWT_SECRET is unset or a known-default. "
+            "Set a strong secret via env before starting in any non-test mode."
+        )
+    del _os, _jwt, _WEAK
+
     app = FastAPI(
         title=settings.app_name,
         description="Agentic Trading Intelligence OS",

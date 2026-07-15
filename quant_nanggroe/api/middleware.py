@@ -38,12 +38,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
                  api_key_auth: Optional[APIKeyAuth] = None,
                  exclude_paths: Optional[set[str]] = None) -> None:
         super().__init__(app)
-        secret = os.environ.get("QNAI_JWT_SECRET", "")
-        if not secret:
-            logger.warning("QNAI_JWT_SECRET not set — using ephemeral key (DO NOT USE IN PRODUCTION)")
-            import uuid
-            secret = uuid.uuid4().hex
-        self._jwt = auth or JWTAuth(secret_key=secret)
+        # ponytail: single source of truth = injected auth (built from settings
+        # in app.py, which fail-closes on the unset sentinel). Never re-read env
+        # here — that created a second secret path divergent from app.py.
+        if auth is None:
+            secret = os.environ.get("QNAI_JWT_SECRET", "")
+            if not secret:
+                raise RuntimeError(
+                    "AuthMiddleware constructed without auth and QNAI_JWT_SECRET unset. "
+                    "Refusing to run with an ephemeral key (fail-closed)."
+                )
+            auth = JWTAuth(secret_key=secret)
+        self._jwt = auth
         self._apikey = api_key_auth or APIKeyAuth()
         self._exclude_paths = exclude_paths or {"/health", "/metrics", "/docs",
                                                 "/openapi.json", "/favicon.ico"}
