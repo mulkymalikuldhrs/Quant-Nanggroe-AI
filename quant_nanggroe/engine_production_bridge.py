@@ -15,6 +15,7 @@ Self-contained: graceful degradation if any engine module fails to import.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any, Tuple
@@ -326,6 +327,20 @@ class ProductionExecutionManager:
                 log.info("PaperExchangeBroker loaded via sync wrapper")
             except Exception as e:
                 log.debug(f"No paper broker: {e}")
+        # ponytail: live MT5 backend — opt-in via env, fail-closed (no terminal -> skipped, not silent)
+        if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is None:
+            try:
+                from quant_nanggroe.connectors.mt5_broker import MT5Broker
+                self._mt5 = MT5Broker(
+                    login=int(os.environ.get("MT5_LOGIN", "0")),
+                    password=os.environ.get("MT5_PASSWORD", ""),
+                    server=os.environ.get("MT5_SERVER", ""),
+                )
+                self._mt5.connect()
+                log.info("MT5Broker LIVE connected")
+            except Exception as e:
+                log.warning(f"MT5 live unavailable (fail-closed): {e}")
+                self._mt5 = None
 
     def execute_signal(
         self, signal, price: float, balance: float
