@@ -61,7 +61,8 @@ class ExecutionManager:
         self._cooldown_guard = CooldownGuard()
         self._max_position_guard = MaxPositionGuard()
         self._whitelist_guard = WhitelistGuard()
-        self._kill_switch: Optional[KillSwitch] = None
+        # ponytail: default ACTIVE switch — bare ExecutionManager() is enforced, not silently open
+        self._kill_switch: Optional[KillSwitch] = KillSwitch()
         self._risk_manager: Optional["RiskManager"] = None
         self._audit_log: List[Dict[str, Any]] = []
 
