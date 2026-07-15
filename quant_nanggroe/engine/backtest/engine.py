@@ -146,6 +146,9 @@ class BacktestEngine:
         # Shift signals by 1 bar (next-bar-open semantics)
         shifted_signals = signals.shift(1).fillna(0.0)
 
+        # ponytail: strategies emit lowercase OHLCV columns; normalize prices once
+        # so symbol lookup in _execute_bar matches (Close->close etc.) regardless of source.
+        prices = prices.rename(columns={c: c.lower() for c in prices.columns})
         symbols = list(prices.columns)
 
         # ponytail: precompute annualized vol per symbol once (O(n)); notional scaled to vol_target

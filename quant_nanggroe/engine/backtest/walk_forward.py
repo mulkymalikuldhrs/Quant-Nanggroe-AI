@@ -445,6 +445,9 @@ class WalkForwardAnalyzer:
         signals = []
         required_cols = strategy.required_columns()
         warmup = strategy.warmup_period()
+        # ponytail: strategies expect lowercase OHLCV (validate_data raises on Capitalized).
+        # Normalize once here — single shared point, not 75 strategy files.
+        prices = prices.rename(columns={c: c.lower() for c in prices.columns})
 
         for i in range(len(prices)):
             data_slice = prices.iloc[max(0, i - warmup):i + 1]

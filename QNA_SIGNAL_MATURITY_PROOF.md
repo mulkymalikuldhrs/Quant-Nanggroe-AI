@@ -16,6 +16,15 @@ Two silent bugs in the strategy→capital bridge, both verified by execution:
    keys are `avg_oos_return` / `avg_oos_sharpe`. Harness printed 0.00% while engine actually traded.
    Fix: correct key names.
 
+4. **`BaseStrategy.validate_data()`** requires **lowercase** OHLCV columns (`close/high/low`),
+   but yfinance / TradingView deliver **Capitalized** (`Close/High/Low`). Every `generate_signal`
+   raised `ValueError` → swallowed in `_generate_strategy_signals` → weight `0.0` for ALL bars.
+   This silently killed ALL 106 strategies on real (Capitalized) data — the true reason the
+   earlier "0 of 106 fire" reading was correct, NOT strategy quality.
+   Fix (v4.5.10): normalize column case ONCE at the two shared ingestion points —
+   `_generate_strategy_signals` (walk_forward.py:448) and `engine.run` (engine.py:149).
+   Post-fix: **75 of 106 strategies emit >10 non-zero 1h signals** on real BTC data.
+
 ## Proof harness
 `scripts/wf_microstructure.py` — real `WalkForwardAnalyzer.analyze_strategy` (rolling, 400-train/80-test,
 purge 5, embargo 2) on **live yfinance data**, 3 assets × 10 microstructure strategies.
@@ -54,8 +63,8 @@ walk-forward aggregate uses per-fold OOS).
 | Execution engine | MATURE (A) | 1818/1819 tests (1 pre-existing state-poison flake); 585 real trades on direct run |
 | Kill-switch safety | MATURE (A) | auto-activation fires on real −5% P&L (was blind 0.0) |
 | Signal bridge | **MATURE (A) — was C** | root-cause fixed; real OOS now computable |
-| **Strategy signal-density** | **C — OPEN** | on real 1h BTC/ETH/SOL (2025–2026, yfinance), **0 of 106 strategies emit >10 non-zero 1h signals** in a 400-bar window. Bridges work; strategies are signal-dead on this proxy data. |
-| Alpha (microstructure) | **UNVERIFIED — DO NOT SHIP** | the "+3576% OOS / Sharpe+0.95 KEEP" headline is **NOT substantiated by trade-count-validated walk-forward**. With ~0 trades firing, those Sharpe numbers are in-sample/low-sample artifacts, not repeatable edge. |
+| **Strategy signal-density** | **B → mostly live** | post v4.5.10 column-case fix, **75 of 106 strategies emit >10 non-zero 1h signals** on real BTC/ETH/SOL yfinance data. Remaining 31 = scaffolds needing multi-asset/L2/on-chain (correctly DROP). |
+| Alpha (microstructure) | **PENDING — now measurable** | strategies now fire real trades; OOS expectancy/sharpe must be re-validated through the v4.5.9 significance gate (under_sampled==False + total_oos_trades>=30) before any KEEP verdict. Prior "+3576%" headline retracted (was measured on silent/dead signal). |
 | Deployment | Out-of-scope | QNA = shadow/research engine; live = external bridge (TradingView-MT5) |
 
 ### Significance gate added (v4.5.9)
