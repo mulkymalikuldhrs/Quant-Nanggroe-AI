@@ -614,3 +614,55 @@ class GuardPipeline:
         """Remove all guards from the pipeline."""
         self._guards.clear()
         logger.info("GuardPipeline [%s]: Cleared all guards", self._name)
+
+
+# ---------------------------------------------------------------------------
+# Default pipeline factory (env-driven)
+# ---------------------------------------------------------------------------
+
+def build_default_guard_pipeline(
+    name: str = "exchange-default",
+    allowed_symbols: Optional[List[str]] = None,
+    blocked_symbols: Optional[List[str]] = None,
+    cooldown_seconds: float = 60.0,
+    max_position_pct: float = 0.25,
+    max_notional: Optional[float] = None,
+    portfolio_value: float = 1_000_000.0,
+) -> GuardPipeline:
+    """Build a fail-closed pre-trade guard pipeline from explicit args or env.
+
+    Env overrides (only used when the corresponding arg is None):
+        QNA_GUARD_ALLOWED   — comma-separated whitelist (e.g. "SOL/USDC,ETH/USDT")
+        QNA_GUARD_BLOCKED   — comma-separated blocklist
+        QNA_GUARD_COOLDOWN  — float seconds
+        QNA_GUARD_MAX_PCT   — float fraction (0.25 = 25%)
+        QNA_GUARD_MAX_NOTIONAL — float absolute cap
+
+    Returns a :class:`GuardPipeline` with Whitelist, Cooldown, MaxPosition guards.
+    The pipeline is fail-closed by construction: any guard FAIL or exception
+    rejects the order (caller must check ``result.passed``).
+    """
+    import os
+
+    if allowed_symbols is None and os.getenv("QNA_GUARD_ALLOWED"):
+        allowed_symbols = [s.strip().upper() for s in os.getenv("QNA_GUARD_ALLOWED").split(",") if s.strip()]
+    if blocked_symbols is None and os.getenv("QNA_GUARD_BLOCKED"):
+        blocked_symbols = [s.strip().upper() for s in os.getenv("QNA_GUARD_BLOCKED").split(",") if s.strip()]
+    if cooldown_seconds is None and os.getenv("QNA_GUARD_COOLDOWN"):
+        cooldown_seconds = float(os.getenv("QNA_GUARD_COOLDOWN"))
+    if max_position_pct is None and os.getenv("QNA_GUARD_MAX_PCT"):
+        max_position_pct = float(os.getenv("QNA_GUARD_MAX_PCT"))
+    if max_notional is None and os.getenv("QNA_GUARD_MAX_NOTIONAL"):
+        max_notional = float(os.getenv("QNA_GUARD_MAX_NOTIONAL"))
+
+    pipeline = GuardPipeline(name=name)
+    pipeline.add_guard(WhitelistGuard(allowed_symbols=allowed_symbols, blocked_symbols=blocked_symbols))
+    pipeline.add_guard(CooldownGuard(seconds=cooldown_seconds or 60.0))
+    pipeline.add_guard(
+        MaxPositionGuard(
+            max_pct=max_position_pct or 0.25,
+            max_notional=max_notional,
+            portfolio_value=portfolio_value,
+        )
+    )
+    return pipeline

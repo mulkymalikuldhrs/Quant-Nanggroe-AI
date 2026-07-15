@@ -44,6 +44,8 @@ from quant_nanggroe.exchange.solana.jupiter import (
     JupiterV6Client,
 )
 from quant_nanggroe.exchange.solana.wallet import SolanaWallet
+from quant_nanggroe.exchange.guards import build_default_guard_pipeline
+from quant_nanggroe.exchange.guards import GuardPipeline
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
 from quant_nanggroe.types.positions import Portfolio, Position
@@ -95,6 +97,7 @@ class SolanaBroker(ExchangeInterface):
         self._jupiter: Optional[JupiterV6Client] = None
         self._local_positions: Dict[str, Position] = {}
         self._local_orders: Dict[str, Order] = {}
+        self._guard_pipeline: GuardPipeline = build_default_guard_pipeline(name="solana")
 
     # ----- Connection lifecycle -----
 
@@ -293,6 +296,28 @@ class SolanaBroker(ExchangeInterface):
         if order_type != OrderType.MARKET:
             raise OrderError(
                 f"Only MARKET orders are supported on Solana, got {order_type}",
+                exchange="solana",
+            )
+
+        # --- Pre-trade guard pipeline (fail-closed) ---
+        # Build the Order model first so guards can inspect symbol/side/qty/price.
+        draft_order = Order(
+            symbol=symbol,
+            side=side,
+            order_type=order_type,
+            quantity=quantity,
+            price=price,
+            client_order_id=client_order_id,
+            strategy_name=strategy_name,
+            agent_name=agent_name,
+            notes=notes,
+        )
+        guard_result = self._guard_pipeline.check(draft_order)
+        if not guard_result.passed:
+            reason = "; ".join(guard_result.reasons) or "guard rejection"
+            logger.warning("SolanaBroker: order REJECTED by guard pipeline — %s", reason)
+            raise OrderError(
+                f"Order rejected by pre-trade guard pipeline: {reason}",
                 exchange="solana",
             )
 

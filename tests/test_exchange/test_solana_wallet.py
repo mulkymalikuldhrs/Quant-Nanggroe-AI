@@ -314,3 +314,83 @@ class TestSolanaWalletEdgeCases:
             mock_bal.return_value = 0.0
             balance = await wallet.get_sol_balance()
             assert balance == 0.0
+
+
+# ======================================================================
+# Guard pipeline wiring (C4 fix — real, not mocked away)
+# ======================================================================
+
+class TestSolanaBrokerGuards:
+    """Verify the pre-trade GuardPipeline is actually wired into place_order.
+
+    These do NOT call Jupiter/RPC — they assert the guard short-circuits
+    BEFORE any swap attempt (fail-closed).
+    """
+
+    def _make_broker(self):
+        from quant_nanggroe.exchange.solana.broker import SolanaBroker
+        from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeState
+        from quant_nanggroe.exchange.guards import (
+            GuardPipeline,
+            WhitelistGuard,
+            CooldownGuard,
+            MaxPositionGuard,
+        )
+
+        cfg = ExchangeConfig(exchange_id="solana", api_key="dummy_bs58_key")
+        broker = SolanaBroker.__new__(SolanaBroker)
+        pipeline = GuardPipeline(name="test")
+        pipeline.add_guard(WhitelistGuard(allowed_symbols=["SOL/USDC"]))
+        pipeline.add_guard(CooldownGuard(seconds=60))
+        pipeline.add_guard(MaxPositionGuard(max_pct=0.25, portfolio_value=10_000.0))
+        broker._guard_pipeline = pipeline
+        broker._wallet = MagicMock()
+        broker._jupiter = MagicMock()
+        broker._state = ExchangeState.CONNECTED
+        return broker
+
+    def test_blocked_symbol_rejected_before_swap(self):
+        """A non-whitelisted symbol must be rejected WITHOUT touching Jupiter."""
+        broker = self._make_broker()
+        from quant_nanggroe.types.orders import OrderSide, OrderType
+        import asyncio
+
+        with patch.object(broker, "_parse_symbol", return_value=("USDC_MINT", "SOL_MINT")):
+            with pytest.raises(Exception) as exc:
+                asyncio.run(
+                    broker.place_order(
+                        symbol="SHITCOIN/USDC",
+                        side=OrderSide.BUY,
+                        order_type=OrderType.MARKET,
+                        quantity=1.0,
+                    )
+                )
+            assert "guard pipeline" in str(exc.value).lower()
+
+    def test_whitelisted_symbol_passes_guard_then_reaches_swap(self):
+        """Whitelisted symbol passes guards; execution proceeds to swap path.
+
+        The swap-side mock raises REACHED_SWAP, which place_order wraps as an
+        OrderError("Failed to place swap order: REACHED_SWAP") — that proves
+        the guard pipeline did NOT reject (we got past it to the swap step).
+        """
+        broker = self._make_broker()
+        from quant_nanggroe.types.orders import OrderSide, OrderType
+        from quant_nanggroe.exchange.base import OrderError
+        import asyncio
+
+        async def boom(*a, **k):
+            raise RuntimeError("REACHED_SWAP")
+
+        with patch.object(broker, "_parse_symbol", return_value=("USDC_MINT", "SOL_MINT")), \
+             patch.object(broker._jupiter, "get_quote", side_effect=boom):
+            with pytest.raises(OrderError) as exc:
+                asyncio.run(
+                    broker.place_order(
+                        symbol="SOL/USDC",
+                        side=OrderSide.BUY,
+                        order_type=OrderType.MARKET,
+                        quantity=0.1,
+                    )
+                )
+            assert "REACHED_SWAP" in str(exc.value)
