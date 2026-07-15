@@ -22,6 +22,8 @@ from quant_nanggroe.engine.strategy.strategies import new_proposals as np_mod  #
 # (symbol, yfinance_interval, train_bars, test_bars)
 CONFIGS = [
     ("BTC-USD", "1h", 400, 80),
+    ("ETH-USD", "1h", 400, 80),
+    ("SOL-USD", "1h", 400, 80),
 ]
 
 # every concrete Strategy subclass from new_proposals (skip abstract BaseStrategy)
@@ -63,8 +65,8 @@ def main() -> int:
                 print(f"  {cls.__name__:28s} ERROR {exc!r}")
                 continue
             agg = res.get("aggregate", {}) or {}
-            oos_ret = agg.get("out_of_sample_return") or 0.0
-            oos_sh = agg.get("out_of_sample_sharpe") or 0.0
+            oos_ret = agg.get("avg_oos_return") or 0.0
+            oos_sh = agg.get("avg_oos_sharpe") or 0.0
             verdict = "KEEP" if oos_ret > 0 and oos_sh > 0 else "DROP"
             print(f"  {cls.__name__:28s} OOS_ret={oos_ret:+.2%} "
                   f"OOS_sharpe={oos_sh:+.2f} -> {verdict}")

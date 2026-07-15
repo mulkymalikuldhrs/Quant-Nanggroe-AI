@@ -162,7 +162,12 @@ class BacktestEngine:
                 if pd.isna(price) or price <= 0:
                     continue
 
-                target_weight = signal_row.get(symbol, 0.0)
+                # ponytail: signals may be named by first OHLCV col, not 'close'; align
+                if isinstance(signal_row, pd.Series) and symbol not in shifted_signals.columns:
+                    sig_col = shifted_signals.columns[0]
+                    target_weight = float(signal_row.get(sig_col, 0.0)) if hasattr(signal_row, "get") else 0.0
+                else:
+                    target_weight = float(signal_row.get(symbol, 0.0)) if hasattr(signal_row, "get") else 0.0
                 current_pos = portfolio.get_position(symbol)
 
                 # Determine target action

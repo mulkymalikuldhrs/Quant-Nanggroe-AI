@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from quant_nanggroe.types.signals import SignalType
 logger = logging.getLogger(__name__)
 
 
@@ -441,11 +442,18 @@ class WalkForwardAnalyzer:
                 continue
             try:
                 signal = strategy.generate_signal(data_slice)
-                signals.append(signal.signal if signal is not None else 0.0)
+                # ponytail: Signal has no `.signal`; use strength, fall back to ±1 by type
+                if signal is None:
+                    signals.append(0.0)
+                else:
+                    weight = signal.strength if signal.strength not in (None, 0.0) else (
+                        1.0 if signal.signal_type == SignalType.BUY else -1.0
+                    )
+                    signals.append(weight)
             except Exception:
                 signals.append(0.0)
 
-        return pd.DataFrame({"signal": signals}, index=prices.index)
+        return pd.DataFrame({prices.columns[0]: signals}, index=prices.index)
 
     def _analyze_cpcv(
         self,
