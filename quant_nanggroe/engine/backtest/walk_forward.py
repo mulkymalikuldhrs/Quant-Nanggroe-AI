@@ -46,6 +46,8 @@ class WalkForwardResult:
     in_sample_max_dd: float
     out_of_sample_max_dd: float
     degradation_ratio: float  # OOS/IS performance ratio
+    is_trades: int = 0  # trades fired in-sample fold (significance context)
+    oos_trades: int = 0  # trades fired out-of-sample fold (significance context)
 
 
 @dataclass
@@ -221,10 +223,12 @@ class WalkForwardAnalyzer:
             # Run in-sample backtest
             is_result = self.engine.run(train_prices, train_signals, **kwargs)
             is_metrics = is_result.get("metrics", {})
+            is_trades = is_metrics.get("total_trades", 0)
 
             # Run out-of-sample backtest
             oos_result = self.engine.run(test_prices, test_signals, **kwargs)
             oos_metrics = oos_result.get("metrics", {})
+            oos_trades = oos_metrics.get("total_trades", 0)
 
             # Calculate degradation ratio
             is_sharpe = is_metrics.get("sharpe_ratio", 0.0)
@@ -243,6 +247,8 @@ class WalkForwardAnalyzer:
                 in_sample_max_dd=is_metrics.get("max_drawdown", 0.0),
                 out_of_sample_max_dd=oos_metrics.get("max_drawdown", 0.0),
                 degradation_ratio=degradation,
+                is_trades=is_trades,
+                oos_trades=oos_trades,
             )
 
             windows.append(wf_result)
@@ -366,15 +372,18 @@ class WalkForwardAnalyzer:
 
             is_result = self.engine.run(train_prices, train_signals, **kwargs)
             is_metrics = is_result.get("metrics", {})
+            is_trades = is_metrics.get("total_trades", 0)
 
             if test_signals is not None and not test_signals.empty:
                 oos_result = self.engine.run(test_prices, test_signals, **kwargs)
                 oos_metrics = oos_result.get("metrics", {})
                 oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
+                oos_trades = oos_metrics.get("total_trades", 0)
                 if len(oos_eq) > 0:
                     oos_equity_parts.append(oos_eq)
             else:
                 oos_metrics = {"sharpe_ratio": 0.0, "total_return": 0.0, "max_drawdown": 0.0}
+                oos_trades = 0
 
             is_sharpe = is_metrics.get("sharpe_ratio", 0.0)
             oos_sharpe = oos_metrics.get("sharpe_ratio", 0.0)
@@ -392,6 +401,8 @@ class WalkForwardAnalyzer:
                 in_sample_max_dd=is_metrics.get("max_drawdown", 0.0),
                 out_of_sample_max_dd=oos_metrics.get("max_drawdown", 0.0),
                 degradation_ratio=degradation,
+                is_trades=is_trades,
+                oos_trades=oos_trades,
             )
 
             windows.append(wf_result)
@@ -553,10 +564,12 @@ class WalkForwardAnalyzer:
                 # Run in-sample backtest
                 is_result = self.engine.run(train_prices, train_signals, **kwargs)
                 is_metrics = is_result.get("metrics", {})
+                is_trades = is_metrics.get("total_trades", 0)
 
                 # Run out-of-sample backtest
                 oos_result = self.engine.run(test_prices, test_signals, **kwargs)
                 oos_metrics = oos_result.get("metrics", {})
+                oos_trades = oos_metrics.get("total_trades", 0)
             except Exception as e:
                 logger.warning(f"CPCV window failed: {e}")
                 continue
@@ -578,6 +591,8 @@ class WalkForwardAnalyzer:
                 in_sample_max_dd=is_metrics.get("max_drawdown", 0.0),
                 out_of_sample_max_dd=oos_metrics.get("max_drawdown", 0.0),
                 degradation_ratio=degradation,
+                is_trades=is_trades,
+                oos_trades=oos_trades,
             )
 
             windows.append(wf_result)
@@ -632,6 +647,14 @@ class WalkForwardAnalyzer:
             "avg_is_sharpe": float(np.mean([w.in_sample_sharpe for w in windows])),
             "avg_is_max_dd": float(np.mean([w.in_sample_max_dd for w in windows])),
             "avg_oos_max_dd": float(np.mean([w.out_of_sample_max_dd for w in windows])),
+            # Significance context: Sharpe on too few trades is noise, not edge.
+            # Aggregate OOS trade count + a hard under-sample flag so a "+X% / Sharpe+Y"
+            # headline cannot be read as "repeatable edge" without enough observed trades.
+            "total_oos_trades": int(sum(w.oos_trades for w in windows)),
+            "min_fold_oos_trades": int(min((w.oos_trades for w in windows), default=0)),
+            "under_sampled": bool(
+                any(w.oos_trades < 30 for w in windows) or len(windows) < 3
+            ),
         }
 
     def _calculate_degradation_stats(

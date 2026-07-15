@@ -45,7 +45,11 @@ def get_kill_switch(app: FastAPI):
     Creates and stores the instance on first access so that activation
     state persists across requests.
     """
-    from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+    from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
+
+    # C5: point this process (and every KillSwitch() it spawns) at ONE shared
+    # file so the API worker, daemon, and bridge converge on one kill-switch truth.
+    configure_kill_switch_file()
 
     _ensure_state(app)
     if "kill_switch" not in app.state._services:

@@ -695,6 +695,7 @@ async def main() -> None:
     broker = PaperExchangeBroker(initial_capital=args.capital)
     await broker.connect()
     kill_switch = KillSwitch()
+    configure_kill_switch_file()  # C5: daemon + API + bridge share one kill-switch file
     auto_disable = AutoDisableManager(
         kill_switch=kill_switch,
         sharpe_window=30,

@@ -12,10 +12,14 @@ Kill switch levels:
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+import threading
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -24,6 +28,51 @@ logger = logging.getLogger(__name__)
 
 EARLY_WARNING_THRESHOLD: float = 0.8
 RESET_CONFIRMATION: str = "CONFIRM_RESET_AFTER_REVIEW"
+
+# ── Cross-process shared state (C5: single source of truth across procs) ──
+# When QNA_KILL_SWITCH_STATE_FILE is set, EVERY KillSwitch() instance — in any
+# worker, daemon, or the production bridge — reads/writes the SAME file. This
+# collapses the previous split-brain (per-ExecutionManager / per-worker
+# in-memory switches that never agreed). Fail-closed: unreadable/corrupt state
+# file => assumed ACTIVE (halt). Default (env unset): pure in-memory, so tests
+# and single-process use stay isolated.  // ponytail: single file = single writer
+_KS_FILE_ENV: str = "QNA_KILL_SWITCH_STATE_FILE"
+_KS_LOCK = threading.RLock()
+
+
+def _ks_store_path() -> Optional[Path]:
+    p = os.environ.get(_KS_FILE_ENV)
+    return Path(p) if p else None
+
+
+def _ks_read(path: Path) -> Optional[dict]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None  # no activation recorded -> inactive
+    except Exception:  # corrupt / permission denied -> FAIL CLOSED
+        logger.critical("Kill switch state file %s unreadable — FAIL CLOSED (assume active)", path)
+        return {"_fail_closed": True}
+
+
+def _ks_write(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, default=str), encoding="utf-8")
+    os.replace(tmp, path)  # atomic on POSIX + Windows
+
+
+def configure_kill_switch_file(path: Optional[str] = None) -> None:
+    """Point all KillSwitch() instances in this process at a shared file.
+
+    Idempotent. Call once at runtime startup (API / daemon / bridge). When the
+    env is already set, this is a no-op. Without it, instances stay in-memory.
+    """
+    if os.environ.get(_KS_FILE_ENV):
+        return
+    if path is None:
+        path = str(Path(__file__).resolve().parents[3] / "data" / "kill_switch_state.json")
+    os.environ[_KS_FILE_ENV] = path
 
 # ── Enums ────────────────────────────────────────────────────────────────────
 
@@ -125,6 +174,9 @@ class KillSwitch:
         self._status: KillSwitchStatus = KillSwitchStatus.INACTIVE
         self._events: List[KillSwitchEvent] = []
         self._activated_at: Optional[datetime] = None
+        self._ks_file = _ks_store_path()
+        if self._ks_file:
+            self._reconcile()
         self._callbacks: Dict[KillSwitchLevel, List[Callable[[KillSwitchEvent], None]]] = {
             KillSwitchLevel.LEVEL_1: [],
             KillSwitchLevel.LEVEL_2: [],
@@ -169,7 +221,51 @@ class KillSwitch:
                 event.resolved_at = datetime.now(timezone.utc)
                 break
         logger.info("Kill switch reset via confirmation: %s → NONE", previous_level.value)
+        self._flush()  # C5: persist reset so other procs stop halting
         return {"status": "RESET"}
+
+    # ── Cross-process reconcile / flush (C5) ───────────────────────────
+
+    def _reconcile(self) -> None:
+        """Load activation truth from the shared file (called on init + before gate checks)."""
+        if not self._ks_file:
+            return
+        data = _ks_read(self._ks_file)
+        if data is None:
+            return
+        if data.get("_fail_closed"):  # unreadable file => halt, no flush (can't write)
+            self._status = KillSwitchStatus.ACTIVE
+            self._current_level = KillSwitchLevel.LEVEL_2
+            self._activated_at = self._activated_at or datetime.now(timezone.utc)
+            return
+        if data.get("status") == "active":  # KillSwitchStatus.ACTIVE.value
+            lvl = KillSwitchLevel(data.get("current_level", "level_2"))
+            # Re-apply without re-recording a duplicate activation event.
+            self._current_level = lvl
+            self._status = KillSwitchStatus.ACTIVE
+            if self._activated_at is None:
+                try:
+                    self._activated_at = datetime.fromisoformat(data["activated_at"]) if data.get("activated_at") else datetime.now(timezone.utc)
+                except Exception:
+                    self._activated_at = datetime.now(timezone.utc)
+
+    def _flush(self) -> None:
+        """Write current activation truth to the shared file (called after every state change)."""
+        if not self._ks_file:
+            return
+        with _KS_LOCK:
+            data = {
+                "status": self._status.value,
+                "current_level": self._current_level.value,
+                "activated_at": self._activated_at.isoformat() if self._activated_at else None,
+                "reason": self._events[-1].reason if self._events else "",
+            }
+            _ks_write(self._ks_file, data)
+
+    def _ensure_reconciled(self) -> None:
+        """Gate checks must see the freshest cross-proc truth before deciding."""
+        if self._ks_file:
+            self._reconcile()
 
     def check_auto_trigger(
         self,
@@ -238,6 +334,9 @@ class KillSwitch:
             auto_activated=auto_activated,
         )
         self._events.append(event)
+
+        # C5: persist to shared file so every proc/worker sees one truth
+        self._flush()
 
         # Log and notify
         logger.critical(
@@ -311,6 +410,9 @@ class KillSwitch:
         max_drawdown_pct: float = 0.0,
         volatility_pct: float = 0.0,
     ) -> Optional[KillSwitchEvent]:
+        self._ensure_reconciled()  # C5: see freshest cross-proc activation before deciding
+        if self._status == KillSwitchStatus.ACTIVE:
+            return None
         """Check if auto-activation conditions are met.
 
         Parameters
@@ -329,9 +431,6 @@ class KillSwitch:
         KillSwitchEvent or None
             Activation event if triggered, else None.
         """
-        if self._status == KillSwitchStatus.ACTIVE:
-            return None
-
         # Check daily loss
         daily_loss = abs(min(0, daily_pnl_pct))
         if daily_loss >= self._config.auto_daily_loss_pct:
@@ -423,7 +522,12 @@ class KillSwitch:
         return False
 
     def can_trade(self) -> bool:
-        """Check if new trades are allowed."""
+        """Check if new trades are allowed.
+
+        Reconciles with the shared file first so this worker halts the instant
+        ANY other process (worker A, daemon, bridge) activates the switch.
+        """
+        self._ensure_reconciled()
         return self._status == KillSwitchStatus.INACTIVE and self._current_level == KillSwitchLevel.NONE
 
     def can_hold_positions(self) -> bool:

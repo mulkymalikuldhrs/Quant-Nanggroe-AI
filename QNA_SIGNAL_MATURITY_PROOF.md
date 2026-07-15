@@ -48,17 +48,26 @@ walk-forward aggregate uses per-fold OOS).
   multi-asset / L2 / on-chain inputs not present in yfinance proxy). They are research scaffolds,
   correctly DROPPED by the gate.
 
-## Maturity verdict (v4.5.5)
+## Maturity verdict (v4.5.5, AMENDED v4.5.9)
 | Layer | Status | Evidence |
 |---|---|---|
-| Execution engine | MATURE (A) | 1819/1819 tests; 585 real trades on direct run |
+| Execution engine | MATURE (A) | 1818/1819 tests (1 pre-existing state-poison flake); 585 real trades on direct run |
 | Kill-switch safety | MATURE (A) | auto-activation fires on real −5% P&L (was blind 0.0) |
 | Signal bridge | **MATURE (A) — was C** | root-cause fixed; real OOS now computable |
-| Alpha (microstructure) | **B+** | 2 strategies KEEP across 3 assets, positive OOS Sharpe |
+| **Strategy signal-density** | **C — OPEN** | on real 1h BTC/ETH/SOL (2025–2026, yfinance), **0 of 106 strategies emit >10 non-zero 1h signals** in a 400-bar window. Bridges work; strategies are signal-dead on this proxy data. |
+| Alpha (microstructure) | **UNVERIFIED — DO NOT SHIP** | the "+3576% OOS / Sharpe+0.95 KEEP" headline is **NOT substantiated by trade-count-validated walk-forward**. With ~0 trades firing, those Sharpe numbers are in-sample/low-sample artifacts, not repeatable edge. |
 | Deployment | Out-of-scope | QNA = shadow/research engine; live = external bridge (TradingView-MT5) |
 
-QNA is now a **walk-forward-validated quant research engine** with a fail-closed safety layer.
-Live capital deployment requires the external broker bridge + compliance sign-off (not in QNA scope).
+### Significance gate added (v4.5.9)
+`WalkForwardResult` now carries `is_trades` / `oos_trades`; `_calculate_aggregate`
+adds `total_oos_trades`, `min_fold_oos_trades`, and `under_sampled`
+(True when any fold has <30 OOS trades OR <3 windows). A KEEP verdict requires
+`under_sampled == False` AND `total_oos_trades >= 30`. The prior "2 KEEP across 3
+assets" claim fails this gate and is **retracted** until re-validated on live-signal
+strategies with adequate trade density.
+
+QNA's *engine* is production-grade. Its *alpha* is unproven — most strategies do
+not emit tradeable signals on available proxy data. That is the honest state.
 
 ## Council findings reconciled
 - #16 (kill-switch auto-activation blind): CONFIRMED + FIXED (v4.5.4).
