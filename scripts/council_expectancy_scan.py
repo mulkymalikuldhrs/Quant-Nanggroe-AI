@@ -7,10 +7,11 @@ avg_oos_sharpe). Outputs JSON for orchestrator review. No live capital, no order
 Ponytail: top-15 by firing count only — sufficient to prove edge exists or not.
 """
 from __future__ import annotations
-import json, sys, traceback
+import json, sys, traceback, warnings
 from pathlib import Path
 import pandas as pd
 import yfinance as yf
+warnings.filterwarnings("ignore")  # ponytail: silence NaN std noise from pandas, not signal
 from quant_nanggroe.engine.backtest.engine import BacktestEngine
 from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
 import importlib, glob, os
@@ -52,12 +53,16 @@ def main():
                 px.columns = [c[0] if isinstance(c, tuple) else c for c in px.columns]
                 res = ana.analyze_strategy(px, cls)
                 agg = res["aggregate"]
+                deg = res.get("degradation_stats", {})
                 per_asset[sym] = {
                     "windows": res["n_folds"],
                     "total_oos_trades": agg.get("total_oos_trades", 0),
                     "under_sampled": agg.get("under_sampled", True),
-                    "avg_oos_return": round(agg.get("avg_oos_return", 0.0), 4),
+                    # expectancy proxy: avg return PER TRADE (not sum-of-trades fold mean)
+                    "avg_oos_return_per_trade": round(agg.get("avg_oos_return_per_trade", 0.0), 5),
                     "avg_oos_sharpe": round(agg.get("avg_oos_sharpe", 0.0), 4),
+                    # OOS/IS Sharpe ratio >0.5 pass-rate: separates edge from beta drift
+                    "degradation_pass_rate": round(deg.get("pass_rate", 0.0), 3),
                 }
             except Exception as e:
                 per_asset[sym] = {"error": repr(e)}

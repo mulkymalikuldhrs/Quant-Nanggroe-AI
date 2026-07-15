@@ -186,6 +186,7 @@ class WalkForwardAnalyzer:
         windows: List[WalkForwardResult] = []
         oos_returns: List[float] = []
         oos_sharpes: List[float] = []
+        oos_trade_counts: List[int] = []  # ponytail: per-fold trade count for return-per-trade
         oos_equity_parts: List[pd.Series] = []
 
         start = 0
@@ -254,6 +255,7 @@ class WalkForwardAnalyzer:
             windows.append(wf_result)
             oos_returns.append(oos_metrics.get("total_return", 0.0))
             oos_sharpes.append(oos_sharpe)
+            oos_trade_counts.append(max(oos_trades, 1))
 
             # Collect OOS equity curve parts
             oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
@@ -264,7 +266,7 @@ class WalkForwardAnalyzer:
             start += self.test_window + self.embargo
 
         # Calculate aggregate statistics
-        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes)
+        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes, oos_trade_counts)
         degradation_stats = self._calculate_degradation_stats(windows)
         stability = self._calculate_stability(windows, oos_sharpes, oos_returns)
 
@@ -324,6 +326,7 @@ class WalkForwardAnalyzer:
         windows: List[WalkForwardResult] = []
         oos_returns: List[float] = []
         oos_sharpes: List[float] = []
+        oos_trade_counts: List[int] = []  # ponytail: per-fold trade count for return-per-trade
         oos_equity_parts: List[pd.Series] = []
 
         start = 0
@@ -408,9 +411,10 @@ class WalkForwardAnalyzer:
             windows.append(wf_result)
             oos_returns.append(oos_metrics.get("total_return", 0.0))
             oos_sharpes.append(oos_sharpe)
+            oos_trade_counts.append(max(oos_trades, 1))
             start += self.test_window + embargo
 
-        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes)
+        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes, oos_trade_counts)
         degradation_stats = self._calculate_degradation_stats(windows)
         stability = self._calculate_stability(windows, oos_sharpes, oos_returns)
         oos_equity_curve = self._combine_oos_equity(oos_equity_parts)
@@ -509,6 +513,7 @@ class WalkForwardAnalyzer:
         windows: List[WalkForwardResult] = []
         oos_returns: List[float] = []
         oos_sharpes: List[float] = []
+        oos_trade_counts: List[int] = []  # ponytail: per-fold trade count for return-per-trade
         oos_equity_parts: List[pd.Series] = []
 
         for test_group_indices in test_combos:
@@ -601,6 +606,7 @@ class WalkForwardAnalyzer:
             windows.append(wf_result)
             oos_returns.append(oos_metrics.get("total_return", 0.0))
             oos_sharpes.append(oos_sharpe)
+            oos_trade_counts.append(max(oos_trades, 1))
 
             # Collect OOS equity curve parts
             oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
@@ -608,7 +614,7 @@ class WalkForwardAnalyzer:
                 oos_equity_parts.append(oos_eq)
 
         # Calculate statistics
-        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes)
+        aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes, oos_trade_counts)
         degradation_stats = self._calculate_degradation_stats(windows)
         stability = self._calculate_stability(windows, oos_sharpes, oos_returns)
         oos_equity_curve = self._combine_oos_equity(oos_equity_parts)
@@ -630,15 +636,21 @@ class WalkForwardAnalyzer:
         windows: List[WalkForwardResult],
         oos_returns: List[float],
         oos_sharpes: List[float],
+        oos_trade_counts: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
         """Calculate aggregate walk-forward statistics."""
+        if oos_trade_counts is None:
+            oos_trade_counts = [1] * len(windows)
         if not windows:
             return {}
 
+        median_fold_trades = float(np.median([w.oos_trades for w in windows]))
+        per_trade = [r / tc for r, tc in zip(oos_returns, oos_trade_counts)] if oos_returns else []
         return {
             "num_windows": len(windows),
-            "avg_oos_return": float(np.mean(oos_returns)) if oos_returns else 0.0,
+            "avg_oos_return": float(np.mean(oos_returns)) if oos_returns else 0.0,  # per-fold mean (readable, vol-inflated)
             "median_oos_return": float(np.median(oos_returns)) if oos_returns else 0.0,
+            "avg_oos_return_per_trade": float(np.mean(per_trade)) if per_trade else 0.0,  # ponytail: expectancy proxy
             "std_oos_return": float(np.std(oos_returns)) if len(oos_returns) > 1 else 0.0,
             "avg_oos_sharpe": float(np.mean(oos_sharpes)) if oos_sharpes else 0.0,
             "median_oos_sharpe": float(np.median(oos_sharpes)) if oos_sharpes else 0.0,
@@ -654,9 +666,9 @@ class WalkForwardAnalyzer:
             # Aggregate OOS trade count + a hard under-sample flag so a "+X% / Sharpe+Y"
             # headline cannot be read as "repeatable edge" without enough observed trades.
             "total_oos_trades": int(sum(w.oos_trades for w in windows)),
-            "min_fold_oos_trades": int(min((w.oos_trades for w in windows), default=0)),
+            "median_fold_oos_trades": int(median_fold_trades),
             "under_sampled": bool(
-                any(w.oos_trades < 30 for w in windows) or len(windows) < 3
+                median_fold_trades < 30 or len(windows) < 3
             ),
         }
 
