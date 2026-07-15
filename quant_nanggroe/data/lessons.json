@@ -75,5 +75,38 @@
     "occurred_at": "2026-07-14T20:49:01.961050+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "4c511111-a8b",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-15T17:17:18.289095+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "8462fb00-6db",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-15T17:17:20.876510+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "83361c3f-e64",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-15T17:17:21.055044+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

@@ -350,10 +350,11 @@ class RiskManager:
         # Enforce constitutional limit on position size
         max_fraction = MAX_RISK_PER_TRADE
         if result.adjusted_fraction > max_fraction:
-            result = result._replace(
-                adjusted_fraction=max_fraction,
-                recommendation=f"CONSTITUTIONAL LIMIT: Position capped at {max_fraction:.1%}",
-            )
+            # ponytail: KellyResult is a @dataclass (kelly.py:92), not a namedtuple,
+            # so _replace() raises AttributeError and the cap silently failed.
+            # Direct attribute assignment (dataclass is mutable, non-frozen).
+            result.adjusted_fraction = max_fraction
+            result.recommendation = f"CONSTITUTIONAL LIMIT: Position capped at {max_fraction:.1%}"
 
         position_size = account_balance * result.adjusted_fraction
 
