@@ -29,6 +29,14 @@ Both breakages are **invisible** (mock fallback). Not production-ready.
   rl/sec_edular/strategy/ecosystem/wiring_compat) mounted but have **no UI consumer**
   (backend-only, not a defect).
 
-## Action
-Add `security.py` + `tools.py` routers (or mark pages mock-only). Fix whatsapp prefix.
-Decision needed: build routers vs. flag mock-only.
+## RESOLVED (post-swarm fixes, 2026-07-15)
+
+- **Islands FIXED**: `security.py` + `tools.py` routers added (real data, no mock).
+  `/security` → `GET /api/security/events` + `/api/security/status` (reads live AuditLogger + KillSwitch).
+  `/tools` → `GET /api/tools/list` (real agent tool modules) + `POST /api/tools/{id}/execute`.
+  Pages no longer show fake seeded `FALLBACK_*` when backend is up.
+- **WhatsApp double-prefix FIXED**: removed internal `prefix="/whatsapp"`, now `/api/whatsapp/...` (not `/api/whatsapp/whatsapp/...`).
+
+## Action (remaining)
+None for wiring — both pages now have real backends. Execution of tool dispatch is a
+structured envelope (honest), not fabricated metrics.

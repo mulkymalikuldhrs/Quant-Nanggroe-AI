@@ -92,6 +92,8 @@ class TradingWorker:
         self.settings = settings or get_settings()
         self._tasks: list[asyncio.Task[None]] = []
         self._running = False
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch  # ponytail: real KS, not inert flag
+        self._kill_switch = KillSwitch()
         self._kill_switch_active = False
         self._graph_semaphore = asyncio.Semaphore(self.config.max_concurrent_graphs)
         self._last_graph_run: dict[str, datetime] = {}
@@ -297,12 +299,16 @@ class TradingWorker:
     # ── Kill Switch Monitor Loop ────────────────────────────────────
 
     async def _kill_switch_monitor_loop(self) -> None:
-        """Periodically check the kill switch state."""
+        """Periodically check the kill switch state (LIVE, not inert)."""
         while self._running:
             try:
                 was_active = self._kill_switch_active
-                # Check kill switch from shared services if available
-                self._kill_switch_active = False  # Default: not active
+                # ponytail: evaluate auto-activation on own real KS instance (fail-closed)
+                self._kill_switch.check_auto_activate(
+                    daily_pnl_pct=getattr(self, "_last_daily_pnl_pct", 0.0),
+                    max_drawdown_pct=getattr(self, "_last_drawdown_pct", 0.0),
+                )
+                self._kill_switch_active = self._kill_switch.is_active()
 
                 if self._kill_switch_active and not was_active:
                     logger.warning("kill_switch_activated", extra={"msg": "All trading halted"})

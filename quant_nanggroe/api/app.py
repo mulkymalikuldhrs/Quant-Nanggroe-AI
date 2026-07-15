@@ -228,9 +228,11 @@ def create_app() -> FastAPI:
         portfolio,
         rl,
         sec_edgar,
+        security,
         signal_generator,
         strategies,
         strategy,
+        tools,
         trading,
         ws,
         whatsapp,
@@ -265,6 +267,8 @@ def create_app() -> FastAPI:
     app.include_router(agentic.router)
     app.include_router(autonomous.router)
     app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
+    app.include_router(security.router, prefix="/api", tags=["Security"])
+    app.include_router(tools.router, prefix="/api", tags=["Tools"])
     app.include_router(wiring_compat.router)
 
     # ── Health Check ────────────────────────────────────────────────
