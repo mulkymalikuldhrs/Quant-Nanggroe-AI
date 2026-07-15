@@ -172,79 +172,11 @@ class BacktestEngine:
             portfolio.mark_to_market(price_row)
 
             # 2. Execute trades based on signals
-            for symbol in symbols:
-                price = price_row.get(symbol, np.nan)
-                if pd.isna(price) or price <= 0:
-                    continue
-
-                # ponytail: signals may be named by first OHLCV col, not 'close'; align
-                if isinstance(signal_row, pd.Series) and symbol not in shifted_signals.columns:
-                    sig_col = shifted_signals.columns[0]
-                    target_weight = float(signal_row.get(sig_col, 0.0)) if hasattr(signal_row, "get") else 0.0
-                else:
-                    target_weight = float(signal_row.get(symbol, 0.0)) if hasattr(signal_row, "get") else 0.0
-                current_pos = portfolio.get_position(symbol)
-
-                # Determine target action
-                target_direction = 1 if target_weight > 0.01 else (-1 if target_weight < -0.01 else 0)
-
-                # Close existing position if direction changed
-                if current_pos is not None:
-                    if target_direction == 0 or (current_pos.direction != target_direction and target_direction != 0):
-                        if not self.config.short_enabled and current_pos.direction == -1:
-                            pass  # Can't close short if shorts disabled (shouldn't happen)
-                        close_price = self._get_fill_price(
-                            execution_model, price, -current_pos.direction,
-                            abs(current_pos.size), timestamp
-                        )
-                        trade = portfolio.close_position(
-                            symbol, close_price, timestamp, "signal"
-                        )
-                        if trade is not None:
-                            commission = self.execution.calc_commission(
-                                abs(trade.size), close_price, is_closing=True
-                            )
-                            portfolio._apply_commission(symbol, commission)
-                            all_trades.append(trade)
-
-                # Open new position if target non-zero
-                if target_direction != 0 and portfolio.get_position(symbol) is None:
-                    if not self.config.short_enabled and target_direction == -1:
-                        continue
-
-                    equity = portfolio.equity
-
-                    if position_sizer:
-                        size = position_sizer(target_weight, equity, price)
-                    else:
-                        # ponytail: scale notional by target vol so high-vol assets (SOL) don't get 1.0 leverage blowups
-                        sym_vol = vol_by_symbol.get(symbol, 0.0)
-                        vol_mult = 1.0 if sym_vol <= 0 else min(1.0, self.config.vol_target_ann / sym_vol)
-                        size = (abs(target_weight) * equity * self.config.leverage * vol_mult) / price
-
-                    # Apply risk limit
-                    max_risk_amount = equity * self.config.risk_per_trade
-                    if abs(size * price) > max_risk_amount * 20:  # 20:1 R:R threshold
-                        size = max_risk_amount * 20 / price
-
-                    exec_price = self._get_fill_price(
-                        execution_model, price, target_direction, size, timestamp
-                    )
-                    open_commission = self.execution.calc_commission(
-                        abs(size), exec_price, is_closing=False
-                    )
-
-                    if portfolio.can_open_position(exec_price, size, open_commission):
-                        trade = portfolio.open_position(
-                            symbol=symbol,
-                            direction=target_direction,
-                            size=size,
-                            price=exec_price,
-                            timestamp=timestamp,
-                            commission=open_commission,
-                        )
-                        if trade is not None:
-                            all_trades.append(trade)
+            self._execute_bar(
+                symbols, signal_row, price_row, timestamp,
+                portfolio, vol_by_symbol, shifted_signals,
+                position_sizer, execution_model, all_trades,
+            )
 
             # Record equity
             equity_curve.append(portfolio.equity)
@@ -519,6 +451,99 @@ class BacktestEngine:
         return analyzer.analyze(prices, signals, **kwargs)
 
     # ── Private helpers ───────────────────────────────────────────────
+
+    def _execute_bar(
+        self,
+        symbols: List[str],
+        signal_row: Any,
+        price_row: pd.Series,
+        timestamp: pd.Timestamp,
+        portfolio: Portfolio,
+        vol_by_symbol: Dict[str, float],
+        shifted_signals: pd.DataFrame,
+        position_sizer: Optional[Callable],
+        execution_model: Optional[Callable],
+        all_trades: List[TradeRecord],
+    ) -> None:
+        """Execute one bar: for each symbol, close stale and open target positions."""
+        for symbol in symbols:
+            price = price_row.get(symbol, np.nan)
+            if pd.isna(price) or price <= 0:
+                continue
+
+            # ponytail: signals may be named by first OHLCV col, not 'close'; align
+            if isinstance(signal_row, pd.Series) and symbol not in shifted_signals.columns:
+                target_weight = float(signal_row.get(shifted_signals.columns[0], 0.0)) \
+                    if hasattr(signal_row, "get") else 0.0
+            else:
+                target_weight = float(signal_row.get(symbol, 0.0)) \
+                    if hasattr(signal_row, "get") else 0.0
+
+            target_direction = 1 if target_weight > 0.01 else (-1 if target_weight < -0.01 else 0)
+            current_pos = portfolio.get_position(symbol)
+
+            # Close when flat-target or direction flipped
+            if current_pos is not None and (
+                target_direction == 0
+                or current_pos.direction != target_direction
+            ):
+                close_price = self._get_fill_price(
+                    execution_model, price, -current_pos.direction,
+                    abs(current_pos.size), timestamp,
+                )
+                trade = portfolio.close_position(symbol, close_price, timestamp, "signal")
+                if trade is not None:
+                    commission = self.execution.calc_commission(
+                        abs(trade.size), close_price, is_closing=True
+                    )
+                    portfolio._apply_commission(symbol, commission)
+                    all_trades.append(trade)
+
+            # Open when target non-zero and no open position
+            if target_direction != 0 and portfolio.get_position(symbol) is None:
+                if not self.config.short_enabled and target_direction == -1:
+                    continue  # shorts disabled: open path blocks this too, guard kept for symmetry
+                size = self._size_position(
+                    target_weight, price, portfolio.equity,
+                    vol_by_symbol.get(symbol, 0.0), position_sizer,
+                )
+                exec_price = self._get_fill_price(
+                    execution_model, price, target_direction, size, timestamp
+                )
+                open_commission = self.execution.calc_commission(
+                    abs(size), exec_price, is_closing=False
+                )
+                if portfolio.can_open_position(exec_price, size, open_commission):
+                    trade = portfolio.open_position(
+                        symbol=symbol,
+                        direction=target_direction,
+                        size=size,
+                        price=exec_price,
+                        timestamp=timestamp,
+                        commission=open_commission,
+                    )
+                    if trade is not None:
+                        all_trades.append(trade)
+
+    def _size_position(
+        self,
+        target_weight: float,
+        price: float,
+        equity: float,
+        sym_vol: float,
+        position_sizer: Optional[Callable],
+    ) -> float:
+        """Resolve target position size: custom sizer, else vol-scaled notional with risk cap."""
+        if position_sizer:
+            return position_sizer(target_weight, equity, price)
+        # ponytail: scale notional by target vol so high-vol assets (SOL) don't get 1.0 leverage blowups
+        vol_mult = 1.0 if sym_vol <= 0 else min(1.0, self.config.vol_target_ann / sym_vol)
+        size = (abs(target_weight) * equity * self.config.leverage * vol_mult) / price
+        # Risk limit: 20:1 reward-to-risk threshold
+        max_risk_amount = equity * self.config.risk_per_trade
+        if abs(size * price) > max_risk_amount * 20:
+            size = max_risk_amount * 20 / price
+        return size
 
     def _get_fill_price(
         self,
