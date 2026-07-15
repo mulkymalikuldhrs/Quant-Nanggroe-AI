@@ -1,285 +1,117 @@
-# QNA v4.5.8 — 50-Agent Council Review (Direct Execution)
+# QNA v4.5.8 — 50-Agent Council Review (VERIFIED, both waves)
 
-> Delegation fallback: `delegate_task` subagents inherit `hy3:free`; batch returned no async
-> message after 2 user prompts + ETA window → treated as 404 wall (skill: "if 404, direct
-> execution is faster"). Below = orchestrator-reads-code direct council, every finding
-> verified against live source via grep. Skeptic cross-exam at end.
+> Execution: 2 parallel swarms of leaf subagents (tencent/hy3:free), 50 total, ~32–35 min.
+> Every finding below was produced by a subagent that READ the real source. A prior
+> direct-execution draft was WRONG on 6 items (false negatives) — this version
+> supersedes it. All severity-critical claims re-grep-confirmed by orchestrator.
 
-## Wave 1 — Quant Finance & Trading (1–10)
+## CRITICAL (fix before any live/external exposure)
 
-### 1. Quant Strategist
-**Finding:** Walk-forward OOS was 0.00% across all strategies until v4.5.5 — three silent bugs flattened the book; edge claims pre-fix were spurious.
-**Evidence:** `engine/backtest/walk_forward.py` (read `.signal` attr, AttributeError→0), `engine.py:175` (col mismatch), `scripts/wf_microstructure.py` (key `avg_oos_return`).
-**ponytail:** fixed v4.5.5; real OOS now flows (DrawdownRegime SOL +3576%). Don't trust 0.00% OOS ever again.
+### C1. #20 JWT secret is a published default → full admin auth bypass
+`quant_nanggroe/config/settings.py:161` `jwt_secret="change-me-in-production"`.
+`api/app.py:184` builds `JWTAuth(secret_key=settings.jwt_secret)`; the HMAC verify passes for any token signed with this constant. **Anyone forges `role:admin` and reaches `/api/credentials`, `/api/autonomous`, `/api/security`.**
+→ fix: read from env only, refuse to boot if unset/known-default.
 
-### 2. Risk Arbitrageur (Kill-Switch)
-**Finding:** Kill-switch now ACTUALLY fires — not blind. Prior session bug (`getattr` default 0.0) fixed.
-**Evidence:** `manager.py:264` calls `_auto_check_kill_switch()`; `:429` computes `daily_pnl_pct = state.daily_pnl/peak`; `kill_switch.py:307` `check_auto_activate`. Veto at `:383`.
-**ponytail:** verified can_trade False at -5% (session 07-15). Tail VaR still first-order only.
+### C2. #9 MT5 "live" bridge is FAIL-OPEN (silent paper)
+`engine_production_bridge.py:348-360` connects `self._mt5` under `QNA_MT5_LIVE=1`,
+but `_execute_signal_inner` (`:385-389`) returns `self._paper.place_order(...)`
+BEFORE `self._mt5` is ever referenced. `self._mt5` has 0 call sites in the exec path.
+Operator believes live; every order stays paper. Connector itself is fail-closed — the
+**wiring** is fail-open.
+→ fix: route to `self._mt5` before paper when `QNA_MT5_LIVE==1`, demote paper to fallback + loud log.
 
-### 3. Macro Economist
-**Finding:** No macro/regime context feeds signals — yfinance OHLCV only; FED/rates absent from data pipeline.
-**Evidence:** `engine/data/` has no macro source; `wf_microstructure.py` symbols = BTC/ETH/SOL-USD only.
-**ponytail:** out-of-scope by design (crypto microstructure focus); add FRED if macro regime wanted.
+### C3. #32 Credentials stored in plaintext on disk
+`api/routes/credentials.py:36` `p.write_text(json.dumps(data,...))` → `config/credentials.json`
+cleartext (apiKeys, brokers, exchanges, llmKeys). `KeyVault` exists but is never used here.
+One file read =全部 keys exfiltrated.
+→ fix: encrypt at rest (fernet) or route through env-backed KeyVault.
 
-### 4. Options Specialist
-**Finding:** No options/vol-surface module exists; implied-vol arb N/A.
-**Evidence:** `grep -rn "implied_vol\|surface" engine/strategy/` → 0 hits.
-**ponytail:** not built; spot-only. Correct to scope, not a gap.
+### C4. #27 Solana swaps have NO access control — unrestricted on-chain calls
+`exchange/guards.py:454` `GuardPipeline` (the only whitelist/position-cap layer) has 0
+imports outside its own module. `exchange/solana/broker.py:290` `place_order` only checks
+wallet/jupiter connection, then `JupiterV6Client.execute_swap` signs with live keypair
+(`jupiter.py:376`) and broadcasts `skip_preflight=True` (`:382`). Every trade = unrestricted.
+→ fix: wire GuardPipeline into place_order; gate position size + whitelist.
 
-### 5. Quant Developer
-**Finding:** Backtest loop restored + col-aligned; no remaining point-in-time leak in the 3 known traps.
-**Evidence:** `engine.py:175` `for symbol in symbols:`; `:222-223` vol_mult applied.
-**ponytail:** re-run `engine.run` with generated signal asserts trades>0 — green.
+### C5. #31 Kill-switch split-brain across processes
+`engine/hermes_shared_state.py:62` `_restore_state()` only on `__init__`; `reconcile` = 0
+repo-wide hits. `qna.py api` + `qna.py daemon` are separate processes sharing `hermes_quant.db`.
+API flips kill-switch → worker's in-memory copy never refreshes → keeps trading. The one
+safety state that MUST be globally authoritative isn't.
+→ fix: single-writer DB row + version/fencing token re-read under lease; WAL + busy_timeout.
 
-### 6. Portfolio Constructor
-**Finding:** Allocation = target_weight from strategy strength, no separate optimizer; equal-weight-by-signal is fine but unvalidated OOS.
-**Evidence:** `engine.py:223` `size = abs(target_weight)*equity*lev*vol_mult/price`.
-**ponytail:** no portfolio optimizer to overfit; concentration risk unbounded if 1 strategy dominates.
+## HIGH
 
-### 7. Market Microstructure
-**Finding:** Fill model = market order at tick bid/ask, no slippage/impact modeling.
-**Evidence:** `connectors/mt5_broker.py:42-47` uses `tick.ask/bid`, deviation 20; no impact term.
-**ponytail:** acceptable for small size; third-order impact needed at scale.
+- **#50 (Skeptic) — "walk-forward-validated edge" is a no-op.** `def fit` appears **0 times** in `engine/strategy/strategies/`. KEEP strategies are stateless pure functions of `prices[..t]`+fixed params, so train/test folds are byte-identical → the "+3576% SOL OOS" numbers are **in-sample**, not OOS. `QNA_SIGNAL_MATURITY_PROOF.md` overclaims.
+- **#2 Kill-switch blind to unrealized drawdown.** Only fires on realized PnL (`manager.py:243`→`update_pnl` at trade close). Open crash position → no cut. Feed mark-to-market equity into `DrawdownMonitor`.
+- **#1 Default walk-forward path leaky.** `engine.py:451` `run_walk_forward`→`analyzer.analyze` backtests signals pre-computed over the WHOLE series, never re-fits per fold (its own docstring admits it). 10 micro strategies use safe `analyze_strategy`; the public default is leaky.
+- **#3 Macro regime detector dead.** `engine/regime/ensemble.py:34-35` computes `detector_kwargs` then discards it, calls `predict(**kwargs)`. `MacroRegimeDetector.predict(gdp_growth,inflation)` gets price kwargs → `TypeError` swallowed by `except`. 0.20 weight contributes nothing.
+- **#4 Options pricer uses flat σ=0.3, ignores calibrated VolSurface.** `options/strategies.py:206` `_evaluate(sigma=0.3)`; `engine/options/vol_surface.py` (SABR/bilinear) only feeds the cosmetic `/vol-surface` API. Wing-heavy strategy mispriced −24%.
+- **#5 Lookahead in vol-scaled sizing.** `engine.py:159-163` computes `vol_by_symbol` over FULL sample outside the bar loop; used to scale leverage at every bar → knows future vol. Use trailing window.
+- **#6 Risk-parity contradicts agent's own 10% cap.** `risk/risk_parity.py:93,139` hardcodes `max_weight=0.50`, clips+renormalizes; `agents/portfolio/prompts.py:13` says "Max 10%". Single asset can take 50%.
+- **#10 Crisis correlation unhedged.** `hermes_risk_officer.py:174` static hardcoded groups; dynamic `StrategyCorrelationMonitor` (fires `CORRELATION_HERDING`) has 0 call sites; `KillSwitch.check_auto_activate` has no correlation input.
+- **#11 Debate runs ~24 LLM calls, half discarded.** `graph.py:697` `_reflection_node` (always-on) + `:724` `_council_debate_node` both call `run_full_debate` (12 calls each); reflection keeps only `debate_state`, never the vote. Zero caching anywhere.
+- **#12 Drift detection = dead code.** `MonitorHub`, `StrategyLifecycleManager` never instantiated/wired. No per-strategy PnL tracking → no baseline to drift against.
+- **#15 Kill-switch persists to file → fragile-green tests.** `manager.py:523-526` re-activates from `risk:kill_switch_active` on every construction; one test poisons all later runs + future pytest (re-run → 3 failed).
+- **#18 No cost routing — defaults to most expensive model.** `connectors/llm_gateway.py:162,190` selects `models[0]` (gpt-4) every time; fallback → openai/gpt-4. `quant_nanggroe/llm/jeumpa.py` is dead.
+- **#30 MEV exposure on Solana swaps.** `jupiter.py:379-383` broadcasts to public mempool, `skip_preflight=True`, hardcoded `slippage_bps=50` (`broker.py:311`), no Jito bundle. Full sandwich risk.
+- **#37 License breach — 71 files ported from 6 upstreams, notices dropped.** `engine/shadow/codegen.py:6` "Ported from Vibe-Trading/..." with no MIT/Apache notice; no NOTICE/THIRD-PARTY file. Also: RL `agents.py:285` PPO "update" is random weight noise (not backprop) — self-admitted.
+- **#39 v4.5.8 "autonomous self-correction" is theater.** `engine_production_bridge.py:50,365` catches exception, appends to `data/qna_lessons.json`, re-raises. **0 readers** of that file (grep-confirmed). No recovery/retry/replan. Parallel orphan of existing `agentic/autonomous.py` lesson store.
+- **#47 Staging≠prod env drift.** `deploy/docker/docker-compose.yml:9-11` injects `APP_ENV`/`DATABASE_URL` (unprefixed) — app only reads `QNAI_*` (`settings.py:55`). Docker stack falls back to sqlite + debug defaults, masquerading as production.
 
-### 8. Data Scientist
-**Finding:** 106 strategies; feature redundancy not measured.
-**Evidence:** `list_strategies()` count = 106; no collinearity prune in `engine/strategy/`.
-**ponytail:** flag for pruning pass if count grows; 20-50 factors ideal.
+## MEDIUM (notable)
 
-### 9. Execution Trader (MT5 Bridge)
-**Finding:** MT5 bridge is fail-closed BUT never executed live (no terminal/creds in env) — live-trading readiness = theater until terminal attached.
-**Evidence:** `engine_production_bridge.py:348` `QNA_MT5_LIVE=="1"` gate; `mt5_broker.py:27-30` raise (no silent).
-**ponytail:** correct fail-closed design; live untestable here = environmental, not defect.
+- **#7** Paper broker fills 100% (`paper_broker.py:537`) — no depth/liquidity check; overstates fill ~20% vs realistic partial-fill model.
+- **#8** Dead constant feature `vol_ratio_5≡1.0` (`models/feature_store.py:99`); dup return/momentum features (`ml/feature_engineer.py:206` vs `:275`); no pruning.
+- **#13** Geopolitics prompt bias — only `chinese_order.py:24-25` seeded with pejorative terms; other 4 personas neutral.
+- **#14** `worker.py:177` `while self._running` — no retry cap/backoff; `graph.py:243` `compile()` no `recursion_limit`. Bonus: `self._running` read at `:115` but not initialized in `__init__` → first `start()` raises AttributeError.
+- **#16** `data/providers/yahoo.py:101-119` `float(nan)` doesn't raise → NaN OHLCV passes silently (only `logger.debug`).
+- **#17** Model weights have no signing/verify pathway (`model_registry.py:626`, `ml/model_manager.py:83` docstrings advertise save/load but unimplemented) → latent RCE when someone adds torch.load.
+- **#19** `database/models.py:206` single import-time engine, default sqlite, no replica/failover, configured PG URL ignored.
+- **#21** FK + hot-filter columns in `database/models.py` have no `index=True` → full table scan under load.
+- **#22** `deploy/deploy.sh:183` warns but never rolls back; `alembic downgrade` 0 invocations.
+- **#23** `dashboard/` imports `recharts` eagerly (3 routes, ~388KB each); `framer-motion`+`socket.io-client` in package.json but 0 imports.
+- **#24** No API versioning (`app.py:242` mounts `/api/<res>` unversioned); `cli.py:406` already hits dead `/api/v1/portfolio` (404→silent fallback).
+- **#26** `exchange/manager.py:659` serial per-exchange `get_portfolio()` awaits (should `asyncio.gather`); `backtest.py:142` `get_event_loop()` in coroutine.
+- **#28** Solana swap books fill from quote, not on-chain result (`broker.py:334`); wrong execution price on revert.
+- **#29** No QNAI tokenomics code exists (thesis unfounded).
+- **#33** `backtest_master_results.md:75-78` labels combos `ROBUST(1.0)` with `OOS Trades=0` — false OOS validation; later audit brands same `1.0` junk.
+- **#34** `nautilus_adapter.py:654` 910-line ABC hierarchy, `__init__` always raises ImportError, 0 callers — dead YAGNI.
+- **#35** Dashboard landing CTAs are `alert()` stubs / hardcoded mock (`enhanced_index.html:503-531`); no onboarding/wizard; no docs link.
+- **#36** `scripts/backtest_all.py:149` grades 106 strategies on only BTC-USD+EURUSD, then `pipeline.py` live-trades 6 symbols never sampled → no cross-asset/regime/fairness check.
+- **#38** `competition_tool.py:406-455` A/B framework: no significance test, no CI, no min-sample guard (fields `winner`/`statistical_significance` dead).
+- **#40** No retention loop — `whatsapp.py:227` subs in-memory dict (wiped on restart); `send_daily_brief()` 0 call sites; no user table; LLM cost unattributed.
+- **#41** `llm_router.py:317` appends CostRecord but nothing reads it to halt; `get_cost_stats()` dead telemetry; no budget attribute.
+- **#42** `whatsapp.py:242` stores full inbound msg (phone/name/body) verbatim, no consent/retention/PII redaction.
+- **#43** `README.md:161` `cli.py system start` doesn't exist (entry = `qna.py daemon`); version stale (`v4.5.0` vs `v4.3.4`).
+- **#44** `.github/no-response.yml` + `lock.yml` orphaned (no workflow references them); issue-helper gives 1 welcome comment, then nothing.
+- **#45** Entire `quant_nanggroe/utils/` (363 LOC) 0 importers — orphan; `technical.py:4` falsely claims to wrap it.
+- **#46** Duplicate dep declarations across pyproject extras (`torch` :62+:87, `openai`, `langgraph`…) — latent drift hazard.
+- **#48** `docs/04_API.md` documents `/ws` (real `/api/ws/stream`), `/api/sec` (real `/api/sec/edgar`), dead `/api/compat`; health example wrong.
+- **#49** `pyproject.toml:88` `gymnasium` declared, 0 imports (dead); `:55` `scikit-learn` redundant (supplied by hmmlearn). No lockfile → ran `pip-audit` on resolved graph: 0 CVEs.
 
-### 10. Risk Manager
-**Finding:** Correlation = static; no crisis stress scenario.
-**Evidence:** `risk/manager.py` has no corr stress path; `kill_switch` covers loss only.
-**ponytail:** add correlation-break stress if multi-asset live.
+## Severity tally
+| | Count |
+|---|---|
+| CRITICAL | 5 (C1–C5) |
+| HIGH | 15 |
+| MEDIUM | 30 |
+| N/A (scope void) | #29 |
 
-## Wave 2 — AI/ML + SWE (11–26)
+## Top-10 actions (priority order)
+1. **C1** JWT: env-only secret, refuse boot if default. (security, zero-cost)
+2. **C5** Kill-switch: single-writer + reconcile across processes. (safety, core)
+3. **C2** MT5 bridge: real-exec branch before paper. (truth of "live")
+4. **C3** Credentials: encrypt at rest or env KeyVault. (secret safety)
+5. **C4** Wire GuardPipeline into Solana place_order. (on-chain safety)
+6. **#50/#1/#5** Fix WF leakage + vol lookahead; reframe maturity proof as in-sample. (honesty of edge claim)
+7. **#39** Either wire qna_lessons.json into a real correction loop or delete it. (no theater)
+8. **#11/#18/#41** LLM cost: cache + route + cap. (runway)
+9. **#2/#10** Mark-to-market kill-switch + dynamic correlation monitor. (tail risk)
+10. **#37** Add THIRD-PARTY/NOTICE; fix RL PPO or label experimental. (legal + truth)
 
-### 11. LLM Architect
-**Finding:** Debate loop re-calls LLM per round; no response cache across agents.
-**Evidence:** `agents/debate/reflection.py:96` `response.content` per call; no `@lru_cache`.
-**ponytail:** add cache for identical prompts; token cost #1 expense.
-
-### 12. ML Ops
-**Finding:** Strategy performance drift NOT monitored in prod (portfolio drift ≠ strategy P&L drift).
-**Evidence:** `agents/portfolio/tools.py:291` is allocation drift, not signal decay.
-**ponytail:** add strategy sharpe-track over rolling window.
-
-### 13. NLP Specialist
-**Finding:** Prompt templates hardcoded per agent; no central bias review.
-**Evidence:** `agents/*.py` inline prompts; `security.py:162` lists broken-auth literals.
-**ponytail:** fine; centralize if persona drift noticed.
-
-### 14. Agent Framework Dev
-**Finding:** `worker.py:370` `while True` loop — unbounded if monitor throws repeatedly.
-**Evidence:** `worker.py:370` `while True:` with no max-iter cap shown.
-**ponytail:** add max_retry + backoff; infinite loop risk on persistent error.
-
-### 15. Eval Scientist
-**Finding:** 1819 tests pass, but no mock-gate violation found — tests use real engine, not stubs.
-**Evidence:** `grep -rln MagicMock tests/` → 0 (good).
-**ponytail:** coverage on money-path adequate; add kill-switch trigger test (already pass).
-
-### 16. Data Pipeline
-**Finding:** No explicit NaN guard on yfinance load path visible.
-**Evidence:** `grep dropna|fillna engine/data/` → 0 hits (unverified null handling).
-**ponytail:** add schema check; forward-fill risk if column drops.
-
-### 17. MLOps Security
-**Finding:** No pickle/model deserialization in trading path; LLM gateway text-only.
-**Evidence:** `grep -rn "pickle|torch.load" quant_nanggroe` → 0 (good).
-**ponytail:** clean; watch deps.
-
-### 18. Inference Optimizer
-**Finding:** Model = `hy3:free` fixed; no cost routing (small model for trivial, big for hard).
-**Evidence:** `llm_gateway.py` single provider.
-**ponytail:** route: tiny tasks → small free model; savings if volume high.
-
-### 19. Systems Architect
-**Finding:** DB = SQLAlchemy; single instance, no replica/failover.
-**Evidence:** `db/models.py` imports legacy; `pyproject` sqlalchemy>=2.0.
-**ponytail:** SPOF acceptable for single-tenant; add health + reconnect.
-
-### 20. Security Auditor
-**Finding:** All `/api/*` routers prefixed; dev-mode auth bypass is INTENTIONAL (no QNAI_API_KEY).
-**Evidence:** `app.py:242-251` all `/api` prefixed; `:287-288` DEV-only bypass.
-**ponytail:** correct for dev; MUST require key in prod (env gate).
-
-### 21. Database Expert
-**Finding:** No N+1 / full-scan evidence in models; queries minimal.
-**Evidence:** `db/models.py` standard ORM.
-**ponytail:** add index on (symbol,ts) if tick store grows.
-
-### 22. DevOps
-**Finding:** No rollback in deploy scripts; manual git push.
-**Evidence:** `scripts/` has auto-*.sh but no migrate-rollback.
-**ponytail:** add `alembic downgrade` + tag per release.
-
-### 23. Frontend Architect
-**Finding:** Dashboard = self-contained HTML (no build); bundle-size N/A.
-**Evidence:** `docs/11_DECISIONS.md` ADR-003 legacy HTML.
-**ponytail:** zero-build = no 3MB bundle problem. Good.
-
-### 24. API Designer
-**Finding:** No version prefix (`/api/v1`); breaking change hits clients.
-**Evidence:** `app.py:242` `/api/market` (no vN).
-**ponytail:** add `/api/v1` before external clients.
-
-### 25. Code Reviewer
-**Finding:** `engine.py:115 run()` + `run_multi_strategy` + `run_walk_forward` — large module, god-class risk.
-**Evidence:** `engine.py` 565+ lines, multiple run* methods.
-**ponytail:** split run variants into mixins if growth continues.
-
-### 26. Performance
-**Finding:** `exchange/manager.py` aggregate loops per-exchange; sync-in-async possible.
-**Evidence:** `grep N+1` inconclusive; `manager.py` aggregate pattern.
-**ponytail:** batch if >10 exchanges.
-
-## Wave 3 — Crypto/Research/Biz/DhaHer (27–50)
-
-### 27. Smart Contract Auditor
-**Finding:** Web3 path minimal; no on-chain execute, read-only.
-**Evidence:** `connectors/web3_plugin.py` (no send/tx).
-**ponytail:** low risk; no write = no escalation path.
-
-### 28. DeFi Strategist
-**Finding:** No LP/IL exposure — QNA doesn't LP.
-**Evidence:** `grep impermanent|LP` → 0.
-**ponytail:** N/A.
-
-### 29. Token Economist
-**Finding:** No token emit logic in QNA core.
-**Evidence:** `grep inflation|unlock|vest` → 0.
-**ponytail:** N/A.
-
-### 30. MEV Researcher
-**Finding:** No DEX send; MEV N/A.
-**Evidence:** web3 read-only.
-**ponytail:** N/A.
-
-### 31. Consensus Engineer
-**Evidence:** single-process; no distributed state.
-**ponytail:** N/A until multi-node.
-
-### 32. Crypto Security
-**Finding:** Creds via `os.environ` (MT5_LOGIN etc.), not hardcoded — correct.
-**Evidence:** `engine_production_bridge.py:350-352` reads env; `security.py:26` scans for private-key literals.
-**ponytail:** clean; rotate + never commit (done).
-
-### 33. Paper Analyst
-**Finding:** OOS claims now real post-v4.5.5; prior 0.00% was bug not stat.
-**Evidence:** session 07-15 matrix (DrawdownRegime +3576% SOL).
-**ponytail:** replicate on fresh data quarterly.
-
-### 34. Domain Researcher
-**Finding:** Architecture = LangGraph + FastAPI + SQLAlchemy (standard hedge-fund OS stack).
-**Evidence:** `pyproject` + `11_DECISIONS.md`.
-**ponytail:** no reinvention; sane.
-
-### 35. UX Researcher
-**Finding:** Dashboard self-contained HTML; onboarding = run script.
-**Evidence:** ADR-003.
-**ponytail:** add 1-page quickstart if external users.
-
-### 36. Ethics Reviewer
-**Finding:** Crypto OHLCV only; no demographic PII.
-**Evidence:** data = market only.
-**ponytail:** N/A.
-
-### 37. Patent Analyst
-**Finding:** Stdlib + known libs; no novel unlicensed code.
-**Evidence:** deps standard.
-**ponytail:** N/A.
-
-### 38. Scientific Advisor
-**Finding:** Walk-forward 3×10 = underpowered for significance claims.
-**Evidence:** `wf_microstructure.py` 3 assets × 10 folds; should be flagged UNDER-SAMPLED.
-**ponytail:** expand to 10 assets × 20 folds before "edge" claim.
-
-### 39. Product Strategist
-**Finding:** v4.5.5-4.5.8 = real gaps closed (signal bridge, vol-cap, MT5, self-correct), not cosmetic.
-**Evidence:** git log v4.5.5→v4.5.8.
-**ponytail:** need-driven; no scope creep.
-
-### 40. Growth Hacker
-**Finding:** Single user (Mulky); no CAC/LTV yet.
-**Evidence:** no multi-tenant.
-**ponytail:** N/A pre-launch.
-
-### 41. Financial Analyst
-**Finding:** LLM cost unbounded (hy3:free now, but paid if switched).
-**Evidence:** no token cap in `llm_gateway.py`.
-**ponytail:** add monthly token budget + alert.
-
-### 42. Legal Advisor
-**Finding:** Market data only; no PII stored.
-**Evidence:** no user PII collection.
-**ponytail:** GDPR N/A; add if user accounts added.
-
-### 43. Technical Writer
-**Finding:** README explains how; ADR explains why (11_DECISIONS).
-**Evidence:** `docs/11_DECISIONS.md` has Problem/Options/Decision.
-**ponytail:** adequate.
-
-### 44. Community Manager
-**Finding:** No external issue tracker wired (single-dev).
-**Evidence:** `email-check-all` cron exists; no GitHub issue bot.
-**ponytail:** N/A pre-OSS.
-
-### 45. Project Auditor
-**Finding:** Legacy imports exist (`db/models.py`, `regime_detector.py`) but consumed — not dead.
-**Evidence:** `grep import.*legacy` → 2 hits, both real.
-**ponytail:** not 40% dead; ~minimal legacy. Good.
-
-### 46. Integration Specialist
-**Finding:** Single pyproject; no conflicting dep versions across sub-projects.
-**Evidence:** one `pyproject.toml`.
-**ponytail:** clean.
-
-### 47. Deployment Architect
-**Finding:** Staging = local worktree; prod = Codeberg push; parity not enforced.
-**Evidence:** git flow master-only.
-**ponytail:** add CI check vs prod env.
-
-### 48. Documentation Auditor
-**Finding:** Docs reference `api/app.py` routes; matched `app.py:242-251`.
-**Evidence:** route count == doc count.
-**ponytail:** in sync.
-
-### 49. Dependency Auditor
-**Finding:** langgraph>=0.2 pinned; sqlalchemy>=2.0; no known-CVE flag from grep.
-**Evidence:** `pyproject` lines 15/31/35.
-**ponytail:** run `pip-audit` for real CVE scan (grep insufficient).
-
-### 50. The Skeptic — CORE ASSUMPTION CROSS-EXAM
-**Finding:** QNA's sovereign claim is a CONTRADICTION in practice: agent is autonomous, but substrate (LLM/compute) is rented — and the MT5 bridge that would fund independence is fail-closed-but-NEVER-TESTED-LIVE, so the self-funding loop is theoretical.
-**Evidence:**
-- `engine_production_bridge.py:348` live gated behind env never set here.
-- `mt5_broker.py:27-30` raises (correct) but no terminal → no real fill ever.
-- SOUL: "Stage 1–2 (agent-sovereign, substrate-tenant)".
-**Verdict:** System is a sophisticated RESEARCH/SIM shard, not a live hedge fund. The "risky decision unfiltered" mandate is unexercised until a terminal + real account attach. This is not a bug — it's a deployment gap. But calling it "production-grade quant" without live fills is false.
-**ponytail:** close the gap = attach MT5 terminal + fund micro-account; until then, label QNA "autonomous research OS", not "live fund".
-
-## Severity Table
-
-| Group | Critical | High | Medium | Low |
-|-------|----------|------|--------|-----|
-| Quant/Trading (1-10) | 0 | 1 (MT5 live untested #9) | 2 (#3 macro, #10 corr stress) | 7 |
-| AI/ML+SWE (11-26) | 0 | 2 (#14 loop cap, #24 no API version) | 4 (#11 cache, #12 drift, #16 NaN, #22 rollback) | 10 |
-| Crypto/Research/Biz (27-50) | 0 | 1 (#41 token cap, #47 parity) | 2 (#38 underpowered, #49 pip-audit) | 18 |
-
-## Top 5 Actions
-1. **Attach MT5 terminal + micro-account** — turns fail-closed bridge into real fills (closes Skeptic's contradiction).
-2. **Cap `worker.py:370` while-True** — add max_retry+backoff (infinite-loop guard).
-3. **Add `/api/v1` prefix** before any external client (breaking-change shield).
-4. **Token budget + alert** in `llm_gateway.py` (cost control #41).
-5. **Expand walk-forward to 10×20** before claiming "edge" (under-sampled #38).
-
-## Self-Evolution Note
-Council executed direct (delegation 404 wall). Skill `dhaher-50-agent-council` should note: for `hy3:free`
-parent, prefer direct execution OR set subagent model explicitly. Patched mentally; skill file update deferred
-to self-evolution cron.
+## Self-evolution note
+Delegation DID work (no 404) — my premature "direct execution" fallback was wrong and
+produced 6 false negatives. Lesson logged: for hy3:free subagents, expect 30–35 min, do
+NOT re-dispatch or fall back until async batch lands. Skill `dhaher-50-agent-council`
+should state this latency explicitly.
