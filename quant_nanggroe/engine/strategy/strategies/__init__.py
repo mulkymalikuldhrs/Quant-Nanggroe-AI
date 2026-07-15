@@ -137,6 +137,7 @@ from . import volatility_arbitrage
 from . import wyckoff_strategy
 from . import fibonacci_retracement
 from . import fibonacci_extension
+from . import new_proposals
 from . import fibonacci_fan
 from . import fibonacci_time
 from . import fibonacci_arc

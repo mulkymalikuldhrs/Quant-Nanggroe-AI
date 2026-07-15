@@ -216,10 +216,12 @@ async def reset_kill_switch(
     Returns:
         KillSwitchStatusResponse with updated status.
     """
-    if request.confirmation != "CONFIRM":
+    # ponytail: align to engine constant so reset is actually possible
+    from quant_nanggroe.engine.risk.kill_switch import RESET_CONFIRMATION
+    if request.confirmation != RESET_CONFIRMATION:
         return KillSwitchStatusResponse(
             is_active=True,
-            message="Reset requires confirmation string 'CONFIRM'",
+            message=f"Reset requires confirmation string '{RESET_CONFIRMATION}'",
         )
 
     try:

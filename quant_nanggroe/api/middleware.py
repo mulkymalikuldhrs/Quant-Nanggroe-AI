@@ -47,10 +47,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._apikey = api_key_auth or APIKeyAuth()
         self._exclude_paths = exclude_paths or {"/health", "/metrics", "/docs",
                                                 "/openapi.json", "/favicon.ico"}
-        # Dev mode: if no API key is configured, allow unauthenticated access
-        self._dev_mode = not bool(os.environ.get("QNAI_API_KEY", ""))
+        # ponytail: fail-closed — dev mode only with explicit opt-in, never silent
+        self._insecure_optin = os.environ.get("QNAI_ALLOW_INSECURE_DEV", "").lower() in ("1", "true", "yes")
+        self._dev_mode = (not bool(os.environ.get("QNAI_API_KEY", ""))) and self._insecure_optin
         if self._dev_mode:
-            logger.warning("Auth in DEV mode — no QNAI_API_KEY set, all requests allowed")
+            logger.warning("Auth BYPASSED — QNAI_ALLOW_INSECURE_DEV=true and no QNAI_API_KEY set")
+        elif not os.environ.get("QNAI_API_KEY", ""):
+            logger.warning("No QNAI_API_KEY set; auth ENFORCED (all /api/* require token). Set QNAI_ALLOW_INSECURE_DEV=true to disable (dev only).")
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         path = request.url.path

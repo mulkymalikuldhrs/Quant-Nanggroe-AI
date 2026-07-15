@@ -35,8 +35,11 @@ Both breakages are **invisible** (mock fallback). Not production-ready.
   `/security` → `GET /api/security/events` + `/api/security/status` (reads live AuditLogger + KillSwitch).
   `/tools` → `GET /api/tools/list` (real agent tool modules) + `POST /api/tools/{id}/execute`.
   Pages no longer show fake seeded `FALLBACK_*` when backend is up.
-- **WhatsApp double-prefix FIXED**: removed internal `prefix="/whatsapp"`, now `/api/whatsapp/...` (not `/api/whatsapp/whatsapp/...`).
+- **Whatsapp prefix FIXED**: now `/api/whatsapp/...` (single prefix).
+- **v4.5.3 security + alpha**: codegen RCE sandbox (AST allowlist), auth fail-closed, kill-switch reset aligned, broker auto-connect deferred. 10 microstructure strategies implanted (all run; OOS-proof needs internal harness).
+
+## Strategy verdict (REAL walk-forward 1h)
+No classical/single-indicator strategy has deployable alpha. BTC-USD: EMA -11.65%, Supertrend -24.87%, Bollinger -8.2%, MACD -42.54% OOS. Robustness_score is NOT profit. QNA NOT ready for live capital on signals; ready as execution/risk/monitoring engine. See STRATEGY_WALKFORWARD_FULL.md.
 
 ## Action (remaining)
-None for wiring — both pages now have real backends. Execution of tool dispatch is a
-structured envelope (honest), not fabricated metrics.
+None for wiring — both pages now have real backends.

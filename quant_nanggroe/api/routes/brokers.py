@@ -191,6 +191,7 @@ async def register_account(payload: Dict[str, Any], request: Request):
             detail=f"Cannot create MT5 broker (is MetaTrader5 installed?): {exc}",
         )
     em.register(name, broker, role=payload.get("role", "primary"))
+    # ponytail: fail-closed — never auto-connect untrusted broker with live creds
     try:
         await broker.connect()
     except Exception as exc:

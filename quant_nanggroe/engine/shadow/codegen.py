@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import re
 import textwrap
+import ast
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -18,23 +19,15 @@ from quant_nanggroe.engine.shadow.extractor import ExtractedRule, ExtractedStrat
 
 logger = logging.getLogger(__name__)
 
-# Forbidden patterns for safe execution
-FORBIDDEN_PATTERNS = [
-    r"import\s+os",
-    r"import\s+sys",
-    r"import\s+subprocess",
-    r"import\s+shutil",
-    r"__import__",
-    r"eval\s*\(",
-    r"exec\s*\(",
-    r"compile\s*\(",
-    r"open\s*\(",
-    r"globals\s*\(",
-    r"locals\s*\(",
-    r"getattr\s*\(",
-    r"setattr\s*\(",
-    r"delattr\s*\(",
-]
+# Safe imports permitted inside user/LLM strategy code (AST allowlist).
+_ALLOWED_IMPORT_ROOTS = ("numpy", "np", "pandas", "pd", "quant_nanggroe")
+# Dangerous builtins/calls blocked even inside the sandbox.
+_FORBIDDEN_CALLS = {
+    "eval", "exec", "compile", "open", "input", "__import__",
+    "getattr", "setattr", "delattr", "globals", "locals", "vars",
+    "exit", "quit", "breakpoint",
+}
+_FORBIDDEN_ATTRS = {"__class__", "__subclasses__", "__bases__", "__mro__", "__dict__", "__globals__"}
 
 
 @dataclass
@@ -198,31 +191,50 @@ class {class_name}(Strategy):
         )
 
     def validate_code(self, code: str) -> tuple:
-        """Validate generated code for safety.
+        """Validate generated code for safety via AST allowlist.
 
-        Args:
-            code: Python source code to validate.
+        Permits only imports from safe roots (numpy/pandas/quant_nanggroe) and
+        blocks dangerous builtins/attribute access. This defeats the regex-
+        blocklist bypasses (e.g. ``getattr(__builtins__, '__import__')('os')``).
 
         Returns:
             Tuple of (is_valid, list_of_errors).
         """
-        errors = []
+        errors: List[str] = []
 
-        # Check for forbidden patterns
-        for pattern in FORBIDDEN_PATTERNS:
-            if re.search(pattern, code):
-                errors.append(f"Forbidden pattern detected: {pattern}")
-
-        # Check for syntax errors
+        # 1) Syntax check
         try:
-            compile(code, "<strategy>", "exec")
+            tree = ast.parse(code)
         except SyntaxError as exc:
-            errors.append(f"Syntax error: {exc}")
+            return False, [f"Syntax error: {exc}"]
+
+        # 2) AST walk — allowlist imports, blocklist dangerous nodes
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                mods = []
+                if isinstance(node, ast.Import):
+                    mods = [a.name for a in node.names]
+                else:
+                    mods = [node.module or ""]
+                for mod in mods:
+                    root = mod.split(".")[0]
+                    if root not in _ALLOWED_IMPORT_ROOTS:
+                        errors.append(f"Import not allowed: '{mod}'")
+            elif isinstance(node, ast.Call):
+                func = node.func
+                name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+                if name in _FORBIDDEN_CALLS:
+                    errors.append(f"Forbidden call: {name}()")
+            elif isinstance(node, ast.Attribute):
+                if node.attr in _FORBIDDEN_ATTRS:
+                    errors.append(f"Forbidden attribute access: {node.attr}")
+            elif isinstance(node, ast.Lambda):
+                errors.append("Lambda expressions not allowed")
 
         return len(errors) == 0, errors
 
     def compile_strategy(self, code: str) -> Optional[type]:
-        """Compile strategy code into a class.
+        """Compile strategy code into a class (sandboxed exec).
 
         Args:
             code: Python source code.
@@ -236,10 +248,21 @@ class {class_name}(Strategy):
             return None
 
         try:
-            namespace: Dict[str, Any] = {}
-            exec(code, namespace)
+            # ponytail: restricted builtins — keep import + class working but drop escapes
+            import builtins as _builtins_mod
+            _keep = ("abs", "min", "max", "sum", "len", "range", "enumerate", "zip",
+                     "map", "filter", "float", "int", "bool", "str", "list", "dict",
+                     "tuple", "set", "frozenset", "round", "pow", "__import__",
+                     "__build_class__")
+            safe_builtins = {k: _builtins_mod.__dict__.get(k) for k in _keep}
+            for _bad in ("eval", "exec", "compile", "open", "input", "globals",
+                         "locals", "vars", "getattr", "setattr", "delattr", "exit",
+                         "quit", "breakpoint"):
+                safe_builtins.pop(_bad, None)
+            namespace: Dict[str, Any] = {"__builtins__": safe_builtins, "__name__": "__strategy__"}
+            exec(compile(code, "<strategy>", "exec"), namespace)  # noqa: S102
 
-            # Find the Strategy subclass
+            # Find the Strategy subclass (name-based; base may vary across modules)
             for name, obj in namespace.items():
                 if isinstance(obj, type) and name.endswith("Strategy"):
                     return obj
