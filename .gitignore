@@ -125,3 +125,8 @@ node_modules/
 
 # local secrets (real creds, never commit)
 .secrets-local/
+
+# QNA: never commit plaintext credentials (env-only via KeyVault)
+config/credentials.json
+config/mt5_accounts.yaml
+config/credentials.json.bak
