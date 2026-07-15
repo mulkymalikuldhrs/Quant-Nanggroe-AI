@@ -397,6 +397,7 @@ class RiskManager:
             "trades_week": self.state.trade_count_week,
             "active_positions": len(self.state.active_positions),
             "veto_count": self._veto_count,
+
             "approval_count": self._approval_count,
             "drawdown": dd_info,
             "kill_switch": self.kill_switch.status(),
@@ -413,6 +414,26 @@ class RiskManager:
                 "min_rr_ratio": f"1:{MIN_RISK_REWARD}",
                 "override_possible": False,
             },
+        }
+
+    def current_risk_snapshot(self) -> Dict[str, float]:
+        """Ponytail: real P&L/drawdown fractions for kill-switch auto-activation.
+
+        Returns fractional daily_pnl_pct / weekly_pnl_pct / max_drawdown_pct
+        (NOT percentages) so callers can feed ``KillSwitch.check_auto_activate``
+        directly without recomputing. This closes the silent 0.0 bypass where the
+        worker monitor passed ``getattr(self, '_last_*', 0.0)`` that was never set.
+        """
+        self._reset_daily_if_needed()
+        peak = self.state.peak_equity or 1.0
+        daily_pnl_pct = (self.state.daily_pnl / peak) if self.state.daily_pnl < 0 else 0.0
+        weekly_pnl_pct = (self.state.weekly_pnl / peak) if self.state.weekly_pnl < 0 else 0.0
+        dd_info = self.drawdown_monitor.get_status()
+        max_dd = float(dd_info.get("current_drawdown", 0.0) or 0.0)
+        return {
+            "daily_pnl_pct": daily_pnl_pct,
+            "weekly_pnl_pct": weekly_pnl_pct,
+            "max_drawdown_pct": max_dd,
         }
 
     def _reset_daily_if_needed(self) -> None:

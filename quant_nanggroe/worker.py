@@ -91,9 +91,13 @@ class TradingWorker:
         self.config = config or WorkerConfig()
         self.settings = settings or get_settings()
         self._tasks: list[asyncio.Task[None]] = []
-        self._running = False
-        from quant_nanggroe.engine.risk.kill_switch import KillSwitch  # ponytail: real KS, not inert flag
-        self._kill_switch = KillSwitch()
+        self._cached_prices: dict[str, float] = {}
+        # ponytail: RiskManager owns the kill switch AND tracks real P&L/drawdown.
+        # Instantiating it here closes the silent 0.0 auto-activation bypass:
+        # the monitor now feeds current_risk_snapshot() instead of never-set attrs.
+        from quant_nanggroe.engine.risk.manager import RiskManager
+        self._risk_manager = RiskManager()
+        self._kill_switch = self._risk_manager.kill_switch
         self._kill_switch_active = False
         self._graph_semaphore = asyncio.Semaphore(self.config.max_concurrent_graphs)
         self._last_graph_run: dict[str, datetime] = {}
@@ -303,10 +307,12 @@ class TradingWorker:
         while self._running:
             try:
                 was_active = self._kill_switch_active
-                # ponytail: evaluate auto-activation on own real KS instance (fail-closed)
+                # ponytail: feed real P&L/drawdown from RiskManager (was 0.0 blind bypass)
+                snap = self._risk_manager.current_risk_snapshot()
                 self._kill_switch.check_auto_activate(
-                    daily_pnl_pct=getattr(self, "_last_daily_pnl_pct", 0.0),
-                    max_drawdown_pct=getattr(self, "_last_drawdown_pct", 0.0),
+                    daily_pnl_pct=snap["daily_pnl_pct"],
+                    weekly_pnl_pct=snap["weekly_pnl_pct"],
+                    max_drawdown_pct=snap["max_drawdown_pct"],
                 )
                 self._kill_switch_active = self._kill_switch.is_active()
 

@@ -424,7 +424,12 @@ class RiskEnforcer:
     def is_kill_switch_triggered(self) -> bool:
         if self._kill_switch:
             try:
-                result = self._kill_switch.check_auto_activate()
+                # ponytail: feed real drawdown (was 0.0 silent bypass)
+                dd = 0.0
+                if self._drawdown is not None:
+                    dd_info = self._drawdown.get_status()
+                    dd = float(dd_info.get("current_drawdown", 0.0) or 0.0)
+                result = self._kill_switch.check_auto_activate(max_drawdown_pct=dd)
                 return result is not None
             except Exception:
                 pass
