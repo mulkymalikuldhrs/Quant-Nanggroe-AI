@@ -42,6 +42,23 @@ class Signal:
 # ProductionStrategyRunner
 # ---------------------------------------------------------------------------
 
+# ponytail: local self-correction — record failure to JSON (MCP-independent, cron-safe). Upgrade to mcp__self_correction when running in Hermes session.
+import json as _json
+import time as _time
+from pathlib import Path as _Path
+
+def _record_lesson(error: Exception, context: str):
+    try:
+        _Path("data").mkdir(exist_ok=True)
+        p = _Path("data/qna_lessons.json")
+        lessons = _json.loads(p.read_text()) if p.exists() else []
+        lessons.append({"ts": _time.time(), "ctx": context, "err": repr(error)})
+        lessons = lessons[-50:]  # ponytail: cap 50, ring buffer
+        p.write_text(_json.dumps(lessons, indent=2))
+    except Exception:
+        pass
+
+
 class ProductionStrategyRunner:
     """Loads ALL engine/ strategies via create_strategy() factory.
     Falls back to empty set if engine imports fail.
@@ -343,6 +360,16 @@ class ProductionExecutionManager:
                 self._mt5 = None
 
     def execute_signal(
+        self, signal, price: float, balance: float
+    ) -> Optional[Dict]:
+        try:
+            return self._execute_signal_inner(signal, price, balance)
+        except Exception as e:
+            _record_lesson(e, f"execute_signal {getattr(signal,'symbol',None)}")
+            log.error(f"execute_signal failed (recorded): {e}")
+            raise
+
+    def _execute_signal_inner(
         self, signal, price: float, balance: float
     ) -> Optional[Dict]:
         if signal is None:
