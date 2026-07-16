@@ -141,39 +141,57 @@ def run_strategy_backtest(strategy_name: str, closes: List[float], initial_capit
     metrics["initial_capital"] = initial_capital
     return metrics
 
-def run_walk_forward(strategy_name: str, closes: List[float], n_folds: int = 5) -> Dict:
-    fold_size = len(closes) // n_folds
-    results = []
-    for fold in range(n_folds):
-        val_start = fold * fold_size
-        val_end = val_start + fold_size if fold < n_folds - 1 else len(closes)
-        train = closes[:val_start]
-        val = closes[val_start:val_end]
-        if len(train) < 30 or len(val) < 10:
-            continue
-        # Combine train + validation for backtest (simple approach)
-        combined = list(train) + list(val)
-        bt = run_strategy_backtest(strategy_name, combined)
-        results.append({
-            "fold": fold + 1,
-            "train_size": len(train),
-            "val_size": len(val),
-            "sharpe": bt.get("sharpe", 0),
-            "trades": bt.get("total_trades", 0),
-            "pnl_pct": bt.get("total_pnl_pct", 0),
-        })
-    if results:
-        avg_sharpe = sum(r["sharpe"] for r in results) / len(results)
-        consistent = sum(1 for r in results if r["sharpe"] > 0.5)
-    else:
-        avg_sharpe = 0.0
-        consistent = 0
+def _closes_to_prices(closes: List[float], symbol: str = "BTCUSDT") -> "pd.DataFrame":
+    """ponytail: minimal DataFrame bridge — DatetimeIndex + single close col."""
+    import pandas as pd
+    idx = pd.date_range(end=pd.Timestamp.today().normalize(), periods=len(closes), freq="D")
+    return pd.DataFrame({symbol: closes}, index=idx)
+
+
+def run_walk_forward(
+    strategy_name: str,
+    closes: List[float],
+    n_folds: int = 5,
+    train_window: int = 60,
+    test_window: int = 20,
+) -> Dict:
+    """Walk-forward via engine WalkForwardAnalyzer (proper OOS, no leakage).
+
+    Replaces the old leaky approach that concatenated train+val and backtested
+    the combined series (validation data leaked into signal generation).
+    Now uses analyze_strategy: re-fits per fold, separate IS/OOS signal slices.
+    """
+    import pandas as pd
+    from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+    from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
+    from quant_nanggroe.engine.strategy.strategies import create_strategy
+
+    prices = _closes_to_prices(closes)
+    strategy_class = create_strategy(strategy_name).__class__
+    engine = BacktestEngine(BacktestConfig())
+    analyzer = WalkForwardAnalyzer(
+        engine, train_window=train_window, test_window=test_window, mode="rolling",
+        purge_gap=2, embargo=1, min_observations=30,
+    )
+    res = analyzer.analyze_strategy(prices, strategy_class)
+    windows = res.get("windows", [])
+    folds = [{
+        "fold": i + 1,
+        "is_sharpe": round(w.in_sample_sharpe, 4),
+        "oos_sharpe": round(w.out_of_sample_sharpe, 4),
+        "is_trades": w.is_trades,
+        "oos_trades": w.oos_trades,
+        "degradation": round(w.degradation_ratio, 4),
+    } for i, w in enumerate(windows)]
+    agg = res.get("aggregate", {})
     return {
         "strategy": strategy_name,
-        "folds": results,
-        "avg_sharpe": round(avg_sharpe, 4),
-        "consistent_folds": consistent,
-        "total_folds": len(results),
+        "folds": folds,
+        "avg_is_sharpe": agg.get("avg_is_sharpe", 0.0),
+        "avg_oos_sharpe": agg.get("avg_oos_sharpe", 0.0),
+        "consistent_folds": sum(1 for f in folds if f["oos_sharpe"] > 0.5),
+        "total_folds": len(folds),
+        "under_sampled": agg.get("under_sampled", False),
     }
 
 def main():
@@ -189,11 +207,15 @@ def main():
     all_results = []
     for name in strategies:
         print(f"\n=== {name} ===")
+        # ponytail: run_strategy_backtest is IN-SAMPLE ONLY (no OOS discipline).
+        # Use it only as a sanity check, NEVER as a deployment signal.
         bt = run_strategy_backtest(name, closes)
-        print(f"Backtest: {bt.get('total_trades',0)} trades, Sharpe {bt.get('sharpe',0):.2f}, PnL {bt.get('total_pnl_pct',0):+.2f}%")
+        print(f"[IN-SAMPLE ONLY] Backtest: {bt.get('total_trades',0)} trades, Sharpe {bt.get('sharpe',0):.2f}, PnL {bt.get('total_pnl_pct',0):+.2f}%")
         wf = run_walk_forward(name, closes)
-        print(f"Walk-forward: {wf['total_folds']} folds, avg Sharpe {wf['avg_sharpe']:.2f}, consistent {wf['consistent_folds']}/{wf['total_folds']}")
-        all_results.append({"name": name, "backtest": bt, "walkforward": wf})
+        print(f"Walk-forward (proper OOS): {wf['total_folds']} folds, IS Sharpe {wf['avg_is_sharpe']:.2f}, OOS Sharpe {wf['avg_oos_sharpe']:.2f}, consistent {wf['consistent_folds']}/{wf['total_folds']}")
+        if wf.get("under_sampled"):
+            print("  WARNING: under_sampled (median OOS fold < 30 trades) — do NOT trust edge")
+        all_results.append({"name": name, "backtest_in_sample": bt, "walkforward": wf})
     # Save results JSON
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     result_path = RESULTS_DIR / f"walkforward_{args.symbol}_{timestamp}.json"
