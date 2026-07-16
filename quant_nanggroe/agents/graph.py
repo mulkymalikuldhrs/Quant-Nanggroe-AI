@@ -855,3 +855,30 @@ class TradingGraph:
 
         for chunk in self._graph.stream(initial_state):
             yield chunk
+
+
+def get_trading_graph(
+    llm_provider: str | None = None,
+    deep_think_model: str | None = None,
+    quick_think_model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+) -> StateGraph:
+    """Factory: build a ready-to-invoke trading graph from env defaults.
+
+    Falls back to environment variables for API keys so the worker can
+    construct a graph without hardcoding credentials.
+
+    Returns
+    -------
+    Compiled ``StateGraph`` — call ``.ainvoke(state_dict)`` on it.
+    """
+    import os
+
+    return TradingGraph(
+        llm_provider=llm_provider or os.getenv("QNA_LLM_PROVIDER", "openai"),
+        deep_think_model=deep_think_model or os.getenv("QNA_DEEP_MODEL", "gpt-4o"),
+        quick_think_model=quick_think_model or os.getenv("QNA_QUICK_MODEL", "gpt-4o-mini"),
+        base_url=base_url or os.getenv("OPENAI_BASE_URL"),
+        api_key=api_key or os.getenv("OPENAI_API_KEY"),
+    ).graph

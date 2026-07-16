@@ -52,8 +52,8 @@ async def list_backtest_factors() -> list[dict[str, Any]]:
 async def get_trading_orders() -> list[dict[str, Any]]:
     """Return current orders (aliased to real /api/trading/trades in api-client)."""
     try:
-        from quant_nanggroe.engine.execution.manager import ExecutionManager
-        mgr = ExecutionManager()
+        from quant_nanggroe.engine.execution.builder import build_execution_manager
+        mgr = build_execution_manager()
         trades = mgr.get_trade_history(limit=20)
         return [
             {
@@ -80,8 +80,8 @@ async def get_trading_orders() -> list[dict[str, Any]]:
 async def cancel_trading_order(order_id: str) -> dict[str, Any]:
     """Cancel an order by ID."""
     try:
-        from quant_nanggroe.engine.execution.manager import ExecutionManager
-        mgr = ExecutionManager()
+        from quant_nanggroe.engine.execution.builder import build_execution_manager
+        mgr = build_execution_manager()
         success = mgr.cancel_order(order_id)
         if not success:
             raise HTTPException(status_code=404, detail=f"Order {order_id} not found")

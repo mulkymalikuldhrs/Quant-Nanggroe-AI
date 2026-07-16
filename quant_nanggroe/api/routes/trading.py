@@ -126,11 +126,9 @@ def _get_execution_manager(http_request: Request):
         http_request.app.state._services = {}
 
     if "execution_manager" not in http_request.app.state._services:
-        em = ExecutionManager()
-        em.set_kill_switch(KillSwitch())
-        em.set_risk_manager(RiskManager())
+        from quant_nanggroe.engine.execution.builder import build_execution_manager
+        em = build_execution_manager()
         # Bridge: wrap the live ExchangeManager as the ExecutionManager's broker.
-        # Pass the execution Order through so account-balance lookup works.
         em.add_broker(ExchangeBrokerAdapter(_get_exchange_manager(http_request)))
         http_request.app.state._services["execution_manager"] = em
     return http_request.app.state._services["execution_manager"]
@@ -386,3 +384,49 @@ async def risk_check(request: RiskCheckRequest, http_request: Request) -> RiskCh
             verdict="ERROR",
             checkpoints={},
         )
+
+
+# ── Hedge-fund cycle (wires strategy -> risk -> execution -> portfolio) ──
+from typing import Any, Dict, Optional
+
+from pydantic import BaseModel
+
+from quant_nanggroe.engine.trading_loop import run_cycle as _run_cycle
+
+
+class CycleRequest(BaseModel):
+    symbol: str = "AAPL"
+    strategy: str = "trend_follow"
+    quantity: float = 10.0
+
+
+class CycleResponse(BaseModel):
+    symbol: str
+    signal: str
+    confidence: float
+    order: Optional[Dict[str, Any]] = None
+    portfolio: Dict[str, Any] = {}
+    error: Optional[str] = None
+
+
+@router.post("/cycle", response_model=CycleResponse)
+async def trading_cycle(request: CycleRequest, http_request: Request) -> CycleResponse:
+    """Run one full hedge-fund cycle: data -> strategy -> execute -> portfolio.
+
+    Uses the live ExchangeManager (MT5 if configured, else paper broker) so the
+    same endpoint drives real or simulated trading.
+    """
+    em = http_request.app.state.exchange_manager
+    if em is None:
+        return CycleResponse(
+            symbol=request.symbol, signal="hold", confidence=0.0,
+            error="exchange_manager not available",
+        )
+    res = await _run_cycle(
+        em, symbol=request.symbol, strategy_name=request.strategy,
+        quantity=request.quantity,
+    )
+    return CycleResponse(
+        symbol=res.symbol, signal=res.signal, confidence=res.confidence,
+        order=res.order, portfolio=res.portfolio, error=res.error,
+    )

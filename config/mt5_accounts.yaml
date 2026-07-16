@@ -1,32 +1,4 @@
 # MT5 Accounts — Semua broker di Indonesia (MT5)
-# Cukup login + password + server, MT5 terminal connect langsung.
-# role: primary | failover | data_only
-# SECURITY: real credentials di .secrets-local/ (gitignored). Tracked file pakai ${ENV}.
-# Loader (quant_nanggroe/exchange/mt5_accounts.py) expand ${VAR} via os.expandvars.
-
-accounts:
-  - name: exness_trial
-    login: "${MT5_LOGIN_EXNESS}"
-    password: "${MT5_PASS_EXNESS}"
-    server: "Exness-MT5Trial6"
-    role: primary
-
-  - name: exness_real
-    login: "${MT5_LOGIN_EXNESS}"
-    password: "${MT5_PASS_EXNESS}"
-    server: "Exness-MT5Real"
-    role: failover
-
-  - name: exness_real2
-    login: "${MT5_LOGIN_EXNESS}"
-    password: "${MT5_PASS_EXNESS}"
-    server: "Exness-MT5Real2"
-    role: failover
-
-# Uncomment dan isi credentials masing-masing akun (pakai ${ENV}):
-#
-#  - name: valutrades_1
-#    login: "${MT5_LOGIN_VALUTRADES}"
-#    password: "${MT5_PASS_VALUTRADES}"
-#    server: "Valutrades-Live"
-#    role: failover
+# DILIHAT: Sudah migrate ke QNAI_MT5_ACCOUNTS env var.
+# File ini sengaja dikosongin biar gak konflik dengan env-var-based registration.
+accounts: []

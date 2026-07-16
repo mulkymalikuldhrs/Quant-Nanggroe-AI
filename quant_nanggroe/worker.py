@@ -91,6 +91,7 @@ class TradingWorker:
         self.config = config or WorkerConfig()
         self.settings = settings or get_settings()
         self._tasks: list[asyncio.Task[None]] = []
+        self._running: bool = False
         self._cached_prices: dict[str, float] = {}
         # ponytail: RiskManager owns the kill switch AND tracks real P&L/drawdown.
         # Instantiating it here closes the silent 0.0 auto-activation bypass:
@@ -314,7 +315,7 @@ class TradingWorker:
                     weekly_pnl_pct=snap["weekly_pnl_pct"],
                     max_drawdown_pct=snap["max_drawdown_pct"],
                 )
-                self._kill_switch_active = self._kill_switch.is_active()
+                self._kill_switch_active = self._kill_switch.is_active
 
                 if self._kill_switch_active and not was_active:
                     logger.warning("kill_switch_activated", extra={"msg": "All trading halted"})

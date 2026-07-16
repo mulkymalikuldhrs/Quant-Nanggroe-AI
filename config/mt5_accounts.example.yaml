@@ -1,0 +1,16 @@
+# QNA MT5 Account Configuration (Valetax / other brokers)
+# Copy this file to mt5_accounts.yaml and fill in YOUR credentials.
+# NEVER commit mt5_accounts.yaml (it holds live trading credentials).
+#
+# To get server name: open MT5 terminal → File → Login → copy "Server" field.
+# Example Valetax servers often look like: "Valetax-Server" / "Valetax-Live" / "Valetax-Demo"
+
+accounts:
+  - name: valetax_live          # arbitrary name, shown in QNA logs
+    broker: mt5                 # must be "mt5"
+    login: 12345678             # your MT5 login ID (number)
+    password: "YOUR_PASSWORD"   # your MT5 password
+    server: "Valetax-Server"    # MT5 server name from terminal
+    # optional: path to terminal exe if not in default location
+    # terminal_path: "C:/Users/Hi/Desktop/valetax/terminal64.exe"
+    paper: false                # false = REAL money. Set true for safe sim.

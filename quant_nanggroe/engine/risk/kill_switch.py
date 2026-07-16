@@ -387,6 +387,9 @@ class KillSwitch:
         self._current_level = KillSwitchLevel.NONE
         self._status = KillSwitchStatus.INACTIVE
 
+        # C5: persist deactivation so every proc/worker stops halting
+        self._flush()
+
         # Mark last event as resolved
         for event in reversed(self._events):
             if event.level == previous_level and not event.resolved:

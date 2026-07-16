@@ -130,3 +130,4 @@ node_modules/
 config/credentials.json
 config/mt5_accounts.yaml
 config/credentials.json.bak
+config/mt5_accounts.yaml

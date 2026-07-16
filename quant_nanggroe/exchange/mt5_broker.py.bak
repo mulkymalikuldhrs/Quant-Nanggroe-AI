@@ -192,28 +192,11 @@ class MT5Broker(ExchangeInterface):
 
             self._mt5 = mt5
 
-            # ponytail: pass login credentials directly to mt5.initialize()
-            # so it can start MT5 headless — no need for the desktop terminal.
-            login = self._config.api_key
-            password = self._config.api_secret
-            server = self._config.options.get("server")
-
+            # Initialize MT5
             init_params: Dict[str, Any] = {"timeout": 60000}
             path = self._config.options.get("path")
             if path:
                 init_params["path"] = path
-
-            if login and password and server:
-                try:
-                    init_params["login"] = int(login)
-                except (ValueError, TypeError):
-                    self._state = ExchangeState.ERROR
-                    raise AuthenticationError(
-                        f"Invalid MT5 login ID: {login}",
-                        exchange="mt5",
-                    )
-                init_params["password"] = password
-                init_params["server"] = server
 
             if not mt5.initialize(**init_params):
                 error = mt5.last_error()
@@ -223,10 +206,12 @@ class MT5Broker(ExchangeInterface):
                     exchange="mt5",
                 )
 
-            # Login only when initialize() was called without credentials
-            # (local-terminal mode).  With credentials in initialize() the
-            # session is already authenticated.
-            if not (login and password and server) and login and password and server:
+            # Login if credentials provided
+            login = self._config.api_key
+            password = self._config.api_secret
+            server = self._config.options.get("server")
+
+            if login and password and server:
                 try:
                     login_id = int(login)
                 except (ValueError, TypeError):

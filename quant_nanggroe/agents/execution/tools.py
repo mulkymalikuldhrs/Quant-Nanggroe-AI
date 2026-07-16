@@ -31,22 +31,14 @@ logger = logging.getLogger(__name__)
 _MOCK_MODE = False
 
 
-# ── Lazy imports for real engine components ─────────────────────────────
+# ── Single source of truth for wired ExecutionManager ──────────────────
 def _get_execution_manager():
-    """Lazy-load ExecutionManager from engine."""
+    """Lazy-load a fully-wired ExecutionManager (paper + live MT5 if enabled)."""
     try:
-        from quant_nanggroe.engine.execution.brokers.paper import PaperExchangeBroker
-        from quant_nanggroe.engine.execution.manager import ExecutionManager
-        from quant_nanggroe.engine.risk.kill_switch import KillSwitch
-        from quant_nanggroe.engine.risk.manager import RiskManager
-        em = ExecutionManager()
-        paper = PaperExchangeBroker()
-        em.add_broker(paper, primary=True)
-        em.set_kill_switch(KillSwitch())
-        em.set_risk_manager(RiskManager())
-        return em
+        from quant_nanggroe.engine.execution.builder import build_execution_manager
+        return build_execution_manager()
     except Exception as exc:
-        logger.warning("Failed to load ExecutionManager: %s", exc)
+        logger.warning("Failed to build ExecutionManager: %s", exc)
         return None
 
 

@@ -220,7 +220,9 @@ class ExchangeManager:
         results: Dict[str, bool] = {}
         for name, reg in self._registrations.items():
             try:
-                success = await reg.exchange.connect()
+                # ponytail: bound connect() so a hanging broker (e.g. MT5 with no
+                # terminal) cannot stall the whole startup.
+                success = await asyncio.wait_for(reg.exchange.connect(), timeout=15)
                 reg.connected = success
                 reg.healthy = success
                 reg.error_count = 0
@@ -783,23 +785,34 @@ class ExchangeManager:
                     logger.warning(
                         "ExchangeManager: Unhealthy exchanges: %s", unhealthy,
                     )
-                    # Attempt reconnection for unhealthy exchanges
+                    # Attempt reconnection for unhealthy exchanges with backoff
                     for name in unhealthy:
                         reg = self._registrations.get(name)
                         if reg and not reg.healthy:
+                            # ponytail: stop retrying after max_errors hit
+                            if reg.error_count >= self._max_errors:
+                                logger.warning(
+                                    "ExchangeManager: %s skipped — %s consecutive failures (>= max_errors=%s)",
+                                    name, reg.error_count, self._max_errors,
+                                )
+                                continue
                             try:
                                 await reg.exchange.disconnect()
                                 success = await reg.exchange.connect()
                                 reg.connected = success
                                 reg.healthy = success
-                                reg.error_count = 0
                                 if success:
+                                    reg.error_count = 0
                                     logger.info(
                                         "ExchangeManager: %s reconnected successfully", name,
                                     )
+                                else:
+                                    reg.error_count += 1
                             except Exception as exc:
+                                reg.error_count += 1
                                 logger.error(
-                                    "ExchangeManager: %s reconnection failed: %s", name, exc,
+                                    "ExchangeManager: %s reconnection failed (%s/%s): %s",
+                                    name, reg.error_count, self._max_errors, exc,
                                 )
 
                     # Check if primary needs failover

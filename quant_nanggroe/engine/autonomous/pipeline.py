@@ -202,8 +202,8 @@ class AutonomousPipeline:
         sys.path.insert(0, r"D:\repositories\Quant-Nanggroe-AI-worktree")
 
         try:
-            from quant_nanggroe.engine.execution.manager import ExecutionManager
-            em = ExecutionManager()
+            from quant_nanggroe.engine.execution.builder import build_execution_manager
+            em = build_execution_manager()
             # Kill switch check
             if hasattr(em, "_kill_switch") and em._kill_switch is not None:
                 from quant_nanggroe.engine.risk.kill_switch import KillLevel

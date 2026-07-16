@@ -328,13 +328,11 @@ class ProductionExecutionManager:
     def _lazy_init(self):
         if self._exec_mgr is None:
             try:
-                from quant_nanggroe.engine.execution.manager import ExecutionManager
                 from quant_nanggroe.engine.execution.order import OrderManager
-                from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
+                from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
                 configure_kill_switch_file()  # C5: converge on one shared kill-switch truth
-                self._exec_mgr = ExecutionManager()
-                self._exec_mgr.set_kill_switch(KillSwitch())
-                self._exec_mgr.set_risk_manager(RiskManager())
+                from quant_nanggroe.engine.execution.builder import build_execution_manager
+                self._exec_mgr = build_execution_manager()
                 self._order_mgr = OrderManager()
                 log.info("ExecutionManager loaded (constitutional risk enforced)")
             except Exception as e:
