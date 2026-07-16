@@ -1,5 +1,14 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ponytail: backend enforces API-key auth (Authorization: ApiKey ***). Inject
+// the dev key from env so the dashboard can actually talk to /api/*.
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
+function defaultHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { ...extra };
+  if (API_KEY && !h["Authorization"]) h["Authorization"] = `ApiKey ${API_KEY}`;
+  return h;
+}
+
 // ── Retry configuration ───────────────────────────────────────────
 
 const RETRY_CONFIG = {
@@ -64,7 +73,7 @@ export async function apiRequest<T>(
 
   const config: RequestInit = {
     method,
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json", ...defaultHeaders(headers) },
     signal,
   };
 

@@ -1,14 +1,16 @@
 @echo off
 REM ============================================================================
-REM  Quant-Nanggroe-AI — SINGLE LAUNCHER
+REM  Quant-Nanggroe-AI — SINGLE LAUNCHER (fixed for Windows cmd.exe)
 REM  Boots backend (FastAPI :8000) + frontend (Next.js :3000) and opens browser.
 REM  Usage: double-click launch.bat
+REM  FIX: health-check via powershell (no curl|tail bash-ism); PYTHONPATH=""
 REM ============================================================================
-setlocal
+setlocal EnableExtensions
 set "ROOT=D:\repositories\Quant-Nanggroe-AI-worktree"
-set "BE_VENV=C:\Users\Hi\.venv-backend"
-set "FRONT=%ROOT%\dashboard"
+set "BE_VENV=%ROOT%\.venv"
+if not exist "%BE_VENV%\Scripts\python.exe" set "BE_VENV=C:\Users\Hi\.venv-backend"
 set "PY=%BE_VENV%\Scripts\python.exe"
+set "FRONT=%ROOT%\dashboard"
 set "NODE_PORT=3000"
 set "API_PORT=8000"
 set "BE_LOG=%ROOT%\backend.log"
@@ -51,14 +53,13 @@ start "QN-API" /min "%BE_HELPER%"
 echo [..] waiting for backend health...
 set "tries=0"
 :be_wait
-curl -s -o nul http://127.0.0.1:%API_PORT%/health
-if %errorlevel%==0 ( goto be_up )
+powershell -NoProfile -Command "try { (Invoke-WebRequest -Uri 'http://127.0.0.1:%API_PORT%/health' -UseBasicParsing -TimeoutSec 2).StatusCode } catch { 0 }" | findstr /r "^200$" >nul && goto be_up
 set /a tries+=1
 if %tries% geq 40 (
-  echo [X] backend did not come up. backend.log:
-  type "%BE_LOG%" | tail -15
+  echo [X] backend did not come up. backend.log (last 15 lines):
+  powershell -NoProfile -Command "Get-Content '%BE_LOG%' -Tail 15 -ErrorAction SilentlyContinue"
   goto :fail
-) else ( ping -n 2 127.0.0.1 >nul & goto be_wait )
+) else ( timeout /t 2 >nul & goto be_wait )
 :be_up
 echo [+] backend UP
 
@@ -69,14 +70,13 @@ start "QN-WEB" /min "%FE_HELPER%"
 echo [..] waiting for frontend...
 set "tries=0"
 :fe_wait
-curl -s -o nul http://127.0.0.1:%NODE_PORT%/
-if %errorlevel%==0 ( goto fe_up )
+powershell -NoProfile -Command "try { (Invoke-WebRequest -Uri 'http://127.0.0.1:%NODE_PORT%/' -UseBasicParsing -TimeoutSec 2).StatusCode } catch { 0 }" | findstr /r "^200$" >nul && goto fe_up
 set /a tries+=1
 if %tries% geq 60 (
-  echo [X] frontend did not come up. frontend.log:
-  type "%FE_LOG%" | tail -15
+  echo [X] frontend did not come up. frontend.log (last 15 lines):
+  powershell -NoProfile -Command "Get-Content '%FE_LOG%' -Tail 15 -ErrorAction SilentlyContinue"
   goto :fail
-) else ( ping -n 2 127.0.0.1 >nul & goto fe_wait )
+) else ( timeout /t 2 >nul & goto fe_wait )
 :fe_up
 echo [+] frontend UP
 
@@ -89,7 +89,7 @@ echo      backend : http://localhost:%API_PORT%/docs
 echo      frontend: http://localhost:%NODE_PORT%/
 
 :waitloop
-ping -n 3 127.0.0.1 >nul
+timeout /t 3 >nul
 goto waitloop
 
 :fail

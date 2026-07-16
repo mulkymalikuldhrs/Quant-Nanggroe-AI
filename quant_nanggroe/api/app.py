@@ -11,6 +11,16 @@ import logging
 import os
 import signal
 import time
+
+# ponytail: load .env into os.environ BEFORE get_settings()/os.environ reads so
+# QNAI_JWT_SECRET + QNAI_API_KEY (admin key, not a Settings field) are present.
+# Without this, uvicorn-launched apps boot with empty env -> JWT guard refuses
+# boot (C1) and API key auth has no registered key -> frontend 401s.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:  # pragma: no cover - dotenv optional
+    pass
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 

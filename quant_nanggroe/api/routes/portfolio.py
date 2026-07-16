@@ -110,7 +110,7 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
             portfolio = await em.get_aggregated_portfolio()
             total_value = portfolio.total_value
             cash_balance = portfolio.cash
-            unrealized_pnl = portfolio.unrealized_pnl
+            unrealized_pnl = portfolio.total_unrealized_pnl
 
             for symbol, pos in portfolio.positions.items():
                 positions.append(
