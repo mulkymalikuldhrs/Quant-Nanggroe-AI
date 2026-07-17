@@ -26,9 +26,12 @@ gracefully raise ConnectionError indicating the platform limitation.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+import os
 
 from pydantic import BaseModel
 
@@ -200,6 +203,17 @@ class MT5Broker(ExchangeInterface):
 
             init_params: Dict[str, Any] = {"timeout": 60000}
             path = self._config.options.get("path")
+            if not path:
+                # detect default MT5 installation path
+                for pfx in [
+                    r"C:\Program Files\MetaTrader 5",
+                    r"C:\Program Files (x86)\MetaTrader 5",
+                ]:
+                    tp = os.path.join(pfx, "terminal64.exe")
+                    if os.path.exists(tp):
+                        logger.info("MT5: detected terminal at %s", tp)
+                        path = tp
+                        break
             if path:
                 init_params["path"] = path
 
@@ -215,7 +229,7 @@ class MT5Broker(ExchangeInterface):
                 init_params["password"] = password
                 init_params["server"] = server
 
-            if not mt5.initialize(**init_params):
+            if not await asyncio.to_thread(mt5.initialize, **init_params):
                 error = mt5.last_error()
                 self._state = ExchangeState.ERROR
                 raise ConnectionError(
@@ -223,10 +237,13 @@ class MT5Broker(ExchangeInterface):
                     exchange="mt5",
                 )
 
-            # Login only when initialize() was called without credentials
-            # (local-terminal mode).  With credentials in initialize() the
-            # session is already authenticated.
-            if not (login and password and server) and login and password and server:
+            # Login only as fallback when initialize() was called WITHOUT
+            # credentials (local-terminal mode).  When credentials were passed
+            # to initialize() above, the session is already authenticated.
+            if login and password and server and path:
+                # Already logged in via initialize() — skip duplicate login
+                pass
+            else:
                 try:
                     login_id = int(login)
                 except (ValueError, TypeError):

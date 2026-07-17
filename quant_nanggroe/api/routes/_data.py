@@ -5,6 +5,8 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from fastapi import APIRouter
+
 random.seed(42)
 
 _TOP_EVENTS = [
@@ -215,3 +217,49 @@ def options_positions() -> list[dict[str, Any]]:
         }
         for s, t, strike, exp, prem in _OPTIONS_POSITIONS
     ]
+
+
+# /api/data router — these are static reference datasets, not live feeds. Exposed under
+# /api/data (with status "synthetic_reference") so consumers can read them
+# honestly instead of through endpoints that pretend to be live.
+router = APIRouter(prefix="/api/data", tags=["Data"])
+
+DATASETS = {
+    "events": geopolitics_events,
+    "sanctions": geopolitics_sanctions,
+    "regions": geopolitics_regions,
+    "personas": personas_list,
+    "council": council_list,
+    "debates": debate_list,
+    "fred": fred_series,
+    "sec_filings": sec_filings,
+    "signals": signals_list,
+    "options_positions": options_positions,
+}
+
+
+@router.get("")
+async def list_datasets() -> dict[str, Any]:
+    return {
+        "datasets": list(DATASETS.keys()),
+        "status": "synthetic_reference",
+        "module": "data",
+    }
+
+
+@router.get("/{name}")
+async def get_dataset(name: str) -> dict[str, Any]:
+    fn = DATASETS.get(name)
+    if fn is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown dataset: {name}. Available: {list(DATASETS.keys())}",
+        )
+    return {
+        "name": name,
+        "items": fn(),
+        "status": "synthetic_reference",
+        "module": "data",
+    }

@@ -236,6 +236,7 @@ export function useRealtimeData() {
   );
 
   const onConnect = useCallback(() => {
+    useAppStore.getState().setWsConnected(true);
     addNotification({
       id: `ws-connect-${Date.now()}`,
       type: "success",
@@ -245,6 +246,7 @@ export function useRealtimeData() {
   }, [addNotification]);
 
   const onDisconnect = useCallback(() => {
+    useAppStore.getState().setWsConnected(false);
     addNotification({
       id: `ws-disconnect-${Date.now()}`,
       type: "warning",

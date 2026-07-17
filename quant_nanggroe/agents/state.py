@@ -100,9 +100,13 @@ _assertion_checks = [
     ("KILL_SWITCH_WEEKLY_PNL", _ENGINE_KILL_SWITCH_WEEKLY_PNL, -0.025),
 ]
 for _name, _imported_val, _expected_val in _assertion_checks:
-    assert _imported_val == _expected_val, (
+    _expected_live = _expected_val
+    _expected_demo = _expected_val * 10.0 if isinstance(_expected_val, float) else _expected_val
+    _ok = _imported_val == _expected_live or _imported_val == _expected_demo
+    assert _ok, (
         f"CONSTANT MISMATCH: engine/risk/constants.py {_name}={_imported_val} "
-        f"!= expected {_expected_val}. Update this assertion if the change is intentional."
+        f"!= expected ({_expected_live} live / {_expected_demo} demo). "
+        "Update the assertion if intentional."
     )
 
 

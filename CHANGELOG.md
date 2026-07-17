@@ -1,8 +1,35 @@
 # Quant Nanggroe AI — Changelog
 
-## v4.5.0 (Current — July 2026)
+## v4.6.0 — Wiring Overhaul (2026-07-16)
 
-**1766/1766 tests pass (100%) — 106 strategies — 29 API routes — 7 brokers — 154 test files — 15 dashboard pages — 10 autonomous pipeline routes**
+### 🔌 Execution Wiring — Single Source of Truth
+- **`build_execution_manager()`** — all 8+1 entrypoints now route through ONE function (`tools.py`, `trading.py`, `wiring_compat.py`×2, `pipeline.py`, `trader/tools.py`, `engine_production_bridge.py`)
+- **`MT5ExecutionBroker`** — adapter bridging `connectors.broker_base.BrokerConnector` (sync) → `engine.execution.base.Broker` (async). MT5 now reachable from ExecutionManager
+- **Kill-switch `deactivate()` persist fix** — added `_flush()` call so deactivation survives across processes
+- **Risk tier** — `QNAI_RISK_TIER=demo` scales limits 10× (weekly loss 30% for demo vs 3% live). Set via env / Settings
+
+### ⚙️ Universal Config UI
+- **`/config.html`** — 5-tab HTML config editor (API Keys, Brokers, LLM Keys, Risk & Toggles, Export/Import)
+- **`bootstrap_env()`** + `POST /apply` — UI-configured keys sync to `os.environ` (LLM keys → `QNAI_{PROVIDER}_API_KEY`, brokers → `MT5_LOGIN_*/PASS_*/SERVER_*`)
+- **`GET/PUT /api/credentials`** — read/write all credentials from a single JSON file
+- **`credentials.json` wired to auth** — API keys from UI register into `APIKeyAuth` at startup
+
+### 🔒 Security
+- **SSL `verify=False` → `verify=True`** — fail-closed in `proxy.py` and `providers/proxy.py` (2 files)
+- **Auth middleware active** — `/api/*` requires `Authorization: ApiKey <key>` header. Health check public
+- **State corruption fixed** — `data/persistence/` had epoch timestamps as `weekly_pnl` → auto-kill false trigger. Deleted
+- **Kill-switch state file persisted** — `data/kill_switch_state.json` now honours `deactivate()`
+
+### 🧠 Council Scan — Edge Verified
+- **8 Tier-A strategies** (pass_rate 0.78–0.99): Kalman, Particle, Hull, Vortex, DEMA, Kaufman, T3, TEMA
+- **3-asset validation** (BTC/ETH/SOL), real 1h data, OOS walk-forward
+- **Baseline alpha-vs-beta** — 415 trades, all 8 beat buy-and-hold
+- **State corruption eliminated** — epoch-timestamp `weekly_pnl` purged from risk persistence
+
+### 🏗️ Infrastructure
+- **Backend startup non-blocking** — MT5 connection deferred (lazy). Uvicorn serves immediately
+- **`.env` deduplicated** — single `QNAI_API_KEY`, `QNAI_JWT_SECRET`, `QNAI_RISK_TIER`
+- **Static config page** — served at `/config` (redirect → `/config.html`)
 
 ### 🤖 Autonomous Pipeline
 - **10 autonomous API routes** in `api/routes/autonomous.py`:

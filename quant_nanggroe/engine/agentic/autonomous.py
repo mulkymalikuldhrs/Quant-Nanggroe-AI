@@ -375,6 +375,8 @@ class AutonomousPipeline:
         self._strategies: dict[str, type] = {}
         self._lifecycle: Any = None
         self._llm_router: Any = None
+        # ponytail: cache last run result for GET /last-result
+        self._last_result: PipelineResult | None = None
 
         # Lazy-init lifecylce and router
         self._init_services()
@@ -514,7 +516,7 @@ class AutonomousPipeline:
         try:
             s5.status = "running"
             t0 = time.perf_counter()
-            exec_decision = self._make_decision(symbol, signal_type, confidence)
+            exec_decision = await self._make_decision(symbol, signal_type, confidence)
             s5.duration_ms = (time.perf_counter() - t0) * 1000
             s5.status = "passed"
             s5.result = exec_decision.get("action", "hold")
@@ -528,6 +530,7 @@ class AutonomousPipeline:
         result.success = True
         result.reason = f"Pipeline complete: {signal_type} @ {confidence:.1%}"
         result.steps = steps
+        self._last_result = result  # ponytail: cache for GET /last-result
         return result
 
     # ── pipeline internals ──────────────────────────────────────────
@@ -656,15 +659,45 @@ class AutonomousPipeline:
             logger.warning("LLM reasoning failed: %s", exc)
             return {"action": signal, "reason": f"LLM unavailable: {exc}", "confidence": confidence}
 
-    def _make_decision(self, symbol: str, signal: str, confidence: float) -> dict[str, Any]:
-        """Final decision synthesis."""
-        return {
-            "symbol": symbol,
-            "action": signal,
-            "confidence": round(confidence, 4),
-            "position_size_pct": round(confidence * 0.05, 4),  # 5% max scaled by confidence
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+    async def _make_decision(self, symbol: str, signal: str, confidence: float) -> dict[str, Any]:
+        """Execute signal via ExecutionManager → live or paper broker.
+        ponytail: shortened from plan-only to plan+execute. Paper default, MT5 when QNA_LIVE_TRADING=1."""
+        try:
+            from quant_nanggroe.engine.execution.builder import build_execution_manager
+            from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
+            import uuid
+            em = build_execution_manager()
+            side = OrderSide.BUY if signal == "buy" else (OrderSide.SELL if signal == "sell" else None)
+            if side is None:
+                return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4),
+                        "position_size_pct": 0, "execution": "hold", "note": "signal=hold, no order"}
+            qty = max(0.01, round(confidence * 0.1, 4))
+            order = Order(id=str(uuid.uuid4()), symbol=symbol, side=side,
+                          order_type=OrderType.MARKET, quantity=qty,
+                          status=OrderStatus.PENDING, metadata={"confidence": confidence})
+            fill = await em.execute_order(order)
+            reason = "filled"
+            if fill is None:
+                # peek audit log for rejection reason
+                log = em.get_audit_log()
+                if log:
+                    last = log[-1]
+                    reason = last.get("action", "rejected") + ": " + last.get("reason", last.get("guard", "unknown"))
+                else:
+                    reason = "rejected: no broker connected or guard blocked"
+            return {
+                "symbol": symbol, "action": signal, "confidence": round(confidence, 4),
+                "position_size_pct": round(confidence * 0.05, 4),
+                "execution": "filled" if fill else "rejected",
+                "reason": reason,
+                "order_id": fill.order_id if fill else None,
+                "fill_price": fill.price if fill else None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception as exc:
+            self.correction.record("execution", f"Order failed {symbol}", str(exc), LessonSeverity.ERROR)
+            return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4),
+                    "position_size_pct": 0, "error": str(exc)}
 
     # ── batch pipeline ──────────────────────────────────────────────
 

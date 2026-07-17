@@ -108,5 +108,71 @@
     "occurred_at": "2026-07-15T17:17:21.055044+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "76824c15-094",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-16T23:29:39.612487+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "65e61cd8-a00",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-16T23:29:41.260939+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "104629e9-217",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-16T23:29:41.406937+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2f86d775-a9b",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-16T23:38:40.353810+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "dd9a260f-b81",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-16T23:38:41.757458+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "17eb9d51-860",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {},
+    "occurred_at": "2026-07-16T23:38:41.912571+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

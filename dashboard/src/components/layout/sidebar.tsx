@@ -3,8 +3,8 @@
 import React from "react";
 import {
   LayoutDashboard, Bot, FlaskConical, Briefcase, ArrowLeftRight, Shield,
-  BarChart3, Sigma, Zap, Radio, Settings, ChevronLeft, ChevronRight,
-  MemoryStick as Memory, Network, Cog, Shrink, Building2,
+  BarChart3, Sigma, Radio, Settings, ChevronLeft, ChevronRight,
+  MemoryStick as Memory, Network, Cog, Shrink, Building2, Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +37,7 @@ const navItems: NavItem[] = [
   { href: "/factors", label: "Factors", icon: Shrink, category: "analysis" },
   { href: "/memory", label: "Memory", icon: Memory, category: "analysis" },
   { href: "/colony", label: "Colony", icon: Network, category: "analysis" },
+  { href: "/qna-status", label: "QNA Status", icon: Activity, category: "analysis" },
 
   // System
   { href: "/security", label: "Security", icon: Shield, category: "system" },

@@ -1245,12 +1245,14 @@ class TestToolDecoratedFunctions:
 
     def test_tool_functions_have_docstrings(self) -> None:
         """All @tool functions have docstrings (required for LangChain)."""
-        from quant_nanggroe.agents.tools import (
+        from quant_nanggroe.agents.tools.market_data import (
             get_ohlcv,
             get_current_price,
             get_multiple_prices,
-            analyze_technical,
-            analyze_sentiment,
+        )
+        from quant_nanggroe.agents.tools.technical import analyze_technical
+        from quant_nanggroe.agents.tools.sentiment import analyze_sentiment
+        from quant_nanggroe.agents.tools.execution import (
             execute_order,
             cancel_order,
             get_order_status,
@@ -1271,13 +1273,13 @@ class TestToolDecoratedFunctions:
 
     def test_tool_functions_have_names(self) -> None:
         """All @tool functions have accessible names."""
-        from quant_nanggroe.agents.tools import (
+        from quant_nanggroe.agents.tools.market_data import (
             get_ohlcv,
             get_current_price,
-            analyze_technical,
-            analyze_sentiment,
-            execute_order,
         )
+        from quant_nanggroe.agents.tools.technical import analyze_technical
+        from quant_nanggroe.agents.tools.sentiment import analyze_sentiment
+        from quant_nanggroe.agents.tools.execution import execute_order
         # LangChain StructuredTool objects always have a 'name' attribute
         for tool_fn in [get_ohlcv, get_current_price, analyze_technical, analyze_sentiment, execute_order]:
             assert hasattr(tool_fn, "name"), f"Tool missing 'name' attribute: {tool_fn}"

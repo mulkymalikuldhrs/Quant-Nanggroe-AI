@@ -39,6 +39,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field
 
+from quant_nanggroe.exchange.base import OrderError  # ponytail: fail-closed wraps guard exceptions as OrderError
 from quant_nanggroe.types.orders import Order, OrderSide
 
 logger = logging.getLogger(__name__)
@@ -543,7 +544,19 @@ class GuardPipeline:
         all_passed = True
 
         for guard in self._guards:
-            result = guard.check(order, context)
+            # ponytail: fail-closed — a guard that raises must reject the order,
+            # never let its exception leak and (worse) fall through to PASS.
+            try:
+                result = guard.check(order, context)
+            except OrderError:
+                raise  # already a deliberate rejection
+            except Exception as exc:  # noqa: BLE001 - any guard failure halts the trade
+                logger.error("GuardPipeline [%s]: guard %s raised — FAIL (fail-closed)", self._name, guard.name)
+                raise OrderError(
+                    f"Guard {guard.name} raised {type(exc).__name__}: {exc}",
+                    exchange=self._name,
+                    original=exc,
+                ) from exc
             results.append(result)
 
             if not result.passed:

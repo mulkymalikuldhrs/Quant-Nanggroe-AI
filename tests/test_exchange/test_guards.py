@@ -16,6 +16,7 @@ from typing import Dict, Any, Optional
 
 import pytest
 
+from quant_nanggroe.exchange.base import OrderError
 from quant_nanggroe.exchange.guards import (
     BaseGuard,
     WhitelistGuard,
@@ -591,3 +592,39 @@ class TestEdgeCases:
         data = result.model_dump()
         assert data["passed"] is False
         assert len(data["results"]) == 1
+
+
+# ======================================================================
+# Fail-closed audits
+# ======================================================================
+
+class _RaisingGuard(BaseGuard):
+    """Guard that always raises — used to prove the pipeline fails closed."""
+
+    @property
+    def name(self) -> str:
+        return "RaisingGuard"
+
+    def check(self, order, context=None):
+        raise RuntimeError("guard blew up")
+
+
+def test_kill_switch_fail_closed_on_corrupt_state(tmp_path, monkeypatch):
+    """KillSwitch must assume ACTIVE when the shared state file is unreadable/corrupt."""
+    from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+
+    state_file = tmp_path / "kill_switch_state.json"
+    state_file.write_text("garbage", encoding="utf-8")  # not valid JSON
+    monkeypatch.setenv("QNA_KILL_SWITCH_STATE_FILE", str(state_file))
+
+    ks = KillSwitch()
+    # Fail-closed: corrupt file => assumed active (halt), not silently inactive.
+    assert ks.is_active is True
+
+
+def test_guard_pipeline_fail_closed_on_guard_exception(buy_order):
+    """A guard that raises must reject the order (raise OrderError), not fall through to PASS."""
+    pipeline = GuardPipeline(name="fail-closed-audit")
+    pipeline.add_guard(_RaisingGuard())
+    with pytest.raises(OrderError):
+        pipeline.check(buy_order)

@@ -106,6 +106,23 @@ async def resolve_lesson(lesson_id: str, body: dict[str, str] | None = None):
 # Pipeline execution
 # -----------------------------------------------------------------------
 
+@router.get("/last-result")
+async def get_last_pipeline_result():
+    """Return the last pipeline run result (cached)."""
+    p = _get_pipeline()
+    if p._last_result is None:
+        raise HTTPException(status_code=404, detail="No pipeline run yet. POST /pipeline/run first.")
+    r = p._last_result
+    return {
+        "symbol": r.symbol, "success": r.success,
+        "signal": r.signal, "confidence": r.confidence,
+        "reason": r.reason, "timestamp": r.timestamp,
+        "steps": [{"name": s.name, "status": s.status, "duration_ms": s.duration_ms}
+                  for s in r.steps],
+        "decision": r.decision,
+    }
+
+
 @router.post("/pipeline/run")
 async def run_pipeline(body: dict[str, Any]):
     """Run the autonomous trading pipeline for one symbol.

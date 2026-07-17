@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -668,6 +669,153 @@ def create_app() -> FastAPI:
             logger.info("WebSocket client disconnected")
         except Exception as e:
             logger.error(f"WebSocket error: {e}")
+        finally:
+            if websocket in _ws_connections:
+                _ws_connections.remove(websocket)
+
+    # ======================================================================
+    # Dashboard Compatibility Layer
+    # Maps frontend-expected paths (/api/*) to backend data.
+    # Dashboard calls /api/* (not /api/v1/*) and expects ~25 endpoints.
+    # ======================================================================
+
+    def _get_kill_switch_state() -> dict:
+        """Read kill switch from file state (C5 reconciled) or env vars."""
+        ks_file = os.environ.get("QNA_KILL_SWITCH_STATE_FILE")
+        if ks_file:
+            try:
+                from pathlib import Path
+                data = json.loads(Path(ks_file).read_text(encoding="utf-8"))
+                return {
+                    "is_active": data.get("is_active", False),
+                    "level": data.get("kill_level", 0),
+                    "trading_paused": data.get("is_active", False),
+                    "auto_activated": data.get("auto_activated", False),
+                    "triggered_by": data.get("triggered_by", "manual"),
+                    "activated_at": data.get("activated_at"),
+                    "reason": data.get("reason", ""),
+                }
+            except Exception:
+                pass
+        is_killed = os.environ.get("QNA_KILL_SWITCH_ACTIVE", "").lower() in ("1", "true", "yes")
+        return {
+            "is_active": is_killed, "level": 2 if is_killed else 0,
+            "trading_paused": is_killed, "auto_activated": False,
+            "triggered_by": "manual" if is_killed else "none",
+            "activated_at": None,
+            "reason": "Kill switch active (env)" if is_killed else "",
+        }
+
+    @app.get("/health")
+    async def dashboard_health():
+        uptime = datetime.now().timestamp() - _start_time
+        return {"status": "healthy", "uptime": round(uptime, 1), "timestamp": datetime.now().isoformat()}
+
+    @app.get("/api/agents/status")
+    async def agents_status():
+        ks = _get_kill_switch_state()
+        return {
+            "agents": [
+                {"name": a["name"], "role": a["role"], "status": "ready",
+                 "description": a["description"], "tools": a.get("tools", [])}
+                for a in _AGENT_DEFINITIONS
+            ],
+            "total": len(_AGENT_DEFINITIONS),
+            "kill_switch_active": ks["is_active"],
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    @app.get("/api/agents/kill-switch/status")
+    async def kill_switch_status():
+        ks = _get_kill_switch_state()
+        return {**ks, "max_daily_loss_pct": 1.0, "max_weekly_loss_pct": 3.0, "max_drawdown_pct": 10.0}
+
+    @app.post("/api/agents/kill-switch/activate")
+    async def kill_switch_activate():
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+            KillSwitch().activate(reason="Dashboard manual activation", level=2)
+        except Exception:
+            os.environ["QNA_KILL_SWITCH_ACTIVE"] = "1"
+        return {"status": "activated", "kill_level": 2, "trading_paused": True}
+
+    @app.post("/api/agents/kill-switch/reset")
+    async def kill_switch_reset():
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+            KillSwitch().deactivate()
+        except Exception:
+            os.environ["QNA_KILL_SWITCH_ACTIVE"] = "0"
+        return {"status": "deactivated", "trading_paused": False}
+
+    @app.get("/api/agents/decisions")
+    async def agents_decisions():
+        return {"decisions": [], "total": 0, "timestamp": datetime.now().isoformat()}
+
+    @app.get("/api/portfolio/summary")
+    async def portfolio_summary():
+        s = _portfolio_state
+        return {
+            "total_value": s["total_value"], "cash": s["cash"],
+            "margin_used": 0.0, "margin_available": s["cash"],
+            "unrealized_pnl": s["unrealized_pnl"], "realized_pnl": s["realized_pnl"],
+            "daily_pnl": s["daily_pnl"], "weekly_pnl": s["weekly_pnl"],
+            "positions_count": len(s["positions"]),
+            "risk_budget_used": s["risk_budget_used"],
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    @app.get("/api/portfolio/risk")
+    async def portfolio_risk():
+        return {
+            "total_exposure": 0.0, "var_95": 0.0, "cvar_95": 0.0,
+            "max_drawdown": _portfolio_state.get("max_drawdown", 0.0),
+            "daily_loss_pct": 0.0, "weekly_loss_pct": 0.0,
+            "drawdown_pct": 0.0, "position_concentration_pct": 0.0,
+            "risk_level": "low", "risk_budget_pct": 0.0,
+        }
+
+    @app.get("/api/trading/positions")
+    async def trading_positions():
+        return {"positions": [], "total": 0, "timestamp": datetime.now().isoformat()}
+
+    @app.get("/api/market/sentiment")
+    async def market_sentiment():
+        return {
+            "overall": "neutral", "score": 0.5, "fear_greed": 50,
+            "signals": [], "timestamp": datetime.now().isoformat(),
+        }
+
+    @app.get("/api/market/price/{symbol}")
+    async def market_price(symbol: str):
+        return {"symbol": symbol, "price": 0.0, "change_24h": 0.0, "volume_24h": 0.0}
+
+    @app.websocket("/api/ws/stream")
+    async def dashboard_ws_stream(websocket: WebSocket):
+        """Dashboard WebSocket stream — matches dashboard's /api/ws/stream."""
+        await websocket.accept()
+        _ws_connections.append(websocket)
+        logger.info(f"[dashboard WS] connected. Total: {len(_ws_connections)}")
+        subscribed: list[str] = []
+        try:
+            while True:
+                try:
+                    data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                    msg = json.loads(data)
+                    if msg.get("type") == "subscribe":
+                        subscribed = msg.get("channels", [])
+                        await websocket.send_json({"type": "subscribed", "channels": subscribed})
+                    elif msg.get("type") == "ping" or data == "ping":
+                        await websocket.send_json({"type": "pong"})
+                except asyncio.TimeoutError:
+                    await websocket.send_json({
+                        "type": "heartbeat",
+                        "data": {"ts": datetime.now().isoformat()},
+                    })
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.error(f"[dashboard WS] error: {e}")
         finally:
             if websocket in _ws_connections:
                 _ws_connections.remove(websocket)

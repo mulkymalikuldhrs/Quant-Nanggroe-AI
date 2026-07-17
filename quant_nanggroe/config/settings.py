@@ -136,6 +136,10 @@ class Settings(BaseSettings):
         ge=5.0,
         le=20.0,
     )
+    risk_tier: str = Field(
+        default="demo",
+        description="Risk profile: 'demo' (lenient limits) or 'live' (strict constitutional limits).",
+    )
 
     # Backtesting
     backtest_default_commission: float = 0.001

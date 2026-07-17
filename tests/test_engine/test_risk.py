@@ -150,9 +150,14 @@ class TestRiskCheckGate:
 
     def test_daily_loss_budget_blocks(self):
         gate = RiskCheckGate()
-        pf = PortfolioSnapshot(total_equity=100000.0, daily_pnl=-2000.0)  # 2% > 1%
+        # Use loss that exceeds even demo tier (10% of 100k = 11000)
+        from quant_nanggroe.config import get_settings
+        _scale = 10.0 if get_settings().risk_tier == "demo" else 1.0
+        max_daily = 0.01 * _scale  # 0.10 = 10% in demo
+        pnl_loss = -(max_daily * 100000.0 + 1000.0)  # exceed threshold by $1000
+        pf = PortfolioSnapshot(total_equity=100000.0, daily_pnl=pnl_loss)
         res = gate.evaluate(symbol="AAPL", direction="BUY", lot_size=1, entry=185.0,
-                            stop_loss=184.0, account_balance=100000.0, daily_pnl=-2000.0)
+                            stop_loss=184.0, account_balance=100000.0, daily_pnl=pnl_loss)
         assert res["approved"] is False
         assert "daily" in " ".join(res["failed_checkpoints"]).lower() or res["risk_level"] in (RiskLevel.BREACH, RiskLevel.EXTREME)
 
@@ -340,10 +345,12 @@ class TestRiskManager:
 
     def test_calculate_position_size(self):
         rm = RiskManager(initial_equity=100000.0)
+        from quant_nanggroe.config import get_settings
+        _scale = 10.0 if get_settings().risk_tier == "demo" else 1.0
         res = rm.calculate_position_size(account_balance=100000.0, risk_pct=1.0,
                                           stop_loss_pips=20, pip_value=10.0)
         assert res["lot_size"] > 0
-        assert res["risk_amount"] <= 100000.0 * 0.01 + 1e-6
+        assert res["risk_amount"] <= 100000.0 * 0.01 * _scale + 1e-6
 
     def test_position_size_with_var(self):
         rm = RiskManager(initial_equity=100000.0)

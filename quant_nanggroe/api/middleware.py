@@ -76,6 +76,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not path.startswith("/api/"):
             return await call_next(request)
 
+        # ponytail: lo bilang "ini mesin uang, jangan pakai auth". Localhost bypass.
+        client = request.client
+        if client and client.host in ("127.0.0.1", "::1", "localhost"):
+            request.state.user_id = "local"
+            request.state.user_role = UserRole.ADMIN
+            return await call_next(request)
+
         auth_header = request.headers.get("Authorization", "")
         if not auth_header:
             return Response(

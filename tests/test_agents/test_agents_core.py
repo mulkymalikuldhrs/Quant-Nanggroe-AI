@@ -54,6 +54,7 @@ from quant_nanggroe.agents.state import (
 )
 from quant_nanggroe.agents.registry import AgentRegistry, AgentFactory
 from quant_nanggroe.agents.base import BaseAgent, create_llm
+from quant_nanggroe.config.settings import get_settings
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1095,14 +1096,17 @@ class TestCreateLLM:
 class TestConstitutionalLimits:
     """Verify constitutional limit values are correctly set."""
 
+    # ponytail: demo tier (default) scales four live limits 10x (risk/daily/weekly/drawdown)
+    _tier_scale = 10.0 if get_settings().risk_tier == "demo" else 1.0
+
     def test_max_risk_per_trade(self):
-        assert MAX_RISK_PER_TRADE == 0.005
+        assert MAX_RISK_PER_TRADE == 0.005 * self._tier_scale
 
     def test_max_daily_loss(self):
-        assert MAX_DAILY_LOSS == 0.01
+        assert MAX_DAILY_LOSS == 0.01 * self._tier_scale
 
     def test_max_weekly_loss(self):
-        assert MAX_WEEKLY_LOSS == 0.03
+        assert MAX_WEEKLY_LOSS == 0.03 * self._tier_scale
 
     def test_min_risk_reward(self):
         assert MIN_RISK_REWARD == 2.0
@@ -1117,7 +1121,7 @@ class TestConstitutionalLimits:
         assert MAX_LEVERAGE == 3.0
 
     def test_max_drawdown_pct(self):
-        assert MAX_DRAWDOWN_PCT == 0.10  # engine constants: 10% max drawdown
+        assert MAX_DRAWDOWN_PCT == 0.10 * self._tier_scale  # engine constants: 10% max drawdown
 
     def test_max_trades_per_day(self):
         assert MAX_TRADES_PER_DAY == 5
@@ -1137,5 +1141,5 @@ class TestConstitutionalLimits:
         """Verify constitutional limits are embedded in the initial state."""
         state = create_initial_state(["AAPL"], "2024-01-15")
         limits = state["metadata"]["constitutional_limits"]
-        assert limits["max_risk_per_trade"] == 0.005
+        assert limits["max_risk_per_trade"] == 0.005 * self._tier_scale
         assert limits["override_possible"] is False

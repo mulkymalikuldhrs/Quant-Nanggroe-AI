@@ -30,8 +30,10 @@ def get_json(url: str, timeout: int = 15) -> Optional[Any]:
     """
     try:
         import requests
-        # ``verify=False`` disables SSL cert verification.
-        resp = requests.get(url, timeout=timeout, verify=False, proxies=PROXIES,
+        # ponytail: fail-closed — verify certs by default. Real exchange endpoints
+        # (Binance/KuCoin/etc.) serve valid certs; disabling verification is an
+        # MITM risk and only excused by a genuine local-CA proxy.
+        resp = requests.get(url, timeout=timeout, verify=True, proxies=PROXIES,
                             headers={"User-Agent": "QNA/1.0"})
         resp.raise_for_status()
         return resp.json()

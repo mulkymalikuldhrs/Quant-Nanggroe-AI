@@ -21,6 +21,13 @@ try:
     load_dotenv()
 except Exception:  # pragma: no cover - dotenv optional
     pass
+# ponytail: also load credentials.json into os.environ so UI-configured keys
+# are picked up by Settings + credential_manager at startup.
+try:
+    from quant_nanggroe.api.routes.credentials import bootstrap_env
+    bootstrap_env()
+except Exception:
+    pass
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
@@ -66,21 +73,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     async def _background_init() -> None:
         try:
-            from quant_nanggroe.services import init_all_services
-            init_all_services(app)
-            logger.info("startup_services_initialized")
-
-            em = app.state._services.get("exchange_manager")
-            if em is not None:
-                try:
-                    from quant_nanggroe.exchange.mt5_accounts import load_mt5_accounts
-                    loaded = load_mt5_accounts(em)
-                    if loaded:
-                        logger.info("startup_mt5_accounts_loaded: %s", loaded)
-                except Exception as exc:
-                    logger.warning("startup_mt5_accounts_failed: %s", exc)
-                results = await em.connect_all()
-                logger.info("startup_exchanges_connected: %s", results)
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, lambda: _init_services_blocking(app))
         except Exception as exc:
             logger.warning(
                 "startup_services_unavailable",
@@ -93,9 +87,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger.info("qnai_starting", extra={"app": settings.app_name, "env": "development"})
 
+    logger.info("LIFESPAN_YIELDING")  # ponytail: debug hanging server
     yield
 
-    # ── Shutdown ────────────────────────────────────────────────────
+    # ── Shutdown (inside lifespan) ──────────────────────────────────
     logger.info("qnai_shutdown_initiated")
 
     # 1. Close exchange connections
@@ -141,6 +136,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.warning("task_drain_error: %s", e)
 
     logger.info("qnai_shutdown_complete")
+
+
+def _init_services_blocking(app: FastAPI) -> None:
+    """Blocking init — runs in thread executor so uvicorn can serve immediately."""
+    try:
+        from quant_nanggroe.services import init_all_services
+        init_all_services(app)
+        logger.info("startup_services_initialized")
+
+        # ponytail: MT5 connected lazily via API / first trade, NOT at boot.
+        # mt5.initialize() blocks the thread executor on Windows, which corrupts
+        # the proactor accept loop. Users open MT5 terminal first, then hit
+        # POST /api/brokers/connect to wire the account.
+    except Exception as exc:
+        logger.warning(
+            "startup_services_unavailable",
+            extra={"error": str(exc), "msg": "Services not available"},
+        )
 
 
 def create_app() -> FastAPI:
@@ -211,7 +224,23 @@ def create_app() -> FastAPI:
 
     # Register a default admin API key from settings or env
     default_key = os.environ.get("QNAI_API_KEY", "")
-    if default_key:
+    if not default_key:
+        # ponytail: fallback to credentials.json (UI-configured keys)
+        try:
+            import json as _json
+            _p = os.path.join(os.path.dirname(__file__), "..", "..", "config", "credentials.json")
+            if os.path.isfile(_p):
+                _creds = _json.load(open(_p))
+                _keys = _creds.get("apiKeys", [])
+                if _keys:
+                    default_key = _keys[0].get("key", "")
+                    # register ALL keys, not just first
+                    for _k in _keys:
+                        if _k.get("key"):
+                            api_key_auth.add_key(_k["key"], _k.get("id", "ui-user"), UserRole.ADMIN)
+        except Exception:
+            pass
+    if default_key and api_key_auth.key_count == 0:
         api_key_auth.add_key(default_key, "admin", UserRole.ADMIN)
 
     app.state.auth = jwt_auth
@@ -293,12 +322,19 @@ def create_app() -> FastAPI:
     app.include_router(security.router, prefix="/api", tags=["Security"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
     app.include_router(wiring_compat.router)
+    from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
+    app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")
     async def health_check():
         ready = app.state._services.get("startup_complete", False)
         return {"status": "healthy", "startup_complete": str(ready), "service": "quant-nanggroe-ai"}
+
+    @app.get("/config")
+    async def config_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/config.html")
 
     @app.get("/api/version")
     async def version() -> dict[str, str]:

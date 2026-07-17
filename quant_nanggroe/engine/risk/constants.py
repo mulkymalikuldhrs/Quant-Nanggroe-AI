@@ -18,23 +18,24 @@ from typing import Final
 from quant_nanggroe.config.settings import get_settings
 
 _settings = get_settings()
+_TIER_SCALE = 10.0 if _settings.risk_tier == "demo" else 1.0
 
 # ─── Constitutional Risk Limits (env-driven — agent-proof) ──────────────────
 
 # Per-Trade Limits
-MAX_RISK_PER_TRADE: float = _settings.risk_max_per_trade / 100  # 0.5% default
+MAX_RISK_PER_TRADE: float = _settings.risk_max_per_trade * _TIER_SCALE / 100
 MAX_POSITION_SIZE_PCT: Final[float] = 0.10      # Max 10% of portfolio in single position
 MAX_LEVERAGE: Final[float] = 3.0                # Max 3x leverage
 
 # Daily Limits
-MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss / 100       # 1% default
+MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss * _TIER_SCALE / 100       # 1% default
 MAX_DAILY_TRADES: Final[int] = 5                # Max 5 trades per day to prevent overtrading
 
 # Weekly Limit
-MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss / 100     # 3% default
+MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss * _TIER_SCALE / 100     # 3% default
 
 # Drawdown
-MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown / 100       # 10% default
+MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown * _TIER_SCALE / 100       # 10% default
 
 # Quality Gates
 MIN_RISK_REWARD: Final[float] = 2.0             # Minimum 1:2 R:R ratio

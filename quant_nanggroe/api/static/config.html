@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>QNA Config</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;max-width:960px;margin:auto}
+h1{color:#58a6ff;margin-bottom:20px}
+h2{color:#8b949e;margin:20px 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:1px}
+.section{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:12px;color:#8b949e;margin:8px 0 4px}
+input,select{width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:14px}
+input:focus{outline:none;border-color:#58a6ff}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.entry{background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:12px;margin-bottom:8px}
+.entry h3{font-size:14px;margin-bottom:8px;color:#f0f6fc}
+.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:14px}
+.btn-primary{background:#238636;color:#fff}
+.btn-primary:hover{background:#2ea043}
+.btn-outline{background:transparent;border:1px solid #30363d;color:#c9d1d9}
+.btn-outline:hover{background:#21262d}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 24px;border-radius:8px;display:none;z-index:999}
+#toast.ok{background:#238636;color:#fff;display:block}
+#toast.err{background:#da3633;color:#fff;display:block}
+.toolbar{display:flex;gap:8px;margin-bottom:20px}
+.tab{flex:1;padding:10px;text-align:center;background:#161b22;border:1px solid #30363d;border-radius:6px;cursor:pointer;font-size:14px}
+.tab.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.array-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.status-badge.ok{background:#23863620;color:#3fb950;border:1px solid #238636}
+.status-badge.missing{background:#da363320;color:#f85149;border:1px solid #da3633}
+</style>
+</head>
+<body>
+<h1>⚙ QNA Configuration</h1>
+<div id="toast"></div>
+<div class="toolbar">
+  <div class="tab active" onclick="switchTab('apiKeys')">API Keys</div>
+  <div class="tab" onclick="switchTab('brokers')">Brokers</div>
+  <div class="tab" onclick="switchTab('llmKeys')">LLM Keys</div>
+  <div class="tab" onclick="switchTab('risk')">Risk & Toggles</div>
+  <div class="tab" onclick="switchTab('exports')">Export/Import</div>
+</div>
+
+<div id="tab-apiKeys" class="tab-content active"></div>
+<div id="tab-brokers" class="tab-content"></div>
+<div id="tab-llmKeys" class="tab-content"></div>
+<div id="tab-risk" class="tab-content"></div>
+<div id="tab-exports" class="tab-content"></div>
+
+<script>
+let DATA = {};
+function toast(msg, ok=true){const t=document.getElementById('toast');t.textContent=msg;t.className=ok?'ok':'err';setTimeout(()=>t.style.display='none',2500)}
+async function load(){
+  const headers={'Authorization':'ApiKey '+localStorage.getItem('qna_api_key')};
+  const r=await fetch('/api/credentials',{headers});if(!r.ok){renderEmpty();toast('Set API key: run this in console → localStorage.setItem(\"qna_api_key\",\"your-key\") then reload',false);return}
+  DATA=await r.json();render();toast('Loaded')}
+async function save(){
+  const h={'Content-Type':'application/json','Authorization':'ApiKey '+localStorage.getItem('qna_api_key')};
+  const r=await fetch('/api/credentials',{method:'PUT',headers:h,body:JSON.stringify(DATA)});
+  if(r.ok){toast('Saved');load()}else{toast('Save failed '+(await r.text()),false)}}
+function renderEmpty(){Object.assign(DATA,window._CRED_DEFAULTS||{apiKeys:[],brokers:[],llmKeys:[],riskLimits:{},systemToggles:{}});render()}
+
+function switchTab(name){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${name}"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');}
+
+function render(){
+  renderApiKeys();
+  renderBrokers();
+  renderLlmKeys();
+  renderRisk();
+  renderExports();
+}
+
+function renderApiKeys(){
+  const keys=DATA.apiKeys||[];
+  let h=`<div class="array-header"><span>${keys.length} API key(s)</span><button class="btn btn-outline" onclick="apiAddKey()">+ Add</button></div>`;
+  keys.forEach((k,i)=>{
+    h+=`<div class="entry">
+      <div class="row"><div><label>Label</label><input value="${k.label||''}" onchange="DATA.apiKeys[${i}].label=this.value"></div>
+      <div><label>Key</label><input value="${k.key||''}" onchange="DATA.apiKeys[${i}].key=this.value"></div></div>
+      <div class="row"><div><label>Role (admin/viewer)</label><input value="${k.role||'admin'}" onchange="DATA.apiKeys[${i}].role=this.value"></div>
+      <div><label>ID</label><input value="${k.id||''}" onchange="DATA.apiKeys[${i}].id=this.value" placeholder="auto"></div></div>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="DATA.apiKeys.splice(${i},1);render()">Remove</button>
+    </div>`;
+  });
+  document.getElementById('tab-apiKeys').innerHTML=h;
+}
+
+function apiAddKey(){DATA.apiKeys.push({label:'',key:'',role:'admin',id:''});render();}
+
+function renderBrokers(){
+  const bs=DATA.brokers||[];
+  let h=`<div class="array-header"><span>${bs.length} broker(s)</span><button class="btn btn-outline" onclick="brokerAdd()">+ Add</button></div>`;
+  bs.forEach((b,i)=>{
+    h+=`<div class="entry">
+      <div class="row"><div><label>Name</label><input value="${b.name||''}" onchange="DATA.brokers[${i}].name=this.value"></div>
+      <div><label>Type (mt5/ccxt)</label><input value="${b.type||'mt5'}" onchange="DATA.brokers[${i}].type=this.value"></div></div>
+      <div class="row"><div><label>Login</label><input value="${b.login||''}" onchange="DATA.brokers[${i}].login=this.value"></div>
+      <div><label>Server</label><input value="${b.server||''}" onchange="DATA.brokers[${i}].server=this.value"></div></div>
+      <div class="row"><div><label>Password</label><input type="password" value="${b.password||''}" onchange="DATA.brokers[${i}].password=this.value"></div>
+      <div><label>Status</label><input value="${b.status||'disconnected'}" readonly style="opacity:0.6"></div></div>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="DATA.brokers.splice(${i},1);render()">Remove</button>
+    </div>`;
+  });
+  document.getElementById('tab-brokers').innerHTML=h;
+}
+function brokerAdd(){DATA.brokers.push({name:'',type:'mt5',login:'',server:'',password:'',status:'disconnected'});render();}
+
+function renderLlmKeys(){
+  const ks=DATA.llmKeys||[];
+  let h=`<div class="array-header"><span>${ks.length} LLM key(s)</span><button class="btn btn-outline" onclick="llmAdd()">+ Add</button></div>`;
+  ks.forEach((k,i)=>{
+    h+=`<div class="entry">
+      <div class="row"><div><label>Provider</label><input value="${k.provider||''}" onchange="DATA.llmKeys[${i}].provider=this.value" placeholder="openai/groq/anthropic"></div>
+      <div><label>Model</label><input value="${k.model||''}" onchange="DATA.llmKeys[${i}].model=this.value" placeholder="gpt-4o"></div></div>
+      <div><label>API Key</label><input type="password" value="${k.key||''}" onchange="DATA.llmKeys[${i}].key=this.value"></div>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="DATA.llmKeys.splice(${i},1);render()">Remove</button>
+    </div>`;
+  });
+  document.getElementById('tab-llmKeys').innerHTML=h;
+}
+function llmAdd(){DATA.llmKeys.push({provider:'',model:'',key:''});render();}
+
+function renderRisk(){
+  const r=DATA.riskLimits||{}, t=DATA.systemToggles||{};
+  document.getElementById('tab-risk').innerHTML=`
+    <div class="section">
+      <h2>Risk Limits</h2>
+      <div class="row"><div><label>Max Position Size (%)</label><input type="number" value="${r.maxPositionSize||10}" onchange="DATA.riskLimits.maxPositionSize=+this.value"></div>
+      <div><label>Max Leverage</label><input type="number" step="0.1" value="${r.maxLeverage||2}" onchange="DATA.riskLimits.maxLeverage=+this.value"></div></div>
+      <div class="row"><div><label>Max Drawdown (%)</label><input type="number" value="${r.maxDrawdown||5}" onchange="DATA.riskLimits.maxDrawdown=+this.value"></div>
+      <div><label>Max VaR ($)</label><input type="number" value="${r.maxVaR||10000}" onchange="DATA.riskLimits.maxVaR=+this.value"></div></div>
+      <div class="row"><div><label>Default Stop Loss (%)</label><input type="number" value="${r.defaultStopLoss||2}" onchange="DATA.riskLimits.defaultStopLoss=+this.value"></div>
+      <div><label>Default Take Profit (%)</label><input type="number" value="${r.defaultTakeProfit||5}" onchange="DATA.riskLimits.defaultTakeProfit=+this.value"></div></div>
+    </div>
+    <div class="section">
+      <h2>System Toggles</h2>
+      ${['liveTrading','autoRebalance','killSwitchOnLoss','emotionalLockout','riskChecksRequired','paperTradingMode'].map(f=>
+        `<label style="display:flex;align-items:center;gap:8px;margin:8px 0">
+          <input type="checkbox" ${t[f]?'checked':''} onchange="DATA.systemToggles['${f}']=this.checked"> ${f}
+        </label>`
+      ).join('')}
+    </div>`;
+}
+
+function renderExports(){
+  document.getElementById('tab-exports').innerHTML=`
+    <div class="section">
+      <h2>Apply to Environment</h2>
+      <p style="font-size:13px;color:#8b949e;margin-bottom:12px">Push current credentials to system environment (no restart needed for new keys)</p>
+      <button class="btn btn-primary" onclick="applyEnv()">Apply Now</button>
+    </div>
+    <div class="section">
+      <h2>Export to .env</h2>
+      <p style="font-size:13px;color:#8b949e;margin-bottom:12px">Download credentials as .env file (for server setup)</p>
+      <button class="btn btn-primary" onclick="exportEnv()">Download .env</button>
+    </div>
+    <div class="section">
+      <h2>Import credentials.json</h2>
+      <p style="font-size:13px;color:#8b949e;margin-bottom:12px">Paste raw JSON to replace all config</p>
+      <textarea id="importField" rows="8" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;padding:8px;font-family:monospace;font-size:12px"></textarea>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="importJson()">Import & Save</button>
+    </div>
+    <div class="section">
+      <h2>Credential Manager Report</h2>
+      <button class="btn btn-outline" onclick="checkAll()">Check All Services</button>
+      <div id="checkResult" style="margin-top:8px;font-size:13px"></div>
+    </div>`;
+}
+
+function exportEnv(){
+  let env='# QNA Credentials — generated from /api/credentials\n';
+  (DATA.apiKeys||[]).forEach(k=>{if(k.key) env+=`${k.id||k.label||'QNAI_API_KEY'}=${k.key}\n`});
+  (DATA.llmKeys||[]).forEach(k=>{if(k.key) env+=`${k.provider.toUpperCase()}_API_KEY=${k.key}\n`});
+  (DATA.brokers||[]).forEach(b=>{
+    if(b.login) env+=`MT5_LOGIN_${b.name.toUpperCase()}=${b.login}\n`;
+    if(b.password) env+=`MT5_PASS_${b.name.toUpperCase()}=${b.password}\n`;
+    if(b.server) env+=`MT5_SERVER_${b.name.toUpperCase()}=${b.server}\n`;
+  });
+  const blob=new Blob([env],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='qna_credentials.env';a.click();
+}
+
+function importJson(){
+  try{const j=JSON.parse(document.getElementById('importField').value);DATA=j;save();}catch(e){toast('Invalid JSON: '+e,false)}
+}
+
+async function checkAll(){
+  const d=document.getElementById('checkResult');
+  d.textContent='Checking...';
+  try{
+    const h={'Authorization':'ApiKey '+localStorage.getItem('qna_api_key')};
+    const r=await fetch('/api/credentials/test/llmKeys/none',{headers:h});
+    d.innerHTML=`✅ API working. Use dashboard for detailed service check.`;
+  }catch(e){d.textContent='Error: '+e}
+}
+
+async function applyEnv(){
+  const h={'Authorization':'ApiKey '+localStorage.getItem('qna_api_key')};
+  const r=await fetch('/api/credentials/apply',{method:'POST',headers:h});
+  const j=await r.json();
+  if(r.ok){toast(`Applied: ${j.env_vars_set} var(s) set`)}else{toast('Apply failed',false)}
+}
+
+load();
+</script>
+</body>
+</html>

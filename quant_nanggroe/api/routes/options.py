@@ -9,21 +9,32 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-
-from ._data import options_positions
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/options", tags=["options"])
 
 
+def _exchange_manager(request: Request):
+    """Lazily reuse the app-wide ExchangeManager (mirrors market.py)."""
+    from quant_nanggroe.exchange.manager import ExchangeManager
+
+    svc = getattr(request.app.state, "_services", {})
+    if "exchange_manager" not in svc:
+        svc["exchange_manager"] = ExchangeManager()
+    return svc["exchange_manager"]
+
+
 class AnalyzeRequest(BaseModel):
     symbol: str
-    type: str
+    type: str  # call | put
     strike: float
-    expiry: str
+    expiry: str  # YYYY-MM-DD
+    spot: float | None = None  # omit to fetch live ticker
+    volatility: float | None = 0.3
+    rate: float = 0.05
 
 
 class VolSurfaceRequest(BaseModel):
@@ -46,41 +57,96 @@ class StrategyRequest(BaseModel):
 
 @router.get("/chain/{symbol}")
 async def get_options_chain(symbol: str) -> dict[str, Any]:
-    positions = options_positions()
-    chain = [p for p in positions if p["symbol"] == symbol.upper()]
+    # ponytail: no real options feed wired — return honest empty state, never synthetic.
     return {
         "symbol": symbol.upper(),
-        "items": chain,
-        "count": len(chain),
+        "items": [],
+        "count": 0,
         "module": "options",
+        "status": "unavailable",
+        "detail": "Real options chain unavailable; no synthetic data returned.",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
 @router.get("/positions")
 async def get_options_positions() -> dict[str, Any]:
+    # ponytail: no real options feed wired — return honest empty state, never synthetic.
     return {
-        "positions": options_positions(),
-        "count": 4,
+        "positions": [],
+        "count": 0,
         "module": "options",
+        "status": "unavailable",
+        "detail": "Real options positions unavailable; no synthetic data returned.",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "status": "synthetic",
     }
 
 
 @router.post("/analyze")
-async def analyze_option_strategy(req: AnalyzeRequest) -> dict[str, Any]:
+async def analyze_option_strategy(req: AnalyzeRequest, request: Request) -> dict[str, Any]:
+    # ponytail: real pricing via Black-Scholes (engine.options.analyzer).
+    # spot defaults to a live ticker fetch; if no feed, caller must pass spot.
+    from quant_nanggroe.engine.options.analyzer import OptionsAnalyzer
+
+    otype = req.type.lower()
+    if otype not in ("call", "put"):
+        raise HTTPException(status_code=400, detail="type must be 'call' or 'put'")
+
+    spot = req.spot
+    if spot is None:
+        try:
+            em = _exchange_manager(request)
+            ticker = await em.get_ticker(req.symbol)
+            spot = ticker.last_price
+        except Exception as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"spot price unavailable for {req.symbol}; pass 'spot' explicitly. ({exc})",
+            )
+    if not spot or spot <= 0:
+        raise HTTPException(status_code=400, detail="spot price must be positive")
+
+    try:
+        expiry = datetime.strptime(req.expiry, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="expiry must be YYYY-MM-DD")
+    T = (expiry - datetime.now(timezone.utc)).days / 365.0
+    if T <= 0:
+        raise HTTPException(status_code=400, detail="expiry must be in the future")
+
+    sigma = req.volatility if req.volatility and req.volatility > 0 else 0.3
+    analyzer = OptionsAnalyzer()
+    bs = analyzer.analyze(S=spot, K=req.strike, T=T, r=req.rate, sigma=sigma)
+    greeks = bs["greeks"]
+
+    price = bs["call_price"] if otype == "call" else bs["put_price"]
+    breakeven = (
+        req.strike + price if otype == "call" else req.strike - price
+    )
+
     return {
         "symbol": req.symbol,
-        "type": req.type,
+        "type": otype,
+        "spot": spot,
         "strike": req.strike,
         "expiry": req.expiry,
         "analysis": {
-            "intrinsic_value": round(max(0, req.strike * 0.05), 2),
-            "time_value": round(req.strike * 0.02, 2),
-            "total_premium": round(req.strike * 0.07, 2),
-            "breakeven": round(req.strike * (1.07 if req.type == "call" else 0.93), 2),
+            "theoretical_price": round(price, 4),
+            "intrinsic_value": round(max(0, spot - req.strike) if otype == "call"
+                                     else max(0, req.strike - spot), 2),
+            "time_value": round(max(0, price - (max(0, spot - req.strike)
+                               if otype == "call" else max(0, req.strike - spot))), 2),
+            "breakeven": round(breakeven, 2),
+            "greeks": {
+                "delta": round(greeks.delta, 4),
+                "gamma": round(greeks.gamma, 4),
+                "theta": round(greeks.theta, 4),
+                "vega": round(greeks.vega, 4),
+                "rho": round(greeks.rho, 4),
+            },
         },
+        "module": "options",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 

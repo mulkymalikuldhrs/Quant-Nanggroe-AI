@@ -14,12 +14,15 @@ import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { useRealtimeData } from "@/lib/websocket";
 import { useAppStore } from "@/lib/store";
 import { cn, formatCurrency, formatPercent, formatPrice, formatTimestamp } from "@/lib/utils";
-import { brokersApi, tradingApi } from "@/lib/api-client";
+import { brokersApi, tradingApi, marketApi } from "@/lib/api-client";
 import type { MT5AccountInfo, BrokerPositionsResponse, OrderType } from "@/lib/api-client";
 import {
   ArrowLeftRight, Send, Route, RefreshCw, Wallet, TrendingUp, Activity,
   Plug, Unplug, Settings, BarChart3, Split, SwitchCamera, Globe,
 } from "lucide-react";
+
+// ponytail: watchlist symbols are config; prices are always live (REST fallback when WS absent)
+const WATCHLIST = ["BTC/USDT", "ETH/USDT", "XAU/USD", "NVDA", "AAPL"];
 
 // ── UI Model Types (populated from API) ────────────────────────────
 
@@ -74,6 +77,7 @@ function TradingDashboardContent() {
   const [orderMsg, setOrderMsg] = useState("");
   const [accounts, setAccounts] = useState<BrokerAccountUI[]>([]);
   const [positions, setPositions] = useState<PositionUI[]>([]);
+  const [restPrices, setRestPrices] = useState<Record<string, { price: number; change: number }>>({});
 
   // Fetch real data from backend
   useEffect(() => {
@@ -133,6 +137,28 @@ function TradingDashboardContent() {
     fetchData();
     return () => { cancelled = true; };
   }, []);
+
+  // REST price fallback when WebSocket is not streaming (mirrors "REST" badge)
+  useEffect(() => {
+    if (Object.keys(realtimePrices).length > 0) return;
+    let cancelled = false;
+    const load = async () => {
+      const res = await Promise.allSettled(
+        WATCHLIST.map(s => marketApi.getPrice(s)),
+      );
+      if (cancelled) return;
+      const next: Record<string, { price: number; change: number }> = {};
+      res.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value.price != null) {
+          next[WATCHLIST[i]] = { price: r.value.price, change: r.value.change ?? 0 };
+        }
+      });
+      setRestPrices(next);
+    };
+    load();
+    const id = setInterval(load, 15000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [realtimePrices]);
 
   // Active account data
   const activeAcct = accounts.find(a => a.id === activeAccount);
@@ -371,8 +397,8 @@ function TradingDashboardContent() {
                         price: orderPrice ? parseFloat(orderPrice) : undefined,
                       });
                       setOrderMsg(`✓ Order placed on ${activeAcct.name}`);
-                    } catch (e: any) {
-                      setOrderMsg(`✗ ${e?.message || "Order failed"}`);
+                    } catch (e) {
+                      setOrderMsg(`✗ ${e instanceof Error ? e.message : "Order failed"}`);
                     }
                     setTimeout(() => setOrderMsg(""), 5000);
                   }}
@@ -469,23 +495,21 @@ function TradingDashboardContent() {
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    {[
-                      { symbol: "BTC/USDT", price: 67340, change: 2.93 },
-                      { symbol: "ETH/USDT", price: 3620, change: 4.93 },
-                      { symbol: "XAU/USD", price: 2355, change: -1.05 },
-                      { symbol: "NVDA", price: 132.30, change: 2.96 },
-                      { symbol: "AAPL", price: 196.80, change: -0.71 },
-                    ].map(item => (
-                      <div key={item.symbol} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                        <span className="text-xs font-mono text-white/70">{item.symbol}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-white">${item.price.toLocaleString()}</span>
-                          <span className={cn("text-[10px] font-mono", item.change >= 0 ? "text-profit" : "text-loss")}>
-                            {item.change >= 0 ? "+" : ""}{item.change.toFixed(2)}%
-                          </span>
+                    {WATCHLIST.map(symbol => {
+                      const item = restPrices[symbol];
+                      if (!item) return null;
+                      return (
+                        <div key={symbol} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                          <span className="text-xs font-mono text-white/70">{symbol}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-white">${item.price.toLocaleString()}</span>
+                            <span className={cn("text-[10px] font-mono", item.change >= 0 ? "text-profit" : "text-loss")}>
+                              {item.change >= 0 ? "+" : ""}{item.change.toFixed(2)}%
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
