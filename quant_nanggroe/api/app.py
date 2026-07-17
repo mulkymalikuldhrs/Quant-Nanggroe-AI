@@ -85,13 +85,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     asyncio.create_task(_background_init())
 
+    # ── Start autonomous trading scheduler if enabled ───────────────
+    import os
+    if os.environ.get("QNA_SCHEDULER_ENABLED", "0") == "1":
+        try:
+            from quant_nanggroe.engine.scheduler import start_default_scheduler
+            interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
+            start_default_scheduler(interval_minutes=interval)
+            logger.info("aut_scheduler_started", extra={"interval_minutes": interval})
+        except Exception as exc:
+            logger.warning("aut_scheduler_start_failed", extra={"error": str(exc)})
+
     logger.info("qnai_starting", extra={"app": settings.app_name, "env": "development"})
 
-    logger.info("LIFESPAN_YIELDING")  # ponytail: debug hanging server
+    logger.info("LIFESPAN_YIELDING")
     yield
 
     # ── Shutdown (inside lifespan) ──────────────────────────────────
     logger.info("qnai_shutdown_initiated")
+
+    # 0. Stop autonomous trading scheduler
+    try:
+        from quant_nanggroe.engine.scheduler import stop_default_scheduler
+        stop_default_scheduler(timeout=3.0)
+        logger.info("aut_scheduler_stopped")
+    except Exception as e:
+        logger.warning("scheduler_stop_error: %s", e)
 
     # 1. Close exchange connections
     try:
@@ -178,10 +197,22 @@ def create_app() -> FastAPI:
         )
     del _os, _jwt, _WEAK
 
+    # ── C5: single source of truth for kill-switch across all procs ──
+    # Without this, every uvicorn worker / daemon / bridge boots its OWN
+    # in-memory KillSwitch() and they never agree (split-brain). Point every
+    # instance in THIS process at one shared state file so activation in any
+    # process halts trading in all. Fail-closed: if the file is later corrupt,
+    # KillSwitch() assumes ACTIVE. Idempotent + default-isolated for tests.
+    try:
+        from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
+        configure_kill_switch_file()  # no-op if QNA_KILL_SWITCH_STATE_FILE already set
+    except Exception as _ks_err:  # pragma: no cover - boot must not fail on this
+        logger.warning("kill_switch_shared_state_init_failed: %s", _ks_err)
+
     app = FastAPI(
         title=settings.app_name,
         description="Agentic Trading Intelligence OS",
-        version="1.0.0",
+        version="4.3.4",
         lifespan=lifespan,
     )
 
@@ -271,7 +302,6 @@ def create_app() -> FastAPI:
         debate,
         ecosystem,
         fred,
-        geopolitics,
         market,
         memory,
         monitor,
@@ -279,6 +309,7 @@ def create_app() -> FastAPI:
         personas,
         portfolio,
         rl,
+        scheduler,
         sec_edgar,
         security,
         signal_generator,
@@ -306,7 +337,6 @@ def create_app() -> FastAPI:
     app.include_router(council.router)
     app.include_router(debate.router)
     app.include_router(fred.router, prefix="/api/fred", tags=["FRED"])
-    app.include_router(geopolitics.router)
     app.include_router(personas.router)
     app.include_router(sec_edgar.router)
     app.include_router(signal_generator.router)
@@ -318,6 +348,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router)
     app.include_router(agentic.router)
     app.include_router(autonomous.router)
+    app.include_router(scheduler.router)
     app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
     app.include_router(security.router, prefix="/api", tags=["Security"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
@@ -377,6 +408,17 @@ def create_app() -> FastAPI:
     static_dir = os.path.join(os.path.dirname(__file__), "static")
     if os.path.isdir(static_dir):
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
+    # ── Paper State (live state files at /paper_state/) ──────────
+    paper_state_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "paper_state")
+    )
+    if os.path.isdir(paper_state_dir):
+        app.mount(
+            "/paper_state",
+            StaticFiles(directory=paper_state_dir, html=False),
+            name="paper_state",
+        )
 
     _setup_signal_handlers(app)
 

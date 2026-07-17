@@ -29,7 +29,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 # ── Ensure project root is on sys.path (BEFORE any project imports) ─
 PROJECT_ROOT = Path(__file__).parent.resolve()
@@ -38,6 +38,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # ── Version (single source of truth) ────────────────────────────────
 __version__ = "4.3.4"
 QNA_VERSION = __version__
+
+# ── PID management for daemon mode ─────────────────────────────────
+PID_DIR = Path("data/daemons")
+PID_FILE = PID_DIR / "qna_daemon.pid"
 
 # ── Logging ─────────────────────────────────────────────────────────
 LOG_LEVEL = os.environ.get("QNA_LOG_LEVEL", "INFO").upper()
@@ -378,9 +382,48 @@ class DaemonRunner:
         logger.info("All agents stopped.")
 
 
+def _write_pid() -> None:
+    """Write current PID to PID file."""
+    PID_DIR.mkdir(parents=True, exist_ok=True)
+    PID_FILE.write_text(str(os.getpid()))
+
+
+def _read_pid() -> Optional[int]:
+    """Read PID from PID file."""
+    if not PID_FILE.exists():
+        return None
+    try:
+        return int(PID_FILE.read_text().strip())
+    except (ValueError, OSError):
+        return None
+
+
+def stop_daemon() -> int:
+    """Stop the running daemon process."""
+    pid = _read_pid()
+    if pid is None:
+        print("❌ No daemon PID file found. Is the daemon running?")
+        print("   Try: python qna.py status")
+        return 1
+    try:
+        os.kill(pid, signal.SIGTERM)
+        print(f"✅ Daemon (PID {pid}) stopped.")
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+    except ProcessLookupError:
+        print(f"⚠️  Daemon (PID {pid}) not found. Removing stale PID file.")
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+    except Exception as e:
+        print(f"❌ Failed to stop daemon: {e}")
+        return 1
+    return 0
+
+
 def run_daemon(args: argparse.Namespace) -> int:
     """Run daemon mode with agent lifecycle management."""
     print(BANNER)
+    _write_pid()
     agents = load_agent_config()
 
     daemon = DaemonRunner(agents)
@@ -390,6 +433,8 @@ def run_daemon(args: argparse.Namespace) -> int:
         logger.info("Shutdown requested...")
     finally:
         daemon.stop_all()
+        if PID_FILE.exists():
+            PID_FILE.unlink()
 
     return 0
 
@@ -466,6 +511,7 @@ def run_status(args: argparse.Namespace) -> int:
     print("    python qna.py daemon      Background daemon")
     print("    python qna.py web         Legacy web UI")
     print("    python qna.py status      This status check")
+    print("    python qna.py stop        Stop running daemon")
 
     return 0
 
@@ -508,7 +554,7 @@ Examples:
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["cli", "api", "daemon", "web", "status"],
+        choices=["cli", "api", "daemon", "web", "status", "stop"],
         default="cli",
         help="Launch mode (default: cli)",
     )
@@ -551,6 +597,17 @@ def main() -> int:
         print(f"Quant Nanggroe AI v{__version__}")
         return 0
 
+    # ── C5: converge every mode (cli/daemon/api/web) on ONE kill-switch
+    # state file. Without this the daemon + api + any bridge each keep their
+    # own in-memory switch and never agree (split-brain). Idempotent; tests
+    # that set QNA_KILL_SWITCH_STATE_FILE keep their isolation. Fail-closed
+    # is enforced inside KillSwitch() if the file later becomes unreadable.
+    try:
+        from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
+        configure_kill_switch_file()
+    except Exception:  # pragma: no cover - never block boot on this
+        pass
+
     # Route to the selected mode
     mode_map = {
         "cli": run_cli,
@@ -558,6 +615,7 @@ def main() -> int:
         "daemon": run_daemon,
         "web": run_web,
         "status": run_status,
+        "stop": lambda a: stop_daemon(),
     }
 
     runner = mode_map.get(args.mode, run_cli)

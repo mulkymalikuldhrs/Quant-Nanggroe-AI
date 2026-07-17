@@ -78,3 +78,51 @@ def test_unreadable_state_file_fails_closed():
             os.environ.pop("QNA_KILL_SWITCH_STATE_FILE", None)
         else:
             os.environ["QNA_KILL_SWITCH_STATE_FILE"] = prev
+
+
+def test_create_app_wires_shared_kill_switch_state(monkeypatch):
+    """C5 boot-wiring regression: create_app() must call
+    configure_kill_switch_file() so every worker/bridge converges on one
+    state file. If this is removed, split-brain returns in production."""
+    import tempfile
+
+    fd, p = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    os.unlink(p)
+    monkeypatch.setenv("QNA_KILL_SWITCH_STATE_FILE", p)
+    # Importing/creating the app must NOT reset our env (idempotent).
+    from quant_nanggroe.api.app import create_app
+
+    create_app()
+    assert os.environ.get("QNA_KILL_SWITCH_STATE_FILE") == p
+    # A fresh KillSwitch (simulating a second worker) must read the same file.
+    a = KillSwitch()
+    a.activate(KillSwitchLevel.LEVEL_1, reason="regression", trigger=KillSwitchTrigger.MANUAL)
+    b = KillSwitch()
+    assert not b.can_trade(), "create_app() did not wire shared kill-switch state"
+    monkeypatch.undo()
+    os.path.exists(p) and os.unlink(p)
+
+
+def test_main_entry_wires_shared_kill_switch_state(monkeypatch):
+    """C5 boot-wiring regression for the qna.py daemon/cli entry point.
+
+    Genuinely invokes qna.main() with --version (exits before mode routing)
+    so the real boot hook runs. If the hook is removed, the shared state env
+    is never set and split-brain returns in production.
+    """
+    import tempfile
+
+    fd, p = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    os.unlink(p)
+    monkeypatch.setenv("QNA_KILL_SWITCH_STATE_FILE", p)
+    monkeypatch.setattr("sys.argv", ["qna", "--version"])  # avoid pytest argv leakage
+    import qna
+
+    # --version returns early but AFTER the boot hook runs.
+    assert qna.main() == 0
+    assert os.environ.get("QNA_KILL_SWITCH_STATE_FILE") == p
+    monkeypatch.undo()
+    os.path.exists(p) and os.unlink(p)
+
