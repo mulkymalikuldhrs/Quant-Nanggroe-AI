@@ -1,4 +1,4 @@
-# Quant-Nanggroe-AI v4.3.4 — Autonomous Quant Hedge Fund
+# Quant-Nanggroe-AI v4.6.0 — Autonomous Quant Hedge Fund
 
 > **"Isi saldo dan mulai autonomous trading."** — Mulky Malikul Dhaher
 
