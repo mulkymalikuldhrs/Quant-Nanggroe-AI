@@ -110,7 +110,9 @@ class RiskManager:
         )
         self.check_gate = RiskCheckGate()
         self.kill_switch = KillSwitch()
-        self.drawdown_monitor = DrawdownMonitor(max_drawdown=MAX_DRAWDOWN)
+        self.drawdown_monitor = DrawdownMonitor(
+            max_drawdown=MAX_DRAWDOWN, initial_equity=initial_equity
+        )
         self.kelly = KellyCriterion()
         self.var_calculator = VaRCalculator()
         self.correlation_regime = CorrelationRegimeDetector(window=30)
@@ -721,9 +723,34 @@ class RiskManager:
 
         return position_size
 
-    def _auto_check_kill_switch(self) -> None:
+    def update_mtm(self, unrealized_pnl: float) -> None:
+        """Feed mark-to-market (open-position) P&L into the risk + kill-switch path.
+
+        Pitfall #41 (realized-only blindness): the kill switch was only fed by
+        ``update_pnl`` at trade CLOSE, so an open position bleeding during a live
+        crash never moved equity/drawdown until the loss was realized. This method
+        folds the current unrealized loss into the drawdown monitor and auto-check
+        so the switch can trip mid-crash, not after.
+
+        ``unrealized_pnl`` is the net open-position MTM P&L (negative = loss). It
+        does NOT mutate realized ``daily_pnl``/``current_equity`` — only the
+        kill-switch observation surface.
+        """
+        self.state.unrealized_pnl = unrealized_pnl
+        # MTM equity = peak + realized daily + open MTM. Drawdown reads from peak.
+        mtm_equity = self.state.peak_equity + self.state.daily_pnl + unrealized_pnl
+        self.drawdown_monitor.update(max(mtm_equity, 0.0))
+        # Effective daily loss includes open MTM loss (realized + unrealized).
+        eff_daily_loss = min(0.0, self.state.daily_pnl + unrealized_pnl)
+        self._auto_check_kill_switch(mtm_daily_loss_pct=eff_daily_loss)
+        self._save_state()
+
+    def _auto_check_kill_switch(self, mtm_daily_loss_pct: Optional[float] = None) -> None:
         """Auto-check if kill switch should activate based on risk limits."""
-        daily_loss_pct = abs(min(0, self.state.daily_pnl)) / self.state.peak_equity if self.state.peak_equity > 0 else 0
+        if mtm_daily_loss_pct is not None:
+            daily_loss_pct = abs(mtm_daily_loss_pct) / self.state.peak_equity if self.state.peak_equity > 0 else 0
+        else:
+            daily_loss_pct = abs(min(0, self.state.daily_pnl)) / self.state.peak_equity if self.state.peak_equity > 0 else 0
         weekly_loss_pct = abs(min(0, self.state.weekly_pnl)) / self.state.peak_equity if self.state.peak_equity > 0 else 0
 
         if daily_loss_pct >= MAX_DAILY_LOSS:
