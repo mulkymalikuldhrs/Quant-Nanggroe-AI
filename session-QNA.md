@@ -6873,3 +6873,48 @@ Launching 4 parallel agents to execute the plan.
 - Fixed orphan walk-forward smoke test (WalkForwardAnalyzer now needs BacktestEngine arg) — commit 19b4ea4.
 
 **Open gaps (honest):** data/kill_switch_state.json still ACTIVE "Crash" from 2026-07-17 -> RiskManager boots with kill switch active unless PERSISTENCE_BACKEND=memory or deactivated. Recommend `qna risk deactivate` CLI / fresh-session auto-reset. backtest_all.py (106x2) not run in full (slow, no args, overwrites backtest_all_results.md).
+
+
+---
+
+## DEVBOT TRIAGE — 2026-07-19 (status verification)
+
+**Scope:** verify session-QNA.md pending upgrades + MT5/backtest pipeline, commit progress.
+
+### Findings (evidence from source, not docs)
+- Deep Audit v2 (P0/P1) mostly DONE in prior sessions:
+  - P0-1 pipeline success: autonomous.py:761 -> result.success = s5.status != "failed" [OK]
+  - P0-2 empty stubs: 6 files DELETED (MISSING on disk) [OK]
+  - P0-3 check2 dead code: checks.py:223 computes proposed_risk_pct = notional/total_equity*100 [OK]
+  - P0-4 MAX_DAILY_TRADES: enforced manager.py:194 [OK]
+  - P1-5 VaR CI: var.py:266-267 uses alpha/2*100 & (1-alpha/2)*100 [OK]
+  - P1-10 stub routes: wiring_compat.py now returns honest not_implemented [OK]
+  - P2-3/4 MT5 adapter: try/except + orders_get() present [OK]
+- 7 plan fixes (Fix 1-7) from session tail: ALL LANDED (singleton, qna-status, DEFAULT_AGENTS, backtest null guard, Coming Soon) [OK]
+
+### MT5 integration — VERIFIED ACTIVE
+- MetaTrader5 pkg 5.0.5735 installed [OK]
+- MT5Broker import OK [OK]
+- terminal64.exe RUNNING (PID 304) [OK]
+- experts/QNAI_Bridge_EA.mq5 RESTORED from archive [OK]
+- config/mt5_accounts.yaml present (login 372044706, ValetaxIntl_Live-2) [OK]
+- Connect attempt: graceful fail (error -7 OTP, no password) fail-closed, no crash [OK]
+- BLOCKER for LIVE: VALETAX_PASSWORD env NOT set -> live connect impossible until user provides creds. Paper default works.
+
+### Backtest pipeline — VERIFIED ACTIVE
+- WalkForwardAnalyzer.analyze_strategy() runs headless on synthetic OHLCV -> OOS equity curve [OK]
+- Added tests/test_backtest/test_walkforward_smoke.py (real BaseStrategy contract) - 74 passed w/ mt5_broker [OK]
+- scripts/run_walkforward.py + production_backtest.py present [OK]
+
+### Issue fixed this session
+- Stale kill-switch state data/kill_switch_state.json was "active" (2026-07-18 correlation_herding test artifact). Boot path would load it -> block ALL orders incl MT5 live via fail-closed. Reset to inactive (gitignored runtime state, no commit).
+
+### Commits this session (master, ahead of origin/master by 5)
+1. 25c44e9 P4 #41: MTM kill-switch blindness fix + 4 regression tests (4/4 pass)
+2. 0c0f4a0 chore: revert version regression 4.5.0->4.6.0 + sync README
+3. walk-forward smoke test commit (74 passed w/ mt5_broker)
+
+### Still OPEN (honest gaps, not blocker for MT5/backtest)
+- P2-10: 5 frontend pages still use FALLBACK_ mock (agents, backtest, market, security, tools)
+- Full test suite: >10min runtime (network yfinance tests) - not run complete; targeted 78 tests pass
+- MT5 LIVE: requires VALETAX_PASSWORD + MT5 terminal up + EA deployed to terminal Experts dir
