@@ -6849,3 +6849,27 @@ Launching 4 parallel agents to execute the plan.
 
 ---
 
+
+---
+
+## devbot — v4.6.0 Upgrade Milestones (2026-07-19)
+
+**State read:** code version 4.3.4 desynced from CHANGELOG v4.6.0. Uncommitted: MTM kill-switch fix (manager.py) + test. MT5 pip 5.0.5735 installed in .venv. On-disk kill_switch_state.json active ("Crash" since 2026-07-17).
+
+**M1 [commit 25c44e9]** — MTM kill-switch + DrawdownMonitor seeding fix.
+- Root cause found: `DrawdownMonitor()` built WITHOUT `initial_equity` -> peak defaulted to 1_000_000. Every account <1M read as ~90% drawdown and FALSE-tripped kill switch on first MTM update. Seeded with `initial_equity`.
+- `RiskManager.update_mtm()` feeds open-position unrealized P&L into kill-switch path (crash trips mid-drawdown, not only at close).
+- 4 new regression tests; tests/test_risk = 108 passed. Test isolate via PERSISTENCE_BACKEND=memory.
+
+**M2 [commit 97e85d9]** — Version sync 4.3.4 -> 4.6.0 (pyproject + __init__). Verified import = 4.6.0.
+
+**M3 — MT5 LIVE VERIFIED (real, not simulated).**
+- `mt5.initialize()` -> True. Terminal connected Valetax (server ValetaxIntl-Live2, login 372044706, balance $1000, trade_allowed=True).
+- tests/test_exchange/test_mt5_broker.py = 73 passed against live terminal.
+
+**M4 — Backtest LIVE VERIFIED.**
+- tests/test_engine backtest = 69 passed. yfinance 1.5.1 live.
+- production_backtest.py run: RSI/AUDUSD +12.1% Sharpe 9.34, EMA_CROSS/BTC +46.1% Sharpe 4.74, RSI/EURUSD +5.3% Sharpe 5.47, etc. (slippage 5bps + commission 0.1%).
+- Fixed orphan walk-forward smoke test (WalkForwardAnalyzer now needs BacktestEngine arg) — commit 19b4ea4.
+
+**Open gaps (honest):** data/kill_switch_state.json still ACTIVE "Crash" from 2026-07-17 -> RiskManager boots with kill switch active unless PERSISTENCE_BACKEND=memory or deactivated. Recommend `qna risk deactivate` CLI / fresh-session auto-reset. backtest_all.py (106x2) not run in full (slow, no args, overwrites backtest_all_results.md).
