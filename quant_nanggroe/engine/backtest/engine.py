@@ -485,6 +485,40 @@ class BacktestEngine:
             target_direction = 1 if target_weight > 0.01 else (-1 if target_weight < -0.01 else 0)
             current_pos = portfolio.get_position(symbol)
 
+            # Check stop-loss and take-profit before signal-based logic
+            if current_pos is not None:
+                bar_high = price_row.get("high", price) if isinstance(price_row, pd.Series) else price
+                bar_low = price_row.get("low", price) if isinstance(price_row, pd.Series) else price
+                close_price = None
+                close_reason = None
+                if current_pos.direction == 1:  # long
+                    if current_pos.stop_loss is not None and bar_low <= current_pos.stop_loss:
+                        close_price = current_pos.stop_loss
+                        close_reason = "stop_loss"
+                    elif current_pos.take_profit is not None and bar_high >= current_pos.take_profit:
+                        close_price = current_pos.take_profit
+                        close_reason = "take_profit"
+                elif current_pos.direction == -1:  # short
+                    if current_pos.stop_loss is not None and bar_high >= current_pos.stop_loss:
+                        close_price = current_pos.stop_loss
+                        close_reason = "stop_loss"
+                    elif current_pos.take_profit is not None and bar_low <= current_pos.take_profit:
+                        close_price = current_pos.take_profit
+                        close_reason = "take_profit"
+                if close_price is not None:
+                    fill_price = self._get_fill_price(
+                        execution_model, close_price, -current_pos.direction,
+                        abs(current_pos.size), timestamp,
+                    )
+                    trade = portfolio.close_position(symbol, fill_price, timestamp, close_reason)
+                    if trade is not None:
+                        commission = self.execution.calc_commission(
+                            abs(trade.size), fill_price, is_closing=True
+                        )
+                        portfolio._apply_commission(symbol, commission)
+                        all_trades.append(trade)
+                    current_pos = portfolio.get_position(symbol)
+
             # Close when flat-target or direction flipped
             if current_pos is not None and (
                 target_direction == 0
@@ -564,6 +598,13 @@ class BacktestEngine:
                     return float(fill)
             except Exception as e:
                 logger.warning(f"Custom execution model failed: {e}, using default")
+
+        # Use simulate_fill() when available (applies market impact + slippage + commission)
+        if isinstance(self.execution, ExecutionSimulator):
+            fill_result = self.execution.simulate_fill(
+                price=price, direction=direction, size=size
+            )
+            return float(fill_result["fill_price"])
 
         return self.execution.apply_slippage(price, direction)
 

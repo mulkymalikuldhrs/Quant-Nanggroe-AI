@@ -30,3 +30,15 @@ async def store_memory(data: dict[str, Any]) -> dict[str, Any]:
     value = data.get("value", "")
     _memory_store[key] = value
     return {"status": "stored", "key": key}
+
+@router.delete("/entry/{entry_id:path}")
+async def delete_memory(entry_id: str) -> dict[str, Any]:
+    """Delete a memory entry by key or ID."""
+    if entry_id in _memory_store:
+        del _memory_store[entry_id]
+        return {"status": "deleted", "key": entry_id}
+    # Try matching by key prefix
+    matched = [k for k in _memory_store.keys() if entry_id in k]
+    for k in matched:
+        del _memory_store[k]
+    return {"status": "deleted" if matched else "not_found", "matched": len(matched)}

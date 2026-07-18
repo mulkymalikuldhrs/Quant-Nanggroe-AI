@@ -9,7 +9,6 @@ from quant_nanggroe.connectors.broker_base import (
     Order,
     Position,
 )
-from quant_nanggroe.connectors.simulated import SimulatedBroker
 
 
 class TestBrokerType:
@@ -48,96 +47,5 @@ class TestPosition:
     def test_default_broker(self):
         p = Position(symbol="XAUUSD", quantity=10.0, entry_price=1900.0, current_price=1910.0)
         assert p.broker == "simulated"
-
-
-class TestSimulatedBroker:
-    def test_connect(self):
-        broker = SimulatedBroker()
-        assert broker.connect() is True
-        assert broker.connected is True
-
-    def test_disconnect(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.disconnect()
-        assert broker.connected is False
-        assert broker.get_positions() == []
-
-    def test_initial_balance(self):
-        broker = SimulatedBroker(initial_balance=50000.0)
-        assert broker.get_balance() == 50000.0
-
-    def test_default_balance(self):
-        broker = SimulatedBroker()
-        assert broker.get_balance() == 100_000.0
-
-    def test_place_buy_order(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.update_price("BTC/USDT", 50000.0)
-        order_id = broker.place_order(Order("BTC/USDT", "buy", 1.0, "market"))
-        assert order_id is not None
-        assert len(order_id) > 0
-
-    def test_buy_order_reduces_balance(self):
-        broker = SimulatedBroker(initial_balance=100000.0)
-        broker.connect()
-        broker.update_price("AAPL", 150.0)
-        broker.place_order(Order("AAPL", "buy", 10.0, "market"))
-        assert broker.get_balance() == 100000.0 - 150.0 * 10.0
-
-    def test_sell_order_increases_balance(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.update_price("AAPL", 150.0)
-        broker.place_order(Order("AAPL", "buy", 10.0, "market"))
-        balance_after_buy = broker.get_balance()
-        broker.place_order(Order("AAPL", "sell", 5.0, "market"))
-        assert broker.get_balance() == balance_after_buy + 150.0 * 5.0
-
-    def test_sell_insufficient_position_raises(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.update_price("AAPL", 150.0)
-        with pytest.raises(ValueError, match="No position to sell"):
-            broker.place_order(Order("AAPL", "sell", 1.0, "market"))
-
-    def test_buy_insufficient_funds_raises(self):
-        broker = SimulatedBroker(initial_balance=100.0)
-        broker.connect()
-        broker.update_price("BTC/USDT", 50000.0)
-        with pytest.raises(ValueError, match="Insufficient funds"):
-            broker.place_order(Order("BTC/USDT", "buy", 10.0, "market"))
-
-    def test_get_positions_after_buy(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.update_price("AAPL", 150.0)
-        broker.place_order(Order("AAPL", "buy", 10.0, "market"))
-        positions = broker.get_positions()
-        assert len(positions) == 1
-        assert positions[0].symbol == "AAPL"
-        assert positions[0].quantity == 10.0
-
-    def test_get_positions_empty(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        assert broker.get_positions() == []
-
-    def test_update_price_updates_pnl(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.update_price("AAPL", 150.0)
-        broker.place_order(Order("AAPL", "buy", 10.0, "market"))
-        broker.update_price("AAPL", 160.0)
-        positions = broker.get_positions()
-        assert positions[0].pnl == 10.0 * 10.0
-
-    def test_limit_order_price(self):
-        broker = SimulatedBroker()
-        broker.connect()
-        broker.update_price("AAPL", 150.0)
-        broker.place_order(Order("AAPL", "buy", 5.0, "limit", price=148.0))
-        assert broker.get_balance() == 100000.0 - 148.0 * 5.0
 
 

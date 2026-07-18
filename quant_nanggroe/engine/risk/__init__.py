@@ -8,8 +8,7 @@ __all__ = [
     'correlation_regime',
     'drawdown',
     'emotional_lockout',
-    'hermes_kill_switch',
-    'hermes_risk_officer',
+
     'kelly',
     'kill_switch',
     'manager',
@@ -28,8 +27,6 @@ from . import correlation
 from . import correlation_regime
 from . import drawdown
 from . import emotional_lockout
-from . import hermes_kill_switch
-from . import hermes_risk_officer
 from . import kelly
 from . import kill_switch
 from . import manager

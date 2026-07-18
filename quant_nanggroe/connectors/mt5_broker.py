@@ -57,8 +57,8 @@ class MT5Broker(BrokerConnector):
         return str(res.order)
 
     def get_positions(self) -> List[Position]:
-        if not self.connected:
-            return []
+        if not self.connected:  # ponytail: fail-closed, consistent with get_balance/place_order
+            raise RuntimeError("not connected")
         out = []
         for p in self._mt5.positions_get() or []:
             out.append(Position(

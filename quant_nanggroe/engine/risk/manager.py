@@ -188,6 +188,16 @@ class RiskManager:
                 "message": "All trading halted. Manual reset required after review.",
             }
 
+        # Daily trade count limit
+        if self.state.trade_count_today >= MAX_DAILY_TRADES:
+            return {
+                "symbol": symbol,
+                "direction": direction.upper(),
+                "verdict": "VETOED",
+                "reason": f"Daily trade limit reached ({self.state.trade_count_today}/{MAX_DAILY_TRADES})",
+                "failed_checkpoints": ["daily_trades"],
+            }
+
         # Run 9-checkpoint gate. Real-time P&L % from the execution layer is authoritative
         # for the constitutional daily/weekly-loss veto. The gate expects absolute equity
         # fractions, so convert the percent args: daily_pnl = daily_pnl_pct/100 * balance.
@@ -638,6 +648,7 @@ class RiskManager:
         account_balance: float,
         risk_per_trade: float = 0.02,
         max_risk_per_trade: float = 0.05,
+        direction: str = "buy",
     ) -> Dict[str, Any]:
         """Calculate position size using ATR (Average True Range).
 
@@ -665,7 +676,10 @@ class RiskManager:
             return {"position_size": 0, "stop_loss": 0, "risk_amount": 0}
 
         position_size = risk_amount / stop_distance
-        stop_loss = entry_price - stop_distance
+        if direction == "sell":
+            stop_loss = entry_price + stop_distance
+        else:
+            stop_loss = entry_price - stop_distance
 
         return {
             "position_size": position_size,

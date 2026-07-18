@@ -70,7 +70,7 @@ const AGENT_GRAPH = {
 };
 
 export default function AgentsPage() {
-  const { killSwitch, toggleKillSwitch, agents: storeAgents, loadingStates, fetchAgents } = useAppStore();
+  const { killSwitch, toggleKillSwitch, killSwitchStatus, agents: storeAgents, loadingStates, fetchAgents } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [runSymbol, setRunSymbol] = useState("AAPL");
@@ -93,7 +93,7 @@ export default function AgentsPage() {
         lastDecision: a.status === "active" ? "Active and monitoring" : "Waiting",
         icon: "🤖",
       } as Agent))
-    : FALLBACK_AGENTS;
+    : [];
 
   const filteredAgents = agents.filter(
     (a) =>
@@ -143,7 +143,16 @@ export default function AgentsPage() {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
             <Skull className="w-3.5 h-3.5 text-red-400" />
             <span className="text-xs text-white/50">Kill Switch</span>
-            <Switch checked={killSwitch} onCheckedChange={toggleKillSwitch} />
+            {loadingStates.killSwitch.loading ? (
+              <RefreshCw className="w-3.5 h-3.3 text-white/30 animate-spin" />
+            ) : loadingStates.killSwitch.error ? (
+              <span className="text-[10px] text-red-400/70" title={loadingStates.killSwitch.error}>!</span>
+            ) : null}
+            <Switch
+              checked={killSwitch}
+              onCheckedChange={toggleKillSwitch}
+              disabled={loadingStates.killSwitch.loading}
+            />
           </div>
         </div>
       </div>
@@ -191,13 +200,28 @@ export default function AgentsPage() {
         </div>
       )}
 
+      {/* Kill Switch Error */}
+      {loadingStates.killSwitch.error && !killSwitch && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2 animate-slide-up">
+          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <p className="text-sm text-red-400 flex-1">Kill Switch: {loadingStates.killSwitch.error}</p>
+        </div>
+      )}
+
       {/* Kill Switch Warning */}
       {killSwitch && (
         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2 animate-slide-up">
           <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-400">
-            Kill switch is active. All agent operations are suspended. Trading and pipeline execution disabled.
-          </p>
+          <div className="flex-1">
+            <p className="text-sm text-red-400">
+              Kill switch is active. All agent operations are suspended.
+            </p>
+            {killSwitchStatus?.activation_reason && (
+              <p className="text-xs text-red-400/60 mt-0.5">
+                Reason: {killSwitchStatus.activation_reason}
+              </p>
+            )}
+          </div>
         </div>
       )}
 

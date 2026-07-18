@@ -3,7 +3,7 @@
 __all__ = [
     'base',
     'fibonacci',
-    'hermes_smc',
+
     'ict',
     'market_profile',
     'registry',
@@ -15,7 +15,6 @@ __all__ = [
 
 from . import base
 from . import fibonacci
-from . import hermes_smc
 from . import ict
 from . import market_profile
 from . import registry

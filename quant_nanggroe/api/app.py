@@ -38,7 +38,7 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from starlette.responses import Response
 
-from quant_nanggroe.api.middleware import AuthMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
+from quant_nanggroe.api.middleware import AuthMiddleware, RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
 from quant_nanggroe.config import get_settings
 from quant_nanggroe.security.auth import APIKeyAuth, JWTAuth, UserRole
 
@@ -246,6 +246,9 @@ def create_app() -> FastAPI:
     # ── Security Headers Middleware ──────────────────────────────────
     app.add_middleware(SecurityHeadersMiddleware)
 
+    # ── Request ID Middleware ────────────────────────────────────────
+    app.add_middleware(RequestIDMiddleware)
+
     # ── Auth Middleware ──────────────────────────────────────────────
     jwt_auth = JWTAuth(
         secret_key=settings.jwt_secret,
@@ -308,6 +311,7 @@ def create_app() -> FastAPI:
         options,
         personas,
         portfolio,
+        qna_status,
         rl,
         scheduler,
         sec_edgar,
@@ -355,6 +359,7 @@ def create_app() -> FastAPI:
     app.include_router(wiring_compat.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
+    app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")

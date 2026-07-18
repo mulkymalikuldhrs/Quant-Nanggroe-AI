@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ponytail: backend enforces API-key auth (Authorization: ApiKey ***). Inject
 // the dev key from env so the dashboard can actually talk to /api/*.
@@ -222,7 +222,7 @@ export const agentsApi = {
   resetKillSwitch: () =>
     apiRequest<KillSwitchStatusResponse>("/api/agents/kill-switch/reset", {
       method: "POST",
-      body: {},
+      body: { confirmation: "CONFIRM_RESET_AFTER_REVIEW" },
     }),
 };
 
@@ -360,6 +360,42 @@ export const brokersApi = {
     }),
 };
 
+export const schedulerApi = {
+  getStatus: () =>
+    apiRequest<SchedulerStatus>("/api/scheduler/status"),
+  start: (intervalMinutes?: number, symbols?: string[]) =>
+    apiRequest<SchedulerStatus>("/api/scheduler/start", {
+      method: "POST",
+      body: { interval_minutes: intervalMinutes, symbols },
+    }),
+  stop: () =>
+    apiRequest<SchedulerStatus>("/api/scheduler/stop", { method: "POST" }),
+  triggerCycle: (symbols?: string[]) =>
+    apiRequest<PipelineCycleResult>("/api/scheduler/cycle", {
+      method: "POST",
+      body: { symbols },
+    }),
+};
+
+export interface SchedulerStatus {
+  running: boolean;
+  interval_minutes?: number;
+  symbols?: string[];
+  error?: string;
+}
+
+export interface PipelineCycleResult {
+  total: number;
+  success_count: number;
+  results: Array<{
+    symbol: string;
+    success: boolean;
+    signal: string;
+    confidence: number;
+    reason: string;
+  }>;
+}
+
 export default apiRequest;
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -398,7 +434,15 @@ export interface Exchange { id: string; name: string; type: ExchangeType; status
 
 // ── Agent Types ──────────────────────────────────────────────────────
 export interface Agent { id: string; name: string; status: AgentStatus; emotion: AgentEmotion; action: string; lastDecision: string; icon: string; type?: string; }
-export interface KillSwitchStatusResponse { active: boolean; level: string; reason: string; }
+export interface KillSwitchStatusResponse {
+  is_active: boolean;
+  activated_at: string | null;
+  activation_reason: string | null;
+  auto_triggers?: number;
+  manual_triggers?: number;
+  total_resets?: number;
+  message: string;
+}
 export interface AgentRunRequest { symbol: string; agentId?: string; }
 export interface AgentRunResponse { success: boolean; result: string; agentId: string; }
 export interface AgentStatusResponse { agents: Agent[]; kill_switch_active: boolean; }

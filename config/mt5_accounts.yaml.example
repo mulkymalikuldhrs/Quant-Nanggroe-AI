@@ -1,0 +1,10 @@
+# MT5 Account Configuration
+# 1. Copy this file to config/mt5_accounts.yaml
+# 2. Fill in your MT5 demo account details
+# 3. Set VALETAX_PASSWORD as environment variable (or fill password here)
+accounts:
+  - name: "MT5 Demo"
+    login: 12345678        # Your MT5 demo login
+    server: "Exness-MT5Trial"  # Your MT5 server
+    password: "${VALETAX_PASSWORD}"  # Set VALETAX_PASSWORD env var
+    role: "primary"

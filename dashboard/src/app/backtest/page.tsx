@@ -57,7 +57,7 @@ export default function BacktestPage() {
   const [endDate, setEndDate] = useState("2024-01-01");
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<BacktestResult>(FALLBACK_RESULT);
+  const [result, setResult] = useState<BacktestResult | null>(null);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [engines, setEngines] = useState<string[]>([]);
@@ -178,7 +178,8 @@ export default function BacktestPage() {
         </div>
       </ChartCard>
 
-      {/* Results */}
+      {/* Results — guard against null while backtest hasn't run */}
+      {result && (
       <Tabs defaultValue="equity">
         <TabsList>
           <TabsTrigger value="equity">Equity Curve</TabsTrigger>
@@ -286,6 +287,7 @@ export default function BacktestPage() {
           </ChartCard>
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }

@@ -11,9 +11,12 @@ Extracted from OpenAlice's ExecutionManager.
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from quant_nanggroe.engine.execution.base import Broker, Fill, Order
@@ -65,6 +68,36 @@ class ExecutionManager:
         self._kill_switch: Optional[KillSwitch] = KillSwitch()
         self._risk_manager: Optional["RiskManager"] = None
         self._audit_log: List[Dict[str, Any]] = []
+        self._audit_log_path: Optional[str] = None
+        self._setup_audit_log()
+
+    def _setup_audit_log(self) -> None:
+        """Initialize audit log path for persistence."""
+        try:
+            state_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "paper_state",
+            )
+            os.makedirs(state_dir, exist_ok=True)
+            self._audit_log_path = os.path.join(state_dir, "execution_audit.jsonl")
+        except Exception:
+            self._audit_log_path = None
+
+    def _persist_audit_entry(self, entry: Dict[str, Any]) -> None:
+        """Append a single audit entry to the JSONL log file."""
+        if not self._audit_log_path:
+            return
+        try:
+            entry_with_ts = {**entry, "timestamp": datetime.now(timezone.utc).isoformat()}
+            with open(self._audit_log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry_with_ts, default=str) + "\n")
+        except Exception:
+            pass
+
+    def _record_audit(self, entry: Dict[str, Any]) -> None:
+        """Record an audit entry to both in-memory log and persistent JSONL file."""
+        self._audit_log.append(entry)
+        self._persist_audit_entry(entry)
 
     def set_risk_manager(self, risk_manager: "RiskManager") -> None:
         """Attach a RiskManager; its constitutional limits are enforced on every order."""
@@ -118,7 +151,7 @@ class ExecutionManager:
                 "Order %s blocked by guard %s: %s",
                 order.id, guard_result.guard_name, guard_result.reason,
             )
-            self._audit_log.append({
+            self._record_audit({
                 "action": "GUARD_BLOCKED",
                 "order_id": order.id,
                 "guard": guard_result.guard_name,
@@ -164,7 +197,7 @@ class ExecutionManager:
                     daily_pnl_pct, weekly_pnl_pct,
                     max_drawdown_pct, volatility_pct,
                 )
-                self._audit_log.append({
+                self._record_audit({
                     "action": "KILL_SWITCH_BLOCKED",
                     "order_id": order.id,
                     "symbol": order.symbol,
@@ -216,7 +249,7 @@ class ExecutionManager:
                     "Order %s BLOCKED by RiskManager: %s — %s",
                     order.id, verdict.get("reason"), verdict.get("failed_checkpoints"),
                 )
-                self._audit_log.append({
+                self._record_audit({
                     "action": "RISK_VETOED",
                     "order_id": order.id,
                     "symbol": order.symbol,
@@ -233,7 +266,7 @@ class ExecutionManager:
 
             # 4. Wait for fill (simplified - in production would be async)
             # For now, we return the order and let the fill tracker handle it
-            self._audit_log.append({
+            self._record_audit({
                 "action": "ORDER_SUBMITTED",
                 "order_id": order.id,
                 "broker": broker_name,
@@ -242,18 +275,31 @@ class ExecutionManager:
                 "quantity": order.quantity,
             })
 
-            return Fill(
+            # Use broker's actual fill price (from metadata), not the order's limit price
+            fill_price = updated_order.metadata.get("fill_price") or updated_order.price or 0.0
+            fill = Fill(
                 id=str(uuid.uuid4()),
                 order_id=order.id,
                 symbol=order.symbol,
                 side=order.side,
                 quantity=order.quantity,
-                price=order.price or 0.0,
+                price=fill_price,
+                commission=updated_order.metadata.get("commission", 0.0),
             )
+
+            # Wire guards: record trade for cooldown, update position tracking
+            self._cooldown_guard.record_trade(order.symbol)
+            fill_notional = fill.price * fill.quantity
+            self._max_position_guard.update_position(order.symbol, fill_notional)
+
+            # Record fill in tracker for execution quality metrics
+            self._fill_tracker.record(fill)
+
+            return fill
 
         except Exception as exc:
             logger.error("Order execution failed: %s", exc)
-            self._audit_log.append({
+            self._record_audit({
                 "action": "EXECUTION_FAILED",
                 "order_id": order.id,
                 "error": str(exc),
@@ -273,9 +319,21 @@ class ExecutionManager:
         if order is None:
             return False
 
-        for broker in self._brokers.values():
+        # Try to cancel via the broker that handled the order
+        broker_name = self._route_order(order)
+        broker = self._brokers.get(broker_name)
+        if broker:
             try:
                 return await broker.cancel_order(order_id)
+            except Exception:
+                pass
+
+        # Fallback: try all other brokers
+        for name, b in self._brokers.items():
+            if name == broker_name:
+                continue
+            try:
+                return await b.cancel_order(order_id)
             except Exception:
                 continue
 
@@ -334,8 +392,8 @@ class ExecutionManager:
 
         Selects the best broker for each order based on:
         - Symbol availability
-        - Broker health
-        - Latency
+        - Broker health (connected status)
+        - Fallback chain if primary is unhealthy
 
         Args:
             order: Order to route.
@@ -343,8 +401,37 @@ class ExecutionManager:
         Returns:
             Broker name to use.
         """
+        # Symbol-specific routing hints
+        crypto_symbols = {"BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "ADA-USD"}
+        forex_symbols = {"EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD"}
+
+        def _broker_healthy(name: str) -> bool:
+            b = self._brokers.get(name)
+            return b is not None and b.is_connected
+
+        # Try primary broker first if healthy
         if self._primary_broker and self._primary_broker in self._brokers:
-            return self._primary_broker
+            if _broker_healthy(self._primary_broker):
+                return self._primary_broker
+            logger.warning("Primary broker %s unhealthy, falling back", self._primary_broker)
+
+        # Symbol-aware fallback: try brokers that likely support the symbol
+        if order.symbol in crypto_symbols:
+            preferred_order = ["binance", "paper"]
+        elif order.symbol in forex_symbols:
+            preferred_order = ["mt5", "paper"]
+        else:
+            preferred_order = ["paper"]
+
+        for name in preferred_order:
+            if name in self._brokers and _broker_healthy(name):
+                return name
+
+        # Last resort: any healthy broker
+        for name, broker in self._brokers.items():
+            if broker.is_connected:
+                return name
+
         return next(iter(self._brokers), "paper")
 
     def get_audit_log(self) -> List[Dict[str, Any]]:

@@ -15,6 +15,9 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
+
 logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -26,6 +29,17 @@ _MAX_RETRIES = 3
 _RETRY_BACKOFF_MULTIPLIER = 2.0
 _BASE_RETRY_DELAY = 1.0
 _RATE_LIMIT_INTERVAL = 1.0 / _MAX_REQUESTS_PER_SECOND
+
+_TIMEFRAME_MAP = {
+    TimeFrame.M1: "1m",
+    TimeFrame.M5: "5m",
+    TimeFrame.M15: "15m",
+    TimeFrame.M30: "30m",
+    TimeFrame.H1: "1h",
+    TimeFrame.H4: "4h",
+    TimeFrame.D1: "1d",
+    TimeFrame.W1: "1w",
+}
 
 
 def _parse_since(since: Optional[str]) -> Optional[int]:
@@ -281,3 +295,60 @@ class CryptoProvider:
 
     async def __aexit__(self, *args: Any) -> None:
         await self.close()
+
+
+class CryptoProviderAdapter(DataProvider):
+    """Adapter wrapping CryptoProvider to conform to the DataProvider ABC."""
+
+    def __init__(self, wrapped: CryptoProvider) -> None:
+        super().__init__(name="crypto", priority=10)
+        self._wrapped = wrapped
+
+    async def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        tf_str = _TIMEFRAME_MAP.get(timeframe, "1d")
+        since_iso = start.isoformat() if start else None
+        df = await self._wrapped.fetch_ohlcv(symbol, timeframe=tf_str, since=since_iso, limit=limit)
+        if df.empty:
+            return []
+        results: List[OHLCV] = []
+        for _, row in df.iterrows():
+            try:
+                results.append(OHLCV(
+                    symbol=symbol,
+                    timestamp=pd.Timestamp(row["timestamp"]).to_pydatetime(),
+                    open=float(row["open"]),
+                    high=float(row["high"]),
+                    low=float(row["low"]),
+                    close=float(row["close"]),
+                    volume=float(row.get("volume", 0)),
+                ))
+            except Exception:
+                continue
+        return results
+
+    async def get_ticker(self, symbol: str) -> Ticker:
+        return Ticker(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+            last_price=0.0,
+        )
+
+    async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
+        return OrderBook(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            await self._wrapped.fetch_ohlcv("BTC/USDT", timeframe="1d", limit=1)
+            return True
+        except Exception:
+            return False

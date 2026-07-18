@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { readFileSync } from "node:fs";
 
 // ponytail: minimal status endpoint. Reads local state files; no deps beyond next.
-const WORKTREE = "D:/repositories/Quant-Nanggroe-AI-worktree";
+const WORKTREE = process.cwd();
 const KILL_STATE_FILE =
   process.env.QNA_KILL_SWITCH_STATE_FILE || `${WORKTREE}/data/kill_switch_state.json`;
-const GRAPH_HTML = "D:/docs/graph.html";
-const LEDGER_MD = "D:/docs/DECISION_LEDGER.md";
+const GRAPH_HTML =
+  process.env.QNA_GRAPH_HTML_PATH || `${WORKTREE}/docs/graph.html`;
+const LEDGER_MD =
+  process.env.QNA_LEDGER_MD_PATH || `${WORKTREE}/docs/DECISION_LEDGER.md`;
 
 function read(path: string): string | null {
   try {

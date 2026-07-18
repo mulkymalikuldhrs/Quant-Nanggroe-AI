@@ -19,15 +19,9 @@ router = APIRouter()
 
 
 def _get_exchange_manager(http_request: Request):
-    """Retrieve or lazily create the ExchangeManager from app state."""
-    from quant_nanggroe.exchange.manager import ExchangeManager
-
-    if not hasattr(http_request.app.state, "_services"):
-        http_request.app.state._services = {}
-
-    if "exchange_manager" not in http_request.app.state._services:
-        http_request.app.state._services["exchange_manager"] = ExchangeManager()
-    return http_request.app.state._services["exchange_manager"]
+    """Retrieve the singleton ExchangeManager from services."""
+    from quant_nanggroe.services import get_exchange_manager
+    return get_exchange_manager(http_request.app)
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +134,7 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
 
 @router.get("/performance")
 async def get_portfolio_performance(http_request: Request) -> dict[str, Any]:
-    """Get portfolio performance metrics."""
+    """Get portfolio performance metrics (stub — not wired to real engine)."""
     return {
         "total_return": 0.0,
         "cagr": 0.0,
@@ -149,6 +143,9 @@ async def get_portfolio_performance(http_request: Request) -> dict[str, Any]:
         "max_drawdown": 0.0,
         "win_rate": 0.0,
         "total_trades": 0,
+        "status": "not_implemented",
+        "_stub": True,
+        "message": "Portfolio performance not wired to real engine",
         "timestamp": datetime.now().isoformat(),
     }
 

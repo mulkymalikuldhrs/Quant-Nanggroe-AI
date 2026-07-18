@@ -7,8 +7,7 @@ __all__ = [
     'engine',
     'execution',
     'fama_french',
-    'hermes_backtest',
-    'hermes_portfolio',
+
     'metrics',
     'monte_carlo',
     'nautilus_adapter',
@@ -33,8 +32,6 @@ from quant_nanggroe.engine.backtest.monte_carlo import MonteCarloSimulator, Mont
 __all__ = ['BacktestEngine', 'BacktestConfig', 'MarketType', 'StrategyType', 'MetricsResult', 'PerformanceMetrics', 'TradeRecord', 'MonteCarloSimulator', 'MonteCarloResult']
 from . import execution
 from . import fama_french
-from . import hermes_backtest
-from . import hermes_portfolio
 from . import metrics
 from . import monte_carlo
 from . import nautilus_adapter

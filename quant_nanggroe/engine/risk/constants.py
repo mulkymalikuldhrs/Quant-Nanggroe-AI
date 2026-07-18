@@ -18,24 +18,26 @@ from typing import Final
 from quant_nanggroe.config.settings import get_settings
 
 _settings = get_settings()
-_TIER_SCALE = 10.0 if _settings.risk_tier == "demo" else 1.0
 
 # ─── Constitutional Risk Limits (env-driven — agent-proof) ──────────────────
+# NOTE: These limits are CONSTITUTIONAL.  The tier/scaling factor is deliberately
+# NOT applied here — demo trades already benefit from play money and relaxed
+# strategy rules, but the constitutional hard limits must remain absolute.
 
 # Per-Trade Limits
-MAX_RISK_PER_TRADE: float = _settings.risk_max_per_trade * _TIER_SCALE / 100
+MAX_RISK_PER_TRADE: float = _settings.risk_max_per_trade / 100
 MAX_POSITION_SIZE_PCT: Final[float] = 0.10      # Max 10% of portfolio in single position
 MAX_LEVERAGE: Final[float] = 3.0                # Max 3x leverage
 
 # Daily Limits
-MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss * _TIER_SCALE / 100       # 1% default
+MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss / 100       # 1% default
 MAX_DAILY_TRADES: Final[int] = 5                # Max 5 trades per day to prevent overtrading
 
 # Weekly Limit
-MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss * _TIER_SCALE / 100     # 3% default
+MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss / 100     # 3% default
 
 # Drawdown
-MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown * _TIER_SCALE / 100       # 10% default
+MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown / 100       # 10% default
 
 # Quality Gates
 MIN_RISK_REWARD: Final[float] = 2.0             # Minimum 1:2 R:R ratio
@@ -51,6 +53,39 @@ MAX_TOTAL_CONCENTRATION: Final[float] = 0.80    # Max 80% of portfolio in positi
 
 # ─── Cost-Aware Budget (P1-32)
 TRADING_BUDGET_PCT: Final[float] = 0.001        # 0.1% of initial capital allocated for fees/slippage
+
+# ─── Sector Exposure Limits ────────────────────────────────────────────────
+MAX_SECTOR_EXPOSURE_PCT: Final[float] = 0.30    # Max 30% of portfolio in any single sector
+
+SECTOR_MAP: dict[str, str] = {
+    # Crypto
+    "BTC-USD": "crypto", "ETH-USD": "crypto", "SOL-USD": "crypto",
+    "XRP-USD": "crypto", "ADA-USD": "crypto", "DOT-USD": "crypto",
+    "DOGE-USD": "crypto", "AVAX-USD": "crypto", "LINK-USD": "crypto",
+    "MATIC-USD": "crypto", "UNI7083-USD": "crypto", "ATOM-USD": "crypto",
+    # Forex
+    "EURUSD": "forex", "GBPUSD": "forex", "USDJPY": "forex",
+    "USDCAD": "forex", "AUDUSD": "forex", "NZDUSD": "forex",
+    "EURGBP": "forex", "EURJPY": "forex", "GBPJPY": "forex",
+    "CHFJPY": "forex", "AUDJPY": "forex", "NZDJPY": "forex",
+    # Indices
+    "SPY": "index", "QQQ": "index", "DIA": "index", "IWM": "index",
+    "SPX": "index", "NDX": "index", "VIX": "index",
+    # US Tech
+    "NVDA": "tech", "AAPL": "tech", "MSFT": "tech", "GOOGL": "tech",
+    "AMZN": "tech", "META": "tech", "TSLA": "tech", "AMD": "tech",
+    "INTC": "tech", "CRM": "tech", "ADBE": "tech", "NFLX": "tech",
+    # US Finance
+    "JPM": "finance", "GS": "finance", "MS": "finance", "V": "finance",
+    "MA": "finance", "BAC": "finance", "WFC": "finance", "C": "finance",
+    # US Energy
+    "XOM": "energy", "CVX": "energy", "COP": "energy", "SLB": "energy",
+    "OXY": "energy", "EOG": "energy",
+    # Commodities
+    "XAUUSD": "commodity", "XAGUSD": "commodity", "USOIL": "commodity",
+    "UKOIL": "commodity", "NG": "commodity", "HG": "commodity",
+}
+SECTOR_DEFAULT: str = "other"
 
 # ─── Kill Switch Thresholds (early warning BEFORE hard limits) ──────────────
 # Kill switch triggers BEFORE the constitutional hard limits are hit,

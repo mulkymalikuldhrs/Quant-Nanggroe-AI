@@ -242,6 +242,27 @@ def get_exchange_manager(app: FastAPI):
 
 
 # ══════════════════════════════════════════════════════════════════════
+# ExecutionManager
+# ══════════════════════════════════════════════════════════════════════
+
+def get_execution_manager(app: FastAPI):
+    """
+    Return the shared ExecutionManager singleton from app.state.
+
+    The ExecutionManager is wired with the constitutional RiskManager and
+    KillSwitch so every order is enforced. Callers that need the
+    ExchangeManager bridge should add the broker adapter after obtaining
+    the singleton.
+    """
+    _ensure_state(app)
+    if "execution_manager" not in app.state._services:
+        logger.info("services_initializing", extra={"component": "ExecutionManager"})
+        from quant_nanggroe.engine.execution.builder import build_execution_manager
+        app.state._services["execution_manager"] = build_execution_manager()
+    return app.state._services["execution_manager"]
+
+
+# ══════════════════════════════════════════════════════════════════════
 # Convenience: initialise all singletons at once (called from lifespan)
 # ══════════════════════════════════════════════════════════════════════
 
@@ -260,4 +281,5 @@ def init_all_services(app: FastAPI) -> None:
     get_autoswitch_engine(app)
     get_audit_logger(app)
     get_exchange_manager(app)
+    get_execution_manager(app)
     logger.info("services_all_initialized")

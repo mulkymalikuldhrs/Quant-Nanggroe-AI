@@ -624,20 +624,10 @@ class XGBoostModel(QuantModel):
 
 @register_model("transformer")
 class TransformerModel(QuantModel):
-    """Transformer-based model (stub with proper interface).
+    """TransformerModel — NOT FOR PRODUCTION.
 
-    This is a stub implementation that provides the full QuantModel
-    interface.  In production, this would use PyTorch or TensorFlow
-    to implement an attention-based time series model.
-
-    For now, uses a simple feedforward network approximation
-    when torch is available, otherwise uses a linear fallback.
-
-    Attributes:
-        d_model: Model dimension.
-        n_heads: Number of attention heads.
-        n_layers: Number of transformer layers.
-        dropout: Dropout rate.
+    This is a simplified feedforward stub, not a real transformer.
+    Uses 2-layer MLP as placeholder. Do not use for live trading.
     """
 
     def __init__(

@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -248,6 +248,12 @@ class AutoSwitcher:
         """
         if not self._config.enable_auto_switch and not force:
             return self._current_strategy
+
+        # Daily reset of switch counter
+        today = date.today()
+        if hasattr(self, '_last_switch_date') and self._last_switch_date != today:
+            self._switches_today = 0
+        self._last_switch_date = today
 
         # Check confidence threshold
         if confidence < self._config.min_regime_confidence and not force:

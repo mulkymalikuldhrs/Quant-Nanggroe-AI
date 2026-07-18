@@ -182,6 +182,13 @@ async def activate_kill_switch(
         KillSwitchStatusResponse with updated status.
     """
     try:
+        from quant_nanggroe.security.auth import UserRole
+        if hasattr(http_request.state, 'user_role') and http_request.state.user_role not in (UserRole.ADMIN,):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=403,
+                content={"error": "Admin role required to activate kill switch", "status": "forbidden"},
+            )
         from quant_nanggroe.services import get_kill_switch
         ks = get_kill_switch(http_request.app)
         ks.activate(request.reason)
@@ -216,6 +223,14 @@ async def reset_kill_switch(
     Returns:
         KillSwitchStatusResponse with updated status.
     """
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(http_request.state, 'user_role') and http_request.state.user_role not in (UserRole.ADMIN,):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Admin role required to reset kill switch", "status": "forbidden"},
+        )
+
     # ponytail: align to engine constant so reset is actually possible
     from quant_nanggroe.engine.risk.kill_switch import RESET_CONFIRMATION
     if request.confirmation != RESET_CONFIRMATION:
@@ -227,8 +242,12 @@ async def reset_kill_switch(
     try:
         from quant_nanggroe.services import get_kill_switch
         ks = get_kill_switch(http_request.app)
-        ks.reset()
-        status = ks.status()
+        reset_result = ks.reset(confirmation=RESET_CONFIRMATION)
+        if reset_result.get("status") == "STILL_ACTIVE":
+            return KillSwitchStatusResponse(
+                is_active=True,
+                message=f"Reset rejected: confirmation mismatch ({reset_result})",
+            )
         return KillSwitchStatusResponse(
             is_active=False,
             message="Kill switch reset. Trading resumed.",

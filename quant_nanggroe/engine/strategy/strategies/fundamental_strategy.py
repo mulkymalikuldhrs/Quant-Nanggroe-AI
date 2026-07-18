@@ -46,14 +46,19 @@ class FundamentalStrategy(BaseStrategy):
 
     def _get_calendar(self):
         if self._calendar is None:
-            from quant_nanggroe.engine.data.economic_calendar import EconomicCalendar
-            self._calendar = EconomicCalendar()
-            self._calendar.fetch(days_ahead=30)
+            try:
+                from quant_nanggroe.engine.data.economic_calendar import EconomicCalendar
+                self._calendar = EconomicCalendar()
+                self._calendar.fetch(days_ahead=30)
+            except ImportError:
+                return None
         return self._calendar
 
     def _check_calendar_events(self, currency: str = "USD") -> Dict:
         """Check economic calendar for upcoming events and recent surprises."""
         cal = self._get_calendar()
+        if cal is None:
+            return {"high_impact_soon": False, "volatility_score": 0.0, "recent_surprise": None}
         upcoming = cal.get_upcoming(hours=self.proximity_hours)
         surprises = cal.get_recent_surprises(hours=self.proximity_hours)
 

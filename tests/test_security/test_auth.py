@@ -284,6 +284,15 @@ class TestJWTAuthRefresh:
 class TestJWTAuthRevocation:
     """Tests for JWT token revocation."""
 
+    @pytest.fixture(autouse=True)
+    def _clean_revocation_file(self):
+        """Clear the file-backed revocation store so each test starts fresh."""
+        import os
+        from quant_nanggroe.security.auth import _REVOCATION_FILE
+        _REVOCATION_FILE.unlink(missing_ok=True)
+        yield
+        _REVOCATION_FILE.unlink(missing_ok=True)
+
     def test_revoke_token(self):
         auth = JWTAuth(secret_key="test-secret-key")
         token = auth.create_token(user_id="user1", role=UserRole.TRADER)

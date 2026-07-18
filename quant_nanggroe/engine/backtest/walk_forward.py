@@ -496,19 +496,20 @@ class WalkForwardAnalyzer:
             CPCV results dict.
         """
         n_bars = len(prices)
-        group_size = n_bars // self.n_groups
+        n_groups = self.n_groups
+        group_size = n_bars // n_groups
 
         if group_size < self.min_observations:
             logger.warning(
                 "CPCV: Group size %d < min_observations %d. Reducing n_groups.",
                 group_size, self.min_observations,
             )
-            self.n_groups = max(2, n_bars // self.min_observations)
-            group_size = n_bars // self.n_groups
+            n_groups = max(2, n_bars // self.min_observations)
+            group_size = n_bars // n_groups
 
         # Generate all combinations of test groups
         from itertools import combinations
-        test_combos = list(combinations(range(self.n_groups), self.n_test_groups))
+        test_combos = list(combinations(range(n_groups), self.n_test_groups))
 
         windows: List[WalkForwardResult] = []
         oos_returns: List[float] = []
@@ -518,7 +519,7 @@ class WalkForwardAnalyzer:
 
         for test_group_indices in test_combos:
             test_groups = set(test_group_indices)
-            train_groups = set(range(self.n_groups)) - test_groups
+            train_groups = set(range(n_groups)) - test_groups
 
             # Build train/test index masks
             train_indices = []
@@ -526,12 +527,12 @@ class WalkForwardAnalyzer:
 
             for g in train_groups:
                 start = g * group_size
-                end = start + group_size if g < self.n_groups - 1 else n_bars
+                end = start + group_size if g < n_groups - 1 else n_bars
                 train_indices.extend(range(start, min(end, n_bars)))
 
             for g in test_groups:
                 start = g * group_size
-                end = start + group_size if g < self.n_groups - 1 else n_bars
+                end = start + group_size if g < n_groups - 1 else n_bars
                 # Apply embargo
                 emb_start = start + self.embargo
                 test_indices.extend(range(emb_start, min(end, n_bars)))
@@ -625,7 +626,7 @@ class WalkForwardAnalyzer:
             "degradation_stats": degradation_stats,
             "stability": stability,
             "mode": "cpcv",
-            "n_groups": self.n_groups,
+            "n_groups": n_groups,
             "n_test_groups": self.n_test_groups,
             "n_combinations": len(test_combos),
             "oos_equity_curve": oos_equity_curve,

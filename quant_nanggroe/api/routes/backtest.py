@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import os
 import uuid
 from typing import Any
 
@@ -21,13 +23,57 @@ router = APIRouter()
 # Backtest result storage keyed by backtest_id
 _backtests: dict[str, dict[str, Any]] = {}
 
+# Persistent backtest state file
+_BACKTEST_STATE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    "paper_state", "backtests.jsonl",
+)
+
+
+def _load_backtests() -> None:
+    """Restore in-memory backtest state from the JSONL file on module load."""
+    if not os.path.exists(_BACKTEST_STATE):
+        return
+    try:
+        with open(_BACKTEST_STATE, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                record = json.loads(line)
+                bt_id = record.get("id")
+                if bt_id:
+                    _backtests[bt_id] = record
+    except Exception as exc:
+        logger.warning("Failed to load backtest state: %s", exc)
+
+
+def _persist_backtest(backtest_id: str) -> None:
+    """Append a backtest record to the JSONL file."""
+    record = _backtests.get(backtest_id)
+    if record is None:
+        return
+    try:
+        os.makedirs(os.path.dirname(_BACKTEST_STATE), exist_ok=True)
+        # Remove non-serializable request object before persisting
+        clean = {k: v for k, v in record.items() if k != "request"}
+        with open(_BACKTEST_STATE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(clean, default=str) + "\n")
+    except Exception as exc:
+        logger.warning("Failed to persist backtest %s: %s", backtest_id, exc)
+
+
+# Load existing state on import
+_load_backtests()
+
 
 def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
     """Execute a backtest synchronously and store the results.
 
     Uses the YFinanceLoader to fetch price data and the BacktestEngine
     to run the simulation.  Results (metrics, equity curve, trades)
-    are stored in the module-level ``_backtests`` dict.
+    are stored in the module-level ``_backtests`` dict and persisted
+    to a JSONL file.
 
     Args:
         backtest_id: Unique backtest identifier.
@@ -39,6 +85,7 @@ def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
 
         from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine, MarketType
         from quant_nanggroe.engine.backtest.loaders.yfinance_loader import YFinanceLoader
+        from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
 
         # Mark as running
         _backtests[backtest_id]["status"] = "RUNNING"
@@ -60,20 +107,53 @@ def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
         if price_df_raw is None or (hasattr(price_df_raw, 'empty') and price_df_raw.empty):
             _backtests[backtest_id]["status"] = "FAILED"
             _backtests[backtest_id]["error"] = f"No price data available for {symbol}"
+            _persist_backtest(backtest_id)
             return
 
         # Build prices DataFrame (single column = close prices)
         prices = price_df_raw[["close"]].copy()
         prices.columns = [symbol]
 
-        # Generate simple signals based on strategy type
-        # For signal-based: use SMA crossover as a default strategy
+        # Generate signals using the selected strategy from the registry
         close = prices[symbol]
-        sma_short = close.rolling(window=20, min_periods=1).mean()
-        sma_long = close.rolling(window=50, min_periods=1).mean()
+        strategy_name = request.strategy
 
-        raw_signal = np.where(sma_short > sma_long, 1.0, np.where(sma_short < sma_long, -1.0, 0.0))
-        signals = pd.DataFrame(raw_signal, index=prices.index, columns=[symbol])
+        try:
+            strategy = create_strategy(strategy_name)
+            warmup = strategy.warmup_period() if hasattr(strategy, "warmup_period") else 0
+
+            # Build OHLCV DataFrame for the strategy
+            ohlcv = pd.DataFrame({
+                "open": price_df_raw["open"] if "open" in price_df_raw.columns else close,
+                "high": price_df_raw["high"] if "high" in price_df_raw.columns else close,
+                "low": price_df_raw["low"] if "low" in price_df_raw.columns else close,
+                "close": close,
+                "volume": price_df_raw["volume"] if "volume" in price_df_raw.columns else pd.Series(1e6, index=close.index),
+            })
+
+            raw_signal = np.zeros(len(close))
+            from quant_nanggroe.types.signals import Signal, SignalType
+
+            for i in range(warmup, len(ohlcv)):
+                window = ohlcv.iloc[: i + 1]
+                sig = strategy.generate_signal(window)
+                if sig is not None and isinstance(sig, Signal):
+                    if sig.signal_type == SignalType.BUY:
+                        raw_signal[i] = 1.0
+                    elif sig.signal_type == SignalType.SELL:
+                        raw_signal[i] = -1.0
+                    else:
+                        raw_signal[i] = 0.0
+                else:
+                    raw_signal[i] = 0.0
+
+            signals = pd.DataFrame(raw_signal, index=prices.index, columns=[symbol])
+        except Exception as strat_exc:
+            logger.warning("Strategy '%s' failed (%s), falling back to SMA crossover", strategy_name, strat_exc)
+            sma_short = close.rolling(window=20, min_periods=1).mean()
+            sma_long = close.rolling(window=50, min_periods=1).mean()
+            raw_signal = np.where(sma_short > sma_long, 1.0, np.where(sma_short < sma_long, -1.0, 0.0))
+            signals = pd.DataFrame(raw_signal, index=prices.index, columns=[symbol])
 
         # Configure and run the backtest engine
         config = BacktestConfig(
@@ -108,11 +188,13 @@ def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
             "equity_curve": curve_data,
             "final_equity": result.get("final_equity", request.initial_capital),
         })
+        _persist_backtest(backtest_id)
 
     except Exception as exc:
         logger.error("backtest_execution_failed id=%s error=%s", backtest_id, exc)
         _backtests[backtest_id]["status"] = "FAILED"
         _backtests[backtest_id]["error"] = str(exc)
+        _persist_backtest(backtest_id)
 
 
 @router.post("/run", response_model=BacktestSubmissionResponse)
@@ -137,6 +219,7 @@ async def submit_backtest(request: BacktestRequest) -> BacktestSubmissionRespons
         "strategy": request.strategy,
         "request": request,
     }
+    _persist_backtest(backtest_id)
 
     # Run the backtest in a background thread so the API returns immediately
     asyncio.get_event_loop().run_in_executor(

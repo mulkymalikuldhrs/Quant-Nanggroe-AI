@@ -112,6 +112,8 @@ class ExecutionSimulator:
         """
         trade_value = abs(size * price)
         commission = max(self.config.min_commission, self._commission_rate * trade_value)
+        if is_closing:
+            commission = commission * 0.5  # closing trades get 50% commission discount
         return commission
 
     def calc_market_impact(

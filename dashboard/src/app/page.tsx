@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { agentsApi, portfolioApi, marketApi, type Agent, type MarketSentiment } from "@/lib/api-client";
+import { SchedulerControls } from "@/components/scheduler-controls";
 import { useRealtimeData } from "@/lib/websocket";
 import { ErrorBoundary, ErrorDisplay } from "@/components/shared/error-boundary";
 import { PageSkeleton, StatusCardSkeleton } from "@/components/shared/loading-skeleton";
@@ -237,6 +238,9 @@ function DashboardContent() {
           />
         )}
       </div>
+
+      {/* Scheduler Controls */}
+      <SchedulerControls />
 
       {/* System Health & Quick Nav */}
       <div className="grid md:grid-cols-2 gap-4">

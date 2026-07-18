@@ -12,12 +12,28 @@ import logging
 import os
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import httpx
 import pandas as pd
 
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
+
 logger = logging.getLogger(__name__)
+
+_RESOLUTION_MAP = {
+    TimeFrame.M1: "1",
+    TimeFrame.M5: "5",
+    TimeFrame.M15: "15",
+    TimeFrame.M30: "30",
+    TimeFrame.H1: "60",
+    TimeFrame.H4: "60",  # Finnhub has no 4h, use 60min
+    TimeFrame.D1: "D",
+    TimeFrame.W1: "W",
+    TimeFrame.MO1: "M",
+}
 
 
 class TokenBucket:
@@ -317,3 +333,59 @@ class FinnhubProvider:
 
 
 __all__ = ["FinnhubProvider"]
+
+
+class FinnhubProviderAdapter(DataProvider):
+    """Adapter wrapping FinnhubProvider to conform to the DataProvider ABC."""
+
+    def __init__(self, wrapped: FinnhubProvider) -> None:
+        super().__init__(name="finnhub", priority=20)
+        self._wrapped = wrapped
+
+    async def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        resolution = _RESOLUTION_MAP.get(timeframe, "D")
+        df = await self._wrapped.get_stock_candle(symbol, resolution=resolution, count=limit)
+        if df.empty:
+            return []
+        results: List[OHLCV] = []
+        for _, row in df.iterrows():
+            try:
+                results.append(OHLCV(
+                    symbol=symbol,
+                    timestamp=pd.Timestamp(row["timestamp"]).to_pydatetime(),
+                    open=float(row["open"]),
+                    high=float(row["high"]),
+                    low=float(row["low"]),
+                    close=float(row["close"]),
+                    volume=float(row.get("volume", 0)),
+                ))
+            except Exception:
+                continue
+        return results
+
+    async def get_ticker(self, symbol: str) -> Ticker:
+        return Ticker(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+            last_price=0.0,
+        )
+
+    async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
+        return OrderBook(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            await self._wrapped._request("/stock/candle", params={"symbol": "AAPL", "resolution": "D", "count": "1"})
+            return True
+        except Exception:
+            return False

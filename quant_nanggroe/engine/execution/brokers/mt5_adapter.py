@@ -17,6 +17,7 @@ from quant_nanggroe.engine.execution.base import (
     Order,
     OrderSide,
     OrderStatus,
+    OrderType,
     PositionInfo,
 )
 from quant_nanggroe.connectors.mt5_broker import MT5Broker
@@ -52,18 +53,26 @@ class MT5ExecutionBroker(Broker):
         return AccountInfo(balance=bal, equity=bal, margin_available=bal, buying_power=bal)
 
     async def submit_order(self, order: Order) -> Order:
-        conn_order = ConnOrder(
-            symbol=order.symbol,
-            side=_SIDE_MAP.get(order.side.value, "buy"),
-            quantity=order.quantity,
-            order_type=order.order_type.value.lower(),
-            price=order.price,
-        )
-        oid = self._mt5.place_order(conn_order)
-        price = await self.get_price(order.symbol)
-        order.status = OrderStatus.FILLED
-        order.metadata["broker_order_id"] = oid
-        order.metadata["fill_price"] = price
+        try:
+            conn_order = ConnOrder(
+                symbol=order.symbol,
+                side=_SIDE_MAP.get(order.side.value, "buy"),
+                quantity=order.quantity,
+                order_type=order.order_type.value.lower(),
+                price=order.price,
+            )
+            result = self._mt5.place_order(conn_order)
+            if result:
+                order.status = OrderStatus.FILLED
+                price = await self.get_price(order.symbol)
+                order.metadata["fill_price"] = price
+                order.metadata["broker_order_id"] = result
+            else:
+                order.status = OrderStatus.REJECTED
+                order.metadata["reason"] = "MT5 order rejected"
+        except Exception as e:
+            order.status = OrderStatus.REJECTED
+            order.metadata["reason"] = str(e)
         return order
 
     async def cancel_order(self, order_id: str) -> bool:
@@ -72,6 +81,22 @@ class MT5ExecutionBroker(Broker):
         return False
 
     async def get_order(self, order_id: str) -> Optional[Order]:
+        try:
+            import MetaTrader5 as mt5
+            orders = mt5.orders_get(ticket=int(order_id))
+            if orders:
+                o = orders[0]
+                return Order(
+                    id=str(o.ticket),
+                    symbol=o.symbol,
+                    side=OrderSide.BUY if o.type == 0 else OrderSide.SELL,
+                    order_type=OrderType.MARKET,
+                    quantity=o.volume_current,
+                    price=o.price_open,
+                    status=OrderStatus.FILLED,
+                )
+        except Exception:
+            pass
         return None
 
     async def get_positions(self) -> List[PositionInfo]:

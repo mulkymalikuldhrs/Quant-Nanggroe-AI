@@ -18,32 +18,38 @@ router = APIRouter(tags=["Compatibility"])
 # ── Agents ──────────────────────────────────────────────────────────────
 
 @router.get("/api/agents/decisions")
-async def get_agent_decisions() -> list[dict[str, Any]]:
-    """Return recent agent decisions (stub — real impl from TradingGraph)."""
-    return [
-        {"id": "d-1", "agent": "strategist", "decision": "BUY", "confidence": 0.72, "timestamp": "2026-07-12T08:00:00Z"},
-        {"id": "d-2", "agent": "risk", "decision": "APPROVE", "confidence": 0.88, "timestamp": "2026-07-12T08:01:00Z"},
-    ]
+async def get_agent_decisions() -> dict[str, Any]:
+    """Return recent agent decisions (stub — not wired to real engine)."""
+    return {
+        "decisions": [],
+        "status": "not_implemented",
+        "_stub": True,
+        "message": "Agent decision history not wired to TradingGraph",
+    }
 
 
 # ── Backtest ────────────────────────────────────────────────────────────
 
 @router.get("/api/backtest/engines")
-async def list_backtest_engines() -> list[str]:
-    """Return available backtest engines."""
-    return ["vectorbt", "custom", "walk_forward"]
+async def list_backtest_engines() -> dict[str, Any]:
+    """Return available backtest engines (stub — not wired to real engine)."""
+    return {
+        "engines": [],
+        "status": "not_implemented",
+        "_stub": True,
+        "message": "Backtest engine listing not wired to real engine",
+    }
 
 
 @router.get("/api/backtest/factors")
-async def list_backtest_factors() -> list[dict[str, Any]]:
-    """Return available factor zoo."""
-    return [
-        {"name": "momentum", "category": "trend", "description": "12-month momentum factor"},
-        {"name": "value", "category": "fundamental", "description": "Book-to-market ratio"},
-        {"name": "size", "category": "market", "description": "Market capitalization factor"},
-        {"name": "volatility", "category": "risk", "description": "Idiosyncratic volatility"},
-        {"name": "quality", "category": "fundamental", "description": "ROE / earnings quality"},
-    ]
+async def list_backtest_factors() -> dict[str, Any]:
+    """Return available factor zoo (stub — not wired to real engine)."""
+    return {
+        "factors": [],
+        "status": "not_implemented",
+        "_stub": True,
+        "message": "Factor zoo listing not wired to real engine",
+    }
 
 
 # ── Trading ─────────────────────────────────────────────────────────────
@@ -95,14 +101,21 @@ async def cancel_trading_order(order_id: str) -> dict[str, Any]:
 
 
 @router.get("/api/trading/exchanges")
-async def list_trading_exchanges() -> list[dict[str, Any]]:
-    """Return available exchanges / brokers."""
-    return [
-        {"id": "exness", "name": "Exness (MT5)", "type": "mt5", "connected": True},
-        {"id": "binance", "name": "Binance", "type": "ccxt", "connected": False},
-        {"id": "alpaca", "name": "Alpaca", "type": "rest", "connected": False},
-        {"id": "paper", "name": "Paper Trading", "type": "simulated", "connected": True},
-    ]
+async def list_trading_exchanges() -> dict[str, Any]:
+    """Return available exchanges / brokers — wired to ExecutionManager._brokers."""
+    try:
+        from quant_nanggroe.engine.execution.builder import build_execution_manager
+        em = build_execution_manager()
+        exchanges = [
+            {
+                "name": name,
+                "is_connected": b.is_connected,
+            }
+            for name, b in em._brokers.items()
+        ]
+        return {"exchanges": exchanges, "status": "ok"}
+    except Exception as e:
+        return {"exchanges": [], "status": "ok", "error": str(e)}
 
 
 # ── Market ──────────────────────────────────────────────────────────────

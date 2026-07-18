@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -22,67 +23,82 @@ _CONFIG_PATH = os.path.join(
 )
 
 
+_em_singleton = None
+_em_lock = threading.Lock()
+
+
 def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
-    from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
-    from quant_nanggroe.engine.execution.manager import ExecutionManager
-    from quant_nanggroe.engine.risk.kill_switch import KillSwitch
-    from quant_nanggroe.engine.risk.manager import RiskManager
+    global _em_singleton
+    if _em_singleton is not None:
+        return _em_singleton
+    with _em_lock:
+        if _em_singleton is not None:
+            return _em_singleton
+        from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
+        from quant_nanggroe.engine.execution.manager import ExecutionManager
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+        from quant_nanggroe.engine.risk.manager import RiskManager
 
-    em = ExecutionManager()
-    # paper always present as safe fallback (no market impact)
-    paper = PaperBroker()
-    em.add_broker(paper, primary=False)
+        em = ExecutionManager()
+        # paper always present as safe fallback (no market impact)
+        paper = PaperBroker()
+        em.add_broker(paper, primary=False)
 
-    if allow_live is None:
-        allow_live = os.environ.get("QNA_LIVE_TRADING", "0") == "1"
+        if allow_live is None:
+            allow_live = os.environ.get("QNA_LIVE_TRADING", "0") == "1"
 
-    if allow_live:
-        try:
-            import yaml
-            with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(os.path.expandvars(f.read())) or {}
-            accounts = data.get("accounts") or []
-            from quant_nanggroe.connectors.mt5_broker import MT5Broker
-            from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
-            wired = 0
-            for acc in accounts:
-                login = acc.get("login")
-                if not login:
-                    continue
-                mt5 = MT5Broker(
-                    login=int(login),
-                    password=str(acc.get("password", "")),
-                    server=str(acc.get("server", "")),
-                )
-                if mt5.connect():
-                    em.add_broker(MT5ExecutionBroker(mt5), primary=(acc.get("role") == "primary"))
-                    wired += 1
-                    logger.info("LIVE MT5 wired: %s", acc.get("name"))
-                else:
-                    logger.warning("MT5 connect failed for %s — skipped (paper remains)", acc.get("name"))
-            if wired == 0:
-                logger.warning("allow_live=True but no MT5 connected — paper only, no market trades")
-        except Exception as exc:
-            logger.error("build_execution_manager live wiring failed: %s", exc)
+        if allow_live:
+            try:
+                import yaml
+                with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(os.path.expandvars(f.read())) or {}
+                accounts = data.get("accounts") or []
+                from quant_nanggroe.connectors.mt5_broker import MT5Broker
+                from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
+                wired = 0
+                for acc in accounts:
+                    login = acc.get("login")
+                    if not login:
+                        continue
+                    mt5 = MT5Broker(
+                        login=int(login),
+                        password=str(acc.get("password", "")),
+                        server=str(acc.get("server", "")),
+                    )
+                    if mt5.connect():
+                        em.add_broker(MT5ExecutionBroker(mt5), primary=(acc.get("role") == "primary"))
+                        wired += 1
+                        logger.info("LIVE MT5 wired: %s", acc.get("name"))
+                    else:
+                        logger.warning("MT5 connect failed for %s — skipped (paper remains)", acc.get("name"))
+                if wired == 0:
+                    logger.warning("allow_live=True but no MT5 connected — paper only, no market trades")
+            except Exception as exc:
+                logger.error("build_execution_manager live wiring failed: %s", exc)
 
-    # ponytail: connect all brokers before returning so execute_order routes cleanly
-    async def _connect_all():
+        # Connect all brokers — PaperBroker connects synchronously, others async
+        import asyncio
         for b in em._brokers.values():
             try:
-                await b.connect()
+                # PaperBroker: connect synchronously (no network)
+                if type(b).__name__ == "PaperBroker":
+                    b._connected = True
+                    logger.info("PaperBroker: Connected (simulated)")
+                else:
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.ensure_future(b.connect())
+                        else:
+                            loop.run_until_complete(b.connect())
+                    except RuntimeError:
+                        pass  # will connect lazily on first order
             except Exception as exc:
                 logger.warning("broker %s connect failed: %s", getattr(b, "name", "?"), exc)
-    try:
-        import asyncio
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(_connect_all())
-        else:
-            loop.run_until_complete(_connect_all())
-    except RuntimeError:
-        # no event loop (e.g. sync context) — connect lazily on first order
-        pass
 
-    em.set_kill_switch(KillSwitch())
-    em.set_risk_manager(RiskManager())
-    return em
+        from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
+        configure_kill_switch_file()
+        em.set_kill_switch(KillSwitch())
+        em.set_risk_manager(RiskManager())
+        _em_singleton = em
+        return _em_singleton

@@ -2,7 +2,9 @@
 
 __all__ = [
     'metrics',
+    'alpha_decay',
 ]
 
 from . import metrics
 from .metrics import compute_metrics, rolling_sharpe, PerformanceMetrics
+from .alpha_decay import AlphaDecayDetector, DecayResult

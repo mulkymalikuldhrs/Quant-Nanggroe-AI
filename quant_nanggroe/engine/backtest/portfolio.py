@@ -27,6 +27,8 @@ class Position:
         size: Number of shares / coins / contracts.
         leverage: Effective leverage (1 for spot/stocks).
         commission: Commission paid at entry.
+        stop_loss: Optional stop-loss price level.
+        take_profit: Optional take-profit price level.
     """
 
     symbol: str
@@ -36,6 +38,8 @@ class Position:
     size: float
     leverage: float = 1.0
     commission: float = 0.0
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -145,6 +149,8 @@ class Portfolio:
         price: float,
         timestamp: pd.Timestamp,
         commission: float = 0.0,
+        stop_loss: Optional[float] = None,
+        take_profit: Optional[float] = None,
     ) -> Optional[TradeRecord]:
         """Open a new position.
 
@@ -155,6 +161,8 @@ class Portfolio:
             price: Entry price.
             timestamp: Entry timestamp.
             commission: Commission for opening.
+            stop_loss: Optional stop-loss price level.
+            take_profit: Optional take-profit price level.
 
         Returns:
             TradeRecord for the opening (or None if failed).
@@ -180,6 +188,8 @@ class Portfolio:
             entry_time=timestamp,
             size=size,
             commission=commission,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
         )
         self.positions[symbol] = pos
         self._entry_bar[symbol] = self._bar_count

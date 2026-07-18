@@ -10,6 +10,7 @@ Extracted from Misi-Screener's PaperTradingBroker with enhancements.
 from __future__ import annotations
 
 import logging
+import random
 import uuid
 from typing import Dict, List, Optional
 
@@ -55,6 +56,7 @@ class PaperBroker(Broker):
         self._connected = False
         self._order_history: List[Order] = []
         self._fill_history: List[Fill] = []
+        self._pending_orders: List[Order] = []
 
     @property
     def name(self) -> str:
@@ -118,8 +120,27 @@ class PaperBroker(Broker):
                 order.status = OrderStatus.PENDING
                 return order
             exec_price = order.price
+        elif order.order_type in (OrderType.STOP, OrderType.STOP_LIMIT, OrderType.TRAILING_STOP):
+            if order.stop_price is None:
+                order.status = OrderStatus.REJECTED
+                return order
+            # Store as pending — will only fill when price crosses the stop level
+            order.status = OrderStatus.PENDING
+            order.metadata["stop_price"] = order.stop_price
+            self._pending_orders.append(order)
+            self._order_history.append(order)
+            return order
         else:
             exec_price = self._apply_slippage(current_price, order.side)
+
+        # Short-selling margin check
+        if order.side == OrderSide.SELL:
+            order_notional = order.quantity * exec_price
+            required_margin = order_notional * 0.5  # 50% margin requirement
+            if self._capital < required_margin:
+                order.status = OrderStatus.REJECTED
+                order.metadata["rejection_reason"] = f"Insufficient margin: need {required_margin:.2f}, have {self._capital:.2f}"
+                return order
 
         # Calculate commission
         commission = max(self._min_commission, self._commission_rate * order.quantity * exec_price)
@@ -135,8 +156,12 @@ class PaperBroker(Broker):
         else:  # SELL
             self._capital += order.quantity * exec_price - commission
 
+        # Simulate partial fill for large orders (random 50-100% fill)
+        fill_ratio = random.uniform(0.5, 1.0) if order.quantity > 10 else 1.0
+        fill_qty = order.quantity * fill_ratio
+
         # Update position
-        self._update_position(order, exec_price)
+        self._update_position(order, exec_price, fill_qty)
 
         # Create fill
         fill = Fill(
@@ -144,17 +169,21 @@ class PaperBroker(Broker):
             order_id=order.id,
             symbol=order.symbol,
             side=order.side,
-            quantity=order.quantity,
+            quantity=fill_qty,
             price=exec_price,
             commission=commission,
             slippage=abs(exec_price - current_price),
         )
         self._fill_history.append(fill)
 
-        # Update order
-        order.status = OrderStatus.FILLED
+        # Update order status
+        if fill_qty < order.quantity:
+            order.status = OrderStatus.PARTIALLY_FILLED
+        else:
+            order.status = OrderStatus.FILLED
         order.metadata["fill_price"] = exec_price
         order.metadata["commission"] = commission
+        order.metadata["fill_quantity"] = fill_qty
         self._order_history.append(order)
 
         return order
@@ -162,6 +191,11 @@ class PaperBroker(Broker):
     async def cancel_order(self, order_id: str) -> bool:
         """Cancel a pending order."""
         for order in self._order_history:
+            if order.id == order_id and order.status == OrderStatus.PENDING:
+                order.status = OrderStatus.CANCELLED
+                return True
+        # Also check pending stop orders
+        for order in self._pending_orders:
             if order.id == order_id and order.status == OrderStatus.PENDING:
                 order.status = OrderStatus.CANCELLED
                 return True
@@ -202,6 +236,83 @@ class PaperBroker(Broker):
                 unrealized_pnl=new_pnl,
                 market_value=pos.quantity * price,
             )
+        # Check pending stop orders for this symbol
+        self.check_pending_orders(symbol, price)
+
+    def check_pending_orders(self, symbol: str, current_price: float) -> None:
+        """Check and fill pending stop orders when price crosses the stop level.
+
+        Args:
+            symbol: Symbol to check.
+            current_price: Current market price.
+        """
+        remaining = []
+        for order in self._pending_orders:
+            if order.symbol != symbol or order.status != OrderStatus.PENDING:
+                continue
+            stop_price = order.metadata.get("stop_price") or order.stop_price
+            if stop_price is None:
+                remaining.append(order)
+                continue
+
+            triggered = False
+            if order.side == OrderSide.BUY and current_price >= stop_price:
+                triggered = True
+            elif order.side == OrderSide.SELL and current_price <= stop_price:
+                triggered = True
+
+            if triggered:
+                exec_price = self._apply_slippage(current_price, order.side)
+                # Margin check for SELL
+                if order.side == OrderSide.SELL:
+                    order_notional = order.quantity * exec_price
+                    required_margin = order_notional * 0.5
+                    if self._capital < required_margin:
+                        order.status = OrderStatus.REJECTED
+                        order.metadata["rejection_reason"] = f"Insufficient margin for stop: need {required_margin:.2f}"
+                        continue
+
+                commission = max(self._min_commission, self._commission_rate * order.quantity * exec_price)
+
+                if order.side == OrderSide.BUY:
+                    cost = order.quantity * exec_price + commission
+                    if cost > self._capital:
+                        order.status = OrderStatus.REJECTED
+                        order.metadata["rejection_reason"] = "Insufficient capital for triggered stop"
+                        continue
+                    self._capital -= cost
+                else:
+                    self._capital += order.quantity * exec_price - commission
+
+                # Partial fill simulation
+                fill_ratio = random.uniform(0.5, 1.0) if order.quantity > 10 else 1.0
+                fill_qty = order.quantity * fill_ratio
+
+                self._update_position(order, exec_price, fill_qty)
+
+                fill = Fill(
+                    id=str(uuid.uuid4()),
+                    order_id=order.id,
+                    symbol=order.symbol,
+                    side=order.side,
+                    quantity=fill_qty,
+                    price=exec_price,
+                    commission=commission,
+                    slippage=abs(exec_price - current_price),
+                )
+                self._fill_history.append(fill)
+
+                if fill_qty < order.quantity:
+                    order.status = OrderStatus.PARTIALLY_FILLED
+                else:
+                    order.status = OrderStatus.FILLED
+                order.metadata["fill_price"] = exec_price
+                order.metadata["commission"] = commission
+                order.metadata["fill_quantity"] = fill_qty
+            else:
+                remaining.append(order)
+
+        self._pending_orders = remaining
 
     def _apply_slippage(self, price: float, side: OrderSide) -> float:
         """Apply slippage to price.
@@ -215,10 +326,10 @@ class PaperBroker(Broker):
         else:
             return price * (1 - slip)
 
-    def _update_position(self, order: Order, exec_price: float) -> None:
+    def _update_position(self, order: Order, exec_price: float, fill_qty: Optional[float] = None) -> None:
         """Update position after order fill."""
         symbol = order.symbol
-        qty = order.quantity if order.side == OrderSide.BUY else -order.quantity
+        qty = (fill_qty if fill_qty is not None else order.quantity) if order.side == OrderSide.BUY else -(fill_qty if fill_qty is not None else order.quantity)
 
         if symbol in self._positions:
             pos = self._positions[symbol]

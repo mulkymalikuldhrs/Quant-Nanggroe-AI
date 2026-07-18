@@ -56,14 +56,29 @@ export default function MarketPage() {
   const [chartType, setChartType] = useState<"area" | "candle">("area");
   const [timeframe, setTimeframe] = useState("1D");
   const [sentiment, setSentiment] = useState<MarketSentiment | null>(null);
-  const [candles, setCandles] = useState<CandleStick[]>(FALLBACK_CANDLES);
+  const [candles, setCandles] = useState<CandleStick[]>([]);
+  const [scanner, setScanner] = useState<{ symbol: string; price: number; change: number; volume: string; signal: string }[]>([]);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     marketApi.getSentiment()
       .then(setSentiment)
       .catch(() => { /* fallback */ });
-  }, []);
+    marketApi.getCandles(selectedSymbol)
+      .then(setCandles)
+      .catch(() => { setCandles(FALLBACK_CANDLES); });
+    marketApi.getSignals()
+      .then((signals) => setScanner(
+        signals.map((s) => ({
+          symbol: s.symbol || "UNKNOWN",
+          price: s.price ?? 0,
+          change: s.change_pct ?? 0,
+          volume: s.volume ?? "0",
+          signal: s.signal ?? "Neutral",
+        }))
+      ))
+      .catch(() => { setScanner(FALLBACK_SCANNER); });
+  }, [selectedSymbol]);
 
   const symbols = [
     { value: "BTC", label: "BTC/USDT" },
@@ -291,7 +306,7 @@ export default function MarketPage() {
         <TabsContent value="scanner">
           <ChartCard title="Market Scanner" subtitle="Top movers and signals" className="mt-3">
             <div className="space-y-2">
-              {FALLBACK_SCANNER.map((item) => (
+              {scanner.map((item) => (
                 <div key={item.symbol} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-xs font-bold text-white/60">{item.symbol.slice(0, 2)}</div>

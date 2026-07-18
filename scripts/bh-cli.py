@@ -347,7 +347,7 @@ def cmd_health(args: argparse.Namespace) -> None:
     # 2. Core modules
     modules = {
         "engine": "quant_nanggroe.engine",
-        "api": "quant_nanggroe.api",
+        "api": "quant_nanggroe.api.app",
         "security": "quant_nanggroe.security",
         "kelly": "quant_nanggroe.engine.kelly",
         "regime": "quant_nanggroe.engine.regime",

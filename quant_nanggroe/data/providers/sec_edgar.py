@@ -15,6 +15,9 @@ from typing import Any, List, Optional
 
 import httpx
 
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OrderBook, Ticker
+
 logger = logging.getLogger(__name__)
 
 SEC_BASE = "https://data.sec.gov"
@@ -49,7 +52,7 @@ def _parse_cik(cik: str | int) -> str:
     return clean
 
 
-class SECEdgarProvider:
+class SECEdgarProvider(DataProvider):
     """SEC EDGAR data provider.
 
     Fetches company filings and financial data from SEC public EDGAR API.
@@ -74,8 +77,7 @@ class SECEdgarProvider:
         user_name: Optional[str] = None,
         priority: int = 35,
     ) -> None:
-        self.name = "sec_edgar"
-        self.priority = priority
+        super().__init__(name="sec_edgar", priority=priority)
         self._user_email = (
             user_email
             or os.environ.get("QNAI_SEC_USER_EMAIL")
@@ -85,10 +87,6 @@ class SECEdgarProvider:
         self._client: httpx.AsyncClient | None = None
         self._ticker_cache: dict[str, str] | None = None
         self._last_request: float = 0.0
-        self.is_available: bool = False
-        self.health_score: float = 1.0
-        self._error_count: int = 0
-        self.last_error: Optional[str] = None
 
     def __repr__(self) -> str:
         return f"SECEdgarProvider(name={self.name!r}, priority={self.priority})"
@@ -351,9 +349,7 @@ class SECEdgarProvider:
 
     def mark_error(self, error_msg: str) -> None:
         """Record an error and decay the health score."""
-        self._error_count += 1
-        self.last_error = error_msg
-        self.health_score *= 0.9
+        super().mark_error(error_msg)
 
     # --- DataProvider interface stubs (not applicable to EDGAR) ---
 

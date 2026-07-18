@@ -6,7 +6,7 @@ __all__ = [
     'base',
     'fundamental',
     'gtja191',
-    'hermes_ta',
+
     'pipeline',
     'qlib158',
     'registry',
@@ -18,7 +18,6 @@ from . import alpha101
 from . import base
 from . import fundamental
 from . import gtja191
-from . import hermes_ta
 from . import pipeline
 from . import qlib158
 from . import registry

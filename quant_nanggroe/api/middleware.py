@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+import uuid
 from typing import Any, Optional
 
 from fastapi import Request, Response
@@ -160,10 +161,20 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.requests: dict[str, list[float]] = {}
+        self._request_count: int = 0
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         client_id = request.client.host if request.client else "unknown"
         now = time.time()
+
+        self._request_count += 1
+        # Prune stale entries every 100 requests to prevent memory leak
+        if self._request_count % 100 == 0:
+            self.requests = {
+                ip: [t for t in timestamps if now - t < 60]
+                for ip, timestamps in self.requests.items()
+                if timestamps and any(now - t < 60 for t in timestamps)
+            }
 
         if client_id not in self.requests:
             self.requests[client_id] = []
@@ -176,4 +187,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         self.requests[client_id].append(now)
         response = await call_next(request)
+        return response
+
+
+# ── Request ID Middleware ────────────────────────────────────────────────────
+
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Attach a unique request ID to every request/response.
+
+    If the client supplies ``X-Request-ID``, it is reused; otherwise a
+    12-character UUID is generated.  The ID is set on ``request.state``
+    and echoed in the response header.
+    """
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:12]
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
         return response

@@ -43,6 +43,11 @@ from quant_nanggroe.engine.risk.constants import (
 from quant_nanggroe.engine.risk.constants import (
     MAX_WEEKLY_LOSS as _MAX_WEEKLY_LOSS_FRAC,  # 0.03 (fraction)
 )
+from quant_nanggroe.engine.risk.constants import (
+    MAX_SECTOR_EXPOSURE_PCT as _MAX_SECTOR_EXPOSURE_FRAC,  # 0.30 (fraction)
+    SECTOR_MAP,
+    SECTOR_DEFAULT,
+)
 
 # Convert fractions to percentages for this module's API (backward compat)
 MAX_RISK_PER_TRADE_PCT: float = _MAX_RISK_PER_TRADE_FRAC * 100   # 0.5%
@@ -203,19 +208,36 @@ class ConstitutionalRiskGuard:
         self._check_count += 1
         result = RiskCheckResult()
 
+        # Hard guard: zero balance → no trade (0-balance bypassed all 9 checks previously)
+        if portfolio.total_equity <= 0:
+            result.reasons.append(
+                f"Account balance ({portfolio.total_equity}) is insufficient for any trade"
+            )
+            result.risk_level = RiskLevel.BREACH
+            result.approved = False
+            self._rejected_count += 1
+            return result
+
         # Calculate proposed risk
-        if portfolio.total_equity > 0 and request.notional_value > 0:
+        if request.notional_value > 0:
             proposed_risk_pct = (request.notional_value / portfolio.total_equity) * 100
         else:
             proposed_risk_pct = 0.0
         result.proposed_risk_pct = proposed_risk_pct
 
-        # Check 1: Per-trade risk limit
-        if proposed_risk_pct > MAX_POSITION_SIZE_PCT:
+        # Check 1: Per-trade position size limit
+        if proposed_risk_pct > MAX_POSITION_SIZE_PCT * 10:  # > 100% — hard reject
+            result.reasons.append(
+                f"Position size {proposed_risk_pct:.2f}% is dangerously excessive (>{MAX_POSITION_SIZE_PCT * 10}%)"
+            )
+            result.risk_level = RiskLevel.BREACH
+            result.approved = False
+            self._rejected_count += 1
+            return result
+        elif proposed_risk_pct > MAX_POSITION_SIZE_PCT:  # > 10% — adjust
             result.warnings.append(
                 f"Position size {proposed_risk_pct:.2f}% exceeds max {MAX_POSITION_SIZE_PCT}%"
             )
-            # Adjust position size
             adjusted_value = portfolio.total_equity * (MAX_POSITION_SIZE_PCT / 100)
             if request.price > 0:
                 adjusted_qty = adjusted_value / request.price
@@ -227,10 +249,14 @@ class ConstitutionalRiskGuard:
                 )
             proposed_risk_pct = MAX_POSITION_SIZE_PCT
 
-        # Check 2: Risk per trade
-        if request.risk_pct > MAX_RISK_PER_TRADE_PCT:
+        # Check 2: Per-trade risk limit — compute from stop-loss distance, not request.risk_pct
+        if request.stop_loss_pct > 0 and request.notional_value > 0:
+            computed_risk_pct = (request.stop_loss_pct / 100.0) * (request.notional_value / portfolio.total_equity * 100) if portfolio.total_equity > 0 else 0
+        else:
+            computed_risk_pct = proposed_risk_pct  # fallback to position size as risk proxy
+        if computed_risk_pct > MAX_RISK_PER_TRADE_PCT:
             result.reasons.append(
-                f"Trade risk {request.risk_pct:.2f}% exceeds max {MAX_RISK_PER_TRADE_PCT}%"
+                f"Per-trade risk {computed_risk_pct:.2f}% exceeds max {MAX_RISK_PER_TRADE_PCT}%"
             )
             result.risk_level = RiskLevel.BREACH
             result.approved = False
@@ -265,18 +291,44 @@ class ConstitutionalRiskGuard:
             self._rejected_count += 1
             return result
 
-        # Check 5: Mandatory stop-loss
+        # Check 5: Mandatory stop-loss — only enforce if no stop provided
         if request.action in (TradeAction.BUY, TradeAction.SELL):
-            if request.stop_loss_pct <= 0 or request.stop_loss_pct > MANDATORY_STOP_LOSS_PCT:
+            if request.stop_loss_pct <= 0:
+                request.stop_loss_pct = MANDATORY_STOP_LOSS_PCT
                 result.stop_loss_required = MANDATORY_STOP_LOSS_PCT
                 result.warnings.append(
-                    f"Stop-loss set to constitutional max {MANDATORY_STOP_LOSS_PCT}%"
+                    f"Stop-loss not set — enforced at {MANDATORY_STOP_LOSS_PCT}%"
                 )
-                request.stop_loss_pct = MANDATORY_STOP_LOSS_PCT
 
-        # Check 6: Leverage
-        if proposed_risk_pct > portfolio.total_equity * _MAX_LEVERAGE:
-            result.warnings.append("Leverage limit check applied")
+        # Check 6: Leverage — total exposure (existing + new) must not exceed equity * max leverage
+        total_exposure = portfolio.total_position_value + request.notional_value
+        max_leverage_notional = portfolio.total_equity * _MAX_LEVERAGE
+        if total_exposure > max_leverage_notional:
+            result.reasons.append(
+                f"Total exposure {total_exposure:.0f} exceeds {_MAX_LEVERAGE}x leverage "
+                f"limit ({max_leverage_notional:.0f})"
+            )
+            result.risk_level = RiskLevel.BREACH
+            result.approved = False
+            self._rejected_count += 1
+            return result
+
+        # Check 7: Sector exposure
+        sector = SECTOR_MAP.get(request.symbol, SECTOR_DEFAULT)
+        sector_value = request.notional_value
+        for sym, pos in portfolio.positions.items():
+            if SECTOR_MAP.get(sym, SECTOR_DEFAULT) == sector:
+                sector_value += pos.get("quantity", 0) * pos.get("current_price", 0)
+        sector_pct = (sector_value / portfolio.total_equity * 100) if portfolio.total_equity > 0 else 0
+        max_sector_pct = _MAX_SECTOR_EXPOSURE_FRAC * 100  # convert fraction to %
+        if sector_pct > max_sector_pct:
+            result.reasons.append(
+                f"Sector {sector} exposure {sector_pct:.1f}% exceeds max {max_sector_pct:.0f}%"
+            )
+            result.risk_level = RiskLevel.BREACH
+            result.approved = False
+            self._rejected_count += 1
+            return result
 
         # Determine overall risk level
         if proposed_risk_pct <= MAX_RISK_PER_TRADE_PCT * 0.5:
@@ -311,12 +363,18 @@ class ConstitutionalRiskGuard:
     ) -> Dict[str, Any]:
         """Flat-parameter evaluate (backward compat for RiskManager)."""
         active_positions = active_positions or []
+        # Convert absolute stop_loss price to percentage if needed
+        # Heuristic: values < 30 are likely percentages, >= 30 are absolute prices
+        sl_pct = stop_loss
+        if stop_loss > 0 and entry > 0 and stop_loss >= 30:
+            # stop_loss looks like an absolute price — convert to % distance
+            sl_pct = abs(entry - stop_loss) / entry * 100
         req = TradeRequest(
             symbol=symbol,
             action=TradeAction.BUY if direction.upper() in ("BUY", "LONG") else TradeAction.SELL,
             quantity=lot_size,
             price=entry,
-            stop_loss_pct=stop_loss,
+            stop_loss_pct=sl_pct,
         )
         pf = PortfolioSnapshot(
             total_equity=account_balance,

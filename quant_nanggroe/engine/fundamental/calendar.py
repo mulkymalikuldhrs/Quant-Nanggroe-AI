@@ -20,16 +20,23 @@ class EconomicCalendar:
 
     def _get_provider(self):
         if self._provider is None:
-            from quant_nanggroe.engine.data.economic_calendar import EconomicCalendarData
-            self._provider = EconomicCalendarData()
+            try:
+                from quant_nanggroe.engine.data.economic_calendar import EconomicCalendarData
+                self._provider = EconomicCalendarData()
+            except ImportError:
+                return None
         return self._provider
 
     def get_today_events(self) -> List[Dict[str, Any]]:
         provider = self._get_provider()
+        if provider is None:
+            return []
         return provider.get_today_events()
 
     def get_high_impact_events(
         self, days_ahead: int = 3
     ) -> List[Dict[str, Any]]:
         provider = self._get_provider()
+        if provider is None:
+            return []
         return provider.get_high_impact_events(days_ahead=days_ahead)

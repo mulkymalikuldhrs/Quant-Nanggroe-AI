@@ -23,7 +23,7 @@ router = APIRouter()
 
 @router.get("/sentiment")
 async def get_market_sentiment() -> dict[str, Any]:
-    """Get overall market sentiment indicator."""
+    """Get overall market sentiment indicator (stub — not wired to real engine)."""
     return {
         "overall": "neutral",
         "fear_greed_index": 52,
@@ -32,20 +32,17 @@ async def get_market_sentiment() -> dict[str, Any]:
             "on_chain": "neutral",
             "news": "bearish",
         },
+        "status": "not_implemented",
+        "_stub": True,
+        "message": "Market sentiment not wired to real data source",
         "timestamp": datetime.now().isoformat(),
     }
 
 
 def _get_exchange_manager(http_request: Request):
-    """Retrieve or lazily create the ExchangeManager from app state."""
-    from quant_nanggroe.exchange.manager import ExchangeManager
-
-    if not hasattr(http_request.app.state, "_services"):
-        http_request.app.state._services = {}
-
-    if "exchange_manager" not in http_request.app.state._services:
-        http_request.app.state._services["exchange_manager"] = ExchangeManager()
-    return http_request.app.state._services["exchange_manager"]
+    """Retrieve the singleton ExchangeManager from services."""
+    from quant_nanggroe.services import get_exchange_manager
+    return get_exchange_manager(http_request.app)
 
 
 @router.get("/price/{symbol}", response_model=PriceResponse)
@@ -178,21 +175,38 @@ async def detect_regime(request: MarketRegimeRequest) -> MarketRegimeResponse:
 
 @router.get("/pressure/{symbol}")
 async def get_pressure(symbol: str) -> dict[str, Any]:
-    """Get current pressure analysis for a symbol."""
-    return {"symbol": symbol, "buy_pressure": 0.55, "sell_pressure": 0.45, "verdict": "BUY", "timestamp": datetime.now().isoformat()}
+    """Get current pressure analysis for a symbol (stub — not wired to real engine)."""
+    return {
+        "symbol": symbol,
+        "buy_pressure": 0.55,
+        "sell_pressure": 0.45,
+        "verdict": "BUY",
+        "status": "not_implemented",
+        "_stub": True,
+        "message": "Market pressure analysis not wired to real engine",
+        "timestamp": datetime.now().isoformat(),
+    }
 
 
 @router.get("/signals")
 async def get_signals() -> dict[str, Any]:
-    """Market signals for dashboard."""
-    return {
-        "symbols": [
-            {"symbol": "BTC", "price": 108743, "change": 2.4},
-            {"symbol": "ETH", "price": 3267, "change": -1.2},
-            {"symbol": "SPY", "price": 542, "change": 0.8},
-        ],
-        "timestamp": datetime.now().isoformat(),
-    }
+    """Market signals from the autonomous pipeline's last run result."""
+    try:
+        from quant_nanggroe.engine.agentic.autonomous import get_autonomous_pipeline
+        pipeline = get_autonomous_pipeline()
+        last = pipeline._last_result
+        signals = []
+        if last is not None and last.success:
+            signals.append({
+                "symbol": last.symbol,
+                "signal": last.signal,
+                "confidence": last.confidence,
+                "reason": last.reason,
+                "timestamp": last.timestamp,
+            })
+        return {"signals": signals, "status": "ok"}
+    except Exception as e:
+        return {"signals": [], "status": "ok", "error": str(e)}
 
 
 @router.get("/mt5/{symbol}")

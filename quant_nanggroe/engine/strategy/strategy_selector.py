@@ -208,7 +208,7 @@ class StrategySelector:
         Returns:
             List of (strategy_name, score) tuples sorted by score descending.
         """
-        candidates = available_strategies or list_strategies()
+        candidates = available_strategies if available_strategies is not None else list_strategies()
         scored = []
         for name in candidates:
             score = self.score_strategy(name, regime)

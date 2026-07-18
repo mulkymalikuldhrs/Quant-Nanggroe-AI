@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAppStore } from "../store";
 
-// Mock apiRequest globally
+// Mock api-client globally
 vi.mock("../api-client", () => ({
   apiRequest: vi.fn(),
+  agentsApi: {
+    activateKillSwitch: vi.fn(),
+    resetKillSwitch: vi.fn(),
+  },
 }));
 
-import { apiRequest } from "../api-client";
+import { apiRequest, agentsApi } from "../api-client";
 const mockApiRequest = vi.mocked(apiRequest);
+const mockActivate = vi.mocked(agentsApi.activateKillSwitch);
+const mockReset = vi.mocked(agentsApi.resetKillSwitch);
 
 // ═════════════════════════════════════════════════════════════════════
 //  Store — Initial State
@@ -70,7 +76,18 @@ describe("UI actions", () => {
       selectedSymbol: "BTC",
       selectedExchange: "binance",
       notifications: [],
+      loadingStates: {
+        agents: { loading: false, error: null, lastUpdated: null },
+        portfolio: { loading: false, error: null, lastUpdated: null },
+        risk: { loading: false, error: null, lastUpdated: null },
+        positions: { loading: false, error: null, lastUpdated: null },
+        health: { loading: false, error: null, lastUpdated: null },
+        killSwitch: { loading: false, error: null, lastUpdated: null },
+        market: { loading: false, error: null, lastUpdated: null },
+        strategies: { loading: false, error: null, lastUpdated: null },
+      },
     });
+    vi.clearAllMocks();
   });
 
   it("toggleSidebar flips sidebarOpen", () => {
@@ -81,12 +98,40 @@ describe("UI actions", () => {
     expect(useAppStore.getState().sidebarOpen).toBe(true);
   });
 
-  it("toggleKillSwitch flips killSwitch", () => {
-    useAppStore.getState().toggleKillSwitch();
-    expect(useAppStore.getState().killSwitch).toBe(true);
+  it("toggleKillSwitch calls activate API and flips killSwitch", async () => {
+    mockActivate.mockResolvedValueOnce({
+      is_active: true,
+      activated_at: "2025-01-01T00:00:00Z",
+      activation_reason: "MANUAL",
+      message: "Kill switch activated. All trading halted.",
+    });
 
-    useAppStore.getState().toggleKillSwitch();
+    await useAppStore.getState().toggleKillSwitch();
+    expect(useAppStore.getState().killSwitch).toBe(true);
+    expect(mockActivate).toHaveBeenCalledWith("MANUAL");
+  });
+
+  it("toggleKillSwitch calls reset API and flips killSwitch back", async () => {
+    useAppStore.setState({ killSwitch: true });
+
+    mockReset.mockResolvedValueOnce({
+      is_active: false,
+      activated_at: null,
+      activation_reason: null,
+      message: "Kill switch reset. Trading resumed.",
+    });
+
+    await useAppStore.getState().toggleKillSwitch();
     expect(useAppStore.getState().killSwitch).toBe(false);
+    expect(mockReset).toHaveBeenCalled();
+  });
+
+  it("toggleKillSwitch reverts state on API failure", async () => {
+    mockActivate.mockRejectedValueOnce(new Error("Network error"));
+
+    await useAppStore.getState().toggleKillSwitch();
+    expect(useAppStore.getState().killSwitch).toBe(false);
+    expect(useAppStore.getState().loadingStates.killSwitch.error).toBe("Network error");
   });
 
   it("toggleAutoTrade flips autoTrade", () => {

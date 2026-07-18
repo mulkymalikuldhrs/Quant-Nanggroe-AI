@@ -106,7 +106,7 @@ class ExchangeBrokerAdapter(Broker):
 
 
 def _get_execution_manager(http_request: Request):
-    """Retrieve or lazily create the ExecutionManager from app state.
+    """Retrieve the singleton ExecutionManager from services, with ExchangeManager bridge.
 
     The ExecutionManager is ALWAYS wired with the constitutional RiskManager and
     KillSwitch so every order is enforced (no override path). A trade that breaches
@@ -117,33 +117,23 @@ def _get_execution_manager(http_request: Request):
     "paper" default. Without this bridge, execute_order routes to a broker that was
     never registered and silently returns None (no fill, no error).
     """
-    from quant_nanggroe.engine.execution.base import Order as ExecOrder
-    from quant_nanggroe.engine.execution.manager import ExecutionManager
-    from quant_nanggroe.engine.risk.kill_switch import KillSwitch
-    from quant_nanggroe.engine.risk.manager import RiskManager
+    from quant_nanggroe.services import get_execution_manager
 
-    if not hasattr(http_request.app.state, "_services"):
-        http_request.app.state._services = {}
+    em = get_execution_manager(http_request.app)
 
-    if "execution_manager" not in http_request.app.state._services:
-        from quant_nanggroe.engine.execution.builder import build_execution_manager
-        em = build_execution_manager()
-        # Bridge: wrap the live ExchangeManager as the ExecutionManager's broker.
+    # Bridge: ensure the live ExchangeManager is registered as a broker.
+    # The adapter is idempotent — adding it twice is a no-op if already present.
+    if not hasattr(em, "_exchange_bridge_added"):
         em.add_broker(ExchangeBrokerAdapter(_get_exchange_manager(http_request)))
-        http_request.app.state._services["execution_manager"] = em
-    return http_request.app.state._services["execution_manager"]
+        em._exchange_bridge_added = True
+
+    return em
 
 
 def _get_exchange_manager(http_request: Request):
-    """Retrieve or lazily create the ExchangeManager from app state."""
-    from quant_nanggroe.exchange.manager import ExchangeManager
-
-    if not hasattr(http_request.app.state, "_services"):
-        http_request.app.state._services = {}
-
-    if "exchange_manager" not in http_request.app.state._services:
-        http_request.app.state._services["exchange_manager"] = ExchangeManager()
-    return http_request.app.state._services["exchange_manager"]
+    """Retrieve the singleton ExchangeManager from services."""
+    from quant_nanggroe.services import get_exchange_manager
+    return get_exchange_manager(http_request.app)
 
 
 @router.post("/order", response_model=OrderResponse)
@@ -161,6 +151,14 @@ async def place_order(request: OrderRequest, http_request: Request) -> OrderResp
     Returns:
         OrderResponse with order status.
     """
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(http_request.state, 'user_role') and http_request.state.user_role not in (UserRole.ADMIN, UserRole.TRADER):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Trader+ role required to place orders", "status": "forbidden"},
+        )
+
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
 
     # Map direction string to OrderSide enum

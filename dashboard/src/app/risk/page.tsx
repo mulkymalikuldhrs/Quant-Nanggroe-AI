@@ -50,7 +50,7 @@ interface RiskData {
 }
 
 export default function RiskPage() {
-  const { killSwitch, toggleKillSwitch } = useAppStore();
+  const { killSwitch, toggleKillSwitch, killSwitchStatus, loadingStates } = useAppStore();
   const [riskData, setRiskData] = useState<RiskData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +161,16 @@ export default function RiskPage() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/5 border border-red-500/20">
             <Skull className="w-4 h-4 text-red-400" />
             <span className="text-sm text-red-400 font-medium">Kill Switch</span>
-            <Switch checked={killSwitch} onCheckedChange={toggleKillSwitch} />
+            {loadingStates.killSwitch.loading ? (
+              <RefreshCw className="w-3.5 h-3.5 text-red-300 animate-spin" />
+            ) : loadingStates.killSwitch.error ? (
+              <span className="text-[10px] text-red-400/70" title={loadingStates.killSwitch.error}>!</span>
+            ) : null}
+            <Switch
+              checked={killSwitch}
+              onCheckedChange={toggleKillSwitch}
+              disabled={loadingStates.killSwitch.loading}
+            />
           </div>
         </div>
       </div>
@@ -172,6 +181,11 @@ export default function RiskPage() {
           <Skull className="w-6 h-6 text-red-400 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-red-400">EMERGENCY KILL SWITCH ACTIVE</p>
+            {killSwitchStatus?.activation_reason && (
+              <p className="text-xs text-red-400/60 mt-0.5">
+                Reason: {killSwitchStatus.activation_reason}
+              </p>
+            )}
             <p className="text-xs text-red-400/60 mt-0.5">
               All trading operations suspended. No new orders will be placed. Existing orders may be cancelled.
             </p>
@@ -187,6 +201,14 @@ export default function RiskPage() {
           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={loadRiskData}>
             <RefreshCw className="w-3 h-3 mr-1" /> Retry
           </Button>
+        </div>
+      )}
+
+      {/* Kill Switch Error */}
+      {loadingStates.killSwitch.error && !killSwitch && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2 animate-slide-up">
+          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <p className="text-sm text-red-400 flex-1">Kill Switch: {loadingStates.killSwitch.error}</p>
         </div>
       )}
 

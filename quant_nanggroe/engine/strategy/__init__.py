@@ -2,7 +2,7 @@
 
 __all__ = [
     'backtest_adapter',
-    'hermes_lifecycle',
+
     'loader',
     'multi_timeframe',
     'parser',
@@ -13,7 +13,6 @@ __all__ = [
 ]
 
 from . import backtest_adapter
-from . import hermes_lifecycle
 from . import loader
 from . import multi_timeframe
 from . import parser

@@ -1,11 +1,12 @@
-# MT5 Accounts — Dikonfigurasi untuk Valetax Demo
-# Password DIISI oleh user sebelum live. File ini .gitignore'd.
-# Env var alternatif: $VALETAX_PASSWORD (via os.path.expandvars)
+# MT5 Account Configuration
+# 1. Set VALETAX_PASSWORD as environment variable (recommended)
+# 2. Or replace ${VALETAX_PASSWORD} with your actual password
+# 3. To find your server: open MT5 → File → Login → copy "Server" field
 accounts:
-  - name: valetax_demo
+  - name: "MT5 Demo"
     broker: mt5
-    login: 372044706
-    password: "${VALETAX_PASSWORD}"  # ganti dengan password asli, atau set env VAR
-    server: "ValetaxIntl_Live-2"
-    paper: false  # demo = real MT5, tapi uang virtual
+    login: 372044706        # Your MT5 demo login
+    server: "ValetaxIntl_Live-2"  # Your MT5 server
+    password: "${VALETAX_PASSWORD}"  # Set VALETAX_PASSWORD env var
+    paper: false  # false = demo/real money, true = paper simulation
 

@@ -273,6 +273,8 @@ class TradingWorker:
 
         No LLM calls.  Every gate is auditable.
         """
+        if symbol is None:  # ponytail: fail-fast — None would propagate silently through all gates
+            raise TypeError("symbol must be str, got None")
         snap = snap or self._risk_manager.current_risk_snapshot()
         rs = self._risk_manager.state  # ponytail: RiskState for gate evaluation
         result: dict[str, str] = {

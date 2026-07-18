@@ -280,7 +280,7 @@ def cmd_health(args: argparse.Namespace) -> None:
         "backtest": "quant_nanggroe.engine.backtest",
         "risk": "quant_nanggroe.engine.risk",
         "data": "quant_nanggroe.engine.data",
-        "api": "quant_nanggroe.api",
+        "api": "quant_nanggroe.api.app",
         "security": "quant_nanggroe.security",
     }
 
@@ -340,7 +340,7 @@ def cmd_serve(args: argparse.Namespace) -> None:
 
         _print_ok("Launching uvicorn...")
         uvicorn.run(
-            "quant_nanggroe.api:app",
+            "quant_nanggroe.api.app:app",
             host=args.host,
             port=args.port,
             reload=args.reload,

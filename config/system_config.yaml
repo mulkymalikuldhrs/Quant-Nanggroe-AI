@@ -4,9 +4,9 @@
 
 # System Information
 system:
-  name: "Agentic AI System"
-  version: "2.0.0"
-  description: "Autonomous Multi-Agent Intelligence Platform"
+  name: "Quant-Nanggroe-AI"
+  version: "4.5.8"
+  description: "Autonomous Quant Hedge Fund"
   author: "Mulky Malikul Dhaher"
   country: "Indonesia 🇮🇩"
   license: "MIT"
@@ -58,106 +58,11 @@ agents:
     enable_metrics: true
     
   # Individual agent settings
-  cybershell:
-    enabled: true
-    allowed_commands:
-      - "ls"
-      - "cat"
-      - "grep"
-      - "find"
-      - "git"
-      - "npm"
-      - "pip"
-      - "python"
-      - "node"
-    blocked_commands:
-      - "rm -rf"
-      - "format"
-      - "del"
-      - "sudo rm"
-    max_execution_time: 300
-    
-  agent_maker:
-    enabled: true
-    max_agents: 50
-    default_templates:
-      - "data_scientist"
-      - "web_developer"
-      - "content_writer"
-      - "devops_engineer"
-    auto_cleanup_unused: true
-    
-  ui_designer:
-    enabled: true
-    supported_frameworks:
-      - "react"
-      - "vue"
-      - "angular"
-      - "svelte"
-    default_styling: "tailwind"
-    generate_tests: true
-    
-  dev_engine:
-    enabled: true
-    supported_languages:
-      - "javascript"
-      - "typescript"
-      - "python"
-      - "java"
-      - "go"
-    project_templates:
-      - "fullstack_web"
-      - "mobile_app"
-      - "api_service"
-      - "microservice"
-    auto_install_deps: true
-    
-  data_sync:
-    enabled: true
-    supported_databases:
-      - "sqlite"
-      - "postgresql" 
-      - "mysql"
-      - "redis"
-      - "mongodb"
-    backup_interval: 3600
-    sync_interval: 300
-    
-  fullstack_dev:
-    enabled: true
-    tech_stacks:
-      frontend:
-        - "react"
-        - "vue"
-        - "angular"
-      backend:
-        - "fastapi"
-        - "express"
-        - "django"
-        - "flask"
-      database:
-        - "postgresql"
-        - "mysql"
-        - "mongodb"
-    
-  deploy_manager:
-    enabled: true
-    platforms:
-      - "netlify"
-      - "vercel"
-      - "railway"
-      - "heroku"
-      - "aws"
-      - "gcp"
-      - "docker"
-    auto_deploy: false
-    health_checks: true
-    
-  prompt_generator:
-    enabled: true
-    optimization_enabled: true
-    pattern_library: true
-    test_prompts: true
+  defaults:
+    timeout: 300
+    max_retries: 3
+    enable_logging: true
+    enable_metrics: true
 
 # LLM Configuration
 llm:
@@ -327,7 +232,7 @@ security:
       burst_limit: 20
     
     authentication:
-      enabled: false  # Disabled for development
+      enabled: true
       type: "jwt"
       token_expiry: 3600
     
@@ -351,9 +256,9 @@ security:
 
 # Development Configuration
 development:
-  debug: true
-  hot_reload: true
-  auto_restart: true
+  debug: false
+  hot_reload: false
+  auto_restart: false
   
   # Testing
   testing:

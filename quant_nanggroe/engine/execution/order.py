@@ -1,15 +1,27 @@
-"""Order Management — tracking, lifecycle, and state transitions.
+"""Order Management — tracking, lifecycle, and state persistence.
 
-Provides order tracking, state management, and query capabilities
-for all orders flowing through the execution engine.
+Provides order tracking, state management, query capabilities,
+and crash-safe persistence for all orders flowing through the
+execution engine.
 """
 
 from __future__ import annotations
 
+import json
+import logging
+import os
 import uuid
+from dataclasses import asdict
 from typing import Dict, List, Optional
 
 from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
+
+logger = logging.getLogger(__name__)
+
+_STATE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+    "paper_state",
+)
 
 
 class OrderManager:
@@ -21,6 +33,60 @@ class OrderManager:
 
     def __init__(self) -> None:
         self._orders: Dict[str, Order] = {}
+        self._state_path: Optional[str] = None
+        self._setup_persistence()
+        self._load()
+
+    def _setup_persistence(self) -> None:
+        """Initialize persistence path."""
+        try:
+            os.makedirs(_STATE_DIR, exist_ok=True)
+            self._state_path = os.path.join(_STATE_DIR, "orders.json")
+        except Exception:
+            self._state_path = None
+
+    def _persist(self) -> None:
+        """Save all orders to disk (atomic write)."""
+        if not self._state_path:
+            return
+        try:
+            data = []
+            for o in self._orders.values():
+                d = asdict(o)
+                data.append(d)
+            tmp = self._state_path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, default=str, indent=2)
+            os.replace(tmp, self._state_path)
+        except Exception as exc:
+            logger.warning("Failed to persist orders: %s", exc)
+
+    def _load(self) -> None:
+        """Load orders from disk on startup."""
+        if not self._state_path or not os.path.exists(self._state_path):
+            return
+        try:
+            with open(self._state_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for d in data:
+                order = Order(
+                    id=d["id"],
+                    symbol=d["symbol"],
+                    side=OrderSide(d["side"]),
+                    order_type=OrderType(d["order_type"]),
+                    quantity=d["quantity"],
+                    price=d.get("price"),
+                    stop_price=d.get("stop_price"),
+                    time_in_force=d.get("time_in_force", "GTC"),
+                    status=OrderStatus(d["status"]),
+                    created_at=d.get("created_at", ""),
+                    updated_at=d.get("updated_at", ""),
+                    metadata=d.get("metadata", {}),
+                )
+                self._orders[order.id] = order
+            logger.info("Loaded %d orders from disk", len(self._orders))
+        except Exception as exc:
+            logger.warning("Failed to load orders from disk: %s", exc)
 
     def create_order(
         self,
@@ -67,6 +133,7 @@ class OrderManager:
             order: Order to track.
         """
         self._orders[order.id] = order
+        self._persist()
 
     def get(self, order_id: str) -> Optional[Order]:
         """Get an order by ID.
@@ -107,6 +174,7 @@ class OrderManager:
             metadata=order.metadata,
         )
         self._orders[order_id] = updated
+        self._persist()
         return updated
 
     def get_by_symbol(self, symbol: str) -> List[Order]:

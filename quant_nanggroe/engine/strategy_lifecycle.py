@@ -9,12 +9,19 @@ Survival of the fittest.
 
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.types.engine import StrategyStatus
+
+_STATE_DIR = Path(__file__).resolve().parent.parent.parent / "paper_state"
+_STATE_FILE = _STATE_DIR / "strategy_lifecycle.json"
 
 
 class StrategyState(BaseModel):
@@ -63,6 +70,40 @@ class StrategyLifecycleManager:
 
     def __init__(self) -> None:
         self.strategies: dict[str, StrategyState] = {}
+        self._load()
+
+    # ── Persistence ──────────────────────────────────────────────────────
+
+    def _load(self) -> None:
+        """Load state from paper_state/strategy_lifecycle.json if it exists."""
+        if not _STATE_FILE.exists():
+            return
+        try:
+            data = json.loads(_STATE_FILE.read_text(encoding="utf-8"))
+            for name, raw in data.get("strategies", {}).items():
+                self.strategies[name] = StrategyState.model_validate(raw)
+        except Exception:
+            pass
+
+    def _persist(self) -> None:
+        """Atomic write of current state to paper_state/strategy_lifecycle.json."""
+        _STATE_DIR.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "strategies": {
+                name: s.model_dump(mode="json")
+                for name, s in self.strategies.items()
+            }
+        }
+        fd, tmp = tempfile.mkstemp(dir=str(_STATE_DIR), suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+            os.replace(tmp, str(_STATE_FILE))
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
     def register_strategy(self, name: str, description: str = "") -> StrategyState:
         """Register a new strategy for lifecycle tracking.
@@ -133,6 +174,7 @@ class StrategyLifecycleManager:
         # Evaluate lifecycle
         self._evaluate_lifecycle(name)
 
+        self._persist()
         return strategy
 
     def _evaluate_lifecycle(self, name: str) -> None:
@@ -182,6 +224,7 @@ class StrategyLifecycleManager:
                 "reason": reason,
             }
         )
+        self._persist()
 
     def get_active_strategies(self) -> list[str]:
         """Get list of active strategy names."""

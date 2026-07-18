@@ -6,12 +6,17 @@ Requires FRED_API_KEY environment variable or configured key.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 
 logger = logging.getLogger(__name__)
 
@@ -116,3 +121,81 @@ class FREDProvider:
             if v is not None:
                 query[k] = v
         return f"{self.BASE_URL}/{endpoint}?{urlencode(query)}"
+
+
+class FREDProviderAdapter(DataProvider):
+    """Async adapter wrapping sync FREDProvider to conform to the DataProvider ABC."""
+
+    def __init__(self, wrapped: FREDProvider) -> None:
+        super().__init__(name="fred", priority=30)
+        self._wrapped = wrapped
+
+    async def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        series_id, _ = _parse_symbol(symbol)
+        start_str = start.strftime("%Y-%m-%d") if start else None
+        end_str = end.strftime("%Y-%m-%d") if end else None
+        observations = await asyncio.to_thread(
+            self._get_observations_sync, series_id, start_str, end_str
+        )
+        results: List[OHLCV] = []
+        for obs in observations[-limit:]:
+            val = obs.get("value", "")
+            if not val or val == ".":
+                continue
+            try:
+                ts = datetime.strptime(obs["date"], "%Y-%m-%d")
+                results.append(OHLCV(
+                    symbol=symbol,
+                    timestamp=ts,
+                    open=float(val),
+                    high=float(val),
+                    low=float(val),
+                    close=float(val),
+                    volume=0.0,
+                ))
+            except (ValueError, KeyError):
+                continue
+        return results
+
+    def _get_observations_sync(
+        self, series_id: str, start_str: Optional[str], end_str: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        url = self._wrapped._build_url(
+            "series/observations",
+            series_id=series_id,
+            observation_start=start_str,
+            observation_end=end_str,
+        )
+        req = Request(url)
+        with urlopen(req) as resp:
+            data = json.loads(resp.read().decode())
+        return data.get("observations", [])
+
+    async def get_ticker(self, symbol: str) -> Ticker:
+        return Ticker(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+            last_price=0.0,
+        )
+
+    async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
+        return OrderBook(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            await asyncio.to_thread(
+                self._get_observations_sync, "GDP", None, None
+            )
+            return True
+        except Exception:
+            return False

@@ -25,14 +25,20 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import time
 import uuid
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
+# File-backed token revocation store (survives restarts)
+_REVOCATION_DIR = Path(__file__).resolve().parent.parent / "paper_state"
+_REVOCATION_FILE = _REVOCATION_DIR / "revoked_tokens.json"
 
 # ---------------------------------------------------------------------------
 # Role definitions
@@ -282,6 +288,7 @@ class JWTAuth:
         self._default_ttl = default_ttl
         self._algorithm = algorithm
         self._revoked_tokens: set[str] = set()
+        self._load_revoked_tokens()
 
     def create_token(
         self,
@@ -421,6 +428,7 @@ class JWTAuth:
         payload = self.validate_token(token)
         # Revoke the old token
         self._revoked_tokens.add(payload.jti)
+        self._save_revoked_tokens()
         # Create a new token with the same user/role
         return self.create_token(
             user_id=payload.user_id,
@@ -439,6 +447,7 @@ class JWTAuth:
         try:
             payload = self.validate_token(token)
             self._revoked_tokens.add(payload.jti)
+            self._save_revoked_tokens()
         except ValueError:
             # Token is already invalid, nothing to revoke
             pass
@@ -500,6 +509,26 @@ class JWTAuth:
         return _ROLE_HIERARCHY.get(role, 0) >= _ROLE_HIERARCHY.get(minimum, 0)
 
     # ----- Internal -----
+
+    def _load_revoked_tokens(self) -> None:
+        """Load revoked tokens from file-backed store."""
+        try:
+            if _REVOCATION_FILE.exists():
+                data = json.loads(_REVOCATION_FILE.read_text(encoding="utf-8"))
+                self._revoked_tokens = set(data.get("revoked", []))
+        except Exception:
+            logger.warning("Failed to load revoked tokens from %s", _REVOCATION_FILE)
+
+    def _save_revoked_tokens(self) -> None:
+        """Persist revoked tokens to file."""
+        try:
+            _REVOCATION_DIR.mkdir(parents=True, exist_ok=True)
+            _REVOCATION_FILE.write_text(
+                json.dumps({"revoked": list(self._revoked_tokens)}, indent=2),
+                encoding="utf-8",
+            )
+        except Exception:
+            logger.warning("Failed to persist revoked tokens to %s", _REVOCATION_FILE)
 
     def _sign(self, data: str) -> bytes:
         """Sign data using HMAC-SHA256.

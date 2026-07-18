@@ -15,7 +15,6 @@ __all__ = [
     'debate',
     'ecosystem',
     'fred',
-    'geopolitics',
     'market',
     'memory',
     'monitor',
@@ -47,7 +46,6 @@ from . import credentials
 from . import debate
 from . import ecosystem
 from . import fred
-from . import geopolitics
 from . import market
 from . import memory
 from . import monitor

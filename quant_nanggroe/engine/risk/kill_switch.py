@@ -174,6 +174,7 @@ class KillSwitch:
         self._status: KillSwitchStatus = KillSwitchStatus.INACTIVE
         self._events: List[KillSwitchEvent] = []
         self._activated_at: Optional[datetime] = None
+        self._level3_approved: bool = False
         self._ks_file = _ks_store_path()
         if self._ks_file:
             self._reconcile()
@@ -381,7 +382,10 @@ class KillSwitch:
 
         # Level 3 requires approval
         if self._current_level == KillSwitchLevel.LEVEL_3 and self._config.level_3_requires_approval:
-            logger.warning("Level 3 deactivation requires explicit approval")
+            if not self._level3_approved:
+                logger.warning("Level 3 deactivation requires explicit approval — call approve_level3_deactivation()")
+                return None
+            self._level3_approved = False  # reset after use
 
         previous_level = self._current_level
         self._current_level = KillSwitchLevel.NONE
@@ -403,6 +407,11 @@ class KillSwitch:
             previous_level=previous_level,
             reason=reason,
         )
+
+    def approve_level3_deactivation(self) -> None:
+        """Approve Level 3 deactivation. Must be called before deactivate() will succeed."""
+        self._level3_approved = True
+        logger.info("Level 3 deactivation approved")
 
     # ── Auto-activation checks ──────────────────────────────────────────
 

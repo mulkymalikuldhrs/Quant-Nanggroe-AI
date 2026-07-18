@@ -254,7 +254,7 @@ class CredentialManager:
                     status.file_based.append({
                         "name": "Exness MT5",
                         "location": "config/credentials.json + config/mt5_accounts.yaml",
-                        "risk": "Password in plaintext: @15September"
+                        "risk": "Password in plaintext (use VALETAX_PASSWORD env var instead)"
                     })
                 continue
 

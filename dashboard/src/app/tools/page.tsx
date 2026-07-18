@@ -33,7 +33,7 @@ const FALLBACK_TOOLS: Tool[] = [
 ];
 
 export default function ToolsPage() {
-  const [tools, setTools] = useState<Tool[]>(FALLBACK_TOOLS);
+  const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);

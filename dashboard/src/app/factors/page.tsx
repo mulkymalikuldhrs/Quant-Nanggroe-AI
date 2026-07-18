@@ -103,6 +103,12 @@ export default function FactorsPage() {
         <p className="text-sm text-white/40 mt-0.5">{factorZoos.length} factor zoos • {totalFactors} alpha factors • Custom pipelines</p>
       </div>
 
+      {/* Coming Soon banner — module is illustrative only */}
+      <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
+        <Badge variant="info" className="text-xs">Coming Soon</Badge>
+        <p className="text-sm text-white/50">The Alpha Factor Explorer is under development — factor statistics shown are illustrative samples, not live computed factors.</p>
+      </div>
+
       {/* Factor Zoo Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {factorZoos.map((zoo) => (

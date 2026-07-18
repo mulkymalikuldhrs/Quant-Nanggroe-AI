@@ -253,10 +253,10 @@ describe("API endpoint objects", () => {
   });
 
   it("agentsApi.activateKillSwitch sends reason", async () => {
-    mockFetch(200, { active: true, level: "emergency", reason: "manual" });
+    mockFetch(200, { is_active: true, activation_reason: "manual override", message: "" });
 
     const result = await agentsApi.activateKillSwitch("manual override");
-    expect(result.active).toBe(true);
+    expect(result.is_active).toBe(true);
     expect(fetch).toHaveBeenCalledWith(
       `${API_BASE}/api/agents/kill-switch/activate`,
       expect.objectContaining({

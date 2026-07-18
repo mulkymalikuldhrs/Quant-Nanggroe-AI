@@ -32,13 +32,13 @@ _BANNER = """
 [bold cyan]╔══════════════════════════════════════════════╗[/bold cyan]
 [bold cyan]║   [bold white]Quant Nanggroe AI[/bold white]                           [bold cyan]║[/bold cyan]
 [bold cyan]║   [dim]Agentic Trading Intelligence OS[/dim]           [bold cyan]║[/bold cyan]
-[bold cyan]║   [dim]v0.2.0 — Multi-Agent · LangGraph · Risk[/dim]   [bold cyan]║[/bold cyan]
+[bold cyan]║   [dim]v4.3.4 — Multi-Agent · LangGraph · Risk[/dim]   [bold cyan]║[/bold cyan]
 [bold cyan]╚══════════════════════════════════════════════╝[/bold cyan]
 """
 
 
 @click.group()
-@click.version_option(version="0.2.0", prog_name="qnai")
+@click.version_option(version="4.3.4", prog_name="qnai")
 def main():
     """Quant Nanggroe AI — Agentic Trading Intelligence OS."""
     pass
@@ -611,7 +611,7 @@ def serve(host: str, port: int, reload: bool):
     import uvicorn
 
     uvicorn.run(
-        "quant_nanggroe.api:app",
+        "quant_nanggroe.api.app:app",
         host=host,
         port=port,
         reload=reload,

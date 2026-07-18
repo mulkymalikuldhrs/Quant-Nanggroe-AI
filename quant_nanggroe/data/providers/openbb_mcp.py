@@ -11,9 +11,12 @@ import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
+
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 
 logger = logging.getLogger(__name__)
 
@@ -233,3 +236,72 @@ class OpenBBMCPProvider:
 
 
 __all__ = ["OpenBBMCPProvider"]
+
+
+class OpenBBMCPProviderAdapter(DataProvider):
+    """Async adapter wrapping sync OpenBBMCPProvider to conform to the DataProvider ABC."""
+
+    def __init__(self, wrapped: OpenBBMCPProvider) -> None:
+        super().__init__(name="openbb", priority=28)
+        self._wrapped = wrapped
+
+    async def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        import asyncio
+
+        tf_map = {
+            TimeFrame.M1: "M1", TimeFrame.M5: "M5", TimeFrame.M15: "M15",
+            TimeFrame.M30: "M30", TimeFrame.H1: "H1", TimeFrame.H4: "H4",
+            TimeFrame.D1: "D1", TimeFrame.W1: "W1", TimeFrame.MO1: "M1",
+        }
+        tf_str = tf_map.get(timeframe, "D1")
+        df = await asyncio.to_thread(
+            self._wrapped.fetch_ohlcv, symbol, tf_str, start, end
+        )
+        if df.empty:
+            return []
+        results: List[OHLCV] = []
+        for _, row in df.tail(limit).iterrows():
+            try:
+                results.append(OHLCV(
+                    symbol=symbol,
+                    timestamp=pd.Timestamp(row.get("timestamp", row.name)).to_pydatetime(),
+                    open=float(row["open"]),
+                    high=float(row["high"]),
+                    low=float(row["low"]),
+                    close=float(row["close"]),
+                    volume=float(row.get("volume", 0)),
+                ))
+            except Exception:
+                continue
+        return results
+
+    async def get_ticker(self, symbol: str) -> Ticker:
+        return Ticker(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+            last_price=0.0,
+        )
+
+    async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
+        return OrderBook(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+        )
+
+    async def health_check(self) -> bool:
+        import asyncio
+
+        try:
+            df = await asyncio.to_thread(
+                self._wrapped.fetch_ohlcv, "AAPL", "D1"
+            )
+            return not df.empty
+        except Exception:
+            return False

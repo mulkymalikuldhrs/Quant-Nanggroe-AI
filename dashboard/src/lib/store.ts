@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { apiRequest } from "./api-client";
+import { apiRequest, agentsApi } from "./api-client";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -122,7 +122,7 @@ interface AppState {
 
   // Actions — UI
   toggleSidebar: () => void;
-  toggleKillSwitch: () => void;
+  toggleKillSwitch: () => Promise<void>;
   toggleAutoTrade: () => void;
   setActiveAgents: (agents: string[]) => void;
   setSelectedSymbol: (symbol: string) => void;
@@ -200,7 +200,52 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ── UI Actions ────────────────────────────────────────────────
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  toggleKillSwitch: () => set((s) => ({ killSwitch: !s.killSwitch })),
+  toggleKillSwitch: async () => {
+    const current = get().killSwitch;
+    set((s) => ({
+      loadingStates: {
+        ...s.loadingStates,
+        killSwitch: { ...s.loadingStates.killSwitch, loading: true, error: null },
+      },
+    }));
+    try {
+      const data = current
+        ? await agentsApi.resetKillSwitch()
+        : await agentsApi.activateKillSwitch("MANUAL");
+      set((s) => ({
+        killSwitch: data.is_active,
+        killSwitchStatus: {
+          is_active: data.is_active,
+          activated_at: data.activated_at ?? null,
+          activation_reason: data.activation_reason ?? null,
+          message: data.message ?? "",
+        },
+        loadingStates: {
+          ...s.loadingStates,
+          killSwitch: { loading: false, error: null, lastUpdated: Date.now() },
+        },
+      }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to toggle kill switch";
+      set((s) => ({
+        loadingStates: {
+          ...s.loadingStates,
+          killSwitch: {
+            loading: false,
+            error: message,
+            lastUpdated: s.loadingStates.killSwitch.lastUpdated,
+          },
+        },
+      }));
+      get().addNotification({
+        id: `killswitch-error-${Date.now()}`,
+        type: "error",
+        message,
+        timestamp: Date.now(),
+      });
+    }
+  },
   toggleAutoTrade: () => set((s) => ({ autoTrade: !s.autoTrade })),
   setActiveAgents: (agents) => set({ activeAgents: agents }),
   setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),

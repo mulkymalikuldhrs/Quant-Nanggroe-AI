@@ -30,7 +30,7 @@ const FALLBACK_EVENTS: SecurityEvent[] = [
 ];
 
 export default function SecurityPage() {
-  const [events, setEvents] = useState<SecurityEvent[]>(FALLBACK_EVENTS);
+  const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [status, setStatus] = useState<SecurityStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

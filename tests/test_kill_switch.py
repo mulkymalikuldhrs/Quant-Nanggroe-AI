@@ -167,6 +167,7 @@ class TestKillSwitchDeactivate(unittest.TestCase):
         self.ks = KillSwitch(config=cfg)
         self.ks.activate(KillSwitchLevel.LEVEL_3, reason="Crash")
         self.ks._activated_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        self.ks.approve_level3_deactivation()
         result = self.ks.deactivate("Approved")
         self.assertIsNotNone(result)
 

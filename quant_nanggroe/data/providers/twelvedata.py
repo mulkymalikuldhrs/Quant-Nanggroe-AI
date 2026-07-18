@@ -13,7 +13,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from quant_nanggroe.types.market import OHLCV, Ticker, TimeFrame
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 
 logger = logging.getLogger(__name__)
 
@@ -250,3 +251,40 @@ def try_float(value: Any) -> Optional[float]:
         return float(value)
     except (ValueError, TypeError):
         return None
+
+
+class TwelveDataProviderAdapter(DataProvider):
+    """Adapter wrapping TwelveDataProvider to conform to the DataProvider ABC."""
+
+    def __init__(self, wrapped: TwelveDataProvider) -> None:
+        super().__init__(name=wrapped.name, priority=wrapped.priority)
+        self._wrapped = wrapped
+
+    async def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        return await self._wrapped.get_ohlcv(symbol, timeframe, start, end, limit)
+
+    async def get_ticker(self, symbol: str) -> Ticker:
+        result = await self._wrapped.get_ticker(symbol)
+        if result is None:
+            return Ticker(
+                symbol=symbol,
+                timestamp=datetime.utcnow(),
+                last_price=0.0,
+            )
+        return result
+
+    async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
+        return OrderBook(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+        )
+
+    async def health_check(self) -> bool:
+        return await self._wrapped.health_check()

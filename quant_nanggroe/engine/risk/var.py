@@ -263,8 +263,8 @@ class VaRCalculator:
 
         # Confidence interval using percentiles of the simulated distribution
         ci = (
-            abs(np.percentile(simulated, alpha * 100 + 1.96) * portfolio_value),
-            abs(np.percentile(simulated, alpha * 100 - 1.96) * portfolio_value),
+            abs(np.percentile(simulated, alpha / 2 * 100) * portfolio_value),
+            abs(np.percentile(simulated, (1 - alpha / 2) * 100) * portfolio_value),
         )
 
         return VaRResult("monte_carlo", confidence_level, var_value, cvar_value, ci)

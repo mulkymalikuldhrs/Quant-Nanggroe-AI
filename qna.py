@@ -70,29 +70,7 @@ BANNER = f"""
 # ══════════════════════════════════════════════════════════════════════
 
 DEFAULT_AGENTS: Dict[str, Dict[str, Any]] = {
-    # ── Core System Agents (priority 1) ────────────────
-    "prompt_master": {
-        "module": "quant_nanggroe.agents.prompt_master",
-        "class": "PromptMasterAgent",
-        "priority": 1,
-        "auto_start": True,
-        "description": "🧠 Prompt processing & routing",
-    },
-    "memory_bus": {
-        "module": "quant_nanggroe.agents.memory_bus",
-        "class": "MemoryBusAgent",
-        "priority": 1,
-        "auto_start": True,
-        "description": "💾 Distributed memory & state management",
-    },
-    "scheduler": {
-        "module": "quant_nanggroe.agents.scheduler",
-        "class": "SchedulerAgent",
-        "priority": 1,
-        "auto_start": True,
-        "description": "⏰ Task scheduling & orchestration",
-    },
-    # ── Trading Agents (priority 2) ────────────────────
+    # ── Verified existing agent modules only ───────────
     "researcher": {
         "module": "quant_nanggroe.agents.researcher",
         "class": "ResearcherAgent",
@@ -107,41 +85,12 @@ DEFAULT_AGENTS: Dict[str, Dict[str, Any]] = {
         "auto_start": True,
         "description": "📈 Trade execution & decision making",
     },
-    "risk_manager": {
-        "module": "quant_nanggroe.agents.risk_manager",
-        "class": "RiskManagerAgent",
-        "priority": 2,
-        "auto_start": True,
-        "description": "🛡️ Risk assessment & kill switch",
-    },
     "strategist": {
         "module": "quant_nanggroe.agents.strategist",
         "class": "StrategistAgent",
         "priority": 2,
         "auto_start": True,
         "description": "📊 Strategy generation & optimization",
-    },
-    # ── Support Agents (priority 3) ────────────────────
-    "cybershell": {
-        "module": "quant_nanggroe.agents.cybershell",
-        "class": "CyberShellAgent",
-        "priority": 3,
-        "auto_start": True,
-        "description": "🔐 Security & system operations",
-    },
-    "bug_hunter": {
-        "module": "quant_nanggroe.agents.bug_hunter",
-        "class": "BugHunterAgent",
-        "priority": 3,
-        "auto_start": True,
-        "description": "🐛 Vulnerability discovery & testing",
-    },
-    "data_sync": {
-        "module": "quant_nanggroe.agents.data_sync",
-        "class": "DataSyncAgent",
-        "priority": 3,
-        "auto_start": True,
-        "description": "🔄 Data synchronization & backup",
     },
 }
 

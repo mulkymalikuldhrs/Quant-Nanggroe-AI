@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { memoryApi } from '@/lib/api-client';
-import type { MemoryEntry } from '@/lib/api-client';
+import type { MemoryEntry, MemoryEntryType } from '@/lib/api-client';
 import { useEffect, useState } from 'react';
 
 export default function MemoryPage() {
@@ -13,6 +13,10 @@ export default function MemoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [storeKey, setStoreKey] = useState('');
+  const [storeType, setStoreType] = useState<MemoryEntryType>('knowledge');
+  const [storeContent, setStoreContent] = useState('');
+  const [storeMsg, setStoreMsg] = useState<string | null>(null);
 
   useEffect(() => {
     memoryApi.search('')
@@ -75,11 +79,11 @@ export default function MemoryPage() {
             <div className="px-4 pb-4 space-y-4">
               <div>
                 <label className="text-white/40 text-xs block mb-1">Key</label>
-                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500/50" />
+                <input type="text" value={storeKey} onChange={e => setStoreKey(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500/50" />
               </div>
               <div>
                 <label className="text-white/40 text-xs block mb-1">Type</label>
-                <select className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                <select value={storeType}               onChange={e => setStoreType(e.target.value as MemoryEntryType)} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
                   <option value="knowledge">Knowledge</option>
                   <option value="session">Session</option>
                   <option value="vector">Vector</option>
@@ -88,11 +92,29 @@ export default function MemoryPage() {
               </div>
               <div>
                 <label className="text-white/40 text-xs block mb-1">Content</label>
-                <textarea className="w-full h-24 bg-white/5 border border-white/10 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-cyan-500/50" />
+                <textarea value={storeContent} onChange={e => setStoreContent(e.target.value)} className="w-full h-24 bg-white/5 border border-white/10 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-cyan-500/50" />
               </div>
-              <button className="w-full py-2 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90 transition">
+              <button onClick={async () => {
+                  if (!storeKey.trim() || !storeContent.trim()) {
+                    setStoreMsg("Key and content are required");
+                    return;
+                  }
+                  setStoreMsg("Storing...");
+                  try {
+                    await memoryApi.store({ key: storeKey, type: storeType, content: storeContent });
+                    setStoreMsg("✓ Stored successfully");
+                    setStoreKey(''); setStoreContent('');
+                    const res = await memoryApi.search('');
+                    setEntries(res.entries);
+                  } catch (e) {
+                    setStoreMsg(`✗ ${e instanceof Error ? e.message : "Store failed"}`);
+                  }
+                  setTimeout(() => setStoreMsg(null), 4000);
+                }}
+                className="w-full py-2 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-sm font-medium hover:opacity-90 transition">
                 Store
               </button>
+              {storeMsg && <p className="text-[11px] text-center text-white/50">{storeMsg}</p>}
             </div>
           </Card>
         </div>

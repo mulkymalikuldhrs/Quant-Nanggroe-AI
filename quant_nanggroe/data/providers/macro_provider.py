@@ -14,10 +14,14 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import httpx
 import pandas as pd
+
+from quant_nanggroe.data.providers.base import DataProvider
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 
 logger = logging.getLogger(__name__)
 
@@ -333,3 +337,61 @@ class MacroProvider:
 
 
 __all__ = ["MacroProvider"]
+
+
+class MacroProviderAdapter(DataProvider):
+    """Adapter wrapping MacroProvider to conform to the DataProvider ABC."""
+
+    def __init__(self, wrapped: MacroProvider) -> None:
+        super().__init__(name="macro", priority=25)
+        self._wrapped = wrapped
+
+    async def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: TimeFrame = TimeFrame.D1,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OHLCV]:
+        series_id = symbol.upper().replace("FRED:", "")
+        start_str = start.strftime("%Y-%m-%d") if start else None
+        end_str = end.strftime("%Y-%m-%d") if end else None
+        df = await self._wrapped.get_series(series_id, start_str, end_str)
+        if df.empty:
+            return []
+        results: List[OHLCV] = []
+        for _, row in df.tail(limit).iterrows():
+            try:
+                results.append(OHLCV(
+                    symbol=symbol,
+                    timestamp=pd.Timestamp(row["date"]).to_pydatetime(),
+                    open=float(row["value"]),
+                    high=float(row["value"]),
+                    low=float(row["value"]),
+                    close=float(row["value"]),
+                    volume=0.0,
+                ))
+            except Exception:
+                continue
+        return results
+
+    async def get_ticker(self, symbol: str) -> Ticker:
+        return Ticker(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+            last_price=0.0,
+        )
+
+    async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
+        return OrderBook(
+            symbol=symbol,
+            timestamp=datetime.utcnow(),
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            await self._wrapped.get_series("GDP")
+            return True
+        except Exception:
+            return False

@@ -77,6 +77,12 @@ export default function ChannelsPage() {
         <p className="text-sm text-white/40 mt-0.5">{activeCount} of {channels.length} channels connected</p>
       </div>
 
+      {/* Coming Soon banner — module is illustrative only */}
+      <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
+        <Badge variant="info" className="text-xs">Coming Soon</Badge>
+        <p className="text-sm text-white/50">Notification channels are under development — the data shown below is illustrative fallback, not live delivery.</p>
+      </div>
+
       {/* Error */}
       {error && (
         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">

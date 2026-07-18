@@ -188,7 +188,7 @@ class PositionSizer:
         best_f = 0.0
         best_growth = -np.inf
 
-        for f_pct in np.arange(0.01, 1.0, 0.01):
+        for f_pct in np.arange(0.001, 1.0, 0.001):
             terminal = 1.0
             for pnl in trades_pnl:
                 hpr = 1.0 + f_pct * (-pnl / max_loss)
@@ -214,3 +214,12 @@ class PositionSizer:
             capped=capped,
             max_risk_used=MAX_RISK_PER_TRADE,
         )
+
+    def risk_parity(self, trades_pnl: list[float], portfolio_value: float) -> float:
+        """Risk parity: equal risk contribution sizing."""
+        if not trades_pnl or portfolio_value <= 0:
+            return 0.0
+        # Equal weight per position, capped by constitutional limit
+        n_positions = max(1, len([t for t in trades_pnl if t != 0]))
+        equal_weight = 1.0 / n_positions
+        return min(equal_weight * portfolio_value, portfolio_value * 0.10)  # 10% cap

@@ -179,10 +179,10 @@ body {
   <div class="card">
     <h2>System Status</h2>
     <div class="stat-grid">
-      <div class="stat"><div class="stat-label">Daemon PID</div><div class="stat-value" id="stat-pid">—</div></div>
-      <div class="stat"><div class="stat-label">Cycle</div><div class="stat-value" id="stat-cycle">—</div></div>
-      <div class="stat"><div class="stat-label">Uptime</div><div class="stat-value" id="stat-uptime">—</div></div>
-      <div class="stat"><div class="stat-label">Last Cycle</div><div class="stat-value" id="stat-lastcycle">—</div></div>
+      <div class="stat"><div class="stat-label">Daemon PID</div><div class="stat-value" id="stat-pid">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Cycle</div><div class="stat-value" id="stat-cycle">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Uptime</div><div class="stat-value" id="stat-uptime">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Last Cycle</div><div class="stat-value" id="stat-lastcycle">Loading...</div></div>
     </div>
     <div style="margin-top:8px;font-size:13px;">
       <span class="status-dot green" id="killSwitchDot"></span>
@@ -193,10 +193,10 @@ body {
   <div class="card">
     <h2>P&amp;L Snapshot</h2>
     <div class="stat-grid">
-      <div class="stat"><div class="stat-label">Cash Balance</div><div class="stat-value green" id="stat-cash">—</div></div>
-      <div class="stat"><div class="stat-label">Total Value</div><div class="stat-value" id="stat-totalval">—</div></div>
-      <div class="stat"><div class="stat-label">Total P&amp;L</div><div class="stat-value" id="stat-totalpnl">—</div></div>
-      <div class="stat"><div class="stat-label">Drawdown</div><div class="stat-value" id="stat-drawdown">—</div></div>
+      <div class="stat"><div class="stat-label">Cash Balance</div><div class="stat-value green" id="stat-cash">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Total Value</div><div class="stat-value" id="stat-totalval">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Total P&amp;L</div><div class="stat-value" id="stat-totalpnl">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Drawdown</div><div class="stat-value" id="stat-drawdown">Loading...</div></div>
     </div>
   </div>
 
@@ -212,18 +212,18 @@ body {
   <div class="card">
     <h2>Regime</h2>
     <div class="stat-grid">
-      <div class="stat"><div class="stat-label">Market Regime</div><div class="stat-value cyan" id="regime-name">—</div></div>
-      <div class="stat"><div class="stat-label">Confidence</div><div class="stat-value" id="regime-confidence">—</div></div>
-      <div class="stat"><div class="stat-label">Multiplier</div><div class="stat-value" id="regime-multiplier">—</div></div>
-      <div class="stat"><div class="stat-label">Vol Regime</div><div class="stat-value" id="regime-vol">—</div></div>
+      <div class="stat"><div class="stat-label">Market Regime</div><div class="stat-value cyan" id="regime-name">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Confidence</div><div class="stat-value" id="regime-confidence">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Multiplier</div><div class="stat-value" id="regime-multiplier">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Vol Regime</div><div class="stat-value" id="regime-vol">Loading...</div></div>
     </div>
   </div>
 
   <div class="card">
     <h2>Risk Status</h2>
     <div class="stat-grid">
-      <div class="stat"><div class="stat-label">Max Drawdown</div><div class="stat-value" id="risk-drawdown">—</div></div>
-      <div class="stat"><div class="stat-label">Auto-Disabled</div><div class="stat-value" id="risk-autodisabled">—</div></div>
+      <div class="stat"><div class="stat-label">Max Drawdown</div><div class="stat-value" id="risk-drawdown">Loading...</div></div>
+      <div class="stat"><div class="stat-label">Auto-Disabled</div><div class="stat-value" id="risk-autodisabled">Loading...</div></div>
     </div>
     <div style="margin-top:8px;font-size:13px;" id="killSwitchLevels"></div>
   </div>
@@ -331,7 +331,8 @@ function renderDashboard(d) {
   const firstRow = pnlRows.length > 0 ? pnlRows[0] : null;
 
   // System Status
-  $('stat-pid').textContent = pid ? pid.trim() : 'No PID';
+  const pidVal = pid ? pid.trim() : '';
+  $('stat-pid').textContent = pidVal && pidVal !== '0' ? pidVal : 'Daemon offline';
   $('stat-cycle').textContent = state ? getValOr(state, 'cycle_count', '—') : '—';
   $('stat-lastcycle').textContent = lastRow ? lastRow.timestamp : '—';
 
@@ -351,19 +352,19 @@ function renderDashboard(d) {
   const ksDot = $('killSwitchDot');
   const ksLabel = $('killSwitchLabel');
   if (killSwitch) {
-    const active = getValOr(killSwitch, 'active', false);
-    const level = getValOr(killSwitch, 'active_level', null);
+    const active = getValOr(killSwitch, 'active', getValOr(killSwitch, 'is_active', false));
+    const level = getValOr(killSwitch, 'level', getValOr(killSwitch, 'active_level', null));
+    const reason = getValOr(killSwitch, 'reason', null);
     if (active) {
       ksDot.className = 'status-dot red';
-      ksLabel.textContent = `Kill Switch: ACTIVE (${level || 'level_1'})`;
+      ksLabel.textContent = `Kill Switch: ACTIVE` + (level ? ` (${level})` : '') + (reason ? ` — ${reason}` : '');
     } else {
       ksDot.className = 'status-dot green';
       ksLabel.textContent = 'Kill Switch: Inactive';
     }
   } else {
-    // Try inferring from daemon.log
-    ksDot.className = 'status-dot green';
-    ksLabel.textContent = 'Kill Switch: Unknown (no state file)';
+    ksDot.className = 'status-dot yellow';
+    ksLabel.textContent = 'Kill Switch: Unknown (state file missing)';
   }
 
   // P&L Snapshot
@@ -375,11 +376,20 @@ function renderDashboard(d) {
     $('stat-totalpnl').className = 'stat-value ' + (totalPnl >= 0 ? 'green' : 'red');
     $('stat-drawdown').textContent = parseFloat(lastRow.drawdown_pct || 0).toFixed(2) + '%';
     $('stat-drawdown').className = 'stat-value ' + (parseFloat(lastRow.drawdown_pct || 0) < -5 ? 'red' : (parseFloat(lastRow.drawdown_pct || 0) < -2 ? 'yellow' : 'green'));
+  } else if (state) {
+    $('stat-cash').textContent = '$' + Number(state.cash_balance || 0).toLocaleString(undefined, {minimumFractionDigits:2});
+    $('stat-totalval').textContent = '$' + Number(state.total_value || 0).toLocaleString(undefined, {minimumFractionDigits:2});
+    const pnl = Number(state.daily_pnl || 0);
+    $('stat-totalpnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+    $('stat-totalpnl').className = 'stat-value ' + (pnl >= 0 ? 'green' : 'red');
+    const dd = Number(state.drawdown || 0);
+    $('stat-drawdown').textContent = dd.toFixed(2) + '%';
+    $('stat-drawdown').className = 'stat-value ' + (dd < -5 ? 'red' : (dd < -2 ? 'yellow' : 'green'));
   } else {
-    $('stat-cash').textContent = state ? '$' + getValOr(state, 'initial_capital', '—') : '—';
-    $('stat-totalval').textContent = '—';
-    $('stat-totalpnl').textContent = state ? getValOr(state, 'total_pnl', '—') : '—';
-    $('stat-drawdown').textContent = '—';
+    $('stat-cash').textContent = 'Waiting for engine...';
+    $('stat-totalval').textContent = 'Waiting for engine...';
+    $('stat-totalpnl').textContent = 'Waiting for engine...';
+    $('stat-drawdown').textContent = 'Waiting for engine...';
   }
 
   // Strategy Health
@@ -387,29 +397,40 @@ function renderDashboard(d) {
   tbody.innerHTML = '';
   const alphaStrs = alpha ? alpha.strategies || {} : {};
 
-  for (const sname of STRATEGY_NAMES) {
-    const tr = document.createElement('tr');
-    const ad = autoDisable ? (autoDisable.strategies || {})[sname] : null;
-    const alphaStrat = alphaStrs[sname] || null;
-    const tunedStrat = tuned ? (tuned.strategies || {})[sname] : null;
+  const hasAnyStratData = STRATEGY_NAMES.some(s => {
+    const ad = autoDisable ? (autoDisable.strategies || {})[s] : null;
+    const alphaStrat = alphaStrs[s] || null;
+    const tunedStrat = tuned ? (tuned.strategies || {})[s] : null;
+    return ad || alphaStrat || tunedStrat;
+  });
 
-    const disabled = ad ? ad.disabled : false;
-    const sharpe = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_sharpe', null) : (tunedStrat ? tunedStrat.default_sharpe : null);
-    const psr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_psr', null) : null;
-    const dsr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_dsr', null) : null;
-    const verdict = alphaStrat ? getValOr(alphaStrat, 'verdict', '—') : (tunedStrat ? '—' : '—');
-    const reason = ad ? ad.disabled_reason || '' : '';
+  if (!hasAnyStratData && !alpha && !autoDisable && (!tuned || Object.keys(tuned).length === 0)) {
+    tbody.innerHTML = '<tr><td colspan="7" class="no-data">Waiting for engine...</td></tr>';
+  } else {
+    for (const sname of STRATEGY_NAMES) {
+      const tr = document.createElement('tr');
+      const ad = autoDisable ? (autoDisable.strategies || {})[sname] : null;
+      const alphaStrat = alphaStrs[sname] || null;
+      const tunedStrat = tuned ? (tuned.strategies || {})[sname] : null;
 
-    tr.innerHTML = `
-      <td><strong>${sname}</strong></td>
-      <td><span class="badge ${disabled ? 'badge-disabled' : 'badge-active'}">${disabled ? 'DISABLED' : 'ACTIVE'}</span></td>
-      <td>${sharpe !== null ? (typeof sharpe === 'number' ? sharpe.toFixed(4) : sharpe) : '—'}</td>
-      <td>${psr !== null ? psr : '—'}</td>
-      <td>${dsr !== null ? dsr : '—'}</td>
-      <td style="font-size:11px;color:#5a7a9a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${reason.replace(/"/g,'&quot;')}">${reason ? reason : (disabled ? 'Auto-disabled' : '—')}</td>
-      <td>${verdict !== '—' ? `<span class="badge ${verdict === 'PASS' ? 'badge-pass' : 'badge-fail'}">${verdict}</span>` : '—'}</td>
-    `;
-    tbody.appendChild(tr);
+      const disabled = ad ? ad.disabled : false;
+      const sharpe = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_sharpe', null) : (tunedStrat ? tunedStrat.default_sharpe : null);
+      const psr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_psr', null) : null;
+      const dsr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_dsr', null) : null;
+      const verdict = alphaStrat ? getValOr(alphaStrat, 'verdict', '—') : (tunedStrat ? '—' : '—');
+      const reason = ad ? ad.disabled_reason || '' : '';
+
+      tr.innerHTML = `
+        <td><strong>${sname}</strong></td>
+        <td><span class="badge ${disabled ? 'badge-disabled' : 'badge-active'}">${disabled ? 'DISABLED' : 'ACTIVE'}</span></td>
+        <td>${sharpe !== null ? (typeof sharpe === 'number' ? sharpe.toFixed(4) : sharpe) : '—'}</td>
+        <td>${psr !== null ? psr : '—'}</td>
+        <td>${dsr !== null ? dsr : '—'}</td>
+        <td style="font-size:11px;color:#5a7a9a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${reason.replace(/"/g,'&quot;')}">${reason ? reason : (disabled ? 'Auto-disabled' : '—')}</td>
+        <td>${verdict !== '—' ? `<span class="badge ${verdict === 'PASS' ? 'badge-pass' : 'badge-fail'}">${verdict}</span>` : '—'}</td>
+      `;
+      tbody.appendChild(tr);
+    }
   }
 
   // Anomaly Alerts
@@ -465,23 +486,24 @@ function renderDashboard(d) {
     $('regime-multiplier').textContent = multiplier !== null ? (typeof multiplier === 'number' ? multiplier.toFixed(2) + 'x' : multiplier) : '—';
     $('regime-vol').textContent = volRegime || '—';
   } else {
-    $('regime-name').textContent = '—';
+    const fallbackRegime = state ? getValOr(state, 'regime', null) : null;
+    $('regime-name').textContent = fallbackRegime || 'Waiting for engine...';
     $('regime-confidence').textContent = '—';
     $('regime-multiplier').textContent = '—';
     $('regime-vol').textContent = '—';
   }
 
   // Risk Status
-  const maxDd = lastRow ? parseFloat(lastRow.drawdown_pct || 0) : (state ? getValOr(state, 'max_drawdown', null) : null);
-  $('risk-drawdown').textContent = maxDd !== null ? maxDd.toFixed(2) + '%' : '—';
-  $('risk-drawdown').className = 'stat-value ' + (maxDd !== null && maxDd < -10 ? 'red' : (maxDd !== null && maxDd < -5 ? 'yellow' : ''));
+  const maxDd = lastRow ? parseFloat(lastRow.drawdown_pct || 0) : (state ? Number(getValOr(state, 'drawdown', null)) : null);
+  $('risk-drawdown').textContent = maxDd !== null && !isNaN(maxDd) ? maxDd.toFixed(2) + '%' : 'Waiting for engine...';
+  $('risk-drawdown').className = 'stat-value ' + (maxDd !== null && maxDd < -10 ? 'red' : (maxDd !== null && maxDd < -5 ? 'yellow' : 'green'));
 
   // Count auto-disabled
   if (autoDisable && autoDisable.strategies) {
     const disabledCount = Object.values(autoDisable.strategies).filter(s => s.disabled).length;
     $('risk-autodisabled').textContent = disabledCount + ' / 8';
   } else {
-    $('risk-autodisabled').textContent = '—';
+    $('risk-autodisabled').textContent = state ? '0 / 8' : 'Waiting for engine...';
   }
 
   // Kill switch levels
@@ -496,9 +518,9 @@ function renderDashboard(d) {
     } else {
       html = `<div class="kill-level">State: ${killSwitch.active ? 'ACTIVE' : 'Inactive'}</div>`;
     }
-    ksLevelDiv.innerHTML = html || '<div class="no-data">No kill switch data</div>';
+    ksLevelDiv.innerHTML = html || '<div class="no-data">No kill switch levels</div>';
   } else {
-    ksLevelDiv.innerHTML = '<div class="no-data">No kill switch state file</div>';
+    ksLevelDiv.innerHTML = '<div class="no-data">Waiting for engine...</div>';
   }
 
   $('footerTimestamp').textContent = new Date().toISOString();
