@@ -1,0 +1,9 @@
+2026-07-20 03:08:59,948 [WARNING] Kronos not available (No module named 'einops') — using fallback mode
+2026-07-20 03:09:01,637 [INFO] ══════════════════════════════════════════════
+2026-07-20 03:09:01,637 [INFO]   DHAHER SYSTEM v1.0 — SL/TP-AWARE BACKTEST 
+2026-07-20 03:09:01,637 [INFO] ══════════════════════════════════════════════
+2026-07-20 03:09:01,638 [INFO] 📡 Loading EURUSD data...
+2026-07-20 03:09:01,760 [INFO] 📊 24560 bars, 2025-07-21 to 2026-07-17
+2026-07-20 03:09:54,661 [INFO]   default        : ❌ Ret=-1.35% SR=-0.290 DD=-3.70% WR=31.8% Trades=1690
+2026-07-20 03:10:44,734 [INFO]   tighter SL     : ✅ Ret=+3.33% SR=0.839 DD=-3.04% WR=29.3% Trades=1992
+2026-07-20 03:11:28,692 [INFO]   wider SL       : ❌ Ret=-0.18% SR=-0.007 DD=-4.01% WR=32.0% Trades=964
