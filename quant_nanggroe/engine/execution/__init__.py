@@ -4,9 +4,9 @@ __all__ = [
     'almgren_chriss',
     'base',
     'fill',
-
     'manager',
     'order',
+    'protection',
 ]
 
 from . import almgren_chriss
@@ -14,3 +14,4 @@ from . import base
 from . import fill
 from . import manager
 from . import order
+from . import protection

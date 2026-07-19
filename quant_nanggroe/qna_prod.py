@@ -164,10 +164,23 @@ class QNAProductionRunner:
             from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard
             from quant_nanggroe.engine.risk.atr_sl import calculate_atr_sl
             from quant_nanggroe.engine.risk.sizing import calculate_position_size
+            from quant_nanggroe.engine.execution.protection import ProtectionEngine
+            from quant_nanggroe.exchange.broker_pack import TradingMode, get_registry
 
             self._smc_engine = SMCEngine()
             self._killzone = KillZone()
             self._risk_gate = ConstitutionalRiskGuard()
+            self._protection_engine = ProtectionEngine(intrabar_mode="balanced")
+            self._broker_registry = get_registry()
+            self._trading_mode = TradingMode()
+            logger.info("BrokerPacks: %d registered, mode=%s",
+                        len(self._broker_registry.list_packs()),
+                        self._trading_mode.mode)
+            try:
+                from quant_nanggroe.engine.council_integration import integrate_council_findings
+                asyncio.create_task(self._run_council_integration())
+            except ImportError:
+                pass
 
             if self._use_telegram:
                 try:
@@ -177,11 +190,23 @@ class QNAProductionRunner:
                 except Exception as e:
                     logger.warning(f"Telegram init failed: {e}")
 
-            logger.info("Engines initialized: SMC, Risk, Killzone")
+            logger.info("Engines initialized: SMC, Risk, Killzone, Protection, BrokerPacks")
         except ImportError as e:
             logger.warning(f"Engine import failed (using fallback): {e}")
             self._smc_engine = None
 
+
+    async def _run_council_integration(self) -> None:
+        """Run council integration findings asynchronously at startup."""
+        try:
+            from quant_nanggroe.engine.council_integration import integrate_council_findings
+            result = await integrate_council_findings()
+            logger.info("Council integration: HF=%d rules, QNA=%d packs, SKILLS=%d pending",
+                        result["wave1_hf"]["rules_added"],
+                        result["wave2_qna"]["packs_registered"],
+                        result["wave3_skills"]["pending_algorithms"])
+        except Exception as e:
+            logger.warning(f"Council integration skipped: {e}")
     def _generate_ohlcv(self, symbol: str) -> Dict[str, Any]:
         """Fetch OHLCV data for symbol."""
         try:

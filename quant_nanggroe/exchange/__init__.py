@@ -3,6 +3,7 @@
 __all__ = [
     'alpaca_broker',
     'base',
+    'broker_pack',
     'ccxt_broker',
     'factory',
     'guards',
@@ -17,6 +18,7 @@ __all__ = [
 
 from . import alpaca_broker
 from . import base
+from . import broker_pack
 from . import ccxt_broker
 from . import factory
 from . import guards
