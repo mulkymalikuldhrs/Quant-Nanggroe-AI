@@ -1,5 +1,21 @@
 # Quant Nanggroe AI — Changelog
 
+## v4.6.0-post — M4 Milestone Complete (2026-07-19)
+
+### Completed Milestones
+- **M4: Backtest verification** — Walk-forward smoke test fixed and verified; orphan test cleanup
+- **M3: Version sync** — Package version unified at 4.6.0 across `__init__.py`, `pyproject.toml`, and README
+- **M2: Package alignment** — Code base synced from v4.3.4 → v4.6.0 (CHANGELOG was already 4.6.0 but code was 4.3.4)
+- **M1: Kill-switch fix (P4 #41)** — MTM kill-switch blindness resolved, DrawdownMonitor peak seeding bug fixed
+
+### Added
+- **Session documentation** — `session-QNA.md`: full DEVBOT triage appendix tracking all P0/P1 resolutions and pipeline status
+- **Order/Fill persistence** — Crash-safe state recovery in `OrderManager` and `FillTracker` (JSON serialization to `paper_state/`)
+
+### Fixed
+- **Walk-forward smoke test orphan** — Fixed import path and test isolation
+- **Version regression reverted** — Desynced version (4.5.0→4.6.0) reverted; README synced to 4.6.0 as single source of truth
+
 ## v4.6.0 — Wiring Overhaul (2026-07-16)
 
 ### 🔌 Execution Wiring — Single Source of Truth
