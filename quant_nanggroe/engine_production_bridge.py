@@ -47,16 +47,39 @@ import json as _json
 import time as _time
 from pathlib import Path as _Path
 
+# ponytail: ring buffer contract — cap is ENFORCED on every write (fail-closed on load error)
+QNA_LESSONS_CAP = 50
+QNA_LESSONS_PATH = "data/qna_lessons.json"
+
+
 def _record_lesson(error: Exception, context: str):
     try:
         _Path("data").mkdir(exist_ok=True)
-        p = _Path("data/qna_lessons.json")
-        lessons = _json.loads(p.read_text()) if p.exists() else []
+        p = _Path(QNA_LESSONS_PATH)
+        try:
+            lessons = _json.loads(p.read_text()) if p.exists() else []
+            if not isinstance(lessons, list):
+                lessons = []  # defend against corrupted file -> reset ring
+        except (ValueError, OSError):
+            lessons = []  # corrupted JSON -> reset ring, don't silently drop
         lessons.append({"ts": _time.time(), "ctx": context, "err": repr(error)})
-        lessons = lessons[-50:]  # ponytail: cap 50, ring buffer
+        if len(lessons) > QNA_LESSONS_CAP:
+            lessons = lessons[-QNA_LESSONS_CAP:]  # explicit, testable cap
         p.write_text(_json.dumps(lessons, indent=2))
     except Exception:
         pass
+
+
+def get_lessons() -> list:
+    """Read-back for audit/tests. Returns [] if missing/corrupt (fail-soft, not silent)."""
+    p = _Path(QNA_LESSONS_PATH)
+    if not p.exists():
+        return []
+    try:
+        data = _json.loads(p.read_text())
+        return data if isinstance(data, list) else []
+    except (ValueError, OSError):
+        return []
 
 
 class ProductionStrategyRunner:
