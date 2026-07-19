@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-07-19T23:43:30.742836",
+  "symbol": "EURUSD",
+  "strategy": "DhaherSystem",
+  "method": "SL/TP-aware backtest (not continuous position-hold)",
+  "configs_tested": 5,
+  "results": [
+    {
+      "strategy": "dhaher_system",
+      "initial_capital": 1000,
+      "final_capital": 1009.07,
+      "total_return": 9.07,
+      "return_pct": 0.91,
+      "sharpe": 0.469,
+      "max_drawdown": -2.48,
+      "win_rate": 26.8,
+      "total_trades": 730,
+      "closed_trades": 365,
+      "avg_win": 1.65,
+      "avg_loss": -0.57,
+      "config": "max risk",
+      "params": {
+        "lookback": 25,
+        "atr_mult": 1.0,
+        "rr_min": 3.0
+      }
+    },
+    {
+      "strategy": "dhaher_system",
+      "initial_capital": 1000,
+      "final_capital": 1001.6,
+      "total_return": 1.6,
+      "return_pct": 0.16,
+      "sharpe": 0.09,
+      "max_drawdown": -3.01,
+      "win_rate": 29.1,
+      "total_trades": 756,
+      "closed_trades": 378,
+      "avg_win": 1.65,
+      "avg_loss": -0.67,
+      "config": "tighter SL",
+      "params": {
+        "lookback": 20,
+        "atr_mult": 1.2,
+        "rr_min": 2.5
+      }
+    },
+    {
+      "strategy": "dhaher_system",
+      "initial_capital": 1000,
+      "final_capital": 978.94,
+      "total_return": -21.06,
+      "return_pct": -2.11,
+      "sharpe": -0.889,
+      "max_drawdown": -4.35,
+      "win_rate": 31.0,
+      "total_trades": 736,
+      "closed_trades": 368,
+      "avg_win": 1.65,
+      "avg_loss": -0.83,
+      "config": "default",
+      "params": {
+        "lookback": 20,
+        "atr_mult": 1.5,
+        "rr_min": 2.0
+      }
+    },
+    {
+      "strategy": "dhaher_system",
+      "initial_capital": 1000,
+      "final_capital": 978.16,
+      "total_return": -21.84,
+      "return_pct": -2.18,
+      "sharpe": -0.904,
+      "max_drawdown": -4.34,
+      "win_rate": 30.7,
+      "total_trades": 796,
+      "closed_trades": 398,
+      "avg_win": 1.65,
+      "avg_loss": -0.81,
+      "config": "faster",
+      "params": {
+        "lookback": 15,
+        "atr_mult": 1.5,
+        "rr_min": 2.0
+      }
+    },
+    {
+      "strategy": "dhaher_system",
+      "initial_capital": 1000,
+      "final_capital": 970.19,
+      "total_return": -29.81,
+      "return_pct": -2.98,
+      "sharpe": -1.026,
+      "max_drawdown": -4.56,
+      "win_rate": 30.7,
+      "total_trades": 600,
+      "closed_trades": 300,
+      "avg_win": 2.23,
+      "avg_loss": -1.13,
+      "config": "wider SL",
+      "params": {
+        "lookback": 30,
+        "atr_mult": 2.0,
+        "rr_min": 2.0
+      }
+    }
+  ],
+  "best": {
+    "strategy": "dhaher_system",
+    "initial_capital": 1000,
+    "final_capital": 1009.07,
+    "total_return": 9.07,
+    "return_pct": 0.91,
+    "sharpe": 0.469,
+    "max_drawdown": -2.48,
+    "win_rate": 26.8,
+    "total_trades": 730,
+    "closed_trades": 365,
+    "avg_win": 1.65,
+    "avg_loss": -0.57,
+    "config": "max risk",
+    "params": {
+      "lookback": 25,
+      "atr_mult": 1.0,
+      "rr_min": 3.0
+    }
+  },
+  "gate": {
+    "pass": "False",
+    "sharpe_check": "False",
+    "return_check": "True",
+    "dd_check": true
+  }
+}

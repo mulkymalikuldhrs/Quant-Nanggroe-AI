@@ -1,0 +1,274 @@
+{
+  "timestamp": "2026-07-20T00:47:56.086879",
+  "symbol": "time",
+  "bars": 24560,
+  "period": "2025-07-21 to 2026-07-17",
+  "old": {
+    "backtest": {
+      "strategy": "smc_old",
+      "initial_capital": 1000,
+      "final_capital": -449.3,
+      "total_return": -1449.3,
+      "return_pct": -144.93,
+      "sharpe": -1.211,
+      "max_drawdown": -135.54,
+      "win_rate": 33.2,
+      "total_trades": 1526,
+      "closed_trades": 763
+    },
+    "walkforward": {
+      "strategy": "SMCStrategyOld",
+      "folds": 4,
+      "avg_return_pct": -39.09,
+      "avg_sharpe": -2.128,
+      "avg_max_dd_pct": -52.7,
+      "avg_win_rate": 32.4,
+      "fold_results": [
+        {
+          "strategy": "smc_old",
+          "initial_capital": 1000,
+          "final_capital": 884.4,
+          "total_return": -115.6,
+          "return_pct": -11.56,
+          "sharpe": -0.744,
+          "max_drawdown": -28.09,
+          "win_rate": 33.1,
+          "total_trades": 290,
+          "closed_trades": 145,
+          "fold": 1,
+          "train_period": "2025-07-21 - 2025-09-09",
+          "test_period": "2025-09-09 - 2025-11-19",
+          "test_bars": 4912
+        },
+        {
+          "strategy": "smc_old",
+          "initial_capital": 1000,
+          "final_capital": 829.3,
+          "total_return": -170.7,
+          "return_pct": -17.07,
+          "sharpe": -1.123,
+          "max_drawdown": -33.71,
+          "win_rate": 38.5,
+          "total_trades": 286,
+          "closed_trades": 143,
+          "fold": 2,
+          "train_period": "2025-07-21 - 2025-11-19",
+          "test_period": "2025-11-19 - 2026-02-03",
+          "test_bars": 4912
+        },
+        {
+          "strategy": "smc_old",
+          "initial_capital": 1000,
+          "final_capital": 505.1,
+          "total_return": -494.9,
+          "return_pct": -49.49,
+          "sharpe": -1.485,
+          "max_drawdown": -66.56,
+          "win_rate": 28.8,
+          "total_trades": 326,
+          "closed_trades": 163,
+          "fold": 3,
+          "train_period": "2025-07-21 - 2026-02-03",
+          "test_period": "2026-02-03 - 2026-04-15",
+          "test_bars": 4912
+        },
+        {
+          "strategy": "smc_old",
+          "initial_capital": 1000,
+          "final_capital": 217.6,
+          "total_return": -782.4,
+          "return_pct": -78.24,
+          "sharpe": -5.159,
+          "max_drawdown": -82.44,
+          "win_rate": 29.3,
+          "total_trades": 334,
+          "closed_trades": 167,
+          "fold": 4,
+          "train_period": "2025-07-21 - 2026-04-15",
+          "test_period": "2026-04-15 - 2026-06-26",
+          "test_bars": 4912
+        }
+      ],
+      "conclusion": "\u274c GAGAL"
+    },
+    "gate": {
+      "pass": false,
+      "reason": "\u274c Gagal: Sharpe -2.128 > 0.5, Return -39.09% > 0%, Drawdown -52.7% > -25%",
+      "checks": [
+        [
+          "False",
+          "Sharpe -2.128 > 0.5"
+        ],
+        [
+          "False",
+          "Return -39.09% > 0%"
+        ],
+        [
+          "False",
+          "Drawdown -52.7% > -25%"
+        ]
+      ]
+    },
+    "execution_time_s": 10.17
+  },
+  "new": {
+    "backtest": {
+      "strategy": "smc",
+      "initial_capital": 1000,
+      "final_capital": 1314.4,
+      "total_return": 314.4,
+      "return_pct": 31.44,
+      "sharpe": 0.884,
+      "max_drawdown": -62.5,
+      "win_rate": 47.8,
+      "total_trades": 46,
+      "closed_trades": 23
+    },
+    "walkforward": {
+      "strategy": "SMCStrategy",
+      "folds": 4,
+      "avg_return_pct": 16.64,
+      "avg_sharpe": 1.562,
+      "avg_max_dd_pct": -29.72,
+      "avg_win_rate": 59.2,
+      "fold_results": [
+        {
+          "strategy": "smc",
+          "initial_capital": 1000,
+          "final_capital": 774.3,
+          "total_return": -225.7,
+          "return_pct": -22.57,
+          "sharpe": -1.5,
+          "max_drawdown": -34.84,
+          "win_rate": 20.0,
+          "total_trades": 10,
+          "closed_trades": 5,
+          "fold": 1,
+          "train_period": "2025-07-21 - 2025-09-09",
+          "test_period": "2025-09-09 - 2025-11-19",
+          "test_bars": 4912
+        },
+        {
+          "strategy": "smc",
+          "initial_capital": 1000,
+          "final_capital": 1820.1,
+          "total_return": 820.1,
+          "return_pct": 82.01,
+          "sharpe": 7.369,
+          "max_drawdown": -8.25,
+          "win_rate": 100.0,
+          "total_trades": 8,
+          "closed_trades": 4,
+          "fold": 2,
+          "train_period": "2025-07-21 - 2025-11-19",
+          "test_period": "2025-11-19 - 2026-02-03",
+          "test_bars": 4912
+        },
+        {
+          "strategy": "smc",
+          "initial_capital": 1000,
+          "final_capital": 1564.0,
+          "total_return": 564.0,
+          "return_pct": 56.4,
+          "sharpe": 4.441,
+          "max_drawdown": -15.64,
+          "win_rate": 100.0,
+          "total_trades": 8,
+          "closed_trades": 4,
+          "fold": 3,
+          "train_period": "2025-07-21 - 2026-02-03",
+          "test_period": "2026-02-03 - 2026-04-15",
+          "test_bars": 4912
+        },
+        {
+          "strategy": "smc",
+          "initial_capital": 1000,
+          "final_capital": 507.2,
+          "total_return": -492.8,
+          "return_pct": -49.28,
+          "sharpe": -4.06,
+          "max_drawdown": -60.16,
+          "win_rate": 16.7,
+          "total_trades": 12,
+          "closed_trades": 6,
+          "fold": 4,
+          "train_period": "2025-07-21 - 2026-04-15",
+          "test_period": "2026-04-15 - 2026-06-26",
+          "test_bars": 4912
+        }
+      ],
+      "conclusion": "\u2705 PAS"
+    },
+    "gate": {
+      "pass": false,
+      "reason": "\u274c Gagal: Drawdown -29.72% > -25%",
+      "checks": [
+        [
+          "True",
+          "Sharpe 1.562 > 0.5"
+        ],
+        [
+          "True",
+          "Return 16.64% > 0%"
+        ],
+        [
+          "False",
+          "Drawdown -29.72% > -25%"
+        ]
+      ]
+    },
+    "execution_time_s": 21.93
+  },
+  "param_sensitivity": [
+    {
+      "swing_length": 5,
+      "return_pct": 107.47,
+      "sharpe": 2.258,
+      "max_dd": -30.78,
+      "win_rate": 59.6,
+      "total_trades": 104,
+      "wf_return": 13.82,
+      "wf_sharpe": 1.383
+    },
+    {
+      "swing_length": 8,
+      "return_pct": 24.57,
+      "sharpe": 0.797,
+      "max_dd": -52.0,
+      "win_rate": 50.0,
+      "total_trades": 52,
+      "wf_return": 13.32,
+      "wf_sharpe": 1.276
+    },
+    {
+      "swing_length": 10,
+      "return_pct": 31.44,
+      "sharpe": 0.884,
+      "max_dd": -62.5,
+      "win_rate": 47.8,
+      "total_trades": 46,
+      "wf_return": 16.64,
+      "wf_sharpe": 1.562
+    },
+    {
+      "swing_length": 15,
+      "return_pct": 16.1,
+      "sharpe": 0.686,
+      "max_dd": -48.78,
+      "win_rate": 52.9,
+      "total_trades": 34,
+      "wf_return": 8.95,
+      "wf_sharpe": 0.963
+    },
+    {
+      "swing_length": 20,
+      "return_pct": 18.44,
+      "sharpe": 0.7,
+      "max_dd": -37.91,
+      "win_rate": 47.1,
+      "total_trades": 34,
+      "wf_return": 6.44,
+      "wf_sharpe": 0.865
+    }
+  ]
+}

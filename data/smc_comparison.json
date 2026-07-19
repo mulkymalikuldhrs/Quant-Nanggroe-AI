@@ -1,0 +1,26 @@
+{
+  "new_smc": {
+    "strategy": "smc",
+    "initial_capital": 1000,
+    "final_capital": 2074.7,
+    "total_return": 1074.7,
+    "return_pct": 107.47,
+    "sharpe": 2.258,
+    "max_drawdown": -30.78,
+    "win_rate": 59.6,
+    "total_trades": 104,
+    "closed_trades": 52
+  },
+  "old_smc": {
+    "strategy": "smc_old",
+    "initial_capital": 1000,
+    "final_capital": -449.3,
+    "total_return": -1449.3,
+    "return_pct": -144.93,
+    "sharpe": -1.211,
+    "max_drawdown": -135.54,
+    "win_rate": 33.2,
+    "total_trades": 1526,
+    "closed_trades": 763
+  }
+}

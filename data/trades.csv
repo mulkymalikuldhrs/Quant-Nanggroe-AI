@@ -1,0 +1,3 @@
+time,action,symbol,volume,price,sl,tp,atr,result,pnl
+2026-07-19T00:36:15.581085,fail_buy,EURUSD,0.02,1.14415,1.14315,1.14615,7.1e-05,code=10017,
+2026-07-19T01:08:18.707853,fail_buy,EURUSD,0.02,1.14415,1.14315,1.14615,7.1e-05,code=10017,

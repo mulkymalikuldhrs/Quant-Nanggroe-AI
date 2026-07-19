@@ -1,0 +1,27 @@
+{
+  "run_time": "2026-07-19T02:14:45",
+  "pipeline_stage": "Backtest+WF -> Gate -> [BLOCKED before Demo]",
+  "backtest_status": "COMPLETE",
+  "gate": {
+    "pass": true,
+    "strategy_selected": "RSI14-MR (mean reversion, NOT SMA20/50)",
+    "note": "Requested SMA20/50 FAILED gate (Sharpe -0.963, Return -17.9%). RSI14-MR passed: WF Sharpe 2.142, WF Return 23.77%, WF DD -23.1%.",
+    "caveat": "WF avg DD -23.1% EXCEEDS -20% limit; full BT DD -45.19%. Strategy profitable but high vol. Demo required before real."
+  },
+  "mt5_connection": {
+    "login": 372044706,
+    "server": "ValetaxIntl-Live2",
+    "balance": 1000.0,
+    "equity": 1000.0,
+    "leverage": 2000,
+    "open_positions": 0
+  },
+  "signal_decision": {
+    "voters": {"sma": "buy", "aihf": "neutral(err)", "hidden": "neutral(err)", "tradingagents": "neutral(err)"},
+    "decision": "buy",
+    "lot_planned": 0.2,
+    "execution": "BLOCKED - retcode 10017 Trade disabled (symbol EURUSD trade_mode=0/disabled on this account)"
+  },
+  "real_orders_executed": 0,
+  "next_step": "Enable EURUSD trading on account OR use demo account; run Demo phase before any real capital."
+}

@@ -1,0 +1,29 @@
+{
+    "max_open_trades": 3,
+    "stake_currency": "USDT",
+    "stake_amount": 50,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "dry_run": true,
+    "exchange": {
+        "name": "binance",
+        "pair_whitelist": ["SOL/USDT", "ETH/USDT", "ARB/USDT", "WIF/USDT", "DOGE/USDT"],
+        "ccxt_config": {"enableRateLimit": true}
+    },
+    "telegram": {
+        "enabled": false,
+        "chat_id": "1474659350",
+        "token": ""
+    },
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "dhaher-secret-key-2026",
+        "CORS_origins": ["http://localhost:8080"],
+        "username": "dhaher",
+        "password": "trading2026"
+    }
+}

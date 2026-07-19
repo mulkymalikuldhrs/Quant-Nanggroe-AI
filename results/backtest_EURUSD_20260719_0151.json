@@ -1,0 +1,113 @@
+{
+  "symbol": "EURUSD",
+  "backtest": {
+    "strategy": "SMA20/50",
+    "initial_capital": 1000,
+    "final_capital": 874.66,
+    "total_return": -125.34,
+    "return_pct": -12.53,
+    "sharpe": -0.583,
+    "max_drawdown": -13.99,
+    "win_rate": 38.5,
+    "total_trades": 1154,
+    "closed_trades": 576
+  },
+  "walkforward": {
+    "strategy": "StrategySMA",
+    "folds": 4,
+    "avg_return_pct": -2.59,
+    "avg_sharpe": -0.614,
+    "avg_max_dd_pct": -3.65,
+    "avg_win_rate": 37.5,
+    "fold_results": [
+      {
+        "strategy": "SMA20/50",
+        "initial_capital": 1000,
+        "final_capital": 977.82,
+        "total_return": -22.18,
+        "return_pct": -2.22,
+        "sharpe": -0.517,
+        "max_drawdown": -2.84,
+        "win_rate": 42.1,
+        "total_trades": 230,
+        "closed_trades": 114,
+        "fold": 1,
+        "train_period": "2025-07-18 - 2025-09-08",
+        "test_period": "2025-09-08 - 2025-11-19",
+        "test_bars": 4915
+      },
+      {
+        "strategy": "SMA20/50",
+        "initial_capital": 1000,
+        "final_capital": 980.08,
+        "total_return": -19.92,
+        "return_pct": -1.99,
+        "sharpe": -0.45,
+        "max_drawdown": -2.86,
+        "win_rate": 40.0,
+        "total_trades": 262,
+        "closed_trades": 130,
+        "fold": 2,
+        "train_period": "2025-07-18 - 2025-11-19",
+        "test_period": "2025-11-19 - 2026-02-03",
+        "test_bars": 4915
+      },
+      {
+        "strategy": "SMA20/50",
+        "initial_capital": 1000,
+        "final_capital": 962.54,
+        "total_return": -37.46,
+        "return_pct": -3.75,
+        "sharpe": -0.751,
+        "max_drawdown": -5.03,
+        "win_rate": 33.0,
+        "total_trades": 226,
+        "closed_trades": 112,
+        "fold": 3,
+        "train_period": "2025-07-18 - 2026-02-03",
+        "test_period": "2026-02-03 - 2026-04-15",
+        "test_bars": 4915
+      },
+      {
+        "strategy": "SMA20/50",
+        "initial_capital": 1000,
+        "final_capital": 975.92,
+        "total_return": -24.08,
+        "return_pct": -2.41,
+        "sharpe": -0.74,
+        "max_drawdown": -3.87,
+        "win_rate": 35.0,
+        "total_trades": 208,
+        "closed_trades": 103,
+        "fold": 4,
+        "train_period": "2025-07-18 - 2026-04-15",
+        "test_period": "2026-04-15 - 2026-06-26",
+        "test_bars": 4915
+      }
+    ],
+    "conclusion": "\u274c GAGAL"
+  },
+  "gate": {
+    "pass": false,
+    "decision": "\u274c TUNDA",
+    "reason": "Gagal: Sharpe -0.614 > 0.5, Return -2.59% > 0%",
+    "checks": [
+      [
+        "False",
+        "Sharpe -0.614 > 0.5"
+      ],
+      [
+        "False",
+        "Return -2.59% > 0%"
+      ],
+      [
+        "True",
+        "Drawdown -3.65% > -20%"
+      ],
+      [
+        "True",
+        "Win rate 37.5% > 30%"
+      ]
+    ]
+  }
+}

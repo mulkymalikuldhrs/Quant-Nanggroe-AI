@@ -1,0 +1,335 @@
+{
+  "timestamp": "2026-07-19T23:35:22.470794",
+  "symbol": "EURUSD",
+  "strategies_tested": 3,
+  "all_results": [
+    {
+      "name": "DhaherSystem (default)",
+      "backtest": {
+        "strategy": "dhaher_system",
+        "initial_capital": 1000,
+        "final_capital": -685.3,
+        "total_return": -1685.3,
+        "return_pct": -168.53,
+        "sharpe": -0.694,
+        "max_drawdown": -165.53,
+        "win_rate": 31.3,
+        "total_trades": 332,
+        "closed_trades": 166
+      },
+      "walkforward": {
+        "strategy": "DhaherSystem",
+        "folds": 4,
+        "avg_return_pct": -33.75,
+        "avg_sharpe": -1.739,
+        "avg_max_dd_pct": -51.63,
+        "avg_win_rate": 29.2,
+        "fold_results": [
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 880.7,
+            "total_return": -119.3,
+            "return_pct": -11.93,
+            "sharpe": -0.808,
+            "max_drawdown": -27.96,
+            "win_rate": 37.5,
+            "total_trades": 64,
+            "closed_trades": 32,
+            "fold": 1,
+            "train_period": "2025-07-21 - 2025-09-09",
+            "test_period": "2025-09-09 - 2025-11-19",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 663.6,
+            "total_return": -336.4,
+            "return_pct": -33.64,
+            "sharpe": -1.909,
+            "max_drawdown": -49.67,
+            "win_rate": 26.8,
+            "total_trades": 82,
+            "closed_trades": 41,
+            "fold": 2,
+            "train_period": "2025-07-21 - 2025-11-19",
+            "test_period": "2025-11-19 - 2026-02-03",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 486.5,
+            "total_return": -513.5,
+            "return_pct": -51.35,
+            "sharpe": -1.83,
+            "max_drawdown": -71.88,
+            "win_rate": 30.8,
+            "total_trades": 52,
+            "closed_trades": 26,
+            "fold": 3,
+            "train_period": "2025-07-21 - 2026-02-03",
+            "test_period": "2026-02-03 - 2026-04-15",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 619.2,
+            "total_return": -380.8,
+            "return_pct": -38.08,
+            "sharpe": -2.407,
+            "max_drawdown": -57.02,
+            "win_rate": 21.6,
+            "total_trades": 74,
+            "closed_trades": 37,
+            "fold": 4,
+            "train_period": "2025-07-21 - 2026-04-15",
+            "test_period": "2026-04-15 - 2026-06-26",
+            "test_bars": 4912
+          }
+        ],
+        "conclusion": "\u274c GAGAL"
+      },
+      "gate": {
+        "pass": false,
+        "reason": "\u274c Gagal: Sharpe -1.739 > 0.5, Return -33.75% > 0%, Drawdown -51.63% > -25%",
+        "checks": [
+          [
+            "False",
+            "Sharpe -1.739 > 0.5"
+          ],
+          [
+            "False",
+            "Return -33.75% > 0%"
+          ],
+          [
+            "False",
+            "Drawdown -51.63% > -25%"
+          ]
+        ]
+      },
+      "trades_count": 332
+    },
+    {
+      "name": "DhaherSystem (aggro)",
+      "backtest": {
+        "strategy": "dhaher_system",
+        "initial_capital": 1000,
+        "final_capital": -682.7,
+        "total_return": -1682.7,
+        "return_pct": -168.27,
+        "sharpe": 1.194,
+        "max_drawdown": -165.31,
+        "win_rate": 31.5,
+        "total_trades": 356,
+        "closed_trades": 178
+      },
+      "walkforward": {
+        "strategy": "DhaherSystem",
+        "folds": 4,
+        "avg_return_pct": -28.99,
+        "avg_sharpe": -1.498,
+        "avg_max_dd_pct": -48.65,
+        "avg_win_rate": 29.7,
+        "fold_results": [
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 990.4,
+            "total_return": -9.6,
+            "return_pct": -0.96,
+            "sharpe": 0.269,
+            "max_drawdown": -22.66,
+            "win_rate": 41.2,
+            "total_trades": 68,
+            "closed_trades": 34,
+            "fold": 1,
+            "train_period": "2025-07-21 - 2025-09-09",
+            "test_period": "2025-09-09 - 2025-11-19",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 608.0,
+            "total_return": -392.0,
+            "return_pct": -39.2,
+            "sharpe": -2.152,
+            "max_drawdown": -55.22,
+            "win_rate": 25.6,
+            "total_trades": 86,
+            "closed_trades": 43,
+            "fold": 2,
+            "train_period": "2025-07-21 - 2025-11-19",
+            "test_period": "2025-11-19 - 2026-02-03",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 621.3,
+            "total_return": -378.7,
+            "return_pct": -37.87,
+            "sharpe": -1.53,
+            "max_drawdown": -59.84,
+            "win_rate": 27.6,
+            "total_trades": 58,
+            "closed_trades": 29,
+            "fold": 3,
+            "train_period": "2025-07-21 - 2026-02-03",
+            "test_period": "2026-02-03 - 2026-04-15",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 620.6,
+            "total_return": -379.4,
+            "return_pct": -37.94,
+            "sharpe": -2.579,
+            "max_drawdown": -56.88,
+            "win_rate": 24.4,
+            "total_trades": 82,
+            "closed_trades": 41,
+            "fold": 4,
+            "train_period": "2025-07-21 - 2026-04-15",
+            "test_period": "2026-04-15 - 2026-06-26",
+            "test_bars": 4912
+          }
+        ],
+        "conclusion": "\u274c GAGAL"
+      },
+      "gate": {
+        "pass": false,
+        "reason": "\u274c Gagal: Sharpe -1.498 > 0.5, Return -28.99% > 0%, Drawdown -48.65% > -25%",
+        "checks": [
+          [
+            "False",
+            "Sharpe -1.498 > 0.5"
+          ],
+          [
+            "False",
+            "Return -28.99% > 0%"
+          ],
+          [
+            "False",
+            "Drawdown -48.65% > -25%"
+          ]
+        ]
+      },
+      "trades_count": 356
+    },
+    {
+      "name": "DhaherSystem (conservative)",
+      "backtest": {
+        "strategy": "dhaher_system",
+        "initial_capital": 1000,
+        "final_capital": -706.5,
+        "total_return": -1706.5,
+        "return_pct": -170.65,
+        "sharpe": 0.913,
+        "max_drawdown": -167.38,
+        "win_rate": 31.9,
+        "total_trades": 320,
+        "closed_trades": 160
+      },
+      "walkforward": {
+        "strategy": "DhaherSystem",
+        "folds": 4,
+        "avg_return_pct": -32.99,
+        "avg_sharpe": -1.64,
+        "avg_max_dd_pct": -51.13,
+        "avg_win_rate": 29.9,
+        "fold_results": [
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 906.7,
+            "total_return": -93.3,
+            "return_pct": -9.33,
+            "sharpe": -0.539,
+            "max_drawdown": -25.83,
+            "win_rate": 40.0,
+            "total_trades": 60,
+            "closed_trades": 30,
+            "fold": 1,
+            "train_period": "2025-07-21 - 2025-09-09",
+            "test_period": "2025-09-09 - 2025-11-19",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 632.0,
+            "total_return": -368.0,
+            "return_pct": -36.8,
+            "sharpe": -2.089,
+            "max_drawdown": -52.82,
+            "win_rate": 28.2,
+            "total_trades": 78,
+            "closed_trades": 39,
+            "fold": 2,
+            "train_period": "2025-07-21 - 2025-11-19",
+            "test_period": "2025-11-19 - 2026-02-03",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 460.9,
+            "total_return": -539.1,
+            "return_pct": -53.91,
+            "sharpe": -1.821,
+            "max_drawdown": -74.41,
+            "win_rate": 30.8,
+            "total_trades": 52,
+            "closed_trades": 26,
+            "fold": 3,
+            "train_period": "2025-07-21 - 2026-02-03",
+            "test_period": "2026-02-03 - 2026-04-15",
+            "test_bars": 4912
+          },
+          {
+            "strategy": "dhaher_system",
+            "initial_capital": 1000,
+            "final_capital": 680.7,
+            "total_return": -319.3,
+            "return_pct": -31.93,
+            "sharpe": -2.109,
+            "max_drawdown": -51.46,
+            "win_rate": 20.6,
+            "total_trades": 68,
+            "closed_trades": 34,
+            "fold": 4,
+            "train_period": "2025-07-21 - 2026-04-15",
+            "test_period": "2026-04-15 - 2026-06-26",
+            "test_bars": 4912
+          }
+        ],
+        "conclusion": "\u274c GAGAL"
+      },
+      "gate": {
+        "pass": false,
+        "reason": "\u274c Gagal: Sharpe -1.64 > 0.5, Return -32.99% > 0%, Drawdown -51.13% > -25%",
+        "checks": [
+          [
+            "False",
+            "Sharpe -1.64 > 0.5"
+          ],
+          [
+            "False",
+            "Return -32.99% > 0%"
+          ],
+          [
+            "False",
+            "Drawdown -51.13% > -25%"
+          ]
+        ]
+      },
+      "trades_count": 320
+    }
+  ],
+  "best": null
+}
