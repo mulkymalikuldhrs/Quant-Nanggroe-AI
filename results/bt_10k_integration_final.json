@@ -1,7 +1,51 @@
 {
-  "timestamp": "2026-07-20T02:26:59.952658",
+  "timestamp": "2026-07-20T02:37:28.281164",
   "bars": 10000,
   "results": [
+    {
+      "label": "DhaherSystem v1.1 (TUNED)",
+      "strategy": "DhaherSystem",
+      "win_rate": 42.1,
+      "sharpe": 3.77,
+      "return_pct": 1675.93,
+      "max_drawdown_pct": -87.5,
+      "profit_factor": 1.44,
+      "total_trades": 114,
+      "gate_pass": false
+    },
+    {
+      "label": "TradeBobby SMC",
+      "strategy": "TradeBobbySMCStrategy",
+      "win_rate": 0,
+      "sharpe": 0,
+      "return_pct": 0.0,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": 999,
+      "total_trades": 0,
+      "gate_pass": false
+    },
+    {
+      "label": "Kronos Provider",
+      "strategy": "KronosSignalProvider",
+      "win_rate": 0,
+      "sharpe": 0,
+      "return_pct": 0.0,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": 999,
+      "total_trades": 0,
+      "gate_pass": false
+    },
+    {
+      "label": "Kronos Ensemble",
+      "strategy": "KronosEnsembleStrategy",
+      "win_rate": 0,
+      "sharpe": 0,
+      "return_pct": 0.0,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": 999,
+      "total_trades": 0,
+      "gate_pass": false
+    },
     {
       "label": "SMC (library-based)",
       "strategy": "SMCStrategy",

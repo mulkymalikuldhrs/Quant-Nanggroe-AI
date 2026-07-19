@@ -283,7 +283,7 @@ class DhaherSystem(BaseStrategy):
                 bull_score += 1
                 bull_reasons.append('trend')
             
-            volume_ok = (self.use_vol_conf is False or 
+            volume_ok = (self.use_volume_conf is False or 
                         (df['vol_ratio'].iloc[i] is not None and 
                          not pd.isna(df['vol_ratio'].iloc[i]) and
                          df['vol_ratio'].iloc[i] > 1.0))
