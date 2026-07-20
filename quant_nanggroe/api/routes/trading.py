@@ -420,6 +420,15 @@ async def trading_cycle(request: CycleRequest, http_request: Request) -> CycleRe
             symbol=request.symbol, signal="hold", confidence=0.0,
             error="exchange_manager not available",
         )
+    # ponytail: backbone is registered at boot but NOT connected (MT5 needs a
+    # live terminal; connecting in-thread corrupts the proactor loop). Without
+    # this lazy connect, /cycle is a permanent no-op returning "No healthy
+    # exchanges". Connect on first cycle so the pipeline actually executes.
+    if not any(reg.connected for reg in em._registrations.values()):
+        try:
+            await em.connect_all()
+        except Exception as exc:
+            logger.warning("cycle_lazy_connect_failed: %s", exc)
     res = await _run_cycle(
         em, symbol=request.symbol, strategy_name=request.strategy,
         quantity=request.quantity,
