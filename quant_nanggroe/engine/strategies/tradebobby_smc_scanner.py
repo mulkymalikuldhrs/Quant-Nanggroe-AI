@@ -19,10 +19,8 @@ import numpy as np
 import pandas as pd
 import logging
 from enum import Enum
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from strategy_registry import register, BaseStrategy
+from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 class SMCPattern(Enum):
@@ -469,8 +467,8 @@ class TradeBobbySMCPatterns:
         return df
 
 
-@register
-class TradeBobbySMCStrategy(BaseStrategy):
+@StrategyRegistry.register
+class TradeBobbySMCStrategy(Strategy):
     """
     TradeBobby SMC Strategy — Smart Money Concepts Scanner terintegrasi.
     
@@ -486,13 +484,15 @@ class TradeBobbySMCStrategy(BaseStrategy):
     
     def __init__(self, swing_lookback=5, min_confluence=3, 
                  fvg_min_pct=0.3, ob_displacement=1.5,
-                 liq_tolerance=0.3, **kw):
-        super().__init__(swing_lookback=swing_lookback, 
-                        min_confluence=min_confluence,
-                        fvg_min_pct=fvg_min_pct,
-                        ob_displacement=ob_displacement,
-                        liq_tolerance=liq_tolerance,
-                        **kw)
+                 liq_tolerance=0.3):
+        from quant_nanggroe.engine.strategies.base import StrategyParameters
+        super().__init__(parameters=StrategyParameters(params={
+            "swing_lookback": swing_lookback,
+            "min_confluence": min_confluence,
+            "fvg_min_pct": fvg_min_pct,
+            "ob_displacement": ob_displacement,
+            "liq_tolerance": liq_tolerance,
+        }))
         self._scanner = TradeBobbySMCPatterns(
             swing_lookback=swing_lookback,
             min_confluence=min_confluence,

@@ -4,16 +4,18 @@ Original implementation from strategy_registry.py lines 86-118
 """
 import pandas as pd
 import numpy as np
-from strategy_registry import BaseStrategy, register
+from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
-@register
-class SMCStrategy_OLD(BaseStrategy):
+@StrategyRegistry.register
+class SMCStrategy_OLD(Strategy):
     """OLD Smart Money Concepts — manual rolling HH/LL BOS + big candle OB"""
     name = "smc_old"
     description = "SMC (OLD): manual BOS with rolling HH/LL, big-candle OB"
     
-    def __init__(self, bos_period=10, **kw):
-        super().__init__(bos_period=bos_period, **kw)
+    def __init__(self, bos_period=10):
+        from quant_nanggroe.engine.strategies.base import StrategyParameters
+        super().__init__(parameters=StrategyParameters(params={"bos_period": bos_period}))
     
     def generate_signals(self, df):
         df = df.copy()
