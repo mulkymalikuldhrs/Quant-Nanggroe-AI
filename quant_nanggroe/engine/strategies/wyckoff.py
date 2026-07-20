@@ -145,7 +145,7 @@ class WyckoffStrategy(Strategy):
             # Sign of Strength: price near support with increasing volume
             if (current_price < recent_low * 1.05
                     and vol_ratio > 1.2
-                    and close[-1] > close[-2] if len(close) >= 2 else False):
+                    and (close[-1] > close[-2] if len(close) >= 2 else False)):
                 return StrategySignal(
                     strategy_name=self.name,
                     symbol=kwargs.get("symbol", ""),

@@ -146,18 +146,18 @@ class VolumeDeltaStrategy(Strategy):
         if total_score > 0.3:
             action = SignalAction.BUY
             stop_loss = current_price * 0.98
-            take_profit = [current_price * 1.04]
+            take_profit = current_price * 1.04
         elif total_score < -0.3:
             action = SignalAction.SELL
             stop_loss = current_price * 1.02
-            take_profit = [current_price * 0.96]
+            take_profit = current_price * 0.96
         else:
             action = SignalAction.HOLD
             stop_loss = current_price
-            take_profit = [current_price]
+            take_profit = current_price
 
         risk = abs(current_price - stop_loss)
-        reward = abs(take_profit[0] - current_price)
+        reward = abs(take_profit - current_price)
         rr_ratio = reward / risk if risk > 0 else 0
 
         if confidence < self._params.min_confidence:

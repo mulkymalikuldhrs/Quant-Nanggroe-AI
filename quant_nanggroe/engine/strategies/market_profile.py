@@ -132,18 +132,18 @@ class MarketProfileStrategy(Strategy):
         if total_score > 0.3:
             action = SignalAction.BUY
             stop_loss = val * 0.99
-            take_profit = [vah * 1.02, poc + (poc - val)]
+            take_profit = vah * 1.02
         elif total_score < -0.3:
             action = SignalAction.SELL
             stop_loss = vah * 1.01
-            take_profit = [val * 0.98, poc - (vah - poc)]
+            take_profit = val * 0.98
         else:
             action = SignalAction.HOLD
             stop_loss = current_price
-            take_profit = [current_price]
+            take_profit = current_price
 
         risk = abs(current_price - stop_loss)
-        reward = abs(take_profit[0] - current_price)
+        reward = abs(take_profit - current_price)
         rr_ratio = reward / risk if risk > 0 else 0
 
         if confidence < self._params.min_confidence:
