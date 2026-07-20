@@ -146,10 +146,21 @@ def execute_mtf(signal, balance, symbol):
            "type_time":mt5.ORDER_TIME_GTC,"type_filling":fill}
     
     # Risk Guard gate — veto sebelum eksekusi
+    # FIX: daily_pnl HARUS nilai REAL dari MT5, bukan literal 0.
+    # Literal 0 -> loss_ratio selalu 0 -> daily-loss veto MATI (silent-disable).
+    try:
+        _today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        _deals = mt5.history_deals_get(_today, datetime.now())
+        daily_pnl = float(sum(d.profit for d in _deals)) if _deals else 0.0
+    except Exception:
+        daily_pnl = 0.0
+    if daily_pnl == 0.0:  # fallback: floating equity profit hari ini
+        _ai = mt5.account_info()
+        daily_pnl = float(_ai.profit) if _ai and _ai.profit else 0.0
     guard_check = risk_guard_approve({
         'symbol': sym, 'action': signal['bias'], 'volume': lot,
         'price': p, 'sl': sl, 'account_balance': balance,
-        'daily_pnl': 0, 'open_positions': len(mt5.positions_get()) if mt5.initialize() else 0,
+        'daily_pnl': daily_pnl, 'open_positions': len(mt5.positions_get() or []),
         'market_volatility': atr / p if p else 0.001,
     })
     if guard_check['status'] == 'VETOED':
