@@ -398,9 +398,10 @@ def create_app() -> FastAPI:
         from quant_nanggroe import __version__
         return {"version": __version__}
 
-    # ponytail: dev-only diagnostic to exercise the global exception handler.
-    # Active only in DEV mode (no QNAI_API_KEY set) — never in production.
-    if not os.environ.get("QNAI_API_KEY"):
+    # ponytail: diagnostic endpoint to exercise the global exception handler.
+    # Gated behind an EXPLICIT dev flag (default OFF) so it is NEVER reachable
+    # in production and NEVER silently disabled by an unrelated API key env var.
+    if os.environ.get("QNAI_DEV_DIAGNOSTICS") == "1":
         @app.get("/trigger-error")
         async def trigger_error() -> None:
             raise RuntimeError("Intentional error for testing the global handler")
