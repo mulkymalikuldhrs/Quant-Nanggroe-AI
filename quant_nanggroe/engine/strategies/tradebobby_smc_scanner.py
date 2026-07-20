@@ -19,8 +19,11 @@ import numpy as np
 import pandas as pd
 import logging
 from enum import Enum
-from quant_nanggroe.engine.strategies.base import Strategy
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+from quant_nanggroe.engine.strategies.base import Strategy
 
 
 class SMCPattern(Enum):
@@ -484,15 +487,13 @@ class TradeBobbySMCStrategy(Strategy):
     
     def __init__(self, swing_lookback=5, min_confluence=3, 
                  fvg_min_pct=0.3, ob_displacement=1.5,
-                 liq_tolerance=0.3):
-        from quant_nanggroe.engine.strategies.base import StrategyParameters
-        super().__init__(parameters=StrategyParameters(params={
-            "swing_lookback": swing_lookback,
-            "min_confluence": min_confluence,
-            "fvg_min_pct": fvg_min_pct,
-            "ob_displacement": ob_displacement,
-            "liq_tolerance": liq_tolerance,
-        }))
+                 liq_tolerance=0.3, **kw):
+        super().__init__(swing_lookback=swing_lookback, 
+                        min_confluence=min_confluence,
+                        fvg_min_pct=fvg_min_pct,
+                        ob_displacement=ob_displacement,
+                        liq_tolerance=liq_tolerance,
+                        **kw)
         self._scanner = TradeBobbySMCPatterns(
             swing_lookback=swing_lookback,
             min_confluence=min_confluence,
