@@ -10,7 +10,7 @@ SRC = Path(r'E:/trading')
 LOG_FILE = SRC / 'data' / 'trades.csv'
 VOTE_LOG = SRC / 'data' / 'votes.csv'
 TERMINAL = r"C:\Program Files\MetaTrader 5\terminal64.exe"
-CREDS = {"login": 372044706, "password": os.environ.get("MT5_PASSWORD", "@15September"), "server": "ValetaxIntl_Live-2"}
+CREDS = {"login": 372044706, "password": os.environ.get("MT5_PASSWORD", "@15September"), "server": "ValetaxIntl-Live2"}
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('hf')
@@ -283,7 +283,7 @@ def run_once():
         pos = mt5.positions_get()
         if pos:
             for p in pos:
-                log.info(f"📌 OPEN: {p.symbol} {p.type_name} PnL=${p.profit:.2f}")
+                log.info(f"📌 OPEN: {p.symbol} {'BUY' if p.type==0 else 'SELL'} PnL=${p.profit:.2f}")
                 ns = trail_sl(p)
                 if ns and (p.sl is None or abs(ns-p.sl) > 0.00001):
                     if p.type == 0 and ns > (p.sl or 0):
