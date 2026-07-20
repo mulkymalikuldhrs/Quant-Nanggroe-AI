@@ -19,11 +19,12 @@ import numpy as np
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from strategy_registry import register, BaseStrategy
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+from quant_nanggroe.engine.strategies.base import Strategy
 
 
-@register
-class DhaherSystem(BaseStrategy):
+@StrategyRegistry.register
+class DhaherSystem(Strategy):
     """
     Dhaher System v1.1 — Smart Money Concepts + Price Action
     

@@ -29,7 +29,7 @@ for f in sorted(_strategies_dir.glob('*.py')):
 
 for mod_name in _strategy_modules:
     try:
-        __import__(f'strategies.{mod_name}', globals(), locals(), [], 0)
+        __import__(f'quant_nanggroe.engine.strategies.{mod_name}', globals(), locals(), [], 0)
         log.debug(f"Loaded strategy: {mod_name}")
     except ImportError as e:
         log.debug(f"Skipped {mod_name}: {e}")

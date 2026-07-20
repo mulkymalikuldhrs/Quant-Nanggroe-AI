@@ -16,7 +16,8 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from strategy_registry import register, BaseStrategy
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+from quant_nanggroe.engine.strategies.base import Strategy
 
 log = logging.getLogger('kronos')
 
@@ -67,8 +68,8 @@ class _FallbackKronosPredictor:
         return forecast
 
 
-@register
-class KronosSignalProvider(BaseStrategy):
+@StrategyRegistry.register
+class KronosSignalProvider(Strategy):
     """
     Kronos Signal Provider — Provider #10 dalam Hedge Fund.
     
@@ -224,8 +225,8 @@ class KronosSignalProvider(BaseStrategy):
         return df
 
 
-@register
-class KronosEnsembleStrategy(BaseStrategy):
+@StrategyRegistry.register
+class KronosEnsembleStrategy(Strategy):
     """
     Kronos Ensemble — Multi-timeframe Kronos signals + momentum confirmation.
     Menggabungkan Kronos forecast dengan teknikal konfirmasi untuk sinyal lebih akurat.
