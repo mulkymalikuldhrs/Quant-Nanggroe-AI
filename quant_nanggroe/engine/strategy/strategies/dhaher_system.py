@@ -133,6 +133,7 @@ class DhaherSystemStrategy(BaseStrategy):
                 stop_loss=float(sl),
                 take_profit=float(tp),
                 confidence=confidence,
+                source_agent=self.name,
                 metadata={
                     "strategy": self.name,
                     "confluence_score": bull_score,
@@ -165,6 +166,7 @@ class DhaherSystemStrategy(BaseStrategy):
                 stop_loss=float(sl),
                 take_profit=float(tp),
                 confidence=confidence,
+                source_agent=self.name,
                 metadata={
                     "strategy": self.name,
                     "confluence_score": bear_score,
