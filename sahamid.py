@@ -76,7 +76,7 @@ def analyze_macro():
     try:
         import yfinance as yf
         ihsg = yf.Ticker("^JKSE")
-        h = ihsg.history(period="3mo")
+        h = ihsg.history(period="3mo").dropna(subset=['Close'])
         if len(h) > 50:
             last = h.iloc[-1]['Close']
             sma20 = h['Close'].rolling(20).mean().iloc[-1]
@@ -98,7 +98,7 @@ def smc_analysis(code):
     try:
         import yfinance as yf
         t = yf.Ticker(f"{code}.JK")
-        h = t.history(period="3mo", interval="1d")
+        h = t.history(period="3mo", interval="1d").dropna(subset=['Close'])
         if len(h) < 60: return {}
         
         close = h['Close'].values
@@ -202,9 +202,9 @@ def sector_rotation():
             for s in stocks:
                 try:
                     t = yf.Ticker(s)
-                    h = t.history(period="1mo")
+                    h = t.history(period="1mo").dropna(subset=['Close'])
                     if len(h) > 1:
-                        g = (h.iloc[-1]['Close'] - h.iloc[-30]['Close']) / h.iloc[-30]['Close'] * 100
+                        g = (h.iloc[-1]['Close'] - h.iloc[0]['Close']) / h.iloc[0]['Close'] * 100
                         gains.append(g)
                 except: continue
             if gains:
@@ -273,7 +273,7 @@ def full_scan():
         try:
             import yfinance as yf
             t = yf.Ticker(f"{code}.JK")
-            h = t.history(period="6mo")
+            h = t.history(period="6mo").dropna(subset=['Close'])
             if len(h) < 20: continue
             
             last = h.iloc[-1]['Close']
