@@ -21,10 +21,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies._df_signal_adapter import DFStrategyAdapter
 
 
 @StrategyRegistry.register
-class DhaherSystem(Strategy):
+class DhaherSystem(DFStrategyAdapter, Strategy):
     """
     Dhaher System v1.1 — Smart Money Concepts + Price Action
     
@@ -46,7 +47,7 @@ class DhaherSystem(Strategy):
     name = "dhaher_system"
     description = "Dhaher System v1.1: Smart Money Concepts + partial confluence entry"
     
-    def __init__(self, lookback=14, atr_mult=1.5, rr_min=2.0,
+    def __init__(self, parameters=None, lookback=14, atr_mult=1.5, rr_min=2.0,
                  max_positions=3, risk_per_trade=0.01,
                  min_confluence=2, use_adx_filter=True,
                  adx_threshold=20, use_volume_conf=False):
@@ -60,7 +61,7 @@ class DhaherSystem(Strategy):
             adx_threshold: Minimum ADX value for trend filter
             use_volume_conf: Volume confirmation
         """
-        super().__init__(lookback=lookback, atr_mult=atr_mult, rr_min=rr_min,
+        super().__init__(parameters=None, lookback=lookback, atr_mult=atr_mult, rr_min=rr_min,
                         max_positions=max_positions, risk_per_trade=risk_per_trade,
                         min_confluence=min_confluence, use_adx_filter=use_adx_filter,
                         adx_threshold=adx_threshold, use_volume_conf=use_volume_conf)

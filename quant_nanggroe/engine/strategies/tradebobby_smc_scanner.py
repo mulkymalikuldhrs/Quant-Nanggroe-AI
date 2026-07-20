@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies._df_signal_adapter import DFStrategyAdapter
 
 
 class SMCPattern(Enum):
@@ -471,7 +472,7 @@ class TradeBobbySMCPatterns:
 
 
 @StrategyRegistry.register
-class TradeBobbySMCStrategy(Strategy):
+class TradeBobbySMCStrategy(DFStrategyAdapter, Strategy):
     """
     TradeBobby SMC Strategy — Smart Money Concepts Scanner terintegrasi.
     
@@ -485,10 +486,10 @@ class TradeBobbySMCStrategy(Strategy):
     name = "tradebobby_smc"
     description = "TradeBobby SMC: Smart Money Concepts scanner dengan confluence engine"
     
-    def __init__(self, swing_lookback=5, min_confluence=3, 
+    def __init__(self, parameters=None, swing_lookback=5, min_confluence=3, 
                  fvg_min_pct=0.3, ob_displacement=1.5,
                  liq_tolerance=0.3, **kw):
-        super().__init__(swing_lookback=swing_lookback, 
+        super().__init__(parameters=None, swing_lookback=swing_lookback, 
                         min_confluence=min_confluence,
                         fvg_min_pct=fvg_min_pct,
                         ob_displacement=ob_displacement,

@@ -18,6 +18,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies._df_signal_adapter import DFStrategyAdapter
 
 log = logging.getLogger('kronos')
 
@@ -69,7 +70,7 @@ class _FallbackKronosPredictor:
 
 
 @StrategyRegistry.register
-class KronosSignalProvider(Strategy):
+class KronosSignalProvider(DFStrategyAdapter, Strategy):
     """
     Kronos Signal Provider — Provider #10 dalam Hedge Fund.
     
@@ -90,7 +91,7 @@ class KronosSignalProvider(Strategy):
     name = "kronos"
     description = "Kronos Financial Foundation Model — Provider #10 (AAAI 2026)"
     
-    def __init__(self, 
+    def __init__(self, parameters=None, 
                  model_name="NeoQuasar/Kronos-small",
                  tokenizer_name="NeoQuasar/Kronos-Tokenizer-base",
                  lookback=200, 
@@ -99,7 +100,7 @@ class KronosSignalProvider(Strategy):
                  ensemble_count=3,
                  fallback_momentum=True,
                  **kw):
-        super().__init__(
+        super().__init__(parameters=None,
             model_name=model_name,
             tokenizer_name=tokenizer_name,
             lookback=lookback,
@@ -226,7 +227,7 @@ class KronosSignalProvider(Strategy):
 
 
 @StrategyRegistry.register
-class KronosEnsembleStrategy(Strategy):
+class KronosEnsembleStrategy(DFStrategyAdapter, Strategy):
     """
     Kronos Ensemble — Multi-timeframe Kronos signals + momentum confirmation.
     Menggabungkan Kronos forecast dengan teknikal konfirmasi untuk sinyal lebih akurat.
@@ -234,13 +235,13 @@ class KronosEnsembleStrategy(Strategy):
     name = "kronos_ensemble"
     description = "Kronos Ensemble: Kronos forecast + trend + volatility filter"
     
-    def __init__(self, 
+    def __init__(self, parameters=None, 
                  lookback=200, pred_len=10, 
                  signal_threshold=0.002,
                  trend_filter=True,
                  vol_filter=True,
                  **kw):
-        super().__init__(
+        super().__init__(parameters=None,
             lookback=lookback, pred_len=pred_len,
             signal_threshold=signal_threshold,
             trend_filter=trend_filter,
