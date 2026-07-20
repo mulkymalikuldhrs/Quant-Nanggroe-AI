@@ -331,7 +331,7 @@ def market_context():
     else:
         eur_bias = "neutral"
     
-    return {
+    ctx = {
         "dxy": dxy,
         "yield_10y": yld,
         "cot": cot,
@@ -345,6 +345,8 @@ def market_context():
         "timestamp": datetime.now().isoformat(),
         "signal_modifier": 0.8 if eur_bias == "buy" else (0.5 if eur_bias == "sell" else 1.0),
     }
+    _save_cache('market_context', ctx)
+    return ctx
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
