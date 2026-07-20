@@ -151,9 +151,21 @@ def strategy_wrapper(strategy_name, **params):
         try:
             strat = get_strategy(strategy_name, **params)
             signals = strat.generate_signals(df)
-            last = signals.iloc[-1]
-            entry = last.get('entry', 0)
-            return {"signal": entry, "confidence": 0.65 if entry != 0 else 0}
+            # Check last 10 bars for any signal (not just last bar)
+            recent = signals.tail(10)
+            non_zero = recent[recent['entry'] != 0]
+            if len(non_zero) > 0:
+                last_sig = non_zero.iloc[-1]
+                entry = last_sig['entry']
+                # Boost confidence jika signal recent (within last 3 bars)
+                idx_pos = len(recent) - 1
+                for i in range(len(recent)-1, -1, -1):
+                    if recent.iloc[i]['entry'] != 0:
+                        idx_pos = len(recent) - 1 - i
+                        break
+                confidence = max(0.3, 0.65 - idx_pos * 0.1)
+                return {"signal": entry, "confidence": min(1.0, confidence)}
+            return {"signal": 0, "confidence": 0}
         except:
             return {"signal": 0, "confidence": 0}
     return wrapper

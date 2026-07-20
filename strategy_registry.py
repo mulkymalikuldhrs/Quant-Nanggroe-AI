@@ -474,3 +474,6 @@ if __name__ == "__main__":
         s = get_strategy(name)
         print(f"  {name}: {s.description}")
     print(f"\nTotal: {len(list_strategies())} strategies registered")
+
+# Late import for externally registered strategies (avoid circular import)
+from strategies import dhaher_system, kronos_wrapper, tradebobby_smc_scanner

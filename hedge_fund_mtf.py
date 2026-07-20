@@ -105,7 +105,7 @@ def run_mtf_cycle():
     pos = mt5.positions_get()
     if pos:
         for p in pos:
-            log.info(f"📌 OPEN: {p.symbol} {p.type_name} PnL=${p.profit:.2f}")
+            log.info(f"📌 OPEN: {p.symbol} {'BUY' if p.type==0 else 'SELL'} PnL=${p.profit:.2f}")
     elif best_signal['bias'] in ('buy','sell'):
         strat_label = best_signal.get('strategy_label', best_signal.get('strategy', 'MTF'))
         log.info(f"🎯 SIGNAL: {best_signal['bias'].upper()} | {strat_label} | Style={best_signal['style']} | Conf={best_signal['confidence']:.0%}")
@@ -126,10 +126,24 @@ def execute_mtf(signal, balance, symbol):
     else:
         p,sl,tp,ot = t.bid, round(t.bid+sd,5), round(t.bid-sd*2,5), mt5.ORDER_TYPE_SELL
     
+    # Check symbol trade mode — Valetax demo .vx = short only (mode 4)
+    sym_info = mt5.symbol_info(sym)
+    if sym_info:
+        if sym_info.trade_mode == 4 and ot == mt5.ORDER_TYPE_BUY:
+            log.warning(f"⛔ {sym} is SHORT ONLY — skipping BUY order")
+            return
+        if sym_info.trade_mode == 3 and ot == mt5.ORDER_TYPE_SELL:
+            log.warning(f"⛔ {sym} is LONG ONLY — skipping SELL order")
+            return
+        # Use supported filling mode
+        fill = mt5.ORDER_FILLING_FOK if sym_info.filling_mode & 1 else mt5.ORDER_FILLING_IOC
+    else:
+        fill = mt5.ORDER_FILLING_IOC
+    
     req = {"action":mt5.TRADE_ACTION_DEAL,"symbol":sym,"volume":lot,"type":ot,
            "price":p,"sl":sl,"tp":tp,"deviation":10,"magic":20260719,
            "comment":f"MTF {signal['style']} {signal['bias']}",
-           "type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}
+           "type_time":mt5.ORDER_TIME_GTC,"type_filling":fill}
     
     # Risk Guard gate — veto sebelum eksekusi
     guard_check = risk_guard_approve({
