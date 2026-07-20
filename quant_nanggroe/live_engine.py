@@ -1025,7 +1025,8 @@ class LiveEngine:
         log.info("QUANT NANGGROE — MULTI-ASSET HEDGE FUND ENGINE STARTED")
         log.info(f"   Balance: ${self.risk.get_balance():.2f}")
         log.info(f"   Assets: {[a['symbol'] for a in ASSETS]}")
-        log.info(f"   Allocations: { {a['symbol']: f'{a['allocation']*100:.0f}%' for a in ASSETS} }")
+        allocations = {a['symbol']: f"{a['allocation']*100:.0f}%" for a in ASSETS}
+        log.info(f"   Allocations: {allocations}")
         log.info(f"   Strategies: {list(self.strategies.keys())}")
         log.info(f"   Trading enabled: {self.trading_enabled}")
         log.info(f"   Resuming from cycle {self.cycle_count}")

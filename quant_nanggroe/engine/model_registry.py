@@ -227,12 +227,12 @@ def register_model(
         if name in MODEL_REGISTRY:
             logger.warning(
                 "model_registry_overwrite",
-                extra={"name": name, "old": MODEL_REGISTRY[name].__name__},
+                extra={"model_name": name, "old": MODEL_REGISTRY[name].__name__},
             )
         MODEL_REGISTRY[name] = model_cls
         logger.info(
             "model_registered",
-            extra={"name": name, "class": model_cls.__name__},
+            extra={"model_name": name, "class": model_cls.__name__},
         )
         return model_cls
 
