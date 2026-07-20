@@ -16,6 +16,8 @@ import time
 # QNAI_JWT_SECRET + QNAI_API_KEY (admin key, not a Settings field) are present.
 # Without this, uvicorn-launched apps boot with empty env -> JWT guard refuses
 # boot (C1) and API key auth has no registered key -> frontend 401s.
+from quant_nanggroe import __version__
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -212,9 +214,16 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         description="Agentic Trading Intelligence OS",
-        version="4.3.4",
+        version=__version__,  # ponytail: single source of truth = package __version__
         lifespan=lifespan,
     )
+
+    # ponytail: ensure app.state._services exists even if lifespan is
+    # skipped (e.g. tests disable it, or a request arrives before startup
+    # completes). The /health handler reads this dict; without it the
+    # endpoint 500s with AttributeError.
+    if not hasattr(app.state, "_services"):
+        app.state._services = {}
 
     # ── Prometheus Tracking Middleware ───────────────────────────────
     @app.middleware("http")
