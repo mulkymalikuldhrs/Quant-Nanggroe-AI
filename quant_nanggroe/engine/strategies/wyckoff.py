@@ -79,13 +79,13 @@ class WyckoffStrategy(Strategy):
             spring_threshold = self._parameters.get("spring_threshold", 0.02)
 
             # Calculate average volume
-            avg_vol = sum(volume[-lookback:]) / lookback if volume else 1
+            avg_vol = sum(volume[-lookback:]) / lookback if len(volume) else 1
 
             # Find support/resistance
             recent_low = min(low[-lookback:]) if len(low) >= lookback else min(low)
             recent_high = max(high[-lookback:]) if len(high) >= lookback else max(high)
             current_price = close[-1]
-            current_vol = volume[-1] if volume else 0
+            current_vol = volume[-1] if len(volume) else 0
 
             # Volume ratio
             vol_ratio = current_vol / max(avg_vol, 1)
