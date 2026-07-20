@@ -502,7 +502,9 @@ class ExchangeFactory:
             api_key=login,
             api_secret=password,
             passphrase=server,
-            options={"initial_capital": initial_capital},
+            # Broker reads server from options["server"] (see mt5_broker.connect);
+            # pass it through so headless initialize() actually authenticates.
+            options={"server": server, "initial_capital": initial_capital},
         )
         broker = MT5Broker(config)  # type: ignore[operator]
         self._created_exchanges["mt5"] = broker
