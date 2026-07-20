@@ -53,14 +53,16 @@ class HalfLifeMeanReversionStrategy(BaseStrategy):
         if z > self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.SELL,
                 confidence=round(min(abs(z) / self.entry_z * size, 1.0), 4),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Half-life MR: z={z:.2f}, hl={hl:.0f} bars",
                 evidence={"zscore": round(z, 3), "half_life": round(float(hl), 1)},
                 factors=["hedge_fund", "half_life_mr"])
         if z < -self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
                 confidence=round(min(abs(z) / self.entry_z * size, 1.0), 4),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Half-life MR: z={z:.2f}, hl={hl:.0f} bars",
                 evidence={"zscore": round(z, 3), "half_life": round(float(hl), 1)},
                 factors=["hedge_fund", "half_life_mr"])

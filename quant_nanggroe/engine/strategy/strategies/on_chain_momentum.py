@@ -36,13 +36,15 @@ class OnChainMomentumStrategy(BaseStrategy):
         vol_trend = float(v.iloc[-int(self.lookback/2):].mean()) / (float(v.iloc[-self.lookback:-int(self.lookback/2)].mean()) + 1e-10)
         if price > vwap.iloc[-1] and vol_trend > 1.2:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="On-chain: price above VWAP with increasing volume",
                 evidence={"vwap": round(float(vwap.iloc[-1]), 4), "vol_trend": round(float(vol_trend), 3)},
                 factors=["macro", "onchain"])
         if price < vwap.iloc[-1] and vol_trend < 0.8:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="On-chain: price below VWAP with decreasing volume",
                 evidence={"vwap": round(float(vwap.iloc[-1]), 4), "vol_trend": round(float(vol_trend), 3)},
                 factors=["macro", "onchain"])

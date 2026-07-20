@@ -79,6 +79,7 @@ class COTStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price - atr * 2,
                 take_profit=latest_price + atr * 4,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=cot["reasoning"],
             )
@@ -90,6 +91,7 @@ class COTStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price + atr * 2,
                 take_profit=latest_price - atr * 4,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=cot["reasoning"],
             )

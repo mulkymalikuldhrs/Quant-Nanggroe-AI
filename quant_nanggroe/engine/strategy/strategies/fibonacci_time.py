@@ -51,7 +51,7 @@ class FibonacciTimeStrategy(BaseStrategy):
                 return Signal(
                     symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
                     confidence=0.55, price=round(price, 6), source_agent=self.name,
-                    source_strategy=self.name,
+                source_strategy=self.name,
                     reasoning=f"Fibonacci time zone {tl} bars from extreme",
                     evidence={"time_level": tl, "bars_from_high": bars_from_high, "bars_from_low": bars_from_low},
                     factors=["fibonacci", "time"],

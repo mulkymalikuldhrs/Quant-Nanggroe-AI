@@ -40,12 +40,14 @@ class EMCarryStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if avg_ret > self.carry_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=min(avg_ret * 20, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"EM carry positive: avg {avg_ret:.4f}",
                 evidence={"avg_return": round(float(avg_ret), 4)}, factors=["macro", "em_carry"])
         if avg_ret < -self.carry_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=min(abs(avg_ret) * 20, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"EM carry negative: avg {avg_ret:.4f}",
                 evidence={"avg_return": round(float(avg_ret), 4)}, factors=["macro", "em_carry"])
         return None

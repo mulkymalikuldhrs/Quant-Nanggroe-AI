@@ -47,7 +47,8 @@ class ChoppinessIndexStrategy(BaseStrategy):
             ret = float(c.iloc[-1]) / float(c.iloc[-int(self.period/2)]) - 1.0
             sig = 1.0 if ret > 0 else -1.0
             return Signal(symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
-                confidence=0.6, price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                confidence=0.6, price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Choppiness {val:.0f} < {self.trend_threshold}: trending",
                 evidence={"choppiness": round(val, 2)}, factors=["technical", "choppiness"])
         return None

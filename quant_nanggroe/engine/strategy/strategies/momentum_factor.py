@@ -40,12 +40,14 @@ class MomentumFactorStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if ret > self.top_pct:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=min(ret * 2, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Momentum factor: return {ret:.2%}, long",
                 evidence={"momentum_return": round(float(ret), 4)}, factors=["hedge_fund", "momentum_factor"])
         if ret < -self.top_pct:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=min(abs(ret) * 2, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Momentum factor: return {ret:.2%}, short",
                 evidence={"momentum_return": round(float(ret), 4)}, factors=["hedge_fund", "momentum_factor"])
         return None

@@ -41,15 +41,15 @@ class LinearRegressionChannelStrategy(BaseStrategy):
         z = float(resid[-1] / (std + 1e-10))
         if z > self.std_mult:
             return Signal(symbol=self.name, signal_type=SignalType.SELL,
-                confidence=min(z / (self.std_mult * 2), 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min(z / (self.std_mult * 2), 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price {z:.2f} std above regression channel",
                 evidence={"zscore": round(z, 3), "slope": round(float(slope), 6)},
                 factors=["ml", "linear_regression"])
         if z < -self.std_mult:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
-                confidence=min(abs(z) / (self.std_mult * 2), 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min(abs(z) / (self.std_mult * 2), 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price {abs(z):.2f} std below regression channel",
                 evidence={"zscore": round(z, 3), "slope": round(float(slope), 6)},
                 factors=["ml", "linear_regression"])

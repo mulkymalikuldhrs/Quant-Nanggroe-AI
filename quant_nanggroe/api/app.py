@@ -324,6 +324,10 @@ def create_app() -> FastAPI:
         ws,
         whatsapp,
         wiring_compat,
+        ensemble,
+        memory_stub,
+        colony_stub,
+        security_tools_stub,
     )
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
@@ -357,6 +361,13 @@ def create_app() -> FastAPI:
     app.include_router(security.router, prefix="/api", tags=["Security"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
     app.include_router(wiring_compat.router)
+    app.include_router(ensemble.router)
+    app.include_router(memory_stub.router)
+    app.include_router(colony_stub.router)
+    app.include_router(security_tools_stub.router)
+    app.include_router(memory_stub.router)
+    app.include_router(colony_stub.router)
+    app.include_router(security_tools_stub.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
     app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])

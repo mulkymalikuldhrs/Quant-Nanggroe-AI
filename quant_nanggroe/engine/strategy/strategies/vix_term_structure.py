@@ -40,13 +40,15 @@ class VIXTermStructureStrategy(BaseStrategy):
         price = float(c[-1])
         if term_structure > self.contango_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Vol contango: short {short_vol:.4f} > long {long_vol:.4f}",
                 evidence={"term_structure": round(float(term_structure), 4), "short_vol": round(float(short_vol), 4), "long_vol": round(float(long_vol), 4)},
                 factors=["volatility", "vix_term"])
         if term_structure < -self.contango_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Vol backwardation: short {short_vol:.4f} < long {long_vol:.4f}",
                 evidence={"term_structure": round(float(term_structure), 4), "short_vol": round(float(short_vol), 4), "long_vol": round(float(long_vol), 4)},
                 factors=["volatility", "vix_term"])

@@ -59,8 +59,8 @@ class MultiIndicatorVotingStrategy(BaseStrategy):
         if abs(votes) >= self.vote_threshold:
             sig = SignalType.BUY if votes > 0 else SignalType.SELL
             return Signal(symbol=self.name, signal_type=sig,
-                confidence=round(abs(votes) / 4.0, 4), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=round(abs(votes) / 4.0, 4), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Voting: {votes:.0f}/4 bullish" if votes > 0 else f"Voting: {abs(votes):.0f}/4 bearish",
                 evidence={"votes": round(float(votes), 1)}, factors=["ml", "voting"])
         return None

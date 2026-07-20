@@ -39,12 +39,14 @@ class DXYMomentumStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if ret > self.threshold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=min(ret / 0.1, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"DXY momentum bullish: {ret:.2%}",
                 evidence={"momentum": round(float(ret), 4)}, factors=["macro", "dxy"])
         if ret < -self.threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=min(abs(ret) / 0.1, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"DXY momentum bearish: {ret:.2%}",
                 evidence={"momentum": round(float(ret), 4)}, factors=["macro", "dxy"])
         return None

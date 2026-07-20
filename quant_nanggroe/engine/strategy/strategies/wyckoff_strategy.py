@@ -202,6 +202,7 @@ class WyckoffStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=sl,
                 take_profit=latest_price + atr_val * 4,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=f"Wyckoff accumulation: SC={acc['sc_price']:.2f} spring={'yes' if acc['spring_detected'] else 'no'} conf={acc['confidence']:.0%}",
             )
@@ -215,6 +216,7 @@ class WyckoffStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price + atr_val * 2,
                 take_profit=tp,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=f"Wyckoff distribution: LC={dist['lc_price']:.2f} upthrust={'yes' if dist['ut_detected'] else 'no'} conf={dist['confidence']:.0%}",
             )

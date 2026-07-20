@@ -42,13 +42,15 @@ class MomentumCrashFilterStrategy(BaseStrategy):
             return None
         if ret_mom > 0.05:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Crash-filtered momentum: ret={ret_mom:.2%}, vol OK",
                 evidence={"momentum": round(float(ret_mom), 4), "cur_vol": round(float(cur_vol), 4)},
                 factors=["hedge_fund", "crash_filter"])
         if ret_mom < -0.05:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Crash-filtered momentum: ret={ret_mom:.2%}, vol OK",
                 evidence={"momentum": round(float(ret_mom), 4), "cur_vol": round(float(cur_vol), 4)},
                 factors=["hedge_fund", "crash_filter"])

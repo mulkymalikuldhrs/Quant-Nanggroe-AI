@@ -42,12 +42,14 @@ class WilliamsRStrategy(BaseStrategy):
         price = float(data["close"].iloc[-1])
         if val > self.ob:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Williams %R {val:.0f} overbought", evidence={"williams_r": round(val, 2)},
                 factors=["technical", "williams_r"])
         if val < self.os:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Williams %R {val:.0f} oversold", evidence={"williams_r": round(val, 2)},
                 factors=["technical", "williams_r"])
         return None

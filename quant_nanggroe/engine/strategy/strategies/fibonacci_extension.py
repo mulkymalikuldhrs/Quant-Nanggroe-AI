@@ -57,7 +57,7 @@ class FibonacciExtensionStrategy(BaseStrategy):
                 return Signal(
                     symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
                     confidence=0.7, price=round(price, 6), source_agent=self.name,
-                    source_strategy=self.name,
+                source_strategy=self.name,
                     reasoning=f"Price at Fib extension {ext:.3f}, reversal expected",
                     evidence={"extension": ext, "target": round(target, 4)},
                     factors=["fibonacci", "extension"],

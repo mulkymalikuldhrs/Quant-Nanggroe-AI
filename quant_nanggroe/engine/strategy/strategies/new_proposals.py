@@ -120,12 +120,12 @@ class DispersionStrategy(BaseStrategy):
             if mom > 0:
                 return Signal(symbol=self.name, signal_type=SignalType.BUY,
                     confidence=min(0.4 + abs(corr), 1.0), price=price, source_agent=self.name,
-                    source_strategy=self.name, reasoning=f"Dispersion, corr={corr:.2f}, long mom",
+                source_strategy=self.name, reasoning=f"Dispersion, corr={corr:.2f}, long mom",
                     evidence={"corr": round(float(corr), 3)}, factors=["macro", "dispersion"])
             if mom < 0:
                 return Signal(symbol=self.name, signal_type=SignalType.SELL,
                     confidence=min(0.4 + abs(corr), 1.0), price=price, source_agent=self.name,
-                    source_strategy=self.name, reasoning=f"Dispersion, corr={corr:.2f}, short mom",
+                source_strategy=self.name, reasoning=f"Dispersion, corr={corr:.2f}, short mom",
                     evidence={"corr": round(float(corr), 3)}, factors=["macro", "dispersion"])
         return None
 
@@ -375,5 +375,5 @@ class VolumeWeightedReversalStrategy(BaseStrategy):
                 evidence={"signal": round(signal, 4)}, factors=["mrv", "vwap_reversal"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL,
             confidence=min(abs(signal), 1.0), price=price, source_agent=self.name,
-            source_strategy=self.name, reasoning=f"Vol-wtd reversal {signal:.3f}",
+                source_strategy=self.name, reasoning=f"Vol-wtd reversal {signal:.3f}",
             evidence={"signal": round(signal, 4)}, factors=["mrv", "vwap_reversal"])

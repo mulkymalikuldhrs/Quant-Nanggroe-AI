@@ -42,8 +42,8 @@ class SocialSentimentStrategy(BaseStrategy):
         if cur_vol > avg_vol * self.spike_mult and abs(ret) > 0.01:
             sig = 1.0 if ret > 0 else -1.0
             return Signal(symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
-                confidence=min(abs(ret) * 10, 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min(abs(ret) * 10, 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Sentiment spike: vol {cur_vol/avg_vol:.1f}x, ret {ret:.2%}",
                 evidence={"vol_ratio": round(float(cur_vol / avg_vol), 2), "return": round(float(ret), 4)},
                 factors=["macro", "sentiment"])

@@ -44,12 +44,14 @@ class PolynomialRegressionStrategy(BaseStrategy):
         curvature = coeffs[-2] * 2 if self.degree >= 2 else 0.0
         if z > self.std_mult:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price {z:.2f} std above poly trend", evidence={"zscore": round(z, 3), "curvature": round(float(curvature), 6)},
                 factors=["ml", "poly_regression"])
         if z < -self.std_mult:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price {abs(z):.2f} std below poly trend",
                 evidence={"zscore": round(z, 3), "curvature": round(float(curvature), 6)},
                 factors=["ml", "poly_regression"])

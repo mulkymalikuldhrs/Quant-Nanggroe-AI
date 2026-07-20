@@ -50,15 +50,15 @@ class MonteCarloBarrierStrategy(BaseStrategy):
         prob_down = np.mean(hit_stop & ~hit_target)
         if prob_up > 0.6:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
-                confidence=round(prob_up, 4), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=round(prob_up, 4), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"MC barrier: P(target)={prob_up:.0%} > P(stop)={prob_down:.0%}",
                 evidence={"prob_up": round(float(prob_up), 3), "prob_down": round(float(prob_down), 3)},
                 factors=["technical", "monte_carlo"])
         if prob_down > 0.6:
             return Signal(symbol=self.name, signal_type=SignalType.SELL,
-                confidence=round(prob_down, 4), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=round(prob_down, 4), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"MC barrier: P(stop)={prob_down:.0%} > P(target)={prob_up:.0%}",
                 evidence={"prob_up": round(float(prob_up), 3), "prob_down": round(float(prob_down), 3)},
                 factors=["technical", "monte_carlo"])

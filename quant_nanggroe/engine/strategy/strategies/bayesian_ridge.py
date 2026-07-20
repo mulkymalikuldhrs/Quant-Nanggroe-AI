@@ -47,14 +47,14 @@ class BayesianRidgeStrategy(BaseStrategy):
         price = float(c[-1])
         if z > self.std_mult:
             return Signal(symbol=self.name, signal_type=SignalType.SELL,
-                confidence=min((z - self.std_mult) / 3.0, 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min((z - self.std_mult) / 3.0, 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Bayesian ridge: {z:.2f} std above", evidence={"zscore": round(z, 3)},
                 factors=["ml", "bayesian_ridge"])
         if z < -self.std_mult:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
-                confidence=min((abs(z) - self.std_mult) / 3.0, 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min((abs(z) - self.std_mult) / 3.0, 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Bayesian ridge: {abs(z):.2f} std below", evidence={"zscore": round(z, 3)},
                 factors=["ml", "bayesian_ridge"])
         return None

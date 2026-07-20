@@ -231,7 +231,7 @@ class CryptoSpecificStrategy(BaseStrategy):
                     stop_loss=round(current_price * (1 - self.stop_loss_pct), 6),
                     take_profit=round(current_price * (1 + self.take_profit_pct), 6),
                     source_agent=self.name,
-                    source_strategy=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"Liquidation cascade BUY: return_z={current_return_z:.2f}, "
                         f"volume_z={current_volume_z:.2f}"
@@ -254,7 +254,7 @@ class CryptoSpecificStrategy(BaseStrategy):
                     stop_loss=round(current_price * (1 + self.stop_loss_pct), 6),
                     take_profit=round(current_price * (1 - self.take_profit_pct), 6),
                     source_agent=self.name,
-                    source_strategy=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"Liquidation cascade SELL: return_z={current_return_z:.2f}, "
                         f"volume_z={current_volume_z:.2f}"

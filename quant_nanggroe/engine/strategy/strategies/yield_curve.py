@@ -36,13 +36,15 @@ class YieldCurveStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if steepness > 0.02:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Yield curve steepening: short {short_ret:.2%} > long {long_ret:.2%}",
                 evidence={"steepness": round(float(steepness), 4), "short_ret": round(float(short_ret), 4), "long_ret": round(float(long_ret), 4)},
                 factors=["macro", "yield_curve"])
         if steepness < -0.02:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Yield curve flattening: short {short_ret:.2%} < long {long_ret:.2%}",
                 evidence={"steepness": round(float(steepness), 4), "short_ret": round(float(short_ret), 4), "long_ret": round(float(long_ret), 4)},
                 factors=["macro", "yield_curve"])

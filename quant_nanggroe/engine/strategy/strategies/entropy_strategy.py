@@ -44,10 +44,12 @@ class EntropyStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if e > self.entropy_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=min(e, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"High entropy {e:.3f}: market inefficient, trend likely",
                 evidence={"entropy": round(e, 3)}, factors=["hedge_fund", "entropy"])
         return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=min(1 - e, 1.0),
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"Low entropy {e:.3f}: market efficient, MR likely",
             evidence={"entropy": round(e, 3)}, factors=["hedge_fund", "entropy"])

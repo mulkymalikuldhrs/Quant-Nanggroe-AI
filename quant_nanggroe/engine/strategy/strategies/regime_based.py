@@ -108,8 +108,8 @@ class RegimeBasedStrategy(BaseStrategy):
             signal_type=SignalType.BUY if raw_signal > 0 else SignalType.SELL,
             confidence=round(min(abs(raw_signal), 1.0), 4),
             price=round(float(data["close"].iloc[-1]), 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"Regime {REGIME_LABELS.get(regime, '?')}: signal={raw_signal:.4f} cost={cost:.4f}",
             evidence={
                 "regime": REGIME_LABELS.get(regime, "unknown"),
@@ -261,8 +261,8 @@ class RegimeBasedStrategy(BaseStrategy):
         self._last_trade_bar = len(data) - 1
         return Signal(
             symbol=self.symbol, signal_type=exit_type, confidence=0.7,
-            price=round(float(data["close"].iloc[-1]), 6),
-            source_agent=self.name, source_strategy=self.name,
+            price=round(float(data["close"].iloc[-1]), 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"RegimeBased EXIT (prior={prior:.3f})",
             evidence={"prior_position": round(float(prior), 4)},
             factors=["regime_based", "exit"],

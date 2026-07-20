@@ -101,8 +101,8 @@ class MomentumStrategy(BaseStrategy):
             signal_type=signal_type,
             confidence=round(float(net_confidence), 4),
             price=round(float(current_price), 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=(
                 f"Momentum {signal_type.value} ({self.strategy_type}): "
                 f"raw={raw:.4f} smoothed={smoothed:.4f} "

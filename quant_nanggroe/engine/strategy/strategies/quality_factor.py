@@ -44,7 +44,8 @@ class QualityFactorStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if sharpe > self.sharpe_threshold and vol_rank < float(rets.std() / close.iloc[-1]):
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=min(sharpe / 2, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Quality factor: Sharpe {sharpe:.2f}",
                 evidence={"sharpe": round(sharpe, 3)}, factors=["hedge_fund", "quality"])
         return None

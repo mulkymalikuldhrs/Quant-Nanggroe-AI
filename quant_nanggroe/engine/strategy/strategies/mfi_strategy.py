@@ -41,12 +41,14 @@ class MFIStrategy(BaseStrategy):
         price = float(data["close"].iloc[-1])
         if val > self.overbought:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"MFI {val:.0f} overbought", evidence={"mfi": round(val, 2)},
                 factors=["technical", "mfi"])
         if val < self.oversold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"MFI {val:.0f} oversold", evidence={"mfi": round(val, 2)},
                 factors=["technical", "mfi"])
         return None

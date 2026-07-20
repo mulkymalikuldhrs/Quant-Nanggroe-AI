@@ -43,14 +43,16 @@ class RSIDivergenceMACDStrategy(BaseStrategy):
         # Bearish divergence: price HH, RSI LH
         if cp > p2 and p2 > p1 and cr < r2 and r2 < r1 and not macd_pos:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.65,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Bearish RSI divergence confirmed by MACD",
                 evidence={"rsi": round(cr, 2), "macd_hist": round(float(histogram.iloc[-1]), 4)},
                 factors=["ml", "rsi_divergence"])
         # Bullish divergence: price LL, RSI HL
         if cp < p2 and p2 < p1 and cr > r2 and r2 > r1 and macd_pos:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.65,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Bullish RSI divergence confirmed by MACD",
                 evidence={"rsi": round(cr, 2), "macd_hist": round(float(histogram.iloc[-1]), 4)},
                 factors=["ml", "rsi_divergence"])

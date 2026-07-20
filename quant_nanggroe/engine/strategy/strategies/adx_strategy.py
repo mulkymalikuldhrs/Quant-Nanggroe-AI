@@ -47,8 +47,8 @@ class ADXStrategy(BaseStrategy):
         if adx_val > self.threshold:
             sig = 1.0 if float(p_di.iloc[-1]) > float(n_di.iloc[-1]) else -1.0
             return Signal(symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
-                confidence=min((adx_val - self.threshold) / 50, 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min((adx_val - self.threshold) / 50, 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"ADX {adx_val:.1f} > {self.threshold}, trending",
                 evidence={"adx": round(adx_val, 2), "p_di": round(float(p_di.iloc[-1]), 2), "n_di": round(float(n_di.iloc[-1]), 2)},
                 factors=["technical", "adx"])

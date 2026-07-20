@@ -42,12 +42,14 @@ class CarryTradeStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if avg_ret > self.carry_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Carry long: avg return {avg_ret:.4f} > {self.carry_threshold}",
                 evidence={"avg_return": round(avg_ret, 4)}, factors=["hedge_fund", "carry"])
         if avg_ret < -self.carry_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Carry short: avg return {avg_ret:.4f} < {-self.carry_threshold}",
                 evidence={"avg_return": round(avg_ret, 4)}, factors=["hedge_fund", "carry"])
         return None

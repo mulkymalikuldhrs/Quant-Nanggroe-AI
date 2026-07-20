@@ -189,8 +189,8 @@ class TrendFollowStrategy(BaseStrategy):
             confidence=round(confidence, 4),
             price=round(price, 6),
             stop_loss=stop_loss,
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=(
                 f"TrendFollow[{self.fast_period}/{self.slow_period}] "
                 f"{'LONG' if target > 0 else 'SHORT'} "
@@ -216,8 +216,8 @@ class TrendFollowStrategy(BaseStrategy):
             signal_type=exit_type,
             confidence=0.7,
             price=round(price, 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"TrendFollow EXIT (prior={prior:.3f})",
             evidence={"prior_position": round(float(prior), 4)},
             factors=["trend_follow", "exit"],

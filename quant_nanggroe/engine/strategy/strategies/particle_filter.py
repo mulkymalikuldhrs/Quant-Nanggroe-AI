@@ -48,10 +48,12 @@ class ParticleFilterStrategy(BaseStrategy):
         price = float(c[-1])
         if price > state_est[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Particle filter: price above estimate",
                 evidence={"pf_state": round(float(state_est[-1]), 4)}, factors=["ml", "particle_filter"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning="Particle filter: price below estimate",
             evidence={"pf_state": round(float(state_est[-1]), 4)}, factors=["ml", "particle_filter"])

@@ -46,7 +46,8 @@ class VolatilitySellingStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if vol_rank > self.vol_percentile:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Vol selling: vol at {vol_rank:.0%} percentile",
                 evidence={"vol_percentile": round(float(vol_rank), 3)}, factors=["hedge_fund", "vol_sell"])
         return None

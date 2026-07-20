@@ -40,13 +40,15 @@ class TRIXStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if trix.iloc[-1] > sig.iloc[-1] and trix.iloc[-2] <= sig.iloc[-2]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="TRIX bullish crossover",
                 evidence={"trix": round(float(trix.iloc[-1]), 4), "sig": round(float(sig.iloc[-1]), 4)},
                 factors=["technical", "trix"])
         if trix.iloc[-1] < sig.iloc[-1] and trix.iloc[-2] >= sig.iloc[-2]:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="TRIX bearish crossover",
                 evidence={"trix": round(float(trix.iloc[-1]), 4), "sig": round(float(sig.iloc[-1]), 4)},
                 factors=["technical", "trix"])

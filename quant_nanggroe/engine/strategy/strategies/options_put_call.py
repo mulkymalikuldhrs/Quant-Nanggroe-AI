@@ -40,13 +40,15 @@ class OptionsPutCallStrategy(BaseStrategy):
         if pc_ratio > 1.5:
             # Extreme put buying — contrarian bullish
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Put/Call ratio {pc_ratio:.2f}: excessive bearishness, contrarian buy",
                 evidence={"pc_ratio": round(float(pc_ratio), 3), "neg_freq": round(float(neg_days), 3)},
                 factors=["macro", "options"])
         if pc_ratio < 0.5:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Put/Call ratio {pc_ratio:.2f}: excessive bullishness, contrarian sell",
                 evidence={"pc_ratio": round(float(pc_ratio), 3), "neg_freq": round(float(neg_days), 3)},
                 factors=["macro", "options"])

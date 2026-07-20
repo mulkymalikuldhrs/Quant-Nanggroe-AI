@@ -40,13 +40,15 @@ class RegimeHMMStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if mu2 > mu1 + 0.5 * (std1 + std2):
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Regime shift to high-return state",
                 evidence={"mu_recent": round(mu2, 4), "mu_prior": round(mu1, 4)},
                 factors=["hedge_fund", "regime_hmm"])
         if mu2 < mu1 - 0.5 * (std1 + std2):
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Regime shift to low-return state",
                 evidence={"mu_recent": round(mu2, 4), "mu_prior": round(mu1, 4)},
                 factors=["hedge_fund", "regime_hmm"])

@@ -56,16 +56,16 @@ class FibonacciFanStrategy(BaseStrategy):
             if abs(price - fan_up[i]) / trend_range < 0.02:
                 return Signal(
                     symbol=self.name, signal_type=SignalType.BUY,
-                    confidence=0.65 - i * 0.05, price=round(price, 6),
-                    source_agent=self.name, source_strategy=self.name,
+                    confidence=0.65 - i * 0.05, price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=f"Price at fan support {level:.1%}",
                     evidence={"fan_level": level}, factors=["fibonacci", "fan"],
                 )
             if abs(price - fan_down[i]) / trend_range < 0.02:
                 return Signal(
                     symbol=self.name, signal_type=SignalType.SELL,
-                    confidence=0.65 - i * 0.05, price=round(price, 6),
-                    source_agent=self.name, source_strategy=self.name,
+                    confidence=0.65 - i * 0.05, price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=f"Price at fan resistance {level:.1%}",
                     evidence={"fan_level": level}, factors=["fibonacci", "fan"],
                 )

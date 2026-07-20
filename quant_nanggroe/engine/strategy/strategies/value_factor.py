@@ -41,12 +41,14 @@ class ValueFactorStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if z < -self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Value factor: price z-score {z:.2f}, undervalued",
                 evidence={"zscore": round(z, 3)}, factors=["hedge_fund", "value"])
         if z > self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Value factor: price z-score {z:.2f}, overvalued",
                 evidence={"zscore": round(z, 3)}, factors=["hedge_fund", "value"])
         return None

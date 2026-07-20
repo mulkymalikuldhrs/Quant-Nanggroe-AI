@@ -43,11 +43,13 @@ class TEMAStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if price > tema.iloc[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Price above TEMA", evidence={"tema": round(float(tema.iloc[-1]), 4)},
                 factors=["technical", "tema"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning="Price below TEMA", evidence={"tema": round(float(tema.iloc[-1]), 4)},
             factors=["technical", "tema"])
 

@@ -137,7 +137,8 @@ class SupplyDemandStrategy(BaseStrategy):
                     price=latest_close,
                     stop_loss=latest_close - atr_val * 1.5,
                     take_profit=latest_close + atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=f"Demand zone touch: {z['zone_high']:.2f}–{z['zone_low']:.2f}, strength={z['strength']}, vol={z.get('volume_ratio',1):.1f}x",
                 )
 
@@ -152,7 +153,8 @@ class SupplyDemandStrategy(BaseStrategy):
                     price=latest_close,
                     stop_loss=latest_close + atr_val * 1.5,
                     take_profit=latest_close - atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=f"Supply zone touch: {z['zone_high']:.2f}–{z['zone_low']:.2f}, strength={z['strength']}, vol={z.get('volume_ratio',1):.1f}x",
                 )
 

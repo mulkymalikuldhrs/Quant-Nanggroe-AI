@@ -68,8 +68,8 @@ class HurstExponentStrategy(BaseStrategy):
             ret_mom = float(close.iloc[-5:].mean()) / float(close.iloc[-self.lookback:-self.lookback+5].mean()) - 1.0
             sig = 1.0 if ret_mom > 0 else -1.0
             return Signal(symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
-                confidence=min(abs(h - 0.5) * 2, 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min(abs(h - 0.5) * 2, 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Hurst {h:.3f} > {self.trend_threshold}: trending regime",
                 evidence={"hurst": round(h, 3)}, factors=["hedge_fund", "hurst"])
         if h < self.mr_threshold:
@@ -77,8 +77,8 @@ class HurstExponentStrategy(BaseStrategy):
             z = float(zs.iloc[-1]) if not np.isnan(zs.iloc[-1]) else 0.0
             sig = 1.0 if z < 0 else -1.0
             return Signal(symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
-                confidence=min(abs(h - 0.5) * 2, 1.0), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=min(abs(h - 0.5) * 2, 1.0), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Hurst {h:.3f} < {self.mr_threshold}: mean-reverting regime",
                 evidence={"hurst": round(h, 3), "zscore": round(float(z), 3)},
                 factors=["hedge_fund", "hurst"])
