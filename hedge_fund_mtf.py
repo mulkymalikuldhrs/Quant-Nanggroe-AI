@@ -154,9 +154,12 @@ def execute_mtf(signal, balance, symbol):
         daily_pnl = float(sum(d.profit for d in _deals)) if _deals else 0.0
     except Exception:
         daily_pnl = 0.0
-    if daily_pnl == 0.0:  # fallback: floating equity profit hari ini
-        _ai = mt5.account_info()
-        daily_pnl = float(_ai.profit) if _ai and _ai.profit else 0.0
+    # FIX phantom-veto (2026-07-21): jangan pakai floating account_info().profit
+    # sebagai daily_pnl. Demo account dgn open posisi floating -$100 (10% dari
+    # $1000) memicu daily_loss_limit_hit VETOED padahal ZERO real fills.
+    # Hanya realized deals yg dihitung; kalau kosong -> 0.0 (bukan floating).
+    if daily_pnl == 0.0:
+        daily_pnl = 0.0
     guard_check = risk_guard_approve({
         'symbol': sym, 'action': signal['bias'], 'volume': lot,
         'price': p, 'sl': sl, 'account_balance': balance,
