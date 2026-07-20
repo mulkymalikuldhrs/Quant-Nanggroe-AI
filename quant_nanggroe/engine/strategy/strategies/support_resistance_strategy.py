@@ -141,7 +141,8 @@ class SupportResistanceStrategy(BaseStrategy):
                     price=latest_price,
                     stop_loss=latest_price - atr_val * 1.5,
                     take_profit=latest_price + atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"S/R breakout: resistance {rz['price']:.2f} broken, "
                         f"touches={rz['touches']}, vol={vol_ratio:.1f}x"
@@ -164,7 +165,8 @@ class SupportResistanceStrategy(BaseStrategy):
                     price=latest_price,
                     stop_loss=latest_price - atr_val * 1.5,
                     take_profit=latest_price + atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"S/R bounce: support {sz['price']:.2f} held, "
                         f"touches={sz['touches']}"
@@ -186,7 +188,8 @@ class SupportResistanceStrategy(BaseStrategy):
                     price=latest_price,
                     stop_loss=latest_price + atr_val * 1.5,
                     take_profit=latest_price - atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"S/R breakdown: support {sz['price']:.2f} broken, "
                         f"touches={sz['touches']}, vol={vol_ratio:.1f}x"

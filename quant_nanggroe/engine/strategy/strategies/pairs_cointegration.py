@@ -43,12 +43,14 @@ class PairsCointegrationStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if z > self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.7,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Spread z-score {z:.2f} > {self.entry_z}, short spread",
                 evidence={"zscore": round(float(z), 3)}, factors=["hedge_fund", "pairs"])
         if z < -self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.7,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Spread z-score {z:.2f} < {-self.entry_z}, long spread",
                 evidence={"zscore": round(float(z), 3)}, factors=["hedge_fund", "pairs"])
         return None

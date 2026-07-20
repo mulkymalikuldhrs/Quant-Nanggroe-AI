@@ -42,12 +42,14 @@ class OptionsStraddleStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if vol_rank < self.low_vol_percentile:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Straddle long: vol at {vol_rank:.0%} percentile (low)",
                 evidence={"vol_percentile": round(float(vol_rank), 3)}, factors=["hedge_fund", "straddle"])
         if vol_rank > self.high_vol_percentile:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Straddle short: vol at {vol_rank:.0%} percentile (high)",
                 evidence={"vol_percentile": round(float(vol_rank), 3)}, factors=["hedge_fund", "straddle"])
         return None

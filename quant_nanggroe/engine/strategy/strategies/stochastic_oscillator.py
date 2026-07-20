@@ -38,12 +38,14 @@ class StochasticOscillatorStrategy(BaseStrategy):
         price = float(data["close"].iloc[-1])
         if k.iloc[-1] < 20 and k.iloc[-1] > d.iloc[-1] and k.iloc[-2] <= d.iloc[-2]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Stochastic bullish crossover", evidence={"k": round(float(k.iloc[-1]), 2), "d": round(float(d.iloc[-1]), 2)},
                 factors=["technical", "stochastic"])
         if k.iloc[-1] > 80 and k.iloc[-1] < d.iloc[-1] and k.iloc[-2] >= d.iloc[-2]:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Stochastic bearish crossover", evidence={"k": round(float(k.iloc[-1]), 2), "d": round(float(d.iloc[-1]), 2)},
                 factors=["technical", "stochastic"])
         return None

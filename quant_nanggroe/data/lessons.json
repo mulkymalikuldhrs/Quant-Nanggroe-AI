@@ -1584,39 +1584,6 @@
     "resolution": ""
   },
   {
-    "id": "26dfd05c-0e3",
-    "category": "data_fetch",
-    "severity": "error",
-    "summary": "Data fetch failed for BTC-USD",
-    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2673531494160'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2673531568976'>).",
-    "context": {},
-    "occurred_at": "2026-07-20T21:10:53.308654+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "3dc041c7-f8a",
-    "category": "data_fetch",
-    "severity": "error",
-    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
-    "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
-    "occurred_at": "2026-07-20T21:11:12.929539+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "9a40a188-ba7",
-    "category": "data_fetch",
-    "severity": "error",
-    "summary": "Data fetch failed for BTC-USD",
-    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2572222006736'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2572222081168'>).",
-    "context": {},
-    "occurred_at": "2026-07-20T21:12:45.081410+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
     "id": "d40302f9-55e",
     "category": "data_fetch",
     "severity": "error",
@@ -1624,17 +1591,6 @@
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
     "context": {},
     "occurred_at": "2026-07-20T21:13:04.260511+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "9d7b9b00-7cc",
-    "category": "data_fetch",
-    "severity": "error",
-    "summary": "Data fetch failed for BTC-USD",
-    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2572222006736'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2572222081168'>).",
-    "context": {},
-    "occurred_at": "2026-07-20T21:13:20.825432+00:00",
     "resolved": false,
     "resolution": ""
   }

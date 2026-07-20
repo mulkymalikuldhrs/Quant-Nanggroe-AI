@@ -46,7 +46,8 @@ class GARCHVolStrategy(BaseStrategy):
         price = float(c[-1])
         if vol_rank > self.vol_percentile:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"GARCH vol at {vol_rank:.0%} percentile, mean-reversion expected",
                 evidence={"garch_vol": round(float(cur_vol * np.sqrt(252) * 100), 4), "percentile": round(float(vol_rank), 3)},
                 factors=["volatility", "garch"])

@@ -132,6 +132,7 @@ class FundamentalStrategy(BaseStrategy):
                 signal_type=SignalType.HOLD,
                 confidence=0.9,
                 price=latest_price,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=f"HOLD: {calendar['upcoming_count']} high-impact events in {self.proximity_hours}h. Market risk: {calendar['market_risk']['overall_risk_score']:.0%}",
             )
@@ -146,6 +147,7 @@ class FundamentalStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price - atr_val * self.vol_mult,
                 take_profit=latest_price + atr_val * self.vol_mult * 2,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=f"BUY: Positive economic surprise. Sentiment={sentiment.get('trend')} Sharpe={sentiment.get('momentum_sharpe')}",
             )
@@ -160,6 +162,7 @@ class FundamentalStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price + atr_val * self.vol_mult,
                 take_profit=latest_price - atr_val * self.vol_mult * 2,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=f"SELL: Negative economic surprise. Sentiment={sentiment.get('trend')} Sharpe={sentiment.get('momentum_sharpe')}",
             )
@@ -171,6 +174,7 @@ class FundamentalStrategy(BaseStrategy):
                 signal_type=SignalType.HOLD,
                 confidence=round(calendar["volatility_score"], 2),
                 price=latest_price,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=f"HOLD: Elevated volatility ({calendar.get('volatility_score', 0.0):.0%}) from upcoming economic data. Reducing risk.",
             )

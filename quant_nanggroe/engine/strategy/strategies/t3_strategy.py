@@ -50,10 +50,12 @@ class T3Strategy(BaseStrategy):
             return None
         if price > t3.iloc[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Price above T3 MA", evidence={"t3": round(float(t3.iloc[-1]), 4)},
                 factors=["technical", "t3"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning="Price below T3 MA", evidence={"t3": round(float(t3.iloc[-1]), 4)},
             factors=["technical", "t3"])

@@ -169,8 +169,8 @@ class MarketMakingStrategy(BaseStrategy):
             signal_type=SignalType.HOLD,
             confidence=0.5,
             price=round(mid, 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=(
                 f"bid={top['bid_price']:.4f}@{top['bid_size']:.2f}, "
                 f"ask={top['ask_price']:.4f}@{top['ask_size']:.2f}, "

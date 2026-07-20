@@ -42,12 +42,14 @@ class DMIStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if p_di.iloc[-1] > n_di.iloc[-1] and p_di.iloc[-2] <= n_di.iloc[-2]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="DMI bullish +DI cross", evidence={"p_di": round(float(p_di.iloc[-1]), 2), "n_di": round(float(n_di.iloc[-1]), 2)},
                 factors=["technical", "dmi"])
         if n_di.iloc[-1] > p_di.iloc[-1] and n_di.iloc[-2] <= p_di.iloc[-2]:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="DMI bearish -DI cross", evidence={"p_di": round(float(p_di.iloc[-1]), 2), "n_di": round(float(n_di.iloc[-1]), 2)},
                 factors=["technical", "dmi"])
         return None

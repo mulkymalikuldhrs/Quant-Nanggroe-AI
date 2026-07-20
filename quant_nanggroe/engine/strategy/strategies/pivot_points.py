@@ -38,12 +38,14 @@ class PivotPointsStrategy(BaseStrategy):
         price = float(data["close"].iloc[-1])
         if price < s1:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price below pivot S1 {s1:.4f}", evidence={"pivot": round(pp, 4), "s1": round(s1, 4), "r1": round(r1, 4)},
                 factors=["technical", "pivot_points"])
         if price > r1:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price above pivot R1 {r1:.4f}", evidence={"pivot": round(pp, 4), "s1": round(s1, 4), "r1": round(r1, 4)},
                 factors=["technical", "pivot_points"])
         return None

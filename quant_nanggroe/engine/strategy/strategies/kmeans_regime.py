@@ -50,12 +50,14 @@ class KMeansRegimeStrategy(BaseStrategy):
         price = float(c[-1])
         if cur_return > 0:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"K-Means regime {cur_label}: positive returns",
                 evidence={"regime": int(cur_label), "mean_return": round(cur_return, 4)},
                 factors=["ml", "kmeans"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"K-Means regime {cur_label}: negative returns",
             evidence={"regime": int(cur_label), "mean_return": round(cur_return, 4)},
             factors=["ml", "kmeans"])

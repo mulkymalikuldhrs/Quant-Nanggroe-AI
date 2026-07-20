@@ -44,12 +44,14 @@ class AdaptiveMovingAverageStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if price > ama.iloc[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price above adaptive MA ({adaptive_period})",
                 evidence={"adaptive_period": adaptive_period, "ama": round(float(ama.iloc[-1]), 4)},
                 factors=["ml", "adaptive_ma"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"Price below adaptive MA ({adaptive_period})",
             evidence={"adaptive_period": adaptive_period, "ama": round(float(ama.iloc[-1]), 4)},
             factors=["ml", "adaptive_ma"])

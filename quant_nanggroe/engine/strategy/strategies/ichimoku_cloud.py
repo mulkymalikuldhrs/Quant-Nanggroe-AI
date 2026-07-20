@@ -46,13 +46,15 @@ class IchimokuCloudStrategy(BaseStrategy):
         tk_cross_bear = tenkan.iloc[-1] < kijun.iloc[-1] and tenkan.iloc[-2] >= kijun.iloc[-2]
         if above_cloud and tk_cross_bull:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.7,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Ichimoku: above cloud + TK bull cross",
                 evidence={"tenkan": round(float(tenkan.iloc[-1]), 4), "kijun": round(float(kijun.iloc[-1]), 4)},
                 factors=["technical", "ichimoku"])
         if below_cloud and tk_cross_bear:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.7,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Ichimoku: below cloud + TK bear cross",
                 evidence={"tenkan": round(float(tenkan.iloc[-1]), 4), "kijun": round(float(kijun.iloc[-1]), 4)},
                 factors=["technical", "ichimoku"])

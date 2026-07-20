@@ -170,7 +170,7 @@ class StatisticalArbitrageStrategy(BaseStrategy):
                     confidence=0.7,
                     price=current_price,
                     source_agent=self.name,
-                    source_strategy=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"StatArb EXIT: residual z={current_z:.2f} reverted "
                         f"below |{self.exit_threshold}|"

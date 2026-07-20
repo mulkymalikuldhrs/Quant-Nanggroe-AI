@@ -38,13 +38,15 @@ class ElderRayStrategy(BaseStrategy):
         bv_, bv2_ = float(bear.iloc[-1]), float(bear.iloc[-2])
         if bv > 0 and bv > bv2:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Elder Ray: bull power rising",
                 evidence={"bull_power": round(bv, 4), "bear_power": round(bv_, 4)},
                 factors=["technical", "elder_ray"])
         if bv_ < 0 and bv_ < bv2_:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Elder Ray: bear power falling",
                 evidence={"bull_power": round(bv, 4), "bear_power": round(bv_, 4)},
                 factors=["technical", "elder_ray"])

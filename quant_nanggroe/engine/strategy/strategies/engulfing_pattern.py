@@ -43,14 +43,14 @@ class EngulfingPatternStrategy(BaseStrategy):
                 return Signal(
                     symbol=self.name, signal_type=SignalType.BUY, confidence=0.7,
                     price=round(float(c.iloc[-1]), 6), source_agent=self.name,
-                    source_strategy=self.name, reasoning="Bullish engulfing",
+                source_strategy=self.name, reasoning="Bullish engulfing",
                     evidence={}, factors=["candlestick", "engulfing"],
                 )
             if prev_bull and not cur_bull:
                 return Signal(
                     symbol=self.name, signal_type=SignalType.SELL, confidence=0.7,
                     price=round(float(c.iloc[-1]), 6), source_agent=self.name,
-                    source_strategy=self.name, reasoning="Bearish engulfing",
+                source_strategy=self.name, reasoning="Bearish engulfing",
                     evidence={}, factors=["candlestick", "engulfing"],
                 )
         return None

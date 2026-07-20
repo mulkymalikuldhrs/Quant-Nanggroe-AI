@@ -43,13 +43,15 @@ class VolSurfaceArbStrategy(BaseStrategy):
         price = float(c[-1])
         if skew_short > self.skew_threshold and skew_long > self.skew_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Vol surface: upward skew across maturities",
                 evidence={"skew_short": round(float(skew_short), 4), "skew_long": round(float(skew_long), 4)},
                 factors=["volatility", "vol_surface"])
         if skew_short < -self.skew_threshold and skew_long < -self.skew_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Vol surface: downward skew across maturities",
                 evidence={"skew_short": round(float(skew_short), 4), "skew_long": round(float(skew_long), 4)},
                 factors=["volatility", "vol_surface"])

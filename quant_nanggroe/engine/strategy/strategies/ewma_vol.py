@@ -42,7 +42,8 @@ class EWMAVolStrategy(BaseStrategy):
         price = float(c[-1])
         if rank > self.vol_percentile:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"EWMA vol at {rank:.0%} percentile",
                 evidence={"ewma_vol": round(float(cur_vol * np.sqrt(252) * 100), 4), "percentile": round(float(rank), 3)},
                 factors=["volatility", "ewma"])

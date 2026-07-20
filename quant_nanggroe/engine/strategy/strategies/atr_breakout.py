@@ -40,13 +40,15 @@ class ATRBreakoutStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if price > highest - atr_val * 0.5:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"ATR breakout: price near {self.lookback}-bar high",
                 evidence={"atr": round(atr_val, 4), "high": round(highest, 4)},
                 factors=["volatility", "atr_breakout"])
         if price < lowest + atr_val * 0.5:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"ATR breakdown: price near {self.lookback}-bar low",
                 evidence={"atr": round(atr_val, 4), "low": round(lowest, 4)},
                 factors=["volatility", "atr_breakout"])

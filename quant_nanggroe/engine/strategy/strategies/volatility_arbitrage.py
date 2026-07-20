@@ -174,8 +174,8 @@ class VolatilityArbitrageStrategy(BaseStrategy):
             signal_type=SignalType.BUY if is_long else SignalType.SELL,
             confidence=round(confidence, 4),
             price=round(price, 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=(
                 f"VolArb[{self.vol_estimation}] "
                 f"{'LONG VOL' if is_long else 'SHORT VOL'} "
@@ -198,8 +198,8 @@ class VolatilityArbitrageStrategy(BaseStrategy):
             signal_type=exit_type,
             confidence=0.7,
             price=round(price, 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"VolArb[{self.vol_estimation}] EXIT flat",
             evidence={"prior_position": round(float(prior), 4),
                        "transaction_cost_bps": self.transaction_cost_bps},

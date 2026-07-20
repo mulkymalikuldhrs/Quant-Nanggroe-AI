@@ -44,8 +44,8 @@ class SizeFactorStrategy(BaseStrategy):
         liq_score = np.clip(avg_vol / (cur_vol + 1e-10), 0, 1)
         if liq_score > 0.7:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
-                confidence=round(liq_score, 4), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=round(liq_score, 4), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Size factor: volume proxy {liq_score:.2f}",
                 evidence={"liq_score": round(liq_score, 3)}, factors=["hedge_fund", "size"])
         return None

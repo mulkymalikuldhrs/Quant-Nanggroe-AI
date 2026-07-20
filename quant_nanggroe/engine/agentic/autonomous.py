@@ -661,6 +661,33 @@ class AutonomousPipeline:
         result.signal = signal_type
         result.confidence = confidence
 
+        # ── Step 2.25: Ensemble Voting (multi-source consensus) ────
+        s225 = PipelineStep(name="ensemble_voting")
+        try:
+            s225.status = "running"
+            t0 = time.perf_counter()
+            from quant_nanggroe.engine.agentic.ensemble import EnsembleVoter
+            voter = EnsembleVoter()
+            voted_bias, voted_conf, vote_meta = voter.run(
+                symbol, signal_type, confidence, dataframe=df,
+            )
+            s225.duration_ms = (time.perf_counter() - t0) * 1000
+            s225.status = "passed"
+            s225.result = f"{voted_bias} @ {voted_conf:.2f} (consensus={vote_meta.get('consensus_strength', 0):.2f})"
+            result.decision["ensemble"] = vote_meta
+            # Only override if ensemble has stronger consensus
+            if voted_bias != "neutral" and vote_meta.get("consensus_strength", 0) > 0.6:
+                signal_type = voted_bias
+                confidence = voted_conf
+                result.signal = signal_type
+                result.confidence = confidence
+        except Exception as exc:
+            s225.status = "skipped"
+            s225.error = str(exc)
+            logger.debug("Ensemble voting skipped for %s: %s", symbol, exc)
+
+        steps.append(s225)
+
         # ── Step 2.5: Council debate (low-confidence signals only) ───
         current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
         s25 = PipelineStep(name="council_debate")

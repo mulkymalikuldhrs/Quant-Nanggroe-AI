@@ -43,8 +43,8 @@ class RiskParityStrategy(BaseStrategy):
         weight = np.clip(self.vol_target / (vol + 1e-10), 0, 1)
         if weight > 0.5:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
-                confidence=round(weight, 4), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=round(weight, 4), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Risk parity: vol {vol:.2%}, weight {weight:.2f}",
                 evidence={"volatility": round(vol, 4), "weight": round(weight, 4)},
                 factors=["hedge_fund", "risk_parity"])

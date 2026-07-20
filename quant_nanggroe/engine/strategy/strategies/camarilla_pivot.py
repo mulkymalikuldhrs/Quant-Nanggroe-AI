@@ -42,12 +42,14 @@ class CamarillaPivotStrategy(BaseStrategy):
         price = float(data["close"].iloc[-1])
         if price >= h8:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price at Camarilla H8 {h8:.4f}", evidence={"h8": round(h8, 4), "l8": round(l8, 4), "range": round(r, 4)},
                 factors=["technical", "camarilla"])
         if price <= l8:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Price at Camarilla L8 {l8:.4f}", evidence={"h8": round(h8, 4), "l8": round(l8, 4), "range": round(r, 4)},
                 factors=["technical", "camarilla"])
         return None

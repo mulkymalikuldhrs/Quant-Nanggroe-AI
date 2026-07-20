@@ -158,6 +158,7 @@ class SMCStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price - sl_atr,
                 take_profit=latest_price + tp_atr,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=(
                     f"SMC BUY: OB={latest_ob} Liq={latest_liq} "
@@ -172,6 +173,7 @@ class SMCStrategy(BaseStrategy):
                 price=latest_price,
                 stop_loss=latest_price + sl_atr,
                 take_profit=latest_price - tp_atr,
+                source_agent=self.name,
                 source_strategy=self.name,
                 reasoning=(
                     f"SMC SELL: OB={latest_ob} Liq={latest_liq} "

@@ -40,12 +40,14 @@ class StatArbZscoreStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if z > self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.65,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Z-score {z:.2f} overbought, short",
                 evidence={"zscore": round(z, 3)}, factors=["hedge_fund", "stat_arb"])
         if z < -self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.65,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Z-score {z:.2f} oversold, long",
                 evidence={"zscore": round(z, 3)}, factors=["hedge_fund", "stat_arb"])
         return None

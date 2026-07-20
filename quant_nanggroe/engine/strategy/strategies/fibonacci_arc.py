@@ -55,7 +55,7 @@ class FibonacciArcStrategy(BaseStrategy):
                 return Signal(
                     symbol=self.name, signal_type=SignalType.BUY if sig > 0 else SignalType.SELL,
                     confidence=0.6, price=round(price, 6), source_agent=self.name,
-                    source_strategy=self.name,
+                source_strategy=self.name,
                     reasoning=f"Price at Fibonacci arc {level:.1%}",
                     evidence={"arc_level": level, "dist_from_mid": round(dist_from_mid, 4)},
                     factors=["fibonacci", "arc"],

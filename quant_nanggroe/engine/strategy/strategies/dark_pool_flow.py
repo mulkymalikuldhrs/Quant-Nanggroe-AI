@@ -39,13 +39,15 @@ class DarkPoolFlowStrategy(BaseStrategy):
         if cur_vol > avg_vol * self.vol_mult and prev_vol < avg_vol * 1.5:
             if ret > 0:
                 return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                    price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                    price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                     reasoning="Dark pool: block buy detected",
                     evidence={"vol_ratio": round(float(cur_vol / avg_vol), 2), "return": round(float(ret), 4)},
                     factors=["macro", "dark_pool"])
             if ret < 0:
                 return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                    price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                    price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                     reasoning="Dark pool: block sell detected",
                     evidence={"vol_ratio": round(float(cur_vol / avg_vol), 2), "return": round(float(ret), 4)},
                     factors=["macro", "dark_pool"])

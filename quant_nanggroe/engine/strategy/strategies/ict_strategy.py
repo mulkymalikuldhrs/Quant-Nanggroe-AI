@@ -159,7 +159,8 @@ class ICTStrategy(BaseStrategy):
                     price=latest_price,
                     stop_loss=latest_price - atr_val * 1.5,
                     take_profit=latest_price + atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"ICT BUY: displacement @{disp_start} FVG={fvg} "
                         f"OB={'yes' if ob else 'no'} OTE={in_ote} conf={has_confluence}/3"
@@ -182,7 +183,8 @@ class ICTStrategy(BaseStrategy):
                     price=latest_price,
                     stop_loss=latest_price + atr_val * 1.5,
                     take_profit=latest_price - atr_val * 3.0,
-                    source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
                     reasoning=(
                         f"ICT SELL: displacement @{disp_start} FVG={fvg} "
                         f"OB={'yes' if ob else 'no'} OTE={in_ote} conf={has_confluence}/3"

@@ -40,12 +40,14 @@ class MeanReversionStatStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if z > self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Stat arb short: z={z:.2f}",
                 evidence={"zscore": round(z, 3)}, factors=["hedge_fund", "stat_mr"])
         if z < -self.entry_z:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.6,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Stat arb long: z={z:.2f}",
                 evidence={"zscore": round(z, 3)}, factors=["hedge_fund", "stat_mr"])
         return None

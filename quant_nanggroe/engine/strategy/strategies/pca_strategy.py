@@ -44,10 +44,12 @@ class PCAStrategy(BaseStrategy):
         price = float(data["close"].iloc[-1])
         if slope > 0:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="PCA: PC1 trending up", evidence={"pc1_slope": round(float(slope), 6)},
                 factors=["ml", "pca"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning="PCA: PC1 trending down", evidence={"pc1_slope": round(float(slope), 6)},
             factors=["ml", "pca"])

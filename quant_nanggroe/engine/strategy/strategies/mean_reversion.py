@@ -222,8 +222,8 @@ class MeanReversionStrategy(BaseStrategy):
             confidence=round(confidence, 4),
             price=round(price, 6),
             stop_loss=stop_loss,
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=(
                 f"MeanReversion[{self.strategy_type}] "
                 f"{'LONG' if target > 0 else 'SHORT'} "
@@ -250,8 +250,8 @@ class MeanReversionStrategy(BaseStrategy):
             signal_type=exit_type,
             confidence=0.7,
             price=round(price, 6),
-            source_agent=self.name,
-            source_strategy=self.name,
+                source_agent=self.name,
+                source_strategy=self.name,
             reasoning=f"MeanReversion[{self.strategy_type}] EXIT flat",
             evidence={
                 "prior_position": round(float(prior), 4),

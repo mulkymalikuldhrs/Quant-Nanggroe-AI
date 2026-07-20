@@ -40,13 +40,15 @@ class CryptoFundingStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if fast_ret > 0.02 and slow_ret > 0:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Crypto funding positive: fast momentum up",
                 evidence={"fast_ret": round(float(fast_ret), 4), "slow_ret": round(float(slow_ret), 4)},
                 factors=["macro", "crypto"])
         if fast_ret < -0.02 and slow_ret < 0:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.5,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Crypto funding negative: fast momentum down",
                 evidence={"fast_ret": round(float(fast_ret), 4), "slow_ret": round(float(slow_ret), 4)},
                 factors=["macro", "crypto"])

@@ -44,10 +44,12 @@ class KalmanFilterStrategy(BaseStrategy):
         price = float(c[-1])
         if price > x[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Kalman: price above state estimate",
                 evidence={"kf_state": round(float(x[-1]), 4)}, factors=["ml", "kalman"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning="Kalman: price below state estimate",
             evidence={"kf_state": round(float(x[-1]), 4)}, factors=["ml", "kalman"])

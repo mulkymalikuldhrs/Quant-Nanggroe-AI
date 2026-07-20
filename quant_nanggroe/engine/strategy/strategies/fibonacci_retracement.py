@@ -74,7 +74,7 @@ class FibonacciRetracementStrategy(BaseStrategy):
         return Signal(
             symbol=self.name, signal_type=SignalType.BUY if signal > 0 else SignalType.SELL,
             confidence=abs(signal), price=round(price, 6), source_agent=self.name,
-            source_strategy=self.name, reasoning=reasoning,
+                source_strategy=self.name, reasoning=reasoning,
             evidence={"fib_level": round(retrace_from_low, 4), "rsi": round(rsi_val, 2)},
             factors=["fibonacci", "retracement"],
         )

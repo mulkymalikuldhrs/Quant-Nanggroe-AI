@@ -42,11 +42,13 @@ class CommodityTrendStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if fast_ma.iloc[-1] > slow_ma.iloc[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Commodity trend bullish", evidence={"fast_ma": round(float(fast_ma.iloc[-1]), 4), "slow_ma": round(float(slow_ma.iloc[-1]), 4)},
                 factors=["macro", "commodity"])
         return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-            price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+            price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
             reasoning="Commodity trend bearish", evidence={"fast_ma": round(float(fast_ma.iloc[-1]), 4), "slow_ma": round(float(slow_ma.iloc[-1]), 4)},
             factors=["macro", "commodity"])
 

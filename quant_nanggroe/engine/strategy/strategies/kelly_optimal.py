@@ -48,8 +48,8 @@ class KellyOptimalStrategy(BaseStrategy):
         ret_mom = float(close.iloc[-5:].mean()) / float(close.iloc[-10:-5].mean()) - 1.0
         if kelly > 0.05 and ret_mom > 0:
             return Signal(symbol=self.name, signal_type=SignalType.BUY,
-                confidence=round(kelly * 4, 4), price=round(price, 6),
-                source_agent=self.name, source_strategy=self.name,
+                confidence=round(kelly * 4, 4), price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Kelly {kelly:.2%}: favorable odds",
                 evidence={"kelly": round(float(kelly), 4), "win_rate": round(win_rate, 3)},
                 factors=["hedge_fund", "kelly"])

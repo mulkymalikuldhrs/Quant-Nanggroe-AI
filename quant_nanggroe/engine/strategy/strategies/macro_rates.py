@@ -39,12 +39,14 @@ class MacroRatesStrategy(BaseStrategy):
         price = float(close.iloc[-1])
         if ret_momentum > self.momentum_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Rates momentum long: {ret_momentum:.2%}",
                 evidence={"momentum": round(float(ret_momentum), 4)}, factors=["hedge_fund", "macro_rates"])
         if ret_momentum < -self.momentum_threshold:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Rates momentum short: {ret_momentum:.2%}",
                 evidence={"momentum": round(float(ret_momentum), 4)}, factors=["hedge_fund", "macro_rates"])
         return None

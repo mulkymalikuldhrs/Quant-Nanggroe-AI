@@ -62,12 +62,14 @@ class ParabolicSARStrategy(BaseStrategy):
         price = float(c[-1])
         if trend == 1 and c[-1] > sar[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Parabolic SAR bullish", evidence={"sar": round(float(sar[-1]), 4)},
                 factors=["technical", "parabolic_sar"])
         if trend == -1 and c[-1] < sar[-1]:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.55,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Parabolic SAR bearish", evidence={"sar": round(float(sar[-1]), 4)},
                 factors=["technical", "parabolic_sar"])
         return None

@@ -40,12 +40,14 @@ class AroonStrategy(BaseStrategy):
         price = float(c.iloc[-1])
         if up > self.threshold and up > down:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=min(up / 100, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Aroon up {up:.0f} > down {down:.0f}", evidence={"aroon_up": round(up, 2), "aroon_down": round(down, 2)},
                 factors=["technical", "aroon"])
         if down > self.threshold and down > up:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=min(down / 100, 1.0),
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning=f"Aroon down {down:.0f} > up {up:.0f}", evidence={"aroon_up": round(up, 2), "aroon_down": round(down, 2)},
                 factors=["technical", "aroon"])
         return None

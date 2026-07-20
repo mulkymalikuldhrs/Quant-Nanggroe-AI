@@ -45,13 +45,15 @@ class ElderTripleScreenStrategy(BaseStrategy):
         wr_val = float(wr.iloc[-1])
         if trend_up and rsi_val < 50 and wr_val < -50:
             return Signal(symbol=self.name, signal_type=SignalType.BUY, confidence=0.65,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Elder Triple: bullish alignment",
                 evidence={"rsi": round(rsi_val, 2), "williams_r": round(wr_val, 2)},
                 factors=["technical", "elder_triple"])
         if not trend_up and rsi_val > 50 and wr_val > -50:
             return Signal(symbol=self.name, signal_type=SignalType.SELL, confidence=0.65,
-                price=round(price, 6), source_agent=self.name, source_strategy=self.name,
+                price=round(price, 6), source_agent=self.name,
+                source_strategy=self.name,
                 reasoning="Elder Triple: bearish alignment",
                 evidence={"rsi": round(rsi_val, 2), "williams_r": round(wr_val, 2)},
                 factors=["technical", "elder_triple"])

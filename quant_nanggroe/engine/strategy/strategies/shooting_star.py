@@ -47,7 +47,7 @@ class ShootingStarStrategy(BaseStrategy):
         return Signal(
             symbol=self.name, signal_type=SignalType.SELL, confidence=0.6,
             price=round(float(c.iloc[-1]), 6), source_agent=self.name,
-            source_strategy=self.name, reasoning="Shooting star at uptrend top",
+                source_strategy=self.name, reasoning="Shooting star at uptrend top",
             evidence={"trend_pct": round(float(trend * 100), 2)}, factors=["candlestick", "shooting_star"],
         )
 
