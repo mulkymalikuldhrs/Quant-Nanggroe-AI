@@ -95,7 +95,7 @@ class FundamentalStrategy(BaseStrategy):
         if len(close) < 20:
             return {"trend": "neutral", "strength": 0.0}
 
-        returns = np.diff(close[-20:]) / close[-21:-1]
+        returns = np.diff(close[-21:]) / close[-21:-1]
         avg_return = np.mean(returns)
         volatility = np.std(returns)
         sharpe_20d = avg_return / (volatility + 1e-10) * np.sqrt(252)
@@ -137,8 +137,8 @@ class FundamentalStrategy(BaseStrategy):
             )
 
         # SURPRISE BULLISH: positive economic surprise
-        if calendar["surprise_bullish"] and sentiment["trend"] != "bearish":
-            conf = min(0.5 + calendar["surprise_count"] * 0.1 + sentiment["momentum_sharpe"] * 0.1, 0.9)
+        if calendar.get("surprise_bullish", False) and sentiment.get("trend") != "bearish":
+            conf = min(0.5 + calendar.get("surprise_count", 0) * 0.1 + sentiment.get("momentum_sharpe", 0.0) * 0.1, 0.9)
             return Signal(
                 symbol=data.get("symbol", "UNKNOWN") if "symbol" in data.columns else "UNKNOWN",
                 signal_type=SignalType.BUY,
@@ -147,12 +147,12 @@ class FundamentalStrategy(BaseStrategy):
                 stop_loss=latest_price - atr_val * self.vol_mult,
                 take_profit=latest_price + atr_val * self.vol_mult * 2,
                 source_strategy=self.name,
-                reasoning=f"BUY: Positive economic surprise. Sentiment={sentiment['trend']} Sharpe={sentiment['momentum_sharpe']}",
+                reasoning=f"BUY: Positive economic surprise. Sentiment={sentiment.get('trend')} Sharpe={sentiment.get('momentum_sharpe')}",
             )
 
         # SURPRISE BEARISH: negative economic surprise
-        if calendar["surprise_bearish"] and sentiment["trend"] != "bullish":
-            conf = min(0.5 + calendar["surprise_count"] * 0.1 + abs(sentiment["momentum_sharpe"]) * 0.1, 0.9)
+        if calendar.get("surprise_bearish", False) and sentiment.get("trend") != "bullish":
+            conf = min(0.5 + calendar.get("surprise_count", 0) * 0.1 + abs(sentiment.get("momentum_sharpe", 0.0)) * 0.1, 0.9)
             return Signal(
                 symbol=data.get("symbol", "UNKNOWN") if "symbol" in data.columns else "UNKNOWN",
                 signal_type=SignalType.SELL,
@@ -161,18 +161,18 @@ class FundamentalStrategy(BaseStrategy):
                 stop_loss=latest_price + atr_val * self.vol_mult,
                 take_profit=latest_price - atr_val * self.vol_mult * 2,
                 source_strategy=self.name,
-                reasoning=f"SELL: Negative economic surprise. Sentiment={sentiment['trend']} Sharpe={sentiment['momentum_sharpe']}",
+                reasoning=f"SELL: Negative economic surprise. Sentiment={sentiment.get('trend')} Sharpe={sentiment.get('momentum_sharpe')}",
             )
 
         # TREND + VOLATILITY: adjust position sizing based on calendar
-        if calendar["volatility_score"] > 0.6:
+        if calendar.get("volatility_score", 0.0) > 0.6:
             return Signal(
                 symbol=data.get("symbol", "UNKNOWN") if "symbol" in data.columns else "UNKNOWN",
                 signal_type=SignalType.HOLD,
                 confidence=round(calendar["volatility_score"], 2),
                 price=latest_price,
                 source_strategy=self.name,
-                reasoning=f"HOLD: Elevated volatility ({calendar['volatility_score']:.0%}) from upcoming economic data. Reducing risk.",
+                reasoning=f"HOLD: Elevated volatility ({calendar.get('volatility_score', 0.0):.0%}) from upcoming economic data. Reducing risk.",
             )
 
         return None
