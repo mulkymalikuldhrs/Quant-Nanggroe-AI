@@ -4,3 +4,4 @@ time,symbol,buys,sells,total,providers,result
 2026-07-19T02:15:33.860615,EURUSD,0,0,0,,neutral
 2026-07-19T02:46:55.970988,EURUSD,0,0,0,,neutral
 2026-07-21T23:39:05.981800,EURUSD,0.6,0,0.6,sma,buy,?
+2026-07-21T23:44:04.554190,EURUSD,0,0.6,0.6,sma,sell,?

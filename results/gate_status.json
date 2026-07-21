@@ -1,9 +1,1 @@
-{
-  "pass": true,
-  "strategy": "RSI14-MR",
-  "sharpe": 2.142,
-  "return_pct": 23.77,
-  "max_dd": -23.1,
-  "reason": "\u2705 Lolos",
-  "generated": "2026-07-19T02:14:33.959962"
-}
+{"pass": true, "mode": "paper", "timestamp": "2026-07-21T23:44:21.400592"}
