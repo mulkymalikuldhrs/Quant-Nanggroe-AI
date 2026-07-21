@@ -671,3 +671,39 @@ def run_once(target_symbol=None):
 
 if __name__ == "__main__":
     run_once()
+
+# Auto-registered by MUE-X: qna_MSNRStrategy_mut_e10dba6a
+
+# Auto-registered by MUE-X: qna_MSNRStrategy_mut_48735c9a
+
+# Auto-registered by MUE-X: qna_SMCStrategy_mut_7b7c1579
+
+# Auto-registered by MUE-X: qna_SMCStrategy_mut_42674b81
+
+# Auto-registered by MUE-X: qna_MeanReversionStrategy_mut_f2242159
+
+# Auto-registered by MUE-X: qna_MeanReversionStrategy_mut_d0c35fc0
+
+# Auto-registered by MUE-X: qna_FiboStrategy_mut_3d236bb5
+
+# Auto-registered by MUE-X: qna_FiboStrategy_mut_726d2261
+
+# Auto-registered by MUE-X: qna_EMAADXStrategy_mut_2329920e
+
+# Auto-registered by MUE-X: qna_EMAADXStrategy_mut_8dce545f
+
+# Auto-registered by MUE-X: qna_AMDXStrategy_mut_163071ea
+
+# Auto-registered by MUE-X: qna_AMDXStrategy_mut_f09909bb
+
+# Auto-registered by MUE-X: qna_AlgebraStrategy_mut_cce8f5f3
+
+# Auto-registered by MUE-X: qna_AlgebraStrategy_mut_d4d7966f
+
+# Auto-registered by MUE-X: qna_WyckoffStrategy_mut_4be93408
+
+# Auto-registered by MUE-X: qna_WyckoffStrategy_mut_d577a6a0
+
+# Auto-registered by MUE-X: qna_SMCStrategyOld_mut_023786dc
+
+# Auto-registered by MUE-X: qna_SMCStrategyOld_mut_d9b02f7b
