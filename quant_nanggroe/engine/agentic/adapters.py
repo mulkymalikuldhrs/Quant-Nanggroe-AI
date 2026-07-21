@@ -85,7 +85,7 @@ class WyckoffAdapter(SignalAdapter):
 
 
 class AIHFAdapter(SignalAdapter):
-    """AI Hedge Fund — multi-agent analysis."""
+    """AI Hedge Fund — multi-agent analysis via run_hedge_fund()."""
     source_name = "aihf"
 
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
@@ -93,12 +93,24 @@ class AIHFAdapter(SignalAdapter):
             mod = self._safe_import(E_AI_HEDGE_FUND, "src.main", "run_hedge_fund")
             if mod is None:
                 return None
-            result = mod({"symbol": symbol})
-            decision = result.get("decision", "hold")
-            confidence = result.get("confidence", 0.5)
-            if decision == "hold":
+            from datetime import datetime, timedelta
+
+            end = datetime.now()
+            start = end - timedelta(days=365)
+            result = mod(
+                tickers=[symbol],
+                start_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d"),
+                portfolio={"cash": 100000},
+            )
+            # result: {"decisions": {ticker: {action, quantity, confidence, reasoning}}, "analyst_signals": ...}
+            decisions = result.get("decisions", {})
+            ticker_dec = decisions.get(symbol, {})
+            action = ticker_dec.get("action", "hold")
+            confidence = ticker_dec.get("confidence", 50) / 100.0  # 0-100 → 0-1
+            if action == "hold":
                 return Signal(Bias.NEUTRAL, 0.0, self.source_name)
-            bias = Bias.BUY if decision == "buy" else Bias.SELL
+            bias = Bias.BUY if action in ("buy",) else Bias.SELL
             return Signal(bias, confidence, self.source_name)
         except Exception as e:
             logger.debug("AIHF failed: %s", e)
