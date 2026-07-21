@@ -61,7 +61,7 @@ class DhaherSystem(DFStrategyAdapter, Strategy):
             adx_threshold: Minimum ADX value for trend filter
             use_volume_conf: Volume confirmation
         """
-        super().__init__(parameters=None, lookback=lookback, atr_mult=atr_mult, rr_min=rr_min,
+        super().__init__(lookback=lookback, atr_mult=atr_mult, rr_min=rr_min,
                         max_positions=max_positions, risk_per_trade=risk_per_trade,
                         min_confluence=min_confluence, use_adx_filter=use_adx_filter,
                         adx_threshold=adx_threshold, use_volume_conf=use_volume_conf)
