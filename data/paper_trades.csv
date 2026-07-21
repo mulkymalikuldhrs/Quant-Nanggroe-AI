@@ -1,0 +1,2 @@
+time,action,symbol,lot,price,sl,tp,atr,providers,mode
+2026-07-21T23:39:06.137650,paper_buy,EURUSD,0.2,1.0510746716268056,1.04907,1.05507,0.001,sma,paper
