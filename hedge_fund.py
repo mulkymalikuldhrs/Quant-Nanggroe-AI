@@ -1,7 +1,7 @@
 """
 Hedge Fund v3 — semua tools voting
 """
-import sys, json, time, logging, threading, subprocess, csv, os
+import sys, json, time, logging, threading, subprocess, csv, os, random
 from pathlib import Path
 from datetime import datetime, timedelta
 import MetaTrader5 as mt5
@@ -11,6 +11,10 @@ LOG_FILE = SRC / 'data' / 'trades.csv'
 VOTE_LOG = SRC / 'data' / 'votes.csv'
 TERMINAL = r"C:\Program Files\MetaTrader 5\terminal64.exe"
 CREDS = {"login": 372044706, "password": os.environ.get("MT5_PASSWORD", "@15September"), "server": "ValetaxIntl-Live2"}
+
+# ── PAPER TRADING MODE ──
+# Set PAPER_TRADE=true di env untuk bypass MT5 execution
+PAPER_TRADE = os.environ.get("PAPER_TRADE", "true").lower() in ("1", "true", "yes")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('hf')
@@ -118,6 +122,61 @@ def signal_langalpha(symbol="EURUSD"):
     except: pass
     return {"bias":"neutral","confidence":0,"source":"langalpha"}
 
+# ── ECOSYSTEM PROVIDERS ──
+
+def signal_aimarketmaker(symbol="EURUSD"):
+    """AI Market Maker — agentic crypto hedge fund (E:/ai-market-maker)"""
+    try:
+        sys.path.insert(0, 'E:/ai-market-maker')
+        from aimm.execution.executor import execute_strategy as aimm_execute
+        res = aimm_execute(symbol, mode="signal")
+        if isinstance(res, dict):
+            bias = res.get("decision", "neutral")
+            if bias == "hold": bias = "neutral"
+            return {"bias": bias, "confidence": res.get("confidence", 0.5), "source": "aimm"}
+    except Exception as e:
+        log.warning(f"AIMM err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"aimm"}
+
+def signal_kronos(symbol="EURUSD"):
+    """Kronos Foundation Model (AAAI 2026) — via wrapper"""
+    try:
+        sys.path.insert(0, str(SRC))
+        from strategies.kronos_wrapper import get_kronos_signal
+        res = get_kronos_signal(symbol)
+        if isinstance(res, dict):
+            b = "neutral" if res.get("signal","hold")=="hold" else res["signal"]
+            return {"bias": b, "confidence": res.get("confidence", 0.4), "source": "kronos"}
+    except Exception as e:
+        log.warning(f"Kronos err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"kronos"}
+
+def signal_pyportfolioopt(symbol="EURUSD"):
+    """PyPortfolioOpt — optimal position sizing recommendation"""
+    try:
+        sys.path.insert(0, 'E:/PyPortfolioOpt')
+        from pypfopt.efficient_frontier import EfficientFrontier
+        from pypfopt.risk_models import CovarianceShrinkage
+        from pypfopt.expected_returns import mean_historical_return
+        # Get price history from MT5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"ppo"}
+        prices = df['close']
+        mu = mean_historical_return(prices.to_frame(symbol))
+        S = CovarianceShrinkage(prices.to_frame(symbol)).shrinkage()
+        ef = EfficientFrontier(mu, S)
+        try:
+            weights = ef.max_sharpe()
+            if symbol in weights:
+                w = weights[symbol]
+                return {"bias":"buy" if w > 0 else "sell","confidence":min(abs(w), 1.0),"source":"ppo","weight":w}
+        except Exception:
+            pass
+    except Exception as e:
+        log.debug(f"PyPortfolioOpt err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"ppo"}
+
 # ── HISTORICAL DATA ──
 def get_historical_mt5(symbol="EURUSD", count=100, tf=mt5.TIMEFRAME_M15):
     rates = mt5.copy_rates_from_pos(symbol, tf, 0, count)
@@ -146,45 +205,96 @@ def signal_wyckoff(symbol="EURUSD"):
     return {"bias":"neutral","confidence":0,"source":"wyckoff"}
 
 # ── AGGREGATOR ──
-ALL_PROVIDERS = [
-    signal_wyckoff,    # 🏆 Wyckoff Volume Spread (Sharpe 3.0)
+# Core signal providers (built-in)
+CORE_PROVIDERS = [
+    signal_sma,          # SMA 20/50 crossover (free, always on)
+    signal_wyckoff,      # 🏆 Wyckoff Volume Spread (Sharpe 3.0)
+    signal_aihf,         # AI Hedge Fund (15 agent investors)
+    signal_hidden,       # Hidden Markov Model regime detection
+    signal_tradingagents,# Multi-agent trading graph
+    signal_aitrader,     # Node.js AI trader
+    signal_langalpha,    # LLM alpha research agent
 ]
 
+ALL_PROVIDERS = CORE_PROVIDERS[:]
+# QNA strategy gene stubs removed — signal_qna_* functions not yet defined
+# Re-add when the actual signal wrapper functions are implemented
+
 def aggregate(symbol="EURUSD"):
+    """
+    Multi-provider weighted voting with market context boost.
+    
+    1. Collect votes dari ALL_PROVIDERS
+    2. Load market context (DXY, Yield, COT, Sentiment, Calendar)
+    3. Weight votes berdasarkan market regime alignment
+    4. Return final decision with confidence
+    """
     votes = []
     results = []
+    
+    # ── Step 1: Load Market Context ──
+    context_boost = {"buy": 1.0, "sell": 1.0}
+    dxy_trend = "unknown"
+    dxy_price = "?"
+    try:
+        from market_context import get_dxy, get_currency_strength
+        dxy = get_dxy()
+        dxy_trend = dxy.get("trend", "unknown")
+        dxy_price = dxy.get("price", "?")
+        strength = get_currency_strength()
+        
+        # Bias: strong dollar = harder for EURUSD buy
+        if dxy_trend == "bull":
+            context_boost["buy"] *= 0.85  # Reduces buy confidence
+            log.info(f"  📈 DXY bull (${dxy_price}) → buy confidence ×0.85")
+        elif dxy_trend == "bear":
+            context_boost["sell"] *= 0.85  # Reduces sell confidence
+            log.info(f"  📉 DXY bear (${dxy_price}) → sell confidence ×0.85")
+    except Exception as e:
+        log.debug(f"Market context unavailable: {e}")
+    
+    # ── Step 2: Collect Provider Votes ──
     for provider in ALL_PROVIDERS:
         try:
             v = provider(symbol)
             results.append(v)
             if v["bias"] != "neutral":
+                # Apply context boost
+                v["confidence"] = v.get("confidence", 0.5) * context_boost.get(v["bias"], 1.0)
+                v["confidence"] = min(v["confidence"], 1.0)  # clamp
                 votes.append(v)
-                log.info(f"  ✅ {v['source']}: {v['bias']}")
+                log.info(f"  ✅ {v['source']}: {v['bias']} (conf={v['confidence']:.2f})")
             else:
                 log.info(f"  ➖ {v['source']}: neutral")
         except Exception as e:
             log.warning(f"  ❌ {provider.__name__}: {e}")
     
-    buys = sum(1 for v in votes if v["bias"] == "buy")
-    sells = sum(1 for v in votes if v["bias"] == "sell")
-    total = len(votes)
+    # ── Step 3: Weighted Decision ──
+    if not votes:
+        log.warning("  ⚠️ No providers voted — staying neutral")
+        return {"bias":"neutral","confidence":0,"votes":[],"context_used":dxy_trend}
     
-    log.info(f"  📊 Vote: {buys} buys / {sells} sells / {total} voters")
+    # Weighted sum: each vote contributes confidence
+    total_conf_buy = sum(v.get("confidence", 0.5) for v in votes if v["bias"] == "buy")
+    total_conf_sell = sum(v.get("confidence", 0.5) for v in votes if v["bias"] == "sell")
+    total_all = total_conf_buy + total_conf_sell
     
-    # Log vote — check if file needs header BEFORE opening
+    log.info(f"  📊 Weighted: buy={total_conf_buy:.2f} sell={total_conf_sell:.2f} total={total_all:.2f}")
+    
+    # Log vote
     needs_header = not VOTE_LOG.exists() or VOTE_LOG.stat().st_size == 0
     with open(VOTE_LOG, 'a', newline='') as f:
         w = csv.writer(f)
         if needs_header:
-            w.writerow(["time","symbol","buys","sells","total","providers","result"])
+            w.writerow(["time","symbol","buy_conf","sell_conf","total","providers","result","dxy"])
         provider_names = ",".join(v["source"] for v in votes)
-        result = "buy" if buys > sells else "sell" if sells > buys else "neutral"
-        w.writerow([datetime.now().isoformat(), symbol, buys, sells, total, provider_names, result])
+        result = "buy" if total_conf_buy > total_conf_sell else "sell" if total_conf_sell > total_conf_buy else "neutral"
+        w.writerow([datetime.now().isoformat(), symbol, round(total_conf_buy,2), round(total_conf_sell,2), round(total_all,2), provider_names, result, dxy.get("price","?")])
     
-    if buys > sells and buys >= 1:
-        return {"bias":"buy","confidence":buys/total,"votes":votes}
-    if sells > buys and sells >= 1:
-        return {"bias":"sell","confidence":sells/total,"votes":votes}
+    if total_conf_buy > total_conf_sell and total_all > 0:
+        return {"bias":"buy","confidence":min(total_conf_buy/total_all, 1.0), "votes":votes, "total_conf": total_all}
+    if total_conf_sell > total_conf_buy and total_all > 0:
+        return {"bias":"sell","confidence":min(total_conf_sell/total_all, 1.0), "votes":votes, "total_conf": total_all}
     return {"bias":"neutral","confidence":0,"votes":votes}
 
 # ── TRAILING ──

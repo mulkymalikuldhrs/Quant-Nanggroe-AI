@@ -312,9 +312,9 @@ class QuarterlyTheoryStrategy(BaseStrategy):
         h, l, c = df['high'], df['low'], df['close']
         
         # Session ranges
-        df['session_range'] = h.rolling(24) - l.rolling(24)
+        df['session_range'] = h.rolling(24).max() - l.rolling(24).min()
         df['avg_range'] = df['session_range'].rolling(5).mean()
-        
+
         # Liquidity grab detection
         df['hh_20'] = h.rolling(20).max()
         df['ll_20'] = l.rolling(20).min()
@@ -477,3 +477,11 @@ if __name__ == "__main__":
 
 # Late import for externally registered strategies (avoid circular import)
 from strategies import dhaher_system, kronos_wrapper, tradebobby_smc_scanner
+
+# Auto-apply strategy fixes — monkey-patch broken strategies with fixed versions
+try:
+    from strategy_fixes import apply_fixes as _apply_fixes
+    _apply_fixes()
+except Exception as _e:
+    import logging as _logging
+    _logging.warning(f"Strategy fixes not applied: {_e}")
