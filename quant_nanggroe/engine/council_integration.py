@@ -10,9 +10,9 @@ Council waves integrated:
 - WAVE 3 (SKILLS): taste-skill → Anti-slop design, GStack → DevOps, FinRL/QLib/PyPortfolioOpt → Algos
 
 Source files:
-    D:\docs\COUNCIL-HF-EXTRACT.md
-    D:\docs\COUNCIL-QNA-EXTRACT.md
-    D:\docs\COUNCIL-SKILLS-EXTRACT.md
+    D:\\docs\\COUNCIL-HF-EXTRACT.md
+    D:\\docs\\COUNCIL-QNA-EXTRACT.md
+    D:\\docs\\COUNCIL-SKILLS-EXTRACT.md
 
 Usage:
     from quant_nanggroe.engine.council_integration import integrate_council_findings
