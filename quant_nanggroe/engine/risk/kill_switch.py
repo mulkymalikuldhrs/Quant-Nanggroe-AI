@@ -249,6 +249,25 @@ class KillSwitch:
                     self._activated_at = datetime.fromisoformat(data["activated_at"]) if data.get("activated_at") else datetime.now(timezone.utc)
                 except Exception:
                     self._activated_at = datetime.now(timezone.utc)
+            # ponytail: a DAILY-LIMIT (level_1) breach is scoped to the trading
+            # day it occurred. A stale level_1 persisted from a previous day must
+            # auto-expire on reconcile, else the hedge fund freezes forever while
+            # /health still reports "healthy" (silent trade-blocker). Weekly/
+            # drawdown/systemic (level_2/3) breaches must NOT auto-expire — those
+            # require explicit human review (RESET_CONFIRMATION).
+            if lvl == KillSwitchLevel.LEVEL_1 and self._activated_at is not None:
+                activated_day = self._activated_at.date()
+                today = datetime.now(timezone.utc).date()
+                if activated_day < today:
+                    logger.info(
+                        "Kill switch: stale level_1 (daily-limit) from %s expired on new day %s — auto-deactivating",
+                        activated_day.isoformat(), today.isoformat(),
+                    )
+                    self._status = KillSwitchStatus.INACTIVE
+                    self._current_level = KillSwitchLevel.NONE
+                    self._activated_at = None
+                    # Persist the expiry so every proc sees one truth.
+                    self._flush()
 
     def _flush(self) -> None:
         """Write current activation truth to the shared file (called after every state change)."""
