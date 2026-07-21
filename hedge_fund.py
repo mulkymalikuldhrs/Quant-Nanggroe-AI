@@ -214,6 +214,9 @@ CORE_PROVIDERS = [
     signal_tradingagents,# Multi-agent trading graph
     signal_aitrader,     # Node.js AI trader
     signal_langalpha,    # LLM alpha research agent
+    signal_kronos,       # Kronos Foundation Model (AAAI 2026)
+    signal_aimarketmaker,# AI Market Maker (agentic crypto HF)
+    signal_pyportfolioopt,# PyPortfolioOpt position sizing
 ]
 
 ALL_PROVIDERS = CORE_PROVIDERS[:]
