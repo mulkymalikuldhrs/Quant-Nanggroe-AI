@@ -46,6 +46,13 @@
 
 ---
 
+## 1.6 CRITICAL CRON FIX (found 04:18 WIB — post-delegation)
+- **`hedge-fund-runner` (QNA live cron) was ERRORING every 30m** — `last_status: error`. Root cause: cycle returned `1` when `executed=0` (no trade). For an autonomous fund, `executed=0` is NORMAL (flat market / positions full / risk veto), NOT failure. Fixed: cycle returns `0` on healthy run. Runner now `✅ Cycle complete` exit 0.
+- **8 crons still on `deepseek-v4-flash-free` (dead model)** despite earlier "22 repointed" claim — including `hedge-fund-runner` itself, `qna-evolve-daily`, `accountability-review`, `sahamid-analysis`, `vault-rag-index`, `vault-autosync`, `profile-traderbot-quant`, `sushu-watchdog`. All repointed to `tencent/hy3:free` (LIVE). **Ecosystem now fully alive.**
+- Lesson: "repointed 22 crons" claim was INCOMPLETE. Verify by listing, not assuming.
+
+---
+
 ## 2. SKEPTICAL REVIEW (hard, institutional-grade)
 
 ### 2.1 What is NOT production-ready (be honest)
