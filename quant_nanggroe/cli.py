@@ -403,7 +403,7 @@ def portfolio_status():
 
         # Try to fetch from API
         try:
-            response = httpx.get("http://localhost:8000/api/v1/portfolio", timeout=5.0)
+            response = httpx.get("http://localhost:8000/api/portfolio", timeout=5.0)
             if response.status_code == 200:
                 data = response.json()
                 _display_portfolio(data)

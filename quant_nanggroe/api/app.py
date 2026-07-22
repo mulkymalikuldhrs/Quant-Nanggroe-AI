@@ -374,9 +374,6 @@ def create_app() -> FastAPI:
     app.include_router(memory_stub.router)
     app.include_router(colony_stub.router)
     app.include_router(security_tools_stub.router)
-    app.include_router(memory_stub.router)
-    app.include_router(colony_stub.router)
-    app.include_router(security_tools_stub.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
     app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
