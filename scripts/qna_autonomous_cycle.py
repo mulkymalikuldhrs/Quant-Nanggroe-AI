@@ -41,7 +41,8 @@ RISK_PCT = 0.01          # 1% account balance per trade
 SL_ATR_MULT = 1.5
 TP_ATR_MULT = 2.5
 MAX_OPEN_POSITIONS = 3   # exposure cap across all symbols
-ACTIVE_STRATEGIES = ["wyckoff", "smc", "dhaher_system", "kronos", "tradebobby_smc"]
+ACTIVE_STRATEGIES = ["wyckoff", "smc", "dhaher_system", "kronos", "tradebobby_smc",
+                      "mean_rev", "msnr", "ict", "unified_retail"]
 
 VENV_PYTHON = r"C:\Users\Hi\AppData\Local\hermes\hermes-agent\venv\Scripts\python.exe"
 
@@ -148,15 +149,23 @@ def ensemble_signal(registry, df, symbol: str):
             votes["SELL"].append((sig.confidence, sig.stop_loss, sig.take_profit, name))
     if not votes["BUY"] and not votes["SELL"]:
         return None, 0.0, None, None, "All strategies HOLD"
+    # Confidence-WEIGHTED voting (not count-based) — conviction > headcount.
+    # A single strong signal (conf 0.8) beats three weak ones (0.4 each = 1.2 but
+    # each below conviction threshold). This prevents trend+reversion ties from
+    # deadlocking into HOLD and raises trade frequency without lowering the bar.
+    buy_w = sum(c for c, _, _, _ in votes["BUY"])
+    sell_w = sum(c for c, _, _, _ in votes["SELL"])
     buy_n, sell_n = len(votes["BUY"]), len(votes["SELL"])
-    if buy_n == sell_n:
-        return None, 0.0, None, None, "Tied vote — no edge"
-    side = "BUY" if buy_n > sell_n else "SELL"
+    if buy_w == sell_w:
+        return None, 0.0, None, None, "Tied conviction — no edge"
+    side = "BUY" if buy_w > sell_w else "SELL"
     pool = votes[side]
     pool.sort(key=lambda x: x[0], reverse=True)
-    conf = sum(c for c, _, _, _ in pool) / len(pool)
+    # Aggregate confidence = weighted avg, but never below best single conviction
+    best_conf = pool[0][0]
+    conf = max(best_conf, sum(c for c, _, _, _ in pool) / len(pool))
     sl, tp, src = pool[0][1], pool[0][2], pool[0][3]
-    return side, conf, sl, tp, f"{side} voted {buy_n}/{sell_n} (best={src} conf={conf:.2f})"
+    return side, conf, sl, tp, f"{side} conv={buy_w:.2f}/{sell_w:.2f} (best={src} conf={conf:.2f})"
 
 
 def run_cycle() -> int:
