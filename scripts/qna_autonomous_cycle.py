@@ -3,10 +3,10 @@
 
 no_agent cron script. Runs ONE full cycle:
   1. build_execution_manager(allow_live=True)  -> wires MT5 live + risk
-  2. load a strategy, generate a signal for a forex symbol
-  3. compute protective SL/TP (ATR-based)
-  4. submit_order via the execution manager (SL/TP carried end-to-end)
-  5. report result
+  2. manage trailing stops on open positions (dynamic protection)
+  3. for each symbol: generate a signal, compute ATR-based SL/TP, risk-check,
+     submit_order via the execution manager (SL/TP carried end-to-end)
+  4. report result
 
 Fail-closed: if MT5 is unavailable, it trades PAPER ONLY and reports degraded.
 Never silent-trades. All guarded by RiskManager (constitutional daily/weekly veto).
@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import os
 import sys
-import json
 import time
 import logging
 import asyncio
@@ -52,6 +51,50 @@ def compute_sl_tp(symbol: str, atr: float, entry: float, side: str):
     return round(sl, 5), round(tp, 5)
 
 
+def manage_trailing(mt5, trailing) -> int:
+    """Periodic trailing-stop management for open positions.
+
+    Called each cycle (cron 30m). Reads live MT5 positions, updates the
+    trailing manager, and modifies the broker SL when the trail tightens.
+    This is the wiring that previously left protection.py/trailing_stop.py
+    with 0 callers — positions now get dynamic protection, not just static SL.
+    """
+    modified = 0
+    positions = mt5.positions_get() or []
+    for p in positions:
+        sym = p.symbol
+        tick = mt5.symbol_info_tick(sym)
+        if not tick:
+            continue
+        price = tick.bid if p.type == mt5.ORDER_TYPE_BUY else tick.ask
+        # register if unseen
+        if sym not in trailing._positions:
+            trailing.add_position(sym, p.price_open)
+        triggered = trailing.update(sym, price)
+        if triggered:
+            # trailing stop hit -> close position
+            close_type = mt5.ORDER_TYPE_SELL if p.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
+            cr = mt5.order_send({
+                "action": mt5.TRADE_ACTION_DEAL, "symbol": sym, "volume": p.volume,
+                "type": close_type, "position": p.ticket, "price": price,
+                "deviation": 20, "magic": 888888, "type_filling": mt5.ORDER_FILLING_FOK,
+                "type_time": mt5.ORDER_TIME_GTC,
+            })
+            log.info("TRAILING CLOSE %s ticket=%s retcode=%s", sym, p.ticket, cr.retcode)
+            modified += 1
+        else:
+            new_sl = trailing.get_stop_price(sym)
+            if new_sl and 0 < new_sl != p.sl:
+                cr = mt5.order_send({
+                    "action": mt5.TRADE_ACTION_SLTP, "symbol": sym, "position": p.ticket,
+                    "sl": new_sl, "tp": p.tp, "deviation": 20, "magic": 888888,
+                })
+                if cr.retcode == mt5.TRADE_RETCODE_DONE:
+                    log.info("TRAILING SL %s ticket=%s sl=%.5f", sym, p.ticket, new_sl)
+                    modified += 1
+    return modified
+
+
 def run_cycle() -> int:
     sys.path.insert(0, QNA_DIR)
     os.environ.setdefault("QNA_LIVE_TRADING", "1")
@@ -61,6 +104,7 @@ def run_cycle() -> int:
 
     from quant_nanggroe.engine.execution.builder import build_execution_manager
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
+    from quant_nanggroe.engine.risk.trailing_stop import TrailingStopManager
 
     t0 = time.time()
     em = build_execution_manager(allow_live=(os.environ.get("QNA_LIVE_TRADING") == "1"))
@@ -74,12 +118,17 @@ def run_cycle() -> int:
 
     import MetaTrader5 as mt5
 
+    trailing = TrailingStopManager()
+    # 1) manage trailing on existing positions first
+    n_trail = manage_trailing(mt5, trailing)
+    if n_trail:
+        log.info("Trailing actions: %d", n_trail)
+
     executed = 0
     for symbol in SYMBOLS:
         try:
             tick = mt5.symbol_info_tick(symbol.replace(".vx", ""))
             if not tick:
-                # try .vx symbol directly
                 tick = mt5.symbol_info_tick(symbol)
             if not tick:
                 log.warning("%s no tick — skip", symbol)
@@ -131,6 +180,8 @@ def run_cycle() -> int:
             )
             res = asyncio.run(em._brokers[primary].submit_order(order))
             log.info("%s %s %.2f lot=%.2f SL=%.5f TP=%.5f -> %s", side.upper(), symbol, entry, lot, sl, tp, res.status)
+            if res.status.value == "FILLED":
+                trailing.add_position(symbol, entry)
             executed += 1
         except Exception as e:
             log.error("%s cycle error: %s", symbol, e)
