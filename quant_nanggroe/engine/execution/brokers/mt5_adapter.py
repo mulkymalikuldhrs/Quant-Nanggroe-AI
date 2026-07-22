@@ -43,6 +43,11 @@ class MT5ExecutionBroker(Broker):
         return self._mt5.connected
 
     async def connect(self) -> bool:
+        # P0 fix: MT5Broker.connect() already called mt5.initialize() in the
+        # builder's live-wiring loop. Calling it again here double-inits the
+        # same MT5 terminal in one process -> IPC timeout. Skip if already up.
+        if self._mt5.connected:
+            return True
         return self._mt5.connect()
 
     async def disconnect(self) -> None:

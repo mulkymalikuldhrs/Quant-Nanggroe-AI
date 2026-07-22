@@ -26,12 +26,17 @@ class MT5Broker(BrokerConnector):
         except ImportError:
             raise RuntimeError("MetaTrader5 lib missing — pip install MetaTrader5")
         self._mt5 = mt5
-        # P0 fix: add explicit timeout so a slow/unresponsive Valetax terminal
-        # cannot hang the entire build_execution_manager() call forever.
+        # P0 fix: add explicit timeout + terminal path so a slow/unresponsive
+        # Valetax terminal cannot hang the entire build_execution_manager() call.
+        # mt5.initialize without `path` can hang on some installs (terminal not
+        # found via registry) — pass the known terminal path explicitly.
+        import os as _os
+        term_path = _os.environ.get("MT5_TERMINAL_PATH") or r"C:\Program Files\MetaTrader 5\terminal64.exe"
         # retry=3 survives transient IPC timeouts; timeout=15000ms bounds each try.
         for attempt in range(3):
             try:
                 ok = mt5.initialize(
+                    path=term_path,
                     login=self.login,
                     password=self.password,
                     server=self.server,
