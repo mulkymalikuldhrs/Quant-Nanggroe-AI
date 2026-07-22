@@ -249,7 +249,18 @@ def run_cycle() -> int:
 
             acc = mt5.account_info()
             bal = float(acc.balance) if acc else 1000.0
-            lot = max(0.01, round((bal * RISK_PCT) / (atr * 100000), 2))
+            # Risk-based lot sizing: risk_amount = balance * RISK_PCT;
+            # lot = risk_amount / (stop_loss_distance * contract_size).
+            sl_distance = abs(entry - sl) if sl else (atr * SL_ATR_MULT)
+            contract_size = 100 if "XAU" in symbol or "GOLD" in symbol else 100000
+            risk_amount = bal * RISK_PCT
+            if sl_distance > 0:
+                lot = risk_amount / (sl_distance * contract_size)
+            else:
+                lot = 0.01
+            # Broker floor + sane cap (never blow the account on one ticket)
+            lot = max(0.01, round(lot, 2))
+            lot = min(lot, 1.0)
 
             # Risk gate — constitutional veto (realized PnL fed from broker)
             verdict = em._risk_manager.check_trade(

@@ -23,14 +23,24 @@ from quant_nanggroe.engine.strategies._df_signal_adapter import DFStrategyAdapte
 log = logging.getLogger('kronos')
 
 # ─── Attempt Kronos import ─────────────────────────────────────────────────────
-try:
-    sys.path.insert(0, r'E:\Kronos')
-    from model import KronosTokenizer, Kronos, KronosPredictor
-    KRONOS_AVAILABLE = True
-    log.info("Kronos model package loaded")
-except ImportError as e:
-    KRONOS_AVAILABLE = False
-    log.warning(f"Kronos not available ({e}) — using fallback mode")
+# ponytail: the real Kronos model package lives at E:\Kronos and is OPTIONAL.
+# The previous bare `from model import ...` raised NameError (safetensors
+# undefined inside the half-installed package) which the `except ImportError`
+# did NOT catch — so every signal call logged a crash and fell back. Widen the
+# guard to Exception and skip the path insertion unless the dir actually exists.
+KRONOS_AVAILABLE = False
+_KRONOS_DIR = r'E:\Kronos'
+if os.path.isdir(_KRONOS_DIR):
+    try:
+        sys.path.insert(0, _KRONOS_DIR)
+        from model import KronosTokenizer, Kronos, KronosPredictor
+        KRONOS_AVAILABLE = True
+        log.info("Kronos model package loaded")
+    except Exception as e:
+        KRONOS_AVAILABLE = False
+        log.warning(f"Kronos not available ({e}) — using fallback mode")
+else:
+    log.info("Kronos dir %s absent — using fallback momentum mode", _KRONOS_DIR)
 
 # ─── Fallback: momentum-based signal when Kronos model not loaded ──────────────
 class _FallbackKronosPredictor:
