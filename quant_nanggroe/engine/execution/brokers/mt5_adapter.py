@@ -49,6 +49,20 @@ class MT5ExecutionBroker(Broker):
         self._mt5.disconnect()
 
     async def get_account(self) -> AccountInfo:
+        # P0 fix: read REAL equity/balance from MT5, not assume equity==balance.
+        # Phantom equity fed the risk veto with wrong numbers.
+        try:
+            import MetaTrader5 as mt5
+            acc = mt5.account_info()
+            if acc:
+                return AccountInfo(
+                    balance=float(acc.balance),
+                    equity=float(acc.equity),
+                    margin_available=float(acc.margin_free),
+                    buying_power=float(acc.margin_free),
+                )
+        except Exception as e:
+            logger.warning("MT5 get_account failed: %s", e)
         bal = self._mt5.get_balance()
         return AccountInfo(balance=bal, equity=bal, margin_available=bal, buying_power=bal)
 
@@ -60,6 +74,10 @@ class MT5ExecutionBroker(Broker):
                 quantity=order.quantity,
                 order_type=order.order_type.value.lower(),
                 price=order.price,
+                # P0 fix: carry protective SL/TP into the connector order so the
+                # broker receives sl/tp on open (previously dropped -> naked positions).
+                stop_loss=order.stop_loss,
+                take_profit=order.take_profit,
             )
             result = self._mt5.place_order(conn_order)
             if result:

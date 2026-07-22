@@ -19,6 +19,8 @@ class Order:
     quantity: float
     order_type: str  # market/limit/stop
     price: Optional[float] = None
+    stop_loss: Optional[float] = None  # P0 fix: protective SL price sent to broker
+    take_profit: Optional[float] = None  # P0 fix: protective TP price sent to broker
     broker: str = "simulated"
 
 

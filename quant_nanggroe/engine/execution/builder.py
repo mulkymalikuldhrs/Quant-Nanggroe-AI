@@ -67,6 +67,9 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                     )
                     if mt5.connect():
                         em.add_broker(MT5ExecutionBroker(mt5), primary=(acc.get("role") == "primary"))
+                        # P0 fix: give RiskManager the live MT5 handle so the
+                        # daily/weekly-loss veto reads REALIZED PnL, not 0.0.
+                        em._risk_manager.set_broker_handle(mt5)
                         wired += 1
                         logger.info("LIVE MT5 wired: %s", acc.get("name"))
                     else:

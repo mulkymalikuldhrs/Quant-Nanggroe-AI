@@ -48,9 +48,17 @@ class MT5Broker(BrokerConnector):
             "price": tick.ask if order.side == "buy" else tick.bid,
             "deviation": 20,
             "magic": self.magic,
-            "type_filling": self._mt5.ORDER_FILLING_IOC,
+            # P0 fix: use FOK filling — Valetax demo reports filling_mode=1 (FOK),
+            # IOC is rejected. FOK is the safe universal choice for market orders.
+            "type_filling": self._mt5.ORDER_FILLING_FOK,
             "type_time": self._mt5.ORDER_TIME_GTC,
         }
+        # P0 fix: carry protective SL/TP from the strategy/risk gate into the order.
+        # Without this, positions open with NO protection (the original bug).
+        if order.stop_loss is not None:
+            req["sl"] = float(order.stop_loss)
+        if order.take_profit is not None:
+            req["tp"] = float(order.take_profit)
         res = self._mt5.order_send(req)
         if res.retcode != self._mt5.TRADE_RETCODE_DONE:
             raise RuntimeError(f"MT5 order failed: {res.retcode} {res.comment}")

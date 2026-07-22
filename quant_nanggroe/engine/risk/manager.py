@@ -135,7 +135,48 @@ class RiskManager:
 
         # Persistence layer — optional, defaults to env-configured backend
         self._persistence = persistence or get_persistence_backend()
+        # P0 fix: live MT5 handle for realized-PnL sync. Without this the
+        # daily/weekly-loss veto reads 0.0 forever (phantom-dead veto). Set via
+        # set_broker_handle() from the execution builder once MT5 is connected.
+        self._mt5_handle = None
         self._load_state()
+
+    def set_broker_handle(self, mt5_handle) -> None:
+        """P0 fix: attach a live MT5 handle so risk can read REALIZED P&L.
+
+        mt5_handle must expose history_deals_get(from_date, to_date) returning
+        deal objects with .profit / .time / .symbol (the MT5Broker connector does).
+        """
+        self._mt5_handle = mt5_handle
+
+    def _sync_realized_pnl(self) -> None:
+        """P0 fix: pull today's + this-week's realized P&L from the live broker.
+
+        Closes the phantom-veto hole: previously ``check_trade`` ran on
+        ``daily_pnl_pct=0.0`` because nothing fed real P&L, so the constitutional
+        daily/weekly-loss veto could NEVER trip (and could never correctly allow).
+        """
+        if self._mt5_handle is None:
+            return
+        try:
+            from datetime import timedelta
+            now = datetime.now()
+            day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            # week start = Monday 00:00
+            week_start = day_start - timedelta(days=now.weekday())
+            day_deals = self._mt5_handle.history_deals_get(day_start, now) or []
+            week_deals = self._mt5_handle.history_deals_get(week_start, now) or []
+            day_pnl = sum(float(d.profit) for d in day_deals)
+            week_pnl = sum(float(d.profit) for d in week_deals)
+            if day_pnl != 0.0:
+                self.state.daily_pnl = day_pnl
+            if week_pnl != 0.0:
+                self.state.weekly_pnl = week_pnl
+            # Equity: realized daily + peak (drawdown monitor uses peak).
+            self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
+            self._auto_check_kill_switch()
+        except Exception as e:
+            logger.warning("RiskManager._sync_realized_pnl failed: %s", e)
 
     @traced("check_trade", attributes={"component": "risk", "operation": "check_trade"})
     def check_trade(
@@ -175,6 +216,10 @@ class RiskManager:
         start = _time.monotonic()
 
         self._reset_daily_if_needed()
+
+        # P0 fix: sync REALIZED P&L from the live broker before evaluating, so the
+        # constitutional daily/weekly-loss veto sees real numbers (not 0.0).
+        self._sync_realized_pnl()
 
         # First check kill switch
         if self.kill_switch.is_active:
