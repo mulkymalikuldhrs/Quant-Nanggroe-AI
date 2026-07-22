@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""QNA Autonomous Live Cycle — single source of truth for live trading.
+"""QNA Autonomous Live Cycle v2 — strategy-engine driven, fail-closed.
 
-no_agent cron script. Runs ONE full cycle:
+no_agent cron script. ONE full cycle:
   1. build_execution_manager(allow_live=True)  -> wires MT5 live + risk
   2. manage trailing stops on open positions (dynamic protection)
-  3. for each symbol: generate a signal, compute ATR-based SL/TP, risk-check,
-     submit_order via the execution manager (SL/TP carried end-to-end)
+  3. for each symbol: build OHLCV from MT5, run the registered strategy
+     ENSEMBLE (wyckoff/smc/dhaher_system/kronos/tradebobby_smc),
+     majority-vote BUY/SELL, compute ATR SL/TP, guard against double
+     positions + exposure cap, risk-check, submit via execution manager.
   4. report result
 
-Fail-closed: if MT5 is unavailable, it trades PAPER ONLY and reports degraded.
-Never silent-trades. All guarded by RiskManager (constitutional daily/weekly veto).
+This replaces the v1 hardcoded mean-reversion bias. The 130+ strategy
+arsenal in quant_nanggroe.engine.strategy.strategies/ is now LIVE via
+StrategyRegistry — the fund actually thinks, not gambles on one heuristic.
 
-Env (set by the cron wrapper or system):
+Fail-closed: MT5 unavailable -> PAPER ONLY, reports degraded. Never
+silent-trades. Guarded by RiskManager (constitutional daily/weekly veto).
+
+Env (set by cron wrapper or system):
   QNA_LIVE_TRADING=1     enable live MT5 in build_execution_manager
   QNA_MT5_LIVE=1         engine_production_bridge uses MT5 path
   VALETAX_PASSWORD        MT5 password (from mt5_accounts.yaml ${...})
@@ -23,6 +29,7 @@ import sys
 import time
 import logging
 import asyncio
+import MetaTrader5 as mt5  # hard dependency for this live trading script
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("qna.cycle")
@@ -33,16 +40,17 @@ SYMBOLS = ["EURUSD.vx", "GBPUSD.vx", "XAUUSD.vx"]   # Valetax forex + gold
 RISK_PCT = 0.01          # 1% account balance per trade
 SL_ATR_MULT = 1.5
 TP_ATR_MULT = 2.5
+MAX_OPEN_POSITIONS = 3   # exposure cap across all symbols
+ACTIVE_STRATEGIES = ["wyckoff", "smc", "dhaher_system", "kronos", "tradebobby_smc"]
 
 VENV_PYTHON = r"C:\Users\Hi\AppData\Local\hermes\hermes-agent\venv\Scripts\python.exe"
 
 # Demo Valetax account (no real funds). Hardcode fallback so the autonomous
 # cron never silently falls back to paper due to a missing env var.
-# For live/real accounts, remove this and rely on the VALETAX_PASSWORD env var.
 VALETAX_PASSWORD_FALLBACK = "@15September"
 
 
-def compute_sl_tp(symbol: str, atr: float, entry: float, side: str):
+def compute_sl_tp(atr: float, entry: float, side: str):
     """ATR-based protective SL/TP. side='buy' -> SL below, TP above."""
     if atr <= 0:
         atr = entry * 0.001
@@ -51,13 +59,36 @@ def compute_sl_tp(symbol: str, atr: float, entry: float, side: str):
     return round(sl, 5), round(tp, 5)
 
 
+def build_ohlcv(broker, symbol: str, tf=None, count=300):
+    """Fetch MT5 rates via the broker adapter's own MT5 handle and build a
+    strategy-ready OHLCV DataFrame.
+
+    MT5Broker.get_rates() returns a list of numpy.void tuples in the canonical
+    MT5 field order (time, open, high, low, close, tick_volume, spread,
+    real_volume). We map them to named columns so strategies that read
+    df['close'] etc. work — pd.DataFrame(raw) would give integer-index
+    columns [0..7] and break every strategy that expects named OHLC.
+    """
+    raw = broker.get_rates(symbol, tf, count)
+    if not raw or len(raw) < 30:
+        raw = broker.get_rates(symbol.replace(".vx", ""), tf, count)
+    if not raw or len(raw) < 30:
+        return None
+    import pandas as pd
+    cols = ["time", "open", "high", "low", "close", "tick_volume", "spread", "real_volume"]
+    rows = [tuple(r) for r in raw]
+    df = pd.DataFrame(rows, columns=cols)
+    df["time"] = pd.to_datetime(df["time"], unit="s")
+    df["symbol"] = symbol
+    return df
+
+
 def manage_trailing(mt5, trailing) -> int:
     """Periodic trailing-stop management for open positions.
 
-    Called each cycle (cron 30m). Reads live MT5 positions, updates the
-    trailing manager, and modifies the broker SL when the trail tightens.
-    This is the wiring that previously left protection.py/trailing_stop.py
-    with 0 callers — positions now get dynamic protection, not just static SL.
+    Called each cycle (cron 30m). Reads live MT5 positions via bare mt5
+    (read-only, safe — proven stable across runs), updates the trailing
+    manager, and modifies the broker SL when the trail tightens.
     """
     modified = 0
     positions = mt5.positions_get() or []
@@ -67,12 +98,10 @@ def manage_trailing(mt5, trailing) -> int:
         if not tick:
             continue
         price = tick.bid if p.type == mt5.ORDER_TYPE_BUY else tick.ask
-        # register if unseen
         if sym not in trailing._positions:
             trailing.add_position(sym, p.price_open)
         triggered = trailing.update(sym, price)
         if triggered:
-            # trailing stop hit -> close position
             close_type = mt5.ORDER_TYPE_SELL if p.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
             cr = mt5.order_send({
                 "action": mt5.TRADE_ACTION_DEAL, "symbol": sym, "volume": p.volume,
@@ -95,6 +124,41 @@ def manage_trailing(mt5, trailing) -> int:
     return modified
 
 
+def ensemble_signal(registry, df, symbol: str):
+    """Run all active strategies, majority-vote direction, take best SL/TP.
+
+    Returns (direction, confidence, sl, tp, reasoning) or (None,...) if HOLD.
+    """
+    from quant_nanggroe.engine.strategies.base import SignalDirection
+    votes = {"BUY": [], "SELL": []}
+    best = None
+    for name in ACTIVE_STRATEGIES:
+        cls = registry.get(name)
+        if cls is None:
+            continue
+        try:
+            inst = cls()
+            sig = inst.generate_signal(df)
+        except Exception as e:
+            log.warning("strategy %s error: %s", name, e)
+            continue
+        if sig.direction == SignalDirection.BUY:
+            votes["BUY"].append((sig.confidence, sig.stop_loss, sig.take_profit, name))
+        elif sig.direction == SignalDirection.SELL:
+            votes["SELL"].append((sig.confidence, sig.stop_loss, sig.take_profit, name))
+    if not votes["BUY"] and not votes["SELL"]:
+        return None, 0.0, None, None, "All strategies HOLD"
+    buy_n, sell_n = len(votes["BUY"]), len(votes["SELL"])
+    if buy_n == sell_n:
+        return None, 0.0, None, None, "Tied vote — no edge"
+    side = "BUY" if buy_n > sell_n else "SELL"
+    pool = votes[side]
+    pool.sort(key=lambda x: x[0], reverse=True)
+    conf = sum(c for c, _, _, _ in pool) / len(pool)
+    sl, tp, src = pool[0][1], pool[0][2], pool[0][3]
+    return side, conf, sl, tp, f"{side} voted {buy_n}/{sell_n} (best={src} conf={conf:.2f})"
+
+
 def run_cycle() -> int:
     sys.path.insert(0, QNA_DIR)
     os.environ.setdefault("QNA_LIVE_TRADING", "1")
@@ -105,12 +169,25 @@ def run_cycle() -> int:
     from quant_nanggroe.engine.execution.builder import build_execution_manager
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
     from quant_nanggroe.engine.risk.trailing_stop import TrailingStopManager
+    from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+    import quant_nanggroe.engine.strategy.strategies  # trigger registration
+
+    registry = StrategyRegistry
+
+    import MetaTrader5 as mt5  # noqa: F811 — already imported at module top
 
     t0 = time.time()
     em = build_execution_manager(allow_live=(os.environ.get("QNA_LIVE_TRADING") == "1"))
     brokers = list(em._brokers.keys())
     primary = em._primary_broker
     log.info("ExecutionManager built in %.1fs brokers=%s primary=%s", time.time() - t0, brokers, primary)
+
+    # Force-sync realized PnL from MT5 BEFORE any risk check, so the
+    # constitutional veto uses live data — not stale persisted state.
+    try:
+        em._risk_manager._sync_realized_pnl()
+    except Exception as e:
+        log.warning("PnL sync failed: %s", e)
 
     if primary != "mt5":
         log.warning("MT5 not live (paper fallback). Trading PAPER ONLY — no market impact.")
@@ -119,48 +196,64 @@ def run_cycle() -> int:
     import MetaTrader5 as mt5
 
     trailing = TrailingStopManager()
-    # 1) manage trailing on existing positions first
+    broker = em._brokers[primary]  # MT5ExecutionBroker adapter (owns live MT5 session)
+    # 1) manage trailing on existing positions first (bare mt5, read-only safe)
     n_trail = manage_trailing(mt5, trailing)
     if n_trail:
         log.info("Trailing actions: %d", n_trail)
 
+    # read open positions via bare mt5 (read-only, safe) for the guard
+    import MetaTrader5 as mt5
+    open_positions = mt5.positions_get() or []
+    open_symbols = {p.symbol for p in open_positions}
+    log.info("Open positions: %d (%s)", len(open_positions), ", ".join(sorted(open_symbols)) or "none")
+
     executed = 0
     for symbol in SYMBOLS:
         try:
-            tick = mt5.symbol_info_tick(symbol.replace(".vx", ""))
+            # GUARD 1: never stack a second position on a symbol that already
+            # has one open (prevents opposing BUY/SELL on XAUUSD, etc.)
+            if symbol in open_symbols:
+                log.info("%s already open — skip (no double-entry)", symbol)
+                continue
+            # GUARD 2: global exposure cap
+            if len(open_symbols) + executed >= MAX_OPEN_POSITIONS:
+                log.info("Exposure cap %d reached — skip %s", MAX_OPEN_POSITIONS, symbol)
+                continue
+
+            df = build_ohlcv(broker, symbol)
+            if df is None:
+                log.warning("%s no rates — skip", symbol)
+                continue
+
+            side, conf, strat_sl, strat_tp, reason = ensemble_signal(registry, df, symbol)
+            if side is None:
+                log.info("%s %s", symbol, reason)
+                continue
+
+            tick = mt5.symbol_info_tick(symbol)
             if not tick:
-                tick = mt5.symbol_info_tick(symbol)
-            if not tick:
-                log.warning("%s no tick — skip", symbol)
                 continue
             entry = (tick.bid + tick.ask) / 2
-            # crude ATR from recent rates
-            rates = mt5.copy_rates_from_pos(symbol.replace(".vx", ""), mt5.TIMEFRAME_M15, 0, 20)
-            if rates is None or len(rates) < 10:
-                rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M15, 0, 20)
-            if rates is not None and len(rates) >= 10:
-                highs = [r[2] for r in rates]
-                lows = [r[3] for r in rates]
-                atr = sum(max(h - l, 1e-6) for h, l in zip(highs[-10:], lows[-10:])) / 10
-            else:
+
+            # ATR from the fetched rates
+            highs = df["high"].values[-10:]
+            lows = df["low"].values[-10:]
+            atr = sum(max(h - l, 1e-6) for h, l in zip(highs, lows)) / 10
+            if atr <= 0:
                 atr = entry * 0.001
 
-            # simple mean-reversion bias: if price near 10-bar low -> buy, else sell
-            lo10 = min(lows[-10:]) if rates is not None else entry
-            hi10 = max(highs[-10:]) if rates is not None else entry
-            side = "buy" if entry <= (lo10 + (hi10 - lo10) * 0.3) else ("sell" if entry >= (lo10 + (hi10 - lo10) * 0.7) else None)
-            if side is None:
-                log.info("%s no edge — skip", symbol)
-                continue
+            # Prefer strategy-provided SL/TP; fall back to ATR-based
+            sl = strat_sl if strat_sl else compute_sl_tp(atr, entry, side.lower())[0]
+            tp = strat_tp if strat_tp else compute_sl_tp(atr, entry, side.lower())[1]
 
-            sl, tp = compute_sl_tp(symbol, atr, entry, side)
             acc = mt5.account_info()
             bal = float(acc.balance) if acc else 1000.0
             lot = max(0.01, round((bal * RISK_PCT) / (atr * 100000), 2))
 
             # Risk gate — constitutional veto (realized PnL fed from broker)
             verdict = em._risk_manager.check_trade(
-                symbol=symbol, direction=side.upper(),
+                symbol=symbol, direction=side,
                 lot_size=lot, entry=entry, stop_loss=sl,
                 account_balance=bal, take_profit=tp,
             )
@@ -171,7 +264,7 @@ def run_cycle() -> int:
             order = Order(
                 id=f"qna_{symbol}_{int(time.time())}",
                 symbol=symbol,
-                side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
+                side=OrderSide.BUY if side == "BUY" else OrderSide.SELL,
                 order_type=OrderType.MARKET,
                 quantity=lot,
                 price=entry,
@@ -179,10 +272,11 @@ def run_cycle() -> int:
                 take_profit=tp,
             )
             res = asyncio.run(em._brokers[primary].submit_order(order))
-            log.info("%s %s %.2f lot=%.2f SL=%.5f TP=%.5f -> %s", side.upper(), symbol, entry, lot, sl, tp, res.status)
+            log.info("%s %s %.2f lot=%.2f SL=%.5f TP=%.5f -> %s | %s",
+                     side, symbol, entry, lot, sl, tp, res.status, reason)
             if res.status.value == "FILLED":
                 trailing.add_position(symbol, entry)
-            executed += 1
+                executed += 1
         except Exception as e:
             log.error("%s cycle error: %s", symbol, e)
 

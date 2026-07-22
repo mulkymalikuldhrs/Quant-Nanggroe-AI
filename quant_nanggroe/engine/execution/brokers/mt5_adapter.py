@@ -138,3 +138,15 @@ class MT5ExecutionBroker(Broker):
         sym = symbol.replace("-", "").upper()
         tick = mt5.symbol_info_tick(sym)
         return float(tick.ask if tick else 0.0)
+
+    def get_rates(self, symbol: str, timeframe=None, count: int = 200):
+        """Fetch OHLCV via the wrapped MT5Broker (owns the live MT5 session).
+
+        Routes through MT5Broker.get_rates() to avoid the MetaTrader5
+        'copy_rates_from_pos returned exception set' C-API corruption that
+        occurs when a second bare `mt5` module handle is used after the
+        broker already initialized the terminal in this process.
+        """
+        import MetaTrader5 as _mt5mod
+        tf = timeframe if timeframe is not None else _mt5mod.TIMEFRAME_M15
+        return self._mt5.get_rates(symbol, tf, count)

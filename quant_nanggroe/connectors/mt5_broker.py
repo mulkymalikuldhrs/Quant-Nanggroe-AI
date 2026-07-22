@@ -126,6 +126,24 @@ class MT5Broker(BrokerConnector):
         except Exception:
             return []
 
+    def get_rates(self, symbol: str, timeframe: int = None, count: int = 200):
+        """Fetch OHLCV bars via the broker's own MT5 handle.
+
+        Routes through self._mt5 (the session the broker initialized) to avoid
+        the 'copy_rates_from_pos returned exception set' C-API corruption that
+        happens when the cycle imports MetaTrader5 as a second bare module and
+        calls copy_rates after the broker already initialized the terminal.
+        Returns a list of rate tuples or empty list on failure.
+        """
+        if not self.connected or self._mt5 is None:
+            return []
+        tf = timeframe if timeframe is not None else self._mt5.TIMEFRAME_M15
+        try:
+            raw = self._mt5.copy_rates_from_pos(symbol, tf, 0, count)
+            return list(raw) if raw is not None else []
+        except Exception:
+            return []
+
     def get_equity(self) -> float:
         """P0 fix: real equity (not balance) for risk/MTM calculations."""
         if not self.connected:

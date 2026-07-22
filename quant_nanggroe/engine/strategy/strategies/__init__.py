@@ -227,6 +227,17 @@ from . import social_sentiment
 from . import options_put_call
 from . import dark_pool_flow
 
+# ── Migrated HF strategies (WAVE 5) ──
+from . import dhaher_system
+from . import kronos_wrapper
+from . import tradebobby_smc_scanner
+
+# Module aliases so HF names resolve in create_strategy()'s globals() lookup
+# (their classes live inside the migrated wrapper/scanner modules).
+kronos = kronos_wrapper
+kronos_ensemble = kronos_wrapper
+tradebobby_smc = tradebobby_smc_scanner
+
 # Convenience registry
 def list_strategies() -> list:
     """Return names of all registered strategy modules."""
@@ -348,6 +359,13 @@ _NAME_MAP = {
     "social_sentiment": "SocialSentimentStrategy",
     "options_put_call": "OptionsPutCallStrategy",
     "dark_pool_flow": "DarkPoolFlowStrategy",
+    # Migrated HF strategies (WAVE 5)
+    "dhaher_system": "DhaherSystem",
+    "kronos_wrapper": "KronosSignalProvider",
+    "kronos": "KronosSignalProvider",
+    "kronos_ensemble": "KronosEnsembleStrategy",
+    "tradebobby_smc_scanner": "TradeBobbySMCStrategy",
+    "tradebobby_smc": "TradeBobbySMCStrategy",
 }
 
 
