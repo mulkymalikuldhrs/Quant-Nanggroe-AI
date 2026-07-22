@@ -8,7 +8,13 @@ from quant_nanggroe.connectors.broker_base import BrokerConnector, Order, Positi
 
 def _mt5_symbol(qna_symbol: str) -> str:
     # ponytail: yfinance BTC-USD -> MT5 BTCUSD; forex EUR-USD -> EURUSD
-    return qna_symbol.replace("-", "").upper()
+    # Keep suffix case (Valetax uses lowercase ".vx", e.g. EURUSD.vx) — .upper()
+    # breaks symbol_select. Only strip dashes and upper-case the base part.
+    s = qna_symbol.replace("-", "")
+    if "." in s:
+        base, ext = s.split(".", 1)
+        return base.upper() + "." + ext  # ext kept as-is (vx, not VX)
+    return s.upper()
 
 
 class MT5Broker(BrokerConnector):

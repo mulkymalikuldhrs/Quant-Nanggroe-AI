@@ -70,6 +70,10 @@ class Order:
     quantity: float
     price: Optional[float] = None
     stop_price: Optional[float] = None
+    # P0 fix: explicit protective SL/TP so the MT5 adapter can carry them into
+    # the broker order (previously naked positions because these were dropped).
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
     time_in_force: str = "GTC"
     status: OrderStatus = OrderStatus.PENDING
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

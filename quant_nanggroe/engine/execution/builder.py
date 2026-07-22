@@ -71,12 +71,17 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                         server=str(acc.get("server", "")),
                     )
                     if mt5.connect():
-                        em.add_broker(MT5ExecutionBroker(mt5), primary=(acc.get("role") == "primary"))
+                        # P0 fix: a live (non-paper) account becomes the PRIMARY
+                        # broker so orders actually hit the market with SL/TP.
+                        # Previously primary was gated on a non-existent
+                        # `role:"primary"` key, so it defaulted to paper -> no trades.
+                        is_live = not acc.get("paper", False)
+                        em.add_broker(MT5ExecutionBroker(mt5), primary=is_live)
                         # P0 fix: give RiskManager the live MT5 handle so the
                         # daily/weekly-loss veto reads REALIZED PnL, not 0.0.
                         em._risk_manager.set_broker_handle(mt5)
                         wired += 1
-                        logger.info("LIVE MT5 wired: %s", acc.get("name"))
+                        logger.info("LIVE MT5 wired: %s (primary=%s)", acc.get("name"), is_live)
                     else:
                         logger.warning("MT5 connect failed for %s — skipped (paper remains)", acc.get("name"))
                 if wired == 0:

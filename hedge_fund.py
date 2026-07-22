@@ -3379,7 +3379,7 @@ def signal_qna_MSNRStrategy_mut_533e27ca(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_MSNRStrategy_mut_533e27ca import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_MSNRStrategy_mut_533e27ca"}
@@ -3403,7 +3403,7 @@ def signal_qna_SMCStrategy_mut_07fb5044(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_SMCStrategy_mut_07fb5044 import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_07fb5044"}
@@ -3427,7 +3427,7 @@ def signal_qna_SMCStrategy_mut_8f503dbc(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_SMCStrategy_mut_8f503dbc import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_8f503dbc"}
@@ -3451,7 +3451,7 @@ def signal_qna_MeanReversionStrategy_mut_4e56917d(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_MeanReversionStrategy_mut_4e56917d import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_4e56917d"}
@@ -3475,7 +3475,7 @@ def signal_qna_MeanReversionStrategy_mut_01dd35a1(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_MeanReversionStrategy_mut_01dd35a1 import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_01dd35a1"}
@@ -3499,7 +3499,7 @@ def signal_qna_FiboStrategy_mut_4aedb0be(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_FiboStrategy_mut_4aedb0be import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_FiboStrategy_mut_4aedb0be"}
@@ -3523,7 +3523,7 @@ def signal_qna_EMAADXStrategy_mut_9d9a8824(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_EMAADXStrategy_mut_9d9a8824 import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_9d9a8824"}
@@ -3547,7 +3547,7 @@ def signal_qna_EMAADXStrategy_mut_51a57ee3(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_EMAADXStrategy_mut_51a57ee3 import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_51a57ee3"}
@@ -3571,7 +3571,7 @@ def signal_qna_AlgebraStrategy_mut_e83540a2(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_AlgebraStrategy_mut_e83540a2 import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_e83540a2"}
@@ -3595,7 +3595,7 @@ def signal_qna_AlgebraStrategy_mut_e25dcaef(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_AlgebraStrategy_mut_e25dcaef import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_e25dcaef"}
@@ -3619,7 +3619,7 @@ def signal_qna_WyckoffStrategy_mut_6637fe02(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_WyckoffStrategy_mut_6637fe02 import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_6637fe02"}
@@ -3643,7 +3643,7 @@ def signal_qna_WyckoffStrategy_mut_f0ac6b0e(symbol="EURUSD"):
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         from qna_WyckoffStrategy_mut_f0ac6b0e import generate_signal, PARAMS
-        from E:\trading.hedge_fund import get_historical_mt5
+        from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
             return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_f0ac6b0e"}
