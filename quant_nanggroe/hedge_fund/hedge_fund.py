@@ -89,8 +89,8 @@ def calc_atr(symbol="EURUSD", period=14, tf=1):
     if r is None or len(r) < period+1: return None
     trs = []
     for i in range(-period, 0):
-        h,l,pc = r[i][2], r[i][3], r[i-1][4]
-        trs.append(max(h-l, abs(h-pc), abs(l-pc)))
+        h,lo,pc = r[i][2], r[i][3], r[i-1][4]
+        trs.append(max(h-lo, abs(h-pc), abs(lo-pc)))
     return sum(trs)/len(trs)
 
 # ── SIGNAL PROVIDERS ──
@@ -178,7 +178,8 @@ def signal_aitrader(symbol="EURUSD"):
         out = r.stdout.lower()
         if "buy" in out: return {"bias":"buy","confidence":0.5,"source":"aitrader"}
         if "sell" in out: return {"bias":"sell","confidence":0.5,"source":"aitrader"}
-    except: pass
+    except Exception:
+        pass
     return {"bias":"neutral","confidence":0,"source":"aitrader"}
 
 def signal_langalpha(symbol="EURUSD"):
@@ -191,7 +192,8 @@ def signal_langalpha(symbol="EURUSD"):
             b = res.get("signal","neutral")
             if b == "hold": b = "neutral"
             return {"bias":b,"confidence":res.get("confidence",0.4),"source":"langalpha"}
-    except: pass
+    except Exception:
+        pass
     return {"bias":"neutral","confidence":0,"source":"langalpha"}
 
 # ── ECOSYSTEM PROVIDERS ──
@@ -3599,7 +3601,7 @@ def aggregate(symbol="EURUSD"):
         dxy = get_dxy()
         dxy_trend = dxy.get("trend", "unknown")
         dxy_price = dxy.get("price", "?")
-        strength = get_currency_strength()
+        _ = get_currency_strength()  # side-effect: populates internal cache
         
         # Bias: strong dollar = harder for EURUSD buy
         if dxy_trend == "bull":
@@ -3817,8 +3819,10 @@ def run_once(target_symbol=None):
         log.warning("❌ GATE TERTUTUP — Strategi gagal backtest/walk-forward")
         log.warning("   Tidak akan execute sampai strategi diperbaiki")
         if not PAPER_TRADE:
-            try: mt5.shutdown()
-            except: pass
+            try:
+                mt5.shutdown()
+            except Exception:
+                pass
         return
     
     log.info("✅ GATE LULUS — Strategi siap eksekusi")
@@ -3892,8 +3896,10 @@ def run_once(target_symbol=None):
                     if rg_result.get("status") == "VETOED":
                         log.warning(f"🚫 Risk Guard VETO: {rg_result.get('reasons', 'unknown')}")
                         if not PAPER_TRADE:
-                            try: mt5.shutdown()
-                            except: pass
+                            try:
+                                mt5.shutdown()
+                            except Exception:
+                                pass
                         return
                     log.info(f"✅ Risk Guard APPROVED (score={rg_result.get('score',0):.2f})")
                 except Exception as e:
@@ -3904,8 +3910,10 @@ def run_once(target_symbol=None):
                 
     finally:
         if not PAPER_TRADE:
-            try: mt5.shutdown()
-            except: pass
+            try:
+                mt5.shutdown()
+            except Exception:
+                pass
 
 if __name__ == "__main__":
     run_once()

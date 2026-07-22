@@ -13,10 +13,7 @@ Usage:
 from quant_nanggroe.hedge_fund.hedge_fund import (
     ALL_PROVIDERS,
     CORE_PROVIDERS,
-    LOG_FILE,
     PAPER_TRADE,
-    SRC,
-    VOTE_LOG,
     aggregate,
     run_once,
 )
