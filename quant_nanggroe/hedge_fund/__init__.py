@@ -11,14 +11,14 @@ Usage:
 """
 
 from quant_nanggroe.hedge_fund.hedge_fund import (
-    run_once,
-    aggregate,
     ALL_PROVIDERS,
     CORE_PROVIDERS,
+    LOG_FILE,
     PAPER_TRADE,
     SRC,
-    LOG_FILE,
     VOTE_LOG,
+    aggregate,
+    run_once,
 )
 
 __all__ = [

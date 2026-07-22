@@ -13,8 +13,8 @@ Examples:
     python -m quant_nanggroe.hedge_fund.runner --paper EURUSD
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
 
 # ── Ensure project root is in PYTHONPATH ──
@@ -22,7 +22,7 @@ _HERE = Path(__file__).resolve().parent
 _QNA_ROOT = _HERE.parent.parent
 sys.path.insert(0, str(_QNA_ROOT))
 
-from quant_nanggroe.hedge_fund import run_once, PAPER_TRADE
+from quant_nanggroe.hedge_fund import run_once
 
 
 def main():

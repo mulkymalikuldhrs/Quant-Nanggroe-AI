@@ -4,9 +4,17 @@ Quant Nanggroe — Hedge Fund v3 Multi-Provider Aggregator
 Adapted from E:/trading/hedge_fund.py for QNA integration.
 All paths relative to QNA data directory.
 """
-import sys, json, time, logging, threading, subprocess, csv, os, random
-from pathlib import Path
+import csv
+import json
+import logging
+import os
+import random
+import subprocess
+import sys
+import threading
+import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
 # ── QNA Data Directory (relative to this file) ──
 _HF_DIR = Path(__file__).resolve().parent
@@ -114,8 +122,8 @@ def signal_hidden(symbol="EURUSD"):
     """Hidden Markov Model regime detection — correct Pipeline API"""
     try:
         sys.path.insert(0, 'E:/hidden-regime')
-        from hidden_regime import create_financial_pipeline
         import yfinance as yf
+        from hidden_regime import create_financial_pipeline
         p = create_financial_pipeline()
         ticker = symbol.replace("EURUSD","EURUSD=X")
         
@@ -206,9 +214,10 @@ def signal_kronos(symbol="EURUSD"):
     """Kronos (AAAI 2026) — hierarchical tokenization price forecasting signal"""
     try:
         sys.path.insert(0, 'E:/trading')
-        from strategies.kronos_wrapper import KronosSignalProvider
-        import yfinance as yf
         import pandas as pd
+        import yfinance as yf
+
+        from strategies.kronos_wrapper import KronosSignalProvider
         
         ticker = symbol.replace("EURUSD", "EURUSD=X")
         df = yf.download(ticker, period="3mo", interval="1d", progress=False)
@@ -239,8 +248,8 @@ def signal_pyportfolioopt(symbol="EURUSD"):
     try:
         sys.path.insert(0, 'E:/PyPortfolioOpt')
         from pypfopt.efficient_frontier import EfficientFrontier
-        from pypfopt.risk_models import CovarianceShrinkage
         from pypfopt.expected_returns import mean_historical_return
+        from pypfopt.risk_models import CovarianceShrinkage
         # Get price history from MT5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -263,9 +272,10 @@ def signal_pyportfolioopt(symbol="EURUSD"):
 # ── HISTORICAL DATA ──
 def get_historical_mt5(symbol="EURUSD", count=100, tf=15):
     """Get OHLCV data from MT5, with mock fallback for paper trading."""
-    import pandas as pd
+    from datetime import datetime
+
     import numpy as np
-    from datetime import datetime, timedelta
+    import pandas as pd
     
     # Try real MT5 first
     if MT5_AVAILABLE and not PAPER_TRADE:
@@ -311,7 +321,8 @@ def get_historical_mt5(symbol="EURUSD", count=100, tf=15):
 def signal_wyckoff(symbol="EURUSD"):
     """Wyckoff Volume Spread — multi-bar signal detection"""
     try:
-        import sys as _sys, pandas as _pd
+        import sys as _sys
+
         _sys.path.insert(0, str(SRC))
         from strategy_registry import WyckoffStrategy
         df = get_historical_mt5(symbol, count=100)
@@ -346,7 +357,7 @@ def signal_qna_MSNRStrategy_mut_3b787b28(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_3b787b28 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_3b787b28 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -370,7 +381,7 @@ def signal_qna_SMCStrategy_mut_28bdc019(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_28bdc019 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_28bdc019 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -394,7 +405,7 @@ def signal_qna_MeanReversionStrategy_mut_54b813e2(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_54b813e2 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_54b813e2 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -418,7 +429,7 @@ def signal_qna_FiboStrategy_mut_b7b9082d(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_b7b9082d import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_b7b9082d import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -442,7 +453,7 @@ def signal_qna_EMAADXStrategy_mut_18900f77(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_18900f77 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_18900f77 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -466,7 +477,7 @@ def signal_qna_AMDXStrategy_mut_34f6635d(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AMDXStrategy_mut_34f6635d import generate_signal, PARAMS
+        from qna_AMDXStrategy_mut_34f6635d import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -490,7 +501,7 @@ def signal_qna_AlgebraStrategy_mut_09836ba3(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_09836ba3 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_09836ba3 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -514,7 +525,7 @@ def signal_qna_WyckoffStrategy_mut_4be93408(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_4be93408 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_4be93408 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -538,7 +549,7 @@ def signal_qna_SMCStrategyOld_mut_d9b02f7b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_d9b02f7b import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_d9b02f7b import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -562,7 +573,7 @@ def signal_qna_AlgebraStrategy_mut_08cdba54(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_08cdba54 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_08cdba54 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -586,7 +597,7 @@ def signal_qna_AlgebraStrategy_mut_4d25722b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_4d25722b import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_4d25722b import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -610,7 +621,7 @@ def signal_qna_AlgebraStrategy_mut_54c88cbb(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_54c88cbb import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_54c88cbb import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -634,7 +645,7 @@ def signal_qna_AlgebraStrategy_mut_57a93e76(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_57a93e76 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_57a93e76 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -658,7 +669,7 @@ def signal_qna_AlgebraStrategy_mut_6478b3bf(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_6478b3bf import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_6478b3bf import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -682,7 +693,7 @@ def signal_qna_AlgebraStrategy_mut_6e5274a7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_6e5274a7 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_6e5274a7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -706,7 +717,7 @@ def signal_qna_AlgebraStrategy_mut_abdee600(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_abdee600 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_abdee600 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -730,7 +741,7 @@ def signal_qna_AlgebraStrategy_mut_ca720a52(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_ca720a52 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_ca720a52 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -754,7 +765,7 @@ def signal_qna_AlgebraStrategy_mut_cce8f5f3(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_cce8f5f3 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_cce8f5f3 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -778,7 +789,7 @@ def signal_qna_AlgebraStrategy_mut_d4d7966f(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_d4d7966f import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_d4d7966f import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -802,7 +813,7 @@ def signal_qna_AlgebraStrategy_mut_e9b231a7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_e9b231a7 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_e9b231a7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -826,7 +837,7 @@ def signal_qna_AMDXStrategy_mut_163071ea(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AMDXStrategy_mut_163071ea import generate_signal, PARAMS
+        from qna_AMDXStrategy_mut_163071ea import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -850,7 +861,7 @@ def signal_qna_AMDXStrategy_mut_2b6056c1(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AMDXStrategy_mut_2b6056c1 import generate_signal, PARAMS
+        from qna_AMDXStrategy_mut_2b6056c1 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -874,7 +885,7 @@ def signal_qna_AMDXStrategy_mut_2ed7d815(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AMDXStrategy_mut_2ed7d815 import generate_signal, PARAMS
+        from qna_AMDXStrategy_mut_2ed7d815 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -898,7 +909,7 @@ def signal_qna_AMDXStrategy_mut_f09909bb(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AMDXStrategy_mut_f09909bb import generate_signal, PARAMS
+        from qna_AMDXStrategy_mut_f09909bb import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -922,7 +933,7 @@ def signal_qna_EMAADXStrategy_mut_19a19dd1(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_19a19dd1 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_19a19dd1 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -946,7 +957,7 @@ def signal_qna_EMAADXStrategy_mut_2329920e(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_2329920e import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_2329920e import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -970,7 +981,7 @@ def signal_qna_EMAADXStrategy_mut_3a5e1072(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_3a5e1072 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_3a5e1072 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -994,7 +1005,7 @@ def signal_qna_EMAADXStrategy_mut_465f341c(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_465f341c import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_465f341c import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1018,7 +1029,7 @@ def signal_qna_EMAADXStrategy_mut_5f4e558e(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_5f4e558e import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_5f4e558e import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1042,7 +1053,7 @@ def signal_qna_EMAADXStrategy_mut_797d1ed2(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_797d1ed2 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_797d1ed2 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1066,7 +1077,7 @@ def signal_qna_EMAADXStrategy_mut_7dd06442(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_7dd06442 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_7dd06442 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1090,7 +1101,7 @@ def signal_qna_EMAADXStrategy_mut_7e80edc0(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_7e80edc0 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_7e80edc0 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1114,7 +1125,7 @@ def signal_qna_EMAADXStrategy_mut_89a691ea(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_89a691ea import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_89a691ea import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1138,7 +1149,7 @@ def signal_qna_EMAADXStrategy_mut_8dce545f(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_8dce545f import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_8dce545f import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1162,7 +1173,7 @@ def signal_qna_EMAADXStrategy_mut_f06897a3(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_f06897a3 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_f06897a3 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1186,7 +1197,7 @@ def signal_qna_FiboStrategy_mut_08ef309d(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_08ef309d import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_08ef309d import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1210,7 +1221,7 @@ def signal_qna_FiboStrategy_mut_22ab1442(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_22ab1442 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_22ab1442 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1234,7 +1245,7 @@ def signal_qna_FiboStrategy_mut_267de559(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_267de559 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_267de559 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1258,7 +1269,7 @@ def signal_qna_FiboStrategy_mut_3d236bb5(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_3d236bb5 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_3d236bb5 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1282,7 +1293,7 @@ def signal_qna_FiboStrategy_mut_625964f5(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_625964f5 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_625964f5 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1306,7 +1317,7 @@ def signal_qna_FiboStrategy_mut_726d2261(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_726d2261 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_726d2261 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1330,7 +1341,7 @@ def signal_qna_FiboStrategy_mut_75c8d197(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_75c8d197 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_75c8d197 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1354,7 +1365,7 @@ def signal_qna_FiboStrategy_mut_b57a5c3a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_b57a5c3a import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_b57a5c3a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1378,7 +1389,7 @@ def signal_qna_FiboStrategy_mut_e918f65d(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_e918f65d import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_e918f65d import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1402,7 +1413,7 @@ def signal_qna_MeanReversionStrategy_mut_238dc347(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_238dc347 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_238dc347 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1426,7 +1437,7 @@ def signal_qna_MeanReversionStrategy_mut_29ffbe50(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_29ffbe50 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_29ffbe50 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1450,7 +1461,7 @@ def signal_qna_MeanReversionStrategy_mut_3f94aebd(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_3f94aebd import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_3f94aebd import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1474,7 +1485,7 @@ def signal_qna_MeanReversionStrategy_mut_534a3e48(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_534a3e48 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_534a3e48 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1498,7 +1509,7 @@ def signal_qna_MeanReversionStrategy_mut_7beac3f8(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_7beac3f8 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_7beac3f8 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1522,7 +1533,7 @@ def signal_qna_MeanReversionStrategy_mut_80c3a50c(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_80c3a50c import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_80c3a50c import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1546,7 +1557,7 @@ def signal_qna_MeanReversionStrategy_mut_aeac95c8(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_aeac95c8 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_aeac95c8 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1570,7 +1581,7 @@ def signal_qna_MeanReversionStrategy_mut_d0c35fc0(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_d0c35fc0 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_d0c35fc0 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1594,7 +1605,7 @@ def signal_qna_MeanReversionStrategy_mut_d282b0ab(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_d282b0ab import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_d282b0ab import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1618,7 +1629,7 @@ def signal_qna_MeanReversionStrategy_mut_efed8264(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_efed8264 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_efed8264 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1642,7 +1653,7 @@ def signal_qna_MeanReversionStrategy_mut_f2242159(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_f2242159 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_f2242159 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1666,7 +1677,7 @@ def signal_qna_MSNRStrategy_mut_0c38513d(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_0c38513d import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_0c38513d import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1690,7 +1701,7 @@ def signal_qna_MSNRStrategy_mut_1082a506(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_1082a506 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_1082a506 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1714,7 +1725,7 @@ def signal_qna_MSNRStrategy_mut_21397cf7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_21397cf7 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_21397cf7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1738,7 +1749,7 @@ def signal_qna_MSNRStrategy_mut_2512c57e(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_2512c57e import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_2512c57e import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1762,7 +1773,7 @@ def signal_qna_MSNRStrategy_mut_25630ace(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_25630ace import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_25630ace import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1786,7 +1797,7 @@ def signal_qna_MSNRStrategy_mut_25ec0944(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_25ec0944 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_25ec0944 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1810,7 +1821,7 @@ def signal_qna_MSNRStrategy_mut_30fe44aa(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_30fe44aa import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_30fe44aa import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1834,7 +1845,7 @@ def signal_qna_MSNRStrategy_mut_47a61c1a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_47a61c1a import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_47a61c1a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1858,7 +1869,7 @@ def signal_qna_MSNRStrategy_mut_48735c9a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_48735c9a import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_48735c9a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1882,7 +1893,7 @@ def signal_qna_MSNRStrategy_mut_85877fda(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_85877fda import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_85877fda import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1906,7 +1917,7 @@ def signal_qna_MSNRStrategy_mut_cfd837e7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_cfd837e7 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_cfd837e7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1930,7 +1941,7 @@ def signal_qna_MSNRStrategy_mut_e10dba6a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_e10dba6a import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_e10dba6a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1954,7 +1965,7 @@ def signal_qna_QuarterlyTheoryStrategy_mut_99914b93(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_QuarterlyTheoryStrategy_mut_99914b93 import generate_signal, PARAMS
+        from qna_QuarterlyTheoryStrategy_mut_99914b93 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -1978,7 +1989,7 @@ def signal_qna_SMCStrategy_mut_0502371a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_0502371a import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_0502371a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2002,7 +2013,7 @@ def signal_qna_SMCStrategy_mut_0ab19902(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_0ab19902 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_0ab19902 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2026,7 +2037,7 @@ def signal_qna_SMCStrategy_mut_3faccbdb(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_3faccbdb import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_3faccbdb import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2050,7 +2061,7 @@ def signal_qna_SMCStrategy_mut_42674b81(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_42674b81 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_42674b81 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2074,7 +2085,7 @@ def signal_qna_SMCStrategy_mut_5b5e79dc(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_5b5e79dc import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_5b5e79dc import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2098,7 +2109,7 @@ def signal_qna_SMCStrategy_mut_5f503a0f(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_5f503a0f import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_5f503a0f import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2122,7 +2133,7 @@ def signal_qna_SMCStrategy_mut_7b7c1579(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_7b7c1579 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_7b7c1579 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2146,7 +2157,7 @@ def signal_qna_SMCStrategy_mut_7dc3a1f7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_7dc3a1f7 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_7dc3a1f7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2170,7 +2181,7 @@ def signal_qna_SMCStrategy_mut_938d57fc(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_938d57fc import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_938d57fc import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2194,7 +2205,7 @@ def signal_qna_SMCStrategy_mut_eef32422(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_eef32422 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_eef32422 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2218,7 +2229,7 @@ def signal_qna_SMCStrategy_mut_f0d3ea7a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_f0d3ea7a import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_f0d3ea7a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2242,7 +2253,7 @@ def signal_qna_SMCStrategyOld_mut_023786dc(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_023786dc import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_023786dc import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2266,7 +2277,7 @@ def signal_qna_SMCStrategyOld_mut_16bdcdd1(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_16bdcdd1 import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_16bdcdd1 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2290,7 +2301,7 @@ def signal_qna_SMCStrategyOld_mut_792be0a9(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_792be0a9 import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_792be0a9 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2314,7 +2325,7 @@ def signal_qna_SMCStrategyOld_mut_af1ac2b3(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_af1ac2b3 import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_af1ac2b3 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2338,7 +2349,7 @@ def signal_qna_WyckoffStrategy_mut_35e60a57(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_35e60a57 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_35e60a57 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2362,7 +2373,7 @@ def signal_qna_WyckoffStrategy_mut_3af916de(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_3af916de import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_3af916de import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2386,7 +2397,7 @@ def signal_qna_WyckoffStrategy_mut_9516b5c7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_9516b5c7 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_9516b5c7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2410,7 +2421,7 @@ def signal_qna_WyckoffStrategy_mut_c354345b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_c354345b import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_c354345b import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2434,7 +2445,7 @@ def signal_qna_WyckoffStrategy_mut_cb42e9bb(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_cb42e9bb import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_cb42e9bb import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2458,7 +2469,7 @@ def signal_qna_WyckoffStrategy_mut_d1311580(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_d1311580 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_d1311580 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2482,7 +2493,7 @@ def signal_qna_WyckoffStrategy_mut_d577a6a0(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_d577a6a0 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_d577a6a0 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2506,7 +2517,7 @@ def signal_qna_WyckoffStrategy_mut_db5ec800(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_db5ec800 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_db5ec800 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2530,7 +2541,7 @@ def signal_qna_WyckoffStrategy_mut_f643d6d7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_f643d6d7 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_f643d6d7 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2554,7 +2565,7 @@ def signal_qna_WyckoffStrategy_mut_f82fb744(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_f82fb744 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_f82fb744 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2578,7 +2589,7 @@ def signal_qna_MSNRStrategy_mut_ea45617a(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_ea45617a import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_ea45617a import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2602,7 +2613,7 @@ def signal_qna_SMCStrategy_mut_561f4ce1(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_561f4ce1 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_561f4ce1 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2626,7 +2637,7 @@ def signal_qna_MeanReversionStrategy_mut_cc3d5065(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_cc3d5065 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_cc3d5065 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2650,7 +2661,7 @@ def signal_qna_EMAADXStrategy_mut_54d92f08(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_54d92f08 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_54d92f08 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2674,7 +2685,7 @@ def signal_qna_AlgebraStrategy_mut_3641ca14(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_3641ca14 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_3641ca14 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2698,7 +2709,7 @@ def signal_qna_WyckoffStrategy_mut_ce31db94(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_ce31db94 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_ce31db94 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2722,7 +2733,7 @@ def signal_qna_MSNRStrategy_mut_c5fe8fa0(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_c5fe8fa0 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_c5fe8fa0 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2746,7 +2757,7 @@ def signal_qna_SMCStrategy_mut_cede1437(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_cede1437 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_cede1437 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2770,7 +2781,7 @@ def signal_qna_MeanReversionStrategy_mut_7876e3ae(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_7876e3ae import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_7876e3ae import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2794,7 +2805,7 @@ def signal_qna_FiboStrategy_mut_7aeab1e4(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_7aeab1e4 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_7aeab1e4 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2818,7 +2829,7 @@ def signal_qna_EMAADXStrategy_mut_c266035b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_c266035b import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_c266035b import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2842,7 +2853,7 @@ def signal_qna_AlgebraStrategy_mut_0e485148(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_0e485148 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_0e485148 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2866,7 +2877,7 @@ def signal_qna_WyckoffStrategy_mut_1dd1110c(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_1dd1110c import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_1dd1110c import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2890,7 +2901,7 @@ def signal_qna_SMCStrategyOld_mut_03bca343(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_03bca343 import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_03bca343 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2914,7 +2925,7 @@ def signal_qna_SMCStrategy_mut_4cc3672b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_4cc3672b import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_4cc3672b import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2938,7 +2949,7 @@ def signal_qna_MeanReversionStrategy_mut_1e3676d8(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_1e3676d8 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_1e3676d8 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2962,7 +2973,7 @@ def signal_qna_FiboStrategy_mut_0676ee24(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_0676ee24 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_0676ee24 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -2986,7 +2997,7 @@ def signal_qna_EMAADXStrategy_mut_a80ab814(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_a80ab814 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_a80ab814 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3010,7 +3021,7 @@ def signal_qna_AMDXStrategy_mut_e8c2ed72(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AMDXStrategy_mut_e8c2ed72 import generate_signal, PARAMS
+        from qna_AMDXStrategy_mut_e8c2ed72 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3034,7 +3045,7 @@ def signal_qna_AlgebraStrategy_mut_219ef5b6(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_219ef5b6 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_219ef5b6 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3058,7 +3069,7 @@ def signal_qna_WyckoffStrategy_mut_2ae599a2(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_2ae599a2 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_2ae599a2 import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3082,7 +3093,7 @@ def signal_qna_SMCStrategyOld_mut_6c24c91b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategyOld_mut_6c24c91b import generate_signal, PARAMS
+        from qna_SMCStrategyOld_mut_6c24c91b import generate_signal
         # get_historical_mt5 already in scope (line 245)
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3106,7 +3117,8 @@ def signal_qna_MSNRStrategy_mut_dcc0ec64(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_dcc0ec64 import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_dcc0ec64 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3130,7 +3142,8 @@ def signal_qna_MSNRStrategy_mut_3ad1ef7b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MSNRStrategy_mut_3ad1ef7b import generate_signal, PARAMS
+        from qna_MSNRStrategy_mut_3ad1ef7b import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3154,7 +3167,8 @@ def signal_qna_SMCStrategy_mut_88e9ed01(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_88e9ed01 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_88e9ed01 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3178,7 +3192,8 @@ def signal_qna_SMCStrategy_mut_8e1060a0(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_SMCStrategy_mut_8e1060a0 import generate_signal, PARAMS
+        from qna_SMCStrategy_mut_8e1060a0 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3202,7 +3217,8 @@ def signal_qna_MeanReversionStrategy_mut_476c4961(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_476c4961 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_476c4961 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3226,7 +3242,8 @@ def signal_qna_MeanReversionStrategy_mut_11acfd90(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_MeanReversionStrategy_mut_11acfd90 import generate_signal, PARAMS
+        from qna_MeanReversionStrategy_mut_11acfd90 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3250,7 +3267,8 @@ def signal_qna_FiboStrategy_mut_1ed8fa83(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_FiboStrategy_mut_1ed8fa83 import generate_signal, PARAMS
+        from qna_FiboStrategy_mut_1ed8fa83 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3274,7 +3292,8 @@ def signal_qna_EMAADXStrategy_mut_ba4d1c3b(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_ba4d1c3b import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_ba4d1c3b import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3298,7 +3317,8 @@ def signal_qna_EMAADXStrategy_mut_8d94f439(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_EMAADXStrategy_mut_8d94f439 import generate_signal, PARAMS
+        from qna_EMAADXStrategy_mut_8d94f439 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3322,7 +3342,8 @@ def signal_qna_AlgebraStrategy_mut_3f3687bb(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_3f3687bb import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_3f3687bb import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3346,7 +3367,8 @@ def signal_qna_AlgebraStrategy_mut_01a09333(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_AlgebraStrategy_mut_01a09333 import generate_signal, PARAMS
+        from qna_AlgebraStrategy_mut_01a09333 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3370,7 +3392,8 @@ def signal_qna_WyckoffStrategy_mut_6c7db5d7(symbol="EURUSD"):
     try:
         import sys as _sys
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
-        from qna_WyckoffStrategy_mut_6c7db5d7 import generate_signal, PARAMS
+        from qna_WyckoffStrategy_mut_6c7db5d7 import generate_signal
+
         from hedge_fund import get_historical_mt5
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 50:
@@ -3572,7 +3595,7 @@ def aggregate(symbol="EURUSD"):
     dxy_trend = "unknown"
     dxy_price = "?"
     try:
-        from market_context import get_dxy, get_currency_strength
+        from market_context import get_currency_strength, get_dxy
         dxy = get_dxy()
         dxy_trend = dxy.get("trend", "unknown")
         dxy_price = dxy.get("price", "?")
