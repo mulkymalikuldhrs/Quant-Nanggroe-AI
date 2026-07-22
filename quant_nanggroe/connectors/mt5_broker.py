@@ -26,10 +26,32 @@ class MT5Broker(BrokerConnector):
         except ImportError:
             raise RuntimeError("MetaTrader5 lib missing — pip install MetaTrader5")
         self._mt5 = mt5
-        if not mt5.initialize(login=self.login, password=self.password, server=self.server):
-            raise RuntimeError(f"MT5 init failed: {mt5.last_error()}")  # ponytail: fail-closed, no silent paper fallback
-        self.connected = True
-        return True
+        # P0 fix: add explicit timeout so a slow/unresponsive Valetax terminal
+        # cannot hang the entire build_execution_manager() call forever.
+        # retry=3 survives transient IPC timeouts; timeout=15000ms bounds each try.
+        for attempt in range(3):
+            try:
+                ok = mt5.initialize(
+                    login=self.login,
+                    password=self.password,
+                    server=self.server,
+                    timeout=15000,
+                )
+                if ok:
+                    self.connected = True
+                    return True
+                err = mt5.last_error()
+                if isinstance(err, (tuple, list)) and err and err[0] == -10005:
+                    # -10005 IPC timeout — transient, retry after brief pause
+                    import time as _t
+                    _t.sleep(1.5 * (attempt + 1))
+                    continue
+                raise RuntimeError(f"MT5 init failed: {err}")  # ponytail: fail-closed, no silent paper fallback
+            except RuntimeError:
+                raise
+            except Exception as e:  # unexpected — fail closed
+                raise RuntimeError(f"MT5 init exception: {e}")
+        raise RuntimeError("MT5 init failed after retries: IPC timeout")
 
     def place_order(self, order: Order) -> str:
         if not self.connected:

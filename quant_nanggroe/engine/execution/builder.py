@@ -36,10 +36,15 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
             return _em_singleton
         from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
         from quant_nanggroe.engine.execution.manager import ExecutionManager
-        from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
         from quant_nanggroe.engine.risk.manager import RiskManager
 
         em = ExecutionManager()
+        # P0 fix: create risk manager + kill switch BEFORE live wiring so the
+        # broker handle can attach to a real RiskManager instance (not None).
+        configure_kill_switch_file()
+        em.set_kill_switch(KillSwitch())
+        em.set_risk_manager(RiskManager())
         # paper always present as safe fallback (no market impact)
         paper = PaperBroker()
         em.add_broker(paper, primary=False)
@@ -99,9 +104,5 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
             except Exception as exc:
                 logger.warning("broker %s connect failed: %s", getattr(b, "name", "?"), exc)
 
-        from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
-        configure_kill_switch_file()
-        em.set_kill_switch(KillSwitch())
-        em.set_risk_manager(RiskManager())
         _em_singleton = em
         return _em_singleton
