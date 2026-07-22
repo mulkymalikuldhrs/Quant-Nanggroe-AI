@@ -1,0 +1,22 @@
+//@version=5
+// DhaHer Multi-TF Confluence — built from TradingView MCP multi_timeframe_analysis
+// Publish invite-only on TradingView Store. TV handles payment. 0 human.
+indicator("DhaHer Multi-TF Confluence", overlay=true)
+
+// Align Weekly->Daily->4H->1H->15m trend via HTF security calls
+htf(src, tf, len) => request.security(syminfo.tickerid, tf, ta.ema(src, len))
+wEMA = htf(close, "W", 200)
+dEMA = htf(close, "D", 50)
+hEMA = htf(close, "240", 20)
+mEMA = htf(close, "60", 10)
+
+bull = close > mEMA and mEMA > hEMA and hEMA > dEMA and dEMA > wEMA
+bear = close < mEMA and mEMA < hEMA and hEMA < dEMA and dEMA < wEMA
+
+plotshape(bull and not bull[1], "CONFLUENCE BUY",  shape.triangleup,   location.belowbar, color.lime,  size=size.normal)
+plotshape(bear and not bear[1], "CONFLUENCE SELL", shape.triangledown, location.abovebar, color.red,    size=size.normal)
+bgcolor(bull ? color.new(color.green, 90) : bear ? color.new(color.red, 90) : na)
+alertcondition(bull, "DhaHer MTF BUY",  "Full multi-timeframe bullish alignment")
+alertcondition(bear, "DhaHer MTF SELL", "Full multi-timeframe bearish alignment")
+
+// ponytail: 5 TF hardcoded, no input UI. Add user-selectable TF if asked.

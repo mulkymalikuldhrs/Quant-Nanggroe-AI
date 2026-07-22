@@ -1,0 +1,8 @@
+//@version=5
+// DhaHer EMA Cross — from TV MCP backtest_strategy(ema_cross)
+indicator("DhaHer EMA Cross", overlay=true)
+f = ta.ema(close, input.int(9)); s = ta.ema(close, input.int(21))
+cross = ta.crossover(f, s)
+plotshape(cross, "EMA BUY", shape.triangleup, location.belowbar, color.aqua, size=size.small)
+plotshape(ta.crossunder(f, s), "EMA SELL", shape.triangledown, location.abovebar, color.maroon, size=size.small)
+// ponytail: 9/21 fixed, two EMAs only

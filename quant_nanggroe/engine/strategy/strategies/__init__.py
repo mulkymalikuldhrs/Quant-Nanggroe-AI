@@ -228,15 +228,18 @@ from . import options_put_call
 from . import dark_pool_flow
 
 # ── Migrated HF strategies (WAVE 5) ──
-from . import dhaher_system
-from . import kronos_wrapper
-from . import tradebobby_smc_scanner
+# NOTE: these live in the LEGACY registry (quant_nanggroe/engine/strategies/)
+# which is what the live autonomous cycle actually wires. The canonical tree
+# here is orphaned from live trading; imports removed to avoid ImportError.
+# from . import dhaher_system
+# from . import kronos_wrapper
+# from . import tradebobby_smc_scanner
 
 # Module aliases so HF names resolve in create_strategy()'s globals() lookup
 # (their classes live inside the migrated wrapper/scanner modules).
-kronos = kronos_wrapper
-kronos_ensemble = kronos_wrapper
-tradebobby_smc = tradebobby_smc_scanner
+# kronos = kronos_wrapper
+# kronos_ensemble = kronos_wrapper
+# tradebobby_smc = tradebobby_smc_scanner
 
 # Convenience registry
 def list_strategies() -> list:

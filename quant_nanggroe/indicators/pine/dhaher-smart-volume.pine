@@ -1,0 +1,23 @@
+//@version=5
+// DhaHer Smart Volume — built from TradingView MCP smart_volume_scanner
+// Publish invite-only on TradingView Store. TV collects payment. 0 human contact.
+indicator("DhaHer Smart Volume Alert", overlay=true)
+
+volAvg   = ta.sma(volume, 20)
+volRatio = volume / volAvg
+rsi      = ta.rsma(close, 14)
+
+spikeUp   = volRatio > input.float(2.0, "Vol Multiple") and close > open
+spikeDn   = volRatio > input.float(2.0, "Vol Multiple") and close < open
+// filter noise: only flag when RSI confirms not exhausted
+validUp = spikeUp and rsi < 70
+validDn = spikeDn and rsi > 30
+
+plotshape(validUp and not validUp[1], "VOL BUY",  shape.arrowup,   location.belowbar, color.teal, size=size.small)
+plotshape(validDn and not validDn[1], "VOL SELL", shape.arrowdown, location.abovebar, color.orange, size=size.small)
+plot(volRatio, "Vol Ratio", color.gray, display=display.data_window)
+
+alertcondition(validUp, "DhaHer VOL BUY",  "Smart volume spike + bullish candle")
+alertcondition(validDn, "DhaHer VOL SELL", "Smart volume spike + bearish candle")
+
+// ponytail: single combined filter. Add OBV divergence later if buyers want.

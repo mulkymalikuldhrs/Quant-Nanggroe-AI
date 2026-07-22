@@ -1,0 +1,12 @@
+//@version=5
+// DhaHer RSI Bands — from TV MCP backtest_strategy(rsi, bollinger)
+indicator("DhaHer RSI Bands", overlay=true)
+src = close, len = input.int(20), m = input.float(2.0)
+basis = ta.sma(src, len); dev = m * ta.stdev(src, len)
+up = basis + dev; lo = basis - dev
+rsi = ta.rsi(src, input.int(14))
+buy = ta.crossover(src, lo) and rsi < 40
+sell = ta.crossunder(src, up) and rsi > 60
+plotshape(buy, "RB BUY", shape.triangleup, location.belowbar, color.green, size=size.small)
+plotshape(sell, "RB SELL", shape.triangledown, location.abovebar, color.red, size=size.small)
+// ponytail: one combined entry model, no UI knobs
