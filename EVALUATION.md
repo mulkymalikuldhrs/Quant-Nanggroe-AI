@@ -50,3 +50,4 @@
 - Gate failed strategies: 6 (perlu fine-tune)
 - 53 MT5 pairs all enabled (Valetax)
 - **2026-07-19:** 2 order EURUSD scalping ditolak MT5 code=10017 (trade disallowed). Root cause: periksa koneksi gateway/context order atau market session. Tidak ada eksekusi = tidak ada PnL. Prioritas: debug mengapa code 10017 muncul berulang — sistem sinyal jalan tapi eksekusi gagal.
+- **2026-07-23:** Accountability review — 0 trade baru. MT5 MCP IPC gagal (-10001), terminal tidak terhubung. Gate status: active, paper_mode: true, risk_mode: normal. Tidak ada aktivitas trading. SEV: prioritas reconnect MT5 gateway untuk memastikan eksekusi order di sesi berikutnya.
