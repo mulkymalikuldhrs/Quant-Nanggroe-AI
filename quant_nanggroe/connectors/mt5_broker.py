@@ -108,10 +108,30 @@ class MT5Broker(BrokerConnector):
         return out
 
     def get_balance(self) -> float:
-        if not self.connected:
+        if not self.connected:  # ponytail: fail-closed, consistent with get_balance/place_order
             raise RuntimeError("not connected")
         acc = self._mt5.account_info()
         return float(acc.balance) if acc else 0.0
+
+    def history_deals_get(self, from_dt, to_dt):
+        """P0 fix: expose MT5 realized-deal history so RiskManager can read REAL
+        daily/weekly P&L (closes the phantom-veto hole). Returns list of deals
+        with `.profit` attribute, or empty list on failure."""
+        if not self.connected or self._mt5 is None:
+            return []
+        try:
+            # MT5 expects (from, to) as datetime tuples
+            deals = self._mt5.history_deals_get(from_dt, to_dt)
+            return list(deals) if deals else []
+        except Exception:
+            return []
+
+    def get_equity(self) -> float:
+        """P0 fix: real equity (not balance) for risk/MTM calculations."""
+        if not self.connected:
+            raise RuntimeError("not connected")
+        acc = self._mt5.account_info()
+        return float(acc.equity) if acc else 0.0
 
     def disconnect(self):
         if self._mt5:
