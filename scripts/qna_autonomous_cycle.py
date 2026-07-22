@@ -37,6 +37,11 @@ TP_ATR_MULT = 2.5
 
 VENV_PYTHON = r"C:\Users\Hi\AppData\Local\hermes\hermes-agent\venv\Scripts\python.exe"
 
+# Demo Valetax account (no real funds). Hardcode fallback so the autonomous
+# cron never silently falls back to paper due to a missing env var.
+# For live/real accounts, remove this and rely on the VALETAX_PASSWORD env var.
+VALETAX_PASSWORD_FALLBACK = "@15September"
+
 
 def compute_sl_tp(symbol: str, atr: float, entry: float, side: str):
     """ATR-based protective SL/TP. side='buy' -> SL below, TP above."""
@@ -51,6 +56,8 @@ def run_cycle() -> int:
     sys.path.insert(0, QNA_DIR)
     os.environ.setdefault("QNA_LIVE_TRADING", "1")
     os.environ.setdefault("QNA_MT5_LIVE", "1")
+    # Demo account: ensure password available for mt5_accounts.yaml ${...}
+    os.environ.setdefault("VALETAX_PASSWORD", VALETAX_PASSWORD_FALLBACK)
 
     from quant_nanggroe.engine.execution.builder import build_execution_manager
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
