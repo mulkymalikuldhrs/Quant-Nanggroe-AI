@@ -14,8 +14,6 @@ Usage:
 import os
 from typing import Optional
 
-from lse import LSE
-
 
 class LSEProvider:
     """Wrapper around lse-data client. Berguna untuk streaming + history.
@@ -26,6 +24,7 @@ class LSEProvider:
     """
 
     def __init__(self, api_key: Optional[str] = None, timeout: float = 60):
+        from lse import LSE  # lazy import — optional dependency
         key = api_key or os.environ.get("LSE_API_KEY")
         if not key:
             raise ValueError(

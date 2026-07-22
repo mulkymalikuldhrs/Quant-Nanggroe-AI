@@ -32,7 +32,10 @@ SRC = Path(r'E:/trading')
 LOG_FILE = SRC / 'data' / 'trades.csv'
 VOTE_LOG = SRC / 'data' / 'votes.csv'
 TERMINAL = r"C:\Program Files\MetaTrader 5\terminal64.exe"
-CREDS = {"login": 372044706, "password": os.environ.get("MT5_PASSWORD", "@15September"), "server": "ValetaxIntl-Live2"}
+_mt5_pass = os.environ.get("MT5_PASSWORD")
+if not _mt5_pass:
+    raise RuntimeError("MT5_PASSWORD environment variable not set — refusing to proceed with empty/hardcoded credential")
+CREDS = {"login": 372044706, "password": _mt5_pass, "server": "ValetaxIntl-Live2"}
 
 # ── PAPER TRADING MODE ──
 # Set PAPER_TRADE=true di env untuk bypass MT5 execution
