@@ -27,7 +27,12 @@
 - Expanded `ACTIVE_STRATEGIES` 5→9 (added `mean_rev`, `msnr`, `ict`, `unified_retail`).
 - Verified on live data: EURUSD BUY (w=2.20 vs 0.55), GBPUSD BUY (smc 0.65).
 
-### 1.4 Ecosystem Wiring
+### 1.4 Pine Script Migration + Deduplication
+- **10 Pine Scripts** (`D:/tv-indicators/*.pine`) — unique D: assets, 0 in QNA. Migrated to `quant_nanggroe/indicators/pine/`.
+- **Port `squeeze_breakout` to Python** (`quant_nanggroe/indicators/squeeze_breakout.py`) — TTM Squeeze volatility-expansion detector. Tested: EURUSD/GBPUSD/XAUUSD ALL in squeeze zone (low-vol Asian session) → explains HOLD-biased fund (market flat, not bug).
+- **Deduplicated 4x copies** of `dhaher_system`/`kronos`/`tradebobby` — removed orphaned canonical (`engine/strategy/strategies/`) + root (`strategies/`) copies. Kept LEGACY wired (`engine/strategies/`). Fixed canonical `__init__.py` import. Cycle re-tested clean.
+
+### 1.5 Ecosystem Wiring
 - 22 cron agent repointed `deepseek-v4-flash-free` (ERROR) → `tencent/hy3:free` (LIVE). Ecosystem was DEAD, now ALIVE.
 - New crons: `qna-pnl-report` (12h→Telegram), `research-to-qna-bridge` (06:00).
 - `accountability-review` (21:00) now reads QNA journal.
