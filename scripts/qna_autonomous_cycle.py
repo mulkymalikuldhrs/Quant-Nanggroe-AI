@@ -301,7 +301,9 @@ def run_cycle() -> int:
             log.error("%s cycle error: %s", symbol, e)
 
     log.info("Cycle done. executed=%d", executed)
-    return 0 if executed > 0 else 1
+    # Autonomous fund: executed=0 is NORMAL (no edge / positions full / market flat),
+    # not a failure. Return 0 on healthy cycle; exceptions propagate as non-zero.
+    return 0
 
 
 if __name__ == "__main__":
