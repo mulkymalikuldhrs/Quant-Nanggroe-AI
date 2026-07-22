@@ -6,7 +6,7 @@ accounts:
   - name: "MT5 Demo"
     broker: mt5
     login: 372044706        # Your MT5 demo login
-    server: "ValetaxIntl_Live-2"  # Your MT5 server
+    server: "ValetaxIntl-Live2"  # Your MT5 server (hyphen, not underscore)
     password: "${VALETAX_PASSWORD}"  # Set VALETAX_PASSWORD env var
     paper: false  # false = demo/real money, true = paper simulation
 

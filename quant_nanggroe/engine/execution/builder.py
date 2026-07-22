@@ -36,10 +36,15 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
             return _em_singleton
         from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
         from quant_nanggroe.engine.execution.manager import ExecutionManager
-        from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
         from quant_nanggroe.engine.risk.manager import RiskManager
 
         em = ExecutionManager()
+        # P0 fix: create risk manager + kill switch BEFORE live wiring so the
+        # broker handle can attach to a real RiskManager instance (not None).
+        configure_kill_switch_file()
+        em.set_kill_switch(KillSwitch())
+        em.set_risk_manager(RiskManager())
         # paper always present as safe fallback (no market impact)
         paper = PaperBroker()
         em.add_broker(paper, primary=False)
@@ -66,12 +71,17 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                         server=str(acc.get("server", "")),
                     )
                     if mt5.connect():
-                        em.add_broker(MT5ExecutionBroker(mt5), primary=(acc.get("role") == "primary"))
+                        # P0 fix: a live (non-paper) account becomes the PRIMARY
+                        # broker so orders actually hit the market with SL/TP.
+                        # Previously primary was gated on a non-existent
+                        # `role:"primary"` key, so it defaulted to paper -> no trades.
+                        is_live = not acc.get("paper", False)
+                        em.add_broker(MT5ExecutionBroker(mt5), primary=is_live)
                         # P0 fix: give RiskManager the live MT5 handle so the
                         # daily/weekly-loss veto reads REALIZED PnL, not 0.0.
                         em._risk_manager.set_broker_handle(mt5)
                         wired += 1
-                        logger.info("LIVE MT5 wired: %s", acc.get("name"))
+                        logger.info("LIVE MT5 wired: %s (primary=%s)", acc.get("name"), is_live)
                     else:
                         logger.warning("MT5 connect failed for %s — skipped (paper remains)", acc.get("name"))
                 if wired == 0:
@@ -99,9 +109,5 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
             except Exception as exc:
                 logger.warning("broker %s connect failed: %s", getattr(b, "name", "?"), exc)
 
-        from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
-        configure_kill_switch_file()
-        em.set_kill_switch(KillSwitch())
-        em.set_risk_manager(RiskManager())
         _em_singleton = em
         return _em_singleton
