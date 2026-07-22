@@ -355,7 +355,10 @@ class ProductionExecutionManager:
                 from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
                 configure_kill_switch_file()  # C5: converge on one shared kill-switch truth
                 from quant_nanggroe.engine.execution.builder import build_execution_manager
-                self._exec_mgr = build_execution_manager()
+                # P0 fix: honor QNA_LIVE_TRADING so the production bridge can
+                # actually trade live (previously always paper-only).
+                _allow_live = os.environ.get("QNA_LIVE_TRADING", "0") == "1"
+                self._exec_mgr = build_execution_manager(allow_live=_allow_live)
                 self._order_mgr = OrderManager()
                 log.info("ExecutionManager loaded (constitutional risk enforced)")
             except Exception as e:
@@ -410,11 +413,15 @@ class ProductionExecutionManager:
             try:
                 from quant_nanggroe.connectors.broker_base import Order
                 from quant_nanggroe.engine.execution.base import OrderSide
+                # P0 fix: carry protective SL/TP into the live order so positions
+                # are never naked (previously dropped -> MT5 veto/phantom risk).
                 order = Order(
                     symbol=signal.symbol,
                     side=OrderSide.BUY if signal.side == "buy" else OrderSide.SELL,
                     order_type=OrderType.MARKET,
                     quantity=qty,
+                    stop_loss=getattr(signal, "stop_loss", None),
+                    take_profit=getattr(signal, "take_profit", None),
                 )
                 ticket = self._mt5.place_order(order)
                 result = {
@@ -446,6 +453,9 @@ class ProductionExecutionManager:
                     side=side,
                     order_type=OrderType.MARKET,
                     quantity=qty,
+                    # P0 fix: carry protective SL/TP into engine order path too
+                    stop_loss=getattr(signal, "stop_loss", None),
+                    take_profit=getattr(signal, "take_profit", None),
                 )
                 fill = self._exec_mgr.execute_order(order)
                 return {
