@@ -22,20 +22,86 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# 1. FREE LLM PROVIDER CONFIGS — extend the existing LLMRouter
+# Module-level try/except for optional QNA Core Components
 # ---------------------------------------------------------------------------
-# All OpenAI-compatible, so we reuse ChatOpenAI with custom base_url.
-# ponytail: reuse the router's _call_openai path via ChatOpenAI.
+# These flags + local imports prevent ImportError when components are missing.
+
+try:
+    from quant_nanggroe.engine.agentic.final_decider import FinalDecider
+    _HAS_FINAL_DECIDER = True
+except ImportError:
+    FinalDecider = None
+    _HAS_FINAL_DECIDER = False
+
+try:
+    from quant_nanggroe.engine.analytics.strategy_logger import StrategyLogger
+    _HAS_STRATEGY_LOGGER = True
+except ImportError:
+    StrategyLogger = None
+    _HAS_STRATEGY_LOGGER = False
+
+try:
+    from quant_nanggroe.engine.analytics.pnl_evaluator import PnLEvaluator
+    _HAS_PNL_EVALUATOR = True
+except ImportError:
+    PnLEvaluator = None
+    _HAS_PNL_EVALUATOR = False
+
+try:
+    from quant_nanggroe.engine.regime.strategy_filter import RegimeStrategyFilter
+    _HAS_REGIME_FILTER = True
+except ImportError:
+    RegimeStrategyFilter = None
+    _HAS_REGIME_FILTER = False
+
+try:
+    from quant_nanggroe.engine.strategies.gene_loader import GeneLoader
+    _HAS_GENE_LOADER = True
+except ImportError:
+    GeneLoader = None
+    _HAS_GENE_LOADER = False
+
+# ── ClosedTrade for PnLEvaluator ──
+ClosedTrade = None
+try:
+    from quant_nanggroe.engine.analytics.pnl_evaluator import ClosedTrade
+except ImportError:
+    pass
+
+# ── AIHF Override Threshold ──
+AIHF_OVERRIDE_THRESHOLD = 0.6
+
+try:
+    from quant_nanggroe.agents.aihf_bridge import AIHFBridge, AIHFSignal
+    _HAS_AIHF_BRIDGE = True
+except ImportError:
+    AIHFBridge = None
+    AIHFSignal = None
+    _HAS_AIHF_BRIDGE = False
+
+try:
+    from quant_nanggroe.agents.hedge_fund_bridge import HedgeFundBridge, get_hf_signal
+    _HAS_HF_BRIDGE = True
+except ImportError:
+    HedgeFundBridge = None
+    get_hf_signal = None
+    _HAS_HF_BRIDGE = False
+
+# ---------------------------------------------------------------------------
+# 1. FREE LLM PROVIDER CONFIGS
+# ---------------------------------------------------------------------------
 
 FREE_PROVIDERS: dict[str, dict[str, Any]] = {
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
         "models": {"deep_thinking": "llama-3.3-70b-versatile", "standard": "llama3-70b-8192", "quick": "llama3-8b-8192"},
         "api_key_env": "GROQ_API_KEY",
-        "priority": 10,  # lower = tried first
+        "priority": 10,
     },
     "deepseek": {
         "base_url": "https://api.deepseek.com",
@@ -59,36 +125,21 @@ FREE_PROVIDERS: dict[str, dict[str, Any]] = {
 
 
 def register_free_providers(router) -> None:
-    """Register free LLM providers into an existing LLMRouter instance.
-
-    Only registers providers whose API key is available (env var or empty for
-    services that work without one). Reuses the router's ProviderConfig model.
-
-    Usage:
-        from quant_nanggroe.engine.llm_router import get_llm_router
-        router = get_llm_router()
-        register_free_providers(router)
-    """
+    """Register free LLM providers into an existing LLMRouter instance."""
     from quant_nanggroe.engine.llm_router import LLMProvider, ModelTier, ProviderConfig
-
     for name, cfg in FREE_PROVIDERS.items():
         api_key = os.environ.get(cfg["api_key_env"], "")
         if not api_key:
             logger.info("Skipping free provider %s: no %s env var", name, cfg["api_key_env"])
             continue
-
         try:
             provider_enum = LLMProvider(name.upper())
         except ValueError:
-            # Create a string-based provider; router dispatches via ChatOpenAI
-            # ponytail: we handle this in the chat call by using _call_openai path
             provider_enum = None
-
         models_map = {}
         for tier_str, model_name in cfg["models"].items():
             tier = ModelTier(tier_str)
             models_map[tier] = model_name
-
         config = ProviderConfig(
             provider=provider_enum or name,
             api_key=api_key,
@@ -102,71 +153,53 @@ def register_free_providers(router) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2. STRATEGY AUTO-DISCOVERY — scan a directory for strategy modules
+# 2. STRATEGY AUTO-DISCOVERY
 # ---------------------------------------------------------------------------
-# ponytail: complements the manual __init__.py + _NAME_MAP pattern.
-# This discovers .py files that export a class ending in "Strategy".
-
 
 def discover_strategies(
     directory: str | None = None,
     base_class: type | None = None,
 ) -> dict[str, type]:
-    """Auto-discover strategy classes from a directory.
-
-    Scans all .py files (except __init__.py) under *directory*, imports each,
-    and collects classes that:
-      - Are defined in that file (not imported)
-      - End with 'Strategy' (or match *base_class*)
-
-    Returns dict of {snake_case_name: class}.
-
-    Args:
-        directory: Path to scan. Defaults to the existing strategies dir.
-        base_class: Optional base class filter.
-
-    Returns:
-        {name: class} mapping of discovered strategies.
-    """
+    """Auto-discover strategy classes from a directory."""
     if directory is None:
-        dir_path = Path(__file__).resolve().parent.parent / "strategy" / "strategies"
+        dir_path = Path(__file__).resolve().parent.parent / "strategies"
     else:
         dir_path = Path(directory)
-
     if not dir_path.is_dir():
-        logger.warning("Strategy directory not found: %s", dir_path)
-        return {}
-
+        logger.warning("Strategy directory not found: %s — trying legacy path", dir_path)
+        legacy_path = Path(__file__).resolve().parent.parent / "strategy" / "strategies"
+        if legacy_path.is_dir():
+            dir_path = legacy_path
+            logger.info("Falling back to canonical strategy dir: %s", legacy_path)
+        else:
+            logger.warning("No strategy directory found at either location")
+            return {}
     discovered: dict[str, type] = {}
-
     for fpath in sorted(dir_path.iterdir()):
         if fpath.suffix != ".py" or fpath.name == "__init__.py":
             continue
         mod_name = fpath.stem
         try:
-            mod = importlib.import_module(f"quant_nanggroe.engine.strategy.strategies.{mod_name}")
+            mod = importlib.import_module(f"quant_nanggroe.engine.strategies.{mod_name}")
         except Exception as exc:
             logger.debug("Skipping %s: %s", mod_name, exc)
             continue
-
         for name, obj in inspect.getmembers(mod, inspect.isclass):
             if obj.__module__ != mod.__name__:
-                continue  # only classes defined in this file
+                continue
             if base_class is not None and not issubclass(obj, base_class):
                 continue
             if base_class is None and not name.endswith("Strategy"):
                 continue
             snake = "".join(f"_{c.lower()}" if c.isupper() else c for c in name).lstrip("_")
             discovered[snake] = obj
-
     logger.info("Auto-discovered %d strategies from %s", len(discovered), dir_path)
     return discovered
 
 
 # ---------------------------------------------------------------------------
-# 3. SELF-CORRECTION — lesson recording + reflection
+# 3. SELF-CORRECTION
 # ---------------------------------------------------------------------------
-# ponytail: file-based persistence, no DB dependency.
 
 class LessonSeverity(str, Enum):
     INFO = "info"
@@ -177,12 +210,11 @@ class LessonSeverity(str, Enum):
 
 @dataclass
 class Lesson:
-    """A recorded lesson from a system failure or observation."""
     id: str = ""
-    category: str = ""           # e.g. "provider_failover", "strategy_load", "signal_gen"
+    category: str = ""
     severity: LessonSeverity = LessonSeverity.INFO
-    summary: str = ""            # one-line summary
-    detail: str = ""             # what happened
+    summary: str = ""
+    detail: str = ""
     context: dict[str, Any] = field(default_factory=dict)
     occurred_at: str = ""
     resolved: bool = False
@@ -196,13 +228,7 @@ class Lesson:
 
 
 class SelfCorrection:
-    """Record, retrieve, and learn from lessons.
-
-    Persists lessons to a JSON file. Provides:
-      - record(): save a lesson
-      - get_prompt(): generate a system prompt with recent failures
-      - resolve(): mark a lesson as resolved
-    """
+    """Record, retrieve, and learn from lessons."""
 
     def __init__(self, lesson_path: str | None = None):
         if lesson_path is None:
@@ -214,46 +240,20 @@ class SelfCorrection:
         self._lessons: list[Lesson] = []
         self._load()
 
-    # ── public API ──────────────────────────────────────────────────
-
-    def record(
-        self,
-        category: str,
-        summary: str,
-        detail: str = "",
-        severity: LessonSeverity = LessonSeverity.INFO,
-        context: dict[str, Any] | None = None,
-    ) -> Lesson:
-        """Record a new lesson."""
-        lesson = Lesson(
-            category=category,
-            severity=severity,
-            summary=summary,
-            detail=detail,
-            context=context or {},
-        )
+    def record(self, category: str, summary: str, detail: str = "", severity: LessonSeverity = LessonSeverity.INFO, context: dict[str, Any] | None = None) -> Lesson:
+        lesson = Lesson(category=category, severity=severity, summary=summary, detail=detail, context=context or {})
         self._lessons.append(lesson)
         self._save()
-        logger.info("Lesson recorded: [%s] %s — %s", lesson.category, lesson.summary, lesson.detail[:80])
         return lesson
 
     def get_prompt(self, max_lessons: int = 5, severity_min: LessonSeverity = LessonSeverity.WARNING) -> str:
-        """Build a system-prompt snippet from recent unresolved lessons.
-
-        Use this to inject lessons into the agent's context so it can
-        avoid repeating mistakes.
-        """
-        # ponytail: severity order for string-safe filtering
         _SEVERITY_ORDER = {"critical": 4, "error": 3, "warning": 2, "info": 1}
         min_level = _SEVERITY_ORDER.get(severity_min.value, 2)
-
         unresolved = [l for l in self._lessons if not l.resolved]
         filtered = [l for l in unresolved if _SEVERITY_ORDER.get(l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity, 1) >= min_level]
         recent = sorted(filtered, key=lambda l: l.occurred_at, reverse=True)[:max_lessons]
-
         if not recent:
             return ""
-
         lines = ["[SELF-CORRECTION: Lessons from previous runs]"]
         for l in recent:
             lines.append(f"- [{l.severity.value}] {l.category}: {l.summary}")
@@ -263,7 +263,6 @@ class SelfCorrection:
         return "\n".join(lines)
 
     def resolve(self, lesson_id: str, resolution: str = "") -> bool:
-        """Mark a lesson as resolved."""
         for l in self._lessons:
             if l.id == lesson_id:
                 l.resolved = True
@@ -272,23 +271,15 @@ class SelfCorrection:
                 return True
         return False
 
-    def list_lessons(
-        self,
-        category: str | None = None,
-        unresolved_only: bool = False,
-        limit: int = 20,
-    ) -> list[dict[str, Any]]:
-        """List lessons, newest first."""
+    def list_lessons(self, category: str | None = None, unresolved_only: bool = False, limit: int = 20) -> list[dict[str, Any]]:
         items = self._lessons
         if category:
             items = [l for l in items if l.category == category]
         if unresolved_only:
             items = [l for l in items if not l.resolved]
         items.sort(key=lambda l: l.occurred_at, reverse=True)
-        return [{"id": l.id, "category": l.category,
-                 "severity": l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity,
-                 "summary": l.summary, "detail": l.detail[:200],
-                 "occurred_at": l.occurred_at, "resolved": l.resolved}
+        return [{"id": l.id, "category": l.category, "severity": l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity,
+                 "summary": l.summary, "detail": l.detail[:200], "occurred_at": l.occurred_at, "resolved": l.resolved}
                 for l in items[:limit]]
 
     def get_stats(self) -> dict[str, Any]:
@@ -299,8 +290,6 @@ class SelfCorrection:
             by_category[l.category] = by_category.get(l.category, 0) + 1
         return {"total": total, "resolved": resolved, "unresolved": total - resolved, "by_category": by_category}
 
-    # ── persistence ─────────────────────────────────────────────────
-
     def _load(self) -> None:
         if not self._path.exists():
             self._lessons = []
@@ -308,7 +297,6 @@ class SelfCorrection:
         try:
             raw = json.loads(self._path.read_text(encoding="utf-8"))
             self._lessons = [Lesson(**item) for item in raw]
-            # Ensure severity is an enum, not a string from JSON
             for l in self._lessons:
                 if isinstance(l.severity, str):
                     l.severity = LessonSeverity(l.severity)
@@ -325,14 +313,13 @@ class SelfCorrection:
 
 
 # ---------------------------------------------------------------------------
-# 4. AUTONOMOUS TRADING PIPELINE — data → signal → risk → execute
+# 4. AUTONOMOUS TRADING PIPELINE
 # ---------------------------------------------------------------------------
-# ponytail: wires existing components into one flow.
 
 @dataclass
 class PipelineStep:
     name: str
-    status: str = "pending"  # pending | running | passed | failed | skipped
+    status: str = "pending"
     duration_ms: float = 0.0
     result: Any = None
     error: str = ""
@@ -355,235 +342,176 @@ class PipelineResult:
 
 
 class AutonomousPipeline:
-    """End-to-end autonomous trading pipeline.
+    """End-to-end autonomous trading pipeline."""
 
-    Flow: fetch data → generate signal → check risk → execute decision.
-    Each step is a discrete PipelineStep. Failures are recorded as lessons.
-
-    Wires into existing QNAI:
-      - Strategy discovery (-> engine/strategy/strategies/)
-      - Agentic consensus (-> engine/agentic_trading.py ConsensusEngine)
-      - Strategy lifecycle (-> engine/strategy_lifecycle.py StrategyLifecycleManager)
-      - LLM routing (-> engine/llm_router.py LLMRouter)
-    """
-
-    def __init__(
-        self,
-        self_correction: SelfCorrection | None = None,
-    ):
+    def __init__(self, self_correction: SelfCorrection | None = None):
         self.correction = self_correction or SelfCorrection()
         self._strategies: dict[str, type] = {}
         self._lifecycle: Any = None
         self._llm_router: Any = None
-        # ponytail: cache last run result for GET /last-result
         self._last_result: PipelineResult | None = None
-        # ponytail: DataProviderManager (lazy-init, used by _fetch_data)
         self._data_manager: Any = None
-        # Data freshness monitor — tracks staleness, triggers kill switch if needed
         self._data_monitor: Any = None
-
-        # Lazy-init lifecylce and router
         self._init_services()
 
     def _ensure_data_manager(self) -> Any:
-        """Lazy-init DataProviderManager with all real providers.
-
-        The 15 data providers exist in quant_nanggroe/data/providers/ but were
-        previously bypassed by _fetch_data() calling yfinance directly. Routing
-        through the manager unlocks failover, caching, health scoring, and
-        multi-provider support (Binance, Finnhub, FRED, Alpaca, etc.).
-        """
         if self._data_manager is not None:
             return self._data_manager
         try:
             from quant_nanggroe.data.manager import DataProviderManager
             from quant_nanggroe.data.providers.yahoo import YahooFinanceProvider
-
             dm = DataProviderManager(default_cache_ttl=300.0)
-            # Yahoo is the only provider that works with zero config — register it
-            # as fallback for all markets. Other providers require API keys.
             dm.register(YahooFinanceProvider(), markets=["stocks", "forex", "crypto"])
-
-            # Try to register additional providers if their API keys are set.
-            # Each provider is optional; registration failures are non-fatal.
-            import os
             for _module_name, _market in (
-                ("binance", "crypto"),
-                ("finnhub_provider", "stocks"),
-                ("fred", "macro"),
-                ("alpaca", "stocks"),
-                ("polygon", "stocks"),
-                ("alpha_vantage", "stocks"),
-                ("twelvedata", "stocks"),
+                ("binance", "crypto"), ("finnhub_provider", "stocks"), ("fred", "macro"),
+                ("alpaca", "stocks"), ("polygon", "stocks"), ("alpha_vantage", "stocks"), ("twelvedata", "stocks"),
             ):
                 try:
-                    mod = __import__(
-                        f"quant_nanggroe.data.providers.{_module_name}",
-                        fromlist=["__all__"],
-                    )
-                    # Find the provider class (first DataProvider subclass in module)
+                    mod = __import__(f"quant_nanggroe.data.providers.{_module_name}", fromlist=["__all__"])
                     from quant_nanggroe.data.providers.base import DataProvider
                     for _attr in dir(mod):
                         obj = getattr(mod, _attr)
-                        if (
-                            isinstance(obj, type)
-                            and issubclass(obj, DataProvider)
-                            and obj is not DataProvider
-                            and not _attr.startswith("_")
-                        ):
+                        if isinstance(obj, type) and issubclass(obj, DataProvider) and obj is not DataProvider and not _attr.startswith("_"):
                             try:
-                                provider = obj()
-                                dm.register(provider, markets=[_market])
+                                dm.register(obj(), markets=[_market])
                             except Exception:
-                                continue  # missing API key or init failure — skip silently
+                                continue
                             break
                 except Exception:
-                    continue  # provider module not importable — skip
+                    continue
             self._data_manager = dm
-            logger.info("DataProviderManager initialized with %d providers", len(dm._providers))
         except Exception as exc:
             logger.warning("DataProviderManager init failed (%s) — falling back to yfinance", exc)
             self._data_manager = None
         return self._data_manager
 
     def _init_services(self) -> None:
-        """Lazy-init lifecycle manager, LLM router, and data freshness monitor."""
+        """Lazy-init core services and QNA components."""
         try:
             from quant_nanggroe.engine.strategy_lifecycle import StrategyLifecycleManager
             self._lifecycle = StrategyLifecycleManager()
         except ImportError:
             self._lifecycle = None
-
         try:
             from quant_nanggroe.engine.llm_router import get_llm_router
             self._llm_router = get_llm_router()
         except ImportError:
             self._llm_router = None
-
         try:
             from quant_nanggroe.data.monitor import DataFreshnessMonitor
             self._data_monitor = DataFreshnessMonitor()
         except ImportError:
             self._data_monitor = None
-
         try:
             from quant_nanggroe.engine.execution.builder import build_execution_manager
             self._em = build_execution_manager()
         except ImportError:
             self._em = None
 
-    # ── strategy signal tracking ────────────────────────────────────
+        # ── QNA Core Components ──
+        self._final_decider = None
+        self._strategy_logger = None
+        self._pnl_evaluator = None
+        self._regime_filter = None
+        self._gene_loader = None
+        self._aihf_bridge = None  # NEW: AIHF Bridge
+        self._hf_bridge = None    # NEW: Hedge Fund Bridge
 
-    def _record_strategy_signals(self, symbol: str, df: Any, signals: list[tuple[str, float, str, str]]) -> None:
-        """Record each strategy's signal for future win/loss evaluation.
-
-        Persists to a JSON file so signal accuracy can be tracked
-        across pipeline runs. On next run, previous signals are checked
-        against actual price movement.
-        """
-        import json
-        from pathlib import Path
-
-        if df is None or len(df) < 2:
-            return
-        current_price = float(df['close'].iloc[-1]) if hasattr(df, 'close') else 0.0
-        if current_price == 0:
-            return
-
-        path = Path(__file__).resolve().parent.parent.parent / "data" / "strategy_signals.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Load previous signals
-        previous: list[dict] = []
-        if path.exists():
+        if _HAS_FINAL_DECIDER:
             try:
-                previous = json.loads(path.read_text(encoding="utf-8"))
-            except Exception:
-                previous = []
+                self._final_decider = FinalDecider(min_confidence_threshold=0.60, min_regime_compatibility=0.35, risk_per_trade=0.01, min_rr_ratio=2.5)
+                logger.info("FinalDecider initialized")
+            except Exception as exc:
+                logger.warning("FinalDecider init failed: %s", exc)
 
-        # Evaluate previous signals for this symbol against current price
-        if previous and self._lifecycle:
-            still_pending = []
-            for ps in previous:
-                if ps.get("symbol") != symbol:
-                    still_pending.append(ps)
-                    continue
-                prev_price = ps.get("price", 0)
-                prev_signal = ps.get("signal", "hold")
-                strat_name = ps.get("strategy", "unknown")
-                if prev_price <= 0 or prev_signal == "hold":
-                    still_pending.append(ps)
-                    continue
-                price_change = (current_price - prev_price) / prev_price
-                is_win = (prev_signal == "buy" and price_change > 0.01) or \
-                         (prev_signal == "sell" and price_change < -0.01)
-                try:
-                    self._lifecycle.update_strategy(
-                        name=strat_name,
-                        pnl=price_change,
-                        is_win=is_win,
-                    )
-                except Exception:
-                    pass
-            previous = still_pending
+        if _HAS_STRATEGY_LOGGER:
+            try:
+                self._strategy_logger = StrategyLogger(log_dir="data")
+                logger.info("StrategyLogger initialized")
+            except Exception as exc:
+                logger.warning("StrategyLogger init failed: %s", exc)
 
-        # Record current signals
-        timenow = datetime.now(timezone.utc).isoformat()
-        for sig, conf, reason, cat in signals:
-            if sig != "hold":
-                previous.append({
-                    "symbol": symbol, "strategy": cat, "signal": sig,
-                    "price": current_price, "confidence": conf,
-                    "timestamp": timenow,
-                })
+        if _HAS_PNL_EVALUATOR:
+            try:
+                self._pnl_evaluator = PnLEvaluator(stats_dir="data/strategy_stats")
+                logger.info("PnLEvaluator initialized")
+            except Exception as exc:
+                logger.warning("PnLEvaluator init failed: %s", exc)
 
-        # Keep only last 1000 entries
-        if len(previous) > 1000:
-            previous = previous[-1000:]
+        if _HAS_REGIME_FILTER:
+            try:
+                self._regime_filter = RegimeStrategyFilter()
+                logger.info("RegimeStrategyFilter initialized")
+            except Exception as exc:
+                logger.warning("RegimeFilter init failed: %s", exc)
 
+        if _HAS_GENE_LOADER:
+            try:
+                self._gene_loader = GeneLoader()
+                logger.info("GeneLoader initialized")
+            except Exception as exc:
+                logger.warning("GeneLoader init failed: %s", exc)
+
+        if _HAS_AIHF_BRIDGE:  # NEW: AIHF Bridge init
+            try:
+                self._aihf_bridge = AIHFBridge()
+                logger.info("AIHFBridge initialized with 20 agents")
+            except Exception as exc:
+                logger.warning("AIHFBridge init failed: %s", exc)
+
+        # NEW: Hedge Fund Bridge init
+        if _HAS_HF_BRIDGE:
+            try:
+                self._hf_bridge = HedgeFundBridge()
+                logger.info("HedgeFundBridge initialized")
+            except Exception as exc:
+                logger.warning("HedgeFundBridge init failed: %s", exc)
+
+    def _compute_atr(self, df: Any, period: int = 14) -> float:
+        """Compute ATR from OHLCV. Returns 0.0 if data insufficient."""
+        if df is None or not hasattr(df, 'columns') or len(df) < period + 1:
+            return 0.0
         try:
-            path.write_text(json.dumps(previous, indent=2, default=str), encoding="utf-8")
+            high = df['high'].values if 'high' in df.columns else None
+            low = df['low'].values if 'low' in df.columns else None
+            close = df['close'].values if 'close' in df.columns else None
+            if high is None or low is None or close is None:
+                return 0.0
+            tr = np.maximum(
+                high[1:] - low[1:],
+                np.maximum(np.abs(high[1:] - close[:-1]), np.abs(low[1:] - close[:-1])),
+            )
+            atr = float(np.mean(tr[-period:])) if len(tr) >= period else float(np.mean(tr))
+            return atr if atr > 0 else 0.0
         except Exception:
-            pass
-
-    # ── strategy management ─────────────────────────────────────────
+            return 0.0
 
     def load_strategies(self, directory: str | None = None, base_class: type | None = None) -> int:
-        """Auto-discover and register strategy classes with lifecycle manager."""
+        """Auto-discover and register strategy classes + MUE-X genes."""
         self._strategies = discover_strategies(directory, base_class)
         count = len(self._strategies)
         if self._lifecycle:
             for name in self._strategies:
                 self._lifecycle.register_strategy(name)
-            logger.info("Registered %d strategies with lifecycle manager", count)
-        logger.info("Loaded %d strategies into autonomous pipeline", count)
-        return count
+        genes_loaded = 0
+        if self._gene_loader is not None:
+            try:
+                genes_discovered = self._gene_loader.discover_genes()
+                if genes_discovered > 0:
+                    genes_loaded = self._gene_loader.register_all()
+                    if self._lifecycle:
+                        for gname in self._gene_loader.get_all_gene_names():
+                            self._lifecycle.register_strategy(gname)
+            except Exception as exc:
+                logger.warning("MUE-X gene loading failed: %s", exc)
+        total = count + genes_loaded
+        logger.info("Loaded %d strategies (%d canonical + %d genes)", total, count, genes_loaded)
+        return total
 
-    def list_available_strategies(self) -> list[str]:
-        return sorted(self._strategies.keys())
-
-    # ── pipeline execution ──────────────────────────────────────────
-
-    async def run(
-        self,
-        symbol: str,
-        strategy_name: str | None = None,
-        use_llm: bool = False,
-        data: Any = None,
-    ) -> PipelineResult:
-        """Run one full pipeline cycle for *symbol*.
-
-        Args:
-            symbol: Trading symbol (e.g. "BTC-USD").
-            strategy_name: Specific strategy to use, or None for first available.
-            use_llm: Whether to route decision through LLM.
-            data: Optional pre-fetched OHLCV DataFrame.
-
-        Returns:
-            PipelineResult with all step details.
-        """
+    async def run(self, symbol: str, strategy_name: str | None = None, use_llm: bool = False, data: Any = None) -> PipelineResult:
+        """Run pipeline: fetch → signal → risk → FinalDecider → execute → log → evaluate."""
         steps: list[PipelineStep] = []
-        result = PipelineResult(symbol=symbol, success=False)
+        result = PipelineResult(symbol=symbol, success=False, decision={})
 
         # ── Step 1: Data ────────────────────────────────────────────
         s1 = PipelineStep(name="data_fetch")
@@ -596,24 +524,19 @@ class AutonomousPipeline:
                 raise ValueError("No data returned")
             s1.status = "passed"
             s1.result = f"{len(df)} bars"
-            # ponytail: feed latest close to PaperBroker so submit_order()
-            # doesn't reject with "No price data available". This was a silent
-            # failure — paper trades always rejected before this fix.
-            try:
-                latest_price = float(df["close"].iloc[-1]) if "close" in df.columns else 0.0
-                self._feed_price_to_paper(symbol, latest_price)
-            except Exception:
-                pass  # non-fatal — paper trading is best-effort
+            latest_price = float(df["close"].iloc[-1]) if "close" in df.columns else 0.0
+            self._feed_price_to_paper(symbol, latest_price)
         except Exception as exc:
             s1.status = "failed"
             s1.error = str(exc)
             self.correction.record("data_fetch", f"Data fetch failed for {symbol}", str(exc), LessonSeverity.ERROR)
-
         steps.append(s1)
         if s1.status == "failed":
             result.reason = f"Data fetch failed: {s1.error}"
             result.steps = steps
             return result
+
+        current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
 
         # ── Step 1.5: Regime Detection ──────────────────────────────
         regime = "unknown"
@@ -628,22 +551,93 @@ class AutonomousPipeline:
             regime = regime_result.regime.value if hasattr(regime_result, "regime") else "unknown"
             regime_confidence = regime_result.confidence if hasattr(regime_result, "confidence") else 0.0
             strategy_type = REGIME_STRATEGY_MAP.get(regime_result.regime, StrategyType.PAUSED)
-            logger.info("Regime detected: %s (conf=%.2f) → strategy type: %s", regime, regime_confidence, strategy_type.value)
-            # Write regime to result for API consumers
-            result.decision["regime"] = {
-                "regime": regime,
-                "confidence": regime_confidence,
-                "strategy_type": strategy_type.value,
-            }
+            result.decision["regime"] = {"regime": regime, "confidence": regime_confidence, "strategy_type": strategy_type.value}
         except Exception as exc:
-            logger.warning("Regime detection failed: %s — falling back to naive strategy selection", exc)
+            logger.warning("Regime detection failed: %s", exc)
+
+        # ── NEW: AIHF Bridge Signals (before council/ensemble) ────
+        aihf_signal_override = None
+        if self._aihf_bridge is not None:
+            try:
+                aihf_signals = self._aihf_bridge.get_all_signals(symbol)
+                if aihf_signals and len(aihf_signals) > 0:
+                    # Use consensus from AIHF agents as an override signal
+                    total_conf = sum(s.confidence for s in aihf_signals)
+                    buy_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "buy")
+                    sell_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "sell")
+                    if total_conf > 0:
+                        buy_pct = buy_conf / total_conf
+                        sell_pct = sell_conf / total_conf
+                        if buy_pct > sell_pct and buy_pct > 0.3:
+                            aihf_signal_override = ("buy", buy_pct)
+                        elif sell_pct > buy_pct and sell_pct > 0.3:
+                            aihf_signal_override = ("sell", sell_pct)
+                    result.decision["aihf"] = {"agents_contributing": len(aihf_signals), "buy_confidence": buy_conf, "sell_confidence": sell_conf}
+                    logger.info("AIHF Bridge: %d agents contributed signals for %s", len(aihf_signals), symbol)
+            except Exception as exc:
+                logger.warning("AIHF Bridge signals failed: %s", exc)
+
+        # ── NEW: Hedge Fund Bridge — get weighted vote from hedge_fund providers
+        hf_signal_override = None
+        if self._hf_bridge is not None and _HAS_HF_BRIDGE:
+            try:
+                hf_result = self._hf_bridge.get_signal(symbol)
+                if hf_result.get("bias") in ("buy", "sell"):
+                    hf_conf = hf_result["confidence"]
+                    hf_bias = hf_result["bias"]
+                    hf_signal_override = (hf_bias, hf_conf)
+                    result.decision["hedge_fund"] = {
+                        "bias": hf_bias,
+                        "confidence": hf_conf,
+                        "providers": len(hf_result.get("votes", [])),
+                        "source": hf_result.get("source", "hf_vote"),
+                    }
+                    logger.info(
+                        "HedgeFundBridge: vote=%s @ %.2f from %d providers",
+                        hf_bias, hf_conf, len(hf_result.get("votes", [])),
+                    )
+            except Exception as exc:
+                logger.warning("HedgeFundBridge signal failed: %s", exc)
 
         # ── Step 2: Signal ──────────────────────────────────────────
         s2 = PipelineStep(name="signal_generation")
         try:
             s2.status = "running"
             t0 = time.perf_counter()
-            signal_type, confidence, reason = self._generate_signal(symbol, strategy_name, df, regime=regime)
+
+            # NEW: Filter strategies via RegimeFilter before generating signals
+            compatible_strategies = None
+            if self._regime_filter is not None and regime != "unknown":
+                try:
+                    all_strat_names = list(self._strategies.keys())
+                    if self._gene_loader:
+                        all_strat_names.extend(self._gene_loader.get_all_gene_names())
+                    filtered = self._regime_filter.filter_strategies(
+                        strategy_names=all_strat_names,
+                        regime=regime,
+                        min_compat=0.35,
+                    )
+                    compatible_strategies = [s[0] for s in filtered]
+                    logger.info("RegimeFilter: %d/%d strategies compatible with %s regime", len(compatible_strategies), len(all_strat_names), regime)
+                except Exception as exc:
+                    logger.warning("RegimeFilter failed (proceeding with all strategies): %s", exc)
+
+            signal_type, confidence, reason = self._generate_signal(symbol, strategy_name, df, regime=regime, compatible_strategies=compatible_strategies)
+
+            # AIHF override: if AIHF has strong consensus and current signal is weak
+            if aihf_signal_override is not None and confidence < AIHF_OVERRIDE_THRESHOLD:
+                if aihf_signal_override[1] > confidence:
+                    signal_type = aihf_signal_override[0]
+                    confidence = aihf_signal_override[1]
+                    reason = f"AIHF consensus override: {signal_type} @ {confidence:.2f}"
+
+            # Hedge Fund override: if HF has strong consensus and current signal is weaker
+            if hf_signal_override is not None and confidence < AIHF_OVERRIDE_THRESHOLD:
+                if hf_signal_override[1] > confidence:
+                    signal_type = hf_signal_override[0]
+                    confidence = hf_signal_override[1]
+                    reason = f"HedgeFund override: {signal_type} @ {confidence:.2f}"
+
             s2.duration_ms = (time.perf_counter() - t0) * 1000
             s2.status = "passed"
             s2.result = f"{signal_type} @ {confidence:.2f}"
@@ -651,7 +645,6 @@ class AutonomousPipeline:
             s2.status = "failed"
             s2.error = str(exc)
             self.correction.record("signal_gen", f"Signal gen failed for {symbol}", str(exc), LessonSeverity.ERROR)
-
         steps.append(s2)
         if s2.status == "failed":
             result.reason = f"Signal generation failed: {s2.error}"
@@ -661,21 +654,18 @@ class AutonomousPipeline:
         result.signal = signal_type
         result.confidence = confidence
 
-        # ── Step 2.25: Ensemble Voting (multi-source consensus) ────
+        # ── Step 2.25: Ensemble Voting ──────────────────────────────
         s225 = PipelineStep(name="ensemble_voting")
         try:
             s225.status = "running"
             t0 = time.perf_counter()
             from quant_nanggroe.engine.agentic.ensemble import EnsembleVoter
             voter = EnsembleVoter()
-            voted_bias, voted_conf, vote_meta = voter.run(
-                symbol, signal_type, confidence, dataframe=df,
-            )
+            voted_bias, voted_conf, vote_meta = voter.run(symbol, signal_type, confidence, dataframe=df)
             s225.duration_ms = (time.perf_counter() - t0) * 1000
             s225.status = "passed"
             s225.result = f"{voted_bias} @ {voted_conf:.2f} (consensus={vote_meta.get('consensus_strength', 0):.2f})"
             result.decision["ensemble"] = vote_meta
-            # Only override if ensemble has stronger consensus
             if voted_bias != "neutral" and vote_meta.get("consensus_strength", 0) > 0.6:
                 signal_type = voted_bias
                 confidence = voted_conf
@@ -684,37 +674,22 @@ class AutonomousPipeline:
         except Exception as exc:
             s225.status = "skipped"
             s225.error = str(exc)
-            logger.debug("Ensemble voting skipped for %s: %s", symbol, exc)
-
         steps.append(s225)
 
-        # ── Step 2.5: Council debate (low-confidence signals only) ───
-        current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
+        # ── Step 2.5: Council Debate ────────────────────────────────
         s25 = PipelineStep(name="council_debate")
         try:
             s25.status = "running"
             t0 = time.perf_counter()
             from quant_nanggroe.engine.agentic.council import convene_council, DEBATE_THRESHOLD
             if confidence < DEBATE_THRESHOLD:
-                debate = convene_council(
-                    symbol=symbol,
-                    proposed_signal=signal_type,
-                    proposed_confidence=confidence,
-                    price=current_price,
-                    regime=regime,
-                )
+                debate = convene_council(symbol=symbol, proposed_signal=signal_type, proposed_confidence=confidence, price=current_price, regime=regime)
                 s25.duration_ms = (time.perf_counter() - t0) * 1000
                 if debate.debate_held:
                     signal_type = debate.signal
                     confidence = debate.confidence
                     s25.result = f"Council: {signal_type} @ {confidence:.2f} — {debate.summary}"
-                    result.decision["council"] = {
-                        "debate_held": True,
-                        "votes": debate.votes,
-                        "summary": debate.summary,
-                        "original_signal": result.signal,
-                        "original_confidence": result.confidence,
-                    }
+                    result.decision["council"] = {"debate_held": True, "votes": debate.votes, "summary": debate.summary, "original_signal": result.signal, "original_confidence": result.confidence}
                     result.signal = signal_type
                     result.confidence = confidence
                 else:
@@ -726,33 +701,27 @@ class AutonomousPipeline:
         except Exception as exc:
             s25.status = "skipped"
             s25.error = str(exc)
-            logger.warning("Council debate skipped for %s: %s", symbol, exc)
-
         steps.append(s25)
 
-        # ── Step 3: Risk check (via real RiskManager + kill switch) ─
+        # ── Step 3: Risk Check ──────────────────────────────────────
         s3 = PipelineStep(name="risk_check")
         try:
             s3.status = "running"
             t0 = time.perf_counter()
-            current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
-            risk_ok, risk_reason, risk_metrics = self._check_risk(
-                symbol, signal_type, confidence, current_price=current_price
-            )
+            risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price)
             s3.duration_ms = (time.perf_counter() - t0) * 1000
             s3.status = "passed" if risk_ok else "failed"
             s3.result = risk_reason
         except Exception as exc:
             s3.status = "failed"
             s3.error = str(exc)
-
         steps.append(s3)
         if s3.status == "failed":
-            result.reason = f"Risk check blocked: {risk_reason if 'risk_reason' in dir() else s3.error}"
+            result.reason = f"Risk check blocked: {s3.error}"
             result.steps = steps
             return result
 
-        # ── Step 4: LLM reasoning (optional) ────────────────────────
+        # ── Step 4: LLM Reasoning ───────────────────────────────────
         if use_llm and self._llm_router:
             s4 = PipelineStep(name="llm_reasoning")
             try:
@@ -769,7 +738,41 @@ class AutonomousPipeline:
                 self.correction.record("llm_reasoning", f"LLM reasoning failed for {symbol}", str(exc), LessonSeverity.WARNING)
             steps.append(s4)
 
-        # ── Step 5: Execution decision ──────────────────────────────
+        # ── Step 4.5: Final Decider ─────────────────────────────────
+        if self._final_decider is not None and current_price > 0:
+            try:
+                from quant_nanggroe.engine.agentic.final_decider import RegimeState, StrategySignal, PortfolioState, RiskState, Action
+                regime_state = RegimeState(regime=regime if regime != "unknown" else "neutral", confidence=regime_confidence)
+                agg_signal = StrategySignal(
+                    strategy_name="ensemble", symbol=symbol,
+                    action=Action.BUY if signal_type == "buy" else (Action.SELL if signal_type == "sell" else Action.HOLD),
+                    confidence=confidence, regime_compatibility=0.5,
+                )
+                rm_state = getattr(getattr(self._em, '_risk_manager', None), 'state', None)
+                portfolio_state = PortfolioState(
+                    total_exposure=0.0, max_exposure=3.0,
+                    available_balance=rm_state.current_equity if rm_state else 1000.0,
+                )
+                risk_state = RiskState(
+                    kill_switch_active=getattr(getattr(self._em, '_kill_switch', None), 'status', lambda: {})().get('is_active', False) if self._em else False,
+                    daily_loss_pct=0.0, weekly_loss_pct=0.0,
+                )
+                atr_val = self._compute_atr(df)
+                final_decision = self._final_decider.decide(
+                    signals=[agg_signal], regime=regime_state, portfolio=portfolio_state,
+                    risk=risk_state, atr=atr_val if atr_val > 0 else None, current_price=current_price,
+                )
+                if final_decision.action != Action.HOLD:
+                    signal_type = final_decision.action.value
+                    confidence = final_decision.confidence
+                    result.decision["final_decider"] = {
+                        "action": final_decision.action.value, "strategy": final_decision.strategy_name,
+                        "confidence": final_decision.confidence, "kelly": final_decision.kelly_fraction, "reason": final_decision.reason,
+                    }
+            except Exception as exc:
+                logger.warning("FinalDecider skipped: %s", exc)
+
+        # ── Step 5: Execution + StrategyLogger + PnLEvaluator ───────
         s5 = PipelineStep(name="execution")
         try:
             s5.status = "running"
@@ -779,271 +782,93 @@ class AutonomousPipeline:
             s5.status = "passed"
             s5.result = exec_decision.get("action", "hold")
             result.decision["execution"] = exec_decision
+
+            # Log strategy attribution after execution
+            trigger_strategy = "ensemble"
+            if result.decision.get("final_decider"):
+                trigger_strategy = result.decision["final_decider"].get("strategy", "ensemble")
+            atr_value = self._compute_atr(df)
+
+            if self._strategy_logger is not None and exec_decision.get("action") in ("buy", "sell"):
+                try:
+                    log_entry = {
+                        "symbol": symbol, "action": exec_decision["action"],
+                        "strategy_name": trigger_strategy, "confidence": confidence,
+                        "market_regime": regime, "entry_price": current_price,
+                        "volume": exec_decision.get("position_size_pct", 0.01),
+                        "sl": exec_decision.get("sl", current_price - atr_value * 1.5 if exec_decision.get("action") == "buy" else current_price + atr_value * 1.5),
+                        "tp": exec_decision.get("tp", current_price + atr_value * 3.0 if exec_decision.get("action") == "buy" else current_price - atr_value * 3.0),
+                        "atr": atr_value,
+                    }
+                    self._strategy_logger.log_trigger(log_entry)
+                except Exception as exc:
+                    logger.warning("StrategyLogger failed: %s", exc)
+
+            # NEW: PnLEvaluator — record trade for closed-PnL feedback
+            if self._pnl_evaluator is not None and exec_decision.get("action") in ("buy", "sell"):
+                try:
+                    trade = ClosedTrade(
+                        trade_id=exec_decision.get("order_id", str(uuid.uuid4())[:12]),
+                        strategy_name=trigger_strategy,
+                        symbol=symbol,
+                        entry_price=current_price,
+                        exit_price=0.0,  # Updated when position closes
+                        volume=exec_decision.get("position_size_pct", 0.01),
+                        side=exec_decision["action"],
+                        entry_time=datetime.now(timezone.utc).isoformat(),
+                        exit_time="",
+                        pnl=0.0,
+                        rr=0.0,
+                        regime_at_entry=regime,
+                        confidence_at_entry=confidence,
+                    )
+                    perf = self._pnl_evaluator.evaluate(trade)
+                    if perf and self._pnl_evaluator.needs_fine_tune(perf):
+                        logger.warning("PnLEvaluator: %s needs fine-tune (win_rate=%.2f, total_pnl=%.2f)",
+                                       trigger_strategy, perf.win_rate, perf.total_pnl)
+                        result.decision["fine_tune"] = {
+                            "strategy": trigger_strategy, "win_rate": perf.win_rate,
+                            "total_pnl": perf.total_pnl, "reason": "PnL below threshold",
+                        }
+                except Exception as exc:
+                    logger.warning("PnLEvaluator evaluate failed: %s", exc)
         except Exception as exc:
             s5.status = "failed"
             s5.error = str(exc)
-
         steps.append(s5)
 
         result.success = s5.status != "failed"
         result.reason = f"Pipeline complete: {signal_type} @ {confidence:.1%}"
         result.steps = steps
-        self._last_result = result  # ponytail: cache for GET /last-result
+        self._last_result = result
         return result
 
-    # ── pipeline internals ──────────────────────────────────────────
-
-    async def _fetch_data(self, symbol: str, data: Any = None) -> Any:
-        """Fetch OHLCV for *symbol*. Accepts pre-loaded data.
-
-        Routes through DataProviderManager first (failover, caching, health
-        scoring, multi-provider) and falls back to direct yfinance if the
-        manager is unavailable. Previously bypassed 15 registered providers
-        by calling yfinance directly.
-        """
-        if data is not None:
-            return data
-
-        import asyncio
-        import pandas as pd
-
-        # ── Primary path: DataProviderManager ────────────────────────
-        dm = self._ensure_data_manager()
-        if dm is not None:
-            try:
-                from quant_nanggroe.types.market import TimeFrame
-                ohlcv_list = await dm.get_ohlcv(symbol, timeframe=TimeFrame.D1, limit=500)
-                if ohlcv_list and len(ohlcv_list) >= 50:
-                    rows = [
-                        {
-                            "open": float(c.open),
-                            "high": float(c.high),
-                            "low": float(c.low),
-                            "close": float(c.close),
-                            "volume": float(c.volume),
-                        }
-                        for c in ohlcv_list
-                    ]
-                    df = pd.DataFrame(rows, index=pd.DatetimeIndex([c.timestamp for c in ohlcv_list]))
-                    logger.debug("DataProviderManager returned %d bars for %s", len(df), symbol)
-                    # Record successful fetch for staleness monitoring
-                    if self._data_monitor is not None:
-                        try:
-                            from quant_nanggroe.types.market import TimeFrame as _TF
-                            self._data_monitor.record_fetch(symbol, _TF.D1)
-                        except Exception:
-                            pass
-                    df = self._validate_ohlcv(df, symbol)
-                    return df
-            except Exception as exc:
-                logger.warning("DataProviderManager fetch failed for %s (%s) — falling back to yfinance", symbol, exc)
-
-        # ── Fallback path: direct yfinance ───────────────────────────
-        import yfinance as yf
-
-        # Symbol map for Yahoo Finance
-        sym_map = {
-            "BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD", "SOL-USD": "SOL-USD",
-            "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X",
-        }
-        yf_sym = sym_map.get(symbol, symbol)
-
-        # Retry with delay to handle Yahoo Finance rate limiting
-        for attempt in range(3):
-            try:
-                ticker = yf.Ticker(yf_sym)
-                df = ticker.history(period="6mo")
-                if len(df) >= 50:
-                    break
-                if attempt < 2:
-                    logger.info("yfinance returned %d bars for %s, retrying in %ds...", len(df), symbol, 5 * (attempt + 1))
-                    await asyncio.sleep(5 * (attempt + 1))
-            except Exception as exc:
-                if attempt < 2:
-                    logger.info("yfinance attempt %d failed for %s: %s, retrying...", attempt + 1, symbol, exc)
-                    await asyncio.sleep(5 * (attempt + 1))
-                else:
-                    raise
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        df.columns = [c.lower() for c in df.columns]
-
-        if len(df) < 50:
-            logger.warning("Insufficient data for %s: %d bars", symbol, len(df))
-            return None
-        # Record successful fetch for staleness monitoring
-        if self._data_monitor is not None:
-            try:
-                from quant_nanggroe.types.market import TimeFrame as _TF
-                self._data_monitor.record_fetch(symbol, _TF.D1)
-            except Exception:
-                pass
-        return self._validate_ohlcv(df, symbol)
-
-    def _feed_price_to_paper(self, symbol: str, price: float) -> None:
-        """Feed latest close price to PaperBroker.
-
-        PaperBroker.submit_order() rejects orders if set_price() has never
-        been called for the symbol ("No price data available"). Without this,
-        paper trading silently never executes. Must be called after every
-        data fetch so the broker has a current quote to fill against.
-        """
-        if price <= 0:
-            return
-        try:
-            # Lazy-import to avoid circular dependency
-            from quant_nanggroe.engine.execution.builder import build_execution_manager
-            # The singleton execution manager is shared across the pipeline.
-            # Look up via the global accessor; if not built yet, skip silently.
-            import quant_nanggroe.engine.execution.builder as _builder
-            # Most callers attach an ExecutionManager to the pipeline; we
-            # opportunistically scan the singleton if present.
-            for _attr in ("_execution_manager", "_em", "execution_manager"):
-                em = getattr(self, _attr, None)
-                if em is None:
-                    continue
-                for broker in getattr(em, "_brokers", {}).values():
-                    set_price = getattr(broker, "set_price", None)
-                    if callable(set_price):
-                        set_price(symbol, price)
-                return
-        except Exception as exc:
-            logger.debug("Paper price feed skipped for %s: %s", symbol, exc)
-
-    def _validate_ohlcv(self, df: Any, symbol: str) -> Any:
-        """Validate and clean OHLCV data before strategy consumption.
-
-        Checks for:
-          1. Gaps in datetime index (> 2× expected interval)
-          2. NaN / inf values in the close column
-          3. Non-positive close prices
-          4. Impossible bars (high < low or open < 0)
-
-        Returns the cleaned DataFrame, or None if fewer than 50 bars survive.
-        """
-        import numpy as np
-        import pandas as pd
-
-        if df is None or df.empty:
-            logger.warning("[%s] OHLCV validation: empty DataFrame", symbol)
-            return None
-
-        initial_len = len(df)
-        issues: list[str] = []
-
-        # ── 1. Gap detection ────────────────────────────────────────
-        if len(df) >= 2:
-            idx = df.index
-            diffs = pd.Series(idx[1:]) - pd.Series(idx[:-1])
-            median_interval = diffs.median()
-            if pd.notna(median_interval) and median_interval.total_seconds() > 0:
-                gap_threshold = median_interval * 2
-                gaps = diffs[diffs > gap_threshold]
-                if len(gaps) > 0:
-                    issues.append(
-                        f"{len(gaps)} index gap(s) > 2× expected interval "
-                        f"(max gap={gaps.max()}, median interval={median_interval})"
-                    )
-
-        # ── 2. NaN / inf in close ───────────────────────────────────
-        if "close" in df.columns:
-            bad_close = df["close"].isna() | ~np.isfinite(df["close"])
-            nan_count = int(bad_close.sum())
-            if nan_count > 0:
-                issues.append(f"{nan_count} row(s) with NaN/inf close")
-                df = df[~bad_close]
-
-        # ── 3. Non-positive close ───────────────────────────────────
-        if "close" in df.columns:
-            non_pos = df["close"] <= 0
-            non_pos_count = int(non_pos.sum())
-            if non_pos_count > 0:
-                issues.append(f"{non_pos_count} row(s) with close <= 0")
-                df = df[~non_pos]
-
-        # ── 4. Impossible bars ──────────────────────────────────────
-        mask = pd.Series(True, index=df.index)
-        if "high" in df.columns and "low" in df.columns:
-            inv = df["high"] < df["low"]
-            inv_count = int(inv.sum())
-            if inv_count > 0:
-                issues.append(f"{inv_count} row(s) with high < low")
-                mask = mask & ~inv
-        if "open" in df.columns:
-            neg_open = df["open"] < 0
-            neg_count = int(neg_open.sum())
-            if neg_count > 0:
-                issues.append(f"{neg_count} row(s) with open < 0")
-                mask = mask & ~neg_open
-        df = df[mask]
-
-        # ── Log and decide ──────────────────────────────────────────
-        removed = initial_len - len(df)
-        if issues:
-            logger.warning(
-                "[%s] OHLCV validation: %d/%d rows removed — %s",
-                symbol, removed, initial_len, "; ".join(issues),
-            )
-        else:
-            logger.debug("[%s] OHLCV validation passed (%d bars)", symbol, len(df))
-
-        if len(df) < 50:
-            logger.warning("[%s] OHLCV validation: only %d bars remain (< 50 threshold) — returning None", symbol, len(df))
-            return None
-
-        return df
-
-    def _generate_signal(self, symbol: str, strategy_name: str | None, df: Any, regime: str = "unknown") -> tuple[str, float, str]:
-        """Generate a trading signal via ensemble aggregation.
-
-        Runs multiple strategies, collects signals, and produces a
-        regime-weighted aggregate signal. Falls back to single-strategy
-        when a specific strategy_name is provided.
-
-        Returns:
-            (signal_type, confidence, reason)
-        """
-        import pandas as pd
-
-        # If a specific strategy is named, use it directly
+    def _generate_signal(self, symbol: str, strategy_name: str | None, df: Any, regime: str = "unknown", compatible_strategies: list[str] | None = None) -> tuple[str, float, str]:
+        """Generate signal via ensemble. If compatible_strategies provided, filters by regime."""
         if strategy_name:
             try:
                 from quant_nanggroe.engine.strategy.strategies import create_strategy
                 strategy = create_strategy(strategy_name)
             except (ImportError, ValueError) as exc:
-                logger.warning("Strategy %s not found: %s", strategy_name, exc)
                 return "hold", 0.0, f"Strategy not found: {exc}"
             result = strategy.generate_signal(df) if hasattr(strategy, 'generate_signal') else None
             return self._extract_signal(result, strategy_name)
+        return self._ensemble_signal(symbol, df, regime, compatible_strategies)
 
-        # Ensemble: run top strategies and aggregate
-        return self._ensemble_signal(symbol, df, regime)
-
-    def _ensemble_signal(self, symbol: str, df: Any, regime: str) -> tuple[str, float, str]:
-        """Run top strategies and aggregate via regime-weighted voting.
-
-        Strategy categories and their regime weights:
-          - momentum/trend: high weight in trending regimes
-          - mean_reversion: high weight in ranging regimes
-          - volatility: high weight in volatile regimes
-          - pattern: low weight everywhere (statistically weak)
-        """
-        import pandas as pd
-
-        # Regime → strategy category weights
+    def _ensemble_signal(self, symbol: str, df: Any, regime: str, compatible_strategies: list[str] | None = None) -> tuple[str, float, str]:
+        """Run top strategies + MUE-X genes, aggregate via regime-weighted voting.
+        If compatible_strategies provided, only runs those that passed RegimeFilter."""
         regime_weights = {
-            "trending_up":   {"momentum": 1.5, "trend": 1.5, "mean_reversion": 0.5, "volatility": 0.8, "pattern": 0.3},
+            "trending_up": {"momentum": 1.5, "trend": 1.5, "mean_reversion": 0.5, "volatility": 0.8, "pattern": 0.3},
             "trending_down": {"momentum": 1.5, "trend": 1.5, "mean_reversion": 0.5, "volatility": 0.8, "pattern": 0.3},
-            "ranging":       {"momentum": 0.5, "trend": 0.5, "mean_reversion": 1.5, "volatility": 1.0, "pattern": 0.5},
-            "volatile":      {"momentum": 0.8, "trend": 0.7, "mean_reversion": 1.0, "volatility": 1.5, "pattern": 0.3},
-            "crisis":        {"momentum": 0.3, "trend": 0.5, "mean_reversion": 1.5, "volatility": 1.2, "pattern": 0.2},
-            "recovery":      {"momentum": 1.2, "trend": 1.0, "mean_reversion": 0.8, "volatility": 0.7, "pattern": 0.3},
-            "unknown":       {"momentum": 1.0, "trend": 1.0, "mean_reversion": 1.0, "volatility": 1.0, "pattern": 0.5},
+            "ranging": {"momentum": 0.5, "trend": 0.5, "mean_reversion": 1.5, "volatility": 1.0, "pattern": 0.5},
+            "volatile": {"momentum": 0.8, "trend": 0.7, "mean_reversion": 1.0, "volatility": 1.5, "pattern": 0.3},
+            "crisis": {"momentum": 0.3, "trend": 0.5, "mean_reversion": 1.5, "volatility": 1.2, "pattern": 0.2},
+            "recovery": {"momentum": 1.2, "trend": 1.0, "mean_reversion": 0.8, "volatility": 0.7, "pattern": 0.3},
+            "unknown": {"momentum": 1.0, "trend": 1.0, "mean_reversion": 1.0, "volatility": 1.0, "pattern": 0.5},
         }
         weights = regime_weights.get(regime, regime_weights["unknown"])
 
-        # Classify strategy by name keywords
         def _classify(name: str) -> str:
             n = name.lower()
             if any(k in n for k in ["momentum", "trend", "aroon", "parabolic", "hull", "dual_ma"]):
@@ -1054,9 +879,8 @@ class AutonomousPipeline:
                 return "volatility"
             if any(k in n for k in ["engulfing", "doji", "hammer", "pattern", "candle"]):
                 return "pattern"
-            return "momentum"  # default
+            return "momentum"
 
-        # Run top 15 strategies (regime-specific first, then fill)
         regime_priority = {
             "trending_up": ["momentum", "trend_following_cta", "parabolic_sar", "aroon_strategy", "hull_ma", "dual_ma_crossover"],
             "trending_down": ["momentum", "trend_following_cta", "hull_ma", "parabolic_sar"],
@@ -1071,16 +895,27 @@ class AutonomousPipeline:
         try:
             from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
             all_names = list_strategies()
-            # Filter through lifecycle manager — exclude killed/hibernating
             if self._lifecycle:
                 active = set(self._lifecycle.get_active_strategies())
                 if active:
                     all_names = [n for n in all_names if n in active]
-                    logger.debug("Lifecycle gate: %d/%d strategies active", len(all_names), len(list_strategies()))
         except (ImportError, ValueError):
             return "hold", 0.0, "Cannot load strategy registry"
 
-        # Build candidate list: priority first, then fill to 15
+        # Add MUE-X genes to candidate pool
+        if self._gene_loader:
+            try:
+                gene_names = self._gene_loader.get_all_gene_names()
+                all_names.extend(gene_names)
+            except Exception:
+                pass
+
+        # If RegimeFilter provided compatible strategies, use them as filter
+        if compatible_strategies is not None:
+            all_names = [n for n in all_names if n in compatible_strategies]
+            if not all_names:
+                return "hold", 0.0, f"No strategies compatible with {regime} regime"
+
         candidates = []
         for name in priority:
             if name in all_names and name not in candidates:
@@ -1089,8 +924,7 @@ class AutonomousPipeline:
             if name not in candidates and len(candidates) < 15:
                 candidates.append(name)
 
-        # Run all candidates
-        signals: list[tuple[str, float, str, str]] = []  # (signal, confidence, reason, category)
+        signals: list[tuple[str, float, str, str]] = []
         for name in candidates:
             try:
                 strat = create_strategy(name)
@@ -1102,47 +936,29 @@ class AutonomousPipeline:
             except Exception:
                 continue
 
-        # Record signals for win/loss tracking
         self._record_strategy_signals(symbol, df, signals)
 
         if not signals:
             return "hold", 0.0, "No strategy produced a signal"
 
-        # Aggregate: weighted vote
-        buy_weight = 0.0
-        sell_weight = 0.0
-        total_weight = 0.0
-        reasons = []
-
-        for sig, conf, reason, cat in signals:
-            w = conf * weights.get(cat, 1.0)
-            if sig == "buy":
-                buy_weight += w
-            elif sig == "sell":
-                sell_weight += w
-            total_weight += w
-            if reason:
-                reasons.append(f"{cat}({sig}:{conf:.0%})")
+        buy_weight = sum(c * weights.get(cat, 1.0) for sig, c, _, cat in signals if sig == "buy")
+        sell_weight = sum(c * weights.get(cat, 1.0) for sig, c, _, cat in signals if sig == "sell")
+        total_weight = buy_weight + sell_weight
 
         if total_weight == 0:
             return "hold", 0.0, "All signals zero weight"
 
-        # Normalize and decide
         buy_pct = buy_weight / total_weight
         sell_pct = sell_weight / total_weight
 
         if buy_pct > sell_pct and buy_pct > 0.3:
-            confidence = min(buy_pct, 1.0)
-            return "buy", confidence, f"Ensemble: {', '.join(reasons[:5])}"
+            return "buy", min(buy_pct, 1.0), f"Ensemble: buy={buy_pct:.0%} sell={sell_pct:.0%}"
         elif sell_pct > buy_pct and sell_pct > 0.3:
-            confidence = min(sell_pct, 1.0)
-            return "sell", confidence, f"Ensemble: {', '.join(reasons[:5])}"
+            return "sell", min(sell_pct, 1.0), f"Ensemble: buy={buy_pct:.0%} sell={sell_pct:.0%}"
         else:
             return "hold", 0.0, f"No consensus: buy={buy_pct:.0%} sell={sell_pct:.0%}"
 
     def _extract_signal(self, result: Any, strategy_name: str) -> tuple[str, float, str]:
-        """Extract (signal, confidence, reason) from a strategy result."""
-        import pandas as pd
         if result is None:
             return "hold", 0.0, "No signal"
         if hasattr(result, 'signal_type'):
@@ -1150,6 +966,7 @@ class AutonomousPipeline:
             conf = getattr(result, 'confidence', 0.5)
             reason = getattr(result, 'reasoning', '') or f"{strategy_name} -> {sig}"
             return sig, min(float(conf), 1.0), reason
+        import pandas as pd
         if isinstance(result, pd.Series) and len(result) > 0:
             last = result.iloc[-1]
             sig = "buy" if last > 0 else "sell" if last < 0 else "hold"
@@ -1157,122 +974,211 @@ class AutonomousPipeline:
             return sig, min(conf, 1.0), f"{strategy_name}: {last:.4f}"
         return "hold", 0.0, f"Unknown result: {type(result).__name__}"
 
-    def _check_risk(
-        self, symbol: str, signal: str, confidence: float,
-        current_price: float = 0.0,
-    ) -> tuple[bool, str, dict]:
-        """Check risk constraints via real RiskManager + kill switch.
+    def _record_strategy_signals(self, symbol: str, df: Any, signals: list[tuple[str, float, str, str]]) -> None:
+        if df is None or len(df) < 2:
+            return
+        current_price = float(df['close'].iloc[-1]) if hasattr(df, 'close') else 0.0
+        if current_price == 0:
+            return
+        path = Path(__file__).resolve().parent.parent.parent / "data" / "strategy_signals.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        previous: list[dict] = []
+        if path.exists():
+            try:
+                previous = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                previous = []
+        if previous and self._lifecycle:
+            still_pending = []
+            for ps in previous:
+                if ps.get("symbol") != symbol:
+                    still_pending.append(ps)
+                    continue
+                prev_price = ps.get("price", 0)
+                prev_signal = ps.get("signal", "hold")
+                strat_name = ps.get("strategy", "unknown")
+                if prev_price <= 0 or prev_signal == "hold":
+                    still_pending.append(ps)
+                    continue
+                price_change = (current_price - prev_price) / prev_price
+                is_win = (prev_signal == "buy" and price_change > 0.01) or (prev_signal == "sell" and price_change < -0.01)
+                try:
+                    self._lifecycle.update_strategy(name=strat_name, pnl=price_change, is_win=is_win)
+                except Exception:
+                    pass
+            previous = still_pending
+        timenow = datetime.now(timezone.utc).isoformat()
+        for sig, conf, reason, cat in signals:
+            if sig != "hold":
+                previous.append({"symbol": symbol, "strategy": cat, "signal": sig, "price": current_price, "confidence": conf, "timestamp": timenow})
+        if len(previous) > 1000:
+            previous = previous[-1000:]
+        try:
+            path.write_text(json.dumps(previous, indent=2, default=str), encoding="utf-8")
+        except Exception:
+            pass
 
-        Uses the shared ExecutionManager's RiskManager for constitutional limit
-        enforcement (VaR, Kelly, drawdown, 9-gate). Falls back to confidence floor
-        when RiskManager is unavailable.
-
-        Args:
-            symbol: Trading symbol.
-            signal: buy/sell/hold.
-            confidence: Signal confidence 0-1.
-            current_price: Current market price from OHLCV data.
-
-        Returns:
-            (ok: bool, reason: str, metrics: dict)
-        """
+    def _check_risk(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0) -> tuple[bool, str, dict]:
         metrics = {"max_drawdown": 0.0, "daily_pnl": 0.0, "price": current_price}
-
         try:
             em = self._em
-
-            # Check kill switch first — hard block if active
             if em._kill_switch:
                 ks_status = em._kill_switch.status()
                 if ks_status.get("is_active") or ks_status.get("active"):
-                    level = ks_status.get("level", "?")
-                    return False, f"Kill switch active (level={level})", metrics
-
-            # Full RiskManager 9-checkpoint gate with real values
+                    return False, f"Kill switch active", metrics
             if em._risk_manager:
                 from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
                 balance = em._risk_manager.state.current_equity
-                stop_loss = current_price * 0.95 if signal == "buy" else (
-                    current_price * 1.05 if signal == "sell" else current_price
-                )
-                lot_size = max(
-                    0.01,
-                    round(balance * MAX_RISK_PER_TRADE / current_price, 4)
-                ) if current_price > 0 else 0.01
-
-                verdict = em._risk_manager.check_trade(
-                    symbol=symbol,
-                    direction=signal.upper() if signal != "hold" else "HOLD",
-                    lot_size=lot_size,
-                    entry=current_price,
-                    stop_loss=stop_loss,
-                    account_balance=balance,
-                )
+                stop_loss = current_price * 0.95 if signal == "buy" else (current_price * 1.05 if signal == "sell" else current_price)
+                lot_size = max(0.01, round(balance * MAX_RISK_PER_TRADE / current_price, 4)) if current_price > 0 else 0.01
+                verdict = em._risk_manager.check_trade(symbol=symbol, direction=signal.upper() if signal != "hold" else "HOLD", lot_size=lot_size, entry=current_price, stop_loss=stop_loss, account_balance=balance)
                 if verdict.get("verdict") == "VETOED":
-                    return False, f"RiskManager vetoed: {verdict.get('reason','?')}", {
-                        **metrics, "risk_verdict": "VETOED", "checkpoints": verdict.get("checkpoints", {})
-                    }
-                metrics.update({
-                    "risk_verdict": "APPROVED",
-                    "lot_size": lot_size,
-                    "stop_loss": stop_loss,
-                    "balance": balance,
-                })
+                    return False, f"RiskManager vetoed: {verdict.get('reason','?')}", {**metrics, "risk_verdict": "VETOED", "checkpoints": verdict.get("checkpoints", {})}
+                metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance})
         except Exception as exc:
-            logger.warning("RiskManager check failed (non-fatal, using confidence gate): %s", exc)
-
-        # Fallback confidence gate when RiskManager unavailable
+            logger.warning("RiskManager check failed: %s", exc)
         if confidence < 0.15:
             return False, f"Confidence {confidence:.2f} below 0.15 floor", metrics
         if signal == "hold":
-            return False, "Signal is HOLD — no trade", metrics
-
+            return False, "Signal is HOLD", metrics
         return True, f"Risk passed: {signal} @ {confidence:.1%}", metrics
 
     async def _llm_reason(self, symbol: str, signal: str, confidence: float) -> dict[str, Any]:
-        """Route decision through LLM for reasoning."""
-        prompt = (
-            f"Symbol: {symbol}\n"
-            f"Technical Signal: {signal}\n"
-            f"Confidence: {confidence:.1%}\n\n"
-            "Evaluate this trade. Consider market conditions and risk. "
-            "Respond with a single JSON: {\"action\": \"buy|sell|hold\", \"reason\": \"...\", \"confidence\": 0.0-1.0}"
-        )
+        prompt = f"Symbol: {symbol}\nTechnical Signal: {signal}\nConfidence: {confidence:.1%}\n\nEvaluate this trade."
         try:
             response = await self._llm_router.chat(prompt, tier=None, temperature=0.3)
             content = response.content.strip()
-            # Try to extract JSON from the response
             if "{" in content:
                 json_str = content[content.index("{"):content.rindex("}") + 1]
                 import json as _json
                 return _json.loads(json_str)
             return {"action": signal, "reason": content[:200], "confidence": confidence}
         except Exception as exc:
-            logger.warning("LLM reasoning failed: %s", exc)
             return {"action": signal, "reason": f"LLM unavailable: {exc}", "confidence": confidence}
 
+    async def _fetch_data(self, symbol: str, data: Any = None) -> Any:
+        if data is not None:
+            return data
+        import asyncio
+        import pandas as pd
+        dm = self._ensure_data_manager()
+        if dm is not None:
+            try:
+                from quant_nanggroe.types.market import TimeFrame
+                ohlcv_list = await dm.get_ohlcv(symbol, timeframe=TimeFrame.D1, limit=500)
+                if ohlcv_list and len(ohlcv_list) >= 50:
+                    rows = [{"open": float(c.open), "high": float(c.high), "low": float(c.low), "close": float(c.close), "volume": float(c.volume)} for c in ohlcv_list]
+                    df = pd.DataFrame(rows, index=pd.DatetimeIndex([c.timestamp for c in ohlcv_list]))
+                    if self._data_monitor is not None:
+                        try:
+                            from quant_nanggroe.types.market import TimeFrame as _TF
+                            self._data_monitor.record_fetch(symbol, _TF.D1)
+                        except Exception:
+                            pass
+                    return self._validate_ohlcv(df, symbol)
+            except Exception as exc:
+                logger.warning("DataProviderManager failed (%s) — falling back to yfinance", exc)
+        import yfinance as yf
+        sym_map = {"BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD", "SOL-USD": "SOL-USD", "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X"}
+        yf_sym = sym_map.get(symbol, symbol)
+        for attempt in range(3):
+            try:
+                ticker = yf.Ticker(yf_sym)
+                df = ticker.history(period="6mo")
+                if len(df) >= 50:
+                    break
+                await asyncio.sleep(5 * (attempt + 1))
+            except Exception as exc:
+                if attempt < 2:
+                    await asyncio.sleep(5 * (attempt + 1))
+                else:
+                    raise
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        df.columns = [c.lower() for c in df.columns]
+        if len(df) < 50:
+            return None
+        if self._data_monitor is not None:
+            try:
+                from quant_nanggroe.types.market import TimeFrame as _TF
+                self._data_monitor.record_fetch(symbol, _TF.D1)
+            except Exception:
+                pass
+        return self._validate_ohlcv(df, symbol)
+
+    def _validate_ohlcv(self, df: Any, symbol: str) -> Any:
+        if df is None or df.empty:
+            return None
+        initial_len = len(df)
+        issues: list[str] = []
+        import pandas as pd
+        if len(df) >= 2:
+            idx = df.index
+            diffs = pd.Series(idx[1:]) - pd.Series(idx[:-1])
+            median_interval = diffs.median()
+            if pd.notna(median_interval) and median_interval.total_seconds() > 0:
+                gap_threshold = median_interval * 2
+                gaps = diffs[diffs > gap_threshold]
+                if len(gaps) > 0:
+                    issues.append(f"{len(gaps)} index gap(s)")
+        if "close" in df.columns:
+            bad_close = df["close"].isna() | ~np.isfinite(df["close"])
+            nan_count = int(bad_close.sum())
+            if nan_count > 0:
+                issues.append(f"{nan_count} NaN/inf close")
+                df = df[~bad_close]
+            non_pos = df["close"] <= 0
+            if int(non_pos.sum()) > 0:
+                issues.append(f"{int(non_pos.sum())} close<=0")
+                df = df[~non_pos]
+        mask = pd.Series(True, index=df.index)
+        if "high" in df.columns and "low" in df.columns:
+            inv = df["high"] < df["low"]
+            if int(inv.sum()) > 0:
+                issues.append(f"{int(inv.sum())} high<low")
+                mask = mask & ~inv
+        if "open" in df.columns:
+            neg = df["open"] < 0
+            if int(neg.sum()) > 0:
+                issues.append(f"{int(neg.sum())} open<0")
+                mask = mask & ~neg
+        df = df[mask]
+        removed = initial_len - len(df)
+        if issues:
+            logger.warning("[%s] OHLCV validation: %d/%d removed — %s", symbol, removed, initial_len, "; ".join(issues))
+        if len(df) < 50:
+            return None
+        return df
+
+    def _feed_price_to_paper(self, symbol: str, price: float) -> None:
+        if price <= 0:
+            return
+        try:
+            for _attr in ("_execution_manager", "_em", "execution_manager"):
+                em = getattr(self, _attr, None)
+                if em is None:
+                    continue
+                for broker in getattr(em, "_brokers", {}).values():
+                    set_price = getattr(broker, "set_price", None)
+                    if callable(set_price):
+                        set_price(symbol, price)
+                return
+        except Exception as exc:
+            logger.debug("Paper price feed skipped: %s", exc)
+
     async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown") -> dict[str, Any]:
-        """Execute signal via ExecutionManager → live or paper broker.
-        Paper default, MT5 when QNA_LIVE_TRADING=1."""
         try:
             from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
-            import uuid
             em = self._em
             side = OrderSide.BUY if signal == "buy" else (OrderSide.SELL if signal == "sell" else None)
             if side is None:
-                return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4),
-                        "position_size_pct": 0, "execution": "hold", "note": "signal=hold, no order"}
+                return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "execution": "hold", "note": "signal=hold, no order"}
             qty = max(0.01, round(confidence * 0.1, 4))
-
-            # Feed current market price to paper broker so it can execute
             if current_price > 0:
                 for broker in em._brokers.values():
                     if hasattr(broker, 'set_price'):
                         broker.set_price(symbol, current_price)
-                        logger.info("Fed price %.2f to broker %s for %s", current_price, getattr(broker, 'name', '?'), symbol)
-            order = Order(id=str(uuid.uuid4()), symbol=symbol, side=side,
-                          order_type=OrderType.MARKET, quantity=qty,
-                          status=OrderStatus.PENDING, metadata={"confidence": confidence})
+            order = Order(id=str(uuid.uuid4()), symbol=symbol, side=side, order_type=OrderType.MARKET, quantity=qty, status=OrderStatus.PENDING, metadata={"confidence": confidence})
             fill = await em.execute_order(order)
             reason = "filled"
             executed = False
@@ -1285,70 +1191,36 @@ class AutonomousPipeline:
                     reason = "rejected: no broker connected or guard blocked"
             else:
                 executed = True
-
-            # Write state snapshot to paper_state/ for dashboard
             try:
                 from quant_nanggroe.engine.state_writer import write_engine_snapshot as _write_snap
                 if executed and fill:
-                    _write_snap(
-                        engine_state={"total_value": fill.price * qty if fill.price else 0,
-                                      "cash_balance": 0, "positions_count": 1,
-                                      "daily_pnl": 0, "weekly_pnl": 0, "drawdown": 0, "regime": "unknown"},
-                        risk_state={"kill_switch_active": False},
-                        positions=[{"symbol": symbol, "side": signal, "qty": qty,
-                                    "entry_price": fill.price if fill.price else 0,
-                                    "timestamp": datetime.now(timezone.utc).isoformat()}],
-                    )
-            except Exception as _wexc:
-                logger.debug("State write skipped: %s", _wexc)
-
-            return {
-                "symbol": symbol, "action": signal, "confidence": round(confidence, 4),
-                "position_size_pct": round(confidence * 0.05, 4),
-                "execution": "filled" if executed else "rejected",
-                "reason": reason,
-                "order_id": fill.order_id if fill else None,
-                "fill_price": fill.price if fill else None,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
+                    _write_snap(engine_state={"total_value": fill.price * qty if fill.price else 0, "cash_balance": 0, "positions_count": 1, "daily_pnl": 0, "weekly_pnl": 0, "drawdown": 0, "regime": "unknown"}, risk_state={"kill_switch_active": False}, positions=[{"symbol": symbol, "side": signal, "qty": qty, "entry_price": fill.price if fill.price else 0, "timestamp": datetime.now(timezone.utc).isoformat()}])
+            except Exception:
+                pass
+            return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": round(confidence * 0.05, 4), "execution": "filled" if executed else "rejected", "reason": reason, "order_id": fill.order_id if fill else None, "fill_price": fill.price if fill else None, "timestamp": datetime.now(timezone.utc).isoformat()}
         except Exception as exc:
             self.correction.record("execution", f"Order failed {symbol}", str(exc), LessonSeverity.ERROR)
-            return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4),
-                    "position_size_pct": 0, "error": str(exc)}
+            return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "error": str(exc)}
 
-    # ── batch pipeline ──────────────────────────────────────────────
-
-    async def run_batch(
-        self,
-        symbols: list[str] | None = None,
-        strategy_name: str | None = None,
-        use_llm: bool = False,
-    ) -> list[PipelineResult]:
-        """Run pipeline across multiple symbols."""
+    async def run_batch(self, symbols: list[str] | None = None, strategy_name: str | None = None, use_llm: bool = False) -> list[PipelineResult]:
         if symbols is None:
             symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "EURUSD", "USDJPY"]
-
         results = []
         for sym in symbols:
             try:
                 res = await self.run(sym, strategy_name, use_llm)
                 results.append(res)
-                logger.info("Pipeline %s: %s @ %.1f%%", sym, res.signal, res.confidence * 100)
             except Exception as exc:
                 results.append(PipelineResult(symbol=sym, success=False, reason=str(exc)))
                 self.correction.record("pipeline_batch", f"Pipeline failed for {sym}", str(exc), LessonSeverity.ERROR)
         return results
 
 
-# ---------------------------------------------------------------------------
 # Module-level singleton
-# ---------------------------------------------------------------------------
-
 _default_pipeline: AutonomousPipeline | None = None
 
 
 def get_autonomous_pipeline() -> AutonomousPipeline:
-    """Get or create the default AutonomousPipeline."""
     global _default_pipeline
     if _default_pipeline is None:
         _default_pipeline = AutonomousPipeline()

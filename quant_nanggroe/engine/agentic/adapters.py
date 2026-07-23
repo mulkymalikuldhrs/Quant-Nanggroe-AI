@@ -68,17 +68,17 @@ class WyckoffAdapter(SignalAdapter):
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
         try:
             # Try QNA's built-in Wyckoff first
-            from quant_nanggroe.engine.strategy.strategies.wyckoff_strategy import WyckoffStrategy
+            from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
+            from quant_nanggroe.engine.strategies.base import StrategyParameters, SignalDirection
             df = kwargs.get("dataframe")
             if df is None or len(df) < 60:
                 return None
-            strat = WyckoffStrategy(lookback=50, volume_mult=1.3)
-            signals = strat.generate_signals(df)
-            last = signals.iloc[-1]
-            if last.get("entry", 0) == 1:
-                return Signal(Bias.BUY, 0.65, self.source_name)
-            if last.get("entry", 0) == -1:
-                return Signal(Bias.SELL, 0.65, self.source_name)
+            strat = WyckoffStrategy(parameters=StrategyParameters(params={"lookback": 50, "volume_threshold": 1.3}))
+            signal = strat.generate_signal(df)
+            if signal.direction == SignalDirection.BUY:
+                return Signal(Bias.BUY, signal.confidence or 0.65, self.source_name)
+            if signal.direction == SignalDirection.SELL:
+                return Signal(Bias.SELL, signal.confidence or 0.65, self.source_name)
             return Signal(Bias.NEUTRAL, 0.0, self.source_name)
         except Exception as e:
             logger.debug("Wyckoff failed: %s", e)

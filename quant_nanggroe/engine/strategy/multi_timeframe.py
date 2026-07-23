@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
+from quant_nanggroe.engine.strategies.base import Strategy as BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
