@@ -18,6 +18,14 @@ build/
 .venv/
 venv/
 env/
+
+# ── Backups / Artifacts ──────────────────────────────────────────────
+backups/
+backup_env/
+
+# ── Context Cache ────────────────────────────────────────────────────
+context_cache/
+context_cache.json
 .env
 
 # ── Testing ───────────────────────────────────────────────────────────
