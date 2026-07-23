@@ -19,17 +19,8 @@ __all__ = [
     'memory',
     'monitor',
     'options',
-    'personas',
-    'portfolio',
-    'rl',
-    'sec_edgar',
-    'signal_generator',
-    'strategies',
-    'strategy',
-    'trading',
-    'whatsapp',
-    'wiring_compat',
-    'ws',
+    'personas',    'portfolio', 'pipeline_status', 'rl', 'sec_edgar', 'signal_generator',
+    'strategies', 'strategy', 'trading', 'whatsapp', 'wiring_compat', 'ws',
 ]
 
 from . import _data
@@ -61,3 +52,4 @@ from . import trading
 from . import whatsapp
 from . import wiring_compat
 from . import ws
+from . import pipeline_status

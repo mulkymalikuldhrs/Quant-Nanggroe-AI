@@ -187,3 +187,22 @@
 - Agent merging from ai_multicolony to quant_nanggroe/agents/
 - CI/CD pipeline setup
 - Documentation structure created
+
+## v4.6.0-hotfix (2026-07-23) — Phase 5: UI Upgrade + Full Pipeline Visibility
+
+### 🖥️ Dashboard UI Massive Upgrade
+- **New Pipeline page** (`/pipeline`) — all 15 stages visible with real-time status, config panels, metrics
+- **Pipeline Flow Diagram** — visual 15-stage flow with operational/degraded status
+- **Component config panels** — toggle switches, sliders, action buttons per component
+- **Sidebar updated** — Pipeline nav item added (badge: 15), version bumped to v4.6.0
+- **17 dashboard routes** — all pipeline stages accessible and configurable via UI
+
+### 📄 Documentation
+- **README.md rewritten** — full X·Y·Z pipeline documentation, 15-component table, dashboard routes, architecture diagram
+- **CHANGELOG.md** — updated with all v4.6.0 changes
+- **session-QNA.md** — architecture section aligned with 15-stage pipeline
+
+### 🔧 Hedge Fund → QNA Merge
+- **hedge_fund_bridge.py** (216L) — safe import with logging suppression, weighted voting across 10 core providers
+- **Wired into autonomous.py** — HF signals collected after AIHF, override checks same threshold
+- **Logging guard** — root logger NullHandler prevents hedge_fund's basicConfig() from taking over

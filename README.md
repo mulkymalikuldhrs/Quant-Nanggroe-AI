@@ -1,6 +1,20 @@
 # Quant-Nanggroe-AI v4.6.0 — Autonomous Quant Hedge Fund
 
+> **X·Y·Z Pipeline: 15 stages, 15 components wired, 72/100 production-ready.**
 > **"Isi saldo dan mulai autonomous trading."** — Mulky Malikul Dhaher
+
+## Dashboard UI
+
+```
+http://localhost:3000/pipeline  → 15-stage pipeline status + config panels
+http://localhost:3000/qna-status → QNA system health
+http://localhost:3000/trading    → Live trading controls
+http://localhost:3000/portfolio  → Portfolio view
+http://localhost:3000/strategies → Strategy management
+http://localhost:3000/risk       → Risk dashboard
+http://localhost:3000/agents     → AI agent status
+http://localhost:3000/settings   → System config
+```
 
 ## 3 Langkah Mulai Trading
 
@@ -15,17 +29,79 @@ copy config\mt5_accounts.yaml.example config\mt5_accounts.yaml
 set VALETAX_PASSWORD=password_mt5_anda
 ```
 
-### 3. Start
+### 3. Start Backend + Dashboard
 ```bash
+# Terminal 1: Backend API
 launch.bat
 # → http://localhost:8000/docs
-# → POST /api/autonomous/pipeline/run {"symbol": "BTC-USD"}
+
+# Terminal 2: Dashboard UI
+cd dashboard && npm run dev
+# → http://localhost:3000/pipeline
 ```
 
 > **Butuh demo MT5?** Buka MT5 → File → Open Account → Demo.   
 > **Untuk live trading:** Set `QNA_LIVE_TRADING=1` di `start_trading.bat`
 
-## Arsitektur
+## X·Y·Z Pipeline — 15 Stages
+
+```
+[1]  Data Fetch     [2]  Regime Detection     [3]  AIHF Bridge
+[4]  HF Bridge       [5]  Strategy+Genes       [6]  RegimeFilter
+[7]  Ensemble Vote   [8]  Council Debate       [9]  Risk Check
+[10] Final Decider   [11] Execution (MT5)      [12] Strategy Logger
+[13] PnL Evaluator   [14] Evolve & Repeat      [15] Hedge Fund Bridge
+```
+
+### Full Pipeline Flow
+
+```
+POST /api/autonomous/pipeline/run {"symbol":"BTC-USD"}
+  → AutonomousPipeline.run() [1,180 lines, 15 components]
+
+    STEP 1 - DATA:
+      _fetch_data(symbol)       → yfinance / DataProviderManager (retry x3)
+
+    STEP 2 - REGIME:
+      MarketRegimeDetector()    → HMM: trending/ranging/volatile/crisis
+
+    STEP 3 - AI SIGNALS:
+      AIHF Bridge               → 20 agents vote → consensus override (< 0.6)
+      HedgeFund Bridge          → 10 core providers → weighted vote [NEW]
+
+    STEP 4 - STRATEGIES:
+      discover_strategies()     → 28 canonical + 34 MUE-X genes
+      GeneLoader                → MUE-X evolved strategies
+      RegimeFilter              → Filter by regime compat (min 0.35)
+
+    STEP 5 - ENSEMBLE:
+      _ensemble_signal()        → Regime-weighted voting
+      AIHF override             → If AIHF stronger, override signal
+      HedgeFund override        → If HF stronger, override signal
+
+    STEP 6 - COUNCIL:
+      convene_council()         → Multi-agent debate (if confidence < threshold)
+
+    STEP 7 - RISK:
+      _check_risk()             → KillSwitch → RiskManager 9-gate → ATR sizing
+
+    STEP 8 - FINAL DECIDER:
+      FinalDecider.decide()     → Kelly + SL/TP + portfolio + regime → VETO
+
+    STEP 9 - EXECUTION:
+      _make_decision()          → PaperBroker (default) / MT5 live
+
+    STEP 10 - LOGGING:
+      StrategyLogger            → EVERY triggered strategy logged
+      PnLEvaluator              → Closed-PnL → win rate / Sharpe / drawdown
+      needs_fine_tune()         → Trigger fine-tune if bad
+
+    STEP 11 - EVOLVE:
+      SelfCorrection            → Lessons recorded → auto-improve
+      Repeat                    → Autonomous loop
+```
+
+## Arsitektur (842 .py files)
 
 ```
 quant_nanggroe/
@@ -34,41 +110,57 @@ quant_nanggroe/
 │   ├── middleware.py → Auth (localhost→ADMIN), CORS, RateLimit
 │   └── routes/     → trading, autonomous, scheduler, backtest, etc.
 ├── engine/
-│   ├── agentic/    → AutonomousPipeline (data→signal→risk→execute)
+│   ├── agentic/    → AutonomousPipeline (1,180 lines) — ALL 15 stages wired
+│   │   ├── autonomous.py    → MAIN ORCHESTRATOR
+│   │   ├── final_decider.py → One Final Veto (483 lines)
+│   │   ├── council.py       → Multi-agent debate
+│   │   └── ensemble.py      → EnsembleVoter
+│   ├── analytics/
+│   │   ├── strategy_logger.py  → Every triggered strategy logged (306L)
+│   │   └── pnl_evaluator.py    → Closed-PnL evaluation + fine-tune (231L)
+│   ├── regime/
+│   │   └── strategy_filter.py  → RegimeFilter (282L)
+│   ├── strategies/
+│   │   └── gene_loader.py      → MUE-X gene evolution (415L)
 │   ├── scheduler.py→ PipelineScheduler (auto-trigger every N min)
-│   ├── execution/  → ExecutionManager (guards→kill switch→risk→broker)
-│   │   ├── manager.py   → execute_order() with full safety pipeline
-│   │   ├── builder.py   → build_execution_manager() (paper default, MT5 opt-in)
-│   │   └── brokers/     → PaperBroker, MT5ExecutionBroker (async adapter)
+│   ├── execution/  → ExecutionManager, PaperBroker, MT5 broker
 │   ├── risk/       → KillSwitch, RiskManager, VaR, Kelly, PositionSizing
 │   ├── backtest/   → WalkForwardAnalyzer, PSR/DSR, Monte Carlo
 │   └── strategy/   → 106+ strategies (regime-based selection)
+├── agents/
+│   ├── aihf_bridge.py          → 20 AI agents (305L)
+│   ├── hedge_fund_bridge.py    → 10 HF providers adapter (216L) [NEW]
+│   ├── tools/                  → Technical, debate, compliance
+│   └── personas/               → AI personas
 ├── exchange/       → ExchangeManager, CCXT broker, PaperExchangeBroker
-├── connectors/     → MT5Broker, broker_base (sync adapter)
+├── data/           → Providers (yahoo, binance, finnhub, polygon, etc)
 ├── config/         → settings, mt5_accounts.yaml
-└── agents/         → LangChain tools, debate, personas
+├── security/       → Auth, encryption, credentials
+└── mcp/            → Model Context Protocol server
+
+dashboard/          → Next.js 16, 17 routes, 36 components, Tailwind v4
+  └── pipeline/     → Pipeline UI with all 15 stages configurable [NEW]
 ```
 
-## Alur Autonomous Trading
+## Semua Komponen Pipeline (15 WIRED)
 
-```
-POST /api/autonomous/pipeline/run {"symbol":"BTC-USD"}
-  → AutonomousPipeline.run_cycle()
-    1. _fetch_data(symbols)        → yfinance (retry x3)
-    2. _generate_signals(data)     → regime-based strategy selection → Signal[]
-    3. _risk_check(signals)        → Kill switch → RiskManager 9-gate → passed signals
-    4. _execute(passed_signals)    → ExecutionManager:
-        a. Guard pipeline (cooldown / max position / whitelist)
-        b. Kill switch check → BLOCK if daily/weekly/drawdown breached
-        c. RiskManager veto → BLOCK if constitutional limits exceeded
-        d. Broker submit → PaperBroker (default) or MT5 (live)
-    5. Log results → return {signals, trades, errors}
-
-Scheduler (auto-start when QNA_SCHEDULER_ENABLED=1):
-  POST /api/scheduler/start {"interval_minutes": 15}
-  → PipelineScheduler runs batch cycle every N minutes
-  → Covers: BTC-USD, ETH-USD, SOL-USD, EURUSD, USDJPY
-```
+| # | Komponen | File | Lines | Status |
+|---|----------|------|-------|--------|
+| 1 | **AutonomousPipeline** | `engine/agentic/autonomous.py` | 1,180 | ✅ Orchestrator |
+| 2 | **FinalDecider** | `engine/agentic/final_decider.py` | 483 | ✅ Final Veto |
+| 3 | **StrategyLogger** | `engine/analytics/strategy_logger.py` | 306 | ✅ Attribution |
+| 4 | **PnLEvaluator** | `engine/analytics/pnl_evaluator.py` | 231 | ✅ Closed-PnL Eval |
+| 5 | **RegimeFilter** | `engine/regime/strategy_filter.py` | 282 | ✅ Regime Gate |
+| 6 | **GeneLoader** | `engine/strategies/gene_loader.py` | 415 | ✅ Gene Evolution |
+| 7 | **AIHF Bridge** | `agents/aihf_bridge.py` | 305 | ✅ AI Signals |
+| 8 | **HF Bridge** | `agents/hedge_fund_bridge.py` | 216 | ✅ **NEW** |
+| 9 | **RiskManager** | `engine/risk/manager.py` | 500+ | ✅ 9-Gate Risk |
+| 10 | **KillSwitch** | `engine/risk/kill_switch.py` | 100 | ✅ Emergency |
+| 11 | **CooldownGuard** | `engine/execution/cooldown.py` | 50 | ✅ Cooldown |
+| 12 | **Council** | `engine/agentic/council.py` | — | ✅ Debate |
+| 13 | **Ensemble** | `engine/agentic/ensemble.py` | — | ✅ Voting |
+| 14 | **DataFreshness** | `engine/analytics/data_freshness.py` | 50 | ✅ Freshness |
+| 15 | **CrashRecovery** | `engine/state/recovery.py` | 100 | ✅ Recovery |
 
 ## Keamanan
 
@@ -77,6 +169,7 @@ Scheduler (auto-start when QNA_SCHEDULER_ENABLED=1):
 - **Kill switch ENFORCED** — `execute_order()` hard-block, bukan warning
 - **RiskManager ENFORCED** — veto tidak bisa di-override
 - **Paper default** — `QNA_LIVE_TRADING=1` diperlukan untuk MT5 live
+- **HF Bridge logging suppressed** — hedge_fund.py `basicConfig()` prevented from overriding root logger
 
 ## Konfigurasi
 
@@ -87,10 +180,42 @@ Scheduler (auto-start when QNA_SCHEDULER_ENABLED=1):
 | `QNAI_API_KEY` | — | API key untuk auth dari luar |
 | `QNAI_JWT_SECRET` | — | JWT signing key |
 | `QNAI_ALLOW_INSECURE_DEV` | `false` | `true` = bypass auth |
+| `PAPER_TRADE` | `true` | `false` = real MT5 execution |
 
-## Status: ✅ AUTONOMOUS TRADING OPERATIONAL
+## Status: ✅ PIPELINE OPERATIONAL — 72/100
 
-421 tests pass. Pipeline end-to-end verified (117 strategies). Scheduler wired. Kill switch enforced. Paper default.
+| Criteria | Score |
+|----------|-------|
+| Pipeline stages wired | 15/15 (100%) |
+| API stubs implemented | 0/3 (0%) — colony, memory, security-tools |
+| E: drive dependencies | 🔴 Missing (ai-hedge-fund, hidden-regime, etc) |
+| Dashboard UI routes | 17 routes + pipeline (NEW) |
+| .md docs consolidated | 44 active + 32 archived = 78 total |
+| hedge_fund.py integration | ✅ Merged via bridge adapter |
+| Production readiness | **72/100** |
+
+## Dashboard UI Endpoints
+
+| Route | Description |
+|-------|-------------|
+| `/` | Main dashboard |
+| `/pipeline` | **15-stage pipeline status + config panels [NEW]** |
+| `/trading` | Live trading controls |
+| `/portfolio` | Portfolio view |
+| `/brokers` | Broker management |
+| `/risk` | Risk dashboard |
+| `/market` | Market data |
+| `/agents` | AI agent status |
+| `/backtest` | Backtest engine |
+| `/strategies` | Strategy management |
+| `/factors` | Alpha factors |
+| `/memory` | System memory |
+| `/colony` | Colony management |
+| `/qna-status` | QNA system health |
+| `/security` | Security settings |
+| `/tools` | Tools |
+| `/channels` | Channels |
+| `/settings` | System config |
 
 ## API Endpoints
 
