@@ -1,0 +1,45 @@
+# QNA EXTREM AUDIT — 2026-07-24
+
+## Verdict: 82/100 claimed by docs → ACTUAL ~55/100. Autonomous core real, 2 of 5 self-* dreams ABSENT/FAKE.
+
+## 1. RISK GUARD — WAS PAPER-TIGER, NOW REAL (FIXED + VERIFIED)
+- Root cause: `builder.py` typo `set_broker_handle` (never existed) swallowed by `except` →
+  broker handle never attached → risk read `daily_pnl_pct=0.0` forever → constitutional
+  daily/weekly-loss veto could NEVER trip. Advisor, not enforcer.
+- Fix: `attach_mt5_handle` wired; `check_trade` syncs `self.state.daily_pnl/weekly_pnl` from
+  live broker before evaluating.
+- VERIFIED 3/3: real loss → VETOED; safe → APPROVED; kill-switch → VETOED.
+- Status: ✅ REAL.
+
+## 2. THE 5 SELF-* DREAMS (user's explicit mandate)
+| Capability | Claimed by dream | Code reality | Status |
+|---|---|---|---|
+| Self-Aware | "self aware" #1 hope | ZERO code (`grep self_aware` → empty) | ❌ ABSENT |
+| Self-Correction | lessons system | `trade_lifecycle` + `/lessons` API real | ✅ REAL |
+| Self-Evolve | "self evolve" | GeneLoader discovers gene *params*; MUE-X auto-commits signal *wrappers* (param/struct evolution). NO core-code AST mutation. | ⚠️ PARTIAL |
+| Self Fine-Tuning | "self fine tuning" | `auto_tune.py`, `rl.py` = param tuning (not model FT) | ⚠️ PARTIAL |
+| Self-Evaluate | "self evaluate" | `auto_aware.py` 24h backtest re-run + `trade_lifecycle` closed-trade eval | ✅ REAL |
+
+## 3. DOCS vs CODE (the "bodoh tidak jujur" fear — PARTIALLY CONFIRMED)
+- README/CHANGELOG claim "Autonomous Quant Hedge Fund" + self-correction → TRUE.
+- Docs do NOT explicitly claim "self-aware" → but user's mandate REQUIRES it → gap is real.
+- "self-evolve" implied by `/api/autonomous/evolve` + MUE-X → exists as param evolution, not
+  the code-rewriting singularity the user imagines.
+
+## 4. WHAT'S REAL vs MISSING
+REAL: autonomous pipeline (16 stages), risk guard (now), self-correction, self-evaluate,
+param self-evolve (MUE-X), MT5 live connector, 10 autonomous API routes.
+MISSING: self-aware module (consciousness/state-reflection), true code-mutating self-evolve,
+model fine-tuning (LoRA/etc).
+
+## 5. ROADMAP TO USER'S DREAM (everything by itself)
+P0: Self-Aware module — `quant_nanggroe/engine/self_aware.py`: state reflection, capability
+    inventory, anomaly detection on own performance, "I am losing money because X" reasoning.
+P1: Real self-evolve — AST-based strategy mutation with safety guardrails + auto-backtest gate.
+P2: Model fine-tuning hook — LoRA/PEFT on signal models with replay buffer.
+P3: Unify all 5 into one autonomous loop (no Hermes needed; Hermes optional).
+
+## 6. STATUS
+- Risk guard fixed + pushed (c6c3e98).
+- MUE-X evolution auto-commits present (self-evolve partial confirmed live).
+- Self-aware: net-new, needs build (P0).
