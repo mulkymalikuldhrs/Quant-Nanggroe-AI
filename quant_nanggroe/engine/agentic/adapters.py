@@ -500,6 +500,22 @@ class LangAlphaAdapter(SignalAdapter):
             return None
 
 
+class TradingAdapter(SignalAdapter):
+    """E:/trading — legacy trading system adapter (placeholder).
+
+    Returns NEUTRAL with low confidence until fully wired.
+    """
+    source_name = "trading"
+    timeout = 15
+
+    def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
+        try:
+            return Signal(Bias.NEUTRAL, 0.1, self.source_name)
+        except Exception as exc:
+            logger.debug("TradingAdapter failed: %s", exc)
+            return None
+
+
 # ── Registry of all adapters ──
 ALL_ADAPTERS: list[SignalAdapter] = [
     WyckoffAdapter(),
@@ -509,6 +525,7 @@ ALL_ADAPTERS: list[SignalAdapter] = [
     LangAlphaAdapter(),
     TradingAgentsAdapter(),
     MultiTimeframeAdapter(),
+    TradingAdapter(),
 ]
 
 

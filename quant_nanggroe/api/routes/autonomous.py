@@ -213,3 +213,132 @@ async def get_provider_status():
         return router.get_health()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# -----------------------------------------------------------------------
+# SLA metrics
+# -----------------------------------------------------------------------
+
+@router.get("/sla")
+async def get_sla_metrics():
+    """Get SLA metrics from the pipeline and trade lifecycle manager.
+
+    Returns:
+        Dict with pipeline SLA, trade lifecycle SLA, PnL strategy stats,
+        and self-correction stats.
+    """
+    pipeline = _get_pipeline()
+    result: dict[str, Any] = {}
+
+    # Pipeline SLA (last result)
+    if pipeline._last_result is not None:
+        sla = pipeline._last_result.sla
+        result["pipeline"] = {
+            "symbol": pipeline._last_result.symbol,
+            "success": pipeline._last_result.success,
+            "total_duration_ms": sla.total_duration_ms,
+            "data_to_signal_ms": sla.data_to_signal_ms,
+            "signal_to_risk_ms": sla.signal_to_risk_ms,
+            "risk_to_exec_ms": sla.risk_to_exec_ms,
+            "closed_trade_to_eval_ms": sla.closed_trade_to_eval_ms,
+            "eval_to_evolve_ms": sla.eval_to_evolve_ms,
+            "cycle_time_ms": sla.cycle_time_ms,
+            "trades_evaluated": sla.trades_evaluated,
+            "evolutions_triggered": sla.evolutions_triggered,
+            "lessons_recorded": sla.lessons_recorded,
+            "avg_eval_time_ms": sla.avg_eval_time_ms,
+            "sla_breached": sla.sla_breached,
+            "sla_threshold_ms": sla.sla_threshold_ms,
+        }
+    else:
+        result["pipeline"] = {"message": "No pipeline run yet. POST /api/autonomous/pipeline/run first."}
+
+    # Trade lifecycle SLA
+    if pipeline._trade_lifecycle is not None:
+        result["trade_lifecycle"] = pipeline._trade_lifecycle.get_lifecycle_stats()
+        result["recent_cycles"] = pipeline._trade_lifecycle.get_recent_cycles(limit=10)
+    else:
+        result["trade_lifecycle"] = {"message": "TradeLifecycleManager not initialized"}
+        result["recent_cycles"] = []
+
+    # PnL strategy stats
+    if pipeline._pnl_evaluator is not None:
+        try:
+            result["strategy_stats"] = pipeline._pnl_evaluator.get_all_strategy_stats()
+        except Exception as exc:
+            result["strategy_stats"] = {"error": str(exc)}
+    else:
+        result["strategy_stats"] = {}
+
+    # Self-correction stats
+    result["self_correction"] = pipeline.correction.get_stats()
+
+    return result
+
+
+# -----------------------------------------------------------------------
+# Evolution
+# -----------------------------------------------------------------------
+
+@router.post("/evolve")
+async def trigger_evolution(body: dict[str, Any]):
+    """Trigger strategy evolution based on PnL feedback and lessons.
+
+    Scans PnLEvaluator stats for underperforming strategies (win_rate < 40%,
+    total_pnl < 0), reviews unresolved SelfCorrection lessons, and returns
+    a list of strategies flagged for evolution.
+
+    Body:
+        strategy: Optional strategy name to evolve (evolves all if omitted).
+        force: If true, force evolution regardless of performance (default false).
+
+    Returns:
+        Dict with strategies_evaluated, evolutions_triggered, lessons_reviewed.
+    """
+    pipeline = _get_pipeline()
+    strategy_name = body.get("strategy", "")
+    force = body.get("force", False)
+
+    result: dict[str, Any] = {
+        "strategies_evaluated": 0,
+        "evolutions_triggered": 0,
+        "lessons_reviewed": 0,
+        "strategies_to_evolve": [],
+    }
+
+    # 1. Scan PnLEvaluator for underperforming strategies
+    if pipeline._pnl_evaluator is not None:
+        try:
+            all_stats = pipeline._pnl_evaluator.get_all_strategy_stats()
+            for sname, stats in all_stats.items():
+                if strategy_name and sname != strategy_name:
+                    continue
+                result["strategies_evaluated"] += 1
+                needs_evolve = force or (
+                    stats.get("win_rate", 1.0) < 0.4 and stats.get("total_pnl", 0) < 0
+                )
+                if needs_evolve:
+                    result["strategies_to_evolve"].append({
+                        "strategy": sname,
+                        "win_rate": stats.get("win_rate", 0),
+                        "total_pnl": stats.get("total_pnl", 0),
+                        "sharpe": stats.get("sharpe", 0),
+                    })
+                    result["evolutions_triggered"] += 1
+        except Exception as exc:
+            logger.warning("PnLEvaluator strategy scan failed: %s", exc)
+
+    # 2. Review unresolved lessons
+    try:
+        sc = SelfCorrection()
+        lessons = sc.list_lessons(unresolved_only=True, limit=100)
+        for lesson in lessons:
+            if strategy_name and strategy_name not in str(lesson.get("context", {})):
+                continue
+            result["lessons_reviewed"] += 1
+            if force or lesson.get("severity") in ("error", "critical"):
+                sc.resolve(lesson["id"], "Evolved via /api/autonomous/evolve")
+    except Exception as exc:
+        logger.warning("Lesson review failed: %s", exc)
+
+    return result

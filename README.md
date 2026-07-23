@@ -1,6 +1,6 @@
-# Quant-Nanggroe-AI v4.7.0 — Autonomous Quant Hedge Fund
+# Quant-Nanggroe-AI v4.8.0 — Autonomous Quant Hedge Fund
 
-> **Pipeline: 15 stages wired · 7 signal adapters · 78/100 production-ready**
+> **Pipeline: 17 stages wired · 13 SLA metrics · 72/100 production-ready**
 > **"Isi saldo dan mulai autonomous trading."** — Mulky Malikul Dhaher
 
 ---
@@ -11,14 +11,14 @@
 |---|------|--------|----------|
 | 1 | ✅ **E: drive adapters** — AITraderAdapter, LangAlphaAdapter, HiddenRegimeAdapter fix | **DONE** v4.7.0 | P0 |
 | 2 | ✅ **3 API stubs** — colony_stub, memory_stub, security_tools_stub | **DONE** v4.7.0 | P0 |
-| 3 | ✅ **Pipeline wiring** — stubs_remaining: 3→0 | **DONE** v4.7.0 | P0 |
-| 4 | ✅ **README rewrite** — mermaid graph, full flow, .md index | **DONE** v4.7.0 | P1 |
-| 5 | ✅ **CHANGELOG** — v4.7.0 with todo tracking | **DONE** v4.7.0 | P1 |
-| 6 | ⬜ **Run paper trading** — end-to-end pipeline test | **NEXT** | P0 |
-| 7 | ⬜ **Wire E:/trading** — create adapter for legacy trading repo | **BACKLOG** | P2 |
-| 8 | ⬜ **Add unit tests** — for 3 new stubs + 2 new adapters | **BACKLOG** | P1 |
-| 9 | ⬜ **Dashboard v2** — real-time pipeline visualization | **BACKLOG** | P2 |
-| 10 | ⬜ **MT5 live validation** — broker connectivity check | **BACKLOG** | P1 |
+| 3 | ✅ **Pipeline wiring** — stubs_remaining: 3->0 | **DONE** v4.7.0 | P0 |
+| 4 | ✅ **6 phantom modules created** — FinalDecider, StrategyLogger, RegimeFilter, GeneLoader, AIHFBridge, HFBridge | **DONE** v4.8.0 | P0 |
+| 5 | ✅ **Trailing stop wired** — TrailingStopManager init + add_position on fill | **DONE** v4.8.0 | P1 |
+| 6 | ✅ **SL/TP to broker** — Order.stop_loss/take_profit from FinalDecider or ATR | **DONE** v4.8.0 | P1 |
+| 7 | ✅ **README + CHANGELOG + docs update** — v4.8.0 accuracy | **DONE** v4.8.0 | P1 |
+| 8 | ⬜ **Run paper trading** — end-to-end pipeline test | **NEXT** | P0 |
+| 9 | ⬜ **Add unit tests** — pipeline, FinalDecider, trade_lifecycle | **BACKLOG** | P1 |
+| 10 | ⬜ **Auto-evolve from TradeLifecycle** — automatic trigger on bad PnL | **BACKLOG** | P2 |
 
 ---
 

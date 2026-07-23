@@ -5,7 +5,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T03:44:11.552851+00:00",
     "resolved": false,
     "resolution": ""
@@ -16,7 +18,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T03:44:54.422032+00:00",
     "resolved": false,
     "resolution": ""
@@ -27,7 +31,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T03:46:03.737365+00:00",
     "resolved": false,
     "resolution": ""
@@ -38,7 +44,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T03:46:25.670991+00:00",
     "resolved": false,
     "resolution": ""
@@ -49,7 +57,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2163293685712'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2163293950544'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T20:48:58.535546+00:00",
     "resolved": false,
     "resolution": ""
@@ -60,7 +70,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T20:49:01.608855+00:00",
     "resolved": false,
     "resolution": ""
@@ -71,7 +83,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2163293685712'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2163293950544'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-14T20:49:01.961050+00:00",
     "resolved": false,
     "resolution": ""
@@ -82,7 +96,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-15T17:17:18.289095+00:00",
     "resolved": false,
     "resolution": ""
@@ -93,7 +109,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-15T17:17:20.876510+00:00",
     "resolved": false,
     "resolution": ""
@@ -104,7 +122,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-15T17:17:21.055044+00:00",
     "resolved": false,
     "resolution": ""
@@ -115,7 +135,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-16T23:29:39.612487+00:00",
     "resolved": false,
     "resolution": ""
@@ -126,7 +148,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-16T23:29:41.260939+00:00",
     "resolved": false,
     "resolution": ""
@@ -137,7 +161,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-16T23:29:41.406937+00:00",
     "resolved": false,
     "resolution": ""
@@ -148,7 +174,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-16T23:38:40.353810+00:00",
     "resolved": false,
     "resolution": ""
@@ -159,7 +187,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-16T23:38:41.757458+00:00",
     "resolved": false,
     "resolution": ""
@@ -170,7 +200,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "len(arrays) must match len(columns)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-16T23:38:41.912571+00:00",
     "resolved": false,
     "resolution": ""
@@ -181,7 +213,9 @@
     "severity": "error",
     "summary": "Signal gen failed for BTC-USD",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:13.866717+00:00",
     "resolved": false,
     "resolution": ""
@@ -192,7 +226,9 @@
     "severity": "error",
     "summary": "Signal gen failed for ETH-USD",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:14.037249+00:00",
     "resolved": false,
     "resolution": ""
@@ -203,7 +239,9 @@
     "severity": "error",
     "summary": "Signal gen failed for EURUSD=X",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:14.452888+00:00",
     "resolved": false,
     "resolution": ""
@@ -214,7 +252,9 @@
     "severity": "error",
     "summary": "Signal gen failed for AUDUSD=X",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:14.598903+00:00",
     "resolved": false,
     "resolution": ""
@@ -225,7 +265,9 @@
     "severity": "error",
     "summary": "Signal gen failed for BTC-USD",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:30.452448+00:00",
     "resolved": false,
     "resolution": ""
@@ -236,7 +278,9 @@
     "severity": "error",
     "summary": "Signal gen failed for ETH-USD",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:30.577440+00:00",
     "resolved": false,
     "resolution": ""
@@ -247,7 +291,9 @@
     "severity": "error",
     "summary": "Signal gen failed for EURUSD=X",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:30.871533+00:00",
     "resolved": false,
     "resolution": ""
@@ -258,7 +304,9 @@
     "severity": "error",
     "summary": "Signal gen failed for AUDUSD=X",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories\\Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:35:30.979531+00:00",
     "resolved": false,
     "resolution": ""
@@ -269,7 +317,9 @@
     "severity": "error",
     "summary": "Signal gen failed for BTC-USD",
     "detail": "cannot import name 'COTProvider' from 'quant_nanggroe.engine.data.cot_provider' (D:\\repositories/Quant-Nanggroe-AI-worktree\\quant_nanggroe\\engine\\data\\cot_provider.py)",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:36:15.716794+00:00",
     "resolved": false,
     "resolution": ""
@@ -280,7 +330,9 @@
     "severity": "error",
     "summary": "Signal gen failed for BTC-USD",
     "detail": "'COTProvider' object has no attribute 'fetch'",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T03:38:48.037501+00:00",
     "resolved": false,
     "resolution": ""
@@ -291,7 +343,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T09:32:12.127601+00:00",
     "resolved": false,
     "resolution": ""
@@ -302,7 +356,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T09:32:12.191202+00:00",
     "resolved": false,
     "resolution": ""
@@ -313,7 +369,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T09:32:12.210390+00:00",
     "resolved": false,
     "resolution": ""
@@ -324,7 +382,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T09:32:12.228944+00:00",
     "resolved": false,
     "resolution": ""
@@ -335,7 +395,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:00:46.579990+00:00",
     "resolved": false,
     "resolution": ""
@@ -346,7 +408,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:02:18.889382+00:00",
     "resolved": false,
     "resolution": ""
@@ -357,7 +421,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:03:49.392061+00:00",
     "resolved": false,
     "resolution": ""
@@ -368,7 +434,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:06:59.052636+00:00",
     "resolved": false,
     "resolution": ""
@@ -379,7 +447,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:12:39.759094+00:00",
     "resolved": false,
     "resolution": ""
@@ -390,7 +460,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:15:00.282778+00:00",
     "resolved": false,
     "resolution": ""
@@ -401,7 +473,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:15:45.105844+00:00",
     "resolved": false,
     "resolution": ""
@@ -412,7 +486,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:16:15.120424+00:00",
     "resolved": false,
     "resolution": ""
@@ -423,7 +499,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:16:26.353998+00:00",
     "resolved": false,
     "resolution": ""
@@ -434,7 +512,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:16:26.367676+00:00",
     "resolved": false,
     "resolution": ""
@@ -445,7 +525,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:30:34.501746+00:00",
     "resolved": false,
     "resolution": ""
@@ -456,7 +538,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:30:49.564891+00:00",
     "resolved": false,
     "resolution": ""
@@ -467,7 +551,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:31:04.823800+00:00",
     "resolved": false,
     "resolution": ""
@@ -478,7 +564,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:31:19.870078+00:00",
     "resolved": false,
     "resolution": ""
@@ -489,7 +577,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:45:34.451929+00:00",
     "resolved": false,
     "resolution": ""
@@ -500,7 +590,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:45:49.502646+00:00",
     "resolved": false,
     "resolution": ""
@@ -511,7 +603,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:46:04.783169+00:00",
     "resolved": false,
     "resolution": ""
@@ -522,7 +616,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:46:19.828749+00:00",
     "resolved": false,
     "resolution": ""
@@ -533,7 +629,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T10:49:04.063510+00:00",
     "resolved": false,
     "resolution": ""
@@ -544,7 +642,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T11:00:36.170613+00:00",
     "resolved": false,
     "resolution": ""
@@ -555,7 +655,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T11:00:54.340339+00:00",
     "resolved": false,
     "resolution": ""
@@ -566,7 +668,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T11:01:09.639251+00:00",
     "resolved": false,
     "resolution": ""
@@ -577,7 +681,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T11:01:24.684248+00:00",
     "resolved": false,
     "resolution": ""
@@ -588,7 +694,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T11:06:40.890248+00:00",
     "resolved": false,
     "resolution": ""
@@ -599,7 +707,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:02:22.342859+00:00",
     "resolved": false,
     "resolution": ""
@@ -610,7 +720,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:02:22.355530+00:00",
     "resolved": false,
     "resolution": ""
@@ -621,7 +733,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:02:22.372256+00:00",
     "resolved": false,
     "resolution": ""
@@ -632,7 +746,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:02:22.405670+00:00",
     "resolved": false,
     "resolution": ""
@@ -643,7 +759,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:46:00.235393+00:00",
     "resolved": false,
     "resolution": ""
@@ -654,7 +772,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:46:15.288360+00:00",
     "resolved": false,
     "resolution": ""
@@ -665,7 +785,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:46:30.560441+00:00",
     "resolved": false,
     "resolution": ""
@@ -676,7 +798,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T12:46:45.613962+00:00",
     "resolved": false,
     "resolution": ""
@@ -687,7 +811,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T13:31:43.286758+00:00",
     "resolved": false,
     "resolution": ""
@@ -698,7 +824,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T13:36:07.326008+00:00",
     "resolved": false,
     "resolution": ""
@@ -709,7 +837,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T13:36:07.343005+00:00",
     "resolved": false,
     "resolution": ""
@@ -720,7 +850,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T13:36:07.359229+00:00",
     "resolved": false,
     "resolution": ""
@@ -731,7 +863,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T13:36:07.376057+00:00",
     "resolved": false,
     "resolution": ""
@@ -742,7 +876,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T14:01:46.530050+00:00",
     "resolved": false,
     "resolution": ""
@@ -753,7 +889,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T14:31:28.881342+00:00",
     "resolved": false,
     "resolution": ""
@@ -764,7 +902,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T14:31:44.164578+00:00",
     "resolved": false,
     "resolution": ""
@@ -775,7 +915,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T14:31:59.214629+00:00",
     "resolved": false,
     "resolution": ""
@@ -786,7 +928,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:02:43.732576+00:00",
     "resolved": false,
     "resolution": ""
@@ -797,7 +941,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:02:43.747037+00:00",
     "resolved": false,
     "resolution": ""
@@ -808,7 +954,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:02:43.763421+00:00",
     "resolved": false,
     "resolution": ""
@@ -819,7 +967,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:02:43.776908+00:00",
     "resolved": false,
     "resolution": ""
@@ -830,7 +980,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:37:55.087496+00:00",
     "resolved": false,
     "resolution": ""
@@ -841,7 +993,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:37:55.106384+00:00",
     "resolved": false,
     "resolution": ""
@@ -852,7 +1006,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:37:55.126009+00:00",
     "resolved": false,
     "resolution": ""
@@ -863,7 +1019,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:37:55.143001+00:00",
     "resolved": false,
     "resolution": ""
@@ -874,7 +1032,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:45:22.182951+00:00",
     "resolved": false,
     "resolution": ""
@@ -885,7 +1045,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:45:37.241194+00:00",
     "resolved": false,
     "resolution": ""
@@ -896,7 +1058,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:45:52.422028+00:00",
     "resolved": false,
     "resolution": ""
@@ -907,7 +1071,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T15:46:07.763543+00:00",
     "resolved": false,
     "resolution": ""
@@ -918,7 +1084,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:00:33.995360+00:00",
     "resolved": false,
     "resolution": ""
@@ -929,7 +1097,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:00:49.033089+00:00",
     "resolved": false,
     "resolution": ""
@@ -940,7 +1110,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:01:04.317161+00:00",
     "resolved": false,
     "resolution": ""
@@ -951,7 +1123,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:01:19.375090+00:00",
     "resolved": false,
     "resolution": ""
@@ -962,7 +1136,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:15:24.009811+00:00",
     "resolved": false,
     "resolution": ""
@@ -973,7 +1149,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:15:39.257815+00:00",
     "resolved": false,
     "resolution": ""
@@ -984,7 +1162,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:15:54.793832+00:00",
     "resolved": false,
     "resolution": ""
@@ -995,7 +1175,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:16:10.242621+00:00",
     "resolved": false,
     "resolution": ""
@@ -1006,7 +1188,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:30:38.571517+00:00",
     "resolved": false,
     "resolution": ""
@@ -1017,7 +1201,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:30:53.607530+00:00",
     "resolved": false,
     "resolution": ""
@@ -1028,7 +1214,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:31:08.778106+00:00",
     "resolved": false,
     "resolution": ""
@@ -1039,7 +1227,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:31:23.823437+00:00",
     "resolved": false,
     "resolution": ""
@@ -1050,7 +1240,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:45:30.263086+00:00",
     "resolved": false,
     "resolution": ""
@@ -1061,7 +1253,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:45:45.313939+00:00",
     "resolved": false,
     "resolution": ""
@@ -1072,7 +1266,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:46:00.448960+00:00",
     "resolved": false,
     "resolution": ""
@@ -1083,7 +1279,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T16:46:15.497818+00:00",
     "resolved": false,
     "resolution": ""
@@ -1094,7 +1292,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:00:43.390368+00:00",
     "resolved": false,
     "resolution": ""
@@ -1105,7 +1305,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:00:58.426219+00:00",
     "resolved": false,
     "resolution": ""
@@ -1116,7 +1318,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:01:13.568812+00:00",
     "resolved": false,
     "resolution": ""
@@ -1127,7 +1331,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:01:28.591703+00:00",
     "resolved": false,
     "resolution": ""
@@ -1138,7 +1344,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:15:44.822754+00:00",
     "resolved": false,
     "resolution": ""
@@ -1149,7 +1357,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:15:59.851439+00:00",
     "resolved": false,
     "resolution": ""
@@ -1160,7 +1370,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:16:14.992783+00:00",
     "resolved": false,
     "resolution": ""
@@ -1171,7 +1383,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:16:30.038174+00:00",
     "resolved": false,
     "resolution": ""
@@ -1182,7 +1396,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:30:45.822825+00:00",
     "resolved": false,
     "resolution": ""
@@ -1193,7 +1409,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:31:00.872906+00:00",
     "resolved": false,
     "resolution": ""
@@ -1204,7 +1422,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:31:16.153499+00:00",
     "resolved": false,
     "resolution": ""
@@ -1215,7 +1435,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T17:31:31.195297+00:00",
     "resolved": false,
     "resolution": ""
@@ -1226,7 +1448,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:12:31.920909+00:00",
     "resolved": false,
     "resolution": ""
@@ -1237,7 +1461,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:12:32.200875+00:00",
     "resolved": false,
     "resolution": ""
@@ -1248,7 +1474,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:12:32.419347+00:00",
     "resolved": false,
     "resolution": ""
@@ -1259,7 +1487,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:12:32.581168+00:00",
     "resolved": false,
     "resolution": ""
@@ -1270,7 +1500,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:32:45.402251+00:00",
     "resolved": false,
     "resolution": ""
@@ -1281,7 +1513,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:32:45.421751+00:00",
     "resolved": false,
     "resolution": ""
@@ -1292,7 +1526,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:32:45.438550+00:00",
     "resolved": false,
     "resolution": ""
@@ -1303,7 +1539,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T18:32:45.457297+00:00",
     "resolved": false,
     "resolution": ""
@@ -1314,7 +1552,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T19:21:28.274098+00:00",
     "resolved": false,
     "resolution": ""
@@ -1325,7 +1565,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T19:32:49.517732+00:00",
     "resolved": false,
     "resolution": ""
@@ -1336,7 +1578,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T19:32:49.540761+00:00",
     "resolved": false,
     "resolution": ""
@@ -1347,7 +1591,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T19:32:49.559929+00:00",
     "resolved": false,
     "resolution": ""
@@ -1358,7 +1604,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T19:32:49.644045+00:00",
     "resolved": false,
     "resolution": ""
@@ -1369,7 +1617,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:09:17.735894+00:00",
     "resolved": false,
     "resolution": ""
@@ -1380,7 +1630,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:09:17.790419+00:00",
     "resolved": false,
     "resolution": ""
@@ -1391,7 +1643,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:09:18.058575+00:00",
     "resolved": false,
     "resolution": ""
@@ -1402,7 +1656,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:09:18.182075+00:00",
     "resolved": false,
     "resolution": ""
@@ -1413,7 +1669,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:33:14.801109+00:00",
     "resolved": false,
     "resolution": ""
@@ -1424,7 +1682,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:33:14.829010+00:00",
     "resolved": false,
     "resolution": ""
@@ -1435,7 +1695,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:33:14.854301+00:00",
     "resolved": false,
     "resolution": ""
@@ -1446,7 +1708,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T20:33:14.879410+00:00",
     "resolved": false,
     "resolution": ""
@@ -1457,7 +1721,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T21:03:02.816826+00:00",
     "resolved": false,
     "resolution": ""
@@ -1468,7 +1734,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T21:03:02.846341+00:00",
     "resolved": false,
     "resolution": ""
@@ -1479,7 +1747,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T21:03:02.882727+00:00",
     "resolved": false,
     "resolution": ""
@@ -1490,7 +1760,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T21:03:02.927310+00:00",
     "resolved": false,
     "resolution": ""
@@ -1501,7 +1773,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "No data returned",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T21:33:01.664284+00:00",
     "resolved": false,
     "resolution": ""
@@ -1512,7 +1786,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T22:02:48.579967+00:00",
     "resolved": false,
     "resolution": ""
@@ -1523,7 +1799,9 @@
     "severity": "error",
     "summary": "Data fetch failed for ETH-USD",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T22:02:48.603311+00:00",
     "resolved": false,
     "resolution": ""
@@ -1534,7 +1812,9 @@
     "severity": "error",
     "summary": "Data fetch failed for EURUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T22:02:48.624987+00:00",
     "resolved": false,
     "resolution": ""
@@ -1545,7 +1825,9 @@
     "severity": "error",
     "summary": "Data fetch failed for AUDUSD=X",
     "detail": "Unable to import required dependencies:\nnumpy: \n\nIMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!\n\nImporting the numpy C-extensions failed. This error can happen for\nmany reasons, often due to issues with your setup or how NumPy was\ninstalled.\nThe following compiled module files exist, but seem incompatible\nwith with either python 'cpython-314' or the platform 'win32':\n\n  * _multiarray_umath.cp311-win_amd64.lib\n  * _multiarray_umath.cp311-win_amd64.pyd\n\nWe have compiled some common reasons and troubleshooting tips at:\n\n    https://numpy.org/devdocs/user/troubleshooting-importerror.html\n\nPlease note and check the following:\n\n  * The Python version is: Python 3.14 from \"C:\\Python314\\python.exe\"\n  * The NumPy version is: \"2.4.6\"\n\nand make sure that they are the versions you expect.\n\nPlease carefully study the information and documentation linked above.\nThis is unlikely to be a NumPy issue but will be caused by a bad install\nor environment on your machine.\n\nOriginal error was: No module named 'numpy._core._multiarray_umath'\n",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-17T22:02:48.650135+00:00",
     "resolved": false,
     "resolution": ""
@@ -1556,7 +1838,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2111824157648'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2111824339472'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T19:39:37.214961+00:00",
     "resolved": false,
     "resolution": ""
@@ -1567,7 +1851,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T19:39:56.095380+00:00",
     "resolved": false,
     "resolution": ""
@@ -1578,7 +1864,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2111824157648'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2111824339472'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T19:40:11.790648+00:00",
     "resolved": false,
     "resolution": ""
@@ -1589,7 +1877,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:13:04.260511+00:00",
     "resolved": false,
     "resolution": ""
@@ -1600,7 +1890,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='1679623764624'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='1679623931280'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:23:50.123864+00:00",
     "resolved": false,
     "resolution": ""
@@ -1611,7 +1903,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:24:10.988977+00:00",
     "resolved": false,
     "resolution": ""
@@ -1622,7 +1916,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='1679623764624'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='1679623931280'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:24:27.199706+00:00",
     "resolved": false,
     "resolution": ""
@@ -1633,7 +1929,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2244805858960'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2244805959568'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:31:46.884585+00:00",
     "resolved": false,
     "resolution": ""
@@ -1644,7 +1942,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:32:06.014169+00:00",
     "resolved": false,
     "resolution": ""
@@ -1655,7 +1955,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2244805858960'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2244805959568'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-20T21:32:22.379511+00:00",
     "resolved": false,
     "resolution": ""
@@ -1666,7 +1968,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='1960916248528'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='1960916394576'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-22T19:53:37.033330+00:00",
     "resolved": false,
     "resolution": ""
@@ -1677,7 +1981,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-22T19:53:58.447118+00:00",
     "resolved": false,
     "resolution": ""
@@ -1688,7 +1994,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='1960916248528'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='1960916394576'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-22T19:54:14.833906+00:00",
     "resolved": false,
     "resolution": ""
@@ -1699,7 +2007,9 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2671852186064'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2671851683536'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-22T20:00:12.265052+00:00",
     "resolved": false,
     "resolution": ""
@@ -1710,7 +2020,9 @@
     "severity": "error",
     "summary": "Data fetch failed for INVALID-SYMBOL-12345",
     "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-22T20:00:31.802976+00:00",
     "resolved": false,
     "resolution": ""
@@ -1721,8 +2033,49 @@
     "severity": "error",
     "summary": "Data fetch failed for BTC-USD",
     "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2671852186064'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2671851683536'>).",
-    "context": {},
+    "context": {
+      "_sla_tracked": true
+    },
     "occurred_at": "2026-07-22T20:00:48.349823+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "b0f4ebab-9b4",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2915054661200'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2915054735760'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-23T19:34:31.931981+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "e77300ed-ade",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-23T19:35:06.530056+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "0547af05-af0",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2915054661200'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2915054735760'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-23T19:35:23.035718+00:00",
     "resolved": false,
     "resolution": ""
   }

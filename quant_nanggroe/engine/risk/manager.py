@@ -245,11 +245,14 @@ class RiskManager:
                 "failed_checkpoints": ["daily_trades"],
             }
 
-        # Run 9-checkpoint gate. Real-time P&L % from the execution layer is authoritative
-        # for the constitutional daily/weekly-loss veto. The gate expects absolute equity
-        # fractions, so convert the percent args: daily_pnl = daily_pnl_pct/100 * balance.
-        _daily_abs = (daily_pnl_pct / 100.0) * account_balance
-        _weekly_abs = (weekly_pnl_pct / 100.0) * account_balance
+        # Run 9-checkpoint gate. The constitutional daily/weekly-loss veto must use
+        # REALIZED PnL synced from the live broker (self.state.daily_pnl / weekly_pnl),
+        # NOT the daily_pnl_pct *parameter* (which defaults to 0.0 and is never passed
+        # by the pipeline). Using the parameter was the paper-tiger bug: the veto could
+        # never trip because it was fed 0. Authoritative source = synced state.
+        _daily_abs = self.state.daily_pnl
+        _weekly_abs = self.state.weekly_pnl
+        # (daily_pnl_pct/weekly_pnl_pct params retained for API compat but ignored here)
         result = self.check_gate.evaluate(
             symbol=symbol,
             direction=direction,
