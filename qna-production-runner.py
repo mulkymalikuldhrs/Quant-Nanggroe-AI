@@ -16,6 +16,8 @@ def run_hedge_fund(mode="paper", symbol="EURUSD"):
     env = os.environ.copy()
     env["PAPER_TRADE"] = "true" if mode == "paper" else "false"
     env["PYTHONPATH"] = str(TRADING_DIR)
+    if "MT5_PASSWORD" not in env and mode == "paper":
+        env["MT5_PASSWORD"] = "paper_mode_dummy"
 
     cmd = [
         str(VENV_PYTHON), "-c", f"""
