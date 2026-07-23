@@ -18,6 +18,7 @@ import logging
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional
 
@@ -138,8 +139,51 @@ class HiddenRegimeAdapter(SignalAdapter):
             return None
 
 
+# ── TradingAgents rating mapping & cost-guard ──────────────────────────────
+# propagate() returns (final_state, rating_string) where rating_string is the
+# 5-tier scale produced by process_signal → parse_rating:
+#   Buy / Overweight / Hold / Underweight / Sell
+# NOTE: it is a STRING, not a dict. The old code did decision.get("action") on a
+# str → AttributeError every call → swallowed → always NEUTRAL (dead adapter).
+_TA_RATING_TO_BIAS: dict[str, Bias] = {
+    "buy": Bias.BUY,
+    "overweight": Bias.BUY,
+    "hold": Bias.NEUTRAL,
+    "underweight": Bias.SELL,
+    "sell": Bias.SELL,
+}
+
+
+def _map_ta_rating(rating: Any) -> tuple[Bias, float]:
+    """Map a TradingAgents 5-tier rating string to (Bias, confidence)."""
+    if not isinstance(rating, str):
+        return Bias.NEUTRAL, 0.0
+    bias = _TA_RATING_TO_BIAS.get(rating.strip().lower(), Bias.NEUTRAL)
+    # Directional calls get a firm confidence; Hold maps to NEUTRAL/0.0.
+    return bias, (0.5 if bias != Bias.NEUTRAL else 0.0)
+
+
+# Providers treated as FREE (self-hosted / local / open). Everything else is
+# treated as PAID and blocked unless explicitly opted in — fail-closed.
+_TA_FREE_PROVIDERS = {"ollama", "local", "huggingface", "vllm", "litellm"}
+
+
+def _ta_should_block(config: dict[str, Any] | None) -> bool:
+    """Return True if TradingAgents would bill a paid LLM and we must NOT call it.
+
+    Fail-closed: only an explicit FREE provider is allowed; any cloud/unknown
+    provider is treated as paid unless the operator opts in via
+    QNA_ALLOW_PAID_LLM=1/true/yes.
+    """
+    if os.environ.get("QNA_ALLOW_PAID_LLM", "").strip().lower() in {"1", "true", "yes"}:
+        return False
+    provider = (config or {}).get("llm_provider", "openai")
+    return provider not in _TA_FREE_PROVIDERS
+
+
 class TradingAgentsAdapter(SignalAdapter):
-    """TradingAgents — LangGraph multi-agent decision."""
+    """TradingAgents — LangGraph multi-agent decision (2nd-opinion source)."""
+
     source_name = "tradingagents"
 
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
@@ -148,19 +192,64 @@ class TradingAgentsAdapter(SignalAdapter):
             config_mod = self._safe_import(E_TRADING_AGENTS, "tradingagents.default_config", "DEFAULT_CONFIG")
             if mod is None or config_mod is None:
                 return None
+            cfg = config_mod.copy()
+            # No-paid-API guard: never silently bill a cloud LLM.
+            if _ta_should_block(cfg):
+                logger.info(
+                    "TradingAgentsAdapter disabled: paid LLM provider '%s' blocked by QNA_ALLOW_PAID_LLM guard",
+                    cfg.get("llm_provider"),
+                )
+                return None
             today = datetime.now().strftime("%Y-%m-%d")
-            ta = mod(debug=False, config=config_mod.copy())
-            _, decision = ta.propagate(symbol.replace("EURUSD", "EURUSD=X"), today)
-            if isinstance(decision, dict):
-                action = decision.get("action", "hold")
-                if action == "hold":
-                    return Signal(Bias.NEUTRAL, 0.0, self.source_name)
-                bias = Bias.BUY if action == "buy" else Bias.SELL
-                return Signal(bias, 0.5, self.source_name)
-            return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+            ta = mod(debug=False, config=cfg)
+            # propagate() returns (final_state, rating_string) — NOT a dict.
+            result = ta.propagate(symbol.replace("EURUSD", "EURUSD=X"), today)
+            rating = result[1] if isinstance(result, (tuple, list)) and len(result) >= 2 else result
+            bias, conf = _map_ta_rating(rating)
+            if bias == Bias.NEUTRAL:
+                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+            return Signal(bias, conf, self.source_name)
         except Exception as e:
             logger.debug("TradingAgents failed: %s", e)
             return None
+
+
+@dataclass
+class ValidationVerdict:
+    """Outcome of the 2nd-opinion cross-check."""
+
+    status: str  # confirm | contradict | neutral | abstain
+    signal: "Signal | None"
+    reason: str
+
+
+class TradingAgentsValidator:
+    """2nd-opinion arbitrator.
+
+    Cross-checks the primary consensus (VoteResult) against the independent
+    TradingAgents signal. It does NOT join the pooled vote — it only CONFIRMs,
+    CONTRADICTs, or ABSTAINS. This guarantees a broken/disabled external model
+    can never silently swing a trade: worst case it abstains.
+    """
+
+    source_name = "tradingagents"
+
+    def __init__(self, adapter: SignalAdapter | None = None):
+        self.adapter = adapter or TradingAgentsAdapter()
+
+    def evaluate(self, primary: "VoteResult", symbol: str) -> ValidationVerdict:
+        sig = self.adapter.fetch_signal(symbol)
+        if sig is None:
+            return ValidationVerdict(
+                "abstain", None, "tradingagents unavailable/disabled (paid-LLM guard or import failure)"
+            )
+        if sig.bias == Bias.NEUTRAL:
+            return ValidationVerdict("neutral", sig, "tradingagents neutral")
+        if sig.bias == primary.final_bias:
+            return ValidationVerdict("confirm", sig, f"agreement with primary {primary.final_bias.value}")
+        return ValidationVerdict(
+            "contradict", sig, f"disagreement: ext={sig.bias.value} primary={primary.final_bias.value}"
+        )
 
 
 class MultiTimeframeAdapter(SignalAdapter):

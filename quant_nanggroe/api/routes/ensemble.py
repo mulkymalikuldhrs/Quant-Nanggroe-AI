@@ -27,6 +27,9 @@ class VoteResponse(BaseModel):
     total_signals: int
     dissenters: int
     votes: list[dict[str, Any]]
+    second_opinion: dict[str, Any] | None = Field(
+        None, description="Independent TradingAgents 2nd-opinion cross-check (confirm/contradict/neutral/abstain)."
+    )
     timestamp: str
 
 
@@ -64,6 +67,22 @@ async def ensemble_vote(req: VoteRequest):
         # Vote
         result = voter.vote(signals)
 
+        # Q3 — 2nd-opinion cross-check (independent arbitrator, fail-closed).
+        # It only CONFIRMs / CONTRADICTs / ABSTAINS; a disabled/unavailable
+        # TradingAgents can never silently swing the primary vote.
+        from quant_nanggroe.engine.agentic.adapters import TradingAgentsValidator
+
+        try:
+            verdict = TradingAgentsValidator().evaluate(result, req.symbol)
+            second_opinion = {
+                "status": verdict.status,
+                "reason": verdict.reason,
+                "external_bias": verdict.signal.bias.value if verdict.signal else None,
+            }
+        except Exception as e:  # never let the 2nd-opinion break the primary vote
+            logger.warning("2nd-opinion validator error: %s", e)
+            second_opinion = {"status": "abstain", "reason": f"validator error: {e}", "external_bias": None}
+
         from datetime import datetime, timezone
         return VoteResponse(
             symbol=req.symbol,
@@ -76,6 +95,7 @@ async def ensemble_vote(req: VoteRequest):
                 {"source": v.source, "bias": v.bias.value, "confidence": v.confidence}
                 for v in result.votes
             ],
+            second_opinion=second_opinion,
             timestamp=datetime.now(timezone.utc).isoformat(),
         )
     except Exception as e:

@@ -151,24 +151,38 @@ def signal_hidden(symbol="EURUSD"):
     return {"bias":"neutral","confidence":0,"source":"hidden"}
 
 def signal_tradingagents(symbol="EURUSD"):
-    """TradingAgents — multi-agent decision via propagate()"""
+    """TradingAgents — multi-agent decision via propagate().
+
+    propagate() returns (final_state, rating_string) on the 5-tier scale
+    Buy / Overweight / Hold / Underweight / Sell. The legacy code did
+    decision.get("action") on that STRING -> always neutral. Fixed to map the
+    rating. Paid-LLM guard: abort if a cloud provider would be billed.
+    """
     try:
         sys.path.insert(0, 'E:/tradingagents')
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.graph.trading_graph import TradingAgentsGraph
+        # No-paid-API guard: never silently bill a cloud LLM.
+        import os
+        cfg = DEFAULT_CONFIG.copy()
+        if os.environ.get("QNA_ALLOW_PAID_LLM", "").strip().lower() not in {"1", "true", "yes"}:
+            provider = cfg.get("llm_provider", "openai")
+            if provider in {"openai", "anthropic", "azure", "bedrock", "google"}:
+                log.info("TradingAgents skipped: paid LLM provider '%s' blocked by QNA_ALLOW_PAID_LLM guard", provider)
+                return {"bias": "neutral", "confidence": 0, "source": "tradingagents"}
         # Butuh format tanggal. Gunakan hari ini.
         today = datetime.now().strftime("%Y-%m-%d")
-        ta = TradingAgentsGraph(debug=False, config=DEFAULT_CONFIG.copy())
-        _, decision = ta.propagate(symbol.replace("EURUSD","EURUSD=X"), today)
-        # decision: {"action": "buy/sell/hold", "quantity": N}
-        if isinstance(decision, dict):
-            bias = decision.get("action","hold")
-            if bias == "hold": bias = "neutral"
-            return {"bias":bias,"confidence":0.5,"source":"tradingagents"}
-        return {"bias":"neutral","confidence":0,"source":"tradingagents"}
+        ta = TradingAgentsGraph(debug=False, config=cfg)
+        result = ta.propagate(symbol.replace("EURUSD", "EURUSD=X"), today)
+        rating = result[1] if isinstance(result, (tuple, list)) and len(result) >= 2 else result
+        _ta_rank = {"buy": "buy", "overweight": "buy", "hold": "neutral",
+                    "underweight": "sell", "sell": "sell"}
+        bias = _ta_rank.get(str(rating).strip().lower(), "neutral")
+        conf = 0.5 if bias != "neutral" else 0.0
+        return {"bias": bias, "confidence": conf, "source": "tradingagents"}
     except Exception as e:
         log.warning(f"TradingAgents err: {e}")
-        return {"bias":"neutral","confidence":0,"source":"tradingagents"}
+        return {"bias": "neutral", "confidence": 0, "source": "tradingagents"}
 
 def signal_aitrader(symbol="EURUSD"):
     """AI-Trader Node.js"""
