@@ -6,9 +6,11 @@ that can be fed into the SignalVotingSystem.
 
 Adapters:
 - WyckoffAdapter: Wyckoff Volume Spread Analysis
-- AIHFAdapter: ai-hedge-fund multi-agent
-- HiddenRegimeAdapter: Hidden Regime detector
-- TradingAgentsAdapter: TradingAgents multi-agent
+- AIHFAdapter: ai-hedge-fund multi-agent (E:/ai-hedge-fund)
+- HiddenRegimeAdapter: Hidden Regime detector (E:/hidden-regime)
+- TradingAgentsAdapter: TradingAgents multi-agent (E:/tradingagents)
+- AITraderAdapter: AI-Trader social/agent signals (E:/AI-Trader)
+- LangAlphaAdapter: LangAlpha fundamental/macro/analysis (E:/LangAlpha)
 - MultiTimeframeAdapter: QNA's own MTF analysis
 """
 from __future__ import annotations
@@ -119,21 +121,43 @@ class AIHFAdapter(SignalAdapter):
 
 
 class HiddenRegimeAdapter(SignalAdapter):
-    """Hidden Regime detector — HMM-based regime classification."""
+    """Hidden Regime detector — HMM-based regime classification via hidden_regime_mcp.detect_regime.
+
+    Uses the correct pipeline API:
+      create_financial_pipeline(ticker=..., include_report=False)
+      pipeline.update()  # trains HMM
+      pipeline.interpreter_output.iloc[-1]  # latest regime data
+    """
     source_name = "hidden_regime"
 
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
         try:
-            mod = self._safe_import(E_HIDDEN_REGIME, "hidden_regime", "create_financial_pipeline")
-            if mod is None:
+            # First try the MCP server's detect_regime (async → asyncio.run)
+            mod = self._safe_import(E_HIDDEN_REGIME, "hidden_regime_mcp.tools", "detect_regime")
+            if mod is not None:
+                import asyncio
+                result = asyncio.run(mod(ticker=symbol, n_states=3))
+                regime = result.get("current_regime", "neutral")
+                confidence = result.get("confidence", 0.3)
+                regime_map = {"bullish": Bias.BUY, "bearish": Bias.SELL, "crisis": Bias.SELL}
+                bias = regime_map.get(regime, Bias.NEUTRAL)
+                return Signal(bias, confidence, self.source_name)
+
+            # Fallback: direct pipeline import (synchronous)
+            create_fn = self._safe_import(E_HIDDEN_REGIME, "hidden_regime", "create_financial_pipeline")
+            if create_fn is None:
                 return None
-            pipeline = mod()
-            result = pipeline.run(symbol)
-            regime = result.get("regime", "neutral")
-            confidence = result.get("confidence", 0.3)
-            regime_map = {"bull": Bias.BUY, "bear": Bias.SELL}
+            pipeline = create_fn(ticker=symbol, n_states=3, include_report=False)
+            pipeline.update()  # returns markdown string, but interpreter_output has the data
+            latest = pipeline.interpreter_output.iloc[-1]
+            regime_label = str(latest.get("regime_label", latest.get("regime_name", "neutral"))).lower()
+            confidence = float(latest.get("confidence", 0.3))
+            # Normalise labels: "bull" → "bullish", "bear" → "bearish"
+            label_map = {"bull": "bullish", "bear": "bearish"}
+            regime = label_map.get(regime_label, regime_label)
+            regime_map = {"bullish": Bias.BUY, "bearish": Bias.SELL, "crisis": Bias.SELL}
             bias = regime_map.get(regime, Bias.NEUTRAL)
-            return Signal(bias, confidence, self.source_name)
+            return Signal(bias, min(confidence, 1.0), self.source_name)
         except Exception as e:
             logger.debug("HiddenRegime failed: %s", e)
             return None
@@ -275,11 +299,215 @@ class MultiTimeframeAdapter(SignalAdapter):
             return None
 
 
+class AITraderAdapter(SignalAdapter):
+    """AI-Trader — social/agent trading signals via HTTP API.
+
+    Connects to AI-Trader's FastAPI backend (E:/AI-Trader/service/server).
+    Queries public endpoints for signal feed and trending data.
+    Fallthroughed by database-level access when API is unavailable.
+    """
+    source_name = "aitrader"
+
+    def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
+        # Strategy 1: HTTP calls to running AI-Trader API
+        try:
+            import httpx
+            base_url = os.environ.get("AI_TRADER_BASE_URL", "http://localhost:8080")
+            with httpx.Client(timeout=self.timeout) as client:
+                # 1a: Signal feed — recent signals across all agents
+                resp = client.get(f"{base_url}/api/signals/feed", params={"limit": 20})
+                if resp.status_code == 200:
+                    data = resp.json()
+                    signals = data if isinstance(data, list) else data.get("signals", data.get("data", []))
+                    for sig in signals:
+                        sym = str(sig.get("symbol", "")).upper()
+                        if sym == symbol.upper():
+                            action = str(sig.get("action", "")).lower()
+                            confidence = min(float(sig.get("confidence", 50)) / 100.0, 1.0)
+                            action_map = {"buy": Bias.BUY, "sell": Bias.SELL, "short": Bias.SELL}
+                            bias = action_map.get(action, Bias.NEUTRAL)
+                            if bias != Bias.NEUTRAL:
+                                return Signal(bias, confidence, self.source_name)
+
+                # 1b: Trending symbols — if symbol is trending, bias direction
+                resp = client.get(f"{base_url}/api/trending")
+                if resp.status_code == 200:
+                    trend_data = resp.json()
+                    entries = trend_data if isinstance(trend_data, list) else trend_data.get("trending", [])
+                    for entry in entries:
+                        sym = str(entry.get("symbol", entry.get("ticker", ""))).upper()
+                        if sym == symbol.upper():
+                            direction = str(entry.get("direction", "")).lower()
+                            score = float(entry.get("score", entry.get("confidence", 0.5)))
+                            if direction in ("up", "bullish"):
+                                return Signal(Bias.BUY, min(score, 0.8), self.source_name)
+                            if direction in ("down", "bearish"):
+                                return Signal(Bias.SELL, min(score, 0.8), self.source_name)
+        except Exception:
+            pass
+
+        # Strategy 2: direct database query via AI-Trader's SQLite backend
+        try:
+            db_path = os.path.join(E_AI_TRADER, "service", "server", "data", "clawtrader.db")
+            if os.path.exists(db_path):
+                import sqlite3
+                conn = sqlite3.connect(db_path)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                try:
+                    cursor.execute(
+                        """
+                        SELECT action, confidence, created_at
+                        FROM signals
+                        WHERE UPPER(symbol) = ?
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                        """,
+                        (symbol.upper(),),
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        action = str(row["action"]).lower()
+                        confidence = min(float(row.get("confidence", 50)) / 100.0, 1.0)
+                        action_map = {"buy": Bias.BUY, "sell": Bias.SELL, "short": Bias.SELL}
+                        bias = action_map.get(action, Bias.NEUTRAL)
+                        if bias != Bias.NEUTRAL:
+                            return Signal(bias, confidence, self.source_name)
+                except sqlite3.OperationalError:
+                    # Table may not exist — AI-Trader schema may differ
+                    pass
+                finally:
+                    conn.close()
+        except Exception:
+            pass
+
+        return None
+
+
+class LangAlphaAdapter(SignalAdapter):
+    """LangAlpha — fundamental/macro/analysis signals via MCP servers.
+
+    Aggregates signals from multiple LangAlpha MCP servers into a single
+    weighted vote. Each source is independently caught so one failure
+    never blocks the others.
+
+    Sources:
+    - yf_analysis_mcp_server: analyst recommendations consensus
+    - fundamentals_mcp_server: financial ratios (PE, PB valuation)
+    - macro_mcp_server: market risk premium for macro regime
+    """
+    source_name = "langalpha"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._import_cache: dict[str, object] = {}
+
+    def _lazy_import(self, attr: str):
+        """Lazy-import an MCP tool once, cache per instance."""
+        if attr in self._import_cache:
+            return self._import_cache[attr]
+        _MAP = {
+            "get_analyst_recommendations": ("mcp_servers.yf_analysis_mcp_server", "get_analyst_recommendations"),
+            "get_financial_ratios": ("mcp_servers.fundamentals_mcp_server", "get_financial_ratios"),
+            "get_market_risk_premium": ("mcp_servers.macro_mcp_server", "get_market_risk_premium"),
+        }
+        if attr not in _MAP:
+            return None
+        mod_name, func_name = _MAP[attr]
+        mod = self._safe_import(E_LANG_ALPHA, mod_name, func_name)
+        self._import_cache[attr] = mod
+        return mod
+
+    def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
+        try:
+            signals: list[tuple[Bias, float]] = []
+
+            # ── Source 1: Analyst Recommendations ──
+            try:
+                fn = self._lazy_import("get_analyst_recommendations")
+                if fn is not None:
+                    import asyncio
+                    recs = asyncio.run(fn(symbol))
+                    if recs and isinstance(recs, dict):
+                        # recs keyed by period string e.g. "2026-06-30"
+                        periods = [k for k in recs if k != "symbol"]
+                        if periods:
+                            latest_key = max(periods)
+                            period = recs[latest_key]
+                            sb = int(period.get("strongBuy", 0))
+                            b = int(period.get("buy", 0))
+                            h = int(period.get("hold", 0))
+                            s = int(period.get("sell", 0))
+                            ss = int(period.get("strongSell", 0))
+                            total = sb + b + h + s + ss
+                            if total > 0:
+                                net = (sb + b - s - ss) / total
+                                if abs(net) > 0.1:
+                                    signals.append((Bias.BUY if net > 0 else Bias.SELL, abs(net) * 0.7))
+            except Exception:
+                pass
+
+            # ── Source 2: Financial Ratios / Valuation ──
+            try:
+                fn = self._lazy_import("get_financial_ratios")
+                if fn is not None:
+                    import asyncio
+                    ratios = asyncio.run(fn(symbol))
+                    if ratios and isinstance(ratios, dict):
+                        pe = ratios.get("priceEarningsRatio")
+                        pb = ratios.get("priceBookValueRatio")
+                        if pe is not None and isinstance(pe, (int, float)) and pe > 0:
+                            if pe > 50:
+                                signals.append((Bias.SELL, 0.3))
+                            elif pe < 10:
+                                signals.append((Bias.BUY, 0.3))
+                        if pb is not None and isinstance(pb, (int, float)) and pb > 0:
+                            if pb > 10:
+                                signals.append((Bias.SELL, 0.25))
+                            elif pb < 1:
+                                signals.append((Bias.BUY, 0.25))
+            except Exception:
+                pass
+
+            # ── Source 3: Macro Risk Premium ──
+            try:
+                fn = self._lazy_import("get_market_risk_premium")
+                if fn is not None:
+                    import asyncio
+                    premium = asyncio.run(fn("US"))
+                    if premium is not None and isinstance(premium, (int, float)):
+                        if premium > 0.05:
+                            signals.append((Bias.SELL, 0.2))
+            except Exception:
+                pass
+
+            # ── Aggregate ──
+            if not signals:
+                return None
+
+            buy_w = sum(c for b, c in signals if b == Bias.BUY)
+            sell_w = sum(c for b, c in signals if b == Bias.SELL)
+            total_w = buy_w + sell_w
+
+            if total_w < 0.15:
+                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+
+            if buy_w > sell_w:
+                return Signal(Bias.BUY, min(buy_w / total_w, 0.8), self.source_name)
+            return Signal(Bias.SELL, min(sell_w / total_w, 0.8), self.source_name)
+
+        except Exception as e:
+            logger.debug("LangAlpha failed: %s", e)
+            return None
+
+
 # ── Registry of all adapters ──
 ALL_ADAPTERS: list[SignalAdapter] = [
     WyckoffAdapter(),
     AIHFAdapter(),
     HiddenRegimeAdapter(),
+    AITraderAdapter(),
+    LangAlphaAdapter(),
     TradingAgentsAdapter(),
     MultiTimeframeAdapter(),
 ]

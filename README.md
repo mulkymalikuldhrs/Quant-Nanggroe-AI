@@ -162,6 +162,40 @@ dashboard/          → Next.js 16, 17 routes, 36 components, Tailwind v4
 | 14 | **DataFreshness** | `engine/analytics/data_freshness.py` | 50 | ✅ Freshness |
 | 15 | **CrashRecovery** | `engine/state/recovery.py` | 100 | ✅ Recovery |
 
+## External Signal Adapters — E: Drive Repos (4 WIRED)
+
+Seven adapters bridge external signal providers into the `SignalVotingSystem`.
+Four are direct E: drive repo integrations; three are built-in.
+
+| Adapter | Source | Integration | Signal Sources |
+|---------|--------|-------------|----------------|
+| **AIHFAdapter** | `E:/ai-hedge-fund` | `src.main.run_hedge_fund()` — 15-investor multi-agent debate | `decisions[].action` (buy/hold/sell) + `confidence` (0-100 scaled to 0-1) |
+| **HiddenRegimeAdapter** | `E:/hidden-regime` | `hidden_regime_mcp.tools.detect_regime()` → `create_financial_pipeline()` HMM | `current_regime` (bullish→BUY, bearish→SELL, crisis→SELL) + `confidence` (0-1) |
+| **TradingAgentsAdapter** | `E:/tradingagents` | `tradingagents.graph.trading_graph.TradingAgentsGraph.propagate()` | 5-tier rating (Buy→BUY, Overweight→BUY, Hold→NEUTRAL, Underweight→SELL, Sell→SELL) + paid-LLM cost-guard |
+| **AITraderAdapter** | `E:/AI-Trader` | HTTP → `GET /api/signals/feed` + `GET /api/trending`; SQLite → `clawtrader.db` signals table | Signal feed actions (buy/sell/short) + trending direction/score |
+| **LangAlphaAdapter** | `E:/LangAlpha` | `mcp_servers.yf_analysis_mcp_server` + `fundamentals_mcp_server` + `macro_mcp_server` | Weighted vote: analyst consensus (strongBuy/buy/sell/strongSell) + PE/PB valuation + market risk premium |
+| **WyckoffAdapter** | Built-in QNA | `engine.strategies.wyckoff.WyckoffStrategy.generate_signal()` | VSA-based BUY/SELL with 0.65 default confidence |
+| **MultiTimeframeAdapter** | Built-in QNA | `engine.strategy.multi_timeframe.MultiTimeframeAnalyzer.analyze()` | MTF direction (bullish→BUY, bearish→SELL) + confidence |
+
+### Signal Flow
+
+```
+fetch_all_signals(symbol="BTC-USD")
+  → iterates ALL_ADAPTERS (7 registered)
+  → each adapter.fetch_signal(symbol) → Signal | None
+  → SignalVotingSystem.aggregate(signals) → VoteResult (final_bias, confidence)
+  → TradingAgentsValidator.evaluate(primary, symbol) → confirm|contradict|abstain
+  → EnsembleVoter merges into AutonomousPipeline signal
+```
+
+### Configuration
+
+| Env Var | Affects | Default | Purpose |
+|---------|---------|---------|---------|
+| `AI_TRADER_BASE_URL` | AITraderAdapter | `http://localhost:8080` | AI-Trader API endpoint |
+| `QNA_ALLOW_PAID_LLM` | TradingAgentsAdapter | (unset) | `1` to bypass paid-LLM cost-guard |
+| `QNAI_ENCRYPTION_KEY` | EncryptedStore | (unset) | Fernet AES-256 key for security |
+
 ## Keamanan
 
 - **Localhost auto-ADMIN** — `127.0.0.1` / `::1` / `localhost` → skip auth
@@ -182,17 +216,18 @@ dashboard/          → Next.js 16, 17 routes, 36 components, Tailwind v4
 | `QNAI_ALLOW_INSECURE_DEV` | `false` | `true` = bypass auth |
 | `PAPER_TRADE` | `true` | `false` = real MT5 execution |
 
-## Status: ✅ PIPELINE OPERATIONAL — 72/100
+## Status: ✅ PIPELINE OPERATIONAL — 78/100
 
 | Criteria | Score |
 |----------|-------|
 | Pipeline stages wired | 15/15 (100%) |
-| API stubs implemented | 0/3 (0%) — colony, memory, security-tools |
-| E: drive dependencies | 🔴 Missing (ai-hedge-fund, hidden-regime, etc) |
-| Dashboard UI routes | 17 routes + pipeline (NEW) |
+| API stubs implemented | 3/3 (100%) — colony, memory, security-tools |
+| E: drive signal adapters | 4/4 (100%) — ai-hedge-fund, hidden-regime, AI-Trader, LangAlpha |
+| External adapter paths | 6 repositories on `E:` verified — ai-hedge-fund, hidden-regime, tradingagents, AI-Trader, LangAlpha, trading |
+| Dashboard UI routes | 17 routes + pipeline |
 | .md docs consolidated | 44 active + 32 archived = 78 total |
 | hedge_fund.py integration | ✅ Merged via bridge adapter |
-| Production readiness | **72/100** |
+| Production readiness | **78/100** |
 
 ## Dashboard UI Endpoints
 

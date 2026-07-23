@@ -233,8 +233,8 @@ async def pipeline_status() -> dict[str, Any]:
         "health_pct": round((operational_count / max(len(PIPELINE_STAGES), 1)) * 100),
         "kill_switch_active": result.get("metrics", {}).get("kill_switch_active", False),
         "all_wired": True,
-        "stubs_remaining": 3,
-        "stub_list": ["colony", "memory", "security-tools"],
+        "stubs_remaining": 0,
+        "stub_list": []
     }
 
     return result
