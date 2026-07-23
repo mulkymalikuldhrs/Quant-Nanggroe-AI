@@ -18,11 +18,10 @@ from __future__ import annotations
 import importlib
 import logging
 import os
-import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from quant_nanggroe.engine.agentic.voting import Bias, Signal
 

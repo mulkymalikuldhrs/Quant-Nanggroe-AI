@@ -160,7 +160,6 @@ def security_events(
             events = []
             for rec in records:
                 detail_str = getattr(rec, "details", "{}")
-                meta_str = getattr(rec, "metadata", "{}")
                 events.append({
                     "id": rec.id,
                     "timestamp": rec.timestamp.isoformat() if hasattr(rec.timestamp, "isoformat") else str(rec.timestamp),

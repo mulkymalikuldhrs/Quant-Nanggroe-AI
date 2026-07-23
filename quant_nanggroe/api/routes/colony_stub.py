@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 
@@ -34,13 +34,13 @@ _HAS_COLONY_ENGINE = False
 try:
     from quant_nanggroe.engine.colony.orchestrator import ColonyOrchestrator
     from quant_nanggroe.engine.colony.tasks import Task, TaskStatus, TaskType
-    from quant_nanggroe.engine.colony.worker import (
+    from quant_nanggroe.engine.colony.worker import (  # noqa: F401 — used in _create_default_orchestrator
         StrategyWorker,
         RiskWorker,
         DataWorker,
         ExecutionWorker,
     )
-    from quant_nanggroe.engine.colony.message_bus import MessageBus
+    from quant_nanggroe.engine.colony.message_bus import MessageBus  # noqa: F401 — used via orchestrator.bus
 
     _HAS_COLONY_ENGINE = True
 except ImportError:

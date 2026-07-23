@@ -3,47 +3,22 @@
 import { useAppStore } from "@/lib/store";
 import { useRealtimeData } from "@/lib/websocket";
 import { useTheme } from "@/components/providers/theme-provider";
-import { Bell, Search, Sun, Moon, Wifi, WifiOff, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Bell, Sun, Moon, Wifi, WifiOff, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export function Header() {
-  const { sidebarOpen, killSwitch, notifications, clearNotifications, refreshAll } = useAppStore();
+  const { killSwitch, notifications, refreshAll } = useAppStore();
   const { isConnected, connectionError } = useRealtimeData();
   const { resolved, toggle } = useTheme();
 
   const unreadCount = notifications.length;
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 right-0 z-30 h-14 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        sidebarOpen ? "left-64" : "left-[68px]",
-      )}
-    >
-      {/* Glass background */}
-      <div className="absolute inset-0 glass rounded-bl-2xl shadow-glass">
-        {/* Top highlight line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex items-center justify-between h-full px-4 gap-3">
-        {/* Left: Search */}
-        <div className="flex items-center gap-3 flex-1 max-w-md">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
-            <input
-              placeholder="Search symbols, agents, commands... (Cmd+K)"
-              className="w-full h-8 pl-9 pr-3 text-xs rounded-xl bg-white/[0.04] border border-white/[0.06] text-white/70 placeholder:text-white/20 focus:outline-none focus:border-emerald-500/30 focus:bg-white/[0.06] transition-all duration-200"
-            />
-            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-mono px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] hidden md:inline">
-              ⌘K
-            </kbd>
-          </div>
-        </div>
+    <header className="sticky top-[68px] z-20">
+      <div className="flex items-center justify-between h-12 px-4">
+        {/* Spacer - island nav handles navigation */}
+        <div className="flex-1" />
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
@@ -69,11 +44,12 @@ export function Header() {
             )}
           </div>
 
-          {/* Kill Switch */}
+          {/* Kill Switch Badge */}
           {killSwitch && (
-            <Badge variant="danger" className="animate-pulse text-[10px] px-2 py-0.5">
-              KILL
-            </Badge>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 animate-pulse">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]" />
+              <span className="text-[10px] font-medium text-red-400 font-mono">KILL</span>
+            </div>
           )}
 
           {/* Refresh */}
@@ -96,14 +72,12 @@ export function Header() {
             )}
           </Button>
 
-          {/* System Status Dot */}
-          <div className="hidden md:flex items-center gap-2 pl-2 border-l border-white/[0.06]">
-            <div className={cn(
-              "w-2 h-2 rounded-full transition-colors duration-300",
-              isConnected ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white/20",
-            )} />
-            <span className="text-[11px] text-white/30 font-mono">ONLINE</span>
-          </div>
+          {/* Connection error tooltip */}
+          {connectionError && (
+            <span className="hidden md:inline text-[10px] text-amber-400/60 font-mono max-w-[200px] truncate" title={connectionError}>
+              {connectionError}
+            </span>
+          )}
         </div>
       </div>
     </header>

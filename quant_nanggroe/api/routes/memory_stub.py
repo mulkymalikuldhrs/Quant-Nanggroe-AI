@@ -42,8 +42,6 @@ try:
     from quant_nanggroe.memory.vector import (
         VectorStore,
         CollectionName,
-        VectorDocument,
-        SearchResult,
         get_vector_store,
     )
 
@@ -66,8 +64,6 @@ try:
         KnowledgeGraph,
         EntityType,
         RelationType,
-        Entity,
-        Relationship,
     )
 
     _knowledge_graph = KnowledgeGraph()
@@ -207,7 +203,7 @@ async def memory_store(
     if _HAS_VECTOR_STORE and _vector_store:
         await _ensure_vector_initialized()
         try:
-            doc = await _vector_store.add(
+            await _vector_store.add(
                 collection=collection,
                 content=content,
                 metadata=metadata,
@@ -220,7 +216,7 @@ async def memory_store(
     # Store in KnowledgeBase
     if _HAS_KNOWLEDGE_BASE and _knowledge_base:
         try:
-            kb_id = _knowledge_base.add(
+            _knowledge_base.add(
                 category=collection,
                 title=data.get("title", content[:50]),
                 content=content,

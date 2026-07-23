@@ -1,5 +1,54 @@
 # Quant Nanggroe AI — Changelog
 
+## v4.7.0 — Final Phase: E: Drive Wiring + Real API Stubs (2026-07-24)
+
+### 📋 Sprint Todo — Current Status
+
+| # | Task | Status | Version |
+|---|------|--------|---------|
+| 1 | ✅ E: drive adapters (AITraderAdapter, LangAlphaAdapter, HiddenRegimeAdapter fix) | **DONE** | v4.7.0 |
+| 2 | ✅ 3 API stubs replaced (colony_stub, memory_stub, security_tools_stub) | **DONE** | v4.7.0 |
+| 3 | ✅ Pipeline wiring (stubs_remaining: 3→0) | **DONE** | v4.7.0 |
+| 4 | ✅ README rewrite (mermaid graph, full flow, .md index, todo) | **DONE** | v4.7.0 |
+| 5 | ✅ CHANGELOG with todo tracking | **DONE** | v4.7.0 |
+| 6 | ⬜ Run paper trading (end-to-end pipeline test) | **NEXT** | — |
+| 7 | ⬜ Wire E:/trading (create adapter for legacy repo) | **BACKLOG** | — |
+| 8 | ⬜ Unit tests for 3 stubs + 2 adapters | **BACKLOG** | — |
+| 9 | ⬜ Dashboard v2 (real-time pipeline visualization) | **BACKLOG** | — |
+| 10 | ⬜ MT5 live validation (broker connectivity check) | **BACKLOG** | — |
+
+### 🔌 External Signal Adapters — 4 E: Drive Repos Wired
+- **HiddenRegimeAdapter (FIXED)** — was calling non-existent `pipeline.run()`; now uses `hidden_regime_mcp.tools.detect_regime()` with fallback to `create_financial_pipeline().update()` + `interpreter_output`
+- **AITraderAdapter (NEW)** — HTTP to `/api/signals/feed` + `/api/trending`; SQLite fallback on `clawtrader.db` (2-strategy graceful degradation)
+- **LangAlphaAdapter (NEW)** — Weighted vote from 3 MCP servers: analyst consensus (yf_analysis), valuation ratios (fundamentals), macro risk premium (macro). Lazy import cache per instance.
+- **7 adapters in ALL_ADAPTERS registry** — Wyckoff, AIHF, HiddenRegime, AITrader, LangAlpha, TradingAgents, MultiTimeframe
+- **Signal flow** — `fetch_all_signals()` → `SignalVotingSystem` → `TradingAgentsValidator` → `EnsembleVoter` → `AutonomousPipeline`
+
+### 🧩 3 API Stubs Replaced with Real Functionality
+- **colony_stub.py** — Full colony orchestration via `ColonyOrchestrator` (4 worker types: Strategy, Risk, Data, Execution), `Task`/`TaskType`/`TaskStatus` enums, `ColonyAgent` integration with health metrics
+- **memory_stub.py** — Full memory subsystem: `VectorStore` (ChromaDB semantic search, 5 collections), `KnowledgeBase` (categorized entries, tag filtering), `KnowledgeGraph` (entities, relationships, BFS shortest path, centrality). 10 endpoints.
+- **security_tools_stub.py** — Full security: `AuditLogger` (append-only SQLite), `EncryptedStore` (AES-256 Fernet), `AuthManager` (JWT, RBAC), `KeyVault`. 9 executable tools + `psutil` system monitoring. Service injection via `request.app.state`.
+
+### 🐛 Critical Bug Fix
+- **`asyncio.run()` inside `async def` endpoints** — All 8 security endpoints + colony_run_task changed to sync `def` to prevent `RuntimeError: asyncio.run() cannot be called from a running event loop` in FastAPI's async context
+
+### 📊 Pipeline Status
+- `stubs_remaining: 3 → 0` — colony, memory, security-tools all implemented
+- `stub_list: []` — pipeline fully wired
+
+### 📄 Documentation
+- **README.md** — New "External Signal Adapters — E: Drive Repos (4 WIRED)" section with 7-adapter table, signal flow diagram, configuration env vars
+- **Status score: 72/100 → 78/100** — E: drive adapters 4/4 (100%), API stubs 3/3 (100%)
+- **session-QNA.md** — Full export of this session with architecture decisions, file changes, and all implementation details
+
+### 🔧 6 E: Drive Repositories Verified
+- `E:/ai-hedge-fund` (87 Python files) — routed via `AIHFAdapter`
+- `E:/hidden-regime` (87 Python files) — routed via `HiddenRegimeAdapter`
+- `E:/tradingagents` — routed via `TradingAgentsAdapter` (with paid-LLM cost-guard)
+- `E:/AI-Trader` (Python/Node.js backend) — routed via `AITraderAdapter`
+- `E:/LangAlpha` (12 MCP server files) — routed via `LangAlphaAdapter`
+- `E:/trading` — verified present, not yet adapter-integrated
+
 ## v4.6.0-post — M4 Milestone Complete (2026-07-19)
 
 ### Completed Milestones
