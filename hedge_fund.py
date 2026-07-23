@@ -7090,6 +7090,270 @@ def signal_qna_WyckoffStrategy_mut_bb73006f(symbol="EURUSD"):
     return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_bb73006f"}
 
 
+
+def signal_qna_MSNRStrategy_mut_df5f873b(symbol="EURUSD"):
+    """MUE-X evolved: qna_MSNRStrategy_mut_df5f873b"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_MSNRStrategy_mut_df5f873b import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_MSNRStrategy_mut_df5f873b"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_MSNRStrategy_mut_df5f873b"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_MSNRStrategy_mut_df5f873b"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_MSNRStrategy_mut_df5f873b"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_MSNRStrategy_mut_df5f873b err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_MSNRStrategy_mut_df5f873b"}
+
+
+
+def signal_qna_SMCStrategy_mut_a54abbfd(symbol="EURUSD"):
+    """MUE-X evolved: qna_SMCStrategy_mut_a54abbfd"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_SMCStrategy_mut_a54abbfd import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_a54abbfd"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_a54abbfd"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_SMCStrategy_mut_a54abbfd"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_SMCStrategy_mut_a54abbfd"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_SMCStrategy_mut_a54abbfd err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_a54abbfd"}
+
+
+
+def signal_qna_SMCStrategy_mut_8319da29(symbol="EURUSD"):
+    """MUE-X evolved: qna_SMCStrategy_mut_8319da29"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_SMCStrategy_mut_8319da29 import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_8319da29"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_8319da29"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_SMCStrategy_mut_8319da29"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_SMCStrategy_mut_8319da29"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_SMCStrategy_mut_8319da29 err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_SMCStrategy_mut_8319da29"}
+
+
+
+def signal_qna_MeanReversionStrategy_mut_4e582f4b(symbol="EURUSD"):
+    """MUE-X evolved: qna_MeanReversionStrategy_mut_4e582f4b"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_MeanReversionStrategy_mut_4e582f4b import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_4e582f4b"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_4e582f4b"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_MeanReversionStrategy_mut_4e582f4b"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_MeanReversionStrategy_mut_4e582f4b"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_MeanReversionStrategy_mut_4e582f4b err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_4e582f4b"}
+
+
+
+def signal_qna_MeanReversionStrategy_mut_bed297ed(symbol="EURUSD"):
+    """MUE-X evolved: qna_MeanReversionStrategy_mut_bed297ed"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_MeanReversionStrategy_mut_bed297ed import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_bed297ed"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_bed297ed"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_MeanReversionStrategy_mut_bed297ed"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_MeanReversionStrategy_mut_bed297ed"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_MeanReversionStrategy_mut_bed297ed err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_MeanReversionStrategy_mut_bed297ed"}
+
+
+
+def signal_qna_EMAADXStrategy_mut_da674d7e(symbol="EURUSD"):
+    """MUE-X evolved: qna_EMAADXStrategy_mut_da674d7e"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_EMAADXStrategy_mut_da674d7e import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_da674d7e"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_da674d7e"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_EMAADXStrategy_mut_da674d7e"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_EMAADXStrategy_mut_da674d7e"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_EMAADXStrategy_mut_da674d7e err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_da674d7e"}
+
+
+
+def signal_qna_EMAADXStrategy_mut_f20e6918(symbol="EURUSD"):
+    """MUE-X evolved: qna_EMAADXStrategy_mut_f20e6918"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_EMAADXStrategy_mut_f20e6918 import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_f20e6918"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_f20e6918"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_EMAADXStrategy_mut_f20e6918"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_EMAADXStrategy_mut_f20e6918"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_EMAADXStrategy_mut_f20e6918 err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_EMAADXStrategy_mut_f20e6918"}
+
+
+
+def signal_qna_AlgebraStrategy_mut_0cf363ea(symbol="EURUSD"):
+    """MUE-X evolved: qna_AlgebraStrategy_mut_0cf363ea"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_AlgebraStrategy_mut_0cf363ea import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_0cf363ea"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_0cf363ea"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_AlgebraStrategy_mut_0cf363ea"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_AlgebraStrategy_mut_0cf363ea"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_AlgebraStrategy_mut_0cf363ea err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_0cf363ea"}
+
+
+
+def signal_qna_AlgebraStrategy_mut_fe7526e0(symbol="EURUSD"):
+    """MUE-X evolved: qna_AlgebraStrategy_mut_fe7526e0"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_AlgebraStrategy_mut_fe7526e0 import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_fe7526e0"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_fe7526e0"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_AlgebraStrategy_mut_fe7526e0"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_AlgebraStrategy_mut_fe7526e0"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_AlgebraStrategy_mut_fe7526e0 err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_AlgebraStrategy_mut_fe7526e0"}
+
+
+
+def signal_qna_WyckoffStrategy_mut_66933e5d(symbol="EURUSD"):
+    """MUE-X evolved: qna_WyckoffStrategy_mut_66933e5d"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_WyckoffStrategy_mut_66933e5d import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_66933e5d"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_66933e5d"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_WyckoffStrategy_mut_66933e5d"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_WyckoffStrategy_mut_66933e5d"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_WyckoffStrategy_mut_66933e5d err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_66933e5d"}
+
+
+
+def signal_qna_WyckoffStrategy_mut_4df1586f(symbol="EURUSD"):
+    """MUE-X evolved: qna_WyckoffStrategy_mut_4df1586f"""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
+        from qna_WyckoffStrategy_mut_4df1586f import generate_signal, PARAMS
+        from hedge_fund import get_historical_mt5
+        df = get_historical_mt5(symbol, count=100)
+        if df is None or len(df) < 50:
+            return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_4df1586f"}
+        result = generate_signal(df)
+        if result is None or len(result) < 2:
+            return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_4df1586f"}
+        last = result.iloc[-1]
+        if last.get('entry',0) == 1:
+            return {"bias":"buy","confidence":0.55,"source":"qna_WyckoffStrategy_mut_4df1586f"}
+        if last.get('entry',0) == -1:
+            return {"bias":"sell","confidence":0.55,"source":"qna_WyckoffStrategy_mut_4df1586f"}
+    except Exception as e:
+        log.warning(f"MUE-X qna_WyckoffStrategy_mut_4df1586f err: {e}")
+    return {"bias":"neutral","confidence":0,"source":"qna_WyckoffStrategy_mut_4df1586f"}
+
+
 # ── AGGREGATOR ──
 # Core signal providers (built-in)
 CORE_PROVIDERS = [
@@ -7391,6 +7655,17 @@ QNA_EVOLVED_PROVIDERS = [
     signal_qna_AlgebraStrategy_mut_142a7b48,
     signal_qna_WyckoffStrategy_mut_229ba89b,
     signal_qna_WyckoffStrategy_mut_bb73006f,
+    signal_qna_MSNRStrategy_mut_df5f873b,
+    signal_qna_SMCStrategy_mut_a54abbfd,
+    signal_qna_SMCStrategy_mut_8319da29,
+    signal_qna_MeanReversionStrategy_mut_4e582f4b,
+    signal_qna_MeanReversionStrategy_mut_bed297ed,
+    signal_qna_EMAADXStrategy_mut_da674d7e,
+    signal_qna_EMAADXStrategy_mut_f20e6918,
+    signal_qna_AlgebraStrategy_mut_0cf363ea,
+    signal_qna_AlgebraStrategy_mut_fe7526e0,
+    signal_qna_WyckoffStrategy_mut_66933e5d,
+    signal_qna_WyckoffStrategy_mut_4df1586f,
 ]
 # Rebuild ALL_PROVIDERS to include both core + evolved
 ALL_PROVIDERS = CORE_PROVIDERS[:] + QNA_EVOLVED_PROVIDERS
