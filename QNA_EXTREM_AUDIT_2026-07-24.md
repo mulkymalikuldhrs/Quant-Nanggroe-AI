@@ -42,4 +42,9 @@ P3: Unify all 5 into one autonomous loop (no Hermes needed; Hermes optional).
 ## 6. STATUS
 - Risk guard fixed + pushed (c6c3e98).
 - MUE-X evolution auto-commits present (self-evolve partial confirmed live).
-- Self-aware: net-new, needs build (P0).
+- Self-aware: NET-NEW BUILT + INTEGRATED (a4f9ef9) — `engine/self_aware.py` + wired into
+  AutonomousPipeline.reflect_self(). Was 0 code, now real.
+- Remaining: real code-mutating self-evolve (AST), model fine-tuning (LoRA). self-correction
+  + self-evaluate already real.
+- 3 of 5 self-* dreams now REAL (self-aware ✅, self-correction ✅, self-evaluate ✅);
+  self-evolve=partial (param), self fine-tuning=partial (param).
