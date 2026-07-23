@@ -5,6 +5,7 @@ Integrates with the existing QNAI infrastructure:
   - Strategy registry (engine/strategy/strategies/) — auto-discovered
   - Agentic trading (engine/agentic_trading.py) — consensus engine
   - Strategy lifecycle (engine/strategy_lifecycle.py) — darwinian management
+  - TradeLifecycleManager (engine/agentic/trade_lifecycle.py) — closed trade → eval → evolve
 """
 
 from __future__ import annotations
@@ -22,6 +23,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from quant_nanggroe.engine.self_aware import SelfAware, SelfState, Reflection
+
+import asyncio
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -69,7 +73,16 @@ except ImportError:
 # ── ClosedTrade for PnLEvaluator ──
 ClosedTrade = None
 try:
-    from quant_nanggroe.engine.analytics.pnl_evaluator import ClosedTrade
+    from quant_nanggroe.engine.analytics.pnl_evaluator import ClosedTrade as _CT
+    ClosedTrade = _CT
+except ImportError:
+    pass
+
+# ── TradeLifecycleManager ──
+_TradeLifecycleManager = None
+try:
+    from quant_nanggroe.engine.agentic.trade_lifecycle import TradeLifecycleManager as _TLM
+    _TradeLifecycleManager = _TLM
 except ImportError:
     pass
 
@@ -121,15 +134,24 @@ FREE_PROVIDERS: dict[str, dict[str, Any]] = {
         "api_key_env": "NOUS_API_KEY",
         "priority": 40,
     },
+    "9router": {
+        "base_url": "http://localhost:20128/v1",
+        "models": {"deep_thinking": "combo", "standard": "combo", "quick": "combo"},
+        "api_key_env": "N9ROUTER_API_KEY",  # Optional — localhost endpoint can use empty key
+        "priority": 1,
+    },
 }
 
 
 def register_free_providers(router) -> None:
-    """Register free LLM providers into an existing LLMRouter instance."""
+    """Register free LLM providers into an existing LLMRouter instance.
+    Localhost endpoints (9router) are registered even without an API key.
+    """
     from quant_nanggroe.engine.llm_router import LLMProvider, ModelTier, ProviderConfig
     for name, cfg in FREE_PROVIDERS.items():
         api_key = os.environ.get(cfg["api_key_env"], "")
-        if not api_key:
+        is_localhost = "localhost" in cfg["base_url"] or "127.0.0.1" in cfg["base_url"]
+        if not api_key and not is_localhost:
             logger.info("Skipping free provider %s: no %s env var", name, cfg["api_key_env"])
             continue
         try:
@@ -140,14 +162,16 @@ def register_free_providers(router) -> None:
         for tier_str, model_name in cfg["models"].items():
             tier = ModelTier(tier_str)
             models_map[tier] = model_name
-        config = ProviderConfig(
-            provider=provider_enum or name,
-            api_key=api_key,
-            base_url=cfg["base_url"],
-            models=models_map,
-            priority=cfg["priority"],
-            enabled=True,
-        )
+        config_kwargs = {
+            "provider": provider_enum or name,
+            "base_url": cfg["base_url"],
+            "models": models_map,
+            "priority": cfg["priority"],
+            "enabled": True,
+        }
+        if api_key:
+            config_kwargs["api_key"] = api_key
+        config = ProviderConfig(**config_kwargs)
         router.add_provider(config)
         logger.info("Registered free provider: %s (key ends with ...%s)", name, api_key[-4:])
 
@@ -288,7 +312,42 @@ class SelfCorrection:
         by_category: dict[str, int] = {}
         for l in self._lessons:
             by_category[l.category] = by_category.get(l.category, 0) + 1
-        return {"total": total, "resolved": resolved, "unresolved": total - resolved, "by_category": by_category}
+        # SLA metrics
+        now = datetime.now(timezone.utc)
+        unresolved_lessons = [l for l in self._lessons if not l.resolved]
+        sla_breached = 0
+        total_cycle_time = 0.0
+        cycle_count = 0
+        oldest_age_hours = 0.0
+        for l in self._lessons:
+            if not l.occurred_at:
+                continue
+            try:
+                occurred = datetime.fromisoformat(l.occurred_at)
+                age_hours = (now - occurred).total_seconds() / 3600
+            except Exception:
+                continue
+            # Track oldest unresolved age
+            if not l.resolved:
+                if age_hours > oldest_age_hours:
+                    oldest_age_hours = age_hours
+                if age_hours > 24:  # SLA breach: unresolved > 24h
+                    sla_breached += 1
+            # Track cycle time from resolved lessons
+            if l.resolved and l.context and 'eval_duration_ms' in l.context:
+                total_cycle_time += l.context.get('eval_duration_ms', 0)
+                cycle_count += 1
+        avg_cycle_time = total_cycle_time / cycle_count if cycle_count > 0 else 0
+        return {
+            "total": total, "resolved": resolved, "unresolved": total - resolved,
+            "by_category": by_category,
+            "sla": {
+                "total_breaches": sla_breached,
+                "avg_cycle_time_ms": round(avg_cycle_time, 2),
+                "resolution_rate": round(resolved / total * 100, 1) if total > 0 else 0.0,
+                "unresolved_aging_hours": round(oldest_age_hours, 1),
+            },
+        }
 
     def _load(self) -> None:
         if not self._path.exists():
@@ -306,7 +365,7 @@ class SelfCorrection:
 
     def _save(self) -> None:
         raw = [{"id": l.id, "category": l.category, "severity": l.severity.value if isinstance(l.severity, LessonSeverity) else l.severity,
-                "summary": l.summary, "detail": l.detail, "context": l.context,
+                "summary": l.summary, "detail": l.detail, "context": {**l.context, "_sla_tracked": True},
                 "occurred_at": l.occurred_at, "resolved": l.resolved, "resolution": l.resolution}
                for l in self._lessons]
         self._path.write_text(json.dumps(raw, indent=2, default=str), encoding="utf-8")
@@ -326,6 +385,23 @@ class PipelineStep:
 
 
 @dataclass
+class SlaMetrics:
+    total_duration_ms: float = 0.0
+    data_to_signal_ms: float = 0.0
+    signal_to_risk_ms: float = 0.0
+    risk_to_exec_ms: float = 0.0
+    closed_trade_to_eval_ms: float = 0.0
+    eval_to_evolve_ms: float = 0.0
+    cycle_time_ms: float = 0.0
+    trades_evaluated: int = 0
+    evolutions_triggered: int = 0
+    lessons_recorded: int = 0
+    avg_eval_time_ms: float = 0.0
+    sla_breached: bool = False
+    sla_threshold_ms: float = 300000.0  # 5 min default
+
+
+@dataclass
 class PipelineResult:
     symbol: str
     success: bool
@@ -335,6 +411,7 @@ class PipelineResult:
     steps: list[PipelineStep] = field(default_factory=list)
     decision: dict[str, Any] = field(default_factory=dict)
     timestamp: str = ""
+    sla: SlaMetrics = field(default_factory=SlaMetrics)
 
     def __post_init__(self):
         if not self.timestamp:
@@ -352,7 +429,40 @@ class AutonomousPipeline:
         self._last_result: PipelineResult | None = None
         self._data_manager: Any = None
         self._data_monitor: Any = None
+        self._run_lock = asyncio.Lock()
+        # P0: Self-Aware capability (user's #1 dream — was ABSENT).
+        self._self_aware = SelfAware()
         self._init_services()
+
+    def _pipeline_self_state(self) -> "SelfState":
+        """State provider for the SelfAware module — reflects THIS pipeline's
+        real internal state so the organism can reason about itself."""
+        from quant_nanggroe.engine.self_aware import SelfState
+        rm = getattr(self._risk_manager, "state", None) if hasattr(self, "_risk_manager") else None
+        return SelfState(
+            equity=getattr(rm, "current_equity", 0.0) or 0.0,
+            peak_equity=getattr(rm, "peak_equity", 0.0) or 0.0,
+            daily_pnl=getattr(rm, "daily_pnl", 0.0) or 0.0,
+            total_trades=getattr(rm, "trade_count_today", 0) or 0,
+            open_positions=len(getattr(rm, "active_positions", []) or []),
+            veto_count=getattr(self._risk_manager, "_veto_count", 0) if hasattr(self, "_risk_manager") else 0,
+            approval_count=getattr(self._risk_manager, "_approval_count", 0) if hasattr(self, "_risk_manager") else 0,
+            losing_streak=self._self_aware._history[-1].losing_streak if self._self_aware._history else 0,
+            last_strategy=self._last_result.strategy if self._last_result else "",
+            last_symbol=self._last_result.symbol if self._last_result else "",
+            last_run_ts=time.time(),
+            extra={"pipeline": "AutonomousPipeline"},
+        )
+
+    def reflect_self(self) -> "Reflection":
+        """Expose self-reflection. Safe to call anytime; returns structured
+        'I am X because Y' reasoning about the pipeline's own performance."""
+        try:
+            self._self_aware.set_state_provider(self._pipeline_self_state)
+            return self._self_aware.reflect()
+        except Exception as e:  # self-awareness must never crash the pipeline
+            from quant_nanggroe.engine.self_aware import Reflection
+            return Reflection(verdict="UNKNOWN", statements=[f"self-reflection unavailable: {e}"], metrics={}, anomalies=[])
 
     def _ensure_data_manager(self) -> Any:
         if self._data_manager is not None:
@@ -414,8 +524,18 @@ class AutonomousPipeline:
         self._pnl_evaluator = None
         self._regime_filter = None
         self._gene_loader = None
-        self._aihf_bridge = None  # NEW: AIHF Bridge
-        self._hf_bridge = None    # NEW: Hedge Fund Bridge
+        self._aihf_bridge = None
+        self._hf_bridge = None
+        self._trade_lifecycle = None
+        self._trailing_stop = None
+
+        # Init TrailingStopManager
+        try:
+            from quant_nanggroe.engine.risk.trailing_stop import TrailingStopManager
+            self._trailing_stop = TrailingStopManager()
+            logger.info("TrailingStopManager initialized")
+        except ImportError:
+            self._trailing_stop = None
 
         if _HAS_FINAL_DECIDER:
             try:
@@ -438,6 +558,18 @@ class AutonomousPipeline:
             except Exception as exc:
                 logger.warning("PnLEvaluator init failed: %s", exc)
 
+        # NEW: TradeLifecycleManager — closed trade → evaluation → evolution loop
+        if _TradeLifecycleManager is not None:
+            try:
+                self._trade_lifecycle = _TradeLifecycleManager(
+                    pnl_evaluator=self._pnl_evaluator,
+                    self_correction=self.correction,
+                    sla_threshold_ms=300000.0,
+                )
+                logger.info("TradeLifecycleManager initialized (closed trade → eval → evolve)")
+            except Exception as exc:
+                logger.warning("TradeLifecycleManager init failed: %s", exc)
+
         if _HAS_REGIME_FILTER:
             try:
                 self._regime_filter = RegimeStrategyFilter()
@@ -452,14 +584,13 @@ class AutonomousPipeline:
             except Exception as exc:
                 logger.warning("GeneLoader init failed: %s", exc)
 
-        if _HAS_AIHF_BRIDGE:  # NEW: AIHF Bridge init
+        if _HAS_AIHF_BRIDGE:
             try:
                 self._aihf_bridge = AIHFBridge()
                 logger.info("AIHFBridge initialized with 20 agents")
             except Exception as exc:
                 logger.warning("AIHFBridge init failed: %s", exc)
 
-        # NEW: Hedge Fund Bridge init
         if _HAS_HF_BRIDGE:
             try:
                 self._hf_bridge = HedgeFundBridge()
@@ -508,340 +639,380 @@ class AutonomousPipeline:
         logger.info("Loaded %d strategies (%d canonical + %d genes)", total, count, genes_loaded)
         return total
 
+    def list_available_strategies(self) -> list[str]:
+        """Return list of available strategy names."""
+        return list(self._strategies.keys())
+
     async def run(self, symbol: str, strategy_name: str | None = None, use_llm: bool = False, data: Any = None) -> PipelineResult:
-        """Run pipeline: fetch → signal → risk → FinalDecider → execute → log → evaluate."""
-        steps: list[PipelineStep] = []
-        result = PipelineResult(symbol=symbol, success=False, decision={})
-
-        # ── Step 1: Data ────────────────────────────────────────────
-        s1 = PipelineStep(name="data_fetch")
+        await self._run_lock.acquire()
         try:
-            s1.status = "running"
-            t0 = time.perf_counter()
-            df = await self._fetch_data(symbol, data)
-            s1.duration_ms = (time.perf_counter() - t0) * 1000
-            if df is None or (hasattr(df, 'empty') and df.empty):
-                raise ValueError("No data returned")
-            s1.status = "passed"
-            s1.result = f"{len(df)} bars"
-            latest_price = float(df["close"].iloc[-1]) if "close" in df.columns else 0.0
-            self._feed_price_to_paper(symbol, latest_price)
-        except Exception as exc:
-            s1.status = "failed"
-            s1.error = str(exc)
-            self.correction.record("data_fetch", f"Data fetch failed for {symbol}", str(exc), LessonSeverity.ERROR)
-        steps.append(s1)
-        if s1.status == "failed":
-            result.reason = f"Data fetch failed: {s1.error}"
-            result.steps = steps
-            return result
+            steps: list[PipelineStep] = []
+            result = PipelineResult(symbol=symbol, success=False, decision={})
 
-        current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
-
-        # ── Step 1.5: Regime Detection ──────────────────────────────
-        regime = "unknown"
-        regime_confidence = 0.0
-        try:
-            from quant_nanggroe.engine.market_state import MarketRegimeDetector
-            from quant_nanggroe.engine.autoswitch import REGIME_STRATEGY_MAP, StrategyType
-            closes = df["close"].tolist() if "close" in df.columns else []
-            volumes = df["volume"].tolist() if "volume" in df.columns else None
-            detector = MarketRegimeDetector()
-            regime_result = detector.detect(closes, volumes, symbol)
-            regime = regime_result.regime.value if hasattr(regime_result, "regime") else "unknown"
-            regime_confidence = regime_result.confidence if hasattr(regime_result, "confidence") else 0.0
-            strategy_type = REGIME_STRATEGY_MAP.get(regime_result.regime, StrategyType.PAUSED)
-            result.decision["regime"] = {"regime": regime, "confidence": regime_confidence, "strategy_type": strategy_type.value}
-        except Exception as exc:
-            logger.warning("Regime detection failed: %s", exc)
-
-        # ── NEW: AIHF Bridge Signals (before council/ensemble) ────
-        aihf_signal_override = None
-        if self._aihf_bridge is not None:
+            # ── Step 1: Data ────────────────────────────────────────────
+            s1 = PipelineStep(name="data_fetch")
             try:
-                aihf_signals = self._aihf_bridge.get_all_signals(symbol)
-                if aihf_signals and len(aihf_signals) > 0:
-                    # Use consensus from AIHF agents as an override signal
-                    total_conf = sum(s.confidence for s in aihf_signals)
-                    buy_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "buy")
-                    sell_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "sell")
-                    if total_conf > 0:
-                        buy_pct = buy_conf / total_conf
-                        sell_pct = sell_conf / total_conf
-                        if buy_pct > sell_pct and buy_pct > 0.3:
-                            aihf_signal_override = ("buy", buy_pct)
-                        elif sell_pct > buy_pct and sell_pct > 0.3:
-                            aihf_signal_override = ("sell", sell_pct)
-                    result.decision["aihf"] = {"agents_contributing": len(aihf_signals), "buy_confidence": buy_conf, "sell_confidence": sell_conf}
-                    logger.info("AIHF Bridge: %d agents contributed signals for %s", len(aihf_signals), symbol)
+                s1.status = "running"
+                t0 = time.perf_counter()
+                df = await self._fetch_data(symbol, data)
+                s1.duration_ms = (time.perf_counter() - t0) * 1000
+                if df is None or (hasattr(df, 'empty') and df.empty):
+                    raise ValueError("No data returned")
+                s1.status = "passed"
+                s1.result = f"{len(df)} bars"
+                latest_price = float(df["close"].iloc[-1]) if "close" in df.columns else 0.0
+                self._feed_price_to_paper(symbol, latest_price)
             except Exception as exc:
-                logger.warning("AIHF Bridge signals failed: %s", exc)
+                s1.status = "failed"
+                s1.error = str(exc)
+                self.correction.record("data_fetch", f"Data fetch failed for {symbol}", str(exc), LessonSeverity.ERROR)
+            steps.append(s1)
+            if s1.status == "failed":
+                result.reason = f"Data fetch failed: {s1.error}"
+                result.steps = steps
+                return result
 
-        # ── NEW: Hedge Fund Bridge — get weighted vote from hedge_fund providers
-        hf_signal_override = None
-        if self._hf_bridge is not None and _HAS_HF_BRIDGE:
+            current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
+
+            # ── Step 1.5: Regime Detection ──────────────────────────────
+            regime = "unknown"
+            regime_confidence = 0.0
             try:
-                hf_result = self._hf_bridge.get_signal(symbol)
-                if hf_result.get("bias") in ("buy", "sell"):
-                    hf_conf = hf_result["confidence"]
-                    hf_bias = hf_result["bias"]
-                    hf_signal_override = (hf_bias, hf_conf)
-                    result.decision["hedge_fund"] = {
-                        "bias": hf_bias,
-                        "confidence": hf_conf,
-                        "providers": len(hf_result.get("votes", [])),
-                        "source": hf_result.get("source", "hf_vote"),
-                    }
-                    logger.info(
-                        "HedgeFundBridge: vote=%s @ %.2f from %d providers",
-                        hf_bias, hf_conf, len(hf_result.get("votes", [])),
-                    )
+                from quant_nanggroe.engine.market_state import MarketRegimeDetector
+                from quant_nanggroe.engine.autoswitch import REGIME_STRATEGY_MAP, StrategyType
+                closes = df["close"].tolist() if "close" in df.columns else []
+                volumes = df["volume"].tolist() if "volume" in df.columns else None
+                detector = MarketRegimeDetector()
+                regime_result = detector.detect(closes, volumes, symbol)
+                regime = regime_result.regime.value if hasattr(regime_result, "regime") else "unknown"
+                regime_confidence = regime_result.confidence if hasattr(regime_result, "confidence") else 0.0
+                strategy_type = REGIME_STRATEGY_MAP.get(regime_result.regime, StrategyType.PAUSED)
+                result.decision["regime"] = {"regime": regime, "confidence": regime_confidence, "strategy_type": strategy_type.value}
             except Exception as exc:
-                logger.warning("HedgeFundBridge signal failed: %s", exc)
+                logger.warning("Regime detection failed: %s", exc)
 
-        # ── Step 2: Signal ──────────────────────────────────────────
-        s2 = PipelineStep(name="signal_generation")
-        try:
-            s2.status = "running"
-            t0 = time.perf_counter()
-
-            # NEW: Filter strategies via RegimeFilter before generating signals
-            compatible_strategies = None
-            if self._regime_filter is not None and regime != "unknown":
+            # ── AIHF Bridge Signals (before council/ensemble) ──────────
+            aihf_signal_override = None
+            if self._aihf_bridge is not None:
                 try:
-                    all_strat_names = list(self._strategies.keys())
-                    if self._gene_loader:
-                        all_strat_names.extend(self._gene_loader.get_all_gene_names())
-                    filtered = self._regime_filter.filter_strategies(
-                        strategy_names=all_strat_names,
-                        regime=regime,
-                        min_compat=0.35,
-                    )
-                    compatible_strategies = [s[0] for s in filtered]
-                    logger.info("RegimeFilter: %d/%d strategies compatible with %s regime", len(compatible_strategies), len(all_strat_names), regime)
+                    aihf_signals = self._aihf_bridge.get_all_signals(symbol)
+                    if aihf_signals and len(aihf_signals) > 0:
+                        total_conf = sum(s.confidence for s in aihf_signals)
+                        buy_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "buy")
+                        sell_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "sell")
+                        if total_conf > 0:
+                            buy_pct = buy_conf / total_conf
+                            sell_pct = sell_conf / total_conf
+                            if buy_pct > sell_pct and buy_pct > 0.3:
+                                aihf_signal_override = ("buy", buy_pct)
+                            elif sell_pct > buy_pct and sell_pct > 0.3:
+                                aihf_signal_override = ("sell", sell_pct)
+                        result.decision["aihf"] = {"agents_contributing": len(aihf_signals), "buy_confidence": buy_conf, "sell_confidence": sell_conf}
+                        logger.info("AIHF Bridge: %d agents contributed signals for %s", len(aihf_signals), symbol)
                 except Exception as exc:
-                    logger.warning("RegimeFilter failed (proceeding with all strategies): %s", exc)
+                    logger.warning("AIHF Bridge signals failed: %s", exc)
 
-            signal_type, confidence, reason = self._generate_signal(symbol, strategy_name, df, regime=regime, compatible_strategies=compatible_strategies)
+            # ── Hedge Fund Bridge — get weighted vote from hedge_fund providers
+            hf_signal_override = None
+            if self._hf_bridge is not None and _HAS_HF_BRIDGE:
+                try:
+                    hf_result = self._hf_bridge.get_signal(symbol)
+                    if hf_result.get("bias") in ("buy", "sell"):
+                        hf_conf = hf_result["confidence"]
+                        hf_bias = hf_result["bias"]
+                        hf_signal_override = (hf_bias, hf_conf)
+                        result.decision["hedge_fund"] = {
+                            "bias": hf_bias,
+                            "confidence": hf_conf,
+                            "providers": len(hf_result.get("votes", [])),
+                            "source": hf_result.get("source", "hf_vote"),
+                        }
+                        logger.info(
+                            "HedgeFundBridge: vote=%s @ %.2f from %d providers",
+                            hf_bias, hf_conf, len(hf_result.get("votes", [])),
+                        )
+                except Exception as exc:
+                    logger.warning("HedgeFundBridge signal failed: %s", exc)
 
-            # AIHF override: if AIHF has strong consensus and current signal is weak
-            if aihf_signal_override is not None and confidence < AIHF_OVERRIDE_THRESHOLD:
-                if aihf_signal_override[1] > confidence:
-                    signal_type = aihf_signal_override[0]
-                    confidence = aihf_signal_override[1]
-                    reason = f"AIHF consensus override: {signal_type} @ {confidence:.2f}"
+            # ── Step 2: Signal ──────────────────────────────────────────
+            s2 = PipelineStep(name="signal_generation")
+            try:
+                s2.status = "running"
+                t0 = time.perf_counter()
 
-            # Hedge Fund override: if HF has strong consensus and current signal is weaker
-            if hf_signal_override is not None and confidence < AIHF_OVERRIDE_THRESHOLD:
-                if hf_signal_override[1] > confidence:
-                    signal_type = hf_signal_override[0]
-                    confidence = hf_signal_override[1]
-                    reason = f"HedgeFund override: {signal_type} @ {confidence:.2f}"
+                compatible_strategies = None
+                if self._regime_filter is not None and regime != "unknown":
+                    try:
+                        all_strat_names = list(self._strategies.keys())
+                        if self._gene_loader:
+                            all_strat_names.extend(self._gene_loader.get_all_gene_names())
+                        filtered = self._regime_filter.filter_strategies(
+                            strategy_names=all_strat_names,
+                            regime=regime,
+                            min_compat=0.35,
+                        )
+                        compatible_strategies = [s[0] for s in filtered]
+                        logger.info("RegimeFilter: %d/%d strategies compatible with %s regime", len(compatible_strategies), len(all_strat_names), regime)
+                    except Exception as exc:
+                        logger.warning("RegimeFilter failed (proceeding with all strategies): %s", exc)
 
-            s2.duration_ms = (time.perf_counter() - t0) * 1000
-            s2.status = "passed"
-            s2.result = f"{signal_type} @ {confidence:.2f}"
-        except Exception as exc:
-            s2.status = "failed"
-            s2.error = str(exc)
-            self.correction.record("signal_gen", f"Signal gen failed for {symbol}", str(exc), LessonSeverity.ERROR)
-        steps.append(s2)
-        if s2.status == "failed":
-            result.reason = f"Signal generation failed: {s2.error}"
-            result.steps = steps
-            return result
+                signal_type, confidence, reason = self._generate_signal(symbol, strategy_name, df, regime=regime, compatible_strategies=compatible_strategies)
 
-        result.signal = signal_type
-        result.confidence = confidence
+                if aihf_signal_override is not None and confidence < AIHF_OVERRIDE_THRESHOLD:
+                    if aihf_signal_override[1] > confidence:
+                        signal_type = aihf_signal_override[0]
+                        confidence = aihf_signal_override[1]
+                        reason = f"AIHF consensus override: {signal_type} @ {confidence:.2f}"
 
-        # ── Step 2.25: Ensemble Voting ──────────────────────────────
-        s225 = PipelineStep(name="ensemble_voting")
-        try:
-            s225.status = "running"
-            t0 = time.perf_counter()
-            from quant_nanggroe.engine.agentic.ensemble import EnsembleVoter
-            voter = EnsembleVoter()
-            voted_bias, voted_conf, vote_meta = voter.run(symbol, signal_type, confidence, dataframe=df)
-            s225.duration_ms = (time.perf_counter() - t0) * 1000
-            s225.status = "passed"
-            s225.result = f"{voted_bias} @ {voted_conf:.2f} (consensus={vote_meta.get('consensus_strength', 0):.2f})"
-            result.decision["ensemble"] = vote_meta
-            if voted_bias != "neutral" and vote_meta.get("consensus_strength", 0) > 0.6:
-                signal_type = voted_bias
-                confidence = voted_conf
-                result.signal = signal_type
-                result.confidence = confidence
-        except Exception as exc:
-            s225.status = "skipped"
-            s225.error = str(exc)
-        steps.append(s225)
+                if hf_signal_override is not None and confidence < AIHF_OVERRIDE_THRESHOLD:
+                    if hf_signal_override[1] > confidence:
+                        signal_type = hf_signal_override[0]
+                        confidence = hf_signal_override[1]
+                        reason = f"HedgeFund override: {signal_type} @ {confidence:.2f}"
 
-        # ── Step 2.5: Council Debate ────────────────────────────────
-        s25 = PipelineStep(name="council_debate")
-        try:
-            s25.status = "running"
-            t0 = time.perf_counter()
-            from quant_nanggroe.engine.agentic.council import convene_council, DEBATE_THRESHOLD
-            if confidence < DEBATE_THRESHOLD:
-                debate = convene_council(symbol=symbol, proposed_signal=signal_type, proposed_confidence=confidence, price=current_price, regime=regime)
-                s25.duration_ms = (time.perf_counter() - t0) * 1000
-                if debate.debate_held:
-                    signal_type = debate.signal
-                    confidence = debate.confidence
-                    s25.result = f"Council: {signal_type} @ {confidence:.2f} — {debate.summary}"
-                    result.decision["council"] = {"debate_held": True, "votes": debate.votes, "summary": debate.summary, "original_signal": result.signal, "original_confidence": result.confidence}
+                s2.duration_ms = (time.perf_counter() - t0) * 1000
+                s2.status = "passed"
+                s2.result = f"{signal_type} @ {confidence:.2f}"
+            except Exception as exc:
+                s2.status = "failed"
+                s2.error = str(exc)
+                self.correction.record("signal_gen", f"Signal gen failed for {symbol}", str(exc), LessonSeverity.ERROR)
+            steps.append(s2)
+            if s2.status == "failed":
+                result.reason = f"Signal generation failed: {s2.error}"
+                result.steps = steps
+                return result
+
+            result.signal = signal_type
+            result.confidence = confidence
+
+            # ── Step 2.25: Ensemble Voting ──────────────────────────────
+            s225 = PipelineStep(name="ensemble_voting")
+            try:
+                s225.status = "running"
+                t0 = time.perf_counter()
+                from quant_nanggroe.engine.agentic.ensemble import EnsembleVoter
+                voter = EnsembleVoter()
+                voted_bias, voted_conf, vote_meta = voter.run(symbol, signal_type, confidence, dataframe=df)
+                s225.duration_ms = (time.perf_counter() - t0) * 1000
+                s225.status = "passed"
+                s225.result = f"{voted_bias} @ {voted_conf:.2f} (consensus={vote_meta.get('consensus_strength', 0):.2f})"
+                result.decision["ensemble"] = vote_meta
+                if voted_bias != "neutral" and vote_meta.get("consensus_strength", 0) > 0.6:
+                    signal_type = voted_bias
+                    confidence = voted_conf
                     result.signal = signal_type
                     result.confidence = confidence
-                else:
-                    s25.result = f"No debate needed ({debate.summary})"
-            else:
-                s25.duration_ms = (time.perf_counter() - t0) * 1000
-                s25.result = f"Skipped (confidence {confidence:.2%} >= {DEBATE_THRESHOLD:.0%})"
-            s25.status = "passed"
-        except Exception as exc:
-            s25.status = "skipped"
-            s25.error = str(exc)
-        steps.append(s25)
+            except Exception as exc:
+                s225.status = "skipped"
+                s225.error = str(exc)
+            steps.append(s225)
 
-        # ── Step 3: Risk Check ──────────────────────────────────────
-        s3 = PipelineStep(name="risk_check")
-        try:
-            s3.status = "running"
-            t0 = time.perf_counter()
-            risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price)
-            s3.duration_ms = (time.perf_counter() - t0) * 1000
-            s3.status = "passed" if risk_ok else "failed"
-            s3.result = risk_reason
-        except Exception as exc:
-            s3.status = "failed"
-            s3.error = str(exc)
-        steps.append(s3)
-        if s3.status == "failed":
-            result.reason = f"Risk check blocked: {s3.error}"
-            result.steps = steps
-            return result
-
-        # ── Step 4: LLM Reasoning ───────────────────────────────────
-        if use_llm and self._llm_router:
-            s4 = PipelineStep(name="llm_reasoning")
+            # ── Step 2.5: Council Debate ────────────────────────────────
+            s25 = PipelineStep(name="council_debate")
             try:
-                s4.status = "running"
+                s25.status = "running"
                 t0 = time.perf_counter()
-                llm_decision = await self._llm_reason(symbol, signal_type, confidence)
-                s4.duration_ms = (time.perf_counter() - t0) * 1000
-                s4.status = "passed"
-                s4.result = llm_decision.get("action", "hold")
-                result.decision["llm"] = llm_decision
+                from quant_nanggroe.engine.agentic.council import convene_council, DEBATE_THRESHOLD
+                if confidence < DEBATE_THRESHOLD:
+                    debate = convene_council(symbol=symbol, proposed_signal=signal_type, proposed_confidence=confidence, price=current_price, regime=regime)
+                    s25.duration_ms = (time.perf_counter() - t0) * 1000
+                    if debate.debate_held:
+                        signal_type = debate.signal
+                        confidence = debate.confidence
+                        s25.result = f"Council: {signal_type} @ {confidence:.2f} — {debate.summary}"
+                        result.decision["council"] = {"debate_held": True, "votes": debate.votes, "summary": debate.summary, "original_signal": result.signal, "original_confidence": result.confidence}
+                        result.signal = signal_type
+                        result.confidence = confidence
+                    else:
+                        s25.result = f"No debate needed ({debate.summary})"
+                else:
+                    s25.duration_ms = (time.perf_counter() - t0) * 1000
+                    s25.result = f"Skipped (confidence {confidence:.2%} >= {DEBATE_THRESHOLD:.0%})"
+                s25.status = "passed"
             except Exception as exc:
-                s4.status = "skipped"
-                s4.error = str(exc)
-                self.correction.record("llm_reasoning", f"LLM reasoning failed for {symbol}", str(exc), LessonSeverity.WARNING)
-            steps.append(s4)
+                s25.status = "skipped"
+                s25.error = str(exc)
+            steps.append(s25)
 
-        # ── Step 4.5: Final Decider ─────────────────────────────────
-        if self._final_decider is not None and current_price > 0:
+            # ── Step 3: Risk Check ──────────────────────────────────────
+            s3 = PipelineStep(name="risk_check")
             try:
-                from quant_nanggroe.engine.agentic.final_decider import RegimeState, StrategySignal, PortfolioState, RiskState, Action
-                regime_state = RegimeState(regime=regime if regime != "unknown" else "neutral", confidence=regime_confidence)
-                agg_signal = StrategySignal(
-                    strategy_name="ensemble", symbol=symbol,
-                    action=Action.BUY if signal_type == "buy" else (Action.SELL if signal_type == "sell" else Action.HOLD),
-                    confidence=confidence, regime_compatibility=0.5,
-                )
-                rm_state = getattr(getattr(self._em, '_risk_manager', None), 'state', None)
-                portfolio_state = PortfolioState(
-                    total_exposure=0.0, max_exposure=3.0,
-                    available_balance=rm_state.current_equity if rm_state else 1000.0,
-                )
-                risk_state = RiskState(
-                    kill_switch_active=getattr(getattr(self._em, '_kill_switch', None), 'status', lambda: {})().get('is_active', False) if self._em else False,
-                    daily_loss_pct=0.0, weekly_loss_pct=0.0,
-                )
-                atr_val = self._compute_atr(df)
-                final_decision = self._final_decider.decide(
-                    signals=[agg_signal], regime=regime_state, portfolio=portfolio_state,
-                    risk=risk_state, atr=atr_val if atr_val > 0 else None, current_price=current_price,
-                )
-                if final_decision.action != Action.HOLD:
-                    signal_type = final_decision.action.value
-                    confidence = final_decision.confidence
-                    result.decision["final_decider"] = {
-                        "action": final_decision.action.value, "strategy": final_decision.strategy_name,
-                        "confidence": final_decision.confidence, "kelly": final_decision.kelly_fraction, "reason": final_decision.reason,
-                    }
+                s3.status = "running"
+                t0 = time.perf_counter()
+                risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price)
+                s3.duration_ms = (time.perf_counter() - t0) * 1000
+                s3.status = "passed" if risk_ok else "failed"
+                s3.result = risk_reason
             except Exception as exc:
-                logger.warning("FinalDecider skipped: %s", exc)
+                s3.status = "failed"
+                s3.error = str(exc)
+            steps.append(s3)
+            if s3.status == "failed":
+                result.reason = f"Risk check blocked: {s3.error}"
+                result.steps = steps
+                return result
 
-        # ── Step 5: Execution + StrategyLogger + PnLEvaluator ───────
-        s5 = PipelineStep(name="execution")
-        try:
-            s5.status = "running"
-            t0 = time.perf_counter()
-            exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime)
-            s5.duration_ms = (time.perf_counter() - t0) * 1000
-            s5.status = "passed"
-            s5.result = exec_decision.get("action", "hold")
-            result.decision["execution"] = exec_decision
-
-            # Log strategy attribution after execution
-            trigger_strategy = "ensemble"
-            if result.decision.get("final_decider"):
-                trigger_strategy = result.decision["final_decider"].get("strategy", "ensemble")
-            atr_value = self._compute_atr(df)
-
-            if self._strategy_logger is not None and exec_decision.get("action") in ("buy", "sell"):
+            # ── Step 4: LLM Reasoning ───────────────────────────────────
+            if use_llm and self._llm_router:
+                s4 = PipelineStep(name="llm_reasoning")
                 try:
-                    log_entry = {
-                        "symbol": symbol, "action": exec_decision["action"],
-                        "strategy_name": trigger_strategy, "confidence": confidence,
-                        "market_regime": regime, "entry_price": current_price,
-                        "volume": exec_decision.get("position_size_pct", 0.01),
-                        "sl": exec_decision.get("sl", current_price - atr_value * 1.5 if exec_decision.get("action") == "buy" else current_price + atr_value * 1.5),
-                        "tp": exec_decision.get("tp", current_price + atr_value * 3.0 if exec_decision.get("action") == "buy" else current_price - atr_value * 3.0),
-                        "atr": atr_value,
-                    }
-                    self._strategy_logger.log_trigger(log_entry)
+                    s4.status = "running"
+                    t0 = time.perf_counter()
+                    llm_decision = await self._llm_reason(symbol, signal_type, confidence)
+                    s4.duration_ms = (time.perf_counter() - t0) * 1000
+                    s4.status = "passed"
+                    s4.result = llm_decision.get("action", "hold")
+                    result.decision["llm"] = llm_decision
                 except Exception as exc:
-                    logger.warning("StrategyLogger failed: %s", exc)
+                    s4.status = "skipped"
+                    s4.error = str(exc)
+                    self.correction.record("llm_reasoning", f"LLM reasoning failed for {symbol}", str(exc), LessonSeverity.WARNING)
+                steps.append(s4)
 
-            # NEW: PnLEvaluator — record trade for closed-PnL feedback
-            if self._pnl_evaluator is not None and exec_decision.get("action") in ("buy", "sell"):
+            # ── Step 4.5: Final Decider ─────────────────────────────────
+            if self._final_decider is not None and current_price > 0:
                 try:
-                    trade = ClosedTrade(
-                        trade_id=exec_decision.get("order_id", str(uuid.uuid4())[:12]),
-                        strategy_name=trigger_strategy,
-                        symbol=symbol,
-                        entry_price=current_price,
-                        exit_price=0.0,  # Updated when position closes
-                        volume=exec_decision.get("position_size_pct", 0.01),
-                        side=exec_decision["action"],
-                        entry_time=datetime.now(timezone.utc).isoformat(),
-                        exit_time="",
-                        pnl=0.0,
-                        rr=0.0,
-                        regime_at_entry=regime,
-                        confidence_at_entry=confidence,
+                    from quant_nanggroe.engine.agentic.final_decider import RegimeState, StrategySignal, PortfolioState, RiskState, Action
+                    regime_state = RegimeState(regime=regime if regime != "unknown" else "neutral", confidence=regime_confidence)
+                    agg_signal = StrategySignal(
+                        strategy_name="ensemble", symbol=symbol,
+                        action=Action.BUY if signal_type == "buy" else (Action.SELL if signal_type == "sell" else Action.HOLD),
+                        confidence=confidence, regime_compatibility=0.5,
                     )
-                    perf = self._pnl_evaluator.evaluate(trade)
-                    if perf and self._pnl_evaluator.needs_fine_tune(perf):
-                        logger.warning("PnLEvaluator: %s needs fine-tune (win_rate=%.2f, total_pnl=%.2f)",
-                                       trigger_strategy, perf.win_rate, perf.total_pnl)
-                        result.decision["fine_tune"] = {
-                            "strategy": trigger_strategy, "win_rate": perf.win_rate,
-                            "total_pnl": perf.total_pnl, "reason": "PnL below threshold",
+                    rm_state = getattr(getattr(self._em, '_risk_manager', None), 'state', None)
+                    portfolio_state = PortfolioState(
+                        total_exposure=0.0, max_exposure=3.0,
+                        available_balance=rm_state.current_equity if rm_state else 1000.0,
+                    )
+                    risk_state = RiskState(
+                        kill_switch_active=getattr(getattr(self._em, '_kill_switch', None), 'status', lambda: {})().get('is_active', False) if self._em else False,
+                        daily_loss_pct=0.0, weekly_loss_pct=0.0,
+                    )
+                    atr_val = self._compute_atr(df)
+                    final_decision = self._final_decider.decide(
+                        signals=[agg_signal], regime=regime_state, portfolio=portfolio_state,
+                        risk=risk_state, atr=atr_val if atr_val > 0 else None, current_price=current_price,
+                    )
+                    if final_decision.action != Action.HOLD:
+                        signal_type = final_decision.action.value
+                        confidence = final_decision.confidence
+                        result.decision["final_decider"] = {
+                            "action": final_decision.action.value, "strategy": final_decision.strategy_name,
+                            "confidence": final_decision.confidence, "kelly": final_decision.kelly_fraction, "reason": final_decision.reason,
                         }
                 except Exception as exc:
-                    logger.warning("PnLEvaluator evaluate failed: %s", exc)
-        except Exception as exc:
-            s5.status = "failed"
-            s5.error = str(exc)
-        steps.append(s5)
+                    logger.warning("FinalDecider skipped: %s", exc)
 
-        result.success = s5.status != "failed"
-        result.reason = f"Pipeline complete: {signal_type} @ {confidence:.1%}"
-        result.steps = steps
-        self._last_result = result
-        return result
+            # ── Step 5: Execution + StrategyLogger + PnLEvaluator + TradeLifecycle ──
+            s5 = PipelineStep(name="execution")
+            try:
+                s5.status = "running"
+                t0 = time.perf_counter()
+                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision)
+                s5.duration_ms = (time.perf_counter() - t0) * 1000
+                s5.status = "passed"
+                s5.result = exec_decision.get("action", "hold")
+                result.decision["execution"] = exec_decision
+
+                trigger_strategy = "ensemble"
+                if result.decision.get("final_decider"):
+                    trigger_strategy = result.decision["final_decider"].get("strategy", "ensemble")
+                atr_value = self._compute_atr(df)
+
+                if self._strategy_logger is not None and exec_decision.get("action") in ("buy", "sell"):
+                    try:
+                        log_entry = {
+                            "symbol": symbol, "action": exec_decision["action"],
+                            "strategy_name": trigger_strategy, "confidence": confidence,
+                            "market_regime": regime, "entry_price": current_price,
+                            "volume": exec_decision.get("position_size_pct", 0.01),
+                            "sl": exec_decision.get("sl", current_price - atr_value * 1.5 if exec_decision.get("action") == "buy" else current_price + atr_value * 1.5),
+                            "tp": exec_decision.get("tp", current_price + atr_value * 3.0 if exec_decision.get("action") == "buy" else current_price - atr_value * 3.0),
+                            "atr": atr_value,
+                        }
+                        self._strategy_logger.log_trigger(log_entry)
+                    except Exception as exc:
+                        logger.warning("StrategyLogger failed: %s", exc)
+
+                # ── NEW: TradeLifecycleManager — closed trade → eval → evolve ──
+                if self._trade_lifecycle is not None and ClosedTrade is not None:
+                    try:
+                        action = exec_decision.get("action", "hold")
+                        if action in ("buy", "sell") and exec_decision.get("execution") == "filled":
+                            # Create a ClosedTrade for lifecycle processing
+                            trade = ClosedTrade(
+                                trade_id=exec_decision.get("order_id", str(uuid.uuid4())[:12]),
+                                strategy_name=trigger_strategy,
+                                symbol=symbol,
+                                entry_price=exec_decision.get("fill_price", current_price),
+                                exit_price=exec_decision.get("exit_price", 0.0),
+                                volume=exec_decision.get("position_size_pct", 0.01),
+                                side=action,
+                                entry_time=exec_decision.get("timestamp", result.timestamp),
+                                exit_time=exec_decision.get("exit_time", ""),
+                                pnl=exec_decision.get("pnl", 0.0),
+                                regime_at_entry=regime,
+                                confidence_at_entry=confidence,
+                            )
+                            lifecycle_context = {
+                                "symbol": symbol,
+                                "confidence": confidence,
+                                "regime": regime,
+                                "pipeline_duration_ms": sum(s.duration_ms for s in steps),
+                            }
+                            lifecycle_record = self._trade_lifecycle.process_closed_trade(
+                                trade, lifecycle_context
+                            )
+                            result.decision["trade_lifecycle"] = lifecycle_record.to_dict()
+
+                            # Populate SLA lifecycle metrics
+                            self._trade_lifecycle.populate_sla_metrics(
+                                result.sla, [lifecycle_record]
+                            )
+
+                            if lifecycle_record.lesson_id:
+                                result.decision["lifecycle_lesson"] = {
+                                    "id": lifecycle_record.lesson_id,
+                                    "sla_breached": lifecycle_record.sla_breached,
+                                    "closed_trade_to_eval_ms": lifecycle_record.closed_trade_to_eval_ms,
+                                    "eval_to_evolve_ms": lifecycle_record.eval_to_evolve_ms,
+                                }
+                    except Exception as exc:
+                        logger.warning("TradeLifecycleManager processing failed: %s", exc)
+
+            except Exception as exc:
+                s5.status = "failed"
+                s5.error = str(exc)
+            steps.append(s5)
+
+            result.success = s5.status != "failed"
+            result.reason = f"Pipeline complete: {signal_type} @ {confidence:.1%}"
+            result.steps = steps
+
+            # ── Populate SLA metrics ────────────────────────────────────
+            total_ms = sum(s.duration_ms for s in steps)
+            result.sla.total_duration_ms = total_ms
+            if len(steps) >= 2:
+                pass  # data_to_signal_ms now set with dynamic lookup below
+            if len(steps) >= 4:
+                result.sla.signal_to_risk_ms = sum(s.duration_ms for s in steps[2:4])
+                # Dynamic step lookup: find 'execution' step by name (handles use_llm=True shifting indices)
+                exec_step = next((s for s in steps if s.name == 'execution'), None)
+                risk_step = next((s for s in steps if s.name == 'risk_check'), None)
+                result.sla.risk_to_exec_ms = (exec_step.duration_ms if exec_step else 0.0)
+                result.sla.data_to_signal_ms = sum(s.duration_ms for s in steps[:2])
+            result.sla.lessons_recorded = len(self.correction._lessons)
+            result.sla.sla_breached = total_ms > result.sla.sla_threshold_ms
+            self._last_result = result
+            # P0: Self-Aware — reflect on own performance after every run.
+            try:
+                result.self_reflection = self.reflect_self()
+            except Exception:
+                pass
+            return result
+        finally:
+            self._run_lock.release()
 
     def _generate_signal(self, symbol: str, strategy_name: str | None, df: Any, regime: str = "unknown", compatible_strategies: list[str] | None = None) -> tuple[str, float, str]:
         """Generate signal via ensemble. If compatible_strategies provided, filters by regime."""
@@ -856,8 +1027,7 @@ class AutonomousPipeline:
         return self._ensemble_signal(symbol, df, regime, compatible_strategies)
 
     def _ensemble_signal(self, symbol: str, df: Any, regime: str, compatible_strategies: list[str] | None = None) -> tuple[str, float, str]:
-        """Run top strategies + MUE-X genes, aggregate via regime-weighted voting.
-        If compatible_strategies provided, only runs those that passed RegimeFilter."""
+        """Run top strategies + MUE-X genes, aggregate via regime-weighted voting."""
         regime_weights = {
             "trending_up": {"momentum": 1.5, "trend": 1.5, "mean_reversion": 0.5, "volatility": 0.8, "pattern": 0.3},
             "trending_down": {"momentum": 1.5, "trend": 1.5, "mean_reversion": 0.5, "volatility": 0.8, "pattern": 0.3},
@@ -902,7 +1072,6 @@ class AutonomousPipeline:
         except (ImportError, ValueError):
             return "hold", 0.0, "Cannot load strategy registry"
 
-        # Add MUE-X genes to candidate pool
         if self._gene_loader:
             try:
                 gene_names = self._gene_loader.get_all_gene_names()
@@ -910,7 +1079,6 @@ class AutonomousPipeline:
             except Exception:
                 pass
 
-        # If RegimeFilter provided compatible strategies, use them as filter
         if compatible_strategies is not None:
             all_names = [n for n in all_names if n in compatible_strategies]
             if not all_names:
@@ -1044,17 +1212,23 @@ class AutonomousPipeline:
         return True, f"Risk passed: {signal} @ {confidence:.1%}", metrics
 
     async def _llm_reason(self, symbol: str, signal: str, confidence: float) -> dict[str, Any]:
-        prompt = f"Symbol: {symbol}\nTechnical Signal: {signal}\nConfidence: {confidence:.1%}\n\nEvaluate this trade."
+        """Use 9router combo mode for LLM reasoning. Falls back to standard routing if combo unavailable."""
+        prompt = f"Symbol: {symbol}\nTechnical Signal: {signal}\nConfidence: {confidence:.1%}\n\nEvaluate this trade. Provide JSON: {{\"action\":\"buy/sell/hold\",\"reason\":\"...\",\"confidence\":0.0-1.0}}"
+        import json as _json
         try:
-            response = await self._llm_router.chat(prompt, tier=None, temperature=0.3)
+            response = await asyncio.wait_for(
+                self._llm_router.chat(prompt, tier=None, temperature=0.3),
+                timeout=15.0  # 9router timeout
+            )
             content = response.content.strip()
             if "{" in content:
                 json_str = content[content.index("{"):content.rindex("}") + 1]
-                import json as _json
-                return _json.loads(json_str)
-            return {"action": signal, "reason": content[:200], "confidence": confidence}
+                parsed = _json.loads(json_str)
+                parsed["model"] = "9router-routed"
+                return parsed
+            return {"action": signal, "reason": content[:200], "confidence": confidence, "model": "raw"}
         except Exception as exc:
-            return {"action": signal, "reason": f"LLM unavailable: {exc}", "confidence": confidence}
+            return {"action": signal, "reason": f"LLM unavailable: {exc}", "confidence": confidence, "model": "none"}
 
     async def _fetch_data(self, symbol: str, data: Any = None) -> Any:
         if data is not None:
@@ -1166,7 +1340,7 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.debug("Paper price feed skipped: %s", exc)
 
-    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown") -> dict[str, Any]:
+    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None) -> dict[str, Any]:
         try:
             from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
             em = self._em
@@ -1178,7 +1352,29 @@ class AutonomousPipeline:
                 for broker in em._brokers.values():
                     if hasattr(broker, 'set_price'):
                         broker.set_price(symbol, current_price)
-            order = Order(id=str(uuid.uuid4()), symbol=symbol, side=side, order_type=OrderType.MARKET, quantity=qty, status=OrderStatus.PENDING, metadata={"confidence": confidence})
+            # Get SL/TP from current pipeline result's FinalDecider decision
+            # Falls back to previous run or static 5%
+            cur_decision = (decision or {}).get('final_decider', {})
+            if cur_decision and cur_decision.get('sl', 0) > 0:
+                order_sl = cur_decision['sl']
+                order_tp = cur_decision['tp']
+            else:
+                # Fallback: try previous pipeline run's FinalDecider
+                prev = getattr(self, '_last_result', None)
+                prev_fd = prev.decision.get('final_decider', {}) if prev else {}
+                if prev_fd and prev_fd.get('sl', 0) > 0:
+                    order_sl = prev_fd['sl']
+                    order_tp = prev_fd['tp']
+                else:
+                    order_sl = current_price * 0.95 if signal == "buy" else (current_price * 1.05 if signal == "sell" else 0.0)
+                    order_tp = current_price * 1.05 if signal == "buy" else (current_price * 0.95 if signal == "sell" else 0.0)
+            order = Order(
+                id=str(uuid.uuid4()), symbol=symbol, side=side,
+                order_type=OrderType.MARKET, quantity=qty,
+                status=OrderStatus.PENDING,
+                stop_loss=order_sl, take_profit=order_tp,
+                metadata={"confidence": confidence},
+            )
             fill = await em.execute_order(order)
             reason = "filled"
             executed = False
@@ -1191,13 +1387,33 @@ class AutonomousPipeline:
                     reason = "rejected: no broker connected or guard blocked"
             else:
                 executed = True
+            # Wire trailing stop for filled positions
+            if executed and fill and self._trailing_stop is not None:
+                try:
+                    self._trailing_stop.add_position(symbol, fill.price or current_price)
+                    logger.info("TrailingStop: position added for %s @ %.2f", symbol, fill.price or current_price)
+                except Exception as exc:
+                    logger.warning("TrailingStop add_position failed: %s", exc)
+
             try:
                 from quant_nanggroe.engine.state_writer import write_engine_snapshot as _write_snap
                 if executed and fill:
                     _write_snap(engine_state={"total_value": fill.price * qty if fill.price else 0, "cash_balance": 0, "positions_count": 1, "daily_pnl": 0, "weekly_pnl": 0, "drawdown": 0, "regime": "unknown"}, risk_state={"kill_switch_active": False}, positions=[{"symbol": symbol, "side": signal, "qty": qty, "entry_price": fill.price if fill.price else 0, "timestamp": datetime.now(timezone.utc).isoformat()}])
             except Exception:
                 pass
-            return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": round(confidence * 0.05, 4), "execution": "filled" if executed else "rejected", "reason": reason, "order_id": fill.order_id if fill else None, "fill_price": fill.price if fill else None, "timestamp": datetime.now(timezone.utc).isoformat()}
+
+            # PnL is 0 at entry time - real PnL computed at position close via TradeLifecycleManager
+            # Use fill price for entry tracking; exit_price/pnl populated on close
+            return {
+                "symbol": symbol, "action": signal, "confidence": round(confidence, 4),
+                "position_size_pct": round(confidence * 0.05, 4),
+                "execution": "filled" if executed else "rejected",
+                "reason": reason, "order_id": fill.order_id if fill else None,
+                "fill_price": fill.price if fill else None,
+                "pnl": 0.0, "exit_price": 0.0, "exit_time": "",
+                "trailing_stop_active": executed and self._trailing_stop is not None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
         except Exception as exc:
             self.correction.record("execution", f"Order failed {symbol}", str(exc), LessonSeverity.ERROR)
             return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "error": str(exc)}
@@ -1231,5 +1447,5 @@ __all__ = [
     "FREE_PROVIDERS", "register_free_providers",
     "discover_strategies",
     "Lesson", "LessonSeverity", "SelfCorrection",
-    "PipelineStep", "PipelineResult", "AutonomousPipeline", "get_autonomous_pipeline",
+    "PipelineStep", "PipelineResult", "SlaMetrics", "AutonomousPipeline", "get_autonomous_pipeline",
 ]
