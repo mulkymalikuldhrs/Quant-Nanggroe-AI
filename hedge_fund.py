@@ -9161,15 +9161,35 @@ def run_once(target_symbol=None):
                 # STEP 6: Risk Guard Approval
                 try:
                     from risk_guard import approve as rg_approve
+                    # FIX (2026-07-24, pro-bug-hunting cron): jangan feed literal
+                    # "daily_pnl":0 / "account_balance":1000 ke guard. Itu silent-disable
+                    # daily-loss veto — guard akan selalu APPROVED walau akun rugi 10%.
+                    # Pakai nilai REAL dari MT5: balance akun + realized PnL hari ini.
+                    _acct_bal = 1000.0
+                    _daily_pnl = 0.0
+                    _open_pos = 0
+                    try:
+                        if not PAPER_TRADE:
+                            _ai = mt5.account_info()
+                            if _ai:
+                                _acct_bal = float(_ai.balance)
+                            _op = mt5.positions_get(symbol=symbol) or []
+                            _open_pos = len(_op)
+                            _today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                            _deals = mt5.history_deals_get(_today, datetime.now())
+                            if _deals:
+                                _daily_pnl = float(sum(d.profit for d in _deals))
+                    except Exception as _e:
+                        log.debug(f"Risk-guard MT5 read failed: {_e}")
                     proposal = {
                         "symbol": symbol,
                         "action": signal["bias"],
                         "volume": max(0.01, round(1000 / 10000, 2)),
                         "price": signal.get("price", 1.0),
                         "sl": signal.get("sl", 0),
-                        "account_balance": 1000,
-                        "daily_pnl": 0,
-                        "open_positions": 0,
+                        "account_balance": _acct_bal,
+                        "daily_pnl": _daily_pnl,
+                        "open_positions": _open_pos,
                         "market_volatility": (calc_atr(symbol) or 0.001) / 1.0,
                     }
                     rg_result = rg_approve(proposal)
