@@ -134,3 +134,4 @@ config/mt5_accounts.yaml
 
 # Hermes desktop attachments (contained live credentials in git history)
 .hermes/desktop-attachments/
+data/context_cache/
