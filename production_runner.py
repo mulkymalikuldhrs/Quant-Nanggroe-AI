@@ -24,7 +24,8 @@ from hedge_fund import run_once
 run_once(target_symbol='{symbol}')
 """
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=env)
+    timeout = 180 if mode == "paper" else 60
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
     return result
 
 def run_backtest(strategy_name="WyckoffStrategy"):
