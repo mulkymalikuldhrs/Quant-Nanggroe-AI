@@ -2286,5 +2286,31 @@
     "occurred_at": "2026-07-24T12:25:31.696018+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "f0df6a4f-32e",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='1873336551184'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='1873337631056'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T12:25:52.758876+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2e346691-efc",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='1873336551184'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='1873337631056'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T12:26:54.207381+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
