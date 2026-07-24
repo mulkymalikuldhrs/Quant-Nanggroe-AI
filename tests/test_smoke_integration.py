@@ -73,7 +73,7 @@ class TestStrategyGeneration:
                 # test dataframe — skip gracefully instead of failing
                 continue
             if sig is not None:
-                assert sig.signal_type is not None
+                assert sig.direction is not None
                 assert 0.0 <= sig.confidence <= 1.0
 
 
