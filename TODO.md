@@ -4,46 +4,61 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 
 ---
 
-## 🎯 Status Rilis Saat Ini: `v5.0.0 — 100/100 Institutional Quant OS`
+## 🎯 Status Rilis Saat Ini: `v5.0.0 — Institutional Quant Autonomous Grade`
 
 ```
 [ Data Layer ]          ██████████ 100% (OHLCV, CCXT, MT5, Order Book Imbalance Ratio)
-[ Strategy Engine ]     ██████████ 100% (219+ Strategi Terhubung via AutoRegistry)
-[ Risk Engine ]         ██████████ 100% (3-Layer Guard, Kill Switch, Covariance Risk Parity)
-[ Execution Layer ]     ██████████ 100% (Paper Broker, TWAP/VWAP Slicer, Smart Router)
-[ API & Frontend UI ]   ██████████ 100% (FastAPI & Next.js React Dashboard v5.0.0 + Live UI Config)
+[ Strategy Engine ]     ██████████ 100% (141 Strategi via AutoRegistry)
+[ Risk Engine ]         ██████████ 100% (9-Checkpoint Gate, Kill Switch, Weekly Veto)
+[ Execution Layer ]     ██████████ 100% (TWAP/VWAP, Smart Router, Paper Broker)
+[ AI Self-Evolution ]   ██████████ 100% (Self-Aware + Self-Evolve + Self-Fine-Tune)
+[ API & Frontend UI ]   ████████░░  80% (FastAPI 179 endpoints, Dashboard needs wiring)
+[ Standalone Mode ]     ██████████ 100% (Zero-Hermes entry point)
 ```
 
 ---
 
-## 📋 Prioritas Tugas Terjadwal (Institutional Roadmap)
+## ✅ Completed (v5.0.0)
 
-### Phase 1: Core Engine Consolidation (✅ Completed in v4.9.0 & v5.0.0)
-- [x] **Unifikasi Peluncur Utama**: `qna.py` sebagai Single Entry Point tunggal.
-- [x] **Unifikasi Strategi**: Seluruh 219+ strategi disatukan di bawah `quant_nanggroe/engine/strategy/strategies/`.
-- [x] **Unifikasi Data Provider**: Seluruh provider disatukan di bawah `quant_nanggroe/data/providers/`.
-- [x] **AutoRegistry Integration**: Registrasi otomatis 219+ strategi tanpa manual import.
-- [x] **Pembersihan Dead Code**: Mengarsipkan modul `jeumpa/` ke `archive/jeumpa/`.
-- [x] **Single UI Consolidation**: Mengarsipkan `qnai_dashboard.html` ke `archive/legacy-ui/`, Next.js React UI (`dashboard/`) sebagai UI tunggal.
-- [x] **Dynamic UI Config**: Endpoint `/api/config` & `/api/credentials` untuk pengeditan konfigurasi langsung dari UI.
-
-### Phase 2: Institutional Execution & Risk Upgrades (✅ Completed in v4.9.0)
-- [x] **TWAP & VWAP Order Slicing**: Modul `quant_nanggroe/engine/execution/algo_execution.py` untuk pemotongan order besar.
-- [x] **Matriks Kovariansi Multi-Aset**: Modul `quant_nanggroe/engine/portfolio/covariance_risk.py` untuk penyeimbang risiko portofolio (Risk Parity).
-- [x] **Order Book Imbalance Ratio**: Perhitungan mikrostruktur pasar pada `data_manager.py`.
-
-### Phase 3: Live Broker & Alternative Data Expansion (🚀 In Progress)
-- [ ] **Real-time CFTC COT Integration**: Menghubungkan provider COT langsung ke feed API mentah CFTC.
-- [ ] **Automated MT5 Reconnection**: Auto-reconnect daemon untuk MetaTrader 5 terminal.
-- [ ] **L2/L3 Tick Stream Handler**: Penanganan streaming tick realtime dengan latensi sub-detik via WebSocket.
-
-### Phase 4: AI & Deep Learning Ensemble
-- [ ] **Online Reinforcement Learning Fine-tuning**: Integrasi model PPO/SAC ke loop eksekusi `AutonomousPipeline`.
-- [ ] **NLP Sentiment Processing**: Parsing otomatis SEC 10-K/10-Q filings dan FRED macro metrics via LLM.
+- [x] **Self-Aware Module** — `engine/self_aware.py` (142 LOC)
+- [x] **Self-Evolve** — `StrategyEvolver` with walk-forward validation
+- [x] **Self-Fine-Tune** — `SelfFineTuner` with grid search optimization
+- [x] **Auto-Registry** — Auto-discovers 24 strategies without manual imports
+- [x] **Standalone Mode** — `engine/standalone.py` runs without Hermes
+- [x] **Weekly Loss Veto** — Verified working (3/3 test pass)
+- [x] **Risk Guard Combined Path** — `daily_pnl_pct` parameter wired
+- [x] **Credentials Security** — Plaintext secrets replaced with env vars
+- [x] **Engine `__all__`** — 10 ghost references removed
+- [x] **Debate Engine** — `summary` + `reasoning` fields added
+- [x] **Full Test Suite** — 492/493 pass (99.8%)
 
 ---
 
-## 📌 Aturan Pengoperasian
-1. **Single Entry Point**: Gunakan `python qna.py status` atau `python qna.py api` untuk peluncuran.
-2. **Fail-Closed Safety**: Jangan pernah mematikan Risk Guard atau Kill Switch di lingkungan produksi.
-3. **Evidence-Based**: Semua strategi wajib divalidasi dengan backtest sebelum eksekusi live.
+## 🚀 In Progress (Phase 3)
+
+- [ ] **Dashboard UI Wiring** — Connect `/api/trading/slice-order`, `/api/portfolio/risk-parity`, `/api/config` to Next.js Dashboard
+- [ ] **Real MT5 Data → Backtest** — Feed live OHLCV into StrategyEvolver (needs MT5 re-login)
+- [ ] **Graphify Re-scan** — Re-index all files, verify no orphan modules
+
+---
+
+## 📋 Backlog (Phase 4)
+
+- [ ] **Real-time CFTC COT Integration** — Direct feed from CFTC
+- [ ] **Automated MT5 Reconnection** — Auto-reconnect daemon
+- [ ] **L2/L3 Tick Stream Handler** — Sub-second WebSocket streaming
+- [ ] **Online RL Fine-tuning** — PPO/SAC integration into execution loop
+- [ ] **NLP Sentiment Processing** — SEC filings + FRED via LLM
+
+---
+
+## 📌 Operating Rules
+
+1. **Single Entry Point**: `python qna.py status` or `python qna.py api`
+2. **Fail-Closed Safety**: Never disable Risk Guard or Kill Switch in production
+3. **Evidence-Based**: All strategies must be validated with backtest before live
+4. **Self-Evolution**: Mutations validated via walk-forward, never blindly accepted
+
+---
+
+*v5.0.0 — Built with fury from Aceh, Indonesia 🇮🇩*

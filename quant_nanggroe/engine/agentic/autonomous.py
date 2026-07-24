@@ -1532,6 +1532,25 @@ class AutonomousPipeline:
                                         "Evolution ACCEPTED for %s: %s",
                                         sname, attempt.reason,
                                     )
+                                    # 1c. Self-Fine-Tune: optimize further after accepted mutation
+                                    if getattr(self, "_self_finetuner", None) is not None:
+                                        try:
+                                            ft_result = self._self_finetuner.optimize(
+                                                sname, mut_params,
+                                            )
+                                            if ft_result.accepted:
+                                                logger.info(
+                                                    "Fine-Tune ACCEPTED for %s: %s",
+                                                    sname, ft_result.reason,
+                                                )
+                                                result["finetune_accepted"] = result.get("finetune_accepted", 0) + 1
+                                            else:
+                                                logger.info(
+                                                    "Fine-Tune REJECTED for %s: %s",
+                                                    sname, ft_result.reason,
+                                                )
+                                        except Exception as ft_exc:
+                                            logger.warning("Fine-tune failed for %s: %s", sname, ft_exc)
                                 else:
                                     logger.info(
                                         "Evolution REJECTED for %s: %s",
