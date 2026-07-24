@@ -147,3 +147,7 @@ data/context_cache/
 # SECURITY: non-standard env filenames MUST never be tracked
 metatrader-mcp.env
 *.mcp.env
+
+# QNA: config files with secrets (env vars used instead)
+config/freqtrade.json
+config/mt5_accounts.yaml

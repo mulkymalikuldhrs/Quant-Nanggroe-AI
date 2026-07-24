@@ -34,9 +34,11 @@ except ImportError:
 
 try:
     from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
+    from quant_nanggroe.engine.strategy.strategies.self_finetune import SelfFineTuner
     _HAS_STRATEGY_EVOLVER = True
 except ImportError:
     StrategyEvolver = None
+    SelfFineTuner = None
     _HAS_STRATEGY_EVOLVER = False
 
 import asyncio
@@ -577,6 +579,11 @@ class AutonomousPipeline:
             try:
                 self._strategy_evolver = StrategyEvolver()
                 logger.info("StrategyEvolver initialized (mutation validation gate active)")
+                try:
+                    self._self_finetuner = SelfFineTuner()
+                    logger.info("SelfFineTuner initialized (auto-optimize active)")
+                except Exception:
+                    self._self_finetuner = None
             except Exception as exc:
                 self._strategy_evolver = None
                 logger.warning("StrategyEvolver init failed: %s", exc)

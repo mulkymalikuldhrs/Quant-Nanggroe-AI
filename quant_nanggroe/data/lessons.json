@@ -2182,5 +2182,31 @@
     "occurred_at": "2026-07-24T04:54:36.618511+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "0df36fab-a44",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Too Many Requests. Rate limited. Try after a while.",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T10:58:26.714412+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "93e43764-d8d",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "Too Many Requests. Rate limited. Try after a while.",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T10:59:05.982335+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
