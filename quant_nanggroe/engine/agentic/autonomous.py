@@ -622,9 +622,10 @@ class AutonomousPipeline:
         if _HAS_AUTO_REGISTRY:
             try:
                 self._auto_registry = AutoRegistry()
-                from quant_nanggroe.engine.strategies.base import Strategy
-                discovered = self._auto_registry.discover_all(base_class=Strategy)
-                total = sum(discovered.values())
+                # Scan ALL directories WITHOUT base_class filter
+                # (many strategies use different base classes or are standalone)
+                discovered = self._auto_registry.discover_all()
+                total = self._auto_registry.count()
                 logger.info("AutoRegistry discovered %d strategies across %d dirs", total, len(discovered))
             except Exception as exc:
                 self._auto_registry = None

@@ -190,6 +190,7 @@ class AutoRegistry:
         dirs = [
             base / "engine" / "strategies",
             base / "engine" / "strategy" / "strategies",
+            base / "strategies",  # new package-level strategies
             base / "agents",
             base / "exchange",
             base / "providers",
