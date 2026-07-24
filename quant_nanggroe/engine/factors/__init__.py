@@ -1,3 +1,5 @@
+"""Factor models: alpha101, GTJA191, Qlib158, technical factors."""
+
 # Package init
 
 __all__ = [

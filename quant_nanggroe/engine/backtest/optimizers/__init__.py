@@ -1,3 +1,5 @@
+"""Portfolio optimizers: mean-variance, risk parity, equal volatility."""
+
 # Package init
 
 __all__ = [

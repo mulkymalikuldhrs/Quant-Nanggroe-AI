@@ -1,3 +1,5 @@
+"""Live trading: adaptive integration and real-time execution."""
+
 # Package init
 
 __all__ = [

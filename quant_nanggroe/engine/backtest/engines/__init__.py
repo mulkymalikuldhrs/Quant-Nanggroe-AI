@@ -1,3 +1,5 @@
+"""Backtest engines: crypto, equity, forex, and futures."""
+
 # Package init
 
 __all__ = [

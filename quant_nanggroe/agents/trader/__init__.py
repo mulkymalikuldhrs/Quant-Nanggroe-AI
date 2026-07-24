@@ -1,3 +1,5 @@
+"""Trader agent: agent logic, prompts, and trading tools."""
+
 # Package init
 
 __all__ = [

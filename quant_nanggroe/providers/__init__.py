@@ -1,3 +1,5 @@
+"""Data providers: CoinGecko, Finnhub, macro, crypto, and LSE."""
+
 # Package init
 
 __all__ = [

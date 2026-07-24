@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🚀 ULTIMATE AUTO-RELEASE SYSTEM v5.0.0
+🚀 ULTIMATE AUTO-RELEASE SYSTEM v5.1.0
 Advanced Automated Release Management with Multi-Platform Deployment
 
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
@@ -87,7 +87,7 @@ class UltimateReleaseSystem:
         # Load current version info
         self.version_info = self._load_version_info()
         
-        logger.info(f"🚀 Ultimate Release System v5.0.0 initialized")
+        logger.info(f"🚀 Ultimate Release System v5.1.0 initialized")
         logger.info(f"📦 Current version: {self.version_info.get('current_version', 'unknown')}")
         logger.info(f"🎯 Release mode: {config.mode.value}")
     
@@ -99,7 +99,7 @@ class UltimateReleaseSystem:
         except FileNotFoundError:
             logger.warning("⚠️ version.json not found, creating default")
             default_version = {
-                "current_version": "5.0.0",
+                "current_version": "5.1.0",
                 "build_number": 1,
                 "last_update": datetime.now(timezone.utc).isoformat(),
                 "features_count": 150,
@@ -607,7 +607,7 @@ def main():
     """Main entry point for Ultimate Release System"""
     import argparse
     
-    parser = argparse.ArgumentParser(description="🚀 Ultimate Auto-Release System v5.0.0")
+    parser = argparse.ArgumentParser(description="🚀 Ultimate Auto-Release System v5.1.0")
     parser.add_argument("--mode", choices=["development", "staging", "production", "emergency"], 
                        default="development", help="Release mode")
     parser.add_argument("--platforms", nargs="+", 
@@ -621,7 +621,7 @@ def main():
     
     # Create release configuration
     config = ReleaseConfig(
-        version="5.0.0",
+        version="5.1.0",
         mode=ReleaseMode(args.mode),
         platforms=[DeploymentPlatform(p) for p in args.platforms],
         run_tests=not args.skip_tests,

@@ -1,3 +1,5 @@
+"""Exchange abstraction: brokers, order types, and factory."""
+
 # Package init
 
 __all__ = [

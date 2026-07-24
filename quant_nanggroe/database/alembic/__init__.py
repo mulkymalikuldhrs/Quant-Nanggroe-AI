@@ -1,3 +1,5 @@
+"""Alembic migration environment and configuration."""
+
 # Package init
 
 __all__ = [

@@ -926,14 +926,17 @@ class PolymarketBroker(ExchangeInterface):
     async def subscribe_ticker(self, symbol: str, callback: WebSocketCallback) -> None:
         """Subscribe to real-time price updates for a market."""
         logger.info("PolymarketBroker: Ticker subscription for %s (WebSocket not implemented)", symbol)
+        # ponytail: implement via wss://ws-subscriptions-clob.polymarket.com/ws/[endpoint]
 
     async def subscribe_orderbook(self, symbol: str, callback: WebSocketCallback) -> None:
         """Subscribe to real-time order book updates."""
         logger.info("PolymarketBroker: Orderbook subscription for %s (WebSocket not implemented)", symbol)
+        # ponytail: implement via wss://ws-subscriptions-clob.polymarket.com/ws/[endpoint]
 
     async def subscribe_trades(self, symbol: str, callback: WebSocketCallback) -> None:
         """Subscribe to real-time trade updates."""
         logger.info("PolymarketBroker: Trade subscription for %s (WebSocket not implemented)", symbol)
+        # ponytail: implement via wss://ws-subscriptions-clob.polymarket.com/ws/[endpoint]
 
     async def unsubscribe(self, symbol: str, channel: str) -> None:
         """Unsubscribe from a real-time data stream."""

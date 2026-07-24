@@ -1,3 +1,5 @@
+"""Backtest engine: metrics, Monte Carlo, walk-forward, and reporting."""
+
 # Package init
 
 __all__ = [

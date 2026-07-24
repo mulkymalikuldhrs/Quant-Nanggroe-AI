@@ -1,3 +1,5 @@
+"""Agent tools: market data, technical, sentiment, and execution."""
+
 # Package init
 
 from .market_data import (

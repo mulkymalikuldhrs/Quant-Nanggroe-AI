@@ -1,3 +1,5 @@
+"""Data models: fixed income, options pricing, and metrics."""
+
 # Package init
 
 __all__ = [

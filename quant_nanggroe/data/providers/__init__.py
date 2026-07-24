@@ -1,3 +1,5 @@
+"""Data provider implementations: Alpaca, Binance, Yahoo, Polygon."""
+
 # Package init
 
 __all__ = [

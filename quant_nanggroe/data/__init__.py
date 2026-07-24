@@ -1,3 +1,5 @@
+"""Data layer: cache, failover providers, warehouse, and monitoring."""
+
 # Package init
 
 __all__ = [

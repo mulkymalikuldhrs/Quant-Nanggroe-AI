@@ -1,13 +1,8 @@
-# Package init
+"""
+Trading strategy implementations — re-exported from canonical engine path.
 
-__all__ = [
-    'pairs_trade',
-    'trend_follow',
-    'tsmom',
-    'xgboost_alpha',
-]
-
-from . import pairs_trade
-from . import trend_follow
-from . import tsmom
-from . import xgboost_alpha
+All strategies live in ``quant_nanggroe/engine/strategy/strategies/``.
+This module is a backward-compat alias so ``from quant_nanggroe.strategies import X``
+still resolves correctly.
+"""
+from quant_nanggroe.engine.strategy.strategies import *  # noqa: F401, F403

@@ -1,3 +1,5 @@
+"""API layer: FastAPI app, middleware, and request schemas."""
+
 # Package init - lazy imports to avoid circular deps
 # Import modules explicitly when needed, not via __init__
 __all__ = [

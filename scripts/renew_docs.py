@@ -26,7 +26,7 @@ def backup_existing():
 # ── Project metadata ──────────────────────────────────────────────────
 PROJECT = {
     "name": "Quant Nanggroe AI",
-    "version": "4.3.4",
+    "version": "5.1.0",
     "description": "Agentic Trading Intelligence OS — Multi-agent trading framework with LangGraph orchestration, constitutional risk management, and production-grade execution",
     "package_name": "quant-nanggroe-ai",
     "python_requires": ">=3.11",
@@ -518,7 +518,7 @@ DOCS["12_TASKS.md"] = TASKS_EXISTING + f"""
 # 13 — CHANGELOG
 DOCS["13_CHANGELOG.md"] = f"""# Quant Nanggroe AI — Changelog
 
-## v4.3.4 (Current — July 2026)
+## v5.1.0 (Current — July 2026)
 - Multi-agent system with 20+ specialized agents.
 - FastAPI backend with trading, risk, portfolio endpoints.
 - Next.js 16 dashboard with React 19, Tailwind CSS v4.
@@ -603,7 +603,7 @@ DOCS["16_AI_MEMORY.md"] = f"""# Quant Nanggroe AI — AI Memory & Facts
 - **Dashboard Package:** `ai-multicolony-dashboard`
 - **API Base Path:** `/api/v1` (but UI expects `/api/`)
 - **Daemon Port:** 8000 (FastAPI), 5000 (Flask web UI)
-- **Current State:** v4.3.4 — multi-agent trading system with paper trading capability
+- **Current State:** v5.1.0 — multi-agent trading system with paper trading capability
 
 ## Decisions Archive
 - LangGraph chosen for agent orchestration (ADR-001).
@@ -884,12 +884,12 @@ Semantic Versioning (SemVer 2.0.0):
 - **PATCH:** Bug fixes, performance improvements, documentation updates.
 
 ## Current Version
-**v4.3.4** — Major (4), Minor (3), Patch (4)
+**v5.1.0** — Major (5), Minor (1), Patch (0)
 
 ## Version Tracking
 - `pyproject.toml`: `version = "4.3.4"`
 - `package.json` (dashboard): `version = "0.1.0"`
-- Git tags: `v4.3.4`
+- Git tags: `v5.1.0`
 - CHANGELOG: `13_CHANGELOG.md`
 """
 
@@ -1560,7 +1560,7 @@ You are operating Quant Nanggroe AI, an autonomous multi-agent trading intellige
 5. **Record decisions.** Use ADR format in `11_DECISIONS.md`.
 
 ## Current State (July 2026)
-- v4.3.4 — Multi-agent trading system with paper trading capability.
+- v5.1.0 — Multi-agent trading system with paper trading capability.
 - API routing mismatch documented in audit.
 - Backtesting engine partially stubbed.
 - RL agents partially stubbed.

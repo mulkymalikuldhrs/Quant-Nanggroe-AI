@@ -1,4 +1,4 @@
-"""New strategy proposals — research gap fill (QNA v4.5.3).
+"""New strategy proposals — research gap fill (QNA v5.1.0).
 
 Implants the 10 strategies from research/NEW_STRATEGY_PROPOSALS.md that close
 gaps in the existing 108-strategy library: microstructure (VPIN), liquidity-

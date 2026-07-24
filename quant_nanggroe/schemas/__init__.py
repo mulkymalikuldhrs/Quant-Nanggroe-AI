@@ -1,3 +1,5 @@
+"""Data schemas for market, orders, positions, and signals."""
+
 # Package init
 
 __all__ = [

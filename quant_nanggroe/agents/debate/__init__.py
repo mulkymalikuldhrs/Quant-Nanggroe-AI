@@ -1,3 +1,5 @@
+"""Debate engine: council, reflection, and multi-agent debate."""
+
 # Package init
 
 __all__ = [

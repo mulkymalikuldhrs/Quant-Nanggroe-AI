@@ -1,3 +1,5 @@
+"""Forex agent: forex-specific prompts, tools, and agent logic."""
+
 # Package init
 
 __all__ = [

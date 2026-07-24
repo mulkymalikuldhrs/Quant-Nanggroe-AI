@@ -1,3 +1,5 @@
+"""Analysis tools: bootstrap resampling and factor analysis."""
+
 # Package init
 
 __all__ = [

@@ -1,3 +1,5 @@
+"""Utility functions: math, time, and validation helpers."""
+
 # Package init
 
 __all__ = [

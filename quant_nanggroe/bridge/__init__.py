@@ -1,3 +1,5 @@
+"""Data bridges: cross-module data synchronization."""
+
 # Package init
 
 __all__ = [

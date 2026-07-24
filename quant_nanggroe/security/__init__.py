@@ -1,3 +1,5 @@
+"""Security layer: audit, auth, encryption, and key management."""
+
 # Package init - lazy imports to avoid circular deps
 # Import modules explicitly when needed, not via __init__
 __all__ = [

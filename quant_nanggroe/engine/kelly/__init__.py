@@ -1,3 +1,5 @@
+"""Kelly criterion: adaptive, fractional, Bayesian, and multi-asset."""
+
 # Package init
 
 __all__ = [

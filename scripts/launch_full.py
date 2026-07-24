@@ -132,7 +132,7 @@ def main():
     os.environ["QNA_SCHEDULER_ENABLED"] = "1"
 
     print("=" * 60)
-    print("  QNA — Quant Nanggroe AI v4.6.0")
+    print("  QNA — Quant Nanggroe AI v5.1.0")
     print("  Autonomous Hedge Fund with Ensemble Voting")
     print("=" * 60)
 

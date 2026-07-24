@@ -1,3 +1,5 @@
+"""API route handlers for all REST endpoints."""
+
 # Package init
 
 __all__ = [

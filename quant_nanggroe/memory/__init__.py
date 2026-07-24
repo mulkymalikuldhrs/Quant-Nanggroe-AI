@@ -1,3 +1,5 @@
+"""Memory systems: journal, knowledge graph, vector, and session."""
+
 # Package init
 
 __all__ = [

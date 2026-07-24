@@ -19,7 +19,7 @@ class AuditLogger:
     """
     Comprehensive audit trail across all decision layers.
     
-    Source: Quant-Nanggroe-AI v15.2.0 Audit Logger
+    Source: Quant-Nanggroe-AI v5.1.0 Audit Logger
     Max 1000 entries per session, filterable by layer and severity.
     """
 

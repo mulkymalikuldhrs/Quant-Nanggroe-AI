@@ -1,3 +1,5 @@
+"""Performance analytics: metrics computation and alpha decay."""
+
 # Package init
 
 __all__ = [
@@ -7,4 +9,4 @@ __all__ = [
 
 from . import metrics
 from .metrics import compute_metrics, rolling_sharpe, PerformanceMetrics
-from .alpha_decay import AlphaDecayDetector, DecayResult
+from .alpha_decay import AlphaDecayDetector, AlphaDecayMonitor, DecayResult, DecayStatus

@@ -1,3 +1,5 @@
+"""Strategy engine: loading, registry, parser, and multi-timeframe."""
+
 # Package init
 
 __all__ = [

@@ -1,3 +1,5 @@
+"""Execution agent: order execution prompts, tools, and logic."""
+
 # Package init
 
 __all__ = [

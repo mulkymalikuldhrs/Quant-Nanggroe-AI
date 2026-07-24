@@ -1,3 +1,5 @@
+"""Configuration: settings, logging, and environment management."""
+
 # Package init
 
 __all__ = [

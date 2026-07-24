@@ -1,3 +1,5 @@
+"""Data loaders: CCXT, YFinance, and base loader interface."""
+
 # Package init
 
 __all__ = [

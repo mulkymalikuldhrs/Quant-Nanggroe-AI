@@ -1,3 +1,5 @@
+"""MCP protocol: client, server, tools, and protocol implementation."""
+
 # Package init
 
 __all__ = [

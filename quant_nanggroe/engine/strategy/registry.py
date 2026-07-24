@@ -120,8 +120,9 @@ class _RegistryEncoder(json.JSONEncoder):
 class StrategyRegistry:
     """Central registry for all trading strategies with walk-forward framework."""
 
-    def __init__(self) -> None:
+    def __init__(self, alpha_decay: Optional[Any] = None) -> None:
         self._strategies: Dict[str, StrategyMetadata] = {}
+        self._alpha_decay = alpha_decay
 
     def register(
         self,

@@ -1,3 +1,5 @@
+"""Stress testing: Monte Carlo, VaR/CVaR, and scenario generation."""
+
 # Package init
 
 __all__ = [

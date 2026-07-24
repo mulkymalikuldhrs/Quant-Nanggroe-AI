@@ -1,1 +1,1 @@
-# Package marker
+"""Database schema migration versions."""

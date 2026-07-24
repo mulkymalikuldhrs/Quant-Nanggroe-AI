@@ -1,3 +1,5 @@
+"""Shared type definitions for agents, engine, market, and risk."""
+
 # Package init
 
 __all__ = [

@@ -1,3 +1,5 @@
+"""Engine API: health check endpoints and monitoring."""
+
 # Package init
 
 __all__ = [
