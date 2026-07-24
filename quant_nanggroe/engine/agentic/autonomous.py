@@ -26,6 +26,13 @@ from typing import Any, Callable, Optional
 from quant_nanggroe.engine.self_aware import SelfAware, SelfState, Reflection
 
 try:
+    from quant_nanggroe.engine.registry import AutoRegistry
+    _HAS_AUTO_REGISTRY = True
+except ImportError:
+    AutoRegistry = None
+    _HAS_AUTO_REGISTRY = False
+
+try:
     from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
     _HAS_STRATEGY_EVOLVER = True
 except ImportError:
@@ -603,6 +610,20 @@ class AutonomousPipeline:
                 logger.info("GeneLoader initialized")
             except Exception as exc:
                 logger.warning("GeneLoader init failed: %s", exc)
+
+        # AutoRegistry — self-discovery of all components (no manual __all__)
+        if _HAS_AUTO_REGISTRY:
+            try:
+                self._auto_registry = AutoRegistry()
+                from quant_nanggroe.engine.strategies.base import Strategy
+                discovered = self._auto_registry.discover_all(base_class=Strategy)
+                total = sum(discovered.values())
+                logger.info("AutoRegistry discovered %d strategies across %d dirs", total, len(discovered))
+            except Exception as exc:
+                self._auto_registry = None
+                logger.warning("AutoRegistry init failed: %s", exc)
+        else:
+            self._auto_registry = None
 
         if _HAS_AIHF_BRIDGE:
             try:
