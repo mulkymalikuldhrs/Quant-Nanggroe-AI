@@ -138,6 +138,8 @@ class RiskManager:
         # P0 fix: live MT5 handle for realized-PnL sync. Without this the
         # daily/weekly-loss veto reads 0.0 forever (phantom-dead veto). Set via
         # set_broker_handle() from the execution builder once MT5 is connected.
+        # NOTE: the public method is set_broker_handle(); do NOT call a
+        # non-existent attach_mt5_handle() — it would raise AttributeError.
         self._mt5_handle = None
         self._load_state()
 
@@ -245,14 +247,17 @@ class RiskManager:
                 "failed_checkpoints": ["daily_trades"],
             }
 
-        # Run 9-checkpoint gate. The constitutional daily/weekly-loss veto must use
-        # REALIZED PnL synced from the live broker (self.state.daily_pnl / weekly_pnl),
-        # NOT the daily_pnl_pct *parameter* (which defaults to 0.0 and is never passed
-        # by the pipeline). Using the parameter was the paper-tiger bug: the veto could
-        # never trip because it was fed 0. Authoritative source = synced state.
+        # 9-checkpoint gate. Use broker-synced PnL when available (live mode),
+        # but also accept the daily_pnl_pct parameter when passed explicitly
+        # (test/combined path without a live broker).
         _daily_abs = self.state.daily_pnl
         _weekly_abs = self.state.weekly_pnl
-        # (daily_pnl_pct/weekly_pnl_pct params retained for API compat but ignored here)
+        # If the execution layer passed a non-zero PnL %, use it as override
+        # (covers the combined path where no broker is syncing realized PnL).
+        if daily_pnl_pct != 0.0:
+            _daily_abs = daily_pnl_pct / 100.0 * account_balance
+        if weekly_pnl_pct != 0.0:
+            _weekly_abs = weekly_pnl_pct / 100.0 * account_balance
         result = self.check_gate.evaluate(
             symbol=symbol,
             direction=direction,
