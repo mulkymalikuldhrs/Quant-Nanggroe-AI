@@ -2130,5 +2130,57 @@
     "occurred_at": "2026-07-24T01:07:32.820107+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "9ef33045-8b1",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2670953478224'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2670954507792'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T04:52:44.091068+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "305bd1da-971",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "isinstance() arg 2 must be a type, a tuple of types, or a union",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T04:53:21.088390+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "c60d5b2b-e1b",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2670953478224'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2670954507792'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T04:53:40.684365+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "ad578dbb-642",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "Could not convert <MagicMock name='mock.TimedeltaIndex().__radd__().dtype' id='2670953478224'> to a NumPy dtype (via `.dtype` value <MagicMock name='mock.TimedeltaIndex().__radd__().dtype.dtype' id='2670954507792'>).",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-24T04:54:36.618511+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

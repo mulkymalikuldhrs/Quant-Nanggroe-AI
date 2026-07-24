@@ -117,6 +117,6 @@ class TestMeanReversionStrategy:
         signal = strategy.generate_signal(data)
         assert signal is None
 
-    def test_list_strategies_includes_mean_reversion(self):
-        from quant_nanggroe.engine.strategy.strategies import list_strategies
-        assert "mean_reversion" in list_strategies()
+    def test_list_strategies_includes_mean_rev(self):
+        from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+        assert "mean_rev" in StrategyRegistry.list_strategies()
