@@ -25,6 +25,13 @@ from typing import Any, Callable, Optional
 
 from quant_nanggroe.engine.self_aware import SelfAware, SelfState, Reflection
 
+try:
+    from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
+    _HAS_STRATEGY_EVOLVER = True
+except ImportError:
+    StrategyEvolver = None
+    _HAS_STRATEGY_EVOLVER = False
+
 import asyncio
 import numpy as np
 
@@ -557,6 +564,17 @@ class AutonomousPipeline:
                 logger.info("PnLEvaluator initialized")
             except Exception as exc:
                 logger.warning("PnLEvaluator init failed: %s", exc)
+
+        # StrategyEvolver — validation gate for MUE-X mutations
+        if _HAS_STRATEGY_EVOLVER:
+            try:
+                self._strategy_evolver = StrategyEvolver()
+                logger.info("StrategyEvolver initialized (mutation validation gate active)")
+            except Exception as exc:
+                self._strategy_evolver = None
+                logger.warning("StrategyEvolver init failed: %s", exc)
+        else:
+            self._strategy_evolver = None
 
         # TradeLifecycleManager — closed trade → evaluation → evolution loop
         # Wired with evolve_callback for auto-evolve on recommendation==evolve
@@ -1459,6 +1477,41 @@ class AutonomousPipeline:
                             "sharpe": stats.get("sharpe", 0),
                         })
                         result["evolutions_triggered"] += 1
+
+                        # 1b. Auto-Mutate via StrategyEvolver (self-evolve validation gate)
+                        if self._strategy_evolver is not None:
+                            try:
+                                # Load current params from strategy gene if available
+                                cur_params = {}
+                                if self._gene_loader is not None:
+                                    gene = self._gene_loader.get_gene(sname.lower())
+                                    if gene and hasattr(gene, "PARAMS"):
+                                        cur_params = dict(gene.PARAMS)
+                                # Generate mutated params (jitter on numeric values)
+                                mut_params = dict(cur_params)
+                                import random
+                                rng = random.Random(f"{sname}_{time.time()}")
+                                for k, v in mut_params.items():
+                                    if isinstance(v, (int, float)):
+                                        jitter = rng.uniform(0.7, 1.3)  # ±30%
+                                        mut_params[k] = v * jitter
+                                # Run validation gate
+                                attempt = self._strategy_evolver.evaluate(
+                                    sname, cur_params, mut_params,
+                                )
+                                if attempt.accepted:
+                                    logger.info(
+                                        "Evolution ACCEPTED for %s: %s",
+                                        sname, attempt.reason,
+                                    )
+                                else:
+                                    logger.info(
+                                        "Evolution REJECTED for %s: %s",
+                                        sname, attempt.reason,
+                                    )
+                                result["evolve_validated"] = result.get("evolve_validated", 0) + 1
+                            except Exception as exc:
+                                logger.warning("Auto-evolve mutation failed for %s: %s", sname, exc)
             except Exception as exc:
                 logger.warning("Auto-evolve PnL scan failed: %s", exc)
 
