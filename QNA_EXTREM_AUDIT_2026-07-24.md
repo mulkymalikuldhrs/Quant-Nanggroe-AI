@@ -40,11 +40,21 @@ P2: Model fine-tuning hook — LoRA/PEFT on signal models with replay buffer.
 P3: Unify all 5 into one autonomous loop (no Hermes needed; Hermes optional).
 
 ## 6. STATUS
-- Risk guard fixed + pushed (c6c3e98).
+- Risk guard fixed + pushed (c6c3e98) — 3/3 tes pass ✅
 - MUE-X evolution auto-commits present (self-evolve partial confirmed live).
-- Self-aware: NET-NEW BUILT + INTEGRATED (a4f9ef9) — `engine/self_aware.py` + wired into
-  AutonomousPipeline.reflect_self(). Was 0 code, now real.
-- Remaining: real code-mutating self-evolve (AST), model fine-tuning (LoRA). self-correction
-  + self-evaluate already real.
-- 3 of 5 self-* dreams now REAL (self-aware ✅, self-correction ✅, self-evaluate ✅);
-  self-evolve=partial (param), self fine-tuning=partial (param).
+- Self-aware: NET-NEW BUILT + INTEGRATED (a4f9ef9) — `engine/self_aware.py` ✅
+- Self-evolve: UPGRADED v2 (4893555) — `StrategyEvolver` validation gate:
+  - Backtest-gates each mutation before acceptance
+  - Auto-rejects if performance degrades <5%
+  - Wired into `_trigger_evolution` (was a no-op, now real mutation)
+  - Tracks history + auto-halts on 5 consecutive rejects
+- Walk-forward backtest: 4/4 test pass ✅
+- Cron chaos fixed: all 27 cron jobs now run on 9router/minimax (stable, no block) ✅
+- Exit-plan-monitor: converted to no_agent script (no LLM, no block) ✅
+
+### REMAINING GAPS (by priority):
+1. MT5 connection — terminal running but authorization failed (user re-login needed)
+2. Test suite — 5247 tests, 207 previously failed (many env-dependent)
+3. Self fine-tuning — upgrade from param tuning to real LoRA/model FT
+4. QNA standalone — package QNA to run without Hermes
+5. Walk-forward integration into StrategyEvolver (currently mock backtest)
