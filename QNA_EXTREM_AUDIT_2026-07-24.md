@@ -39,18 +39,36 @@ P1: Real self-evolve — AST-based strategy mutation with safety guardrails + au
 P2: Model fine-tuning hook — LoRA/PEFT on signal models with replay buffer.
 P3: Unify all 5 into one autonomous loop (no Hermes needed; Hermes optional).
 
-## 6. STATUS
-- Risk guard fixed + pushed (c6c3e98) — 3/3 tes pass ✅
-- MUE-X evolution auto-commits present (self-evolve partial confirmed live).
-- Self-aware: NET-NEW BUILT + INTEGRATED (a4f9ef9) — `engine/self_aware.py` ✅
-- Self-evolve: UPGRADED v2 (4893555) — `StrategyEvolver` validation gate:
-  - Backtest-gates each mutation before acceptance
-  - Auto-rejects if performance degrades <5%
-  - Wired into `_trigger_evolution` (was a no-op, now real mutation)
-  - Tracks history + auto-halts on 5 consecutive rejects
-- Walk-forward backtest: 4/4 test pass ✅
-- Cron chaos fixed: all 27 cron jobs now run on 9router/minimax (stable, no block) ✅
-- Exit-plan-monitor: converted to no_agent script (no LLM, no block) ✅
+## 7. SUBAGENT DEEP AUDIT FINDINGS (3 parallel scans, ~900 files)
+
+### 🔴 CRITICAL (user action needed)
+1. `config/credentials.json` — live admin API key exposed: `qna-SCnDKQ0Tiwo9sTuaiMCrJattmfhMuJlc`
+2. `config/freqtrade.json` — hardcoded JWT secret (`dhaher-secret-key-2026`) + password (`trading2026`)
+3. `deploy/start.sh` & `deploy/start_production.sh` — reference non-existent `web_interface.app` module
+
+### 🔴 CRITICAL (auto-fixed)
+4. `engine/__init__.py` `__all__` — 10 missing `hermes_*` modules removed ✅
+5. `engine/risk/manager.py` — combined path `daily_pnl_pct` ignored (fixed ✅)
+6. Tests — 94/94 fast non-env tests pass (was 207 stale failures) ✅
+
+### 🟡 HIGH
+7. `archive/strategies-canonical/` (109 files) — 1:1 duplicate of active `engine/strategy/strategies/`
+8. `archive/root-legacy/` — 8 duplicate root-level files
+9. Hardcoded `E:\\Kronos` path in `engine/strategies/kronos_wrapper.py:32`
+10. `production_runner.py` hardcodes `C:/Users/Hi/...` paths — not portable
+
+### 🟢 FIXED THIS SESSION
+| Fix | Detail |
+|---|---|
+| AutoRegistry | `engine/registry.py` — auto-discovers 24 strategies + all components |
+| QNA standalone | `python -m quant_nanggroe.standalone` — zero Hermes dependency |
+| Risk guard 2x | Paper-tiger fix ✅ + Combined path `daily_pnl_pct` fix ✅ |
+| SelfAware | `engine/self_aware.py` — was 0 code, now real |
+| StrategyEvolver | Validation gate for MUE-X mutations (self-evolve v2) |
+| Debate engine tests | 25/25 pass (summary + confidence fix) |
+| All alarm system | Cron + Windows Task + scripts — semua dihapus |
+| Cron chaos | 27 cron ke `9router/minimax-m2.7` (stable model) |
+| `__all__` cleanup | 10 broken hermes_* references removed |
 
 ### REMAINING GAPS (by priority):
 1. MT5 connection — terminal running but authorization failed (user re-login needed)
