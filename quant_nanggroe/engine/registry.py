@@ -1,20 +1,15 @@
 """AutoRegistry — Fully autonomous component registry for QNA.
 
-No manual __all__, no explicit imports, no file left behind.
-Auto-discovers ALL .py files across the entire quant_nanggroe package.
+Scans EVERYTHING in the entire repo. No manual __all__, no file left behind.
+Auto-discovers ALL .py files across quant_nanggroe/, tests/, scripts/, root/.
 Auto-generates __init__.py for directories missing them.
 Auto-cleans stale registrations when files are deleted.
-Auto-re-scans on every discover_all() call.
 
 Usage:
     from quant_nanggroe.engine.registry import AutoRegistry
-
     registry = AutoRegistry()
-    registry.discover_all()  # scans everything, no exceptions
-
-    strat = registry.get("WyckoffStrategy")
-    registry.list_registered()
-    registry.health_check()  # returns full audit
+    registry.discover_all()  # scans entire repo
+    registry.health_check()
 """
 from __future__ import annotations
 
@@ -28,34 +23,7 @@ from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
-# Directories to scan (recursive). Empty = scan ALL quant_nanggroe subdirs.
-_SCAN_ROOTS = [
-    "engine",
-    "agents",
-    "api",
-    "exchange",
-    "strategies",
-    "providers",
-    "indicators",
-    "memory",
-    "data",
-    "hedge_fund",
-    "mcp",
-    "schemas",
-    "security",
-    "skills",
-    "types",
-    "utils",
-    "backtest",
-    "bridge",
-    "config",
-    "connectors",
-    "core",
-    "database",
-    "llm",
-]
-
-# Files to skip (support modules, not components)
+# Files to skip
 _SKIP_FILES = {
     "__init__.py",
     "_df_signal_adapter.py",
@@ -65,20 +33,22 @@ _SKIP_FILES = {
 
 
 class AutoRegistry:
-    """Fully autonomous registry — discovers, registers, maintains itself.
+    """Fully autonomous registry — scans the ENTIRE repo.
 
-    Scans ALL .py files under quant_nanggroe/ recursively.
-    - Auto-discovers every class (no base_class filter needed)
+    Every .py file in every directory is auto-discovered and registered.
+    - No base_class filter — registers every class found
     - Auto-generates __init__.py for missing dirs
     - Auto-cleans stale entries on re-scan
-    - Tracks file hashes for change detection
+    - File hash tracking for change detection
+    - Health check with full audit
     """
 
-    def __init__(self):
+    def __init__(self, repo_root: str | Path | None = None):
         self._registry: dict[str, type] = {}
         self._modules: dict[str, str] = {}
         self._file_hashes: dict[str, str] = {}
         self._scan_count: int = 0
+        self._repo_root = Path(repo_root) if repo_root else self._find_repo_root()
 
     # ── Core Discovery ─────────────────────────────────────────────
 
@@ -100,15 +70,15 @@ class AutoRegistry:
         for py_file in sorted(dir_path.glob(pattern)):
             if py_file.name in _SKIP_FILES or py_file.name.startswith("__"):
                 continue
-            if "__pycache__" in str(py_file):
+            if any(skip in str(py_file) for skip in ("__pycache__", ".venv", "node_modules", ".next", ".git", "archive")):
                 continue
 
             mod_name = py_file.stem
-
-            # Check if file changed since last scan
             file_hash = self._file_hash(py_file)
+
+            # Skip unchanged files
             if mod_name in self._registry and self._file_hashes.get(mod_name) == file_hash:
-                continue  # unchanged, skip
+                continue
 
             # Remove stale entry if file changed
             if mod_name in self._registry:
@@ -125,10 +95,10 @@ class AutoRegistry:
                 logger.debug("Skipping %s: %s", py_file.name, e)
                 continue
 
-            # Register ALL classes found (no base_class filter by default)
+            # Register ALL classes
             for obj_name, obj in inspect.getmembers(mod, inspect.isclass):
                 if obj.__module__ != mod.__name__:
-                    continue  # imported, not defined here
+                    continue
                 if name_suffix and not obj_name.endswith(name_suffix):
                     continue
                 if base_class is not None and not issubclass(obj, base_class):
@@ -143,7 +113,6 @@ class AutoRegistry:
                 self._modules[key] = str(py_file)
                 self._file_hashes[key] = file_hash
                 count += 1
-                logger.debug("Registered: %s -> %s", obj_name, py_file)
 
         if count:
             logger.info("Discovered %d components in %s", count, directory)
@@ -155,14 +124,13 @@ class AutoRegistry:
         base_class: Optional[type] = None,
         name_suffix: str = "",
     ) -> dict[str, int]:
-        """Scan ALL directories. Auto-cleans stale entries.
+        """Scan the ENTIRE repo. No directory skipped.
 
         Returns dict mapping directory -> number of discoveries.
         """
         if strategy_dirs is None:
-            strategy_dirs = self._default_dirs()
+            strategy_dirs = self._all_dirs()
 
-        # Snapshot current registrations for stale detection
         before = set(self._registry.keys())
 
         results: dict[str, int] = {}
@@ -170,46 +138,22 @@ class AutoRegistry:
             n = self.discover_from_dir(d, base_class, name_suffix)
             results[str(d)] = n
 
-        # Auto-clean: remove entries whose files no longer exist
-        after = set(self._registry.keys())
-        stale = before - after
+        # Auto-clean stale entries
         for key in list(self._registry.keys()):
             mod_path = self._modules.get(key, "")
             if mod_path and not Path(mod_path).exists():
                 del self._registry[key]
                 del self._modules[key]
                 self._file_hashes.pop(key, None)
-                stale.add(key)
-
-        if stale:
-            logger.info("Auto-cleaned %d stale registrations: %s", len(stale), stale)
 
         self._scan_count += 1
         return results
 
-    def discover_package(
-        self,
-        package_name: str,
-        base_class: Optional[type] = None,
-        name_suffix: str = "",
-    ) -> int:
-        """Scan an installed Python package by name."""
-        try:
-            pkg = importlib.import_module(package_name)
-        except ImportError:
-            logger.warning("Package not found: %s", package_name)
-            return 0
-        pkg_path = Path(getattr(pkg, "__path__", str(pkg.__file__ or ""))[0])
-        return self.discover_from_dir(pkg_path, base_class, name_suffix)
-
     # ── Auto-Init ──────────────────────────────────────────────────
 
-    def ensure_init_files(self, root: str | Path) -> int:
-        """Auto-generate __init__.py for ALL directories missing one.
-
-        Scans recursively under root. Returns count of files created.
-        """
-        root_path = Path(root)
+    def ensure_init_files(self, root: str | Path | None = None) -> int:
+        """Auto-generate __init__.py for ALL directories missing one."""
+        root_path = Path(root) if root else self._repo_root
         if not root_path.is_dir():
             return 0
 
@@ -217,18 +161,14 @@ class AutoRegistry:
         for d in sorted(root_path.rglob("*")):
             if not d.is_dir():
                 continue
-            if "__pycache__" in str(d) or "node_modules" in str(d):
-                continue
-            if ".git" in str(d):
+            if any(skip in str(d) for skip in ("__pycache__", "node_modules", ".git", ".next", ".venv", "archive")):
                 continue
 
             init_file = d / "__init__.py"
             if not init_file.exists():
-                # Check if directory has any .py files
                 has_python = any(d.glob("*.py"))
                 if has_python:
-                    pkg_name = d.name
-                    init_file.write_text(f"# {pkg_name} module\n")
+                    init_file.write_text(f"# {d.name} module\n")
                     created += 1
                     logger.info("Created __init__.py: %s", init_file)
 
@@ -237,49 +177,39 @@ class AutoRegistry:
     # ── Health Check ───────────────────────────────────────────────
 
     def health_check(self) -> dict[str, Any]:
-        """Full audit of registry health.
-
-        Returns dict with:
-        - total: total registered components
-        - dirs_scanned: number of directories scanned
-        - stale: list of registrations pointing to deleted files
-        - missing_init: list of dirs without __init__.py
-        - by_directory: component count per directory
-        - scan_count: number of times discover_all was called
-        """
-        # Check for stale entries
+        """Full audit of registry health across the entire repo."""
         stale = []
         for key, mod_path in self._modules.items():
             if not Path(mod_path).exists():
                 stale.append(key)
 
-        # Check for missing __init__.py
         missing_init = []
-        base = Path(__file__).resolve().parent.parent
-        for d in base.rglob("*"):
+        for d in self._repo_root.rglob("*"):
             if not d.is_dir():
                 continue
-            if "__pycache__" in str(d) or "node_modules" in str(d):
-                continue
-            if ".git" in str(d):
+            if any(skip in str(d) for skip in ("__pycache__", "node_modules", ".git", ".next", ".venv", "archive")):
                 continue
             has_python = any(d.glob("*.py"))
             has_init = (d / "__init__.py").exists()
             if has_python and not has_init:
-                missing_init.append(str(d.relative_to(base)))
+                missing_init.append(str(d.relative_to(self._repo_root)))
 
-        # Count by directory
         by_dir: dict[str, int] = {}
         for mod_path in self._modules.values():
             try:
-                rel = str(Path(mod_path).relative_to(base).parent)
+                rel = str(Path(mod_path).relative_to(self._repo_root).parent)
                 by_dir[rel] = by_dir.get(rel, 0) + 1
             except ValueError:
                 by_dir["unknown"] = by_dir.get("unknown", 0) + 1
 
+        # Count total .py files vs registered
+        total_py = sum(1 for _ in self._repo_root.rglob("*.py")
+                      if not any(skip in str(_) for skip in ("__pycache__", ".venv", "node_modules", ".next", ".git", "archive")))
+
         return {
-            "total": self.count(),
-            "dirs_scanned": len(self._default_dirs()),
+            "total_registered": self.count(),
+            "total_py_files": total_py,
+            "coverage_pct": round(self.count() / max(1, total_py) * 100, 1),
             "stale": stale,
             "stale_count": len(stale),
             "missing_init": missing_init,
@@ -291,19 +221,15 @@ class AutoRegistry:
     # ── Access ─────────────────────────────────────────────────────
 
     def get(self, name: str) -> Optional[type]:
-        """Get a registered component by name (case-insensitive)."""
         return self._registry.get(name.lower())
 
     def get_all(self) -> dict[str, type]:
-        """Get all registered components."""
         return dict(self._registry)
 
     def get_by_module(self, name: str) -> Optional[str]:
-        """Get the file path where a component was found."""
         return self._modules.get(name.lower())
 
     def list_registered(self) -> list[str]:
-        """List all registered component names."""
         return sorted(self._registry.keys())
 
     def count(self) -> int:
@@ -311,29 +237,33 @@ class AutoRegistry:
 
     # ── Internal helpers ────────────────────────────────────────────
 
-    def _default_dirs(self) -> list[Path]:
-        """Return ALL quant_nanggroe subdirectories for scanning."""
-        base = Path(__file__).resolve().parent.parent
+    def _find_repo_root(self) -> Path:
+        """Find repo root by looking for pyproject.toml or .git."""
+        d = Path(__file__).resolve()
+        while d != d.parent:
+            if (d / "pyproject.toml").exists() or (d / ".git").is_dir():
+                return d
+            d = d.parent
+        return Path(__file__).resolve().parent.parent.parent
+
+    def _all_dirs(self) -> list[Path]:
+        """Return ALL top-level directories in the repo for scanning."""
         dirs = []
-        for root_name in _SCAN_ROOTS:
-            d = base / root_name
-            if d.is_dir():
-                dirs.append(d)
-        # Also scan the strategies sub-package
-        strategies = base / "strategies"
-        if strategies.is_dir():
-            dirs.append(strategies)
+        for d in sorted(self._repo_root.iterdir()):
+            if not d.is_dir():
+                continue
+            if any(skip in str(d) for skip in (".git", ".venv", "node_modules", ".next", "__pycache__", "archive")):
+                continue
+            dirs.append(d)
         return dirs
 
     def _file_hash(self, path: Path) -> str:
-        """Quick content hash for change detection."""
         try:
             return hashlib.md5(path.read_bytes()).hexdigest()[:12]
         except Exception:
             return "error"
 
     def status(self) -> dict[str, Any]:
-        """Report registry status."""
         return {
             "total_registered": self.count(),
             "scan_count": self._scan_count,
