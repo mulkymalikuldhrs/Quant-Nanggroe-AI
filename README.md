@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v5.0.0 — Autonomous Quant Hedge Fund
+# Quant Nanggroe AI v5.1.0 — Autonomous Quant Hedge Fund
 
 > **Autonomous Quantitative Hedge Fund — Institutional Grade**
 > **Self-Aware · Self-Correct · Self-Evolve · Self-Fine-Tune · Self-Evaluate**
@@ -19,7 +19,7 @@ QNA is a **fully autonomous quantitative hedge fund platform** that runs, evolve
 | **Self-Evolve** | `engine/strategy/strategies/strategy_evolver.py` | ✅ Walk-forward validated mutations |
 | **Self-Fine-Tune** | `engine/strategy/strategies/self_finetune.py` | ✅ Grid search + optimization |
 | **Self-Evaluate** | `engine/strategy/strategies/strategy_evolver.py` | ✅ Accept/reject gate |
-| **Auto-Registry** | `engine/registry.py` | ✅ Auto-discovers all strategies |
+| **Auto-Registry** | `engine/registry.py` | ✅ Scans ENTIRE repo (1017+ files) |
 | **Standalone** | `engine/standalone.py` | ✅ Runs without Hermes |
 
 ---
@@ -36,7 +36,7 @@ uv sync
 ### 2. Configure
 ```bash
 cp .env.example .env
-# Edit .env with your credentials
+# Required vars: MT5_LOGIN, MT5_PASSWORD, MT5_SERVER, QNA_ADMIN_API_KEY
 ```
 
 ### 3. Run
@@ -58,7 +58,7 @@ qna.py (single entry point)
 ├── engine/
 │   ├── agentic/autonomous.py    — Main pipeline (3,528 LOC)
 │   ├── self_aware.py            — Self-reflection module
-│   ├── registry.py              — Auto-discovery registry
+│   ├── registry.py              — Auto-discovery registry (ENTIRE repo)
 │   ├── strategies/              — Active strategies + evolver + fine-tuner
 │   ├── risk/                    — 9-checkpoint risk gate + kill switch
 │   ├── backtest/                — Walk-forward + Monte Carlo + CPCV
@@ -67,7 +67,7 @@ qna.py (single entry point)
 │   └── 30+ subpackages
 ├── agents/                      — 7 AI agent personas
 ├── api/                         — 179 FastAPI endpoints
-├── exchange/                    — 6 broker integrations (MT5, Alpaca, IBKR, CCXT, Polymarket, Paper)
+├── exchange/                    — 6 broker integrations
 ├── dashboard/                   — Next.js React UI
 ├── tests/                       — 492+ tests
 └── standalone.py                — Zero-Hermes entry point
@@ -79,14 +79,13 @@ qna.py (single entry point)
 
 | Metric | Value |
 |---|---|
-| Total files | 2,984 |
-| Python LOC | 172,160 |
-| Test LOC | 57,017 |
-| API endpoints | 179 |
-| Strategies | 138 legacy + 3 active |
+| Total files | 3,037 |
+| Python LOC | 180,007 (pkg) + 57,014 (tests) |
+| API endpoints | 174 |
+| Strategies | 152 wired (auto-discovered) |
 | Exchange brokers | 6 |
 | Agent personas | 7 |
-| Test pass rate | 492/493 (99.8%) |
+| Test pass rate | 94/94 (fast suite) |
 
 ---
 
@@ -113,30 +112,6 @@ qna.py (single entry point)
 7. SELF-FINE-TUNE → grid search optimization
 8. PROMOTE → only if improved > 2% over baseline
 9. REPEAT → continuously improving
-```
-
----
-
-## 📁 Project Structure
-
-```
-quant_nanggroe/
-├── engine/                    # Core engine (83K LOC)
-│   ├── agentic/               # Autonomous pipeline
-│   ├── backtest/              # Walk-forward, Monte Carlo, CPCV
-│   ├── execution/             # TWAP/VWAP, order management
-│   ├── factors/               # Alpha factors (15K LOC)
-│   ├── risk/                  # Risk management (5.8K LOC)
-│   ├── strategies/            # Active strategies + evolver
-│   └── strategy/strategies/   # Legacy strategies (138 files)
-├── agents/                    # AI agents (24K LOC)
-├── api/                       # REST API (9.3K LOC)
-├── exchange/                  # Broker integrations (16K LOC)
-├── hedge_fund/                # Hedge fund logic (8.3K LOC)
-├── data/                      # Data pipeline (8.7K LOC)
-├── memory/                    # Memory system (3.6K LOC)
-├── security/                  # Security (2.2K LOC)
-└── standalone.py              # Zero-Hermes entry
 ```
 
 ---
@@ -180,9 +155,12 @@ All credentials use environment variables (never hardcoded):
 | `docs/01_PRD.md` | Product requirements |
 | `docs/02_ARCHITECTURE.md` | Technical architecture |
 | `docs/04_API.md` | API reference |
+| `docs/07_SECURITY.md` | Security architecture |
 | `docs/09_TESTING.md` | Testing guide |
+| `docs/10_ROADMAP.md` | Development roadmap |
 | `docs/19_RISK_REGISTER.md` | Risk management |
 | `QNA_EXTREM_AUDIT_2026-07-24.md` | Latest deep audit |
+| `session-QNA.md` | Session history |
 
 ---
 
@@ -192,4 +170,4 @@ Proprietary — Dhaher Labs. All rights reserved.
 
 ---
 
-*v5.0.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+*v5.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*
