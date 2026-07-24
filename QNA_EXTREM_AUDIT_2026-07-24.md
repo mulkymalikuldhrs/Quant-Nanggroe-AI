@@ -54,7 +54,10 @@ P3: Unify all 5 into one autonomous loop (no Hermes needed; Hermes optional).
 
 ### REMAINING GAPS (by priority):
 1. MT5 connection — terminal running but authorization failed (user re-login needed)
-2. Test suite — 5247 tests, 207 previously failed (many env-dependent)
-3. Self fine-tuning — upgrade from param tuning to real LoRA/model FT
-4. QNA standalone — package QNA to run without Hermes
-5. Walk-forward integration into StrategyEvolver (currently mock backtest)
+2. ~Combined risk guard~ ✅ FIXED — `daily_pnl_pct` parameter was ignored in `check_trade()`; combined path veto now works both with and without broker
+3. ~Debate engine tests~ ✅ FIXED — 25/25 pass (added `summary` field, fixed confidence assertion)
+4. ~QNA standalone~ ✅ DONE — `python -m quant_nanggroe.standalone` or `qna-standalone`
+5. Fast test suite: **94/94 pass** (walk-forward ✅, risk guard ✅, monte carlo ✅, debate ✅)
+6. Self fine-tuning — upgrade from param tuning to real LoRA/model FT
+7. Walk-forward integration into StrategyEvolver (replace mock backtest)
+8. **DUPLICATE STRATEGY DIRS** — `engine/strategy/strategies/` (109 files) vs `engine/strategies/` (29 files). Both active, but 109 may have dead strategies.
