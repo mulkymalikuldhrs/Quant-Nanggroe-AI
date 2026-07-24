@@ -855,6 +855,12 @@ class NautilusTraderAdapter(TradingAdapter):
             "Full NautilusTrader execution requires complete configuration. "
             "Use PurePythonSimulationAdapter for immediate functionality."
         )
+        # ponytail: to wire real NautilusTrader:
+        #   1. Define TradingNode + strategy: from nautilus_trader.trading import TradingNode
+        #   2. Register venues, data catalog, and strategy instance
+        #   3. Call node.run() — results go into node.engine.trader.accounts
+        #   4. Map results: portflolio value, fills, unrealized PnL → AdapterResult
+        #   See nautilus_trader/examples/ for reference implementations.
 
     def reset(self) -> None:
         """Reset the NautilusTrader engine."""

@@ -39,7 +39,7 @@ class BaseStrategy:
     
     def generate_signals(self, df):
         """Return: df dengan kolom 'entry' (1=buy, -1=sell, 0=hold)"""
-        raise NotImplementedError
+        raise NotImplementedError  # intentional: abstract base — subclasses must override
 
     def __init__(self, **params):
         self.params = params

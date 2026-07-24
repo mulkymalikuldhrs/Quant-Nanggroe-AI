@@ -44,7 +44,7 @@ class SignalAdapter:
 
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
         """Fetch signal from external source. Returns None on failure."""
-        raise NotImplementedError
+        raise NotImplementedError  # intentional: abstract — subclasses implement per-source logic
 
     def _safe_import(self, module_path: str, module_name: str, attr: str = None):
         """Safely import from external project."""

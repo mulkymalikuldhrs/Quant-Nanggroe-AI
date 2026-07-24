@@ -62,7 +62,7 @@ class TestSettingsDefaults(_IsolatedEnvTest):
 
     def test_database_url_default(self):
         s = _make_settings()
-        self.assertEqual(s.database_url, "sqlite:///quant_nanggroe.db")
+        self.assertEqual(s.database_url, "sqlite:///data/agentic.db")
 
     def test_redis_url_default(self):
         s = _make_settings()

@@ -47,7 +47,7 @@ class ComponentHealth(BaseModel):
 
 class HealthResponse(BaseModel):
     status: HealthStatus
-    version: str = "1.0.0"
+    version: str = "5.1.0"
     uptime_seconds: float
     timestamp: str
     components: list[ComponentHealth] = Field(default_factory=list)
@@ -74,7 +74,7 @@ def _check_database() -> ComponentHealth:
         import sqlite3
         from pathlib import Path
 
-        db_path = Path(__file__).resolve().parent.parent.parent.parent / "data" / "quant_nanggroe.db"
+        db_path = Path(__file__).resolve().parent.parent.parent.parent / "data" / "agentic.db"
         if db_path.exists():
             conn = sqlite3.connect(str(db_path), timeout=2)
             conn.execute("SELECT 1")

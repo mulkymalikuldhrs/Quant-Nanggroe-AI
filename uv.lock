@@ -4728,7 +4728,7 @@ wheels = [
 
 [[package]]
 name = "quant-nanggroe-ai"
-version = "4.6.0"
+version = "5.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database
-    database_url: str = "sqlite:///quant_nanggroe.db"
+    database_url: str = "sqlite:///data/agentic.db"
     redis_url: Optional[str] = None
 
     # LLM API Keys

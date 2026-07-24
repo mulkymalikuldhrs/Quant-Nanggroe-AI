@@ -95,14 +95,35 @@ class EncryptedStore:
     # ── Value operations ───────────────────────────────────────────
 
     def encrypt_value(self, value: str) -> str:
-        """Encrypt a string value.  Returns base64-encoded ciphertext."""
+        """Encrypt a string value.
+        
+        Returns base64-encoded ciphertext when QNAI_ENCRYPTION_KEY is set.
+        When encryption is disabled (no key), returns the input value
+        unchanged — pass-through mode.  This is a known limitation:
+        production deployments MUST set QNAI_ENCRYPTION_KEY.
+        
+        // ponytail: upgrade to AES-256-GCM with key-wrapping:
+        //   pip install cryptography
+        //   from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        //   key = AESGCM.generate_key(bit_length=256)
+        //   aesgcm = AESGCM(key)
+        //   nonce = os.urandom(12)
+        //   ct = aesgcm.encrypt(nonce, plaintext, aad)
+        //   Store nonce + ct together (nonce prepended).
+        // Key management: wrap with KMS (AWS KMS / GCP Cloud KMS)
+        // or derive via argon2id from a master passphrase.
+        """
         if not self._enabled:
             return value
         encrypted = self._fernet.encrypt(value.encode())  # type: ignore[union-attr]
         return base64.urlsafe_b64encode(encrypted).decode()
 
     def decrypt_value(self, value: str) -> str:
-        """Decrypt a base64-encoded ciphertext string."""
+        """Decrypt a base64-encoded ciphertext string.
+        
+        When encryption is disabled (no key), returns the input value
+        unchanged — pass-through mode.
+        """
         if not self._enabled:
             return value
         try:

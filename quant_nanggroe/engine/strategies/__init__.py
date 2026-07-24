@@ -1,35 +1,61 @@
 """
-Strategies Package — auto-load semua strategi
-Semua file .py di sini akan di-import sehingga @register decorator firing
+Strategies Package — auto-load semua strategi.
+
+Loads strategies from two sources:
+1. New canonical path (this directory) — 28 migrated strategies
+2. Old path (engine/strategy/strategies/) — 110 legacy strategies via shim
+
+All strategies are accessible via ``quant_nanggroe.engine.strategies.XXX``
+regardless of which path they live in.
 """
-import os, sys, logging
+import logging
+import sys
 from pathlib import Path
 
 log = logging.getLogger('strategies')
 
-# Import all strategy modules from this directory
 _strategies_dir = Path(__file__).parent
 
-# Core strategies loaded in specific order
-_strategy_modules = [
-    'dhaher_system',          # Dhaher System v1.1
-    'kronos_wrapper',         # Kronos Signal Provider
-    'tradebobby_smc_scanner', # TradeBobby SMC Scanner
-    'smc_strategy_OLD',       # SMC Old (reference)
+_explicit_order = [
+    'dhaher_system',
+    'kronos_wrapper',
+    'tradebobby_smc_scanner',
+    'smc_strategy_OLD',
 ]
 
-# Also scan for any .py files not in the explicit list
-_loaded = set(_strategy_modules)
+_modules = list(_explicit_order)
+_loaded = set(_explicit_order)
+
 for f in sorted(_strategies_dir.glob('*.py')):
     mod_name = f.stem
     if mod_name.startswith('_') or mod_name in _loaded:
         continue
-    if mod_name not in _strategy_modules:
-        _strategy_modules.append(mod_name)
+    _modules.append(mod_name)
+    _loaded.add(mod_name)
 
-for mod_name in _strategy_modules:
+for mod_name in _modules:
     try:
         __import__(f'quant_nanggroe.engine.strategies.{mod_name}', globals(), locals(), [], 0)
-        log.debug(f"Loaded strategy: {mod_name}")
     except ImportError as e:
-        log.debug(f"Skipped {mod_name}: {e}")
+        log.debug("Skipped %s: %s", mod_name, e)
+
+# ── Legacy bridge: make old-path strategies accessible from new path ──
+try:
+    import importlib
+    _this_mod = sys.modules[__name__]
+    _legacy_dir = Path(__file__).parent.parent / "strategy" / "strategies"
+    _bridged = 0
+    for f in sorted(_legacy_dir.glob('*.py')):
+        mod_name = f.stem
+        if mod_name.startswith('_') or mod_name in _loaded:
+            continue
+        try:
+            _mod = importlib.import_module(f'quant_nanggroe.engine.strategy.strategies.{mod_name}')
+            setattr(_this_mod, mod_name, _mod)
+            _loaded.add(mod_name)
+            _bridged += 1
+        except ImportError:
+            pass
+    log.info("Legacy bridge: %d bridged + %d canonical = %d total", _bridged, len(_modules), len(_loaded))
+except Exception:
+    log.debug("Legacy bridge unavailable")

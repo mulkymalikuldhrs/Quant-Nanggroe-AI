@@ -4,6 +4,14 @@ COT (Commitment of Traders) data provider.
 Minimal functional stub: returns neutral positioning so strategies that
 depend on COT don't crash the pipeline when CFTC data isn't wired yet.
 Real CFTC fetch can be dropped in later without changing the interface.
+
+// ponytail: CFTC publishes weekly COT data at:
+//   https://www.cftc.gov/dea/futures/deacmxsf.htm  (legacy TXT)
+//   https://www.cftc.gov/MarketReports/CommitmentsofTraders/  (portal)
+// Alternative: Quandl/Barchart/Investing.com APIs.
+// Parse the TXT with pandas.read_fwf() — format is fixed-width per
+// legacy legacy_cftc_cot.pdf spec.  Use cot_reports (PyPI) as a
+// ready-made wrapper: pip install cot_reports
 """
 
 
