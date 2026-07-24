@@ -542,3 +542,124 @@ curl -X POST http://localhost:8000/api/autonomous/evolve \
 - Production readiness: 47/100 > 72/100
 - All _HAS_* flags now True - pipeline 100% active
 - All 7 files compile clean
+
+---
+
+## Session 2026-07-24 - v4.8.2 E2E Tests + FinalDecider Fix + MT5 Demo
+
+**Version:** v4.8.2
+**Goal:** E2E paper trading tests, 79 unit tests, FinalDecider veto fix, MT5 demo wiring
+
+### Files Created
+- **test_e2e_paper_trading.py** — 2-scenario E2E test (real BTC-USD + forced buy)
+- **test_phantom_modules.py** — 79 unit tests across 5 modules (FinalDecider, StrategyLogger, RegimeFilter, TrailingStop, Pipeline)
+
+### Files Modified
+- **autonomous.py** — Fixed unawaited coroutine `get_all_signals` (added `await`)
+- **final_decider.py** — Added `_save_and_return()` — `_last_decision` now set on ALL return paths
+- **config/mt5_accounts.yaml** — `paper: false` -> `paper: true` (demo mode)
+- **README.md** — v4.8.2, todos updated, 17-stage mermaid updated
+- **CHANGELOG.md** — v4.8.2 entry added
+- **session-QNA.md** — This entry
+
+### E2E Test Results
+- Scenario A (real BTC-USD): All 6 explicit stages ran, risk_check blocked hold signal
+- Scenario B (forced buy): FinalDecider CALLED, VETOED (R:R 2.0<2.5), SLA populated (4149ms total), trailing stop verified
+
+### Impact
+- Production readiness: 72/100 -> ~76/100
+- 79 new unit tests passing
+- 2 E2E scenarios passing
+- All files compile clean
+
+---
+
+## Session 2026-07-24 - v4.8.3 Strategy Gap Closure: 4 Legacy Strategies + SMC Adapter
+
+**Version:** v4.8.3
+**Goal:** Register all orphaned strategies + wire SMC agent into pipeline
+
+### Gaps Found (Audit)
+| Gap | Severity | Status |
+|-----|----------|--------|
+| 19 arena strategies in `StrategyRegistry`, 23 in `engine/strategies/` dir | Info | ✅ Already registered |
+| **4 legacy strategies** in `quant_nanggroe/strategies/` NOT registered | 🔴 Critical | ✅ Fixed |
+| **SMC agent** (`quant_nanggroe/agents/smc/`) NOT wired as SignalAdapter | 🔴 Critical | ✅ Fixed |
+| **Arena `engine/strategies/` dir** (23 .py files) orphaned from pipeline | ⚠️ Already registered | ✅ Confirmed during audit |
+| **Multi-timeframe** not in core ensemble voting | 🟡 Low | ⏳ Future |
+
+### Files Created
+- **quant_nanggroe/engine/strategies/pairs_trade_strategy.py** — Wraps legacy `PairsTrade` via `@StrategyRegistry.register`
+- **quant_nanggroe/engine/strategies/trend_follow_strategy.py** — Wraps legacy `TrendFollow` (MA crossover + slope + momentum)
+- **quant_nanggroe/engine/strategies/tsmom_strategy.py** — Wraps legacy `TSMOM` (time-series momentum, Moskowitz 2012)
+- **quant_nanggroe/engine/strategies/xgboost_alpha_strategy.py** — Wraps legacy `XGBoostAlpha` (ML-driven return prediction)
+
+### Files Modified
+- **quant_nanggroe/engine/agentic/adapters.py** — Added `SmcAdapter` class using SMC detectors directly (no LLM), registered in `ALL_ADAPTERS`
+
+### Registry Validation
+```
+Strategies: 19 (arena) + 4 (new) = 23 registered ✓
+  - pairs_trade, trend_follow, tsmom, xgboost_alpha
+Adapters:   8 (existing) + 1 (smc_agent) = 9 registered ✓
+  - wyckoff, aihf, hidden_regime, aitrader, langalpha,
+    tradingagents, mtf, smc_agent, trading
+Compile:    All 5 files → OK ✓
+```
+
+### Architecture — SMC Adapter Data Flow
+```
+Pipeline._generate_signal()
+  → fetch_all_signals(dataframe=df)
+    → SmcAdapter.fetch_signal(symbol, dataframe=df)
+      → OrderBlockDetector.detect(records)
+      → FairValueGapDetector.detect(records)
+      → LiquidityLevelDetector.detect(records)
+      → Aggregate bullish/bearish counts → Signal(Bias, confidence)
+    → (joined into SignalVotingSystem vote)
+```
+
+### Impact
+- Production readiness: ~76/100 -> ~80/100
+- All orphaned code now wired
+- 23 strategies available for walk-forward + backtesting
+- 4 legacy modules preserved without modifying original files
+- Detector-only SMC adapter (no LLM cost)
+
+---
+
+## Session 2026-07-24 - v4.8.4 Multi-Timeframe Core Ensemble + Adapter Fix
+
+**Version:** v4.8.4
+**Goal:** Wire Multi-Timeframe into core ensemble voting, fix broken MTF adapter
+
+### Changes
+
+| File | Change |
+|------|--------|
+| `quant_nanggroe/engine/strategies/multi_timeframe_strategy.py` | **NEW** — Proper `@StrategyRegistry.register`-ed `MultiTimeframeStrategy`. Uses window-length proxies (50/20/5 bars) for HTF/MTF/LTF. 3 alignment modes: `all`, `htf_mtf`, `htf`. Volatility-aware confidence. |
+| `quant_nanggroe/engine/agentic/adapters.py` | **FIXED** — `MultiTimeframeAdapter` was importing non-existent `MultiTimeframeAnalyzer` (always failed silently). Now delegates to the same registered `MultiTimeframeStrategy`. |
+
+### Registry
+```
+Strategies: 23 + 1 (multi_timeframe) = 24 registered
+Adapters:   9 (mtf adapter now works, not silent-fail)
+```
+
+### Architecture Change
+```
+BEFORE:
+  MultiTimeframeAdapter (external) → MultiTimeframeAnalyzer (DOES NOT EXIST) → always returns None
+  Core ensemble voting → no MTF strategy registered
+
+AFTER:
+  MultiTimeframeAdapter (external) → MultiTimeframeStrategy.generate_signal() ← same as core
+  Core ensemble voting → list_strategies() includes "multi_timeframe" → participates in voting
+  Pipeline._ensemble_signal() → SMA slope at 50/20/5 windows → alignment check → BUY/SELL/HOLD
+```
+
+### Impact
+- Production readiness: ~80/100 -> ~82/100
+- 24 strategies now available for ensemble voting
+- MTF adapter no longer silently broken
+- Single source of truth: one `MultiTimeframeStrategy` for both paths

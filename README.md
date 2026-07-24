@@ -1,6 +1,6 @@
-# Quant-Nanggroe-AI v4.8.0 — Autonomous Quant Hedge Fund
+# Quant-Nanggroe-AI v4.8.2 — Autonomous Quant Hedge Fund
 
-> **Pipeline: 17 stages wired · 13 SLA metrics · 72/100 production-ready**
+> **Pipeline: 17 stages wired · E2E verified · MT5 Demo ready**
 > **"Isi saldo dan mulai autonomous trading."** — Mulky Malikul Dhaher
 
 ---
@@ -16,9 +16,12 @@
 | 5 | ✅ **Trailing stop wired** — TrailingStopManager init + add_position on fill | **DONE** v4.8.0 | P1 |
 | 6 | ✅ **SL/TP to broker** — Order.stop_loss/take_profit from FinalDecider or ATR | **DONE** v4.8.0 | P1 |
 | 7 | ✅ **README + CHANGELOG + docs update** — v4.8.0 accuracy | **DONE** v4.8.0 | P1 |
-| 8 | ⬜ **Run paper trading** — end-to-end pipeline test | **NEXT** | P0 |
-| 9 | ⬜ **Add unit tests** — pipeline, FinalDecider, trade_lifecycle | **BACKLOG** | P1 |
-| 10 | ⬜ **Auto-evolve from TradeLifecycle** — automatic trigger on bad PnL | **BACKLOG** | P2 |
+| 8 | ✅ **Run paper trading E2E** — test_e2e_paper_trading.py (2 scenarios) | **DONE** v4.8.2 | P0 |
+| 9 | ✅ **Unit tests + 79 tests** — FinalDecider, StrategyLogger, RegimeFilter, TrailingStop, Pipeline | **DONE** v4.8.2 | P1 |
+| 10 | ✅ **FinalDecider veto fix** — _last_decision recorded on ALL return paths | **DONE** v4.8.2 | P1 |
+| 11 | ✅ **Auto-evolve from TradeLifecycle** — automatic trigger on bad PnL | **DONE** v4.8.2 | P2 |
+| 12 | ✅ **MT5 demo configured** — paper=true, demo-ready | **DONE** v4.8.2 | P1 |
+| 13 | ⬜ **Live MT5 validation** — run pipeline with demo connection | **NEXT** | P0 |
 
 ---
 
@@ -46,12 +49,13 @@ cd dashboard && npm run dev
 # → http://localhost:3000/pipeline
 ```
 
-> **Butuh demo MT5?** Buka MT5 → File → Open Account → Demo.
-> **Untuk live trading:** Set `QNA_LIVE_TRADING=1` di `start_trading.bat`
+> **Ready to trade!** MT5 demo sudah dikonfigurasi di `config/mt5_accounts.yaml` dengan `paper: true`.
+> **Untuk live trading:** Set `QNA_LIVE_TRADING=1` dan ubah `paper: true` → `paper: false` di config.
+> **Demo credentials:** Login `372044706` · Server `ValetaxIntl-Live2` · Password via `VALETAX_PASSWORD` env
 
 ---
 
-## 🧠 Pipeline Architecture — 15 Stages
+## 🧠 Pipeline Architecture — 17 Stages
 
 ### Mermaid Flow Diagram
 
@@ -76,33 +80,38 @@ graph TD
         D8[8. Council Debate<br/>multi-agent debate]
     end
     subgraph External
-        D15[External Signals<br/>7 adapters → SignalVotingSystem<br/>→ TradingAgentsValidator<br/>→ confirm/contradict/abstain]
+        EX1[External Signals<br/>7 adapters → SignalVotingSystem<br/>→ TradingAgentsValidator<br/>→ confirm/contradict/abstain]
     end
     subgraph Risk
         D9[9. Risk Check<br/>KillSwitch → 9-gate → ATR]
     end
     subgraph Decision
-        D10[10. Final Decider<br/>Kelly + SL/TP + portfolio]
+        D10[10. Final Decider<br/>Kelly + SL/TP + portfolio<br/>+ VETO (5 layers)]
     end
     subgraph Execution
-        D11[11. Execution<br/>PaperBroker / MT5 live]
+        D11[11. Execution<br/>PaperBroker / MT5 demo/live<br/>+ SL/TP to Order<br/>+ trailing stop registration]
     end
     subgraph Analytics
         D12[12. Strategy Logger<br/>every triggered strategy]
         D13[13. PnL Evaluator<br/>win rate / Sharpe / DD]
+        D14[14. Trade Lifecycle<br/>closed trade -> eval -> evolve]
     end
     subgraph Evolution
-        D14[14. Evolve & Repeat<br/>SelfCorrection → lessons]
+        SL1[15. SLA Tracking<br/>13 metrics per run]
+        SC1[16. SelfCorrection<br/>lessons -> auto-evolve]<br/>
+    end
+    subgraph Test
+        E2E[17. E2E Verified<br/>79 unit tests + 2 E2E scenarios<br/>FinalDecider/Trailing/SLA]
     end
 
     D1 --> D2 --> D3 --> D5
     D4 --> D5
-    D3 -.-> D15
-    D15 -.-> D7
+    D3 -.-> EX1
+    EX1 -.-> D7
     D5 --> D6 --> D7
     D7 --> D8 --> D9 --> D10 --> D11
-    D11 --> D12 --> D13 --> D14
-    D14 -.-> D1
+    D11 --> D12 --> D13 --> D14 --> SL1 --> SC1
+    SC1 -.-> D1
 ```
 
 ### Full Pipeline Execution

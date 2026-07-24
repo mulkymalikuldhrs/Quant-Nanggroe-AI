@@ -276,25 +276,34 @@ class TradingAgentsValidator:
 
 
 class MultiTimeframeAdapter(SignalAdapter):
-    """QNA's own multi-timeframe analysis."""
+    """QNA's own multi-timeframe analysis — delegates to registered
+    MultiTimeframeStrategy (core ensemble path).  Also kept as external
+    adapter for backward compatibility."""
     source_name = "mtf"
 
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
         try:
-            from quant_nanggroe.engine.strategy.multi_timeframe import MultiTimeframeAnalyzer
+            from quant_nanggroe.engine.strategies.base import (
+                SignalDirection,
+                StrategyParameters,
+            )
+            from quant_nanggroe.engine.strategies.multi_timeframe_strategy import (
+                MultiTimeframeStrategy,
+            )
             df = kwargs.get("dataframe")
-            if df is None:
+            if df is None or (hasattr(df, 'empty') and df.empty):
                 return None
-            analyzer = MultiTimeframeAnalyzer()
-            result = analyzer.analyze(df, symbol)
-            direction = result.get("direction", "neutral")
-            confidence = result.get("confidence", 0.0)
-            if direction == "neutral":
-                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
-            bias = Bias.BUY if direction == "bullish" else Bias.SELL
-            return Signal(bias, confidence, self.source_name)
+            if hasattr(df, 'iloc') and len(df) < 55:
+                return None
+            strat = MultiTimeframeStrategy()
+            signal = strat.generate_signal(df, symbol=symbol)
+            if signal.direction == SignalDirection.BUY:
+                return Signal(Bias.BUY, signal.confidence, self.source_name)
+            if signal.direction == SignalDirection.SELL:
+                return Signal(Bias.SELL, signal.confidence, self.source_name)
+            return Signal(Bias.NEUTRAL, 0.0, self.source_name)
         except Exception as e:
-            logger.debug("MTF failed: %s", e)
+            logger.debug("MTF adapter failed: %s", e)
             return None
 
 
@@ -500,6 +509,96 @@ class LangAlphaAdapter(SignalAdapter):
             return None
 
 
+class SmcAdapter(SignalAdapter):
+    """SMC Agent — Smart Money Concepts detector signals.
+
+    Uses the three core SMC detectors (OrderBlock, FairValueGap, LiquidityLevel)
+    directly — no LLM needed.  Combines detector output into a signal.
+    """
+    source_name = "smc_agent"
+    timeout = 10
+
+    def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
+        try:
+            df = kwargs.get("dataframe")
+            if df is None:
+                return None
+
+            from quant_nanggroe.agents.smc.enhanced import (
+                FairValueGapDetector,
+                LiquidityLevelDetector,
+                OrderBlockDetector,
+            )
+
+            # Build list-of-dicts format expected by SMC detectors
+            if hasattr(df, "to_dict"):
+                records = df.tail(60).to_dict("records")
+            elif isinstance(df, dict):
+                n = len(df.get("close", []))
+                records = [
+                    {
+                        "open": float(df["open"][i]) if isinstance(df.get("open"), (list, tuple)) else 0,
+                        "high": float(df["high"][i]) if isinstance(df.get("high"), (list, tuple)) else 0,
+                        "low": float(df["low"][i]) if isinstance(df.get("low"), (list, tuple)) else 0,
+                        "close": float(df["close"][i]),
+                        "volume": float(df["volume"][i]) if isinstance(df.get("volume"), (list, tuple)) else 0,
+                    }
+                    for i in range(min(n, 60))
+                ]
+            else:
+                return None
+
+            if len(records) < 5:
+                return None
+
+            ob_detector = OrderBlockDetector()
+            fvg_detector = FairValueGapDetector()
+            liq_detector = LiquidityLevelDetector()
+
+            order_blocks = ob_detector.detect(records)
+            fvgs = fvg_detector.detect(records)
+            liquidity = liq_detector.detect(records)
+
+            # Aggregate patterns into bias
+            bullish_count = 0.0
+            bearish_count = 0.0
+
+            for ob in order_blocks:
+                if ob.ob_type == "bullish_ob":
+                    bullish_count += ob.strength
+                else:
+                    bearish_count += ob.strength
+
+            for fvg in fvgs:
+                if fvg.fvg_type == "bullish_fvg":
+                    bullish_count += 1.0
+                else:
+                    bearish_count += 1.0
+
+            for liq in liquidity:
+                if liq.liq_type == "sell_side":
+                    bullish_count += liq.strength * 0.5
+                else:
+                    bearish_count += liq.strength * 0.5
+
+            total = bullish_count + bearish_count
+            if total < 0.5:
+                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+
+            if bullish_count > bearish_count:
+                confidence = min(bullish_count / total, 0.85)
+                return Signal(Bias.BUY, confidence, self.source_name)
+            elif bearish_count > bullish_count:
+                confidence = min(bearish_count / total, 0.85)
+                return Signal(Bias.SELL, confidence, self.source_name)
+
+            return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+
+        except Exception as exc:
+            logger.debug("SmcAdapter failed: %s", exc)
+            return None
+
+
 class TradingAdapter(SignalAdapter):
     """E:/trading — legacy trading system adapter (placeholder).
 
@@ -525,6 +624,7 @@ ALL_ADAPTERS: list[SignalAdapter] = [
     LangAlphaAdapter(),
     TradingAgentsAdapter(),
     MultiTimeframeAdapter(),
+    SmcAdapter(),
     TradingAdapter(),
 ]
 

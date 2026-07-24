@@ -78,24 +78,25 @@ class FinalDecider:
 
     def decide(self, signals: list[StrategySignal], regime: RegimeState, portfolio: PortfolioState, risk: RiskState, atr: Optional[float] = None, current_price: float = 0.0) -> FinalDecision:
         vetoed_by: list[str] = []
+        _veto = lambda action, reason, tags: self._save_and_return(FinalDecision(action=action, reason=reason, vetoed_by=tags))
         if risk.kill_switch_active:
-            return FinalDecision(action=Action.HOLD, reason="Kill switch active", vetoed_by=["kill_switch"])
+            return _veto(Action.HOLD, "Kill switch active", ["kill_switch"])
         if risk.current_drawdown >= risk.max_drawdown:
-            return FinalDecision(action=Action.HOLD, reason=f"Max drawdown {risk.max_drawdown:.0%}", vetoed_by=["drawdown"])
+            return _veto(Action.HOLD, f"Max drawdown {risk.max_drawdown:.0%}", ["drawdown"])
         if risk.daily_loss_pct <= -risk.max_daily_loss_pct:
-            return FinalDecision(action=Action.HOLD, reason=f"Daily loss {risk.max_daily_loss_pct:.0%}", vetoed_by=["daily_loss"])
+            return _veto(Action.HOLD, f"Daily loss {risk.max_daily_loss_pct:.0%}", ["daily_loss"])
         regime_mult = _REGIME_VETO_MAP.get(regime.regime.lower(), 0.3)
         if regime_mult < self.min_regime_compat:
-            return FinalDecision(action=Action.HOLD, reason=f"Regime {regime.regime} blocked", vetoed_by=["regime"])
+            return _veto(Action.HOLD, f"Regime {regime.regime} blocked", ["regime"])
         if not signals:
-            return FinalDecision(action=Action.HOLD, reason="No signals", vetoed_by=["no_signals"])
+            return _veto(Action.HOLD, "No signals", ["no_signals"])
         best = max(signals, key=lambda s: s.confidence * regime_mult)
         if best.action == Action.HOLD or best.confidence < self.min_confidence:
-            return FinalDecision(action=Action.HOLD, reason=f"Best: {best.strategy_name} @ {best.confidence:.1%}", vetoed_by=["confidence"])
+            return _veto(Action.HOLD, f"Best: {best.strategy_name} @ {best.confidence:.1%}", ["confidence"])
         if portfolio.total_exposure >= portfolio.max_exposure:
-            return FinalDecision(action=Action.HOLD, reason="Max exposure", vetoed_by=["exposure"])
+            return _veto(Action.HOLD, "Max exposure", ["exposure"])
         if portfolio.position_count >= portfolio.max_positions:
-            return FinalDecision(action=Action.HOLD, reason="Max positions", vetoed_by=["positions"])
+            return _veto(Action.HOLD, "Max positions", ["positions"])
         try:
             from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod, compute_kelly
             kp = KellyParameters(win_rate=best.confidence**1.5, avg_win=0.02, avg_loss=0.01, fraction=0.25, max_drawdown=risk.max_drawdown, current_drawdown=risk.current_drawdown)
@@ -114,8 +115,12 @@ class FinalDecider:
             if slp > 0 and tpp > 0:
                 rr = abs(tpp - current_price) / abs(current_price - slp)
                 if rr < self.min_rr:
-                    return FinalDecision(action=Action.HOLD, reason=f"R:R {rr:.1f}<{self.min_rr:.1f}", vetoed_by=["rr"])
+                    return _veto(Action.HOLD, f"R:R {rr:.1f}<{self.min_rr:.1f}", ["rr"])
         d = FinalDecision(action=best.action, strategy_name=best.strategy_name, confidence=best.confidence, kelly_fraction=round(kf,4), position_size_pct=round(pct,4), sl=round(slp,2), tp=round(tpp,2), reason=f"{best.strategy_name} @ {best.confidence:.1%} Kelly={kf:.1%}", vetoed_by=vetoed_by or ["none"])
+        self._last_decision = d
+        return d
+
+    def _save_and_return(self, d: FinalDecision) -> FinalDecision:
         self._last_decision = d
         return d
 

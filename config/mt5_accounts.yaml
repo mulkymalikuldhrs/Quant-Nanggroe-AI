@@ -8,5 +8,5 @@ accounts:
     login: 372044706        # Your MT5 demo login
     server: "ValetaxIntl-Live2"  # Your MT5 server (hyphen, not underscore)
     password: "${VALETAX_PASSWORD}"  # Set VALETAX_PASSWORD env var
-    paper: false  # false = demo/real money, true = paper simulation
+    paper: true  # true = demo/paper mode (false = real money live trading)
 

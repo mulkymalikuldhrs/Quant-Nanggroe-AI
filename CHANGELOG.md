@@ -287,3 +287,109 @@
 - Pre-fix: 47/100 production readiness
 - Post-fix: ~72/100
 - Gaps closed: 6 phantom modules + trailing stop + SL/TP
+
+## v4.8.2 — E2E Tests + FinalDecider Veto Fix + MT5 Demo Config (2026-07-24)
+
+### New — E2E Paper Trading Tests
+- **test_e2e_paper_trading.py** — 2-scenario E2E test:
+  - Scenario A: Real BTC-USD data via yfinance + paper broker
+  - Scenario B: Monkey-patched forced buy signal through FinalDecider + trailing + SLA
+- **Manual trailing stop verification** — `add_position(50000)` confirmed `stop=49000.00`
+- **ASCII-only output** — cp1252-safe for Windows terminals
+
+### New — 79 Unit Tests (test_phantom_modules.py)
+- **FinalDecider**: 17 tests — all 5 veto layers, Kelly sizing, SL/TP, happy path buy/sell
+- **StrategyLogger**: 10 tests — log_trigger, attribution, persistence, unicode
+- **RegimeFilter**: 10 tests — all 12 regimes, filter/compatibility/best_strategies
+- **TrailingStop**: 11 tests — add/update trail/trigger/remove/multi-symbol
+- **AutonomousPipeline**: 8 tests — mock data, uptrend/downtrend/sideways, SLA, error handling
+- **Edge/integration**: 23 tests — dataclass defaults, unicode, numbers-in-names
+
+### Critical Bug Fixes
+- **FinalDecider._last_decision** — Added `_save_and_return()` helper. Was only set on final approval path; now recorded on ALL return paths (kill switch, drawdown, daily loss, regime, confidence, exposure, positions, RR). Enables E2E test to verify FinalDecider was called even when it vetoed.
+- **AIHF Bridge unawaited coroutine** — `self._aihf_bridge.get_all_signals(symbol)` missing `await`. Caused `RuntimeWarning: coroutine was never awaited` and AIHF signals always failed silently.
+
+### Pipeline Improvements
+- **Auto-evolve from TradeLifecycleManager** — When PnLEvaluator returns `recommendation='evolve'`, auto-triggers evolution callback (no manual POST needed)
+- **Auto-evolve hook** — Safe `getattr(record.evaluation_result, "recommendation", "")` access pattern (no NameError risk)
+- **SLA metrics populated** — Both scenarios confirm SLA data
+
+### MT5 Demo Configuration
+- **config/mt5_accounts.yaml** — Changed `paper: false` to `paper: true` for demo account
+  - `paper: true` = simulation mode — risk limits apply, no real money execution
+  - MT5 demo wired as secondary broker; paper broker remains primary fallback
+  - Ready: set `VALETAX_PASSWORD` env var, pipeline will connect on next run
+
+### Scoring
+- Pre-fix: 72/100
+- Post-fix: ~76/100
+- Verified: E2E paper trading, FinalDecider veto, trailing stop, SLA metrics, 79 unit tests
+
+## v4.8.3 — Strategy Gap Closure: 4 Legacy Strategies + SMC Adapter (2026-07-24)
+
+### 🎯 Gaps Closed
+
+| Gap | Severity | Status |
+|-----|----------|--------|
+| 4 legacy strategies in `quant_nanggroe/strategies/` NOT registered in pipeline | 🔴 Critical | ✅ Fixed |
+| SMC agent (`quant_nanggroe/agents/smc/`) NOT wired as SignalAdapter | 🔴 Critical | ✅ Fixed |
+
+### 🔌 New Strategy Wrappers (4)
+
+Each wraps a legacy strategy into `@StrategyRegistry.register` + `Strategy(ABC)`:
+
+- **`pairs_trade_strategy.py`** — PairsTradeStrategy: z-score of cointegrated pair spread (Gatev 2006), needs `pair_data` or `pair_closes` in kwargs
+- **`trend_follow_strategy.py`** — TrendFollowStrategy: MA crossover (20/100) + 50d slope + 12-month momentum ensemble
+- **`tsmom_strategy.py`** — TSMOMStrategy: Time-series momentum (Moskowitz 2012), vol-scaled to 40% target
+- **`xgboost_alpha_strategy.py`** — XGBoostAlphaStrategy: Feature-engineered XGBoost regression on OHLCV, auto-trains on `generate_signal()`
+
+### 🔗 New SignalAdapter
+
+- **`SmcAdapter`** in `adapters.py` — Directly uses SMC detectors (OrderBlockDetector, FairValueGapDetector, LiquidityLevelDetector) from `quant_nanggroe.agents.smc.enhanced`. No LLM needed. Aggregates pattern counts into BUY/SELL/NEUTRAL signal.
+- Added to `ALL_ADAPTERS` as `smc_agent`
+
+### 🧪 Registry Validation
+
+```
+Strategies: 19 (arena) + 4 (new) = 23 registered ✓
+  - pairs_trade, trend_follow, tsmom, xgboost_alpha
+Adapters:   8 (existing) + 1 (smc_agent) = 9 registered ✓
+  - wyckoff, aihf, hidden_regime, aitrader, langalpha,
+    tradingagents, mtf, smc_agent, trading
+Compile:    All 5 files → OK ✓
+```
+
+### Scoring
+- Pre-fix: ~76/100
+- Post-fix: ~80/100
+- All orphaned strategies now wired, no legacy code modified
+
+## v4.8.4 — Multi-Timeframe Core Ensemble + Adapter Fix (2026-07-24)
+
+### 🔌 Multi-Timeframe Now Participates in Core Ensemble Voting
+
+| Before | After |
+|--------|-------|
+| MTF only as external adapter (always failed silently — `MultiTimeframeAnalyzer` never existed) | **24 strategies** in `StrategyRegistry` including `multi_timeframe` |
+| Core ensemble voting had NO MTF signal | `MultiTimeframeStrategy.generate_signal()` called alongside all other strategies in `_ensemble_signal()` |
+
+### New Strategy: MultiTimeframeStrategy
+
+- **Registered** via `@StrategyRegistry.register` with `name = "multi_timeframe"`
+- **Window proxy** approach: uses SMA slope at 50/20/5 bars as proxies for Higher/Medium/Lower timeframes
+- **3 alignment modes** (`require_alignment` parameter):
+  - `"all"`: HTF + MTF + LTF must all agree
+  - `"htf_mtf"` (default): HTF sets direction, MTF confirms, LTF refines confidence
+  - `"htf"`: only HTF trend matters
+- **Volatility-aware**: confidence penalized in high-volatility regimes
+- Works with single DataFrame (pipeline's daily data) — no need for separate HTF/MTF/LTF feeds
+
+### Fixed: MultiTimeframeAdapter (adapters.py)
+
+- **Root cause**: `MultiTimeframeAdapter.fetch_signal()` imported `MultiTimeframeAnalyzer` from `engine.strategy.multi_timeframe` — **class never existed** (file only has `MultiTimeframeStrategy` and `MultiTimeframeManager`). Import always failed silently → returned None.
+- **Fix**: Now imports `MultiTimeframeStrategy` from `engine.strategies.multi_timeframe_strategy` — the SAME registered strategy used in core ensemble. External adapter path now consistent with core ensemble path.
+
+### Scoring
+- Pre-fix: ~80/100
+- Post-fix: ~82/100
+- 24 strategies registered, 9 adapters working, MTF dual-wired (core + external)

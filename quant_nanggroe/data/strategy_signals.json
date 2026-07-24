@@ -56,22 +56,6 @@
     "timestamp": "2026-07-17T14:22:57.527746+00:00"
   },
   {
-    "symbol": "BTC-USD",
-    "strategy": "momentum",
-    "signal": "sell",
-    "price": 63910.78125,
-    "confidence": 0.55,
-    "timestamp": "2026-07-17T22:45:58.104882+00:00"
-  },
-  {
-    "symbol": "BTC-USD",
-    "strategy": "momentum",
-    "signal": "sell",
-    "price": 63910.78125,
-    "confidence": 0.999,
-    "timestamp": "2026-07-17T22:45:58.104882+00:00"
-  },
-  {
     "symbol": "ETH-USD",
     "strategy": "momentum",
     "signal": "sell",

@@ -697,7 +697,7 @@ class AutonomousPipeline:
             aihf_signal_override = None
             if self._aihf_bridge is not None:
                 try:
-                    aihf_signals = self._aihf_bridge.get_all_signals(symbol)
+                    aihf_signals = await self._aihf_bridge.get_all_signals(symbol)
                     if aihf_signals and len(aihf_signals) > 0:
                         total_conf = sum(s.confidence for s in aihf_signals)
                         buy_conf = sum(s.confidence for s in aihf_signals if s.action.value.lower() == "buy")
