@@ -100,6 +100,7 @@ class DebateResult:
     opinions: List[AgentOpinion] = field(default_factory=list)
     risk: Optional[RiskMetrics] = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
+    summary: str = ""
 
 
 class DebateEngine:
@@ -147,6 +148,12 @@ class DebateEngine:
         unique_signals = {op.signal for op in opinions}
         disagreement = len(unique_signals) > 1 and consensus_confidence < 0.6
 
+        # Build summary string
+        sig_counts = {s: sum(1 for op in opinions if op.signal == s) for s in {op.signal for op in opinions}}
+        summary = f"Debate: {consensus_signal.value} ({consensus_confidence:.0%}), {len(opinions)} agents, {len(unique_signals)} signals"
+        if disagreement:
+            summary += " — DISAGREEMENT"
+
         risk = self.risk_manager.assess(opinions, volatility)
 
         return DebateResult(
@@ -155,6 +162,7 @@ class DebateEngine:
             disagreement=disagreement,
             opinions=opinions,
             risk=risk,
+            summary=summary,
         )
 
 
