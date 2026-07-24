@@ -250,6 +250,11 @@ export const tradingApi = {
     apiRequest<{ success: boolean }>(`/api/trading/order/${id}`, { method: "DELETE" }),
   getExchanges: () =>
     apiRequest<Exchange[]>("/api/trading/exchanges"),
+  sliceOrder: (req: {
+    symbol: string; side: string; quantity: number;
+    algo?: string; duration_minutes?: number; num_slices?: number;
+  }) =>
+    apiRequest<Record<string, unknown>>("/api/trading/slice-order", { method: "POST", body: req }),
 };
 
 export const marketApi = {
@@ -272,6 +277,8 @@ export const portfolioApi = {
     apiRequest<EquityCurveResponse>("/api/portfolio/equity-curve"),
   getRisk: () =>
     apiRequest<RiskData>("/api/portfolio/risk"),
+  getRiskParity: (targetVol: number = 0.15) =>
+    apiRequest<Record<string, number>>(`/api/portfolio/risk-parity?target_vol=${targetVol}`),
 };
 
 export const memoryApi = {
@@ -489,3 +496,12 @@ export interface BrokerPosition { symbol: string; side: string; quantity: number
 export interface BrokerPositionsResponse { account: string; positions: BrokerPosition[]; }
 export interface MT5AccountInfo { login: number; balance: number; equity: number; margin: number; margin_free: number; margin_level: number; server: string; currency: string; leverage: number; }
 export interface ExecuteToolResponse { success: boolean; result: string; }
+
+// ── Config API (dynamic settings) ──────────────────────────────────
+
+export const configApi = {
+  getConfig: () =>
+    apiRequest<Record<string, unknown>>("/api/credentials"),
+  updateConfig: (data: Record<string, unknown>) =>
+    apiRequest<{ success: boolean }>("/api/credentials", { method: "PUT", body: data }),
+};
