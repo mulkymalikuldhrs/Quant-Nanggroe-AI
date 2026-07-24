@@ -1,3 +1,15 @@
+"""
+Legacy synchronous Telegram notifier (urllib).
+
+Used by live_engine.py for heartbeat, error, and trade alert messages.
+
+For the async signal analysis pipeline with full trade signal formatting,
+see agents/telegram_bot.py (TelegramSignalBot — aiohttp-based).
+
+This file is kept as the lightweight sync path; telegram_bot.py is the
+unified implementation for signal-oriented workflows.
+"""
+
 import os
 import json
 import logging

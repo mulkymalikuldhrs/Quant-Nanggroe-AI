@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse
 
-app = FastAPI(title="Dhaher Hedge Fund Dashboard", version="5.0.0")
+app = FastAPI(title="Dhaher Hedge Fund Dashboard", version="5.1.0")
 
 SRC = Path(__file__).parent
 DATA = SRC / 'data'

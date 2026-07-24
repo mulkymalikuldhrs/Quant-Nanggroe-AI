@@ -441,9 +441,6 @@ class KillSwitch:
         max_drawdown_pct: float = 0.0,
         volatility_pct: float = 0.0,
     ) -> Optional[KillSwitchEvent]:
-        self._ensure_reconciled()  # C5: see freshest cross-proc activation before deciding
-        if self._status == KillSwitchStatus.ACTIVE:
-            return None
         """Check if auto-activation conditions are met.
 
         Parameters
@@ -462,6 +459,9 @@ class KillSwitch:
         KillSwitchEvent or None
             Activation event if triggered, else None.
         """
+        self._ensure_reconciled()  # C5: see freshest cross-proc activation before deciding
+        if self._status == KillSwitchStatus.ACTIVE:
+            return None
         # Check daily loss
         daily_loss = abs(min(0, daily_pnl_pct))
         if daily_loss >= self._config.auto_daily_loss_pct:

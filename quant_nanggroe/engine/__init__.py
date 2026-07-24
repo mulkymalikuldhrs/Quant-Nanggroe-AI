@@ -17,6 +17,7 @@ __all__ = [
     'persistence',
     'pressure',
     'regime_detector',
+    'standalone',
     'strategy_lifecycle',
     'worker',
 ]

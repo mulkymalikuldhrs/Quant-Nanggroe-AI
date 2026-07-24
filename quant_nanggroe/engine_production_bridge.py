@@ -498,6 +498,8 @@ class RiskEnforcer:
         self._kill_switch = None
         self._drawdown = None
         self._sizer = None
+        self._daily_pnl = 0.0
+        self._weekly_pnl = 0.0
         self._lazy_init()
     
     def _lazy_init(self):
@@ -520,15 +522,28 @@ class RiskEnforcer:
         except Exception as e:
             log.debug(f"Risk engine partial: {e}")
     
+    def update_pnl(self, daily_pnl: float, weekly_pnl: float) -> None:
+        self._daily_pnl = daily_pnl
+        self._weekly_pnl = weekly_pnl
+
     def is_kill_switch_triggered(self) -> bool:
         if self._kill_switch:
             try:
-                # ponytail: feed real drawdown (was 0.0 silent bypass)
+                equity = (self._drawdown._initial_equity
+                          if self._drawdown is not None else 10000.0)
+                daily_pnl_pct = (self._daily_pnl / equity
+                                 if self._daily_pnl < 0 else 0.0)
+                weekly_pnl_pct = (self._weekly_pnl / equity
+                                  if self._weekly_pnl < 0 else 0.0)
                 dd = 0.0
                 if self._drawdown is not None:
                     dd_info = self._drawdown.get_status()
                     dd = float(dd_info.get("current_drawdown", 0.0) or 0.0)
-                result = self._kill_switch.check_auto_activate(max_drawdown_pct=dd)
+                result = self._kill_switch.check_auto_activate(
+                    daily_pnl_pct=daily_pnl_pct,
+                    weekly_pnl_pct=weekly_pnl_pct,
+                    max_drawdown_pct=dd,
+                )
                 return result is not None
             except Exception:
                 pass

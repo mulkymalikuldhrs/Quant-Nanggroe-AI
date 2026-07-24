@@ -21,9 +21,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, List
 
 from quant_nanggroe.engine.self_aware import SelfAware, SelfState, Reflection
+from quant_nanggroe.engine.correction import SelfCorrect
+
+# Module-level import degradation tracker
+import_warnings: list[str] = []
 
 try:
     from quant_nanggroe.engine.registry import AutoRegistry
@@ -31,6 +35,7 @@ try:
 except ImportError:
     AutoRegistry = None
     _HAS_AUTO_REGISTRY = False
+    import_warnings.append("AutoRegistry unavailable — auto-discovery disabled")
 
 try:
     from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
@@ -40,11 +45,13 @@ except ImportError:
     StrategyEvolver = None
     SelfFineTuner = None
     _HAS_STRATEGY_EVOLVER = False
+    import_warnings.append("StrategyEvolver/SelfFineTuner unavailable — strategy evolution disabled")
 
 import asyncio
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Module-level try/except for optional QNA Core Components
@@ -57,6 +64,7 @@ try:
 except ImportError:
     FinalDecider = None
     _HAS_FINAL_DECIDER = False
+    import_warnings.append("FinalDecider unavailable — final decision layer disabled")
 
 try:
     from quant_nanggroe.engine.analytics.strategy_logger import StrategyLogger
@@ -64,6 +72,7 @@ try:
 except ImportError:
     StrategyLogger = None
     _HAS_STRATEGY_LOGGER = False
+    import_warnings.append("StrategyLogger unavailable — strategy logging disabled")
 
 try:
     from quant_nanggroe.engine.analytics.pnl_evaluator import PnLEvaluator
@@ -71,6 +80,7 @@ try:
 except ImportError:
     PnLEvaluator = None
     _HAS_PNL_EVALUATOR = False
+    import_warnings.append("PnLEvaluator unavailable — PnL evaluation disabled")
 
 try:
     from quant_nanggroe.engine.regime.strategy_filter import RegimeStrategyFilter
@@ -78,6 +88,7 @@ try:
 except ImportError:
     RegimeStrategyFilter = None
     _HAS_REGIME_FILTER = False
+    import_warnings.append("RegimeStrategyFilter unavailable — regime filtering disabled")
 
 try:
     from quant_nanggroe.engine.strategies.gene_loader import GeneLoader
@@ -85,6 +96,7 @@ try:
 except ImportError:
     GeneLoader = None
     _HAS_GENE_LOADER = False
+    import_warnings.append("GeneLoader unavailable — MUE-X gene loading disabled")
 
 # ── ClosedTrade for PnLEvaluator ──
 ClosedTrade = None
@@ -92,7 +104,7 @@ try:
     from quant_nanggroe.engine.analytics.pnl_evaluator import ClosedTrade as _CT
     ClosedTrade = _CT
 except ImportError:
-    pass
+    import_warnings.append("ClosedTrade unavailable — trade lifecycle PnL tracking disabled")
 
 # ── TradeLifecycleManager ──
 _TradeLifecycleManager = None
@@ -100,7 +112,7 @@ try:
     from quant_nanggroe.engine.agentic.trade_lifecycle import TradeLifecycleManager as _TLM
     _TradeLifecycleManager = _TLM
 except ImportError:
-    pass
+    import_warnings.append("TradeLifecycleManager unavailable — closed trade evaluation loop disabled")
 
 # ── AIHF Override Threshold ──
 AIHF_OVERRIDE_THRESHOLD = 0.6
@@ -112,6 +124,7 @@ except ImportError:
     AIHFBridge = None
     AIHFSignal = None
     _HAS_AIHF_BRIDGE = False
+    import_warnings.append("AIHFBridge unavailable — AI hedge fund signals disabled")
 
 try:
     from quant_nanggroe.agents.hedge_fund_bridge import HedgeFundBridge, get_hf_signal
@@ -120,6 +133,47 @@ except ImportError:
     HedgeFundBridge = None
     get_hf_signal = None
     _HAS_HF_BRIDGE = False
+    import_warnings.append("HedgeFundBridge unavailable — hedge fund vote signals disabled")
+
+# Log all import degradations collected at module load time
+for _warn in import_warnings:
+    logger.warning("Import degradation: %s", _warn)
+
+
+def verify_critical_imports() -> list[str]:
+    """Verify critical QNA modules are importable. Logs ERROR for failures."""
+    _CRITICAL_MODULES: list[tuple[str, str]] = [
+        ("quant_nanggroe.engine.strategy_lifecycle", "StrategyLifecycleManager"),
+        ("quant_nanggroe.engine.llm_router", "get_llm_router"),
+        ("quant_nanggroe.engine.execution.builder", "build_execution_manager"),
+    ]
+    _SEMI_CRITICAL_MODULES: list[tuple[str, str, str]] = [
+        ("quant_nanggroe.engine.agentic.final_decider", "FinalDecider", "FinalDecider"),
+        ("quant_nanggroe.engine.analytics.pnl_evaluator", "PnLEvaluator", "PnLEvaluator"),
+        ("quant_nanggroe.engine.agentic.trade_lifecycle", "TradeLifecycleManager", "TradeLifecycleManager"),
+    ]
+    failures: list[str] = []
+    for mod_path, attrs in _CRITICAL_MODULES:
+        try:
+            importlib.import_module(mod_path)
+        except ImportError as exc:
+            logger.error("CRITICAL import failed: %s.%s — %s", mod_path, attrs, exc)
+            failures.append(f"{mod_path}.{attrs}")
+    for mod_path, class_name, label in _SEMI_CRITICAL_MODULES:
+        try:
+            importlib.import_module(mod_path)
+        except ImportError as exc:
+            logger.warning("Semi-critical import failed: %s.%s — %s", mod_path, class_name, exc)
+            failures.append(f"{mod_path}.{class_name}")
+    if failures:
+        logger.warning("verify_critical_imports: %d module(s) unavailable — pipeline will run with degraded functionality", len(failures))
+    else:
+        logger.info("verify_critical_imports: all critical modules OK")
+    return failures
+
+
+# Run immediately at module load time
+verify_critical_imports()
 
 # ---------------------------------------------------------------------------
 # 1. FREE LLM PROVIDER CONFIGS

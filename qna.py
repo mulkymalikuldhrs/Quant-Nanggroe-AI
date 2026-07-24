@@ -35,8 +35,8 @@ from typing import Any, Dict, Optional
 PROJECT_ROOT = Path(__file__).parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# ── Version (single source of truth) ────────────────────────────────
-__version__ = "4.3.4"
+# ── Version — canonical source: quant_nanggroe/__init__.py ──────────
+__version__ = "5.1.0"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────

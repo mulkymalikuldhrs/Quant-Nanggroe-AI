@@ -69,7 +69,7 @@ qna.py (single entry point)
 ├── api/                         — 179 FastAPI endpoints
 ├── exchange/                    — 6 broker integrations
 ├── dashboard/                   — Next.js React UI
-├── tests/                       — 492+ tests
+├── tests/                       — 135 tests
 └── standalone.py                — Zero-Hermes entry point
 ```
 
@@ -166,7 +166,7 @@ All credentials use environment variables (never hardcoded):
 
 ## 📜 License
 
-Proprietary — Dhaher Labs. All rights reserved.
+MIT — Dhaher Labs. See [LICENSE](LICENSE).
 
 ---
 

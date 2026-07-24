@@ -8,6 +8,7 @@ direct request.
 
 import os
 import logging
+import requests
 from typing import Optional, Any
 
 log = logging.getLogger("QNA.Proxy")
@@ -25,14 +26,9 @@ def get_json(url: str, timeout: int = 15) -> Optional[Any]:
     """Fetch JSON from *url*.
 
     Returns the parsed JSON object on success, ``None`` on any error.
-    SSL verification is disabled because many exchange endpoints have
-    mismatched certificates in the current network environment.
+    SSL verification is enabled. Proxy routing via PROXY_SOCKS5 env var.
     """
     try:
-        import requests
-        # ponytail: fail-closed — verify certs by default. Real exchange endpoints
-        # (Binance/KuCoin/etc.) serve valid certs; disabling verification is an
-        # MITM risk and only excused by a genuine local-CA proxy.
         resp = requests.get(url, timeout=timeout, verify=True, proxies=PROXIES,
                             headers={"User-Agent": "QNA/1.0"})
         resp.raise_for_status()
