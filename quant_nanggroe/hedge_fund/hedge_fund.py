@@ -54,7 +54,7 @@ TERMINAL = r"C:\Program Files\MetaTrader 5\terminal64.exe"
 
 # ── CREDENTIALS (deferred — checked at trade time, not import time) ──
 CREDS = {
-    "login": 372044706,
+    "login": int(os.environ.get("MT5_LOGIN", "0")),
     "password": lambda: os.environ.get("MT5_PASSWORD"),
     "server": "ValetaxIntl-Live2",
 }

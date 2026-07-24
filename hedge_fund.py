@@ -38,7 +38,7 @@ if not _mt5_pass:
     if not PAPER_TRADE:
         raise RuntimeError("MT5_PASSWORD environment variable not set — refusing to proceed with empty/hardcoded credential")
     _mt5_pass = "paper_mode_dummy"  # placeholder for paper mode only
-CREDS = {"login": 372044706, "password": _mt5_pass, "server": "ValetaxIntl-Live2"}
+CREDS = {"login": int(os.environ.get("MT5_LOGIN", "0")), "password": _mt5_pass, "server": "ValetaxIntl-Live2"}
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('hf')

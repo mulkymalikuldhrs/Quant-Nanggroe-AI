@@ -48,7 +48,7 @@ VENV_PYTHON = r"C:\Users\Hi\AppData\Local\hermes\hermes-agent\venv\Scripts\pytho
 
 # Demo Valetax account (no real funds). Hardcode fallback so the autonomous
 # cron never silently falls back to paper due to a missing env var.
-VALETAX_PASSWORD_FALLBACK = "@15September"
+VALETAX_PASSWORD_FALLBACK = os.environ.get("MT5_PASSWORD", "")
 
 
 def compute_sl_tp(atr: float, entry: float, side: str):
@@ -173,7 +173,7 @@ def run_cycle() -> int:
     os.environ.setdefault("QNA_LIVE_TRADING", "1")
     os.environ.setdefault("QNA_MT5_LIVE", "1")
     # Demo account: ensure password available for mt5_accounts.yaml ${...}
-    os.environ.setdefault("VALETAX_PASSWORD", VALETAX_PASSWORD_FALLBACK)
+    if not os.environ.get("MT5_PASSWORD"): logger.warning("MT5_PASSWORD not set!")
 
     from quant_nanggroe.engine.execution.builder import build_execution_manager
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
