@@ -558,15 +558,17 @@ class AutonomousPipeline:
             except Exception as exc:
                 logger.warning("PnLEvaluator init failed: %s", exc)
 
-        # NEW: TradeLifecycleManager — closed trade → evaluation → evolution loop
+        # TradeLifecycleManager — closed trade → evaluation → evolution loop
+        # Wired with evolve_callback for auto-evolve on recommendation==evolve
         if _TradeLifecycleManager is not None:
             try:
                 self._trade_lifecycle = _TradeLifecycleManager(
                     pnl_evaluator=self._pnl_evaluator,
                     self_correction=self.correction,
                     sla_threshold_ms=300000.0,
+                    evolve_callback=self._trigger_evolution,
                 )
-                logger.info("TradeLifecycleManager initialized (closed trade → eval → evolve)")
+                logger.info("TradeLifecycleManager initialized (auto-evolve wired: recommendation=evolve → _trigger_evolution)")
             except Exception as exc:
                 logger.warning("TradeLifecycleManager init failed: %s", exc)
 
@@ -1417,6 +1419,71 @@ class AutonomousPipeline:
         except Exception as exc:
             self.correction.record("execution", f"Order failed {symbol}", str(exc), LessonSeverity.ERROR)
             return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "error": str(exc)}
+
+    # ── Auto-Evolve: triggered by TradeLifecycleManager when recommendation == 'evolve' ──
+    def _trigger_evolution(self, strategy_name: str | None = None) -> dict[str, Any]:
+        """Auto-trigger evolution for an underperforming strategy.
+
+        Called by TradeLifecycleManager.process_closed_trade() when the
+        PnLEvaluator recommendation is 'evolve'. No manual POST needed.
+
+        Args:
+            strategy_name: Specific strategy to evolve, or all if None.
+
+        Returns:
+            Dict with evolution results.
+        """
+        result: dict[str, Any] = {
+            "strategies_evaluated": 0,
+            "evolutions_triggered": 0,
+            "lessons_reviewed": 0,
+            "strategies_to_evolve": [],
+        }
+
+        # 1. Scan PnLEvaluator for underperforming strategies
+        if self._pnl_evaluator is not None:
+            try:
+                all_stats = self._pnl_evaluator.get_all_strategy_stats()
+                for sname, stats in all_stats.items():
+                    if strategy_name and sname != strategy_name:
+                        continue
+                    result["strategies_evaluated"] += 1
+                    needs_evolve = (
+                        stats.get("win_rate", 1.0) < 0.4 and stats.get("total_pnl", 0) < 0
+                    )
+                    if needs_evolve:
+                        result["strategies_to_evolve"].append({
+                            "strategy": sname,
+                            "win_rate": stats.get("win_rate", 0),
+                            "total_pnl": stats.get("total_pnl", 0),
+                            "sharpe": stats.get("sharpe", 0),
+                        })
+                        result["evolutions_triggered"] += 1
+            except Exception as exc:
+                logger.warning("Auto-evolve PnL scan failed: %s", exc)
+
+        # 2. Resolve relevant unresolved lessons
+        try:
+            lessons = self.correction.list_lessons(unresolved_only=True, limit=100)
+            for lesson in lessons:
+                if strategy_name and strategy_name not in str(lesson.get("context", {})):
+                    continue
+                result["lessons_reviewed"] += 1
+                if lesson.get("severity") in ("error", "critical"):
+                    self.correction.resolve(
+                        lesson["id"],
+                        "Auto-resolved via _trigger_evolution (recommendation==evolve)",
+                    )
+        except Exception as exc:
+            logger.warning("Auto-evolve lesson review failed: %s", exc)
+
+        logger.info(
+            "Auto-evolve complete: %d evaluated, %d triggered, %d lessons reviewed",
+            result["strategies_evaluated"],
+            result["evolutions_triggered"],
+            result["lessons_reviewed"],
+        )
+        return result
 
     async def run_batch(self, symbols: list[str] | None = None, strategy_name: str | None = None, use_llm: bool = False) -> list[PipelineResult]:
         if symbols is None:

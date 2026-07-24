@@ -18,7 +18,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from quant_nanggroe.engine.analytics.pnl_evaluator import (
@@ -75,6 +75,11 @@ class TradeLifecycleRecord:
     sla_breached: bool = False
     sla_threshold_ms: float = 300000.0  # 5 min default
 
+    # Auto-evolve tracking
+    evolution_triggered: bool = False
+    evolution_result: dict[str, Any] = field(default_factory=dict)
+    auto_evolve_duration_ms: float = 0.0
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "trade_id": self.trade_id,
@@ -88,6 +93,9 @@ class TradeLifecycleRecord:
             "total_cycle_ms": self.total_cycle_ms,
             "sla_breached": self.sla_breached,
             "lesson_id": self.lesson_id,
+            "evolution_triggered": self.evolution_triggered,
+            "evolution_result": self.evolution_result,
+            "auto_evolve_duration_ms": self.auto_evolve_duration_ms,
             "eval_result": {
                 "pnl": getattr(self.evaluation_result, "pnl", 0),
                 "rr": getattr(self.evaluation_result, "rr", 0),
@@ -120,6 +128,7 @@ class TradeLifecycleManager:
         sla_threshold_ms: float = 300000.0,
         data_dir: str = "data/trade_lifecycle",
         max_history: int = 500,
+        evolve_callback: Callable[[str], dict[str, Any]] | None = None,
     ):
         self._pnl_evaluator = pnl_evaluator
         self._correction = self_correction
@@ -128,6 +137,7 @@ class TradeLifecycleManager:
         self._data_dir.mkdir(parents=True, exist_ok=True)
         self._max_history = max_history
         self._history: list[TradeLifecycleRecord] = []
+        self._evolve_callback = evolve_callback
         self._max_recorded_lessons = 1000  # GC threshold: auto-archive old info lessons
 
         # Lazy imports for optional components
@@ -288,6 +298,41 @@ class TradeLifecycleManager:
                         context=context,
                     )
                     record.lesson_id = lesson.id
+
+                    # ── Auto-Evolve Hook: when recommendation == 'evolve',
+                    #    trigger evolution WITHOUT manual POST ──────────
+                    #    Safe access: check via evaluation_result directly,
+                    #    not the local 'rec' var which may not be in scope.
+                    if self._evolve_callback is not None \
+                       and record.evaluation_result is not None \
+                       and getattr(record.evaluation_result, "recommendation", "") == "evolve":
+                        evo_start = time.perf_counter()
+                        try:
+                            evo_result = self._evolve_callback(record.strategy_name)
+                            record.evolution_triggered = True
+                            record.evolution_result = {
+                                "strategies_evaluated": evo_result.get("strategies_evaluated", 0),
+                                "evolutions_triggered": evo_result.get("evolutions_triggered", 0),
+                                "lessons_reviewed": evo_result.get("lessons_reviewed", 0),
+                                "strategies_to_evolve": evo_result.get("strategies_to_evolve", []),
+                                "source": "auto_evolve_hook",
+                            }
+                            logger.info(
+                                "Auto-evolve triggered for %s: %d evolutions, %d lessons reviewed",
+                                record.strategy_name,
+                                evo_result.get("evolutions_triggered", 0),
+                                evo_result.get("lessons_reviewed", 0),
+                            )
+                        except Exception as exc:
+                            logger.warning(
+                                "Auto-evolve callback failed for %s: %s",
+                                record.strategy_name, exc,
+                            )
+                            record.evolution_result = {"error": str(exc), "source": "auto_evolve_hook"}
+                        finally:
+                            record.auto_evolve_duration_ms = round(
+                                (time.perf_counter() - evo_start) * 1000, 2
+                            )
                 # else: skip recording for healthy trades to prevent lesson bloat
 
                 record.evolution_started_at = evolution_start_dt.isoformat()
@@ -312,7 +357,8 @@ class TradeLifecycleManager:
             record.closed_trade_to_eval_ms
             + record.eval_to_evolve_ms
             + record.eval_duration_ms
-            + record.evolve_duration_ms, 2
+            + record.evolve_duration_ms
+            + record.auto_evolve_duration_ms, 2
         )
         record.sla_breached = record.total_cycle_ms > record.sla_threshold_ms
 
