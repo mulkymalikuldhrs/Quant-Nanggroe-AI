@@ -1,23 +1,19 @@
 """
 Quant Nanggroe — Hedge Fund v3 Module
 ======================================
-Multi-provider weighted voting aggregator with MT5/paper execution.
+Single-source-of-truth re-exports from the monolith hedge_fund.py.
 
-Adapted from E:/trading/hedge_fund.py for QNA integration.
-
-Refactored module structure (Mon Jul 24 2026):
-  utils/         — config, connection, data, indicators
-  signals/       — core providers, qna_strategies, registry, aggregator
-  risk/          — gate, guard
-  execution/     — orders (trail_sl, execute)
-  portfolio/     — main orchestration (run_once)
-
-Usage:
-    from quant_nanggroe.hedge_fund import run_once, aggregate, ALL_PROVIDERS
-    result = run_once("EURUSD")
+NOTE: The pkg was partially refactored into utils/signals/risk/execution/
+portfolio submodules, but those stubs were never completed — the real
+working code lives in hedge_fund.py. To keep `qna.py hedge-fund` working
+we re-export directly from the monolith. The stub submodules remain on
+disk but are intentionally NOT imported here (they raise ImportError).
+Legacy mtf.py / multipair.py are excluded (they import E:/trading deps
+and numpy C-extensions that are not required by the core run_once path).
 """
 
-from quant_nanggroe.hedge_fund.utils import (
+from quant_nanggroe.hedge_fund.hedge_fund import (  # noqa: F401
+    # utils
     connect,
     ensure_terminal,
     get_historical_mt5,
@@ -25,8 +21,8 @@ from quant_nanggroe.hedge_fund.utils import (
     MT5_AVAILABLE,
     PAPER_TRADE,
     log,
-)
-from quant_nanggroe.hedge_fund.signals import (
+    CREDS,
+    # core providers / signals
     aggregate,
     ALL_PROVIDERS,
     CORE_PROVIDERS,
@@ -40,30 +36,23 @@ from quant_nanggroe.hedge_fund.signals import (
     signal_aimarketmaker,
     signal_kronos,
     signal_pyportfolioopt,
+    # risk
+    check_gate,
+    # execution
+    trail_sl,
+    execute,
+    # portfolio / main
+    run_once,
 )
-from quant_nanggroe.hedge_fund.risk import check_gate
-from quant_nanggroe.hedge_fund.execution import trail_sl, execute
-from quant_nanggroe.hedge_fund.portfolio import run_once
-
-# Legacy re-exports (from monolith era — kept for backward compatibility)
-from quant_nanggroe.hedge_fund.mtf import run_mtf_cycle, execute_mtf
-from quant_nanggroe.hedge_fund.multipair import run_multipair_cycle
 
 __all__ = [
-    # utils
     "connect", "ensure_terminal", "get_historical_mt5", "calc_atr",
-    "MT5_AVAILABLE", "PAPER_TRADE", "log",
-    # signals
+    "MT5_AVAILABLE", "PAPER_TRADE", "log", "CREDS",
     "aggregate", "ALL_PROVIDERS", "CORE_PROVIDERS",
     "signal_sma", "signal_wyckoff", "signal_aihf", "signal_hidden",
     "signal_tradingagents", "signal_aitrader", "signal_langalpha",
     "signal_aimarketmaker", "signal_kronos", "signal_pyportfolioopt",
-    # risk
     "check_gate",
-    # execution
     "trail_sl", "execute",
-    # portfolio / main
     "run_once",
-    # legacy (mtf, multipair)
-    "run_mtf_cycle", "execute_mtf", "run_multipair_cycle",
 ]

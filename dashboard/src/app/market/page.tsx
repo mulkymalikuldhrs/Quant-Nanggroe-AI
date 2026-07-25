@@ -73,7 +73,7 @@ export default function MarketPage() {
           symbol: s.symbol || "UNKNOWN",
           price: s.price ?? 0,
           change: s.change_pct ?? 0,
-          volume: s.volume ?? "0",
+          volume: String(s.volume ?? 0),
           signal: s.signal ?? "Neutral",
         }))
       ))

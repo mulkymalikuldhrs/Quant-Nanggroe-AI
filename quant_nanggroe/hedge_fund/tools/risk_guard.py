@@ -62,24 +62,28 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
     risk = 0.0
     reasons = []
     
-    # 1. Position size vs balance
-    balance = proposal.get('account_balance', 1000)
+    # 1. Position size vs balance — fail-closed: missing balance -> veto
+    balance = proposal.get('account_balance')
+    if balance is None or balance <= 0:
+        risk = max(risk, 1.0)
+        reasons.append("missing_or_invalid_account_balance")
+        return min(1.0, max(0.0, risk)), reasons[:6]
     volume = proposal.get('volume', 0.01)
     notional = volume * proposal.get('price', 1.0)
     pos_ratio = notional / balance if balance > 0 else 1.0
     max_pos = policy.get('max_position_size', 0.02)
-    
+
     if pos_ratio > max_pos * 1.5:
         risk = max(risk, 0.95)
         reasons.append(f"position_too_large ratio={pos_ratio:.2%} > {max_pos:.2%}")
     elif pos_ratio > max_pos:
         risk = max(risk, 0.75)
         reasons.append(f"position_large ratio={pos_ratio:.2%} ~ {max_pos:.2%}")
-    
-    # 2. Daily loss limit
-    daily_pnl = proposal.get('daily_pnl', 0.0)
+
+    # 2. Daily loss limit — fail-closed: missing daily_pnl -> flag
+    daily_pnl = proposal.get('daily_pnl')
     max_loss = policy.get('max_daily_loss', 0.05)
-    loss_ratio = abs(daily_pnl) / balance if balance > 0 and daily_pnl < 0 else 0
+    loss_ratio = abs(daily_pnl) / balance if balance > 0 and daily_pnl is not None and daily_pnl < 0 else 0
     
     if loss_ratio > max_loss * 1.2:
         risk = max(risk, 1.0)

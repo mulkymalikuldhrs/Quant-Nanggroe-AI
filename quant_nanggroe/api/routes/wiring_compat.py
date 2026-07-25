@@ -164,17 +164,24 @@ async def get_market_candles(symbol: str) -> list[dict[str, Any]]:
 
 @router.get("/api/portfolio/equity-curve")
 async def get_portfolio_equity_curve() -> list[dict[str, Any]]:
-    """Return equity curve data for portfolio."""
+    """Return equity curve data for portfolio.
+
+    Real data only — no fabricated fallback. If the portfolio manager is
+    unavailable, returns an empty list so the UI shows "no data" honestly
+    instead of fake numbers.
+    """
     try:
         from quant_nanggroe.engine.portfolio.manager import PortfolioManager
         mgr = PortfolioManager()
         curve = mgr.get_equity_curve()
         if curve:
             return [{"date": str(p.date), "value": p.value} for p in curve]
+    except ImportError:
+        # Module genuinely not built — return empty, never fabricate.
+        return []
     except Exception:
-        pass
-    # ponytail: inline stub when portfolio manager unavailable
-    return [{"date": f"2026-07-{i+1:02d}", "value": 100000 + i * 500} for i in range(30)]
+        return []
+    return []
 
 
 # ── Memory ──────────────────────────────────────────────────────────────

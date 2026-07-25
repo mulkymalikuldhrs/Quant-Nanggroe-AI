@@ -1,4 +1,5 @@
-"""Market regime detection for the AI-MultiColony finance module.
+"""
+Market regime detection for the AI-MultiColony finance module.
 
 Detects the current market regime (trending, ranging, volatile,
 crisis) using statistical analysis of price and volume data.
@@ -384,6 +385,271 @@ class MarketRegimeDetector:
         }
 
 
-# ── Backward-compatible aliases ──────────────────────────────────────
-MarketStateEngine = MarketRegimeDetector
-MarketStateResult = RegimeResult
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+from quant_nanggroe.types.engine import (
+    MarketRegime as TypesMarketRegime,
+    VolatilityLevel,
+    LiquidityLevel,
+    MarketState,
+)
+
+
+# ── MarketStateResult ───────────────────────────────────────────────────────
+
+
+@dataclass
+class MarketStateResult:
+    """Result from a market state / regime detection run.
+
+    Attributes
+    ----------
+    base_regime:
+        The raw detected regime before overrides.
+    regime:
+        The final regime after applying overrides (PANIC → NO_TRADE, etc.).
+    trade_allowed:
+        Whether trading is permitted in this regime.
+    no_trade_reasons:
+        Reasons why trading is blocked (if applicable).
+    volatility:
+        Volatility classification.
+    liquidity:
+        Liquidity classification.
+    inputs:
+        Dict of the input values used for detection.
+    symbol:
+        Symbol that was analysed.
+    """
+    base_regime: "TypesMarketRegime" = TypesMarketRegime.UNKNOWN
+    regime: "TypesMarketRegime" = TypesMarketRegime.UNKNOWN
+    trade_allowed: bool = True
+    no_trade_reasons: List[str] = field(default_factory=list)
+    volatility: VolatilityLevel = VolatilityLevel.NORMAL
+    liquidity: LiquidityLevel = LiquidityLevel.NORMAL
+    inputs: Dict[str, float] = field(default_factory=dict)
+    symbol: str = ""
+
+
+# ── MarketStateEngine ───────────────────────────────────────────────────────
+
+
+class MarketStateEngine:
+    """Market regime detection engine.
+
+    Classifies market state based on price change, trend strength (ADX),
+    RSI, volatility (ATR), and volume. Applies overrides for extreme
+    conditions (PANIC → NO_TRADE, very low volume → NO_TRADE, etc.).
+    """
+
+    def __init__(self) -> None:
+        self._regime_history: List[MarketStateResult] = []
+        self._max_history = 100
+
+    @property
+    def regime_history(self) -> List[MarketStateResult]:
+        return list(self._regime_history)
+
+    @property
+    def current_regime(self) -> TypesMarketRegime:
+        if self._regime_history:
+            return self._regime_history[-1].regime
+        return TypesMarketRegime.UNKNOWN
+
+    def get_regime(self) -> TypesMarketRegime:
+        """Return the current regime (same as current_regime for API compatibility)."""
+        return self.current_regime
+
+    def get_market_state(self) -> MarketState:
+        """Return a MarketState model summarizing current state."""
+        if not self._regime_history:
+            return MarketState()
+        last = self._regime_history[-1]
+        return MarketState(
+            regime=last.regime,
+            volatility=last.volatility,
+            liquidity=last.liquidity,
+        )
+
+    def detect_regime(
+        self,
+        symbol: str = "",
+        price_change_5d: float = 0.0,
+        price_change_1d: float = 0.0,
+        adx: float = 0.0,
+        rsi: float = 50.0,
+        atr_pct: float = 0.01,
+        volume_ratio: float = 1.0,
+        ema_trend: str = "neutral",
+    ) -> MarketStateResult:
+        """Detect market regime from technical inputs.
+
+        Parameters
+        ----------
+        symbol:
+            Symbol being analysed.
+        price_change_5d:
+            5-day price change in percent (e.g. -6.0 for -6%).
+        price_change_1d:
+            1-day price change in percent.
+        adx:
+            Average Directional Index.
+        rsi:
+            Relative Strength Index.
+        atr_pct:
+            Average True Range as % of price.
+        volume_ratio:
+            Recent volume / average volume.
+        ema_trend:
+            EMA trend direction: "bullish", "bearish", or "neutral".
+
+        Returns
+        -------
+        MarketStateResult
+            Detected regime with overrides.
+        """
+        inputs = {
+            "price_change_5d": price_change_5d,
+            "price_change_1d": price_change_1d,
+            "adx": adx,
+            "rsi": rsi,
+            "atr_pct": atr_pct,
+            "volume_ratio": volume_ratio,
+            "ema_trend": ema_trend,
+        }
+
+        # ── Volatility classification ─────────────────────────────────
+        if atr_pct > 2.5:
+            volatility = VolatilityLevel.HIGH
+        elif atr_pct < 0.5:
+            volatility = VolatilityLevel.LOW
+        else:
+            volatility = VolatilityLevel.NORMAL
+
+        # ── Liquidity classification ──────────────────────────────────
+        if volume_ratio < 0.4:
+            liquidity = LiquidityLevel.THIN
+        elif volume_ratio > 1.8:
+            liquidity = LiquidityLevel.DEEP
+        else:
+            liquidity = LiquidityLevel.NORMAL
+
+        # ── Step 1: Detect base regime ────────────────────────────────
+        base_regime = self._classify_base(
+            price_change_5d, price_change_1d, adx, rsi, ema_trend, atr_pct, volume_ratio,
+        )
+
+        # ── Step 2: Apply overrides ──────────────────────────────────
+        regime, trade_allowed, no_trade_reasons = self._apply_overrides(
+            base_regime, price_change_5d, adx, rsi, atr_pct, volume_ratio,
+            volatility, liquidity,
+        )
+
+        result = MarketStateResult(
+            base_regime=base_regime,
+            regime=regime,
+            trade_allowed=trade_allowed,
+            no_trade_reasons=no_trade_reasons,
+            volatility=volatility,
+            liquidity=liquidity,
+            inputs=inputs,
+            symbol=symbol,
+        )
+
+        self._regime_history.append(result)
+
+        # Cap history
+        if len(self._regime_history) > self._max_history:
+            self._regime_history = self._regime_history[-self._max_history:]
+
+        return result
+
+    def _classify_base(
+        self,
+        price_change_5d: float,
+        price_change_1d: float,
+        adx: float,
+        rsi: float,
+        ema_trend: str,
+        atr_pct: float,
+        volume_ratio: float,
+    ) -> TypesMarketRegime:
+
+        # ── Panic / Risk-off (price drop overrides everything) ──
+        if price_change_5d < -5.0:
+            return TypesMarketRegime.PANIC
+        if price_change_5d < -2.0:
+            return TypesMarketRegime.RISK_OFF
+
+        # ── Trending (ADX > 25) ─────────────────────────────────
+        if adx > 25:
+            if ema_trend == "bullish":
+                return TypesMarketRegime.TRENDING_UP
+            elif ema_trend == "bearish":
+                return TypesMarketRegime.TRENDING_DOWN
+            # Neutral EMA — use 1-day price change for direction
+            if price_change_1d > 0.5:
+                return TypesMarketRegime.TRENDING_UP
+            elif price_change_1d < -0.5:
+                return TypesMarketRegime.TRENDING_DOWN
+            else:
+                return TypesMarketRegime.TRENDING
+
+        # ── Mean-revert (RSI extremes) ──────────────────────────
+        if rsi > 75 or rsi < 25:
+            return TypesMarketRegime.MEAN_REVERT
+
+        # ── Volatility / ATR based regimes ──────────────────────
+        if atr_pct > 2.5:
+            return TypesMarketRegime.VOLATILE
+        if atr_pct < 0.5 and volume_ratio < 0.5:
+            return TypesMarketRegime.CALM
+
+        # ── Default: RANGE ──────────────────────────────────────
+        return TypesMarketRegime.RANGE
+
+    def _apply_overrides(
+        self,
+        base_regime: TypesMarketRegime,
+        price_change_5d: float,
+        adx: float,
+        rsi: float,
+        atr_pct: float,
+        volume_ratio: float,
+        volatility: VolatilityLevel,
+        liquidity: LiquidityLevel,
+    ) -> Tuple[TypesMarketRegime, bool, List[str]]:
+        """Apply overrides to the base regime.
+
+        Returns (final_regime, trade_allowed, reasons_list).
+        """
+
+        regime = base_regime
+        trade_allowed = True
+        reasons: List[str] = []
+
+        # PANIC → NO_TRADE
+        if regime == TypesMarketRegime.PANIC:
+            regime = TypesMarketRegime.NO_TRADE
+            trade_allowed = False
+            reasons.append("PANIC regime: price dropped more than 5% in 5 days")
+
+        # RISK_OFF → also block
+        if regime == TypesMarketRegime.RISK_OFF:
+            trade_allowed = False
+            reasons.append("RISK_OFF regime: price dropped 2-5% in 5 days")
+
+        # Very low volume → NO_TRADE
+        if volume_ratio < 0.2:
+            regime = TypesMarketRegime.NO_TRADE
+            trade_allowed = False
+            reasons.append("Low volume — volume ratio below 0.2, insufficient liquidity")
+
+        # High volatility + thin liquidity → NO_TRADE
+        if volatility == VolatilityLevel.HIGH and liquidity == LiquidityLevel.THIN:
+            regime = TypesMarketRegime.NO_TRADE
+            trade_allowed = False
+            reasons.append("High volatility with thin liquidity")
+
+        return regime, trade_allowed, reasons

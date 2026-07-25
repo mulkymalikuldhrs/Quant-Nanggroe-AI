@@ -217,7 +217,7 @@ class TestPolymarketCLOBClient:
         )
         assert client._base_url == PolymarketCLOBClient.STAGING_URL
         assert client._wallet_config.private_key == "0xkey"
-        assert client._api_key == "my-key"
+        assert client._api_key == "<placeholder>"
 
     def test_build_headers_no_auth(self):
         client = PolymarketCLOBClient()
@@ -227,7 +227,7 @@ class TestPolymarketCLOBClient:
         assert "POLY_API_KEY" not in headers
 
     def test_build_headers_with_api_key(self):
-        client = PolymarketCLOBClient(api_key="<placeholder>")
+        client = PolymarketCLOBClient(api_key="bearer-token")
         headers = client._build_headers()
         assert headers["Authorization"] == "Bearer bearer-token"
 

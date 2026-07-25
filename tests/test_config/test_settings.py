@@ -70,7 +70,8 @@ class TestSettingsDefaults(_IsolatedEnvTest):
 
     def test_jwt_secret_default(self):
         s = _make_settings()
-        self.assertEqual(s.jwt_secret, "change-me-in-production")
+        # Sentinel default — NOT a usable secret. Boot is refused with this value.
+        self.assertEqual(s.jwt_secret, "__UNSET_QNAI_JWT_SECRET__")
 
     def test_log_level_default(self):
         s = _make_settings()

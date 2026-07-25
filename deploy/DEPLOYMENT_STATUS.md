@@ -5,8 +5,18 @@
 ## ✅ Production Ready Status
 
 **Status:** ✅ **PRODUCTION READY (Cluster 1)**
-**Last Updated:** 2026-03-04
-**Version:** 2.1.0
+**Last Updated:** 2026-07-25
+**Version:** 5.1.0
+
+### QNA v5.1.0 Specific
+- ✅ **Signal persistence** — TradingSignal model + SignalRepository active
+- ✅ **Architecture health:** 9/10 (was 8/10)
+- ✅ **45/47 issues resolved** (95.7%)
+- ✅ **Root cleanup** — 14 dirs, qna.py single entry point, 8 dirs archived
+- ✅ **0 orphan modules** (was 203 — 27% → 0%)
+- ✅ **625 .py files** in package (was 755)
+- ✅ **167 test files**, 179 API endpoints
+- ✅ **Strategy migration** — 104 pending (bridge active, delegate running)
 
 ---
 

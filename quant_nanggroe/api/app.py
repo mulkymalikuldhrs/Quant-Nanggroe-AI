@@ -334,9 +334,7 @@ def create_app() -> FastAPI:
         whatsapp,
         wiring_compat,
         ensemble,
-        memory_stub,
-        colony_stub,
-        security_tools_stub,
+        security_tools,
     )
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])

@@ -429,7 +429,7 @@ export interface SectorSentiment { name: string; sentiment: number; }
 export interface MarketSentiment { overall: number; fear_greed: number; sectors: SectorSentiment[]; }
 export interface PriceResponse { symbol: string; price: number; change: number; changePercent: number; timestamp: string; }
 export interface CandleStick { time: string; open: number; high: number; low: number; close: number; }
-export interface TradingSignal { id: number; time: string; agent: string; symbol: string; signal: "BUY" | "SELL" | "HOLD"; confidence: number; reason: string; }
+export interface TradingSignal { id: number; time: string; agent: string; symbol: string; signal: "BUY" | "SELL" | "HOLD"; confidence: number; reason: string; price: number; change_pct: number; volume: number; }
 
 // ── Trading Types ────────────────────────────────────────────────────
 export interface Order { id: string; symbol: string; side: OrderSide; type: OrderType; quantity: number; price: number; status: OrderStatus; time: string; exchange: string; }

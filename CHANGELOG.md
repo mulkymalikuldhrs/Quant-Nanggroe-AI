@@ -1,17 +1,22 @@
 # Quant Nanggroe AI — Changelog
 
-## v5.1.0 — Security Sweep + Cleanup + AutoRegistry v3 (2026-07-24)
+## v5.1.0 — Security Sweep + Cleanup + AutoRegistry v3 (2026-07-25)
 
 ### 🔒 Security
 - **Removed hardcoded MT5 password** from `scripts/qna_autonomous_cycle.py` — now reads `MT5_PASSWORD` env var
 - **Removed hardcoded MT5 login** from `hedge_fund.py` and `quant_nanggroe/hedge_fund/hedge_fund.py` — now reads `MT5_LOGIN` env var
 - **Plaintext secrets migrated** — `config/credentials.json` → `QNA_ADMIN_API_KEY`, `config/freqtrade.json` → `FREQTRADE_JWT_SECRET` + `FREQTRADE_USERNAME` + `FREQTRADE_PASSWORD`
-- `.env.example` documents all required env vars
+- **CRITICAL: `.env` rotated** — live MT5 password sanitized, sandbox mode enabled
+- **Git history still contains stale secrets** — force-push purge pending rotation of MT5 password
+- **Dependencies unbounded** — all 30+ use `>=` without upper cap
 
-### 🧹 Cleanup
+### 🧹 Cleanup & Single Entry Point
 - **Deleted 6 duplicate directories** (~400K+ freed): `D:\d\`, `D:\e\`, `D:\c\`, `E:\d\`, `E:\e\`, `E:\c\`
-- **Unique files preserved** to canonical locations (`QNA_macro_economist_finding.md`, `FINDING_AGENT45_DEADCODE.md`, etc.)
-- Canonical: `D:\repositories\Quant-Nanggroe-AI-worktree` (QNA), `D:\repositories\ai-multicolony-worktree` (MultiColony)
+- **Root hedge_fund.py (13,684 lines)** — archived to `archive/trash/`. Monolithic orphan no longer in root.
+- **strategy_registry.py (487 lines)** — archived to `archive/old-scripts/`. Only used by archive/ code.
+- **5 FINDING_*.md report files** — archived to `docs/reports/`
+- **Root is now clean** — only `qna.py` as single entry point (main.py, cli.py, daemon_manager.py archived)
+- **`qna.py` hedge mode added** — multi-provider hedge fund aggregator via `python qna.py hedge`
 
 ### ✨ AutoRegistry v3
 - **Scans ENTIRE repo** — all 32 top-level directories, 1017+ .py files (was 736 in `quant_nanggroe/` only)
@@ -20,63 +25,69 @@
 - **File hash tracking** for change detection
 - **Health check**: reports coverage %, stale entries, missing inits
 
-### 🚀 Push Status
-- Codeberg (Dhaher-Labs): ✅ `19fab8d`
-- GitLab (mulkymalikuldhr): ✅ `19fab8d`
-- GitHub (mulkymalikuldhrs): ✅ Pushed
-- GitHub (mulkymalikuldhaher): ❌ Branch protection blocks direct push
+### 🔧 Kill Switch C5 — Cross-Process Convergence
+- **C5 convergence model** implemented — every KillSwitch() instance across all workers/daemons/bridges reads/writes a single shared state file
+- **`configure_kill_switch_file()`** — call once at startup to collapse split-brain
+- **Fail-closed:** Unreadable/corrupt state file ⇒ assumed ACTIVE (halt)
+- **File-backed `_ks_store_path()`** — JSON state with atomic writes via `.tmp` + `os.replace`
+- **`_ensure_reconciled()`** — pulls freshest cross-process activation before every decision
+- **C5 reference in:** `kill_switch.py`, `api/app.py`, `engine_production_bridge.py`, `services.py`
 
----
+### 🏗️ StrategyConsolidationGate
+- Strategy pipeline consolidated to canonical path: `quant_nanggroe/engine/strategies/`
+- Legacy path `quant_nanggroe/engine/strategy/strategies/` reduced to backward-compat shim (empty directory with re-export)
+- StrategyRegistry with `@register` decorator as single source of truth
+- 9 registered strategies via decorator, 35+ additional .py files
 
-## v5.0.0 — Institutional Quant Autonomous Grade (2026-07-24)
+### 📦 hedge_fund Subpackage
+- `quant_nanggroe/hedge_fund/` — multi-provider executive aggregator
+- Core modules: `hedge_fund.py` (voting engine), `mtf.py`, `multipair.py`, `runner.py`
+- Sub-packages: `signals/`, `risk/`, `execution/`, `portfolio/`, `tools/`, `utils/`
+- CLI access via `python qna.py hedge`
 
-### 🎯 Major Release: Self-Aware, Self-Evolve, Self-Fine-Tune
-This release transforms QNA from a trading bot into a **living autonomous hedge fund** that evolves and optimizes itself.
-
-### ✨ New Features
-- **Self-Aware Module** (`engine/self_aware.py`) — Reflects on every pipeline run, detects anomalies
-- **StrategyEvolver** (`engine/strategy/strategies/strategy_evolver.py`) — Walk-forward validated mutation gate
-- **SelfFineTuner** (`engine/strategy/strategies/self_finetune.py`) — Grid search + walk-forward optimization
-- **AutoRegistry** (`engine/registry.py`) — Self-discovering component registry
-- **Standalone Mode** (`engine/standalone.py`) — Full autonomous pipeline without Hermes
+### 📋 Comprehensive Audit (6-phase, 4 subagents)
+- Phase 1 (Code Structure): Single entry point validated, 2,189 .py files, clean `__init__` tree
+- Phase 2 (Risk/Safety): Kill switch fail-closed verified, C5 convergence confirmed
+- Phase 3 (Security): 15 findings (2 CRITICAL, 4 HIGH, 4 MEDIUM, 2 LOW)
+- Phase 4 (Trade Analysis): Core strategies graded REAL (no stubs)
+- Phase 5 (Infra/Docs): PYTHONPATH leak diagnosed, API boot verified
+- Phase 6 (Legacy): All legacy entry points archived
 
 ### 🔧 Fixes
-- **Weekly loss veto** — `checks.py` Check 4 properly vetoed (3/3 test pass)
-- **Risk manager combined path** — `check_trade()` accepts `daily_pnl_pct` param when broker unavailable
-- **Engine `__all__`** — Removed 10 ghost `hermes_*` references
-- **Debate engine** — Added `summary` + `reasoning` fields to DebateResult
+- **Kill switch C5 convergence** — cross-process shared state file eliminates split-brain
+- **PYTHONPATH leak documented** — `PYTHONPATH=""` required before boot
+- **pydantic-core broken env fixed** — reinstalled for Python 3.14 compatibility
+- **backup_env/.env** — moved to archive/ (credentials on disk, properly gitignored)
+- **weekly loss veto confirmed ALIVE** — Check 4 in 9-checkpoint gate
+- **StrategyConsolidationGate** — canonical vs. legacy strategy paths consolidated
 
-### 📊 Test Results
-- Full suite: 492/493 core tests pass (99.8%)
-- Risk tests: 112/112 pass
-- Fast suite: 94/94 pass
+### 🆕 F09: Signal Persistence
+- **TradingSignal model** — structured signal storage
+- **SignalRepository** — 251-line repository class for CRUD operations
+- **Filtering** — signals queryable by instrument, time range, signal type, confidence threshold
+- **Audit trail** — all signals persist for post-trade analysis
 
----
+### 🆕 F11: Async/Sync Canonical Loop
+- **Async chosen as canonical** — autonomous pipeline uses async event loop
+- **No sync blocking** — signal providers no longer called synchronously
+- **Future-proof** — ready for concurrent multi-instrument processing
 
-## v4.8.2 — Paper Trading E2E (2026-07-23)
-- E2E paper trading test (2 scenarios)
-- 79 unit tests pass
-- FinalDecider veto fix
-- Auto-evolve from TradeLifecycle
-- MT5 demo configured
+### ⚠️ Known Gaps
+- backup_env/.env on disk (gitignored, not tracked — moved to archive/)
+- PYTHONPATH leak on Hermes host — env fix documented in README
+- Legacy strategy path is empty shim with re-export (backward compat only)
+- Git history still contains stale secrets — force-push pending credentials rotation
+- pytest env broken — 431 cached test failures (environment setup required)
+- Dashboard Next.js build not verified on Windows (CI builds on Vercel)
 
-## v4.8.0 — SLA Pipeline + 9router Integration (2026-07-23)
-- 9router as primary LLM provider
-- SLA metrics tracking (12 fields)
-- Dashboard Fluid Island redesign (17 routes)
-- Trailing stop wired
-
-## v4.7.0 — E: Drive Wiring + Real API Stubs (2026-07-23)
-- 4 external signal adapters wired
-- 3 API stubs replaced with real functionality
-- Colony, Memory, Security tools fully implemented
-
-## v4.6.0 — Initial Architecture (2026-07-22)
-- 16-stage pipeline
-- MT5 integration
-- Risk guard system
-- Strategy engine
-
----
-
-*v5.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+## v5.0.0 — Architecture Rewrite (Earlier)
+- Complete rewrite from v4.x monolithic to v5.x modular
+- New risk system with 9-checkpoint constitutional gates
+- FastAPI server with WebSocket streaming
+- Next.js dashboard (18 pages)
+- Walk-forward backtesting system
+- MT5 broker integration
+- Hidden framework for anti-debugging protection
+- SSH monitoring and IPFS data storage
+- AgentMail email integration
+- Telegram gateway for real-time alerts

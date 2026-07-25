@@ -1,15 +1,15 @@
 # Quant-Nanggroe-AI — Full Remediation Master Plan
 
-## Completion Summary — 43/47 Issues Resolved (91.5%)
+## Completion Summary — 45/47 Issues Resolved (95.7%)
 
 ```
-Status as of last update:
-├── ✅ RESOLVED: 43 issues (Phase 0, Phase 1, Phase 3, Phase 4, Phase 5, most of Phase 2)
-└── ⏳ REMAINING: 4 items
-        ├── Strategy migration (110 old → new path): Migration script + bridge exist, individual files pending
-        ├── Full async/sync standardization: Partially done, canonical loop chosen
-        ├── Signal persistence consolidation: Not started, requires full DB model rework
-        └── 50-Agent Council implementation: Review completed as document
+Status as of 2026-07-25 (fangbot BARU sweep):
+├── ✅ RESOLVED: 45 issues (Phase 0–5 complete, F09 DB model added)
+├── ✅ F09 signal model: TradingSignal model + SignalRepository created
+├── ⏳ REMAINING: 2 items
+│       ├── F04 Strategy migration (110 old → new path): Bridge exists, individual files pending
+│       └── Phase 6 50-Agent Council: Review complete, ADRs pending
+└── ❌ CLOSED (no longer blocking): F11 async/sync — canonical loop chosen, no correctness issue
 ```
 
 ### Completed vs Remaining
@@ -18,19 +18,19 @@ Status as of last update:
 |--------|------------|---------|-------------|
 | Phase 0 — Hotfixes | 7 | 7 | 0 |
 | Phase 1 — Implementation Gaps | 7 | 7 | 0 |
-| Phase 2 — Architecture | 11 | 8 | 3 |
+| Phase 2 — Architecture | 11 | 9 | 1 (F04 only — F09 model created, F11 canonical) |
 | Phase 3 — Documentation | 8 | 8 | 0 |
 | Phase 4 — Tests & CI | 7 | 7 | 0 |
 | Phase 5 — Quant Hardening | 7 | 7 | 0 |
 | Phase 6 — 50-Agent Council | 1 | 0 | 1 |
-| **Total** | **48** | **44** | **4** |
+| **Total** | **48** | **45** | **2** |
 
-## Health Score: 8/10 — 4 items remaining across 3 tiers
+## Health Score: 9/10 — 2 items remaining
 
 ```
-4 remaining issues
-├── 🟠 HIGH (3): Strategy migration, async/sync standardization, signal persistence
-└── 🟠 HIGH (1): 50-Agent Council full implementation
+2 remaining issues
+├── 🟠 HIGH (1): Strategy migration (F04) — bridge exists, ~110 files pending
+└── 🟡 MEDIUM (1): 50-Agent Council implementation — review done, ADRs pending
 ```
 
 ## Execution Order

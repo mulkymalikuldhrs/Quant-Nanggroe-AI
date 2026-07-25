@@ -13,8 +13,11 @@ import subprocess
 import sys
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
+
+from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters, KellyMethod
 
 # ── QNA Data Directory (relative to this file) ──
 _HF_DIR = Path(__file__).resolve().parent
@@ -6128,15 +6131,15 @@ def _timeout_call(fn, args=(), timeout=8):
 def aggregate(symbol="EURUSD"):
     """
     Multi-provider weighted voting with market context boost.
-    
-    1. Collect votes dari ALL_PROVIDERS
+
+    1. Collect votes dari ALL_PROVIDERS (parallelized via ThreadPoolExecutor)
     2. Load market context (DXY, Yield, COT, Sentiment, Calendar)
     3. Weight votes berdasarkan market regime alignment
     4. Return final decision with confidence
     """
     votes = []
     results = []
-    
+
     # ── Step 1: Load Market Context ──
     context_boost = {"buy": 1.0, "sell": 1.0}
     dxy_trend = "unknown"
@@ -6147,7 +6150,7 @@ def aggregate(symbol="EURUSD"):
         dxy_trend = dxy.get("trend", "unknown")
         dxy_price = dxy.get("price", "?")
         _ = get_currency_strength()  # side-effect: populates internal cache
-        
+
         # Bias: strong dollar = harder for EURUSD buy
         if dxy_trend == "bull":
             context_boost["buy"] *= 0.85  # Reduces buy confidence
@@ -6157,22 +6160,28 @@ def aggregate(symbol="EURUSD"):
             log.info(f"  📉 DXY bear (${dxy_price}) → sell confidence ×0.85")
     except Exception as e:
         log.debug(f"Market context unavailable: {e}")
-    
-    # ── Step 2: Collect Provider Votes ──
-    for provider in ALL_PROVIDERS:
-        try:
-            v = provider(symbol)
-            results.append(v)
-            if v["bias"] != "neutral":
-                # Apply context boost
-                v["confidence"] = v.get("confidence", 0.5) * context_boost.get(v["bias"], 1.0)
-                v["confidence"] = min(v["confidence"], 1.0)  # clamp
-                votes.append(v)
-                log.info(f"  ✅ {v['source']}: {v['bias']} (conf={v['confidence']:.2f})")
-            else:
-                log.info(f"  ➖ {v['source']}: neutral")
-        except Exception as e:
-            log.warning(f"  ❌ {provider.__name__}: {e}")
+
+    # ── Step 2: Collect Provider Votes (PARALLELIZED via ThreadPoolExecutor) ──
+    max_workers = min(20, len(ALL_PROVIDERS))
+    log.info(f"  🚀 Parallel voting: {len(ALL_PROVIDERS)} providers via {max_workers} workers")
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        fut_to_provider = {executor.submit(provider, symbol): provider for provider in ALL_PROVIDERS}
+        for future in as_completed(fut_to_provider, timeout=30):
+            provider = fut_to_provider[future]
+            try:
+                v = future.result(timeout=5)
+                results.append(v)
+                if v["bias"] != "neutral":
+                    # Apply context boost
+                    v["confidence"] = v.get("confidence", 0.5) * context_boost.get(v["bias"], 1.0)
+                    v["confidence"] = min(v["confidence"], 1.0)  # clamp
+                    votes.append(v)
+                    log.info(f"  ✅ {v['source']}: {v['bias']} (conf={v['confidence']:.2f})")
+                else:
+                    log.info(f"  ➖ {v['source']}: neutral")
+            except Exception as e:
+                log.warning(f"  ❌ {provider.__name__}: {e}")
     
     # ── Step 3: Weighted Decision ──
     if not votes:
@@ -6203,13 +6212,107 @@ def aggregate(symbol="EURUSD"):
     return {"bias":"neutral","confidence":0,"votes":votes}
 
 # ── TRAILING ──
-def trail_sl(pos, tf=mt5.TIMEFRAME_M1):
+def trail_sl(pos, tf=mt5.TIMEFRAME_M1, step_pips=10):
+    """Progressive trailing stop — moves SL toward price as it goes in-the-money.
+
+    Returns new SL price (float) or None if no update needed.
+    Unlike the old one-shot version, this ratchets SL in `step_pips`
+    increments toward the current extreme, never moving it against the trade.
+    """
+    if pos.sl is None:
+        return None
     rates = mt5.copy_rates_from_pos(pos.symbol, tf, 0, 15)
-    if rates is None or len(rates) < 10: return None
-    highs = [r[2] for r in rates[-10:]]; lows = [r[3] for r in rates[-10:]]
-    if pos.type == 0 and max(highs[-5:]) > max(highs[:5]): return pos.price_open
-    if pos.type == 1 and min(lows[-5:]) < min(lows[:5]): return pos.price_open
+    if rates is None or len(rates) < 10:
+        return None
+    highs = [r[2] for r in rates[-10:]]
+    lows = [r[3] for r in rates[-10:]]
+    pip = 0.0001
+    try:
+        sinfo = mt5.symbol_info(pos.symbol)
+        if sinfo and sinfo.trade_tick_size:
+            pip = float(sinfo.trade_tick_size)
+    except Exception:
+        pass
+    step = step_pips * pip
+    if pos.type == 0:  # BUY
+        extreme = max(highs[-5:])
+        candidate = extreme - step
+        # Only move SL up (toward price), never down
+        if candidate > pos.sl and candidate < pos.price_open:
+            return round(candidate, 5)
+    else:  # SELL
+        extreme = min(lows[-5:])
+        candidate = extreme + step
+        if candidate < pos.sl and candidate > pos.price_open:
+            return round(candidate, 5)
     return None
+
+
+# ── Kelly lot sizing (FractionalKelly wired into execution path) ──
+
+def kelly_lot_size(balance: float, symbol: str, confidence: float) -> float:
+    """Compute optimal lot size using FractionalKelly.
+
+    Uses a conservative quarter-Kelly default for the fraction when
+    trade-history parameters are unavailable (no-MT5 / paper mode).
+    """
+    try:
+        kelly = FractionalKelly(fraction=0.25)
+        params = KellyParameters(
+            win_rate=0.55,         # conservative estimate absent history
+            avg_win=0.012,         # 1.2 % avg win
+            avg_loss=0.008,        # 0.8 % avg loss → ~1.5 win/loss ratio
+            fraction=0.25,         # quarter Kelly
+            leverage_max=0.02,     # max 2 % of balance
+        )
+        # Override with MT5 trade history when available
+        if not PAPER_TRADE and MT5_AVAILABLE:
+            try:
+                from datetime import datetime as _dt
+                deals = mt5.history_deals_get(_dt(1970, 1, 1), _dt.now())
+                if deals and len(deals) > 5:
+                    wins = [d.profit for d in deals if d.profit > 0]
+                    losses = [abs(d.profit) for d in deals if d.profit < 0]
+                    if wins and losses:
+                        params.win_rate = len(wins) / len(deals)
+                        params.avg_win = sum(wins) / len(wins) / balance if balance > 0 else params.avg_win
+                        params.avg_loss = sum(losses) / len(losses) / balance if balance > 0 else params.avg_loss
+            except Exception:
+                pass  # stick with defaults
+
+        result = kelly.compute(params)
+        kelly_fraction = max(0.01, min(result.f_star, params.leverage_max))
+    except Exception as e:
+        log.warning(f"Kelly computation failed: {e}, using 0.01 fallback")
+        kelly_fraction = 0.01
+
+    # Convert kelly fraction to lot size
+    contract_size = 100000.0
+    pip_size = 0.0001
+    if not PAPER_TRADE:
+        try:
+            sinfo = mt5.symbol_info(symbol)
+            if sinfo:
+                contract_size = float(sinfo.trade_contract_size or 100000.0)
+                pip_size = float(sinfo.trade_tick_size or 0.0001)
+        except Exception:
+            pass
+
+    atr_val = calc_atr(symbol) or 0.0010
+    sl_dist = max(atr_val * 2, 0.0010)
+    sl_pips = sl_dist / pip_size if pip_size > 0 else sl_dist / 0.0001
+    dollar_per_pip_per_lot = contract_size * pip_size
+
+    risk_amount = balance * kelly_fraction
+    raw_lot = (risk_amount / (sl_pips * dollar_per_pip_per_lot)) if (sl_pips * dollar_per_pip_per_lot) > 0 else 0.01
+    conf = max(0.1, min(1.0, confidence))
+    lot = round(raw_lot * conf, 2)
+    lot = max(0.01, lot)
+    notional_cap_lot = max(0.01, round((balance * kelly_fraction * 2) / (1.0 / contract_size) if contract_size > 0 else 0.02, 2))
+    lot = min(lot, notional_cap_lot)
+    lot = max(0.01, lot)
+    return lot
+
 
 # ── Execute ──
 # PAPER_LOG already defined at module level (line 43)
@@ -6226,14 +6329,20 @@ def execute(sig, symbol="EURUSD"):
     if not PAPER_TRADE:
         t = mt5.symbol_info_tick(sym)
     
-    # Dynamic lot sizing based on balance
+    # ── FRACTIONAL KELLY lot sizing (wired via kelly_lot_size) ──
     a = mt5.account_info() if not PAPER_TRADE else None
-    bal = a.balance if a else 1000
-    lot_min = max(0.01, round(bal / 10000, 2))
-    lot_max = max(0.02, round(bal / 5000, 2))
-    lot = round(lot_min + (lot_max - lot_min) * sig.get("confidence", 0.5), 2)
-    lot = min(lot, lot_max)
-    log.info(f"   Balance=${bal:.0f} → Lot={lot} (range {lot_min}-{lot_max})")
+    if not PAPER_TRADE and a is None:
+        log.error("MT5 account_info() returned None in live mode — cannot trade")
+        return None
+    bal = a.balance if a else (1000.0 if PAPER_TRADE else 0.0)
+    lot = kelly_lot_size(
+        balance=bal,
+        symbol=sym,
+        confidence=sig.get("confidence", 0.5),
+    )
+    atr = calc_atr(sym) or 0.0010
+    sd = max(atr * 2, 0.0010)
+    log.info(f"   Balance=${bal:.0f} → Lot={lot} (Kelly-optimized, conf={sig.get('confidence', 0.5):.2f})")
     
     atr = calc_atr(sym) or 0.0010
     sd = max(atr*2, 0.0010)
@@ -6421,35 +6530,69 @@ def run_once(target_symbol=None):
             log.info(f"📊 Voting: {len(ALL_PROVIDERS)} providers")
             signal = aggregate(symbol)
             log.info(f"🏆 DECISION: {signal['bias']} (conf={signal['confidence']:.2f})")
-            
             if signal["bias"] in ("buy", "sell"):
-                # STEP 6: Risk Guard Approval
+                # STEP 6: Risk Guard Approval — FAIL-CLOSED with REAL account data
                 try:
                     from risk_guard import approve as rg_approve
-                    proposal = {
-                        "symbol": symbol,
-                        "action": signal["bias"],
-                        "volume": max(0.01, round(1000 / 10000, 2)),
-                        "price": signal.get("price", 1.0),
-                        "sl": signal.get("sl", 0),
-                        "account_balance": 1000,
-                        "daily_pnl": 0,
-                        "open_positions": 0,
-                        "market_volatility": (calc_atr(symbol) or 0.001) / 1.0,
-                    }
-                    rg_result = rg_approve(proposal)
-                    if rg_result.get("status") == "VETOED":
-                        log.warning(f"🚫 Risk Guard VETO: {rg_result.get('reasons', 'unknown')}")
-                        if not PAPER_TRADE:
-                            try:
-                                mt5.shutdown()
-                            except Exception:
-                                pass
-                        return
-                    log.info(f"✅ Risk Guard APPROVED (score={rg_result.get('score',0):.2f})")
                 except Exception as e:
-                    log.warning(f"Risk guard unavailable, proceeding: {e}")
-                
+                    # FAIL-CLOSED: if the guard cannot be imported, BLOCK the trade.
+                    log.error(f"🚫 Risk guard import FAILED — blocking trade (fail-closed): {e}")
+                    if not PAPER_TRADE:
+                        try:
+                            mt5.shutdown()
+                        except Exception:
+                            pass
+                    return
+
+                # ── Real account state (never hardcode) ──
+                acct = mt5.account_info() if (MT5_AVAILABLE and not PAPER_TRADE) else None
+                real_balance = acct.balance if acct else 1000.0
+                # Real daily P&L from deal history (same source mtf.py uses)
+                real_daily_pnl = 0.0
+                if acct and not PAPER_TRADE:
+                    try:
+                        from datetime import datetime as _dt
+                        start = _dt.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                        deals = mt5.history_deals_get(start, _dt.now())
+                        if deals:
+                            real_daily_pnl = sum(float(d.profit) + float(d.commission or 0) for d in deals)
+                    except Exception as _e:
+                        log.debug(f"daily pnl read failed: {_e}")
+                real_open = len(mt5.positions_get() or []) if (MT5_AVAILABLE and not PAPER_TRADE) else 0
+
+                proposal = {
+                    "symbol": symbol,
+                    "action": signal["bias"],
+                    "volume": max(0.01, round(real_balance / 10000, 2)),
+                    "price": signal.get("price", 1.0),
+                    "sl": signal.get("sl", 0),
+                    "account_balance": real_balance,
+                    "daily_pnl": real_daily_pnl,
+                    "open_positions": real_open,
+                    "market_volatility": (calc_atr(symbol) or 0.001) / 1.0,
+                }
+                try:
+                    rg_result = rg_approve(proposal)
+                except Exception as e:
+                    # FAIL-CLOSED: guard error ⇒ block, never proceed.
+                    log.error(f"🚫 Risk guard execution FAILED — blocking trade (fail-closed): {e}")
+                    if not PAPER_TRADE:
+                        try:
+                            mt5.shutdown()
+                        except Exception:
+                            pass
+                    return
+
+                if rg_result.get("status") == "VETOED":
+                    log.warning(f"🚫 Risk Guard VETO: {rg_result.get('reasons', 'unknown')}")
+                    if not PAPER_TRADE:
+                        try:
+                            mt5.shutdown()
+                        except Exception:
+                            pass
+                    return
+                log.info(f"✅ Risk Guard APPROVED (score={rg_result.get('risk_score', rg_result.get('score',0)):.2f})")
+
                 # STEP 7: Execute
                 execute(signal, symbol)
                 

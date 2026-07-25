@@ -1,147 +1,231 @@
 # Quant Nanggroe AI v5.1.0 — Autonomous Quantitative Hedge Fund
 
-Autonomous quantitative hedge fund platform with multi-strategy execution, constitutional risk management, and self-evolving pipelines. Runs without human intervention across forex, crypto, and equities.
+Autonomous quantitative hedge fund platform with multi-strategy execution, constitutional risk management (9-checkpoint gate), hedge fund aggregator, and self-evolving pipeline. Runs without human intervention across forex, crypto, and equities.
+
+**Single entry point:** `python qna.py [mode]` — all other entry points (main.py, cli.py, daemon_manager.py) are archived.
 
 ---
 
-## Overview
+## Quick Start
 
-Quant Nanggroe AI (QNA) is a production-grade quantitative hedge fund system. It combines institutional risk controls with AI-driven strategy evolution — strategies are automatically discovered, executed, evaluated, mutated, and promoted based on live performance. The system operates standalone or as part of the broader Dhaher Labs ecosystem.
+```bash
+# Set environment
+cp .env.example .env
+# Edit .env: set QNAI_JWT_SECRET, MT5_LOGIN, MT5_PASSWORD
+
+# Boot API (port 8000)
+PYTHONPATH="" .venv/Scripts/python -m uvicorn quant_nanggroe.api.app:app
+
+# Or via unified launcher
+python qna.py api
+
+# Test suite (requires PYTHONPATH isolation)
+PYTHONPATH="" .venv/Scripts/python -m pytest tests/ -v --tb=short
+```
+
+**⚠️ Critical:** Always run with `PYTHONPATH=""` to avoid leaking Hermes venv packages.
+
+---
+
+## CLI Modes
+
+| Mode | Command | Description |
+|------|---------|-------------|
+| CLI | `python qna.py cli` | Interactive CLI shell |
+| API | `python qna.py api` | FastAPI server (port 8000) |
+| Daemon | `python qna.py daemon` | Background lifecycle daemon |
+| Web | `python qna.py web` | Legacy Flask UI (port 5000) |
+| Hedge | `python qna.py hedge` | Hedge Fund aggregator (multi-provider voting) |
+| Status | `python qna.py status` | System health & status |
+| Stop | `python qna.py stop` | Stop running daemon |
 
 ---
 
 ## Architecture
 
 ```
-qna.py (entry point)
-├── engine/                  Core pipeline orchestration
-│   ├── agentic/             Autonomous trading pipeline
-│   ├── risk/                9-checkpoint constitutional risk gate
-│   ├── strategies/          Active strategies + evolver + fine-tuner
-│   ├── backtest/            Walk-forward, Monte Carlo, CPCV
-│   ├── execution/           TWAP/VWAP order slicing
-│   ├── factors/             Alpha factor library
-│   ├── self_aware.py        Self-reflection on every run
-│   ├── correction.py        Error recording and resolution
-│   ├── registry.py          Auto-discovery component registry
-│   └── standalone.py        Zero-dependency entry point
-├── agents/                  7 AI agent personas
-├── api/                     179 FastAPI endpoints
-├── exchange/                6 broker integrations (MT5, CCXT, etc.)
-├── dashboard/               React monitoring UI
-└── tests/                   135+ test files (51 new in v5.1.0)
+quant_nanggroe/                          (753 .py files, 125K+ lines)
+├── api/                                 → FastAPI server (181 endpoints)
+├── engine/                              → Core trading engine (19 modules)
+│   ├── strategies/                      → CANONICAL — 9 registered strategies (@register decorator)
+│   │   └── registry.py                  → StrategyRegistry auto-discovery
+│   ├── strategy/strategies/             → LEGACY BRIDGE — backward-compat shim only (empty, routes via __init__)
+│   ├── risk/                            → Constitutional risk: 9-checkpoint gate, KillSwitch, drawdown monitor
+│   │   ├── kill_switch.py               → KillSwitch with C5 cross-process shared state
+│   │   ├── checks.py                    → ConstitutionalRiskGuard (= RiskCheckGate alias)
+│   │   └── manager.py                   → RiskManager orchestration
+│   ├── backtest/                        → Walk-forward, Monte Carlo, multi-market backtest
+│   ├── execution/                       → Order routing, Builder, RiskManager, Almgren-Chriss
+│   ├── agentic/                         → Autonomous agent lifecycle (LangGraph orchestration)
+│   ├── portfolio/                       → Portfolio construction, Kelly sizing, risk parity
+│   └── models/                          → ML models and inference
+├── hedge_fund/                          → Executive-level multi-provider aggregator
+│   ├── hedge_fund.py                    → Hedge fund voting engine (331K+ lines)
+│   ├── mtf.py                           → Multi-timeframe analysis
+│   ├── multipair.py                     → Multi-pair scanner
+│   ├── runner.py                        → Hedge fund runner
+│   ├── signals/                         → Signal generation
+│   ├── risk/                            → Hedge fund risk management
+│   ├── execution/                       → Hedge fund execution
+│   ├── portfolio/                       → Hedge fund portfolio
+│   └── tools/                           → Utility tools
+├── signals/                             → TradingSignal model + SignalRepository
+├── security/                            → Auth (JWT, API key), credential manager
+├── agents/                              → 9 specialized agent modules
+│   ├── researcher/                      → Market research (ResearcherAgent)
+│   ├── trader/                          → Trade execution (TraderAgent)
+│   ├── strategist/                      → Strategy generation (StrategistAgent)
+│   ├── risk/                            → Risk monitoring agent
+│   ├── coder.py                         → Coding agent
+│   ├── browser.py                       → Browser agent
+│   ├── executor.py                      → Execution agent
+│   ├── graph.py                         → Agent graph orchestration
+│   ├── colony.py                        → Agent colony management
+│   ├── planner.py                       → Planning agent
+│   ├── manus.py                         → Manus agent
+│   ├── debate_engine.py                 → Multi-agent debate engine
+│   ├── chinese_wall.py                  → Information barrier agent
+│   └── ...                              + subdirectories (compliance, council, crypto, debate, execution, forex, macro, personas, portfolio)
+├── dashboard/                           → Next.js 18-page UI (agents, backtest, risk, portfolio, etc.)
+├── tests/                               → 167 test files (env setup required)
+└── archive/                             → Clean archive of legacy/duplicate code
 ```
 
-### Key Components
+### Strategy Pipeline
 
-- **Autonomous Pipeline** — End-to-end trading loop: data → signal → risk check → execution → PnL tracking → self-evaluation → evolution
-- **Risk Engine** — 9-checkpoint constitutional gate with daily/weekly loss vetoes, kill switch, position sizing limits, and TWAP/VWAP smart execution
-- **Strategy Pipeline** — 152 auto-discovered strategies with walk-forward validated mutation, grid search fine-tuning, and accept/reject promotion gates
-- **Correction Module** — Records errors, resolves them, and prevents recurrence through lesson-based learning
-- **Self-Correct System** — Self-awareness reflection on every pipeline run, anomaly detection, and automated recovery
-- **Correlation Monitoring** — Real-time cross-asset correlation tracking to manage portfolio heat and concentration risk
-- **Alpha Decay Detection** — Continuous monitoring of strategy performance degradation with automatic evolution triggers
-- **CI/CD Pipeline** — CircleCI automation with linting, type checking, security scanning, and multi-suite test execution
+The canonical strategy pipeline lives in `quant_nanggroe/engine/strategies/` with **9 registered strategies** via `@StrategyRegistry.register` decorator:
+
+| Strategy | File | Description |
+|----------|------|-------------|
+| SMC | `smc_strategy.py` | Smart Money Concepts — OB, FVG, liquidity sweep, BOS/CHOCH |
+| Wyckoff | — | Spring/upthrust, volume ratio, SoS/SoW |
+| MSNR | `msnr.py` | Multi-timeframe confluence |
+| MeanRev | `mean_reversion.py` | OU process, half-life, Bollinger, z-score |
+| ADX | `adx_strategy.py` | Trend strength |
+| Aroon | `aroon_strategy.py` | Trend change detection |
+| Bollinger Squeeze | `bollinger_squeeze.py` | Volatility breakout |
+| CCI | `cci_strategy.py` | Commodity Channel Index |
+| Choppiness Index | `choppiness_index.py` | Trend vs. ranging market |
+| +32 more .py files (signal adapters, wrappers, legacy bridges) | | |
+
+**Total: 9 registered strategies + 35+ additional .py files** including signal adapters, wrappers, and experimental modules.
+
+**Legacy path** `quant_nanggroe/engine/strategy/strategies/` is a backward-compat shim only (empty directory with re-export `__init__.py`).
+
+### Kill Switch C5 — Cross-Process Shared State
+
+The kill switch implements a **C5 convergence model** where every KillSwitch() instance — across any worker, daemon, or production bridge — reads/writes a single shared state file (`QNA_KILL_SWITCH_STATE_FILE` env var). This collapses split-brain scenarios where per-process in-memory kill switches disagree.
+
+- **Three activation levels:** NONE (✓ trade) → MONITOR (log only) → ACTIVE (VETO all)
+- **Path-A:** In-memory state via `_auto_check_kill_switch()`
+- **Path-B:** Real MT5 PnL via `history_deals_get()` → `_sync_realized_pnl()`
+- **C5 convergence:** File-backed state prevents split-brain across uvicorn workers
+- **Fail-closed:** Unreadable/corrupt state file ⇒ assumed ACTIVE (halt)
+- **Triggers:** daily, weekly, volatility, drawdown auto-activation
 
 ---
 
 ## Key Features
 
-- **Multi-Strategy Execution** — 152 strategies across SMC/ICT, Wyckoff, Mean Reversion, Momentum, and statistical arbitrage
-- **Institutional Risk Management** — 9-checkpoint constitutional gate, daily 2% / weekly 3% loss limits, fail-closed kill switch
-- **MT5 & Broker Integration** — Live MT5 bridge via MetaTrader5 terminal, CCXT for crypto exchanges, paper trading mode
-- **Async Pipeline** — Fully asynchronous event-driven architecture with LangGraph orchestration
-- **Self-Evolution** — Strategies continuously mutate, backtest, and improve via walk-forward validated evolution
-- **Standalone Mode** — Full autonomous operation without Hermes or external AI orchestrators
-- **7 Agent Personas** — Autobot, Clawbot, Devbot, Fangbot, Hackerbot, Traderbot, Researchbot — each with specialized roles
-- **50-Agent Council** — Multi-model debate engine for strategic trading decisions
+### Constitutional Risk Management (HARDCODED — no override)
+
+| Limit | Value | Enforcement |
+|-------|-------|-------------|
+| Per trade risk | 0.5% | Position sizing (Kelly + VaR) |
+| Daily loss | 1.0% | 9-checkpoint gate (Check 3) |
+| Weekly loss | 3.0% | 9-checkpoint gate (Check 4) |
+| Max drawdown | 15% | KillSwitch auto-activation |
+| Min risk:reward | 1:2 | Trade proposal rejection |
+| Max leverage | 3x | Margin monitor |
+| Max trades/day | 5 | Rate limiter |
+
+### Hedge Fund Aggregator
+
+The `hedge_fund/` subpackage provides executive-level multi-provider signal aggregation with voting, allowing strategies from multiple sources to converge on a unified trading decision.
+
+### Dashboard (Next.js 18 Pages)
+
+- Real-time WebSocket streaming via `@/lib/websocket`
+- API client with retry (3 attempts), backoff, dedup
+- 18 route pages: trading, risk, portfolio, backtest, agents, brokers, strategies, etc.
+- Next.js API proxy rewrite for same-origin requests
+- Glassmorphism design system (Apple macOS Liquid Glass × Bloomberg Terminal)
 
 ---
 
-## Quick Start
+## Current Gaps & Known Issues
 
-### Install
+| Gap | Severity | Status |
+|-----|----------|--------|
+| PYTHONPATH leak on boot (Hermes venv contamination) | HIGH | Mitigated (env fix documented) |
+| backup_env/.env on disk (not git-tracked) | MEDIUM | Archived |
+| 2 strategy hierarchies (canonical + legacy shim) | MEDIUM | Legacy empty, bridge in place |
+| Test suite requires environment setup (pytest env broken) | HIGH | 431 cached failures, env config needed |
+| No cron-to-live-trade wiring on this host | LOW | Requires MT5 + VPS |
+| Dashboard Next.js build not verified on Windows | LOW | Vercel builds in CI |
+| Option/volatility strategies not live-tested | LOW | Walk-forward validates directional only |
 
-```bash
-git clone https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI
-cd Quant-Nanggroe-AI
-uv sync
+---
+
+## Project Status
+
+| Domain | Status |
+|--------|--------|
+| Architecture Health | 9/10 — Clean single entry point |
+| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate |
+| Strategies | 9 registered via StrategyRegistry + legacy bridge |
+| Hedge Fund | Multi-provider aggregator (hedge_fund/ subpackage) |
+| Documentation | 50+ docs files |
+| Test Suite | 167 test files (env setup required before running) |
+| Security | Secrets via env vars, secrets rotation pending |
+| Issues Resolved | 45/47 (95.7%) |
+
+---
+
+## Ecosystem
+
+```
+Dhaher Labs Ecosystem
+├── Quant-Nanggroe-AI    🟢 v5.1.0    ← YOU ARE HERE
+├── Autonomous-Organism  🟢 v5.4.1    Live on Vercel
+├── BlackHornet          🟢            110+ agents, Codeberg sync
+├── Seulanga-RAG         🟢            Merged GitLab
+├── BioWallet            🟢            Synced Codeberg
+├── JeumpaLLM            🟢            Merged 2+9 commits
+├── HeadlessX            🟢 v2.1.2    1,989 stars
+└── GStack               🟢            122,860 stars, 23 AI tools
 ```
 
-### Configure
+---
 
-```bash
-cp .env.example .env
-# Required: MT5_LOGIN, MT5_PASSWORD, MT5_SERVER, QNA_ADMIN_API_KEY
-```
+## Stack
 
-### Run
-
-```bash
-# Standalone mode (no external dependencies)
-uv run python -m quant_nanggroe.standalone --once --symbols EURUSD
-
-# Full autonomous pipeline
-uv run python qna.py status
-uv run python qna.py api
-
-# Run tests
-uv run python -m pytest tests/ -v --tb=short
-```
+| Layer | Technology |
+|-------|-----------|
+| Language | Python 3.11+ |
+| Package Manager | `uv` (not pip, not poetry) |
+| API Server | FastAPI (181 endpoints) |
+| Legacy UI | Flask |
+| Dashboard | Next.js 16 + React 19 + Recharts + Zustand |
+| Broker | MetaTrader5 (via set_broker_handle()) |
+| Crypto | CCXT |
+| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager |
+| Testing | pytest |
+| Credentials | MT5_LOGIN / MT5_PASSWORD env vars (NOT hardcoded) |
 
 ---
 
-## Documentation
+## Deployment
 
-Full documentation is in `docs/` (50 documents covering all aspects of the system):
-
-| Document | Description |
-|----------|-------------|
-| `docs/00_VISION.md` | Project vision and objectives |
-| `docs/01_PRD.md` | Product requirements |
-| `docs/02_ARCHITECTURE.md` | Technical architecture |
-| `docs/04_API.md` | API reference (179 endpoints) |
-| `docs/07_SECURITY.md` | Security architecture and threat model |
-| `docs/09_TESTING.md` | Testing guide and suite results |
-| `docs/10_ROADMAP.md` | Development roadmap |
-| `docs/19_RISK_REGISTER.md` | Risk management and register |
-| `docs/35_CI_CD.md` | CI/CD pipeline configuration |
-| `docs/50_AGENT_COUNCIL.md` | Multi-agent council protocol |
-
-See `docs/` for the complete set.
+- **Canonical source:** `D:\repositories\Quant-Nanggroe-AI-worktree\`
+- **Deployment copy:** `E:\trading\quant_nanggroe\`
+- **Credentials:** MT5_LOGIN, MT5_PASSWORD env vars (not hardcoded)
+- **Kill switch state:** Shared file at `QNA_KILL_SWITCH_STATE_FILE` (or `data/kill_switch_state.json`)
 
 ---
 
-## Current Status
+## License & Credits
 
-| Metric | Value |
-|--------|-------|
-| Version | 5.1.0 |
-| Architecture Health | 8/10 (was 5/10) |
-| Test Files | 135+ (51 new in v5.1.0) |
-| Issues Resolved | 45 of 47 |
-| Python | 3.14+ |
-| Strategies | 152 auto-discovered |
-| Broker Integrations | 6 |
-| API Endpoints | 179 |
+Built by Dhaher Labs. Architecture inspired by institutional quant funds, SMC/ICT methodology, and constitutional AI risk management.
 
-### Recent Improvements (v5.1.0)
-
-- **Correction module** — Systematic error recording and resolution with lesson-based prevention
-- **Self-correct system** — Self-awareness reflection, anomaly detection, and automated recovery
-- **Correlation monitoring** — Real-time cross-asset correlation tracking
-- **Alpha decay detection** — Continuous performance degradation monitoring
-- **CI/CD pipeline** — CircleCI automation with linting, type-checking, security scanning
-- **51 new tests** — Expanded coverage across risk, execution, and strategy modules
-- **45/47 issues resolved** — Security vulnerabilities, architectural debt, and test gaps closed
-- **Architecture health improved** — 5/10 to 8/10 through systematic audit and remediation
-
----
-
-## License
-
-MIT — Dhaher Labs. See [LICENSE](LICENSE).
-
----
-
-v5.1.0 — Built with fury from Aceh, Indonesia
+*"Wakafa billahi syahidan" — Gas dengan penuh amarah dan presisi.*

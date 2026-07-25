@@ -200,6 +200,48 @@ class APILog(Base):
     response_data = Column(JSON, default=dict)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+
+class TradingSignal(Base):
+    """Unified trading signal persistence — single source of truth.
+    
+    Replaces fragmented JSON stores (strategy_signals.json, lifecycle_history.json).
+    Each record captures one decision point: strategy → signal → confidence → outcome.
+    """
+    __tablename__ = 'trading_signals'
+    
+    id = Column(Integer, primary_key=True)
+    signal_id = Column(String(64), unique=True, nullable=False, index=True)
+    symbol = Column(String(32), nullable=False, index=True)
+    strategy_name = Column(String(128), nullable=False, index=True)
+    signal_type = Column(String(16), nullable=False)  # buy / sell / hold / close_long / close_short / exit_all
+    confidence = Column(Float, nullable=False, default=0.0)
+    price = Column(Float, nullable=False, default=0.0)
+    reason = Column(Text, nullable=True)
+    
+    # Outcome tracking (filled after trade evaluation)
+    exit_price = Column(Float, nullable=True)
+    pnl_pct = Column(Float, nullable=True)
+    is_win = Column(Integer, nullable=True)  # 0=loss, 1=win, NULL=pending
+    duration_seconds = Column(Integer, nullable=True)
+    
+    # Metadata
+    provider = Column(String(64), nullable=True)       # gene_loader / llm / rule / hybrid
+    lifecycle_id = Column(String(64), nullable=True)   # link to TradeLifecycleRecord
+    regime = Column(String(32), nullable=True)         # market regime at signal time
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    evaluated_at = Column(DateTime, nullable=True)
+    
+    # ── helpers ───────────────────────────────────────────────────
+    @property
+    def is_pending(self) -> bool:
+        return self.is_win is None
+    
+    @property
+    def direction_label(self) -> str:
+        return self.signal_type.upper()
+
 # Database configuration
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/agentic.db')
 

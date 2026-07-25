@@ -24,6 +24,8 @@ except ImportError:
             return f
         return decorator
 
+from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters, KellyMethod
+
 
 logger = logging.getLogger(__name__)
 
@@ -362,4 +364,79 @@ def get_fills(order_id: Optional[str] = None) -> str:
     )
 
 
-EXECUTION_TOOLS = [submit_order, cancel_order, get_fills]
+@tool
+def kelly_lot_size(
+    symbol: str,
+    balance: float,
+    confidence: float = 0.5,
+    win_rate: Optional[float] = None,
+    avg_win: Optional[float] = None,
+    avg_loss: Optional[float] = None,
+) -> str:
+    """Compute optimal position size using FractionalKelly.
+
+    Uses conservative quarter-Kelly defaults when trade-history
+    parameters are not provided. The returned lot/quantity respects
+    the FractionalKelly f_star capped at 2% of balance.
+
+    Args:
+        symbol: Trading symbol (e.g. EURUSD, BTCUSD)
+        balance: Current account balance in USD
+        confidence: Signal confidence 0-1 (default 0.5)
+        win_rate: Optional win rate from trade history
+        avg_win: Optional average win amount as fraction of balance
+        avg_loss: Optional average loss amount as fraction of balance
+
+    Returns:
+        JSON string with lot_size and kelly_fraction
+    """
+    try:
+        kelly = FractionalKelly(fraction=0.25)
+        params = KellyParameters(
+            win_rate=win_rate or 0.55,
+            avg_win=avg_win or 0.012,
+            avg_loss=avg_loss or 0.008,
+            fraction=0.25,
+            leverage_max=0.02,
+        )
+        result = kelly.compute(params)
+        kelly_fraction = max(0.01, min(result.f_star, params.leverage_max))
+    except Exception as exc:
+        logger.warning("FractionalKelly computation failed: %s", exc)
+        kelly_fraction = 0.01
+
+    # Convert to lot size using standard FX conventions
+    contract_size = 100000.0
+    pip_size = 0.0001
+    atr_val = 0.0010  # default ATR
+    try:
+        from quant_nanggroe.hedge_fund.hedge_fund import calc_atr
+        raw_atr = calc_atr(symbol)
+        if raw_atr:
+            atr_val = raw_atr
+    except Exception:
+        pass
+    sl_dist = max(atr_val * 2, 0.0010)
+    sl_pips = sl_dist / pip_size if pip_size > 0 else sl_dist / 0.0001
+    dollar_per_pip_per_lot = contract_size * pip_size
+
+    risk_amount = balance * kelly_fraction
+    raw_lot = (risk_amount / (sl_pips * dollar_per_pip_per_lot)) if (sl_pips * dollar_per_pip_per_lot) > 0 else 0.01
+    conf = max(0.1, min(1.0, confidence))
+    lot = round(raw_lot * conf, 2)
+    lot = max(0.01, lot)
+    notional_cap_lot = max(0.01, round((balance * kelly_fraction * 2) / (1.0 / contract_size) if contract_size > 0 else 0.02, 2))
+    lot = min(lot, notional_cap_lot)
+    lot = max(0.01, lot)
+
+    return json.dumps({
+        "symbol": symbol.upper(),
+        "lot_size": lot,
+        "kelly_fraction": round(kelly_fraction, 4),
+        "f_star": round(kelly_fraction, 4),
+        "risk_amount": round(risk_amount, 2),
+        "_source": "FractionalKelly",
+    }, indent=2, default=str)
+
+
+EXECUTION_TOOLS = [submit_order, cancel_order, get_fills, kelly_lot_size]

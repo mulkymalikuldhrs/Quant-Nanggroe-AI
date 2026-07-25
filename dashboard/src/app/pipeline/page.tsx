@@ -188,12 +188,10 @@ export default function PipelinePage() {
     const [expanded, setExpanded] = useState(false);
     const Icon = component.icon;
     const isOperational = component.status === "operational";
-    const statusColor = isOperational ? "text-emerald-400" : component.status === "degraded" ? "text-amber-400" : "text-gray-500";
+    const statusColor = isOperational ? "text-emerald-400" : "text-gray-500";
     const statusBg = isOperational
       ? "bg-emerald-500/10 border-emerald-500/20"
-      : component.status === "degraded"
-        ? "bg-amber-500/10 border-amber-500/20"
-        : "bg-gray-500/10 border-gray-500/20";
+      : "bg-gray-500/10 border-gray-500/20";
 
     return (
       <div className={`group rounded-xl border ${statusBg} backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/[0.04]`}>
@@ -338,7 +336,7 @@ export default function PipelinePage() {
         {[
           { label: "Total Stages", value: components.length, icon: GitBranch, color: "text-blue-400" },
           { label: "Operational", value: components.filter((c: PipelineComponent) => c.status === "operational").length, icon: CheckCircle2, color: "text-emerald-400" },
-          { label: "Degraded", value: components.filter((c: PipelineComponent) => c.status === "degraded").length, icon: AlertTriangle, color: "text-amber-400" },
+          { label: "Degraded", value: components.filter((c) => (c.status as string) === "degraded").length, icon: AlertTriangle, color: "text-amber-400" },
           { label: "Health", value: `${Math.round((components.filter((c: PipelineComponent) => c.status === "operational").length / components.length) * 100)}%`, icon: Activity, color: "text-violet-400" },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm hover:border-white/10 transition-colors duration-200">

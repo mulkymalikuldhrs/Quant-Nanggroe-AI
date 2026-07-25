@@ -430,7 +430,7 @@ class ProviderHealth:
         """Provider is available when not on cooldown."""
         if self.cooldown_until is None:
             return True
-        return datetime.now(timezone.utc) > self.cooldown_until
+        return datetime.now() > self.cooldown_until
 
 
 class AutoSwitchEngine(AutoSwitcher):
@@ -439,6 +439,7 @@ class AutoSwitchEngine(AutoSwitcher):
     def __init__(self, config: Optional[AutoSwitchConfig] = None, regime_detector: Optional[MarketRegimeDetector] = None):
         super().__init__(config, regime_detector)
         self.providers: Dict[str, ProviderHealth] = {}
+        self.request_log: List[Dict[str, Any]] = []
 
     def register_provider(self, name: str) -> ProviderHealth:
         """Register a provider for health tracking."""
@@ -446,16 +447,33 @@ class AutoSwitchEngine(AutoSwitcher):
             self.providers[name] = ProviderHealth(name=name)
         return self.providers[name]
 
-    def record_failure(self, name: str, error: str = "") -> None:
+    def record_failure(self, name: str, error: str = "", **kwargs) -> None:
         """Record a provider failure and optionally set cooldown."""
         if name not in self.providers:
             self.register_provider(name)
         ph = self.providers[name]
         ph.failure_count += 1
         ph._last_error = error
-        # Set cooldown: exponential backoff based on consecutive failures
-        cooldown_minutes = min(2 ** (ph.failure_count - 1), 60)
-        ph.cooldown_until = datetime.now(timezone.utc) + timedelta(minutes=cooldown_minutes)
+
+        # Log to request_log
+        self.request_log.append({
+            "status": "failure",
+            "provider": name,
+            "error": error,
+        })
+
+        # Trim request_log if > 1000
+        if len(self.request_log) > 1000:
+            self.request_log = self.request_log[-500:]
+
+        # Immediate cooldown for rate limit (429) regardless of count
+        if kwargs.get("status_code") == 429:
+            ph.cooldown_until = datetime.now() + timedelta(minutes=5)
+
+        # Set cooldown only after more than 5 failures (exponential backoff)
+        elif ph.failure_count > 5:
+            cooldown_minutes = min(2 ** (ph.failure_count - 5), 60)
+            ph.cooldown_until = datetime.now() + timedelta(minutes=cooldown_minutes)
 
     def record_success(self, name: str, latency_ms: float = 0.0) -> None:
         """Record a successful provider call."""
@@ -463,13 +481,20 @@ class AutoSwitchEngine(AutoSwitcher):
             self.register_provider(name)
         ph = self.providers[name]
         ph.success_count += 1
-        # Exponential moving average for latency
+        # Simple running average for latency
         if ph.avg_latency_ms == 0:
             ph.avg_latency_ms = latency_ms
         else:
-            ph.avg_latency_ms = 0.9 * ph.avg_latency_ms + 0.1 * latency_ms
+            ph.avg_latency_ms = (ph.avg_latency_ms + latency_ms) / 2.0
         # Clear cooldown on success
         ph.cooldown_until = None
+
+        # Log to request_log
+        self.request_log.append({
+            "status": "success",
+            "provider": name,
+            "latency_ms": latency_ms,
+        })
 
     def get_provider_order(self) -> List[str]:
         """Return provider names sorted by health score (best first).
@@ -477,3 +502,13 @@ class AutoSwitchEngine(AutoSwitcher):
         """
         available = {n: p for n, p in self.providers.items() if p.is_available}
         return sorted(available.keys(), key=lambda n: available[n].score, reverse=True)
+
+    def get_status(self) -> Dict[str, Any]:
+        """Return a complete status report."""
+        errors = [e for e in self.request_log if e["status"] == "failure"][-10:]
+        return {
+            "providers": self.providers,
+            "provider_order": self.get_provider_order(),
+            "total_requests": len(self.request_log),
+            "recent_errors": errors,
+        }

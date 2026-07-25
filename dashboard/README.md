@@ -160,9 +160,7 @@ npm start
 Requires the Quant Nanggroe Python backend running on port 8000:
 
 ```bash
-python main.py
-# OR
-python qna.py api start
+python qna.py api
 ```
 
 ---

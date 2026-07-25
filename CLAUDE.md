@@ -1,18 +1,26 @@
-# Claude-Specific Instructions — Quant Nanggroe AI
+# Claude-Specific Instructions — Quant Nanggroe AI v5.2.0
 
-## Tools Available
-- Repository audit (`48_REPOSITORY_AUDIT.md`).
-- Architecture docs (`02_ARCHITECTURE.md`).
-- API reference (`04_API.md`).
-- Task tracking (`12_TASKS.md`).
+## Entry Point
+- **Single**: `qna.py` — modes: `cli|api|daemon|web|status|stop`
+- All legacy launchers archived to `archive/launchers/`
 
 ## Key Files
-- `main.py` — Entry point (asyncio-based agent system).
-- `cli.py` — CLI interface (Click commands).
-- `daemon_manager.py` — Agent lifecycle manager.
-- `pyproject.toml` — Dependencies and configuration.
+- `qna.py` — Single entry point (unified launcher).
+- `quant_nanggroe/engine/standalone.py` — Zero-dependency autonomous runner.
+- `quant_nanggroe/cli.py` — CLI interface.
+- `quant_nanggroe/api/app.py` — FastAPI factory (179 endpoints).
+- `quant_nanggroe/engine/agentic/autonomous.py` — Autonomous pipeline orchestration.
+- `quant_nanggroe/engine/risk/` — 9-checkpoint constitutional risk gate.
+- `pyproject.toml` — Dependencies with `uv`.
+
+## Tools Available
+- `docs/` — 58 documents (00-49).
+- `archive/` — Legacy files, launchers, reports.
+- `dashboard/` — Next.js monitoring UI (needs `npm run build`).
 
 ## Response Style
+- Always check root-level docs first: README → AGENTS → ARCHITECTURE → CHANGELOG → TODO.
 - Start with project state detection per AI-Engineering-OS.
-- Reference specific docs by their number prefix.
+- Reference specific docs by their number prefix in `docs/`.
 - Flag uncertainties explicitly.
+- Never create new root-level entry points. `qna.py` is THE entry point.

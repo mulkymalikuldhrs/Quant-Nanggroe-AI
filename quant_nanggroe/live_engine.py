@@ -28,6 +28,7 @@ from quant_nanggroe.strategies.trend_follow import TrendFollow
 from quant_nanggroe.providers.data_manager import DataManager
 from quant_nanggroe.notifier import send_telegram, format_heartbeat, format_error_message
 from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline, LiveSignal
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, configure_kill_switch_file
 
 logging.basicConfig(
     level=logging.INFO,
@@ -492,6 +493,11 @@ class LiveEngine:
         }
         self._load_state()
         self._init_auto_aware()
+        # ── KillSwitch (cross-process fail-closed) ──
+        configure_kill_switch_file()
+        self._kill_switch = KillSwitch()
+        log.info(f"KillSwitch initialized (active={self._kill_switch.is_active})")
+
         self.production = create_production_engine(
             price_provider=self.price_provider,
             risk_manager=self.risk,
@@ -584,6 +590,9 @@ class LiveEngine:
         }
 
     def _can_open_new_position(self, symbol: str) -> tuple[bool, str]:
+        # KillSwitch gate: fail-closed if kill switch is active
+        if self._kill_switch.is_active:
+            return False, "KillSwitch active — no new positions"
         if not self.trading_enabled:
             return False, "QNA_TRADING_ENABLED is not true"
         if self._get_open_position(symbol):
@@ -831,6 +840,11 @@ class LiveEngine:
                 log.debug(f"{name} {symbol}: {e}")
 
     def execute_cycle(self):
+        # ── KillSwitch gate (cross-process fail-closed) ──
+        if self._kill_switch.is_active:
+            log.critical("KillSwitch ACTIVE — halting all trading in execute_cycle")
+            return
+
         # Production bridge: risk check
         balance = self.risk.get_balance()
         pos_count = self.risk.get_open_position_count()

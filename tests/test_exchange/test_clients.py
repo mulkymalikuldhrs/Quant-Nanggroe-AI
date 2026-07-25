@@ -34,8 +34,8 @@ class TestRestClientConfig:
     def test_custom(self):
         config = RestClientConfig(
             exchange_id="binance",
-            api_key="<placeholder>",
-            api_secret="<placeholder>",
+            api_key="test_key",
+            api_secret="test_secret",
             base_url="https://api.binance.com",
             rate_limit=20,
         )

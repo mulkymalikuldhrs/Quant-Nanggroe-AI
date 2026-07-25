@@ -8,14 +8,16 @@
 ║     qna api      → FastAPI server (port 8000)                      ║
 ║     qna daemon   → Background daemon with agent lifecycle          ║
 ║     qna web      → Legacy Flask web UI (port 5000)                 ║
+║     qna hedge    → Hedge Fund aggregator (multi-provider voting)   ║
 ║     qna status   → System health & status                          ║
 ║                                                                    ║
 ║   Built by Dhaher Labs — Quant Nanggroe Hedge Fund                 ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
    This is the SINGLE source of truth for all entry points.
-   main.py, cli.py, and daemon_manager.py are thin wrappers that
-   delegate to this module.
+   All other entry points (main.py, cli.py, daemon_manager.py,
+   qna_prod.py, standalone.py, worker.py) have been archived.
+   Use `qna.py <mode>` for everything.
 """
 
 from __future__ import annotations
@@ -35,8 +37,14 @@ from typing import Any, Dict, Optional
 PROJECT_ROOT = Path(__file__).parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# ── Version — canonical source: quant_nanggroe/__init__.py ──────────
-__version__ = "5.1.0"
+# ── Environment sanitize (strip Hermes venv leak) ──────────────
+import os
+_hermes_paths = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" in p.lower()]
+if _hermes_paths:
+    clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
+    os.environ["PYTHONPATH"] = ";".join(clean)
+    sys.path = [p for p in sys.path if "hermes" not in p.lower()]
+__version__ = "5.2.0"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────
@@ -460,6 +468,8 @@ def run_status(args: argparse.Namespace) -> int:
     print("    python qna.py daemon      Background daemon")
     print("    python qna.py web         Legacy web UI")
     print("    python qna.py status      This status check")
+    print("    python qna.py hedge       Hedge Fund aggregator (multi-provider voting)")
+    print("    python qna.py hedge --paper EURUSD  Paper trade EURUSD")
     print("    python qna.py stop        Stop running daemon")
 
     return 0
@@ -480,6 +490,65 @@ def _import_quant_nanggroe() -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════════
+#  MODE: Hedge Fund Aggregator
+# ══════════════════════════════════════════════════════════════════════
+
+def run_hedge(args: argparse.Namespace) -> int:
+    """Run the multi-provider hedge fund aggregator."""
+    print(BANNER)
+    symbols = args.symbols or ["EURUSD"]
+    print(f"🛡️  Hedge Fund Aggregator — symbols: {', '.join(symbols)}")
+    if args.paper:
+        print("   Paper trading mode ON")
+        import os
+        os.environ["PAPER_TRADE"] = "true"
+    print()
+
+    try:
+        from quant_nanggroe.hedge_fund import run_once
+
+        results = []
+        for sym in symbols:
+            print(f"  {'='*58}")
+            print(f"  HF RUN: {sym}")
+            print(f"  {'='*58}")
+            result = run_once(sym)
+            results.append((sym, result))
+            if result:
+                verdict = "EXECUTED" if result.get("executed") else "SKIPPED"
+                print(f"  → {verdict}: {json.dumps(result, default=str, indent=4)}")
+            else:
+                print(f"  → FAILED: no result returned")
+            print()
+
+        print(f"  {'='*58}")
+        print(f"  DONE — {len(results)} symbols processed")
+        for sym, res in results:
+            status = "✅" if res and res.get("executed") else "⏭️"
+            print(f"  {status} {sym}: verdict={res.get('verdict','?') if res else 'NONE'}")
+        return 0
+
+    except ImportError as e:
+        logger.error("Hedge Fund module not available: %s", e)
+        logger.error("  Ensure quant_nanggroe.hedge_fund is in your PYTHONPATH")
+        return 1
+    except Exception as e:
+        logger.error("Hedge Fund error: %s", e)
+        return 1
+# ══════════════════════════════════════════════════════════════════════
+
+def _auto_open_browser(url: str) -> None:
+    """Open browser to URL if QNA_AUTO_OPEN is set (or default True)."""
+    if os.environ.get("QNA_AUTO_OPEN", "1").lower() in ("1", "true", "yes"):
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            logger.info("Auto-opened browser: %s", url)
+        except Exception as e:
+            logger.debug("Auto-open browser failed: %s", e)
+
+
+# ══════════════════════════════════════════════════════════════════════
 #  CLI ARGUMENT PARSER
 # ══════════════════════════════════════════════════════════════════════
 
@@ -489,21 +558,21 @@ def build_parser() -> argparse.ArgumentParser:
         prog="qna",
         description="Quant Nanggroe AI — Unified Launcher",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
+        epilog="""Examples:
   python qna.py cli              Interactive CLI shell
   python qna.py api              Start API server on port 8000
   python qna.py api --port 8080  Custom port
   python qna.py daemon           Background daemon mode
   python qna.py web              Legacy web UI on port 5000
   python qna.py status           System health check
+  python qna.py cli --no-browser     Disable auto-open browser
         """,
     )
 
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["cli", "api", "daemon", "web", "status", "stop"],
+        choices=["cli", "api", "daemon", "web", "status", "stop", "hedge"],
         default="cli",
         help="Launch mode (default: cli)",
     )
@@ -523,6 +592,23 @@ Examples:
         "--reload",
         action="store_true",
         help="Enable hot-reload (api mode only)",
+    )
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Disable auto-open browser on start",
+    )
+    parser.add_argument(
+        "--paper",
+        action="store_true",
+        default=False,
+        help="Force paper trading mode (hedge mode only)",
+    )
+    parser.add_argument(
+        "symbols",
+        nargs="*",
+        default=None,
+        help="Symbols to trade (hedge mode only, default: EURUSD)",
     )
     parser.add_argument(
         "--version",
@@ -564,11 +650,19 @@ def main() -> int:
         "daemon": run_daemon,
         "web": run_web,
         "status": run_status,
+        "hedge": run_hedge,
         "stop": lambda a: stop_daemon(),
     }
 
     runner = mode_map.get(args.mode, run_cli)
-    return runner(args)
+    exit_code = runner(args)
+
+    # Auto-open browser for api/web modes (unless --no-browser)
+    if args.mode in ("api", "web") and not args.no_browser:
+        port = args.port or (8000 if args.mode == "api" else 5000)
+        _auto_open_browser(f"http://localhost:{port}")
+
+    return exit_code
 
 
 if __name__ == "__main__":

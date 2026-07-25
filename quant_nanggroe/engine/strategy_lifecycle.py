@@ -70,7 +70,6 @@ class StrategyLifecycleManager:
 
     def __init__(self) -> None:
         self.strategies: dict[str, StrategyState] = {}
-        self._load()
 
     # ── Persistence ──────────────────────────────────────────────────────
 

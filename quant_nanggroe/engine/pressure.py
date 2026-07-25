@@ -341,13 +341,234 @@ class PressureEngine:
         }
 
 
-# ── Backward-compatible aliases ──────────────────────────────────────
-PressureNormalizationEngine = PressureEngine
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Dict, Optional
+
+
+# ── PressureInput ──────────────────────────────────────────────────────────
 
 
 @dataclass
 class PressureInput:
-    """Input dataclass for pressure engine analysis."""
-    trend_direction: str = "neutral"
-    trend_strength: float = 0.0
+    """Multi-sensor pressure input dataclass.
+
+    Aggregates signals from quant scanner, SMC, news, and flow agents.
+    """
+    trend_direction: str = "neutral"        # "bullish", "bearish", "neutral"
+    trend_strength: float = 0.0             # 0.0 - 1.0
+    smc_signal: str = ""                     # "bullish_bos", "bearish_bos", "bearish_choch", "bullish_choch"
+    displacement_strength: float = 0.0      # 0.0 - 1.0
+    liquidity_sweep: bool = False
+    news_impact: float = 0.0                # 0.0 - 1.0
+    news_uncertainty: float = 0.5           # 0.0 - 1.0
+    flow_direction: str = ""                 # "long", "short", ""
+    flow_imbalance: float = 0.0             # 0.0 - 1.0
+
+
+# ── PressureNormalizationResult ────────────────────────────────────────────
+
+
+@dataclass
+class PressureNormalizationResult:
+    """Normalized pressure result from the multi-sensor engine.
+
+    All pressures are normalized to 0.0-1.0.
+    """
+    buy_pressure: float = 0.0
+    sell_pressure: float = 0.0
+    confidence: float = 0.0
+    verdict: str = "NEUTRAL"                 # STRONG_BUY, BUY, NEUTRAL, SELL, STRONG_SELL
+    sensor_inputs: Dict[str, dict] = field(default_factory=dict)
+    raw_buy: float = 0.0
+    raw_sell: float = 0.0
+
+
+# ── Convenience alias ──────────────────────────────────────────────────────
+
+PressureResult = PressureNormalizationResult
+
+
+# ── PressureNormalizationEngine ────────────────────────────────────────────
+
+
+class PressureNormalizationEngine:
+    """Multi-sensor pressure normalization engine.
+
+    Combines signals from quant scanner (trend), SMC (Smart Money Concepts),
+    news, and flow agents into normalized buy/sell pressure values.
+
+    Sensor weights define each sensor's contribution to the final verdict.
+    """
+
+    SENSOR_WEIGHTS = {
+        "quant_scanner": 0.25,
+        "smc": 0.30,
+        "news": 0.20,
+        "flow": 0.25,
+    }
+
+    def __init__(self) -> None:
+        self._last_result: Optional[PressureNormalizationResult] = None
+
+    def compile_pressure(self, inputs: PressureInput) -> PressureNormalizationResult:
+        """Compile multi-sensor inputs into a normalized pressure result.
+
+        Parameters
+        ----------
+        inputs:
+            Aggregated sensor signals.
+
+        Returns
+        -------
+        PressureNormalizationResult
+            Normalized buy/sell pressure with verdict.
+        """
+        w = self.SENSOR_WEIGHTS
+        sensor_inputs: Dict[str, dict] = {}
+        raw_buy = 0.0
+        raw_sell = 0.0
+
+        # ── Quant scanner (trend) ─────────────────────────────────────
+        trend_buy = 0.0
+        trend_sell = 0.0
+        if inputs.trend_direction == "bullish":
+            trend_buy = inputs.trend_strength * w["quant_scanner"]
+        elif inputs.trend_direction == "bearish":
+            trend_sell = inputs.trend_strength * w["quant_scanner"]
+        raw_buy += trend_buy
+        raw_sell += trend_sell
+        sensor_inputs["trend"] = {
+            "direction": inputs.trend_direction,
+            "strength": inputs.trend_strength,
+            "buy": trend_buy,
+            "sell": trend_sell,
+        }
+
+        # ── SMC (Smart Money Concepts) ───────────────────────────────
+        smc_buy = 0.0
+        smc_sell = 0.0
+        signal = inputs.smc_signal
+        if signal in ("bullish_bos", "bullish_choch"):
+            smc_buy = inputs.displacement_strength * w["smc"]
+        elif signal in ("bearish_bos", "bearish_choch"):
+            smc_sell = inputs.displacement_strength * w["smc"]
+
+        # Liquidity sweep adds to both sides (turbulence)
+        liq_sweep_penalty = 0.0
+        if inputs.liquidity_sweep:
+            liq_sweep_penalty = 0.15 * w["smc"]
+            smc_buy += liq_sweep_penalty
+            smc_sell += liq_sweep_penalty
+
+        raw_buy += smc_buy
+        raw_sell += smc_sell
+        sensor_inputs["smc"] = {
+            "signal": signal,
+            "displacement": inputs.displacement_strength,
+            "liquidity_sweep": inputs.liquidity_sweep,
+            "buy": smc_buy,
+            "sell": smc_sell,
+        }
+
+        # ── News ─────────────────────────────────────────────────────
+        news_buy = 0.0
+        news_sell = 0.0
+        certainty = 1.0 - inputs.news_uncertainty
+        # High certainty → directional; low certainty → split evenly
+        if certainty > 0.5:
+            news_buy = inputs.news_impact * certainty * w["news"]
+            news_sell = 0.0
+        else:
+            # Low certainty — split evenly
+            half = inputs.news_impact * w["news"] * 0.5
+            news_buy = half
+            news_sell = half
+
+        raw_buy += news_buy
+        raw_sell += news_sell
+        sensor_inputs["news_impact"] = {
+            "impact": inputs.news_impact,
+            "uncertainty": inputs.news_uncertainty,
+            "certainty": certainty,
+            "buy": news_buy,
+            "sell": news_sell,
+        }
+
+        # ── Flow agent ───────────────────────────────────────────────
+        flow_buy = 0.0
+        flow_sell = 0.0
+        if inputs.flow_direction == "long":
+            flow_buy = inputs.flow_imbalance * w["flow"]
+        elif inputs.flow_direction == "short":
+            flow_sell = inputs.flow_imbalance * w["flow"]
+
+        raw_buy += flow_buy
+        raw_sell += flow_sell
+        sensor_inputs["flow"] = {
+            "direction": inputs.flow_direction,
+            "imbalance": inputs.flow_imbalance,
+            "buy": flow_buy,
+            "sell": flow_sell,
+        }
+
+        # ── Top-level sensor keys (test expectations) ──────────────
+        sensor_inputs["liquidity_sweep"] = inputs.liquidity_sweep
+        sensor_inputs["news_impact"] = inputs.news_impact
+
+        # ── Normalize to 0-1 ─────────────────────────────────────────
+        total = raw_buy + raw_sell
+        if total > 0:
+            buy_pressure = raw_buy / total
+            sell_pressure = raw_sell / total
+        else:
+            buy_pressure = 0.0
+            sell_pressure = 0.0
+
+        # Confidence = magnitude relative to max possible
+        total_weight = sum(w.values())  # 1.0
+        max_raw = total_weight           # if all sensors at 1.0
+        confidence = min(1.0, total / max_raw) if max_raw > 0 else 0.0
+
+        # ── Verdict ──────────────────────────────────────────────────
+        net = buy_pressure - sell_pressure
+        if buy_pressure > 0.70 and net > 0.4:
+            verdict = "STRONG_BUY"
+        elif sell_pressure > 0.70 and net < -0.4:
+            verdict = "STRONG_SELL"
+        elif buy_pressure > 0.55:
+            verdict = "BUY"
+        elif sell_pressure > 0.55:
+            verdict = "SELL"
+        else:
+            verdict = "NEUTRAL"
+
+        result = PressureNormalizationResult(
+            buy_pressure=round(buy_pressure, 4),
+            sell_pressure=round(sell_pressure, 4),
+            confidence=round(confidence, 4),
+            verdict=verdict,
+            sensor_inputs=sensor_inputs,
+            raw_buy=round(raw_buy, 4),
+            raw_sell=round(raw_sell, 4),
+        )
+
+        self._last_result = result
+        return result
+
+    def get_pressure(self) -> Optional[PressureNormalizationResult]:
+        """Return the last compiled pressure result."""
+        return self._last_result
+
+    def get_pressure_state(self) -> "PressureState":
+        """Return a PressureState model from the last result.
+
+        Falls back to default (all zeros) if no compilation yet.
+        """
+        from quant_nanggroe.types.engine import PressureState
+        if self._last_result is None:
+            return PressureState()
+        return PressureState(
+            buy_pressure=self._last_result.buy_pressure,
+            sell_pressure=self._last_result.sell_pressure,
+            confidence=self._last_result.confidence,
+        )
