@@ -57,22 +57,31 @@ class HurstExponentStrategy(Strategy):
                 return self._hold("Insufficient data")
             h = self._hurst(log_prices, self.min_lag, self.max_lag)
             price = float(c.iloc[-1])
-            if h > 0.6:
+            # ── TREND STRENGTH CONFIRMATION (Phase-Improve) ──
+            diff = c.diff()
+            up = diff.clip(lower=0).rolling(14).sum()
+            dn = (-diff.clip(upper=0)).rolling(14).sum()
+            plus_dm = up.rolling(14).mean()
+            minus_dm = dn.rolling(14).mean()
+            dx = np.abs(plus_dm - minus_dm) / (plus_dm + minus_dm + 1e-10)
+            adx = float(dx.rolling(14).mean().iloc[-1]) if len(dx) > 14 else 0.0
+            if h > 0.6 and adx >= 20.0:
                 ret = float(c.iloc[-1]) / float(c.iloc[-5]) - 1.0
                 sig = 1.0 if ret > 0 else -1.0
+                strength = np.clip((adx - 20) / 30.0, 0.1, 0.95)
                 return StrategySignal(
                     strategy_name=self.name,
                     symbol=kwargs.get("symbol", ""),
                     direction=SignalDirection.BUY if sig > 0 else SignalDirection.SELL,
-                    confidence=0.55,
+                    confidence=round(float(strength), 2),
                     entry_price=round(price, 6),
-                    reasoning=f"Hurst {h:.3f} > 0.6: trending",
-                    indicators={"hurst": round(h, 4)},
+                    reasoning=f"Hurst {h:.3f} > 0.6: trending, ADX={adx:.1f}",
+                    indicators={"hurst": round(h, 4), "adx": round(adx, 2)},
                 )
             if h < 0.4:
                 mean = float(log_prices[-10:].mean())
                 z = (log_prices[-1] - mean) / np.std(log_prices[-10:]) if len(log_prices) >= 10 else 0
-                if z < -0.5:
+                if z < -0.5 and adx >= 20.0:
                     return StrategySignal(
                         strategy_name=self.name,
                         symbol=kwargs.get("symbol", ""),

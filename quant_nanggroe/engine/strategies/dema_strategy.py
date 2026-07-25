@@ -46,26 +46,29 @@ class DEMAStrategy(Strategy):
             ema2 = self._ema(ema1, self.period)
             dema = 2 * ema1 - ema2
             price = float(c.iloc[-1])
-            if np.isnan(dema.iloc[-1]):
+            dema_val = float(dema.iloc[-1])
+            if np.isnan(dema_val):
                 return self._hold("DEMA not ready")
-            if price > dema.iloc[-1]:
-                return StrategySignal(
-                    strategy_name=self.name,
-                    symbol=kwargs.get("symbol", ""),
-                    direction=SignalDirection.BUY,
-                    confidence=0.5,
-                    entry_price=round(price, 6),
-                    reasoning="Price above DEMA (bullish)",
-                    indicators={"dema": round(float(dema.iloc[-1]), 4)},
-                )
+            # ── TREND STRENGTH FILTER (Phase-Improve) ──
+            diff = c.diff()
+            up = diff.clip(lower=0).rolling(14).sum()
+            dn = (-diff.clip(upper=0)).rolling(14).sum()
+            plus_dm = up.rolling(14).mean()
+            minus_dm = dn.rolling(14).mean()
+            dx = np.abs(plus_dm - minus_dm) / (plus_dm + minus_dm + 1e-10)
+            adx = float(dx.rolling(14).mean().iloc[-1]) if len(dx) > 14 else 0.0
+            if adx < 20.0:
+                return self._hold(f"Weak trend (ADX={adx:.1f} < 20) — stay flat", {"adx": round(adx, 2)})
+            is_buy = price > dema_val
+            strength = np.clip((adx - 20) / 30.0, 0.1, 0.95)
             return StrategySignal(
                 strategy_name=self.name,
                 symbol=kwargs.get("symbol", ""),
-                direction=SignalDirection.SELL,
-                confidence=0.5,
+                direction=SignalDirection.BUY if is_buy else SignalDirection.SELL,
+                confidence=round(strength, 2),
                 entry_price=round(price, 6),
-                reasoning="Price below DEMA (bearish)",
-                indicators={"dema": round(float(dema.iloc[-1]), 4)},
+                reasoning=f"{'Price above' if is_buy else 'Price below'} DEMA, ADX={adx:.1f}",
+                indicators={"dema": round(dema_val, 4), "adx": round(adx, 2)},
             )
         except Exception as exc:
             logger.error("DEMA error: %s", exc)

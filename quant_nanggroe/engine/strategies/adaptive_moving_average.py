@@ -55,24 +55,33 @@ class AdaptiveMovingAverageStrategy(Strategy):
             if np.isnan(ama.iloc[-1]):
                 return self._hold("AMA not ready")
             price = float(c.iloc[-1])
-            if price > ama.iloc[-1]:
-                return StrategySignal(
-                    strategy_name=self.name,
-                    symbol=kwargs.get("symbol", ""),
-                    direction=SignalDirection.BUY,
-                    confidence=0.5,
-                    entry_price=round(price, 6),
-                    reasoning=f"Price above adaptive MA ({adaptive_period})",
-                    indicators={"adaptive_period": adaptive_period, "ama": round(float(ama.iloc[-1]), 4)},
-                )
+            ama_val = float(ama.iloc[-1])
+            if np.isnan(ama_val):
+                return self._hold("AMA not ready")
+            # ── TREND STRENGTH FILTER (Phase-Improve: only trade real trends) ──
+            # Compute ADX-like trend strength to avoid churning in ranges
+            diff = c.diff()
+            up = diff.clip(lower=0).rolling(14).sum()
+            dn = (-diff.clip(upper=0)).rolling(14).sum()
+            plus_dm = up.rolling(14).mean()
+            minus_dm = dn.rolling(14).mean()
+            atr = (c.diff().abs()).rolling(14).mean()
+            dx = np.abs(plus_dm - minus_dm) / (plus_dm + minus_dm + 1e-10)
+            adx = dx.rolling(14).mean().iloc[-1] if len(dx) > 14 else 0.0
+            # Gap fix: only trade when ADX > 20 (real trend), else HOLD
+            if adx < 20.0:
+                return self._hold(f"Weak trend (ADX={adx:.1f} < 20) — stay flat", {"adx": round(float(adx), 2)})
+            is_buy = price > ama_val
+            strength = np.clip((adx - 20) / 30.0, 0.1, 0.95)
+            direction = SignalDirection.BUY if is_buy else SignalDirection.SELL
             return StrategySignal(
                 strategy_name=self.name,
                 symbol=kwargs.get("symbol", ""),
-                direction=SignalDirection.SELL,
-                confidence=0.5,
+                direction=direction,
+                confidence=round(float(strength), 2),
                 entry_price=round(price, 6),
-                reasoning=f"Price below adaptive MA ({adaptive_period})",
-                indicators={"adaptive_period": adaptive_period, "ama": round(float(ama.iloc[-1]), 4)},
+                reasoning=f"{'Price above' if is_buy else 'Price below'} adaptive MA ({adaptive_period}), ADX={adx:.1f}",
+                indicators={"adaptive_period": adaptive_period, "ama": round(ama_val, 4), "adx": round(float(adx), 2)},
             )
         except Exception as exc:
             logger.error("AdaptiveMovingAverage error: %s", exc)
