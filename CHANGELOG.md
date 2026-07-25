@@ -1,6 +1,6 @@
 # Quant Nanggroe AI — Changelog
 
-## v5.2.0 — Stub Rename + Walkforward + API Wiring Lock (2026-07-25)
+## v5.1.0 — Self-Aware + Self-Evolve + Standalone + AutoRegistry (2026-07-24)
 
 ### 🚀 Walkforward Framework
 - **New `scripts/walkforward_runner.py`** — 318-line walkforward campaign runner

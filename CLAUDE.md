@@ -1,4 +1,4 @@
-# Claude-Specific Instructions — Quant Nanggroe AI v5.2.0
+# Claude-Specific Instructions — Quant Nanggroe AI v5.1.0
 
 ## Entry Point
 - **Single**: `qna.py` — modes: `cli|api|daemon|web|status|stop`
