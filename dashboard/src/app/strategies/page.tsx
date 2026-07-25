@@ -54,35 +54,64 @@ export default function StrategiesPage() {
       render: (row: Record<string, unknown>) => (
         <div>
           <p className="font-medium text-white">{row.name as string}</p>
-          <p className="text-xs text-white/30">{row.type as string}</p>
+          <p className="text-xs text-white/30">{row.category as string}</p>
         </div>
       ),
     },
     {
       key: "performance",
-      header: "Return",
-      render: (row: Record<string, unknown>) => (
-        <span className={cn("font-mono font-medium", (row.performance as number) >= 0 ? "text-emerald-400" : "text-red-400")}>
-          {formatPercent(row.performance as number)}
-        </span>
-      ),
+      header: "Return %",
+      render: (row: Record<string, unknown>) => {
+        const bt = (row.backtest as any) || {};
+        const ret = bt.return_pct ?? 0;
+        return (
+          <span className={cn("font-mono font-medium", ret >= 0 ? "text-emerald-400" : "text-red-400")}>
+            {ret.toFixed(2)}%
+          </span>
+        );
+      },
     },
     {
       key: "sharpe",
       header: "Sharpe",
-      render: (row: Record<string, unknown>) => (
-        <span className="font-mono text-blue-400">{(row.sharpe as number).toFixed(2)}</span>
-      ),
+      render: (row: Record<string, unknown>) => {
+        const bt = (row.backtest as any) || {};
+        const sharpe = bt.sharpe ?? 0;
+        return <span className="font-mono text-blue-400">{sharpe.toFixed(2)}</span>;
+      },
+    },
+    {
+      key: "dd",
+      header: "Max DD %",
+      render: (row: Record<string, unknown>) => {
+        const bt = (row.backtest as any) || {};
+        const dd = bt.max_dd_pct ?? 0;
+        return <span className="font-mono text-orange-400">{dd.toFixed(2)}%</span>;
+      },
+    },
+    {
+      key: "gate",
+      header: "Audit Gate",
+      render: (row: Record<string, unknown>) => {
+        const bt = (row.backtest as any) || {};
+        const gate = bt.gate ?? "HOLD";
+        const color = gate === "PASS" ? "success" : gate === "REJECT" ? "danger" : "warning";
+        return (
+          <Badge variant={color} className="text-[10px]">
+            {(gate as string).toUpperCase()}
+          </Badge>
+        );
+      },
     },
     {
       key: "status",
       header: "Status",
       render: (row: Record<string, unknown>) => (
         <Badge
-          variant={(row.status as string) === "active" ? "success" : "warning"}
+          variant={(row.enabled as boolean) ? "success" : "warning"}
           className="text-[10px]"
         >
-          {(row.status as string).toUpperCase()}
+          {(row.enabled as boolean) ? "ACTIVE" : "INACTIVE"}
         </Badge>
       ),
     },

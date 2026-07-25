@@ -15,6 +15,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List
 
+# GLOBAL FLAG: Route all strategy signal generation through the adaptive pipeline
+# (loads ALL 73+ registered strategies via registry, not just 4 hardcoded).
+QNA_USE_ADAPTIVE_PIPELINE = os.environ.get("QNA_USE_ADAPTIVE_PIPELINE", "1") == "1"
+
 QNA_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = QNA_DIR / "data"
 LOG_DIR = QNA_DIR / "logs"
@@ -23,6 +27,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 from quant_nanggroe.engine_bridge import EnginePriceProvider, EngineRiskManager, StalePositionAnalyzer
 from quant_nanggroe.engine_production_bridge import create_production_engine
+from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline, LiveSignal
 from quant_nanggroe.strategies.tsmom import TSMOM
 from quant_nanggroe.strategies.trend_follow import TrendFollow
 from quant_nanggroe.providers.data_manager import DataManager
@@ -820,6 +825,7 @@ class LiveEngine:
         if not adaptive_signals and symbol in self.strategies:
             candles = self.asset_candles.get(symbol, [])
             if len(candles) >= 20:
+                # Regime-aware selection from the 4 core inline strategies
                 regime = self.strategies["Trend"].analyze(candles)
                 active_strategies = []
                 if regime == "trending":
