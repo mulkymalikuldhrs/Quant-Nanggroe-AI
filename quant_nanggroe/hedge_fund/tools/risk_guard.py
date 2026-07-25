@@ -32,6 +32,7 @@ def _load_policy(policy_path: Optional[Path] = None) -> dict:
         "risk_max_drawdown_stop": 0.20,
         "max_leverage": 3.0,
         "max_daily_loss": 0.05,
+        "max_weekly_loss": 0.03,
         "max_position_size": 0.02,
         "risk_score_threshold": 0.8,
         "concentration_limit": 0.3,
@@ -80,10 +81,16 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
         risk = max(risk, 0.75)
         reasons.append(f"position_large ratio={pos_ratio:.2%} ~ {max_pos:.2%}")
 
-    # 2. Daily loss limit — fail-closed: missing daily_pnl -> flag
+    # 2. Daily loss limit — fail-closed: missing/unknown daily_pnl -> veto
     daily_pnl = proposal.get('daily_pnl')
     max_loss = policy.get('max_daily_loss', 0.05)
-    loss_ratio = abs(daily_pnl) / balance if balance > 0 and daily_pnl is not None and daily_pnl < 0 else 0
+    if daily_pnl is None:
+        # Cannot assess the loss limit on unknown P&L -> fail-closed veto
+        # (phantom-veto defense: never auto-approve when realized P&L is absent).
+        risk = max(risk, 1.0)
+        reasons.append("missing_daily_pnl_unknown_risk")
+        return min(1.0, max(0.0, risk)), reasons[:6]
+    loss_ratio = abs(daily_pnl) / balance if daily_pnl < 0 else 0
     
     if loss_ratio > max_loss * 1.2:
         risk = max(risk, 1.0)
@@ -91,6 +98,17 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
     elif loss_ratio > max_loss:
         risk = max(risk, 0.85)
         reasons.append(f"daily_loss_high loss={loss_ratio:.2%} ~ {max_loss:.2%}")
+    
+    # 2b. Weekly loss limit — fail-closed (WAR_PLAN Phase 4 gap)
+    weekly_pnl = proposal.get('weekly_pnl', 0.0)
+    max_weekly_loss = policy.get('max_weekly_loss', 0.03)
+    week_loss_ratio = abs(weekly_pnl) / balance if weekly_pnl < 0 else 0
+    if week_loss_ratio > max_weekly_loss * 1.2:
+        risk = max(risk, 1.0)
+        reasons.append(f"weekly_loss_limit_hit loss={week_loss_ratio:.2%} > {max_weekly_loss:.2%}")
+    elif week_loss_ratio > max_weekly_loss:
+        risk = max(risk, 0.85)
+        reasons.append(f"weekly_loss_high loss={week_loss_ratio:.2%} ~ {max_weekly_loss:.2%}")
     
     # 3. Concentration (open positions)
     open_pos = proposal.get('open_positions', 0)
@@ -117,10 +135,19 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
             risk = max(risk, min(0.9, sl_pct * 10))
             reasons.append(f"wide_stop_loss sl={sl_pct:.2%}")
     
-    # Default caution jika gak cukup data
+    # Default caution / fail-closed on insufficient evidence
     if not reasons:
-        risk = 0.35
-        reasons.append("insufficient_data_default_caution")
+        has_signal = proposal.get('signal') not in (None, 'hold', 'HOLD', 0, 0.0, False)
+        has_conf = proposal.get('strategy_confidence') is not None
+        if has_signal or has_conf:
+            # Strategy evidence present -> approve with caution
+            risk = 0.35
+            reasons.append("insufficient_data_default_caution")
+        else:
+            # No risk reason fired AND no strategy evidence -> fail-closed veto
+            # (kills the rubber-stamp: cannot approve what it cannot justify)
+            risk = 1.0
+            reasons.append("no_strategy_evidence_veto")
     
     return min(1.0, max(0.0, risk)), reasons[:6]
 
