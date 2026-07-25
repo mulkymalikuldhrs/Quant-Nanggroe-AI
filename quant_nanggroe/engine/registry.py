@@ -245,7 +245,11 @@ class AutoRegistry:
         for node in ast.walk(tree):
             if not isinstance(node, ast.ClassDef):
                 continue
-            # Check if it has Strategy as a base class
+            cls_name = node.name
+            # Skip the base classes themselves
+            if cls_name in ("Strategy", "BaseStrategy", "TradingStrategy", "StrategyBase"):
+                continue
+            # Check if it has a Strategy-compatible base class
             has_strategy_base = False
             for base in node.bases:
                 base_name = None
@@ -253,13 +257,20 @@ class AutoRegistry:
                     base_name = base.id
                 elif isinstance(base, ast.Attribute):
                     base_name = base.attr
-                if base_name and base_name in ("Strategy",):
+                if base_name and (
+                    base_name
+                    in ("Strategy", "BaseStrategy", "TradingStrategy", "StrategyBase")
+                    or base_name.endswith("Strategy")
+                ):
                     has_strategy_base = True
                     break
+            # Supplement: directly defines generate_signals (inherited-method strategies)
             if not has_strategy_base:
-                continue
-            cls_name = node.name
-            if cls_name in ("Strategy",):
+                for sub in node.body:
+                    if isinstance(sub, ast.FunctionDef) and sub.name == "generate_signals":
+                        has_strategy_base = True
+                        break
+            if not has_strategy_base:
                 continue
             archive_name = f"archive_{cls_name}"
             if archive_name not in _registry._registry:
