@@ -76,9 +76,12 @@ export default function BacktestPage() {
   const strategyOptions = strategies.length > 0
     ? strategies.map((s) => ({ value: s.id, label: s.name }))
     : [
-        { value: "momentum_alpha", label: "Momentum Alpha" },
-        { value: "value_quality", label: "Value + Quality" },
-        { value: "mean_reversion", label: "Mean Reversion" },
+        { value: "smc", label: "SMC" },
+        { value: "wyckoff", label: "Wyckoff" },
+        { value: "msnr", label: "MSNR" },
+        { value: "dhaher_system", label: "Dhaher System" },
+        { value: "ict", label: "ICT" },
+        { value: "mean_rev", label: "Mean Reversion" },
       ];
 
   const engineOptions = engines.length > 0
