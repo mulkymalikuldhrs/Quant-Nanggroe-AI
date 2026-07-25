@@ -31,6 +31,8 @@ from quant_nanggroe.engine.persistence import (
 from quant_nanggroe.engine.risk.checks import RiskCheckGate
 from quant_nanggroe.engine.risk.constants import (
     HARD_STOP_ATR_MULTIPLIER,
+    KILL_SWITCH_DAILY_PNL,
+    KILL_SWITCH_WEEKLY_PNL,
     MAX_ASSET_DAILY_LOSS_PCT,
     MAX_CORRELATED_POSITIONS,
     MAX_DAILY_LOSS,
@@ -170,10 +172,13 @@ class RiskManager:
             week_deals = self._mt5_handle.history_deals_get(week_start, now) or []
             day_pnl = sum(float(d.profit) for d in day_deals)
             week_pnl = sum(float(d.profit) for d in week_deals)
-            if day_pnl != 0.0:
-                self.state.daily_pnl = day_pnl
-            if week_pnl != 0.0:
-                self.state.weekly_pnl = week_pnl
+            # ponytail: always reflect truth. The old `!= 0.0` guard kept a
+            # STALE negative daily_pnl when the day recovered to flat /
+            # break-even (broker returns 0 realized) -> phantom-permanent veto
+            # blocked all trading on a recovered day. Always assign so a
+            # recovered day is no longer blocked.
+            self.state.daily_pnl = day_pnl
+            self.state.weekly_pnl = week_pnl
             # Equity: realized daily + peak (drawdown monitor uses peak).
             self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
             self._auto_check_kill_switch()
@@ -806,13 +811,18 @@ class RiskManager:
             daily_loss_pct = abs(min(0, self.state.daily_pnl)) / self.state.peak_equity if self.state.peak_equity > 0 else 0
         weekly_loss_pct = abs(min(0, self.state.weekly_pnl)) / self.state.peak_equity if self.state.peak_equity > 0 else 0
 
-        if daily_loss_pct >= MAX_DAILY_LOSS:
+        # ponytail: use the documented early-warning thresholds
+        # (KILL_SWITCH_DAILY_PNL=-0.8% / KILL_SWITCH_WEEKLY_PNL=-2.5%) so the
+        # kill switch fires BEFORE the 1%/3% constitutional hard limits. The
+        # old code used MAX_DAILY_LOSS/MAX_WEEKLY_LOSS (1%/3%) which made these
+        # constants dead and the early-warning buffer non-existent.
+        if daily_loss_pct >= abs(KILL_SWITCH_DAILY_PNL):
             self.kill_switch.activate("AUTO_DAILY_LIMIT")
-            logger.critical("KILL SWITCH: Daily loss limit breached (%.2f%% >= %.2f%%)", daily_loss_pct * 100, MAX_DAILY_LOSS * 100)
+            logger.critical("KILL SWITCH: Daily loss limit breached (%.2f%% >= %.2f%%)", daily_loss_pct * 100, abs(KILL_SWITCH_DAILY_PNL) * 100)
 
-        if weekly_loss_pct >= MAX_WEEKLY_LOSS:
+        if weekly_loss_pct >= abs(KILL_SWITCH_WEEKLY_PNL):
             self.kill_switch.activate("AUTO_WEEKLY_LIMIT")
-            logger.critical("KILL SWITCH: Weekly loss limit breached (%.2f%% >= %.2f%%)", weekly_loss_pct * 100, MAX_WEEKLY_LOSS * 100)
+            logger.critical("KILL SWITCH: Weekly loss limit breached (%.2f%% >= %.2f%%)", weekly_loss_pct * 100, abs(KILL_SWITCH_WEEKLY_PNL) * 100)
 
         if self.drawdown_monitor.is_breached:
             self.kill_switch.activate("AUTO_MAX_DRAWDOWN")

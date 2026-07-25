@@ -235,28 +235,32 @@ class AutoRegistry:
 
     @staticmethod
     def _load_strategy_from_source(source: str, module_name: str, filepath: Path) -> int:
-        """Extract Strategy subclasses from source without full import."""
+        """Extract REAL Strategy subclasses from archive source via import.
+
+        AST is used only to shortlist candidate class names; the module is then
+        actually imported and only genuine ``Strategy`` subclasses are registered.
+        Modules that fail to import (broken deps, junk) are skipped -- never
+        registered as ``None`` placeholders.
+        """
         import ast
-        count = 0
+
         try:
             tree = ast.parse(source, filename=str(filepath))
         except SyntaxError:
             return 0
+
+        candidate_names: set[str] = set()
         for node in ast.walk(tree):
             if not isinstance(node, ast.ClassDef):
                 continue
             cls_name = node.name
-            # Skip the base classes themselves
             if cls_name in ("Strategy", "BaseStrategy", "TradingStrategy", "StrategyBase"):
                 continue
-            # Check if it has a Strategy-compatible base class
             has_strategy_base = False
             for base in node.bases:
-                base_name = None
-                if isinstance(base, ast.Name):
-                    base_name = base.id
-                elif isinstance(base, ast.Attribute):
-                    base_name = base.attr
+                base_name = base.id if isinstance(base, ast.Name) else (
+                    base.attr if isinstance(base, ast.Attribute) else None
+                )
                 if base_name and (
                     base_name
                     in ("Strategy", "BaseStrategy", "TradingStrategy", "StrategyBase")
@@ -264,17 +268,34 @@ class AutoRegistry:
                 ):
                     has_strategy_base = True
                     break
-            # Supplement: directly defines generate_signals (inherited-method strategies)
             if not has_strategy_base:
                 for sub in node.body:
                     if isinstance(sub, ast.FunctionDef) and sub.name == "generate_signals":
                         has_strategy_base = True
                         break
-            if not has_strategy_base:
+            if has_strategy_base:
+                candidate_names.add(cls_name)
+
+        if not candidate_names:
+            return 0
+
+        # Real import -- register actual classes, not None placeholders.
+        try:
+            mod = importlib.import_module(module_name)
+        except Exception:
+            return 0
+
+        count = 0
+        for _, obj in inspect.getmembers(mod, inspect.isclass):
+            if obj.__name__ not in candidate_names:
                 continue
-            archive_name = f"archive_{cls_name}"
+            if not (issubclass(obj, Strategy) and obj is not Strategy):
+                continue
+            if not obj.__module__.startswith("archive."):
+                continue
+            archive_name = f"archive_{obj.__name__}"
             if archive_name not in _registry._registry:
-                _registry.register(archive_name, None)
+                _registry.register(archive_name, obj)
                 count += 1
         return count
 
