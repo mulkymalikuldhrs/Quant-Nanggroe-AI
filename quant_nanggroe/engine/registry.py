@@ -38,7 +38,7 @@ _ARCHIVE_DIRS: List[str] = [
 ]
 
 # Filesystem-based archive root (repository-level archive/ directory)
-_ARCHIVE_ROOT: str = str(Path(__file__).resolve().parent.parent.parent.parent / "archive")
+_ARCHIVE_ROOT: str = str(Path(__file__).resolve().parent.parent.parent / "archive")
 _ARCHIVE_PACKAGES: List[str] = []  # populated at scan time from _ARCHIVE_ROOT
 
 
@@ -121,9 +121,8 @@ class AutoRegistry:
             self._archive_scanned = True
 
         # Also scan filesystem-based archive root for non-package archives
-        if not self._archive_scanned or force:
-            count = self._scan_archive_filesystem(force=force)
-            total += count
+        count = self._scan_archive_filesystem(force=force)
+        total += count
         return total
 
     def scan_active(self, force: bool = False) -> int:
