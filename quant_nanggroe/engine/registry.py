@@ -14,7 +14,7 @@ import pkgutil
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Type
 
-from quant_nanggroe.engine.strategies.base import Strategy, StrategyBase
+from quant_nanggroe.engine.strategies.base import Strategy
 
 logger = logging.getLogger("quant_nanggroe.registry")
 
@@ -108,8 +108,11 @@ class AutoRegistry:
         """
         total = 0
         for pkg_path in SCAN_DIRS:
-            count = self._scan_package(pkg_path, force=force)
-            total += count
+            try:
+                count = self._scan_package(pkg_path, force=force)
+                total += count
+            except Exception as e:
+                logger.warning("AutoRegistry: failed to scan %s: %s", pkg_path, e)
         # Always include archive dirs (Python packages)
         if not self._archive_scanned or force:
             for pkg_path in _ARCHIVE_DIRS:
@@ -156,9 +159,13 @@ class AutoRegistry:
         self._scanned.add(pkg_path)
 
         count = 0
-        # Scan submodules
+        # Scan submodules (skip if module has no __path__ - namespace package issue)
+        pkg_path_obj = getattr(module, '__path__', None)
+        if pkg_path_obj is None:
+            logger.debug("AutoRegistry: skipped %s (no __path__)", pkg_path)
+            return 0
         for finder, name, is_pkg in pkgutil.walk_packages(
-            module.__path__, prefix=pkg_path + "."
+            pkg_path_obj, prefix=pkg_path + "."
         ):
             if name in self._scanned and not force:
                 continue
@@ -247,13 +254,13 @@ class AutoRegistry:
                     base_name = base.id
                 elif isinstance(base, ast.Attribute):
                     base_name = base.attr
-                if base_name and base_name in ("Strategy", "StrategyBase", "BaseStrategy"):
+                if base_name and base_name in ("Strategy",):
                     has_strategy_base = True
                     break
             if not has_strategy_base:
                 continue
             cls_name = node.name
-            if cls_name in ("Strategy", "StrategyBase", "BaseStrategy"):
+            if cls_name in ("Strategy",):
                 continue
             archive_name = f"archive_{cls_name}"
             if archive_name not in _registry._registry:
@@ -295,7 +302,7 @@ class AutoRegistry:
     @staticmethod
     def _is_strategy_class(obj: type) -> bool:
         """Check if a class is a Strategy subclass (not the base itself)."""
-        if obj is Strategy or obj is StrategyBase:
+        if obj is Strategy:
             return False
         if obj.__module__.startswith("_"):
             return False
