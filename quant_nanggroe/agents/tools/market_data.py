@@ -93,7 +93,7 @@ class _InMemoryCache:
         if entry is None:
             return None
         value, expires_at = entry
-        if time.monotonic() > expires_at:
+        if time.monotonic() >= expires_at:
             del self._store[key]
             return None
         return value
