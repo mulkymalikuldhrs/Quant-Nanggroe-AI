@@ -4,20 +4,21 @@ This file maintains backward compatibility for code that still imports
 from the old strategy path (``quant_nanggroe.engine.strategy.strategies``).
 All actual strategy implementations live in ``quant_nanggroe.engine.strategies``.
 """
+from __future__ import annotations
+
 import logging
 from typing import Any
 
 from quant_nanggroe.engine.strategies.registry import (
     list_strategies,
     StrategyRegistry,
+    get_strategy_metadata,
 )
 from quant_nanggroe.engine.strategies.base import (
     Strategy,
     StrategyParameters,
     StrategySignal,
 )
-
-# Re-export everything for star imports
 from quant_nanggroe.engine.strategies.base import (
     SignalDirection,
     SignalStrength,
@@ -25,35 +26,24 @@ from quant_nanggroe.engine.strategies.base import (
     StrategyType,
 )
 
-log = logging.getLogger(__name__)
-
 # Backward compat: old code uses BaseStrategy, new code uses Strategy
 BaseStrategy = Strategy
 
+log = logging.getLogger(__name__)
 
-def create_strategy(name: str, **kwargs: Any):
-    """Create a strategy instance by name.
 
-    Args:
-        name: Registered strategy name.
-        **kwargs: Optional parameters (``parameters`` for StrategyParameters object).
-
-    Returns:
-        Strategy instance or None if not found.
-    """
-    parameters = kwargs.get("parameters")
-    return StrategyRegistry.create(name, parameters=parameters)
+def create_strategy(name: str, *args, **kwargs) -> Any:
+    """Backward-compatible create_strategy — delegates to StrategyRegistry.create."""
+    if args or kwargs:
+        params = StrategyParameters()
+        for k, v in kwargs.items():
+            params.set(k, v)
+        return StrategyRegistry.create(name, parameters=params)
+    return StrategyRegistry.create(name)
 
 
 def get_strategy(name: str):
-    """Get a registered strategy class by name.
-
-    Args:
-        name: Registered strategy name.
-
-    Returns:
-        Strategy class or None if not found.
-    """
+    """Get a registered strategy class by name."""
     return StrategyRegistry.get(name)
 
 
@@ -70,4 +60,5 @@ __all__ = [
     "list_strategies",
     "create_strategy",
     "get_strategy",
+    "get_strategy_metadata",
 ]
