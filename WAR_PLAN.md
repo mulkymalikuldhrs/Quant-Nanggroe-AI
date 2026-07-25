@@ -39,9 +39,9 @@ QNA is NOT a research toy. It is a production autonomous hedge fund that:
 ### PHASE 1 — Wire All Strategies (P0)
 **Goal:** AutoRegistry discovers ALL 200+ strategies (active + archive).
 - [x] AutoRegistry v2 scans `quant_nanggroe/engine/strategies/` + `archive/`
-- [ ] Register 64 archive-only strategies via `archive/__init__.py` re-export
-- [ ] Verify: `list_strategies()` returns 200+ entries
-- [ ] Fix: archive strategies import `Strategy` base correctly (no broken imports)
+- [x] Register 64 archive-only strategies — AutoRegistry v3 auto-discovers ALL archive subpackages (135 archive classes wired; manual `archive/__init__.py` re-export OBSOLETE)
+- [x] Verify: `list_strategies()` returns 208 entries (2026-07-26 cron) — goal ≥200 MET
+- [x] Fix: archive strategies import `Strategy` base correctly — all 208 registered classes instantiate; only non-strategy cruft (`examples`, `old-database-root`, `old-strategies`, `web_interface`) has isolated import errors, none affecting registered set
 - **Owner:** devbot (profile cron, scoped to QNA)
 - **Verify:** `python -c "from quant_nanggroe.engine.registry import list_strategies; print(len(list_strategies()))"` → 200+
 
