@@ -1,271 +1,350 @@
-"""AutoRegistry — Fully autonomous component registry for QNA.
+"""AutoRegistry — Self-discovering component registry for QNA v5.1.0.
 
-Scans EVERYTHING in the entire repo. No manual __all__, no file left behind.
-Auto-discovers ALL .py files across quant_nanggroe/, tests/, scripts/, root/.
-Auto-generates __init__.py for directories missing them.
-Auto-cleans stale registrations when files are deleted.
-
-Usage:
-    from quant_nanggroe.engine.registry import AutoRegistry
-    registry = AutoRegistry()
-    registry.discover_all()  # scans entire repo
-    registry.health_check()
+Scans ALL directories: active strategies, archive/, legacy/,
+and any new directory with Strategy subclasses. Zero manual registration.
 """
+
 from __future__ import annotations
 
-import hashlib
 import importlib
-import importlib.util
+import os
 import inspect
 import logging
+import pkgutil
 from pathlib import Path
-from typing import Any, Optional
+from typing import Dict, List, Optional, Set, Type
 
-logger = logging.getLogger(__name__)
+from quant_nanggroe.engine.strategies.base import Strategy, StrategyBase
 
-# Files to skip
-_SKIP_FILES = {
-    "__init__.py",
-    "_df_signal_adapter.py",
-    "conftest.py",
-    "setup.py",
-}
+logger = logging.getLogger("quant_nanggroe.registry")
+
+# Directories to scan (in priority order)
+SCAN_DIRS: List[str] = [
+    "quant_nanggroe.engine.strategies",  # Active strategies
+    "quant_nanggroe.engine.regime",       # Regime detection
+    "quant_nanggroe.engine.backtest",     # Backtest engines
+    "quant_nanggroe.engine.risk",         # Risk management
+    "quant_nanggroe.engine.execution",    # Execution builders
+    "quant_nanggroe.engine.memory",       # Memory layer
+    "quant_nanggroe.engine.pipeline",     # Pipeline (self-aware, self-evolve)
+    "quant_nanggroe.engine.agentic",      # Agentic pipeline
+    "quant_nanggroe.engine.self_aware",   # Self-awareness
+    "quant_nanggroe.engine.strategies",   # All strategy subdirs (incl archive)
+]
+
+_ARCHIVE_DIRS: List[str] = [
+    "quant_nanggroe.engine.strategies.archive",
+    "quant_nanggroe.engine.strategies.strategies.archive",
+]
+
+# Filesystem-based archive root (repository-level archive/ directory)
+_ARCHIVE_ROOT: str = str(Path(__file__).resolve().parent.parent.parent.parent / "archive")
+_ARCHIVE_PACKAGES: List[str] = []  # populated at scan time from _ARCHIVE_ROOT
 
 
 class AutoRegistry:
-    """Fully autonomous registry — scans the ENTIRE repo.
+    """Self-discovering strategy and component registry.
 
-    Every .py file in every directory is auto-discovered and registered.
-    - No base_class filter — registers every class found
-    - Auto-generates __init__.py for missing dirs
-    - Auto-cleans stale entries on re-scan
-    - File hash tracking for change detection
-    - Health check with full audit
+    Automatically finds and registers all Strategy subclasses across
+    active + archive directories. No manual __all__ or explicit imports needed.
     """
 
-    def __init__(self, repo_root: str | Path | None = None):
-        self._registry: dict[str, type] = {}
-        self._modules: dict[str, str] = {}
-        self._file_hashes: dict[str, str] = {}
-        self._scan_count: int = 0
-        self._repo_root = Path(repo_root) if repo_root else self._find_repo_root()
+    _instance: Optional["AutoRegistry"] = None
+    _registry: Dict[str, Type[Strategy]] = {}
+    _scanned: Set[str] = set()
+    _archive_scanned: bool = False
 
-    # ── Core Discovery ─────────────────────────────────────────────
+    def __new__(cls) -> "AutoRegistry":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
-    def discover_from_dir(
-        self,
-        directory: str | Path,
-        base_class: Optional[type] = None,
-        name_suffix: str = "",
-        recursive: bool = True,
-    ) -> int:
-        """Scan a directory and auto-register ALL matching classes."""
-        dir_path = Path(directory)
-        if not dir_path.is_dir():
-            logger.warning("Directory not found: %s", directory)
+    # ── Public API ──────────────────────────────────────────────────────
+
+    def register(self, name: str, cls: Type[Strategy]) -> None:
+        """Register a strategy class by name."""
+        self._registry[name] = cls
+        logger.info("AutoRegistry: registered %s from %s", name, cls.__module__)
+
+    def unregister(self, name: str) -> None:
+        """Remove a strategy from registry."""
+        self._registry.pop(name, None)
+
+    def get(self, name: str) -> Optional[Type[Strategy]]:
+        """Get a registered strategy class by name."""
+        return self._registry.get(name)
+
+    def list_strategies(self) -> Dict[str, Type[Strategy]]:
+        """Return all registered strategies."""
+        return dict(self._registry)
+
+    def list_strategies_by_category(self, category: str) -> Dict[str, Type[Strategy]]:
+        """Filter strategies by category (archive, active, regime, backtest, etc.)."""
+        result = {}
+        for name, cls in self._registry.items():
+            mod = cls.__module__
+            if category in mod or category in name.lower():
+                result[name] = cls
+        return result
+
+    def create(self, name: str, **kwargs) -> Optional[Strategy]:
+        """Create a strategy instance by name."""
+        cls = self._registry.get(name)
+        if cls is None:
+            logger.warning("AutoRegistry: strategy '%s' not found", name)
+            return None
+        try:
+            return cls(**kwargs)
+        except Exception as e:
+            logger.error("AutoRegistry: failed to create %s: %s", name, e)
+            return None
+
+    # ── Auto-Discovery ─────────────────────────────────────────────────
+
+    def scan_all(self, force: bool = False) -> int:
+        """Scan ALL registered directories and register discovered strategies.
+
+        Returns total number of registered strategies after scan.
+        """
+        total = 0
+        for pkg_path in SCAN_DIRS:
+            count = self._scan_package(pkg_path, force=force)
+            total += count
+        # Always include archive dirs (Python packages)
+        if not self._archive_scanned or force:
+            for pkg_path in _ARCHIVE_DIRS:
+                count = self._scan_archive_package(pkg_path, force=force)
+                total += count
+            self._archive_scanned = True
+
+        # Also scan filesystem-based archive root for non-package archives
+        if not self._archive_scanned or force:
+            count = self._scan_archive_filesystem(force=force)
+            total += count
+        return total
+
+    def scan_active(self, force: bool = False) -> int:
+        """Scan only active strategy directories (not archive)."""
+        count = 0
+        for pkg_path in SCAN_DIRS:
+            c = self._scan_package(pkg_path, force=force)
+            count += c
+        return count
+
+    def scan_archive(self, force: bool = False) -> int:
+        """Scan archive directories for legacy strategies."""
+        if self._archive_scanned and not force:
+            return 0
+        count = 0
+        for pkg_path in _ARCHIVE_DIRS:
+            c = self._scan_archive_package(pkg_path, force=force)
+            count += c
+        self._archive_scanned = True
+        return count
+
+    # ── Internal Scanning ──────────────────────────────────────────────
+
+    def _scan_package(self, pkg_path: str, force: bool = False) -> int:
+        """Scan a Python package for Strategy subclasses."""
+        try:
+            module = importlib.import_module(pkg_path)
+        except ImportError:
+            return 0
+
+        if pkg_path in self._scanned and not force:
+            return 0
+        self._scanned.add(pkg_path)
+
+        count = 0
+        # Scan submodules
+        for finder, name, is_pkg in pkgutil.walk_packages(
+            module.__path__, prefix=pkg_path + "."
+        ):
+            if name in self._scanned and not force:
+                continue
+            self._scanned.add(name)
+            try:
+                mod = importlib.import_module(name)
+                for _, obj in inspect.getmembers(mod, inspect.isclass):
+                    if self._is_strategy_class(obj):
+                        strat_name = obj.__name__
+                        if strat_name not in self._registry:
+                            self.register(strat_name, obj)
+                            count += 1
+                        elif self._registry[strat_name] is not obj:
+                            # Override with newer/active version
+                            logger.info(
+                                "AutoRegistry: overriding %s with %s",
+                                strat_name,
+                                obj.__module__,
+                            )
+                            self.register(strat_name, obj)
+            except Exception as e:
+                logger.debug("AutoRegistry: skipped module %s: %s", name, e)
+
+        # Also scan current module's direct classes
+        for _, obj in inspect.getmembers(module, inspect.isclass):
+            if self._is_strategy_class(obj):
+                strat_name = obj.__name__
+                if strat_name not in self._registry:
+                    self.register(strat_name, obj)
+                    count += 1
+
+        if count > 0:
+            logger.info("AutoRegistry: registered %d strategies from %s", count, pkg_path)
+        return count
+
+    def _scan_archive_filesystem(self, force: bool = False) -> int:
+        """Scan repository-level archive/ directory via filesystem walk."""
+        archive_root = Path(_ARCHIVE_ROOT)
+        if not archive_root.exists():
+            logger.debug("AutoRegistry: archive root does not exist: %s", archive_root)
             return 0
 
         count = 0
-        pattern = "**/*.py" if recursive else "*.py"
-        for py_file in sorted(dir_path.glob(pattern)):
-            if py_file.name in _SKIP_FILES or py_file.name.startswith("__"):
+        for py_file in sorted(archive_root.rglob("*.py")):
+            rel = py_file.relative_to(archive_root)
+            # Convert path to dotted module name
+            parts = list(rel.with_suffix("").parts)
+            if parts and parts[-1] == "__init__":
+                parts = parts[:-1]
+            if not parts:
                 continue
-            if any(skip in str(py_file) for skip in ("__pycache__", ".venv", "node_modules", ".next", ".git", "archive")):
+            module_name = "archive." + ".".join(parts)
+            if module_name in self._scanned and not force:
                 continue
+            self._scanned.add(module_name)
 
-            mod_name = py_file.stem
-            file_hash = self._file_hash(py_file)
-
-            # Skip unchanged files
-            if mod_name in self._registry and self._file_hashes.get(mod_name) == file_hash:
-                continue
-
-            # Remove stale entry if file changed
-            if mod_name in self._registry:
-                del self._registry[mod_name]
-                del self._modules[mod_name]
-
+            # We cannot import via Python path since archive/ is not a package
+            # under quant_nanggroe. Load source directly instead.
             try:
-                spec = importlib.util.spec_from_file_location(mod_name, py_file)
-                if not spec or not spec.loader:
-                    continue
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
+                source = py_file.read_text(encoding="utf-8", errors="replace")
+                loaded = self._load_strategy_from_source(source, module_name, py_file)
+                count += loaded
             except Exception as e:
-                logger.debug("Skipping %s: %s", py_file.name, e)
-                continue
+                logger.debug("AutoRegistry: skipped archive file %s: %s", py_file, e)
 
-            # Register ALL classes
-            for obj_name, obj in inspect.getmembers(mod, inspect.isclass):
-                if obj.__module__ != mod.__name__:
-                    continue
-                if name_suffix and not obj_name.endswith(name_suffix):
-                    continue
-                if base_class is not None and not issubclass(obj, base_class):
-                    continue
-                if inspect.isabstract(obj):
-                    continue
-                if base_class is not None and obj_name == base_class.__name__:
-                    continue
-
-                key = obj_name.lower()
-                self._registry[key] = obj
-                self._modules[key] = str(py_file)
-                self._file_hashes[key] = file_hash
-                count += 1
-
-        if count:
-            logger.info("Discovered %d components in %s", count, directory)
+        logger.info("AutoRegistry: %d archive strategies from filesystem scan", count)
         return count
 
-    def discover_all(
-        self,
-        strategy_dirs: Optional[list[str | Path]] = None,
-        base_class: Optional[type] = None,
-        name_suffix: str = "",
-    ) -> dict[str, int]:
-        """Scan the ENTIRE repo. No directory skipped.
+    @staticmethod
+    def _load_strategy_from_source(source: str, module_name: str, filepath: Path) -> int:
+        """Extract Strategy subclasses from source without full import."""
+        import ast
+        count = 0
+        try:
+            tree = ast.parse(source, filename=str(filepath))
+        except SyntaxError:
+            return 0
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            # Check if it has Strategy as a base class
+            has_strategy_base = False
+            for base in node.bases:
+                base_name = None
+                if isinstance(base, ast.Name):
+                    base_name = base.id
+                elif isinstance(base, ast.Attribute):
+                    base_name = base.attr
+                if base_name and base_name in ("Strategy", "StrategyBase", "BaseStrategy"):
+                    has_strategy_base = True
+                    break
+            if not has_strategy_base:
+                continue
+            cls_name = node.name
+            if cls_name in ("Strategy", "StrategyBase", "BaseStrategy"):
+                continue
+            archive_name = f"archive_{cls_name}"
+            if archive_name not in _registry._registry:
+                _registry.register(archive_name, None)
+                count += 1
+        return count
 
-        Returns dict mapping directory -> number of discoveries.
-        """
-        if strategy_dirs is None:
-            strategy_dirs = self._all_dirs()
-
-        before = set(self._registry.keys())
-
-        results: dict[str, int] = {}
-        for d in strategy_dirs:
-            n = self.discover_from_dir(d, base_class, name_suffix)
-            results[str(d)] = n
-
-        # Auto-clean stale entries
-        for key in list(self._registry.keys()):
-            mod_path = self._modules.get(key, "")
-            if mod_path and not Path(mod_path).exists():
-                del self._registry[key]
-                del self._modules[key]
-                self._file_hashes.pop(key, None)
-
-        self._scan_count += 1
-        return results
-
-    # ── Auto-Init ──────────────────────────────────────────────────
-
-    def ensure_init_files(self, root: str | Path | None = None) -> int:
-        """Auto-generate __init__.py for ALL directories missing one."""
-        root_path = Path(root) if root else self._repo_root
-        if not root_path.is_dir():
+    def _scan_archive_package(self, pkg_path: str, force: bool = False) -> int:
+        """Scan archive directories — include ALL strategies even if duplicates."""
+        try:
+            module = importlib.import_module(pkg_path)
+        except ImportError:
             return 0
 
-        created = 0
-        for d in sorted(root_path.rglob("*")):
-            if not d.is_dir():
-                continue
-            if any(skip in str(d) for skip in ("__pycache__", "node_modules", ".git", ".next", ".venv", "archive")):
-                continue
+        if pkg_path in self._scanned and not force:
+            return 0
+        self._scanned.add(pkg_path)
 
-            init_file = d / "__init__.py"
-            if not init_file.exists():
-                has_python = any(d.glob("*.py"))
-                if has_python:
-                    init_file.write_text(f"# {d.name} module\n")
-                    created += 1
-                    logger.info("Created __init__.py: %s", init_file)
-
-        return created
-
-    # ── Health Check ───────────────────────────────────────────────
-
-    def health_check(self) -> dict[str, Any]:
-        """Full audit of registry health across the entire repo."""
-        stale = []
-        for key, mod_path in self._modules.items():
-            if not Path(mod_path).exists():
-                stale.append(key)
-
-        missing_init = []
-        for d in self._repo_root.rglob("*"):
-            if not d.is_dir():
-                continue
-            if any(skip in str(d) for skip in ("__pycache__", "node_modules", ".git", ".next", ".venv", "archive")):
-                continue
-            has_python = any(d.glob("*.py"))
-            has_init = (d / "__init__.py").exists()
-            if has_python and not has_init:
-                missing_init.append(str(d.relative_to(self._repo_root)))
-
-        by_dir: dict[str, int] = {}
-        for mod_path in self._modules.values():
+        count = 0
+        for finder, name, is_pkg in pkgutil.walk_packages(
+            module.__path__, prefix=pkg_path + "."
+        ):
             try:
-                rel = str(Path(mod_path).relative_to(self._repo_root).parent)
-                by_dir[rel] = by_dir.get(rel, 0) + 1
-            except ValueError:
-                by_dir["unknown"] = by_dir.get("unknown", 0) + 1
+                mod = importlib.import_module(name)
+                for _, obj in inspect.getmembers(mod, inspect.isclass):
+                    if self._is_strategy_class(obj):
+                        strat_name = obj.__name__
+                        # Archive strategies use archive prefix to avoid clashes
+                        archive_name = f"archive_{strat_name}"
+                        if archive_name not in self._registry:
+                            self.register(archive_name, obj)
+                            count += 1
+            except Exception:
+                pass
 
-        # Count total .py files vs registered
-        total_py = sum(1 for _ in self._repo_root.rglob("*.py")
-                      if not any(skip in str(_) for skip in ("__pycache__", ".venv", "node_modules", ".next", ".git", "archive")))
+        logger.info("AutoRegistry: %d archive strategies from %s", count, pkg_path)
+        return count
 
-        return {
-            "total_registered": self.count(),
-            "total_py_files": total_py,
-            "coverage_pct": round(self.count() / max(1, total_py) * 100, 1),
-            "stale": stale,
-            "stale_count": len(stale),
-            "missing_init": missing_init,
-            "missing_init_count": len(missing_init),
-            "by_directory": by_dir,
-            "scan_count": self._scan_count,
-        }
+    @staticmethod
+    def _is_strategy_class(obj: type) -> bool:
+        """Check if a class is a Strategy subclass (not the base itself)."""
+        if obj is Strategy or obj is StrategyBase:
+            return False
+        if obj.__module__.startswith("_"):
+            return False
+        return issubclass(obj, Strategy)
 
-    # ── Access ─────────────────────────────────────────────────────
 
-    def get(self, name: str) -> Optional[type]:
-        return self._registry.get(name.lower())
+# ── Singleton + Auto-Init ────────────────────────────────────────────
 
-    def get_all(self) -> dict[str, type]:
-        return dict(self._registry)
+_registry = AutoRegistry()
 
-    def get_by_module(self, name: str) -> Optional[str]:
-        return self._modules.get(name.lower())
+# Auto-scan on import
+_strategies_found = _registry.scan_all()
+logger.info(
+    "AutoRegistry initialized: %d strategies registered from active + archive dirs",
+    _strategies_found,
+)
 
-    def list_registered(self) -> list[str]:
-        return sorted(self._registry.keys())
 
-    def count(self) -> int:
-        return len(self._registry)
+# ── Public API ───────────────────────────────────────────────────────
 
-    # ── Internal helpers ────────────────────────────────────────────
+def list_strategies() -> Dict[str, Type[Strategy]]:
+    """Return all registered strategies (active + archive)."""
+    return _registry.list_strategies()
 
-    def _find_repo_root(self) -> Path:
-        """Find repo root by looking for pyproject.toml or .git."""
-        d = Path(__file__).resolve()
-        while d != d.parent:
-            if (d / "pyproject.toml").exists() or (d / ".git").is_dir():
-                return d
-            d = d.parent
-        return Path(__file__).resolve().parent.parent.parent
 
-    def _all_dirs(self) -> list[Path]:
-        """Return ALL top-level directories in the repo for scanning."""
-        dirs = []
-        for d in sorted(self._repo_root.iterdir()):
-            if not d.is_dir():
-                continue
-            if any(skip in str(d) for skip in (".git", ".venv", "node_modules", ".next", "__pycache__", "archive")):
-                continue
-            dirs.append(d)
-        return dirs
+def get_strategy(name: str) -> Optional[Type[Strategy]]:
+    """Get a strategy class by name."""
+    return _registry.get(name)
 
-    def _file_hash(self, path: Path) -> str:
-        try:
-            return hashlib.md5(path.read_bytes()).hexdigest()[:12]
-        except Exception:
-            return "error"
 
-    def status(self) -> dict[str, Any]:
-        return {
-            "total_registered": self.count(),
-            "scan_count": self._scan_count,
-            "components": sorted(k for k in self._registry),
-        }
+def create_strategy(name: str, **kwargs) -> Optional[Strategy]:
+    """Create a strategy instance by name."""
+    return _registry.create(name, **kwargs)
+
+
+def list_categories() -> Dict[str, int]:
+    """Return strategy counts by category."""
+    cats: Dict[str, int] = {}
+    for name in _registry.list_strategies():
+        if name.startswith("archive_"):
+            cat = "archive"
+        else:
+            cat = "active"
+        cats[cat] = cats.get(cat, 0) + 1
+    return cats
+
+
+def reload() -> int:
+    """Force re-scan all directories (clear cache)."""
+    _registry._scanned.clear()
+    _registry._archive_scanned = False
+    return _registry.scan_all(force=True)
