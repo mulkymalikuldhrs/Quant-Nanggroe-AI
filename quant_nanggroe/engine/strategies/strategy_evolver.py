@@ -75,10 +75,27 @@ class StrategyEvolver:
             EvolveAttempt with accepted=True/False.
         """
         if backtest_fn is None:
-            backtest_fn = self._mock_backtest
+            # Phase C: default to REAL backtest, fail-closed. No silent mock.
+            backtest_fn = self._real_backtest
 
         baseline_metrics = backtest_fn(strategy_name, baseline_params)
+        # Fail-closed: if real backtest returns None (failed), reject
+        if baseline_metrics is None:
+            self._rejects_in_a_row += 1
+            return EvolveAttempt(
+                timestamp=time.time(), strategy_name=strategy_name,
+                baseline_params=baseline_params, mutated_params=mutated_params,
+                metric=metric, baseline_value=0.0, mutated_value=0.0,
+                accepted=False, reason="REAL BACKTEST FAILED — reject (fail-closed)")
         mutated_metrics = backtest_fn(strategy_name, mutated_params)
+        if mutated_metrics is None:
+            self._rejects_in_a_row += 1
+            return EvolveAttempt(
+                timestamp=time.time(), strategy_name=strategy_name,
+                baseline_params=baseline_params, mutated_params=mutated_params,
+                metric=metric, baseline_value=baseline_metrics.get(metric, 0.0),
+                mutated_value=0.0, accepted=False,
+                reason="MUTATED BACKTEST FAILED — reject (fail-closed)")
 
         metric = self.config.metric
         baseline_val = baseline_metrics.get(metric, 0.0)
@@ -143,18 +160,35 @@ class StrategyEvolver:
 
     # ── Internal ──────────────────────────────────────────────────
 
+    def _real_backtest(self, name: str, params: dict) -> dict:
+        """Phase C: real backtest via SL/TP-aware engine (yfinance EURUSD M15).
+        Returns metrics dict; fail-closed: if backtest fails, return None so the
+        caller rejects (never mock)."""
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
+            from scripts.backtest_dhaher_sltp import run_backtest
+            df = run_backtest(strategy=name, params=params, bars=500)
+            return {
+                "profit_factor": df.get("profit_factor", 0.0),
+                "sharpe": df.get("sharpe", 0.0),
+                "win_rate": df.get("win_rate", 0.0),
+                "total_return_pct": df.get("total_return_pct", 0.0),
+                "max_drawdown_pct": df.get("max_dd_pct", -100.0),
+            }
+        except Exception as e:
+            log.error(f"Real backtest failed for {name}: {e}")
+            return None
+
     def _mock_backtest(self, name: str, params: dict) -> dict:
-        """Placeholder backtest — REPLACE with real walk-forward."""
-        # Uses a simple heuristic: different params → slightly different "results"
-        # This is TEMPORARY until wired into real backtest engine.
+        """Placeholder backtest — DEPRECATED, kept only for unit tests."""
         import random
         base = {"profit_factor": 1.2, "sharpe": 0.8, "win_rate": 55.0,
                 "total_return_pct": 3.0, "max_drawdown_pct": -8.0}
-        # Jitter based on param hash for reproducibility
         param_hash = hash(frozenset(params.items())) & 0xFFFF
         rng = random.Random(param_hash)
         for k in base:
-            base[k] += rng.uniform(-0.3, 0.3) * base[k]  # ±30% jitter
+            base[k] += rng.uniform(-0.3, 0.3) * base[k]
         return base
 
     def _persist_history(self, attempt: EvolveAttempt) -> None:

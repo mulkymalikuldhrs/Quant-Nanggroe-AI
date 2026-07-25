@@ -66,9 +66,9 @@ QNA is NOT a research toy. It is a production autonomous hedge fund that:
 ### PHASE 4 — Risk Guard Hardening (P0)
 **Goal:** Fail-closed, no phantom veto, no rubber stamp.
 - [x] Daily/weekly-loss veto wired (reads real PnL)
-- [ ] Remove floating-equity fallback (phantom veto source)
-- [ ] Add weekly-loss veto (currently missing — P1 gap)
-- [ ] Kill switch: AUTO_DAILY_LIMIT must reset after restart
+- [x] Remove floating-equity fallback (phantom veto source) — verified: manager.py has no account_info()/float(mt5) fallback; `_sync_realized_pnl` uses history_deals_get only
+- [x] Add weekly-loss veto — verified BOTH paths present: constitutional Check 4 (3% hard limit) + kill-switch AUTO_WEEKLY_LIMIT (-2.5% early warning) in `_auto_check_kill_switch`
+- [x] Kill switch: AUTO_DAILY_LIMIT resets after restart — kill_switch.py `_reconcile` auto-expires stale level_1 (daily) on new day; weekly/drawdown require RESET_CONFIRMATION
 - **Owner:** clawbot (tester) + hackerbot (security audit)
 - **Verify:** Force daily loss > 5% → veto fires, blocks ALL orders
 

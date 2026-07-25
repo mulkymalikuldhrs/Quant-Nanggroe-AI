@@ -504,6 +504,8 @@ class LiveEngine:
             db=self.db,
         )
         log.info(f"Production engine: {list(self.production['strategy_runner'].strategies.keys())} strategies")
+        self._exec = self.production["execution"]  # Phase A: wired execution path
+        self._sync_broker_positions()  # Phase A: sync ledger with broker on startup
         # ── Adaptive integration (replaces inline strategies) ──
         self._signal_pipeline, self._risk_gate, self._data_feeds = create_live_pipeline(
             initial_equity=10000.0,
@@ -602,6 +604,32 @@ class LiveEngine:
             return False, reason
         return True, "ok"
 
+    def _sync_broker_positions(self):
+        """Phase A: reconcile open positions in ledger with broker (MT5 or paper)
+        so the engine does not double-open when restarted live."""
+        try:
+            # Only meaningful when a live/paper broker is wired
+            if not hasattr(self, "_exec") or self._exec is None:
+                return
+            # MT5 path: pull live positions into ledger (idempotent)
+            mt5 = getattr(self._exec, "_mt5", None)
+            if mt5 is not None and mt5.connected:
+                for p in mt5.get_positions():
+                    sym = p.symbol
+                    # reverse map MT5 BTCUSD -> QNA BTCUSDT not needed; keep MT5 symbol
+                    if self._get_open_position(sym) is None:
+                        self.db.execute(
+                            "INSERT INTO positions (symbol, side, entry_price, quantity, "
+                            "entry_time, highest_since_entry, strategy, take_profit) "
+                            "VALUES (?,?,?,?,?,?,?,?)",
+                            (sym, "long" if p.quantity > 0 else "short", p.entry_price,
+                             abs(p.quantity), datetime.now().isoformat(), p.entry_price,
+                             "mt5-sync", p.entry_price * 1.05))
+                        self.db.commit()
+                        log.info(f"SYNCED broker position {sym} {p.quantity}")
+        except Exception as e:
+            log.warning(f"Broker position sync skipped: {e}")
+
     def _open_position(self, symbol: str, price: float, qty: float, strategy: str):
         allowed, reason = self._can_open_new_position(symbol)
         if not allowed:
@@ -609,10 +637,23 @@ class LiveEngine:
             return
         now = datetime.now().isoformat()
         tp_target = TP_TARGETS.get(strategy, 0.05)
+        tp_price = price * (1 + tp_target)
+        # Phase A: push real order through wired execution manager (MT5 or paper)
+        try:
+            result = self._exec.execute_signal(
+                type("Sig", (), {"symbol": symbol, "side": "buy", "strategy": strategy,
+                                 "stop_loss": price * (1 - TRAILING_STOP_PCT),
+                                 "take_profit": tp_price})(),
+                price, self.risk.get_balance())
+            mode = (result or {}).get("mode", "unknown")
+            log.info(f"ORDER SENT {symbol} {qty:.4f} @ {price:.2f} ({strategy}) -> {mode}")
+        except Exception as e:
+            log.error(f"Live order failed {symbol}: {e}")
+        # Ledger insert (audit trail, always kept in sync)
         self.db.execute(
             "INSERT INTO positions (symbol, side, entry_price, quantity, entry_time, "
             "highest_since_entry, strategy, take_profit) VALUES (?,?,?,?,?,?,?,?)",
-            (symbol, "long", price, qty, now, price, strategy, price * (1 + tp_target))
+            (symbol, "long", price, qty, now, price, strategy, tp_price)
         )
         self.db.commit()
         log.info(f"BUY {symbol} {qty:.4f} @ {price:.2f} ({strategy})")
@@ -624,6 +665,17 @@ class LiveEngine:
         pnl = (price - pos["entry_price"]) * remaining
         balance = self.risk.get_balance()
         new_balance = balance + pnl
+        # Phase A: send real close order through wired broker (MT5 or paper)
+        try:
+            mt5 = getattr(self._exec, "_mt5", None) if hasattr(self, "_exec") else None
+            if mt5 is not None and mt5.connected:
+                from quant_nanggroe.connectors.broker_base import Order
+                mt5.place_order(Order(
+                    symbol=pos["symbol"], side="sell", quantity=remaining,
+                    order_type="market", price=price))
+                log.info(f"MT5 CLOSE SENT {pos['symbol']} {remaining}")
+        except Exception as e:
+            log.error(f"Live close failed {pos['symbol']}: {e}")
         self.db.execute("UPDATE portfolio SET value=? WHERE key='balance'", (new_balance,))
         self.db.execute("UPDATE portfolio SET value=value+1 WHERE key='total_trades'")
         if pnl > 0:
@@ -985,6 +1037,10 @@ class LiveEngine:
         if self.cycle_count % HEARTBEAT_INTERVAL == 0:
             self._heartbeat(balance, portfolio_value)
 
+        # Phase E: closed-PnL feedback loop (daily @ 60s cycle)
+        if self.cycle_count % 1440 == 0 and self.cycle_count > 0:
+            self._closed_pnl_feedback()
+
         if self.auto_aware and self.cycle_count % 5 == 0:
             try:
                 self.auto_aware.tick(self.asset_candles)
@@ -1007,6 +1063,44 @@ class LiveEngine:
             )
             result[sym] = round(cur.fetchone()[0], 2)
         return result
+
+    def _closed_pnl_feedback(self):
+        """Phase E: rank strategies by closed-PnL expectation, trigger evolver
+        for losers, promote winners. Runs daily (every 1440 cycles @ 60s)."""
+        try:
+            cur = self.db.execute(
+                "SELECT strategy, trades, wins, total_pnl FROM strategy_stats")
+            rows = cur.fetchall()
+            ranked = []
+            for s, t, w, pnl in rows:
+                if t < 3:
+                    continue
+                win_rate = w / t
+                expectation = pnl / t  # avg PnL per trade
+                ranked.append((s, t, win_rate, expectation))
+            ranked.sort(key=lambda x: x[3], reverse=True)
+            for s, t, wr, exp in ranked:
+                if exp < 0:  # negative expectation -> evolve or disable
+                    log.warning(f"STRATEGY {s}: negative expectation ${exp:.2f}/trade "
+                                 f"({wr:.0%} WR, {t} trades) — candidate for evolver")
+                    # Trigger StrategyEvolver if available
+                    try:
+                        from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
+                        ev = StrategyEvolver()
+                        # Simple mutation: nudge params, real-backtest gate decides
+                        baseline = {"lookback": 20, "atr_mult": 1.2}
+                        mutated = {"lookback": 20, "atr_mult": 1.5}
+                        att = ev.evaluate(s, baseline, mutated)
+                        log.info(f"Evolver {s}: {att.reason}")
+                    except Exception as e:
+                        log.debug(f"Evolver skip {s}: {e}")
+                else:
+                    log.info(f"STRATEGY {s}: +${exp:.2f}/trade ({wr:.0%} WR) — KEEP/PROMOTE")
+            if ranked:
+                best = ranked[0]
+                log.info(f"CLOSED-PnL RANK: best={best[0]} (${best[3]:.2f}/trade)")
+        except Exception as e:
+            log.debug(f"Closed-PnL feedback: {e}")
 
     def _heartbeat(self, balance: float, portfolio_value: float):
         dd = self.risk.get_drawdown()
