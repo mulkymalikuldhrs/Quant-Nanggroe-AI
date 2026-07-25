@@ -12,7 +12,6 @@ from quant_nanggroe.engine.strategies.registry import (
     StrategyRegistry,
 )
 from quant_nanggroe.engine.strategies.base import (
-    BaseStrategy,
     Strategy,
     StrategyParameters,
     StrategySignal,
@@ -27,6 +26,9 @@ from quant_nanggroe.engine.strategies.base import (
 )
 
 log = logging.getLogger(__name__)
+
+# Backward compat: old code uses BaseStrategy, new code uses Strategy
+BaseStrategy = Strategy
 
 
 def create_strategy(name: str, **kwargs: Any):
