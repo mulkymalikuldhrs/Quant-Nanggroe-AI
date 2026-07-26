@@ -540,10 +540,12 @@ class RiskManager:
                 "risk:active_positions": self.state.active_positions,
                 "risk:veto_count": self._veto_count,
                 "risk:approval_count": self._approval_count,
-                "risk:kill_switch_active": self.kill_switch.is_active,
-                "risk:kill_switch_reason": self.kill_switch.status().get("activation_reason"),
-                "risk:kill_switch_activated_at": self.kill_switch.status().get("activated_at"),
             }, ttl=86400 * 7)  # 7-day TTL
+            # NOTE: kill-switch ACTIVE state is owned by KillSwitch itself
+            # (cross-proc file via QNA_KILL_SWITCH_STATE_FILE + _reconcile
+            # daily-expiry). Do NOT persist/reactivate it here — the old
+            # redundant flag bypassed _reconcile and re-halted every fresh
+            # RiskManager() on a stale daily-level_1 (phantom-veto).
         except Exception as e:
             logger.warning("Failed to persist risk state: %s", e)
 
@@ -590,12 +592,11 @@ class RiskManager:
             if approval_count is not None:
                 self._approval_count = int(approval_count)
 
-            # Restore kill switch state
-            kill_switch_active = self._persistence.get("risk:kill_switch_active")
-            if kill_switch_active:
-                reason = self._persistence.get("risk:kill_switch_reason") or "PERSISTED_STATE"
-                self.kill_switch.activate(reason)
-
+            # Kill-switch ACTIVE state is owned by KillSwitch (its own
+            # reconcile() daily-expiry on the cross-proc file). Do NOT
+            # re-activate from a generic persistence flag — that bypasses
+            # reconcile and re-halts every fresh RiskManager() on a stale
+            # daily-level_1 from a prior day/run (phantom-veto / over-active flip).
             # Reset daily counters if the persisted state is from a previous day
             self._reset_daily_if_needed()
 
