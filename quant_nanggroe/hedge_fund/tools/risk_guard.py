@@ -99,9 +99,20 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
         risk = max(risk, 0.85)
         reasons.append(f"daily_loss_high loss={loss_ratio:.2%} ~ {max_loss:.2%}")
     
-    # 2b. Weekly loss limit — fail-closed (WAR_PLAN Phase 4 gap)
-    weekly_pnl = proposal.get('weekly_pnl', 0.0)
+    # 2b. Weekly loss limit — caution on missing data.
+    # Unlike daily_pnl (must-have every session), weekly_pnl can be missing
+    # during broker reconnections or week boundaries. Missing weekly data
+    # bumps baseline risk but does NOT veto — a stale 0.0 is safer than a hard halt.
+    weekly_pnl = proposal.get('weekly_pnl')
     max_weekly_loss = policy.get('max_weekly_loss', 0.03)
+    if weekly_pnl is None:
+        # No weekly data available — cannot assess weekly loss.
+        # Bump risk conservatively but allow the trade (degraded mode).
+        risk = max(risk, 0.5)
+        # Do NOT append to reasons — this keeps the no-evidence veto intact.
+        # If no other real risk reason fires and no signal/confidence exists,
+        # the guard still vetoes via the no-evidence path below.
+        weekly_pnl = 0.0  # treat as zero for loss calc
     week_loss_ratio = abs(weekly_pnl) / balance if weekly_pnl < 0 else 0
     if week_loss_ratio > max_weekly_loss * 1.2:
         risk = max(risk, 1.0)
@@ -135,19 +146,12 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
             risk = max(risk, min(0.9, sl_pct * 10))
             reasons.append(f"wide_stop_loss sl={sl_pct:.2%}")
     
-    # Default caution / fail-closed on insufficient evidence
+    # Default: fail-closed veto when no risk reasons fire.
+    # A trading signal is not a safety justification — it is a conviction claim,
+    # not a risk checkpoint. Approving on conviction alone = rubber stamp.
     if not reasons:
-        has_signal = proposal.get('signal') not in (None, 'hold', 'HOLD', 0, 0.0, False)
-        has_conf = proposal.get('strategy_confidence') is not None
-        if has_signal or has_conf:
-            # Strategy evidence present -> approve with caution
-            risk = 0.35
-            reasons.append("insufficient_data_default_caution")
-        else:
-            # No risk reason fired AND no strategy evidence -> fail-closed veto
-            # (kills the rubber-stamp: cannot approve what it cannot justify)
-            risk = 1.0
-            reasons.append("no_strategy_evidence_veto")
+        risk = 1.0
+        reasons.append("no_risk_evidence_veto")
     
     return min(1.0, max(0.0, risk)), reasons[:6]
 
