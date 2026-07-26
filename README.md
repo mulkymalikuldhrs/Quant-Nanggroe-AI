@@ -1,8 +1,8 @@
-# Quant Nanggroe AI v5.1.0 — Autonomous Quantitative Hedge Fund
+# Quant Nanggroe AI v6.0.0 — Autonomous Quantitative Hedge Fund
 
-Autonomous quantitative hedge fund platform with multi-strategy execution, constitutional risk management (9-checkpoint gate), hedge fund aggregator, and self-evolving pipeline. Runs without human intervention across forex, crypto, and equities.
+Autonomous quantitative hedge fund platform with multi-strategy execution, constitutional risk management (9-checkpoint gate), unified pipeline, hedge fund aggregator, and self-evolving pipeline. Runs without human intervention across forex, crypto, and equities.
 
-**Single entry point:** `python qna.py [mode]` — all other entry points (main.py, cli.py, daemon_manager.py) are archived.
+**Single entry point:** `python qna.py [mode]` — `unified` is now the default mode.
 
 ---
 
@@ -31,13 +31,14 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/ -v --tb=short
 
 | Mode | Command | Description |
 |------|---------|-------------|
-| CLI | `python qna.py cli` | Interactive CLI shell |
+| Unified | `python qna.py` (default) | Unified pipeline — auto mode-routing (hedge/crypto/agentic) |
 | API | `python qna.py api` | FastAPI server (port 8000) |
 | Daemon | `python qna.py daemon` | Background lifecycle daemon |
-| Web | `python qna.py web` | Legacy Flask UI (port 5000) |
 | Hedge | `python qna.py hedge` | Hedge Fund aggregator (multi-provider voting) |
 | Status | `python qna.py status` | System health & status |
 | Stop | `python qna.py stop` | Stop running daemon |
+
+**⚠️ Deprecated:** `cli` and `web` modes will be removed in v7.0. Use `unified` (default) instead.
 
 ---
 
@@ -45,29 +46,37 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/ -v --tb=short
 
 ```
 quant_nanggroe/                          (753 .py files, 125K+ lines)
+├── pipeline/                            → UnifiedPipeline — auto mode-routing (hedge/crypto/agentic) 🆕 v6.0.0
+│   ├── orchestrator.py                  → Pipeline orchestration & lifecycle
+│   ├── data.py                          → Data ingestion & normalization
+│   ├── signal.py                        → Signal generation & aggregation
+│   ├── execution.py                     → Order execution pipeline
+│   └── factory.py                       → Pipeline factory with auto mode detection
 ├── api/                                 → FastAPI server (181 endpoints)
 ├── engine/                              → Core trading engine (19 modules)
 │   ├── strategies/                      → CANONICAL — 9 registered strategies (@register decorator)
 │   │   └── registry.py                  → StrategyRegistry auto-discovery
 │   ├── strategy/strategies/             → LEGACY BRIDGE — backward-compat shim only (empty, routes via __init__)
 │   ├── risk/                            → Constitutional risk: 9-checkpoint gate, KillSwitch, drawdown monitor
-│   │   ├── kill_switch.py               → KillSwitch with C5 cross-process shared state
+│   │   ├── kill_switch.py               → KillSwitch with C5 cross-process shared state (thresholds from constants.py)
 │   │   ├── checks.py                    → ConstitutionalRiskGuard (= RiskCheckGate alias)
-│   │   └── manager.py                   → RiskManager orchestration
+│   │   ├── manager.py                   → RiskManager orchestration
+│   │   └── constants.py                 → Single source of truth for all risk limits
 │   ├── backtest/                        → Walk-forward, Monte Carlo, multi-market backtest
 │   ├── execution/                       → Order routing, Builder, RiskManager, Almgren-Chriss
 │   ├── agentic/                         → Autonomous agent lifecycle (LangGraph orchestration)
 │   ├── portfolio/                       → Portfolio construction, Kelly sizing, risk parity
 │   └── models/                          → ML models and inference
 ├── hedge_fund/                          → Executive-level multi-provider aggregator
-│   ├── hedge_fund.py                    → Hedge fund voting engine (331K+ lines)
+│   ├── hedge_fund.py                    → Hedge fund voting engine (backward-compat shim)
 │   ├── mtf.py                           → Multi-timeframe analysis
 │   ├── multipair.py                     → Multi-pair scanner
 │   ├── runner.py                        → Hedge fund runner
-│   ├── signals/                         → Signal generation
-│   ├── risk/                            → Hedge fund risk management
-│   ├── execution/                       → Hedge fund execution
-│   ├── portfolio/                       → Hedge fund portfolio
+│   ├── signals/                         → 247 providers: core (10) + evolved (237) + registry + aggregator
+│   ├── risk/                            → gate.py, guard.py (fail-closed)
+│   ├── execution/                       → orders.py (trail_sl, execute)
+│   ├── portfolio/                       → main.py (run_once)
+│   ├── utils/                           → data, config, connection, indicators
 │   └── tools/                           → Utility tools
 ├── signals/                             → TradingSignal model + SignalRepository
 ├── security/                            → Auth (JWT, API key), credential manager
@@ -158,9 +167,8 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 | Gap | Severity | Status |
 |-----|----------|--------|
 | PYTHONPATH leak on boot (Hermes venv contamination) | HIGH | Mitigated (env fix documented) |
-| backup_env/.env on disk (not git-tracked) | MEDIUM | Archived |
+| Test suite requires environment setup (pytest env broken) | MEDIUM | 1 skip remaining (ccxt env) — 107/108 pass |
 | 2 strategy hierarchies (canonical + legacy shim) | MEDIUM | Legacy empty, bridge in place |
-| Test suite requires environment setup (pytest env broken) | HIGH | 431 cached failures, env config needed |
 | No cron-to-live-trade wiring on this host | LOW | Requires MT5 + VPS |
 | Dashboard Next.js build not verified on Windows | LOW | Vercel builds in CI |
 | Option/volatility strategies not live-tested | LOW | Walk-forward validates directional only |
@@ -171,14 +179,15 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 
 | Domain | Status |
 |--------|--------|
-| Architecture Health | 9/10 — Clean single entry point |
-| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate |
+| Architecture Health | 9/10 — Clean single entry point + unified pipeline |
+| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate, unified constants |
 | Strategies | 9 registered via StrategyRegistry + legacy bridge |
-| Hedge Fund | Multi-provider aggregator (hedge_fund/ subpackage) |
+| Hedge Fund | Multi-provider aggregator split into real submodules (v6.0.0) |
+| UnifiedPipeline | 🆕 v6.0.0 — auto mode-routing (hedge/crypto/agentic) |
 | Documentation | 50+ docs files |
-| Test Suite | 167 test files (env setup required before running) |
-| Security | Secrets via env vars, secrets rotation pending |
-| Issues Resolved | 45/47 (95.7%) |
+| Test Suite | 107/108 pass (1 ccxt skip) |
+| Security | Secrets via env vars, Telegram config validated |
+| Issues Resolved | 48/49 (98%) |
 
 ---
 
@@ -186,7 +195,7 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 
 ```
 Dhaher Labs Ecosystem
-├── Quant-Nanggroe-AI    🟢 v5.1.0    ← YOU ARE HERE
+├── Quant-Nanggroe-AI    🟢 v6.0.0    ← YOU ARE HERE
 ├── Autonomous-Organism  🟢 v5.4.1    Live on Vercel
 ├── BlackHornet          🟢            110+ agents, Codeberg sync
 ├── Seulanga-RAG         🟢            Merged GitLab
@@ -209,8 +218,11 @@ Dhaher Labs Ecosystem
 | Dashboard | Next.js 16 + React 19 + Recharts + Zustand |
 | Broker | MetaTrader5 (via set_broker_handle()) |
 | Crypto | CCXT |
-| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager |
-| Testing | pytest |
+| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager, unified constants |
+| UnifiedPipeline | `quant_nanggroe/pipeline/` — auto mode-routing (hedge/crypto/agentic) |
+| Exchange REST | 10 clients lazy-wired via `ExchangeFactory.create_rest_client()` |
+| Telegram | Config-validated (`validate_telegram_config` / `ensure_telegram`) |
+| Testing | pytest (107/108 pass — 1 ccxt skip) |
 | Credentials | MT5_LOGIN / MT5_PASSWORD env vars (NOT hardcoded) |
 
 ---

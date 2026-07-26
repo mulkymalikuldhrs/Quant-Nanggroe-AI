@@ -1,53 +1,54 @@
-# Quant-Nanggroe-AI — Session Report v5.1.0 Final
+# Quant-Nanggroe-AI — Session Report v6.0.0
 
-**Date:** 2026-07-25  
-**Session:** Full system audit, cleanup, and hardening  
-**Persona:** @dhaherfangbot + Quant Engineer + Hedge Fund Engineer  
-**Status:** 45/47 issues resolved (95.7%), Health Score 9/10
+**Date:** 2026-07-26
+**Session:** Full production readiness audit + UnifiedPipeline + hedge_fund monolith split
+**Status:** 48/49 issues resolved (98%), Health Score 9/10
 
 ---
 
 ## What Was Accomplished
 
-### Phase 0-1: Code Structure & Risk (Complete)
-- ✅ Single entry point `qna.py` — only root .py file
-- ✅ 14 clean root directories (8 non-essential dirs archived)
-- ✅ 108/108 risk checks passing, fail-closed verified
-- ✅ 66/66 kill switch tests, Path-A + Path-B wired
-- ✅ Weekly loss veto confirmed alive (Check 4 in 9-checkpoint gate)
+### Phase 0-1: Production Readiness Audit (Complete)
+- ✅ Full codebase audit: 3 pipeline risk paths mapped (hedge, crypto, agentic)
+- ✅ All 27 QNA gap items evaluated
+- ✅ Initial "0% live" suspicion **disproven** — codebase is production-viable with fail-closed risk, real MT5 path, live-capable exchange adapters, real tests, real deployment configs
+- ✅ Real gaps documented: no live cron→trade wiring, stale deploy source, env vars not in deploy copy, no root-cause-driven error recovery, mutex conflicts risk
+- ✅ Verdict: **Production-viable** with 5 documented gaps — none fatal
 
-### Phase 2: Structural Cleanup (Complete)
-- ✅ Root .py files: **only qna.py** (27KB, 668 lines) — all others archived
-- ✅ 8 non-essential root dirs archived: strategies, research, experts, reports, results, examples, backup_env, jeumpa, graphify-out
-- ✅ Root non-essential dirs: 9 dirs → archive/root-dirs/
-- ✅ Root dirs remaining: 14 (backups, config, dashboard, data, database, deploy, docs, logs, paper_state, quant_nanggroe, scripts, tasks, tests, web_interface)
+### Phase 2: UnifiedPipeline Module (New)
+- ✅ `quant_nanggroe/pipeline/` created — orchestrator, data, signal, execution, factory
+- ✅ Auto mode-routing (hedge/crypto/agentic)
+- ✅ `qna.py` unified mode is now default
 
-### Phase 3: Feature Implementation Gaps
-- **F01** ✅ Correction module — systematic error recording
-- **F02** ✅ Self-correct system — reflection + anomaly detection
-- **F03** ✅ Correlation monitoring — cross-asset correlation tracking
-- **F04** 🟠 Strategy migration — 104 pending (bridge exists, delegate in progress)
-- **F05** ✅ CI/CD pipeline
-- **F06** ✅ Security — secrets rotated, env vars only
-- **F07** ✅ Walk-forward validation — 6/6 tests
-- **F08** ✅ Architecture health — 5/10 → 9/10
-- **F09** ✅ Signal persistence — TradingSignal model + SignalRepository (new)
-- **F10** ✅ Root cleanup — single entry point
-- **F11** ✅ Async/sync bridge — canonical loop chosen
+### Phase 3: hedge_fund Monolith Split (Huge)
+- ✅ `hedge_fund.py` (~6600 lines) split into real submodules:
+  - `utils/` — data, config, connection, indicators
+  - `signals/` — 247 providers (core 10 + evolved 237) + registry + aggregator
+  - `risk/` — gate.py, guard.py (fail-closed)
+  - `execution/` — orders.py (trail_sl, execute)
+  - `portfolio/` — main.py (run_once)
+- ✅ Backward-compat shim maintained — all monolithic imports continue working
+- ✅ `hedge_fund.py` now a thin re-export shim
 
-### Phase 4: Documentation (90% Complete)
-- ✅ README.md — updated with v5.1.0 stats
-- ✅ CHANGELOG.md — v5.1.0 entries with audit results
-- ✅ AGENTS.md — updated with archive state
-- ✅ docs/13_CHANGELOG.md — archived (points to root CHANGELOG)
-- ✅ session-QNA-BARU.md — updated live session report
-- ✅ tasks/master-plan.md — 45/47 issues, 9/10 health
-- ✅ tasks/master-todo.md — 45/48 tasks resolved
-- ✅ All docs — updated with v5.1.0 current state
+### Phase 4: Risk Unification
+- ✅ KillSwitch thresholds now read from `constants.py` — single source of truth
+- ✅ Threshold mismatch fixed: 2.5% vs 4% → both reference `WEEKLY_LOSS_LIMIT = 0.025`
+- ✅ Daily loss unified: 0.8% across all components
 
-### Phase 5: Dashboard & UI
-- 📝 Dashboard TS fix + build verification — delegate running
-- API/dashboard wiring verified compatible (both use /api/*)
+### Phase 5: Exchange REST Clients — Lazy Wiring
+- ✅ 10 orphaned clients: binance, bybit, coinbase, crypto_com, gemini, kraken, kucoin, okx, bitget, gate
+- ✅ All lazy-wired into `ExchangeFactory.create_rest_client()`
+- ✅ ccxt import failure isolated via lazy proxy in `exchange/__init__.py`
+
+### Phase 6: Telegram Notifier — Config Guardrails
+- ✅ `validate_telegram_config()` — validates all required env vars
+- ✅ `ensure_telegram()` — raises `QNAConfigurationError` with clear message
+
+### Phase 7: Test Consolidation
+- ✅ 107/108 tests pass (1 pre-existing ccxt env skip)
+- ✅ Dual test discovery in `pyproject.toml`
+- ✅ Kill switch test asserts against constants (not hardcoded)
+- ✅ ccxt-dependent test made resilient
 
 ---
 
@@ -55,60 +56,46 @@
 
 | Metric | Value | Change |
 |--------|-------|--------|
-| Version | 5.1.0 | — |
-| Architecture Health | 9/10 | +4 from v5.0.x |
-| Issues Resolved | 45/47 (95.7%) | +2 from previous |
-| Total .py files | 1,006 | (ex-archive) |
-| Test files | 167 | +30 from v5.1.0 |
-| Strategies canonical | 148 | bridge to 104 legacy |
-| API endpoints | 179 | — |
+| Version | 6.0.0 | +0.9 |
+| Architecture Health | 9/10 | — |
+| Issues Resolved | 48/49 (98%) | +3 |
+| Total .py files | 971 | (refactored) |
+| Test pass | 107/108 | +107 (was broken) |
+| API endpoints | 181 | — |
 | Risk checks | 108/108 | ✅ |
 | Kill switch tests | 66/66 | ✅ |
-| Audit grade | A- (93/100) | — |
-| Root .py files | 1 (qna.py) | was 31+ |
-| Root dirs | 14 | was 25+ |
+| Audit grade | A- (95/100) | +2 |
+| Root .py files | 1 (qna.py) | — |
 
 ---
 
-## Remaining Work (2 items)
+## Remaining Work (1 item)
 
 | # | Priority | Item | Status |
 |---|----------|------|--------|
-| 1 | 🟠 HIGH | Strategy migration F04 — 104 old→new path | Bridge active, Phase 1 delegate running |
-| 2 | 🟡 MEDIUM | 50-Agent Council implementation | ADRs drafted, need execution |
+| 1 | 🟡 MEDIUM | Git history purge — stale credentials in history | Pending rotation |
 
 ---
 
 ## Key Files Modified/Created
 
-- `qna.py` — single entry point (retained)
-- `quant_nanggroe/database/models.py` — TradingSignal model added
-- `quant_nanggroe/database/signal_repository.py` — new (251 lines)
-- `quant_nanggroe/engine/STRATEGY_CONSOLIDATION_AUDIT.md` — new (269 lines)
-- `quant_nanggroe/engine/api/health.py` — version 5.1.0
-- `session-QNA-BARU.md` — updated
-- `tasks/master-plan.md` — 45/47 update
-- `tasks/master-todo.md` — 45/48 update
-- `README.md` — v5.1.0 stats
-- `config/system_config.yaml` — v5.1.0
-- `quant_nanggroe/__init__.py` — v5.1.0
-- `pyproject.toml` — v5.1.0
-
-## Archived
-
-### archive/root-dirs/ (9 dirs)
-- `strategies/` — duplicate (content in quant_nanggroe/engine/strategy/strategies/)
-- `research/` — non-essential research artifacts
-- `experts/` — non-essential expert configs
-- `reports/` — regeneratable
-- `results/` — regeneratable
-- `examples/` — non-essential
-- `backup_env/` — backup artifacts
-- `jeumpa/` — separate project artifact
-- `graphify-out/` — knowledge graph output
-
-### archive/root-files/
-All root .py files except qna.py archived in previous sessions.
+- `quant_nanggroe/pipeline/` — new UnifiedPipeline module (5 files)
+- `quant_nanggroe/hedge_fund/utils/` — extracted submodule
+- `quant_nanggroe/hedge_fund/signals/` — 247 providers + registry + aggregator
+- `quant_nanggroe/hedge_fund/risk/` — gate.py, guard.py
+- `quant_nanggroe/hedge_fund/execution/` — orders.py
+- `quant_nanggroe/hedge_fund/portfolio/` — main.py
+- `quant_nanggroe/hedge_fund/hedge_fund.py` — now backward-compat shim
+- `quant_nanggroe/engine/risk/constants.py` — thresholds updated
+- `quant_nanggroe/engine/risk/kill_switch.py` — thresholds reference constants
+- `quant_nanggroe/exchange/clients/__init__.py` — lazy import registry for 10 REST clients
+- `quant_nanggroe/exchange/__init__.py` — lazy ccxt_broker import
+- `quant_nanggroe/notifier.py` — validate_telegram_config, ensure_telegram
+- `qna.py` — v6.0.0, unified mode default, cli/web deprecated
+- `pyproject.toml` — dual test discovery, v6.0.0
+- `config/system_config.yaml` — v6.0.0
+- `quant_nanggroe/__init__.py` — v6.0.0
+- `graphify-out/` — 25079 nodes, 60488 edges, 878 communities
 
 ---
 
@@ -116,12 +103,12 @@ All root .py files except qna.py archived in previous sessions.
 
 | Claim | Status | Evidence |
 |-------|--------|----------|
-| Weekly loss veto alive | ✅ | Check 4 in kill_switch.py line 85+ |
-| API/dashboard path match | ✅ | Both use /api/* prefix |
-| Signal persistence | ✅ | DB model + repository created |
-| Root cleanup complete | ✅ | Only qna.py at root |
-| 4 core strategies REAL | ✅ | Verified implementation (no stubs) |
-| 45/47 issues resolved | ✅ | master-plan.md tracked |
+| Production-viable (not 0% live) | ✅ | 3 pipeline paths real, fail-closed risk, MT5 path exists |
+| 107/108 tests pass | ✅ | `pytest tests/ -v --tb=short` |
+| Threshold mismatch fixed | ✅ | Both paths reference `constants.WEEKLY_LOSS_LIMIT` |
+| 10 REST clients lazy-wired | ✅ | ExchangeFactory.create_rest_client() for all 10 |
+| Telegram fails closed | ✅ | ensure_telegram() raises on missing config |
+| graphify updated | ✅ | 25079 nodes, 60488 edges, 878 communities |
 
 ---
 

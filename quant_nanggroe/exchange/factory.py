@@ -38,6 +38,8 @@ from typing import Any, Dict, FrozenSet, List, Optional
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeInterface
+from quant_nanggroe.exchange.clients import AVAILABLE_CLIENTS
+from quant_nanggroe.exchange.clients.base_rest_client import BaseRestClient, RestClientConfig
 
 # CCXTBroker requires the ``ccxt`` package (optional)
 try:
@@ -724,6 +726,62 @@ class ExchangeFactory:
             if attr_val is True:
                 result.append(name)
         return sorted(result)
+
+    # ------------------------------------------------------------------ #
+    # REST Client factory (wire orphaned REST clients into the system)
+    # ------------------------------------------------------------------ #
+
+    def create_rest_client(
+        self,
+        exchange_name: str,
+        api_key: str = "",
+        api_secret: str = "",
+        passphrase: str = "",
+        testnet: bool = False,
+        **kwargs: Any,
+    ) -> BaseRestClient:
+        """Create a REST API client for the given exchange.
+
+        Args:
+            exchange_name: Exchange identifier (e.g. ``"binance"``, ``"okx"``).
+            api_key: API key.
+            api_secret: API secret.
+            passphrase: API passphrase (required for OKX, KuCoin, Bitget, Coinbase).
+            testnet: Use testnet/sandbox endpoints.
+            **kwargs: Additional keyword arguments passed to the client config.
+
+        Returns:
+            A :class:`~quant_nanggroe.exchange.clients.base_rest_client.BaseRestClient` instance.
+
+        Raises:
+            ExchangeFactoryError: If the exchange is not in ``AVAILABLE_CLIENTS``.
+        """
+        name_lower = exchange_name.lower().strip()
+        client_cls = AVAILABLE_CLIENTS.get(name_lower)
+        if client_cls is None:
+            raise ExchangeFactoryError(
+                f"No REST client available for '{exchange_name}'. "
+                f"Available: {sorted(AVAILABLE_CLIENTS)}",
+                exchange=exchange_name,
+            )
+        config = RestClientConfig(
+            exchange_id=name_lower,
+            api_key=api_key,
+            api_secret=api_secret,
+            passphrase=passphrase,
+            testnet=testnet,
+            **kwargs,
+        )
+        return client_cls(config)
+
+    @staticmethod
+    def get_available_rest_clients() -> List[str]:
+        """List all exchanges that have a REST client implementation.
+
+        Returns:
+            Sorted list of exchange identifiers with REST clients.
+        """
+        return sorted(AVAILABLE_CLIENTS)
 
     # ------------------------------------------------------------------ #
     # Factory state

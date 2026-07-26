@@ -24,6 +24,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from quant_nanggroe.engine.risk.constants import KILL_SWITCH_DAILY_PNL, KILL_SWITCH_WEEKLY_PNL
+
 logger = logging.getLogger(__name__)
 
 EARLY_WARNING_THRESHOLD: float = 0.8
@@ -129,8 +131,9 @@ class KillSwitchConfig(BaseModel):
     model_config = ConfigDict(frozen=False)
 
     # Auto-activation thresholds (as fractions, e.g. 0.015 = 1.5%)
-    auto_daily_loss_pct: float = 0.015
-    auto_weekly_loss_pct: float = 0.04
+    # Defaults sourced from constants.py (single source of truth)
+    auto_daily_loss_pct: float = abs(KILL_SWITCH_DAILY_PNL)
+    auto_weekly_loss_pct: float = abs(KILL_SWITCH_WEEKLY_PNL)
     auto_max_drawdown_pct: float = 0.05
     auto_volatility_spike_pct: float = 0.10
 

@@ -9,14 +9,14 @@ README → AGENTS → ARCHITECTURE → CHANGELOG → TODO → docs/00_VISION →
 `docs/` has 58+ documents (numbered 00-51 plus ADRs), covering architecture, API, risk, security, testing, roadmap, and more.
 
 ## Entry Points
-- **Primary**: `qna.py` — single unified launcher (modes: `cli`, `api`, `daemon`, `web`, `status`, `stop`, `hedge`). This is the ONLY root entry point. All others have been archived.
-- **CLI**: `python qna.py cli` — interactive shell.
+- **Primary**: `qna.py` — single unified launcher (modes: `unified`, `api`, `daemon`, `hedge`, `status`, `stop`). `unified` is the default mode (no subcommand needed). All others archived.
+- **Unified (default)**: `python qna.py` — UnifiedPipeline with auto mode-routing (hedge/crypto/agentic).
 - **API**: `python qna.py api` — FastAPI server on port 8000. Auto-opens browser.
 - **Daemon**: `python qna.py daemon` — background lifecycle daemon.
-- **Web**: `python qna.py web` — legacy Flask UI. Auto-opens browser.
 - **Hedge**: `python qna.py hedge` — multi-provider hedge fund aggregator.
 - **Status**: `python qna.py status` — system health check.
 - **Stop**: `python qna.py stop` — stop running daemon.
+- **⚠️ Deprecated:** `cli` and `web` modes (removed in v7.0).
 
 ## 🚨 Critical: PYTHONPATH Contamination
 
@@ -72,6 +72,34 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 - `personas/` — Agent persona definitions
 - `portfolio/` — Portfolio management agents
 
+## UnifiedPipeline (`quant_nanggroe/pipeline/`) — 🆕 v6.0.0
+- **Auto mode-routing**: `orchestrator.py` detects mode from config (hedge → default, crypto, agentic)
+- **Pipeline stages**: `data.py` → `signal.py` → `execution.py`, orchestrated by `orchestrator.py`
+- **Factory**: `factory.py` auto-creates the right pipeline for the detected mode
+- **Default**: `python qna.py` runs the unified pipeline in hedge mode
+
+## Hedge Fund Subpackage (`quant_nanggroe/hedge_fund/`) — v6.0.0 Refactored
+- **Monolith split**: `hedge_fund.py` (~6600 lines) → real submodules:
+  - `utils/` — data, config, connection, indicators
+  - `signals/` — 247 providers (core 10 + evolved 237) + registry + aggregator
+  - `risk/` — gate.py, guard.py (fail-closed)
+  - `execution/` — orders.py (trail_sl, execute)
+  - `portfolio/` — main.py (run_once)
+- **Backward-compat**: `hedge_fund.py` is now a thin re-export shim. All old imports keep working.
+
+## Risk System — v6.0.0 Unified Thresholds
+- **Single source of truth**: `engine/risk/constants.py` for ALL constitutional limits
+- **KillSwitch** reads thresholds from `constants.py` (was hardcoded per-class)
+- **Threshold mismatch FIXED**: weekly loss was 2.5% vs 4% across components → now both reference `WEEKLY_LOSS_LIMIT = 0.025`
+
+## Exchange REST Clients — v6.0.0 Lazy Wiring
+- **10 clients** lazy-wired into `ExchangeFactory.create_rest_client()`: binance, bybit, coinbase, crypto_com, gemini, kraken, kucoin, okx, bitget, gate
+- **ccxt isolation**: lazy proxy in `exchange/__init__.py` prevents bootstrap crash when ccxt not installed
+
+## Telegram Config Validation — v6.0.0
+- `validate_telegram_config()` — validates all required env vars at init
+- `ensure_telegram()` — fail-closed: raises `QNAConfigurationError` with clear message
+
 ## Strategy System
 - **Canonical:** `quant_nanggroe/engine/strategies/` (9 registered via `@StrategyRegistry.register` + 35+ .py files)
 - **Legacy (archived):** Path is a backward-compat shim — `quant_nanggroe/engine/strategy/strategies/` (empty directory with re-export `__init__.py`)
@@ -83,11 +111,13 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 - **configure_kill_switch_file()** — call at startup to wire all workers to one truth
 - **Fail-closed:** corrupt/unreadable state file → halt all trading
 - **Three-level activation:** NONE → MONITOR → ACTIVE
-- **Triggers:** daily loss, weekly loss, volatility spike, drawdown
+- **Triggers:** daily loss (0.8%), weekly loss (2.5%), volatility spike, drawdown
+- **Thresholds from `constants.py`** (v6.0.0): `DAILY_LOSS_LIMIT = 0.008`, `WEEKLY_LOSS_LIMIT = 0.025`
 
 ## What Not to Change Without Approval
 - API contract (response envelope, endpoint paths).
-- Risk engine logic (`engine/risk/` — Kelly, VaR, drawdown limits, sector limits, kill switch thresholds).
+- Risk engine logic (`engine/risk/` — Kelly, VaR, drawdown limits, sector limits, kill switch thresholds). Thresholds MUST come from `constants.py` — do not hardcode.
+- Pipeline mode-routing logic (`pipeline/orchestrator.py`).
 - State file format in `paper_state/`.
 - Agent registration in `qna.py` (`DEFAULT_AGENTS` dict).
 
@@ -98,7 +128,7 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 
 ## Commands
 ```sh
-# Test (requires PYTHONPATH isolation)
+# Test (requires PYTHONPATH isolation) — 107/108 pass (1 ccxt skip)
 PYTHONPATH="" uv run python -m pytest tests/ -v --tb=short   # full suite
 PYTHONPATH="" uv run python -m pytest tests/path/to_test.py   # single file
 
@@ -106,10 +136,10 @@ PYTHONPATH="" uv run python -m pytest tests/path/to_test.py   # single file
 cd dashboard && npm run build
 
 # Run
+uv run python qna.py                    # UnifiedPipeline (default mode, auto hedge routing)
 uv run python qna.py api                # API server + auto browser
 uv run python qna.py api --no-browser   # no auto-open
 uv run python qna.py status             # health check
-uv run python qna.py cli                # interactive CLI
 uv run python qna.py hedge              # hedge fund aggregator
 ```
 
@@ -117,11 +147,14 @@ uv run python qna.py hedge              # hedge fund aggregator
 - **`RiskCheckGate` is an alias** for `ConstitutionalRiskGuard` (line 461 of `checks.py`). Both names refer to the same class.
 - **Kill switch unit mismatch**: RiskManager passes P&L as percentages (0-100), but KillSwitch expects fractions (0-1). `ExecutionManager.execute_order()` converts via `/100.0` at the boundary.
 - **Kill Switch C5**: Shared state file prevents split-brain across uvicorn workers. Call `configure_kill_switch_file()` at startup.
+- **Kill Switch thresholds MUST come from constants.py**: Do NOT hardcode daily/weekly limits in kill_switch.py or manager.py. All limits are in `engine/risk/constants.py`.
 - **Strategy auto-discovery**: Engine scans `engine/strategy/strategies/` for re-exports from canonical `engine/strategies/`.
 - **`conftest.py` overrides `DATABASE_URL`** at import time to `sqlite+aiosqlite:///test_qna.db` with test-only JWT/secret keys.
 - **JWT_SECRET sentinel**: Default `__UNSET_QNAI_JWT_SECRET__` causes boot refusal. Set `QNAI_JWT_SECRET=dev` for local dev.
 - **Risk limits**: Single source of truth is `engine/risk/constants.py`. Some limits are env-driven via `QNAI_*`, others are hardcoded Final.
 - **Constitutional risk is 3-layer**: settings → constants → checks/manager. All imports must come from `constants.py`, not settings directly.
+- **Telegram `ensure_telegram()`**: Call at startup — raises `QNAConfigurationError` with clear message if TELEGRAM_* env vars are missing.
+- **Exchange clients**: Use `ExchangeFactory.create_rest_client(exchange_name)` for any REST client. ccxt import is lazy — isolated in `exchange/__init__.py`.
 
 ## Constraints
 - `asyncio_mode = "auto"` for pytest (no need for `@pytest.mark.asyncio` on async tests).

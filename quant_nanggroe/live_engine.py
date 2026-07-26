@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOTE: Use pipeline/ module for new code — see quant_nanggroe.pipeline.UnifiedPipeline
 """
 QUANT NANGGROE — Autonomous Multi-Asset Hedge Fund Engine
 ==========================================================

@@ -1,4 +1,4 @@
-"""AutoRegistry — Self-discovering component registry for QNA v5.1.0.
+"""AutoRegistry — Self-discovering component registry for QNA v6.0.0.
 
 Scans ALL directories: active strategies, archive/, legacy/,
 and any new directory with Strategy subclasses. Zero manual registration.

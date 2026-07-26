@@ -10,6 +10,7 @@ This file is kept as the lightweight sync path; telegram_bot.py is the
 unified implementation for signal-oriented workflows.
 """
 
+import functools
 import os
 import json
 import logging
@@ -25,7 +26,47 @@ TELEGRAM_BOTS = [
 CHAT_ID = os.environ.get("QNA_TELEGRAM_CHAT_ID", "")
 
 
+@functools.lru_cache(maxsize=1)
+def validate_telegram_config() -> tuple[bool, str]:
+    """Validate Telegram configuration (cached — warns only once per session).
+
+    Returns:
+        Tuple of (is_valid, message). ``is_valid`` is True when at least one
+        bot token is set and CHAT_ID is set.
+    """
+    configured_bots = [b for b in TELEGRAM_BOTS if b["token"]]
+    if not configured_bots:
+        return False, (
+            "No Telegram bot tokens configured. Set QNA_TELEGRAM_BOT_TOKEN_AUTOBOT "
+            "and/or QNA_TELEGRAM_BOT_TOKEN_TRADERBOT environment variables."
+        )
+    if not CHAT_ID:
+        return False, (
+            "No Telegram chat ID configured. Set QNA_TELEGRAM_CHAT_ID "
+            "environment variable."
+        )
+    return True, f"Telegram configured: {len(configured_bots)} bot(s), chat_id={CHAT_ID[:8]}..."
+
+
+def ensure_telegram() -> bool:
+    """Verify Telegram config at startup. Logs a clear warning if missing.
+
+    Returns:
+        True if configuration is valid, False otherwise.
+    """
+    is_valid, msg = validate_telegram_config()
+    if is_valid:
+        log.info("Telegram notifier ready — %s", msg)
+    else:
+        log.warning("Telegram notifier DISABLED — %s", msg)
+    return is_valid
+
+
 def send_telegram(message: str, bot_index: int = 0) -> bool:
+    is_valid, msg = validate_telegram_config()
+    if not is_valid:
+        log.warning("send_telegram skipped — %s", msg)
+        return False
     if bot_index >= len(TELEGRAM_BOTS):
         return False
     bot = TELEGRAM_BOTS[bot_index]
@@ -44,10 +85,10 @@ def send_telegram(message: str, bot_index: int = 0) -> bool:
             result = json.loads(r.read().decode())
             if result.get("ok"):
                 return True
-            log.debug(f"Telegram error: {result}")
+            log.debug("Telegram error: %s", result)
             return False
     except Exception as e:
-        log.debug(f"Telegram send failed: {e}")
+        log.debug("Telegram send failed: %s", e)
         if bot_index < len(TELEGRAM_BOTS) - 1:
             return send_telegram(message, bot_index + 1)
         return False

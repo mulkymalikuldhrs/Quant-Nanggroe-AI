@@ -1,6 +1,6 @@
 [project]
 name = "quant-nanggroe-ai"
-version = "5.1.0"
+version = "6.0.0"
 description = "Agentic Trading Intelligence OS — Multi-agent trading framework with LangGraph orchestration, constitutional risk management, and production-grade execution"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -123,7 +123,7 @@ select = ["E", "F", "I"]
 ignore = ["E501"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "quant_nanggroe/tests"]
 asyncio_mode = "auto"
 markers = [
     "slow: marks tests as slow",

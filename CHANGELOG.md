@@ -1,5 +1,55 @@
 # Quant Nanggroe AI — Changelog
 
+## v6.0.0 — Production Readiness Audit + UnifiedPipeline + Monolith Split (2026-07-26)
+
+### 🏭 UnifiedPipeline Module (New)
+- **`quant_nanggroe/pipeline/`** — unified pipeline orchestrator with auto mode-routing
+- **`orchestrator.py`** — pipeline orchestration (hedge/crypto/agentic modes)
+- **`data.py`** — data ingestion & normalization
+- **`signal.py`** — signal generation & aggregation
+- **`execution.py`** — order execution pipeline
+- **`factory.py`** — pipeline factory with auto mode detection
+- **`qna.py unified` mode is now default** — pipeline fallback in hedge mode. `cli`/`web` modes deprecated.
+- **Verification:** 107 tests pass, unified pipeline imports clean
+
+### 🔪 hedge_fund Monolith Split
+- **`hedge_fund.py` (~6600 lines)** — split into real submodules:
+  - `hedge_fund/utils/` — data, config, connection, indicators
+  - `hedge_fund/signals/` — 247 providers in core (10) + evolved (237) + registry + aggregator
+  - `hedge_fund/risk/` — gate.py, guard.py (fail-closed)
+  - `hedge_fund/execution/` — orders.py (trail_sl, execute)
+  - `hedge_fund/portfolio/` — main.py (run_once)
+- **Backward-compat shim** — original monolithic imports continue working
+- **Verification:** 107 tests pass, all submodule imports verified
+
+### ⚖️ Risk Unification
+- **KillSwitch thresholds** now read from `quant_nanggroe/engine/risk/constants.py` — single source of truth
+- **Threshold mismatch fixed:** Weekly loss limit was 2.5% in kill switch vs 4% in risk manager → now both reference `WEEKLY_LOSS_LIMIT = 0.025` (2.5%)
+- **Daily loss threshold unified:** 0.8% across all components
+- **Verification:** Kill switch test asserts against constants; risk manager imports from constants
+
+### 🔌 Exchange REST Clients — Lazy Wiring
+- **10 orphaned REST clients** — `binance`, `bybit`, `coinbase`, `crypto_com`, `gemini`, `kraken`, `kucoin`, `okx`, `bitget`, `gate` — now lazy-wired into `ExchangeFactory.create_rest_client()`
+- **ccxt import failure isolation** — lazy proxy in `exchange/__init__.py` prevents bootstrap crash when ccxt not installed
+- **Verification:** `from quant_nanggroe.exchange import ccxt_broker` succeeds with or without ccxt installed
+
+### 📬 Telegram Notifier — Guardrails
+- **`validate_telegram_config()`** — validates all required telegram env vars at init
+- **`ensure_telegram()`** — fail-closed: raises `QNAConfigurationError` with clear message if missing
+- No more silent telegram failures
+
+### 🧹 qna.py v6.0.0
+- `unified` mode is default (was `cli`)
+- Pipeline fallback in hedge mode
+- `cli`/`web` modes deprecated with DEPRECATED notice
+- Clean version string
+
+### 🧪 Test Consolidation
+- **`pyproject.toml`** — dual test discovery: `tests/` + `quant_nanggroe/hedge_fund/tests/`
+- **Kill switch test** — now asserts against `constants.py` (not hardcoded values)
+- **ccxt-dependent test** — made resilient to missing ccxt env
+- **Verification:** 107/108 tests pass (1 pre-existing ccxt env skip)
+
 ## v5.1.0 — Self-Aware + Self-Evolve + Standalone + AutoRegistry (2026-07-24)
 
 ### 🚀 Walkforward Framework

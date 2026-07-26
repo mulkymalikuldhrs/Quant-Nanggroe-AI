@@ -32,7 +32,7 @@ _BANNER = """
 [bold cyan]╔══════════════════════════════════════════════╗[/bold cyan]
 [bold cyan]║   [bold white]Quant Nanggroe AI[/bold white]                           [bold cyan]║[/bold cyan]
 [bold cyan]║   [dim]Agentic Trading Intelligence OS[/dim]           [bold cyan]║[/bold cyan]
-[bold cyan]║   [dim]v5.1.0 — Multi-Agent · LangGraph · Risk[/dim]   [bold cyan]║[/bold cyan]
+[bold cyan]║   [dim]v6.0.0 — UnifiedPipeline · Multi-Provider · Risk[/dim]   [bold cyan]║[/bold cyan]
 [bold cyan]╚══════════════════════════════════════════════╝[/bold cyan]
 """
 

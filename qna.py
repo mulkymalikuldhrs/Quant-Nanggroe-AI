@@ -4,12 +4,13 @@
 ║            Quant Nanggroe AI — Unified Launcher                    ║
 ║                                                                    ║
 ║   Modes:                                                           ║
-║     qna cli      → Interactive CLI shell                           ║
-║     qna api      → FastAPI server (port 8000)                      ║
-║     qna daemon   → Background daemon with agent lifecycle          ║
-║     qna web      → Legacy Flask web UI (port 5000)                 ║
-║     qna hedge    → Hedge Fund aggregator (multi-provider voting)   ║
-║     qna status   → System health & status                          ║
+║     qna unified   → [DEFAULT] Auto-detect & orchestrate everything ║
+║     qna api       → FastAPI server (port 8000)                      ║
+║     qna daemon    → Background daemon with agent lifecycle          ║
+║     qna hedge     → Hedge Fund aggregator (multi-provider voting)   ║
+║     qna status    → System health & status                          ║
+║     qna cli       → [DEPRECATED] Interactive CLI shell              ║
+║     qna web       → [DEPRECATED] Legacy Flask web UI (port 5000)   ║
 ║                                                                    ║
 ║   Built by Dhaher Labs — Quant Nanggroe Hedge Fund                 ║
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -44,7 +45,7 @@ if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
     os.environ["PYTHONPATH"] = ";".join(clean)
     sys.path = [p for p in sys.path if "hermes" not in p.lower()]
-__version__ = "5.2.0"
+__version__ = "6.0.0"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────
@@ -125,7 +126,7 @@ def load_agent_config() -> Dict[str, Dict[str, Any]]:
 # ══════════════════════════════════════════════════════════════════════
 
 def run_cli(args: argparse.Namespace) -> int:
-    """Run interactive CLI shell."""
+    """[DEPRECATED] Run interactive CLI shell. Use unified mode instead."""
     print(BANNER)
     print("🎯 Entering CLI mode. Type 'help' for commands, 'exit' to quit.")
     print()
@@ -145,7 +146,7 @@ def run_cli(args: argparse.Namespace) -> int:
             if cmd.lower() == "status":
                 print(f"  Version: {__version__}")
                 print(f"  Agents: {len(agents)} configured")
-                print(f"  Modes: cli | api | daemon | web")
+                print(f"  Modes: unified | api | daemon | hedge | status | cli [deprecated] | web [deprecated]")
                 continue
             if cmd.lower() == "agents":
                 for name, cfg in agents.items():
@@ -172,9 +173,13 @@ def _print_cli_help() -> None:
     exit / quit       Exit CLI
 
   To run in other modes:
+    python qna.py unified   Auto-detect & orchestrate (default)
     python qna.py api       Start API server
     python qna.py daemon    Start daemon mode
-    python qna.py web       Start web UI
+    python qna.py hedge     Hedge Fund aggregator
+    python qna.py status    System health check
+    python qna.py cli       [DEPRECATED] Interactive CLI
+    python qna.py web       [DEPRECATED] Legacy web UI
 """)
 
 
@@ -401,7 +406,7 @@ def run_daemon(args: argparse.Namespace) -> int:
 # ══════════════════════════════════════════════════════════════════════
 
 def run_web(args: argparse.Namespace) -> int:
-    """Start the legacy Flask web UI."""
+    """[DEPRECATED] Start the legacy Flask web UI. Use api mode instead."""
     port = args.port or 5000
 
     print(BANNER)
@@ -463,14 +468,16 @@ def run_status(args: argparse.Namespace) -> int:
 
     print()
     print("  Modes available:")
-    print("    python qna.py cli         Interactive CLI")
-    print("    python qna.py api         API server (FastAPI)")
-    print("    python qna.py daemon      Background daemon")
-    print("    python qna.py web         Legacy web UI")
-    print("    python qna.py status      This status check")
-    print("    python qna.py hedge       Hedge Fund aggregator (multi-provider voting)")
+    print("    python qna.py unified              [DEFAULT] Auto-detect & orchestrate")
+    print("    python qna.py unified --mode hedge  Run unified in hedge mode")
+    print("    python qna.py api                   API server (FastAPI)")
+    print("    python qna.py daemon                Background daemon")
+    print("    python qna.py status                This status check")
+    print("    python qna.py hedge                 Hedge Fund aggregator (multi-provider voting)")
     print("    python qna.py hedge --paper EURUSD  Paper trade EURUSD")
-    print("    python qna.py stop        Stop running daemon")
+    print("    python qna.py stop                  Stop running daemon")
+    print("    python qna.py cli         [DEPRECATED] Interactive CLI")
+    print("    python qna.py web         [DEPRECATED] Legacy web UI")
 
     return 0
 
@@ -504,6 +511,35 @@ def run_hedge(args: argparse.Namespace) -> int:
         os.environ["PAPER_TRADE"] = "true"
     print()
 
+    # Try the new pipeline module first
+    try:
+        from quant_nanggroe.pipeline.factory import create_pipeline
+        pipeline = create_pipeline()
+        import asyncio
+        print("  Using unified pipeline...")
+        results = []
+        for sym in symbols:
+            print(f"  {'='*58}")
+            print(f"  HF RUN: {sym}")
+            print(f"  {'='*58}")
+            result = asyncio.run(pipeline.run(symbol=sym))
+            results.append((sym, result))
+            if result:
+                verdict = "EXECUTED" if result.get("executed") else "SKIPPED"
+                print(f"  → {verdict}: {json.dumps(result, default=str, indent=4)}")
+            else:
+                print(f"  → FAILED: no result returned")
+            print()
+        print(f"  DONE — {len(results)} symbols processed")
+        for sym, res in results:
+            status = "✅" if res and res.get("executed") else "⏭️"
+            print(f"  {status} {sym}: verdict={res.get('verdict','?') if res else 'NONE'}")
+        return 0
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning("Pipeline run failed, falling back to legacy hedge_fund: %s", e)
+
     try:
         from quant_nanggroe.hedge_fund import run_once
 
@@ -535,6 +571,90 @@ def run_hedge(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.error("Hedge Fund error: %s", e)
         return 1
+
+# ══════════════════════════════════════════════════════════════════════
+#  MODE: Unified — Auto-detect & orchestrate
+# ══════════════════════════════════════════════════════════════════════
+
+def run_unified(args: argparse.Namespace) -> int:
+    """Run in unified mode — auto-detect and orchestrate all subsystems.
+
+    This is the DEFAULT entry point. It:
+      1. Checks the --mode flag (auto|hedge|crypto|agentic)
+      2. Auto-detects from env vars if mode=auto
+      3. Tries the pipeline factory first
+      4. Falls back to legacy modes gracefully
+    """
+    print(BANNER)
+    mode = args.unified_mode or os.environ.get("QNA_UNIFIED_MODE", "auto")
+    print(f"🔀 Unified mode — mode={mode}")
+    print()
+
+    if mode == "agentic":
+        print("  Agentic mode: running agent orchestration pipeline...")
+        try:
+            from quant_nanggroe.pipeline.factory import create_pipeline
+            pipeline = create_pipeline(config={"mode": "agentic"})
+            import asyncio
+            result = asyncio.run(pipeline.run())
+            print(f"  ✅ Pipeline complete: {result}")
+            return 0
+        except ImportError:
+            print("  ⚠️  Pipeline not available. Falling back to daemon mode.")
+            return run_daemon(args)
+        except Exception as e:
+            logger.error("Agentic pipeline error: %s", e)
+            return 1
+
+    if mode == "crypto":
+        print("  Crypto mode: running crypto pipeline...")
+        try:
+            from quant_nanggroe.pipeline.factory import create_pipeline
+            pipeline = create_pipeline(config={"mode": "crypto"})
+            import asyncio
+            result = asyncio.run(pipeline.run())
+            print(f"  ✅ Pipeline complete: {result}")
+            return 0
+        except ImportError:
+            print("  ⚠️  Pipeline not available. Falling back to hedge mode.")
+            symbols = args.symbols or ["BTCUSDT", "ETHUSDT"]
+            fallback_args = argparse.Namespace(symbols=symbols, paper=args.paper)
+            return run_hedge(fallback_args)
+        except Exception as e:
+            logger.error("Crypto pipeline error: %s", e)
+            return 1
+
+    if mode == "hedge":
+        print("  Hedge mode: delegating to run_hedge...")
+        return run_hedge(args)
+
+    # mode == "auto" (default)
+    print("  Auto-detecting optimal mode...")
+
+    # Priority 1: Try pipeline factory
+    try:
+        from quant_nanggroe.pipeline.factory import create_pipeline
+        pipeline = create_pipeline()
+        import asyncio
+        print("  ✅ Pipeline found. Running unified pipeline...")
+        result = asyncio.run(pipeline.run())
+        print(f"  ✅ Pipeline complete: {result}")
+        return 0
+    except ImportError:
+        print("  ⚠️  Pipeline module not available.")
+    except Exception as e:
+        logger.warning("Pipeline error, falling back: %s", e)
+
+    # Priority 2: Check if API should start
+    if os.environ.get("QNA_MODE") == "api":
+        print("  → Detected QNA_MODE=api. Starting API server...")
+        return run_api(args)
+
+    # Priority 3: Default to hedge mode
+    print("  → Falling back to hedge fund aggregator mode.")
+    return run_hedge(args)
+
+
 # ══════════════════════════════════════════════════════════════════════
 
 def _auto_open_browser(url: str) -> None:
@@ -559,22 +679,33 @@ def build_parser() -> argparse.ArgumentParser:
         description="Quant Nanggroe AI — Unified Launcher",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
-  python qna.py cli              Interactive CLI shell
-  python qna.py api              Start API server on port 8000
-  python qna.py api --port 8080  Custom port
-  python qna.py daemon           Background daemon mode
-  python qna.py web              Legacy web UI on port 5000
-  python qna.py status           System health check
-  python qna.py cli --no-browser     Disable auto-open browser
+  python qna.py unified                    [DEFAULT] Auto-detect & orchestrate
+  python qna.py unified --mode hedge       Run unified in hedge mode
+  python qna.py unified --mode crypto      Run unified in crypto mode
+  python qna.py api                        Start API server on port 8000
+  python qna.py api --port 8080            Custom port
+  python qna.py daemon                     Background daemon mode
+  python qna.py hedge --paper EURUSD       Paper trade EURUSD
+  python qna.py status                     System health check
+  python qna.py cli             [DEPRECATED] Interactive CLI shell
+  python qna.py web             [DEPRECATED] Legacy web UI on port 5000
         """,
     )
 
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["cli", "api", "daemon", "web", "status", "stop", "hedge"],
-        default="cli",
-        help="Launch mode (default: cli)",
+        choices=["unified", "cli", "api", "daemon", "web", "status", "stop", "hedge"],
+        default="unified",
+        help="Launch mode (default: unified)",
+    )
+    parser.add_argument(
+        "--mode",
+        dest="unified_mode",
+        type=str,
+        default="auto",
+        choices=["auto", "hedge", "crypto", "agentic"],
+        help="Sub-mode for unified mode (auto|hedge|crypto|agentic, default: auto)",
     )
     parser.add_argument(
         "--port",
@@ -645,6 +776,7 @@ def main() -> int:
 
     # Route to the selected mode
     mode_map = {
+        "unified": run_unified,
         "cli": run_cli,
         "api": run_api,
         "daemon": run_daemon,
@@ -654,7 +786,7 @@ def main() -> int:
         "stop": lambda a: stop_daemon(),
     }
 
-    runner = mode_map.get(args.mode, run_cli)
+    runner = mode_map.get(args.mode, run_unified)
     exit_code = runner(args)
 
     # Auto-open browser for api/web modes (unless --no-browser)

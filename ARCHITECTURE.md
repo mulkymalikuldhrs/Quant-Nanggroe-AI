@@ -1,47 +1,51 @@
-# Quant Nanggroe AI v5.1.0 — Architecture
+# Quant Nanggroe AI v6.0.0 — Architecture
 
 ## Overview
 
-Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedge fund** platform. Multi-strategy execution, constitutional risk management, cross-process kill switch (C5), hedge fund aggregator, and self-evolving pipeline — all accessible via a single entry point.
+Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedge fund** platform. Multi-strategy execution, constitutional risk management, cross-process kill switch (C5), unified pipeline (auto mode-routing), hedge fund aggregator, and self-evolving pipeline — all accessible via a single entry point.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      QNA v5.1.0 — Architecture                         │
+│                      QNA v6.0.0 — Architecture                         │
 │              Autonomous Quantitative Hedge Fund                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ENTRY: qna.py (single — all others archived)                           │
-│    ├── cli      → Interactive CLI shell                                  │
-│    ├── api      → FastAPI server (:8000) + auto-open browser             │
-│    ├── daemon   → Background lifecycle daemon                            │
-│    ├── web      → Flask legacy UI (:5000) + auto-open browser            │
-│    ├── hedge    → Hedge Fund aggregator (multi-provider voting)          │
-│    ├── status   → Health check                                           │
-│    └── stop     → Stop daemon                                            │
+│  ENTRY: qna.py (single — unified mode default)                          │
+│    ├── unified → UnifiedPipeline (auto mode-routing: hedge/crypto/agent)│
+│    ├── api     → FastAPI server (:8000) + auto-open browser              │
+│    ├── daemon  → Background lifecycle daemon                             │
+│    ├── hedge   → Hedge Fund aggregator (multi-provider voting)          │
+│    ├── status  → Health check                                            │
+│    └── stop    → Stop daemon                                             │
+│    (cli → deprecated, web → deprecated)                                  │
 │                                                                          │
 │  ┌──────────────────────────────────────────────────────────────────┐    │
 │  │                    QUANT_NANGNGROE/                              │    │
 │  │                                                                  │    │
-│  │  ┌──────────────┐  ┌────────────────┐  ┌──────────────────┐     │    │
-│  │  │ ENGINE       │→│ RISK          │→│ EXECUTION        │     │    │
-│  │  │  19 modules  │  │  9-checkpoint │  │  Builder         │     │    │
-│  │  │  Self-Aware  │  │  KillSwitch   │  │  RiskManager     │     │    │
-│  │  │  Self-Evolve │  │  C5 cross-proc│  │  Almgren-Chriss  │     │    │
-│  │  └──────┬───────┘  └───────────────┘  └──────────────────┘     │    │
-│  │         │                                                       │    │
-│  │  ┌──────▼───────┐  ┌──────────────┐  ┌──────────────────┐     │    │
-│  │  │ STRATEGIES   │→│ BACKTEST    │→│ API (181 eps)    │     │    │
-│  │  │  Canonical   │  │  Walk-fwd   │  │  FastAPI         │     │    │
-│  │  │  9 registered│  │  Monte Carlo│  │  Dashboard API   │     │    │
-│  │  │  @register   │  │  CPCV       │  │  WebSocket       │     │    │
-│  │  └──────────────┘  └─────────────┘  └──────────────────┘     │    │
-│  │                                                                  │    │
-│  │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐   │    │
-│  │  │ HEDGE_FUND       │  │ AGENTS            │  │ EXCHANGE    │   │    │
-│  │  │  Multi-provider  │  │  9+ specialized   │  │  MT5 Bridge │   │    │
-│  │  │  Voting engine   │  │  Council/Debate   │  │  CCXT/Crypto│   │    │
-│  │  │  HF Runner       │  │  Risk/Compliance  │  │  set_broker │   │    │
-│  │  └──────────────────┘  └──────────────────┘  └──────────────┘   │    │
+│  │  ┌──────────────────┐  ┌────────────────┐  ┌──────────────────┐ │    │
+│  │  │ PIPELINE       🆕│→│ ENGINE        │→│ RISK (unified)   │ │    │
+│  │  │  orchestrator   │  │  19 modules    │  │  constants.py    │ │    │
+│  │  │  data           │  │  Strategies    │  │  KillSwitch C5   │ │    │
+│  │  │  signal         │  │  Self-Aware    │  │  9-checkpoint    │ │    │
+│  │  │  execution      │  │  Self-Evolve   │  └──────────┬───────┘ │    │
+│  │  │  factory        │  └────────┬───────┘             │         │    │
+│  │  └────────┬────────┘          │                     │         │    │
+│  │           │                   ▼                     │         │    │
+│  │           │            ┌──────────────┐             │         │    │
+│  │           └───────────→│ BACKTEST     │←────────────┘         │    │
+│  │                        │  Walk-fwd    │                       │    │
+│  │  ┌──────────────────┐  │  Monte Carlo │  ┌──────────────────┐ │    │
+│  │  │ HEDGE_FUND (v6)  │  │  CPCV        │  │ EXCHANGE (v6)   │ │    │
+│  │  │  utils/          │  └──────────────┘  │  10 REST clients │ │    │
+│  │  │  signals/ (247)  │                    │  Lazy-wired     │ │    │
+│  │  │  risk/           │  ┌──────────────┐  │  ccxt proxy     │ │    │
+│  │  │  execution/      │  │ AGENTS       │  └──────────────────┘ │    │
+│  │  │  portfolio/      │  │  9+ special  │                       │    │
+│  │  │  (monolith split)│  │  Council/Dbt │  ┌──────────────────┐ │    │
+│  │  └──────────────────┘  │  Risk/Compl  │  │ API (181 eps)   │ │    │
+│  │                        └──────────────┘  │  FastAPI         │ │    │
+│  │                                           │  Telegram Guard  │ │    │
+│  │                                           └──────────────────┘ │    │
 │  └──────────────────────────────────────────────────────────────────┘    │
 │                                                                          │
 │  DEPLOYMENT:                                                              │
@@ -59,15 +63,27 @@ Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedg
 
 | Mode | Command | Port | Auto-Browser |
 |------|---------|------|-------------|
-| CLI | `python qna.py cli` | — | No |
+| Unified (default) | `python qna.py` | — | No |
 | API | `python qna.py api` | 8000 | Yes |
 | Daemon | `python qna.py daemon` | — | No |
-| Web | `python qna.py web` | 5000 | Yes |
 | Hedge | `python qna.py hedge` | — | No |
 | Status | `python qna.py status` | — | No |
 | Stop | `python qna.py stop` | — | No |
 
+**⚠️ Deprecated:** `cli` and `web` modes will be removed in v7.0.Use `unified` (default) instead.
 Auto-browser disabled via `--no-browser` or `QNA_AUTO_OPEN=0`.
+
+### 1b. UnifiedPipeline (`quant_nanggroe/pipeline/`) — 🆕 v6.0.0
+
+| Module | Purpose |
+|--------|---------|
+| `orchestrator.py` | Pipeline orchestration & lifecycle — auto mode-routing |
+| `data.py` | Data ingestion & normalization |
+| `signal.py` | Signal generation & aggregation |
+| `execution.py` | Order execution pipeline |
+| `factory.py` | Pipeline factory with auto mode detection |
+
+Auto-routes between hedge, crypto, and agentic modes based on config. Default mode: hedge.
 
 ### 2. Engine (`quant_nanggroe/engine/`) — 19 Modules
 
@@ -77,8 +93,8 @@ Auto-browser disabled via `--no-browser` or `QNA_AUTO_OPEN=0`.
 | `strategy/` | 🟡 LEGACY BRIDGE — backward-compat shim only (empty dir, re-export) |
 | `risk/` | 9-checkpoint constitutional risk gate, KillSwitch C5, RiskManager |
 | `risk/checks.py` | ConstitutionalRiskGuard (= RiskCheckGate alias) |
-| `risk/kill_switch.py` | C5 cross-process shared state, 3-level activation |
-| `risk/constants.py` | Single source of truth for constitutional limits |
+| `risk/kill_switch.py` | C5 cross-process shared state, 3-level activation (thresholds from constants.py) |
+| `risk/constants.py` | **Single source of truth** for ALL constitutional limits (v6.0.0) |
 | `risk/manager.py` | RiskManager orchestration |
 | `backtest/` | Walk-forward, Monte Carlo, CPCV |
 | `execution/` | TWAP/VWAP order slicing, Builder, Almgren-Chriss |
@@ -163,24 +179,26 @@ Triggers:
 Fail-closed: Unreadable/corrupt state file ⇒ ACTIVE
 ```
 
-### 5. Hedge Fund Subpackage (`quant_nanggroe/hedge_fund/`)
+### 5. Hedge Fund Subpackage (`quant_nanggroe/hedge_fund/`) — v6.0.0 Refactored
+
+**Monolith (~6600 lines) split into real submodules with backward-compat shim.**
 
 ```
 hedge_fund/
 ├── __init__.py              ← Package init
-├── hedge_fund.py            ← Multi-provider voting engine (331K+ lines)
+├── hedge_fund.py            ← BACKWARD-COMPAT SHIM (re-exports from submodules)
 ├── runner.py                ← Hedge fund runner CLI entry point
 ├── mtf.py                   ← Multi-timeframe analysis
 ├── multipair.py             ← Multi-pair scanner
-├── signals/                 ← Signal generation & aggregation
-├── risk/                    ← Hedge fund risk management
-├── execution/               ← Hedge fund order execution
-├── portfolio/               ← Hedge fund portfolio allocation
-├── tools/                   ← Utility tools
-└── utils/                   ← Utility functions
+├── utils/                   ← Extracted: data, config, connection, indicators
+├── signals/                 ← 247 providers: core (10) + evolved (237) + registry + aggregator
+├── risk/                    ← gate.py, guard.py (fail-closed)
+├── execution/               ← orders.py (trail_sl, execute)
+├── portfolio/               ← main.py (run_once)
+└── tools/                   ← Utility tools
 ```
 
-Access via: `python qna.py hedge`
+Access via: `python qna.py hedge` or `python qna.py unified` (default auto-routes to hedge).
 
 ### 6. Agent System (`quant_nanggroe/agents/`)
 
@@ -228,47 +246,60 @@ agents/
 ### 7. Data Flow
 
 ```
-Market Data (MT5/CCXT)
+Market Data (MT5/CCXT / exchange REST clients)
     │
     ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Strategy     │───▶│ Risk Check   │───▶│ Execution    │
-│ Engine (9+   │    │ (9 gates +   │    │ (Builder,    │
-│ registered)  │    │  C5 KillSw)  │    │  Almgren)    │
-└──────────────┘    └──────────────┘    └──────────────┘
-    │                                      │
-    ▼                                      ▼
-┌──────────────┐                    ┌──────────────┐
-│ Self-Aware   │                    │ PnL Track   │
-│ Anomaly      │                    │ Journal     │
-│ Detection    │                    │ Evolution   │
-└──────────────┘                    └──────────────┘
-    │                                      │
-    ▼                                      ▼
-┌──────────────┐                    ┌──────────────┐
-│ Hedge Fund   │                    │ Dashboard    │
-│ Aggregator   │                    │ WebSocket    │
-│ (voting)     │                    │ Streaming    │
-└──────────────┘                    └──────────────┘
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│ PIPELINE (v6)   │───▶│ ENGINE           │───▶│ RISK (unified)  │
+│  orchestrator   │    │  Strategies (9+) │    │  constants.py   │
+│  data→signal→exe│    │  Self-Aware      │    │  KillSwitch C5  │
+│  auto mode-rt   │    │  Self-Evolve     │    │  9-checkpoint   │
+└──────────────────┘    └──────────────────┘    └────────┬─────────┘
+    │                                                      │
+    ▼                                                      ▼
+┌──────────────────┐                              ┌──────────────────┐
+│ HEDGE_FUND (v6) │                              │ EXECUTION       │
+│  utils/signals/ │                              │  Builder        │
+│  risk/exec/port │                              │  Almgren-Chriss │
+│  (monolith→mods)│                              │  Paper/MT5      │
+└──────────────────┘                              └──────────────────┘
+    │                                                      │
+    ▼                                                      ▼
+┌──────────────────┐                              ┌──────────────────┐
+│ API (181 eps)   │                              │ PnL Track       │
+│ Telegram Guard  │                              │ Journal         │
+│ WebSocket       │                              │ Self-Evolution  │
+└──────────────────┘                              └──────────────────┘
 ```
+**v6.0.0 Changes:**
+- Pipeline is now the default entry path (orchestrator auto-routes mode)
+- Hedge fund submodules extracted from monolithic hedge_fund.py
+- Risk thresholds unified under constants.py single source
+- Exchange REST clients lazy-wired (10 clients, ccxt failure isolated)
+- Telegram config validated at init (fail-closed on missing env vars)
 
 ## Key Metrics
 
 | Metric | Value |
 |--------|-------|
-| Version | 5.1.0 |
+| Version | 6.0.0 |
 | Architecture Health | 9/10 |
-| Single Entry Point | `qna.py` (all others archived) |
+| Single Entry Point | `qna.py` (unified mode default) |
+| UnifiedPipeline | `pipeline/` module — auto mode-routing 🆕 |
 | Strategy Registration | 9 via @StrategyRegistry.register |
 | Strategy Files | 45 .py files in canonical path |
-| Hedge Fund | `hedge_fund/` subpackage with multi-provider voting |
+| Hedge Fund | Monolith → submodules (utils/signals/risk/execution/portfolio) 🆕 |
+| Risk Limits | Unified single source `constants.py` 🆕 |
+| Exchange Clients | 10 REST clients lazy-wired + ccxt proxy 🆕 |
 | Kill Switch | C5 cross-process shared state, fail-closed |
 | Risk Gates | 9-checkpoint + constitutional limits |
+| Telegram Guard | Config-validated at init 🆕 |
+| Test Suite | 107/108 pass (1 ccxt skip) 🆕 |
 | MT5 Bridge | via set_broker_handle() |
 | API Endpoints | 181 FastAPI |
 | Agent Modules | 9+ specialized agents + subdirectories |
 | Python Files | 2,189 total |
-| Documentation | 50+ docs files |
+| Documentation | 50+ docs files + graphify (25079 nodes) |
 
 ## Stack
 
@@ -277,12 +308,13 @@ Market Data (MT5/CCXT)
 | Language | Python 3.11+ |
 | Package Manager | `uv` (not pip, not poetry) |
 | API Server | FastAPI (181 endpoints) |
-| Legacy UI | Flask |
+| Pipeline | `quant_nanggroe/pipeline/` — auto mode-routing 🆕 |
 | Dashboard | Next.js + React + Recharts + Zustand |
 | Broker | MetaTrader5 (env vars for credentials) |
-| Crypto | CCXT |
-| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager |
-| Testing | pytest (env setup required) |
+| Crypto | CCXT + 10 REST clients (lazy-wired) |
+| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager, unified constants |
+| Telegram | Config-validated (`validate_telegram_config` + `ensure_telegram`) 🆕 |
+| Testing | pytest (107/108 pass — 1 ccxt skip) |
 
 ## Known Architecture Issues
 
@@ -290,10 +322,9 @@ Market Data (MT5/CCXT)
 |-------|--------|-----------|
 | PYTHONPATH leak on Hermes host | ModuleNotFoundError | `PYTHONPATH=""` wrapper |
 | 2 strategy hierarchies | Confusion (canonical vs legacy shim) | Legacy empty, re-export only |
-| pytest 431 cached failures | Cannot run tests | Environment setup documented |
 | Git history has stale secrets | Security exposure | Force-push pending rotation |
 | Dashboard build not Windows-verified | Deployment gap | Vercel builds in CI |
 
 ---
 
-*v5.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+*v6.0.0 — Built with fury from Aceh, Indonesia 🇮🇩*

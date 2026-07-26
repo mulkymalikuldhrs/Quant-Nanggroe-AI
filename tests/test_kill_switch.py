@@ -421,9 +421,10 @@ class TestKillSwitchConfig(unittest.TestCase):
     """Tests for KillSwitchConfig dataclass."""
 
     def test_default_values(self):
+        from quant_nanggroe.engine.risk.constants import KILL_SWITCH_DAILY_PNL, KILL_SWITCH_WEEKLY_PNL
         cfg = KillSwitchConfig()
-        self.assertEqual(cfg.auto_daily_loss_pct, 0.015)
-        self.assertEqual(cfg.auto_weekly_loss_pct, 0.04)
+        self.assertEqual(cfg.auto_daily_loss_pct, abs(KILL_SWITCH_DAILY_PNL))
+        self.assertEqual(cfg.auto_weekly_loss_pct, abs(KILL_SWITCH_WEEKLY_PNL))
         self.assertEqual(cfg.auto_max_drawdown_pct, 0.05)
         self.assertEqual(cfg.auto_volatility_spike_pct, 0.10)
         self.assertEqual(cfg.cooldown_minutes, 30)
