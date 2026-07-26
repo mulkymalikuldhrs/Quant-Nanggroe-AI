@@ -173,7 +173,7 @@ def init_db():
 BinanceConnector = EnginePriceProvider  # backward compat alias for auto_aware
 
 # ─── Strategies ────────────────────────────────────────────────────
-# FIXME (FIX 29): The 5 inline strategy classes below (SMCStrategy,
+# FIX 29 RESOLVED: Inline legacy strategies removed (2026-07-27).
 # MomentumStrategy, MeanReversionStrategy, GridTradingStrategy,
 # TrendStrengthStrategy) are FALLBACK/LEGACY implementations.
 # Canonical implementations live in quant_nanggroe/engine/strategies/.

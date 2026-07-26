@@ -1,9 +1,0 @@
-{
-  "initial_capital": 100000.0,
-  "peak_capital": 100000.0,
-  "cycle_count": 5,
-  "total_pnl": 0.0,
-  "regime": "RegimeBased",
-  "regime_name": "high_volatility",
-  "regime_at_entry": {}
-}

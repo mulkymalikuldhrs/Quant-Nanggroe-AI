@@ -1,9 +1,0 @@
-{
-  "regime": "high_volatility",
-  "confidence": 0.8,
-  "risk_multiplier": 0.4,
-  "selected_strategies": [
-    "RegimeBased"
-  ],
-  "detected_at": "2026-07-10T06:06:07.231253+00:00"
-}
