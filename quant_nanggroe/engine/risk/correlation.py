@@ -247,7 +247,7 @@ class StrategyCorrelationMonitor:
     def __init__(
         self,
         kill_switch: Optional[KillSwitch] = None,
-        window: int = 30,
+        window: int = 60,
         threshold: float = 0.85,
         state_dir: str = "paper_state",
         paper_mode: bool = False,

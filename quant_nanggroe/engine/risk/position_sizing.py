@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
+from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE, MAX_POSITION_SIZE_PCT
 
 
 @dataclass
@@ -68,6 +68,8 @@ class PositionSizer:
             return PositionSizeResult(0.0, 0.0, 0.0, "fixed_fractional", True, MAX_RISK_PER_TRADE)
 
         size = risk_amount / price_risk
+        max_size = (MAX_POSITION_SIZE_PCT * equity) / entry_price if entry_price > 0 else size
+        size = min(size, max_size)
         return PositionSizeResult(
             size=size,
             risk_amount=risk_amount,
@@ -109,6 +111,8 @@ class PositionSizer:
             return PositionSizeResult(0.0, 0.0, 0.0, "volatility_based", True, MAX_RISK_PER_TRADE)
 
         size = risk_amount / stop_distance
+        max_size = (MAX_POSITION_SIZE_PCT * equity) / entry_price if entry_price > 0 else size
+        size = min(size, max_size)
         return PositionSizeResult(
             size=size,
             risk_amount=risk_amount,

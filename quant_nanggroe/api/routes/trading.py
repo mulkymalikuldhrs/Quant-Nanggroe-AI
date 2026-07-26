@@ -6,7 +6,7 @@ import logging
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from quant_nanggroe.api.schemas import (
     OrderRequest,
@@ -414,6 +414,10 @@ async def trading_cycle(request: CycleRequest, http_request: Request) -> CycleRe
     Uses the live ExchangeManager (MT5 if configured, else paper broker) so the
     same endpoint drives real or simulated trading.
     """
+    # FIX S5: Require TRADER+ role for cycle execution
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(http_request.state, "user_role") and http_request.state.user_role not in (UserRole.ADMIN, UserRole.TRADER):
+        raise HTTPException(status_code=403, detail="Trader+ role required to run trading cycle")
     em = http_request.app.state.exchange_manager
     if em is None:
         return CycleResponse(

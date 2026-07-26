@@ -12,7 +12,6 @@ DO NOT modify existing engine/ files — this bridge adapts them for live_engine
 
 import json
 import os
-import random
 import socket
 import sqlite3
 import ssl
@@ -198,8 +197,8 @@ class EnginePriceProvider:
     Replaces live_engine.py's BinanceConnector with one that:
     - Uses engine/data/rate_limiter for rate limiting
     - Uses engine/data/caching for response caching
-    - Fetches from Bybit (fast) -> OKX (fast) -> CoinGecko (slow) with fallback to cached/synthetic
-    - Returns 0.0 when all sources fail
+    - Fetches from Bybit (fast) -> OKX (fast) -> CoinGecko (slow)
+    - Raises RuntimeError when all sources fail (no synthetic data)
     """
 
     def __init__(self, cache_ttl: int = 60):
@@ -345,8 +344,11 @@ class EnginePriceProvider:
                 self._cache.set(cache_key, candles, ttl=self.cache_ttl)
             return candles
 
-        # 3. Synthetic fallback
-        return self._synthetic_klines(symbol, limit)
+        # 3. Fail-closed: no synthetic data
+        raise RuntimeError(
+            f"No real klines available for {symbol} from any source (Bybit + CoinGecko). "
+            "Cannot generate synthetic data. Failing closed."
+        )
 
     def _bybit_klines(self, symbol: str, limit: int = 60) -> List[Dict]:
         """Fetch klines from Bybit via CDN bypass."""
@@ -362,22 +364,6 @@ class EnginePriceProvider:
                     "synthetic": False,
                 } for r in raw]
         return []
-
-    def _synthetic_klines(self, symbol: str, limit: int) -> List[Dict]:
-        price = self.get_price(symbol)
-        if not price:
-            return []
-        now = int(time.time())
-        candles = []
-        for i in range(min(limit, 60)):
-            ts = now - (limit - i) * 60
-            base = price * (1 + random.uniform(-0.001, 0.001))
-            candles.append({
-                "timestamp": ts, "open": base, "high": base * 1.0005,
-                "low": base * 0.9995, "close": base, "volume": random.uniform(1, 20),
-                "synthetic": True,
-            })
-        return candles
 
     def health(self) -> Dict:
         btc = self._exchange.get_price("BTCUSDT")

@@ -1,5 +1,9 @@
 """MetaTrader 5 Broker — Forex/CFD Trading via MT5 Terminal.
 
+EXCHANGE-LAYER ADAPTER — Provides the ExchangeInterface abstraction (async,
+Pydantic models) for external consumers. The active engine broker is
+quant_nanggroe/connectors/mt5_broker.py (synchronous, BrokerConnector ABC).
+
 Provides a production-grade implementation of
 :class:`~quant_nanggroe.exchange.base.ExchangeInterface` for the
 MetaTrader 5 platform, supporting forex, CFDs, and futures.
@@ -295,12 +299,7 @@ class MT5Broker(ExchangeInterface):
 
     @property
     def is_connected(self) -> bool:
-        if self._mt5 and self._state == ExchangeState.CONNECTED:
-            try:
-                return self._mt5.initialize()
-            except Exception:
-                return False
-        return False
+        return self._mt5 is not None and self._state == ExchangeState.CONNECTED
 
     @property
     def state(self) -> ExchangeState:

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/credentials", tags=["Credentials"])
@@ -119,12 +119,20 @@ def _defaults() -> dict[str, Any]:
 
 
 @router.get("")
-def get_credentials() -> dict[str, Any]:
+def get_credentials(request: Request) -> dict[str, Any]:
+    # FIX S3: Require ADMIN role for credential access
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(request.state, "user_role") and request.state.user_role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
     return _load()
 
 
 @router.put("")
-def update_credentials(body: dict[str, Any]) -> dict[str, Any]:
+def update_credentials(body: dict[str, Any], request: Request) -> dict[str, Any]:
+    # FIX S3: Require ADMIN role for credential modification
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(request.state, "user_role") and request.state.user_role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
     current = _load()
     # merge: keep keys not present in body, override present ones
     current.update(body)

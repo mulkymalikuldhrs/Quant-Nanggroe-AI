@@ -227,17 +227,6 @@ class StrategyEvolver:
             log.error(f"Real backtest failed for {name}: {e}")
             return None
 
-    def _mock_backtest(self, name: str, params: dict) -> dict:
-        """Placeholder backtest — DEPRECATED, kept only for unit tests."""
-        import random
-        base = {"profit_factor": 1.2, "sharpe": 0.8, "win_rate": 55.0,
-                "total_return_pct": 3.0, "max_drawdown_pct": -8.0}
-        param_hash = hash(frozenset(params.items())) & 0xFFFF
-        rng = random.Random(param_hash)
-        for k in base:
-            base[k] += rng.uniform(-0.3, 0.3) * base[k]
-        return base
-
     def _persist_history(self, attempt: EvolveAttempt) -> None:
         """Append attempt to JSON history file."""
         path = Path(self.config.history_path)

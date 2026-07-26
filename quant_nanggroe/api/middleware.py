@@ -78,11 +78,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # ponytail: lo bilang "ini mesin uang, jangan pakai auth". Localhost bypass.
+        # FIX S1: Gate behind env var to prevent unauthenticated admin access in production.
         client = request.client
         if client and client.host in ("127.0.0.1", "::1", "localhost"):
-            request.state.user_id = "local"
-            request.state.user_role = UserRole.ADMIN
-            return await call_next(request)
+            if os.environ.get("QNAI_ALLOW_LOCALHOST_BYPASS", "0") == "1":
+                request.state.user_id = "local"
+                request.state.user_role = UserRole.ADMIN
+                return await call_next(request)
+            # else: fall through to normal auth
 
         auth_header = request.headers.get("Authorization", "")
         if not auth_header:

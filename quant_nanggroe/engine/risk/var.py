@@ -116,7 +116,7 @@ class VaRCalculator:
         elif n_observations >= 100:
             return "parametric"
         else:
-            return "parametric"
+            return "monte_carlo"
 
     @staticmethod
     def _get_z_score(confidence_level: float) -> float:

@@ -157,21 +157,6 @@ class BHQnaBridge:
             latency = (time.monotonic() - start_time) * 1000
             logger.error(f"BH→QNA market data fetch failed for {symbol}: {exc}")
 
-            if self.config.enable_fallback:
-                fallback_result = self._fallback_market_data(
-                    symbol, start_date, end_date, interval, fields
-                )
-                if fallback_result is not None:
-                    self._record_fallback("get_market_data_from_bh", latency)
-                    return BridgeResult(
-                        status=BridgeStatus.FALLBACK,
-                        data=fallback_result,
-                        source=ModuleSide.BH,
-                        target=ModuleSide.QNA,
-                        latency_ms=latency,
-                        fallback_used=True,
-                    )
-
             self._record_failure("get_market_data_from_bh", latency)
             return BridgeResult(
                 status=BridgeStatus.FAILED,
@@ -188,47 +173,16 @@ class BHQnaBridge:
         end_date: str,
         interval: str,
     ) -> pd.DataFrame:
-        """Internal method to fetch data from BH backtest infrastructure.
-
-        This is a bridge stub — in production this would call the BH
-        data loader or persistence layer. For now we generate synthetic data.
-        """
+        """Fetch data from BH backtest infrastructure. Fail-closed on loader failure."""
         try:
             from quant_nanggroe.engine.backtest.loaders import CSVLoader
             loader = CSVLoader()
             return loader.load(symbol, start_date, end_date)
-        except (ImportError, Exception):
-            logger.debug(f"Using synthetic data for {symbol} (BH loader unavailable)")
-            return self._generate_synthetic_data(symbol, start_date, end_date, interval)
-
-    @staticmethod
-    def _generate_synthetic_data(
-        symbol: str,
-        start_date: str,
-        end_date: str,
-        interval: str = "1d",
-    ) -> pd.DataFrame:
-        """Generate synthetic OHLCV data for testing/fallback."""
-        dates = pd.date_range(start=start_date, end=end_date, freq=interval)
-        n = len(dates)
-        if n == 0:
-            return pd.DataFrame()
-
-        rng = np.random.default_rng(hash(symbol) % 2**31)
-        returns = rng.normal(0.0003, 0.015, n)
-        close = 100.0 * np.cumprod(1 + returns)
-        high = close * (1 + np.abs(rng.normal(0, 0.005, n)))
-        low = close * (1 - np.abs(rng.normal(0, 0.005, n)))
-        open_ = close * (1 + rng.normal(0, 0.002, n))
-        volume = rng.lognormal(15, 1, n)
-
-        return pd.DataFrame({
-            "open": open_,
-            "high": high,
-            "low": low,
-            "close": close,
-            "volume": volume,
-        }, index=dates)
+        except Exception as exc:
+            raise RuntimeError(
+                f"BH market data loader failed for {symbol}: {exc}. "
+                "Cannot generate synthetic data. Failing closed."
+            ) from exc
 
     @staticmethod
     def _align_columns(df: pd.DataFrame, fields: List[str]) -> pd.DataFrame:
@@ -238,23 +192,6 @@ class BHQnaBridge:
             logger.warning(f"None of requested fields {fields} found in DataFrame")
             return df
         return df[available]
-
-    def _fallback_market_data(
-        self,
-        symbol: str,
-        start_date: str,
-        end_date: str,
-        interval: str,
-        fields: List[str],
-    ) -> Optional[pd.DataFrame]:
-        """Generate fallback data when primary source fails."""
-        try:
-            df = self._generate_synthetic_data(symbol, start_date, end_date, interval)
-            if not df.empty:
-                return self._align_columns(df, fields)
-        except Exception as exc:
-            logger.error(f"Fallback market data generation failed: {exc}")
-        return None
 
     # ── QNA Analysis: QNA Internal ───────────────────────────────────
 

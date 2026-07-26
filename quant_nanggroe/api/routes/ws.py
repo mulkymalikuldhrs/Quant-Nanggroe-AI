@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random as _random
 from datetime import datetime, timezone
 from typing import Any
 
@@ -100,7 +99,7 @@ class ConnectionManager:
     # ------------------------------------------------------------------ #
 
     async def _get_prices(self, symbols: list[str]) -> dict[str, dict[str, float]]:
-        """Fetch real prices from ExchangeManager, falling back to simulation."""
+        """Fetch real prices from ExchangeManager. Raises RuntimeError if unavailable."""
         exchange_mgr = self._services.get("exchange_manager")
         result: dict[str, dict[str, float]] = {}
 
@@ -132,9 +131,10 @@ class ConnectionManager:
                 )
 
             if used_fallback:
-                price = _random.uniform(50000, 70000)
-                change_24h = _random.uniform(-5, 5)
-                volume = _random.uniform(100000, 5000000)
+                raise RuntimeError(
+                    f"No real price data for {s} — exchange manager unavailable or failed. "
+                    "Cannot generate simulated prices. Failing closed."
+                )
 
             result[s] = {
                 "price": round(price, 2),
@@ -288,11 +288,10 @@ class ConnectionManager:
                 extra={"error": "no exchange manager"},
             )
 
-        return {
-            "total_value": round(_random.uniform(950000, 1050000), 2),
-            "position_count": _random.randint(0, 8),
-            "unrealized_pnl": round(_random.uniform(-5000, 8000), 2),
-        }
+        raise RuntimeError(
+            "No real portfolio data — exchange manager unavailable or failed. "
+            "Cannot generate simulated portfolio. Failing closed."
+        )
 
     # ------------------------------------------------------------------ #
     # Main push loop body
@@ -355,6 +354,24 @@ async def websocket_stream(websocket: WebSocket) -> None:
     - Client sends JSON:  {"action": "subscribe",   "channels": ["price"], "symbols": ["BTC/USDT"]}
     - Server sends JSON:  {"type": "price", "data": {...}}
     """
+    # FIX S2: Require auth token on WebSocket connections
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4001, reason="Missing auth token")
+        return
+    try:
+        from quant_nanggroe.security.auth import JWTAuth
+        import os
+        secret = os.environ.get("QNAI_JWT_SECRET", "")
+        if not secret:
+            await websocket.close(code=4001, reason="Server auth not configured")
+            return
+        jwt_auth = JWTAuth(secret_key=secret)
+        jwt_auth.validate_token(token)
+    except Exception:
+        await websocket.close(code=4001, reason="Invalid or expired token")
+        return
+
     cid = await manager.connect(websocket)
     logger.info("ws_client_connected", extra={"cid": cid})
 

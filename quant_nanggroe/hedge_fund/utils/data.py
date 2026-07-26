@@ -1,12 +1,9 @@
-"""Historical market data fetching with mock fallback."""
+"""Historical market data fetching from MT5. Fail-closed on no connection."""
 
-from datetime import datetime, timedelta
-
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.hedge_fund.utils.config import (
-    MT5_AVAILABLE, PAPER_TRADE, _DATA_DIR, log, mt5,
+    MT5_AVAILABLE, PAPER_TRADE, log, mt5,
 )
 
 
@@ -22,30 +19,7 @@ def get_historical_mt5(symbol="EURUSD", count=100, tf=15):
         except Exception:
             pass
 
-    if PAPER_TRADE:
-        log.info(f"  Using mock data for {symbol} (paper mode)")
-        np.random.seed(hash(symbol) % (2**31))
-        now = datetime.now()
-        times = [now - timedelta(minutes=i*tf) for i in range(count-1, -1, -1)]
-
-        close = 1.0800
-        closes = []
-        for i in range(count):
-            close += np.random.normal(0, 0.0005)
-            close = max(close, 1.0500)
-            close = min(close, 1.1200)
-            closes.append(close)
-
-        df = pd.DataFrame({
-            'open': [c - np.random.uniform(0, 0.001) for c in closes],
-            'high': [c + np.random.uniform(0.001, 0.003) for c in closes],
-            'low': [c - np.random.uniform(0.001, 0.003) for c in closes],
-            'close': closes,
-            'tick_volume': [np.random.randint(100, 5000) for _ in range(count)],
-            'spread': [np.random.randint(5, 20) for _ in range(count)],
-            'real_volume': [np.random.randint(1000, 50000) for _ in range(count)],
-        }, index=pd.DatetimeIndex(times))
-
-        return df
-
-    return None
+    raise RuntimeError(
+        f"No real MT5 data for {symbol} — cannot generate historical data "
+        "without live connection. Failing closed (no mock/simulated data)."
+    )

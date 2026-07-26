@@ -298,11 +298,12 @@ class ExecutionManager:
             return fill
 
         except Exception as exc:
-            logger.error("Order execution failed: %s", exc)
+            logger.error("Order execution failed: %s [%s]", exc, type(exc).__name__, exc_info=True)
             self._record_audit({
                 "action": "EXECUTION_FAILED",
                 "order_id": order.id,
                 "error": str(exc),
+                "error_type": type(exc).__name__,
             })
             return None
 

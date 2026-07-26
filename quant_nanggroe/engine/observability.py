@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 # ── Environment configuration ─────────────────────────────────────────────
 
-OBSERVABILITY_ENABLED: bool = os.getenv("OBSERVABILITY_ENABLED", "false").lower() in ("true", "1", "yes")
+OBSERVABILITY_ENABLED: bool = os.getenv("OBSERVABILITY_ENABLED", "true").lower() in ("true", "1", "yes")
 OTEL_SERVICE_NAME: str = os.getenv("OTEL_SERVICE_NAME", "quant-nanggroe-ai")
 
 # ── Lazy OpenTelemetry imports ────────────────────────────────────────────

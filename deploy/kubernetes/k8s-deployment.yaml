@@ -162,7 +162,14 @@ metadata:
   namespace: quant-nanggroe
 type: Opaque
 data:
-  database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzc0Bsb2NhbGhvc3Q6NTQzMi9xdWFudF9uYW5nZ3JvZQ==
-  redis-url: cmVkaXM6Ly9sb2NhbGhvc3Q6NjM3OS8w
-  jwt-secret: Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24t
+  # FIX S6: Secrets are now managed via External Secrets Operator / manual kubectl create secret
+  # Do NOT store plaintext or base64 secrets in version control.
+  # Create secrets with:
+  #   kubectl create secret generic qna-secrets -n quant-nanggroe \
+  #     --from-literal=database-url='<YOUR_DB_URL>' \
+  #     --from-literal=redis-url='<YOUR_REDIS_URL>' \
+  #     --from-literal=jwt-secret='<YOUR_JWT_SECRET>'
+  database-url: REPLACE_ME
+  redis-url: REPLACE_ME
+  jwt-secret: REPLACE_ME
   

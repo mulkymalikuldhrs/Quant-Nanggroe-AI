@@ -87,14 +87,13 @@ class RegimeAdaptiveStrategy:
 
         regime_label = self.current_regime
 
-        self.current_map = self.selector.select_strategy(
+        self.current_map = self.selector.select_strategies(
             regime_label,
             confidence,
-            self._get_available_strategies(),
         )
 
-        adjusted_kelly = self.selector.adjust_kelly_for_regime(
-            self.current_map.primary_strategy.Kelly.get("fraction", 0.25),
+        adjusted_kelly = self.selector.adjust_kelly(
+            self.current_map.active_strategies[0].Kelly.get("fraction", 0.25),
             regime_label,
             confidence,
         )
@@ -102,13 +101,13 @@ class RegimeAdaptiveStrategy:
         return {
             "regime": regime_label,
             "confidence": round(confidence, 4),
-            "recommended_strategy": self.current_map.primary_strategy.name,
+            "recommended_strategy": self.current_map.active_strategies[0].name,
             "risk_multiplier": self.current_map.risk_multiplier,
             "kelly_adjustment": {
-                **self.current_map.primary_strategy.Kelly,
+                **self.current_map.active_strategies[0].Kelly,
                 "adjusted_fraction": adjusted_kelly,
             },
-            "secondary_strategies": [s.name for s in self.current_map.secondary_strategies],
+            "secondary_strategies": [s.name for s in self.current_map.active_strategies[1:]],
         }
 
     def _get_available_strategies(self) -> List[StrategyConfig]:

@@ -32,14 +32,15 @@ class RegimeEnsemble:
 
             try:
                 detector_kwargs = self._extract_kwargs(detector, kwargs)
-                result = detector.predict(**kwargs)
+                result = detector.predict(**detector_kwargs)
                 if result and isinstance(result, RegimeState):
                     r = result.regime
                     votes[r] = votes.get(r, 0.0) + weight * result.confidence
                     feature_accum.update(result.features)
                     methods_used.append(f"{result.method}:{r.value}")
                     total_weight += weight
-            except Exception:
+            except Exception as e:
+                logger.warning("Regime detector %s failed: %s", name, e)
                 continue
 
         if not votes:

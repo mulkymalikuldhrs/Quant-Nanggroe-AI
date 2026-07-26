@@ -59,7 +59,7 @@ class EncryptedStore:
         if self._enabled:
             logger.info("EncryptedStore active — data will be encrypted at rest")
         else:
-            logger.info("EncryptedStore pass-through — set QNAI_ENCRYPTION_KEY for encryption")
+            logger.warning("EncryptedStore DISABLED — data is stored in PLAINTEXT. Set QNAI_ENCRYPTION_KEY for production!")
 
     @property
     def enabled(self) -> bool:

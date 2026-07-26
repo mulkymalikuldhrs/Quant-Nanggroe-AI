@@ -136,6 +136,10 @@ async def get_portfolio(name: str, request: Request):
 
 @router.post("/{name}/order")
 async def place_order(name: str, payload: Dict[str, Any], request: Request):
+    # FIX S4: Require TRADER+ role for order placement
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(request.state, "user_role") and request.state.user_role not in (UserRole.ADMIN, UserRole.TRADER):
+        raise HTTPException(status_code=403, detail="Trader+ role required to place orders")
     em = _get_em(request)
     if name not in em._registrations:
         raise HTTPException(status_code=404, detail=f"Account '{name}' not registered")

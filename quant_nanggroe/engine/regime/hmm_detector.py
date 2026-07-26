@@ -112,6 +112,8 @@ class HMMRegimeDetector:
                 tol=1e-4,
             )
             self.hmm.fit(self._features_cache)
+            if not hasattr(self.hmm, 'monitor_') or not self.hmm.monitor_.converged:
+                logger.warning("HMM did not converge after %d iterations", self.hmm.n_iter)
             self._build_state_map()
             self._last_transition_matrix = self.hmm.transmat_.copy()
             self.is_fitted = True

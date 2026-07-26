@@ -562,6 +562,14 @@ def run_hedge(args: argparse.Namespace) -> int:
     # Thesis Drift Guard runs intra-engine in LiveEngine.execute_cycle()
     # and is not exposed via env vars (engine-internal concern).
 
+    # Log Macro Surprise Index context if available
+    msi_n = os.environ.get("QNA_MSI_N_SIGNIFICANT", "")
+    if msi_n:
+        logger.info(
+            "MSI context: %s significant surprises",
+            msi_n,
+        )
+
     # Try the new pipeline module first
     try:
         from quant_nanggroe.pipeline.factory import create_pipeline
@@ -722,6 +730,16 @@ def run_unified(args: argparse.Namespace) -> int:
                     pct = cot_detail.get("percentile_noncomm")
                     if pct is not None:
                         os.environ["QNA_COT_PERCENTILE"] = str(pct)
+
+                # Expose Macro Surprise Index context from phase1_msi
+                msi = pre_filter.get("phase1_msi", {})
+                if msi.get("connected"):
+                    os.environ["QNA_MSI_CONNECTED"] = "1"
+                    os.environ["QNA_MSI_N_SIGNIFICANT"] = str(msi.get("n_significant", 0))
+                    events = msi.get("events", {})
+                    for event_name, event_data in events.items():
+                        if event_data.get("is_significant"):
+                            os.environ[f"QNA_MSI_{event_name}"] = str(event_data.get("avg_msi", 0))
 
                 if pre_filter.get("phase2_smt", {}).get("smt_divergence_detected"):
                     logger.warning("SMT divergence detected between correlated pairs — review positions")

@@ -60,8 +60,7 @@ services:
     image: redis:7-alpine
     container_name: qna-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # FIX S8: Redis only accessible within Docker network (no host port mapping)
     volumes:
       - redis_data:/data
     healthcheck:

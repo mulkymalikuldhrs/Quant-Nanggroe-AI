@@ -1,5 +1,9 @@
 """Live MT5 broker connector (Exness/Valutrades). Fail-closed: no terminal -> raise, never silent.
 Reuses BrokerConnector ABC + Order/Position from broker_base. Symbol map: BTC-USD -> BTCUSD.
+
+ACTIVE IMPLEMENTATION — This is the broker used by the engine execution layer.
+The exchange-layer adapter at quant_nanggroe/exchange/mt5_broker.py provides
+the ExchangeInterface abstraction (async, Pydantic models) for external consumers.
 """
 from typing import List
 

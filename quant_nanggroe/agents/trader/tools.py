@@ -80,8 +80,7 @@ def place_order(
     Place a trading order.
 
     PRODUCTION: Uses ExecutionTool for real order routing through
-    PaperBroker (or live broker when configured).
-    Falls back to mock data only in _MOCK_MODE.
+    PaperBroker (or live broker when configured). Fails closed if unavailable.
 
     Args:
         symbol: Trading symbol (e.g., AAPL, BTCUSDT)

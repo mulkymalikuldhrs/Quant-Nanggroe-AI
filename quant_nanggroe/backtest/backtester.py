@@ -94,38 +94,10 @@ class DataFetcher:
         except Exception:
             pass
 
-        fallback = self.CACHE_DIR / f"{coin_id}_fallback.json"
-        if fallback.exists():
-            return json.loads(fallback.read_text())
-        return self._generate_synthetic(coin_id, days)
-
-    def _generate_synthetic(self, coin_id, days, base_price=None) -> List[Dict]:
-        """Generate synthetic candles as ultimate fallback."""
-        import random
-        if base_price is None:
-            prices = {"bitcoin": 63450, "ethereum": 3400, "solana": 140, "binancecoin": 580}
-            base_price = prices.get(coin_id, 100)
-        now = int(time.time())
-        start = now - days * 86400
-        candles = []
-        price = base_price
-        for i in range(days):
-            ts = start + i * 86400
-            change = random.gauss(0, base_price * 0.02)
-            price += change
-            if price < base_price * 0.3:
-                price = base_price * 0.3
-            elif price > base_price * 3:
-                price = base_price * 3
-            candles.append({
-                "timestamp": ts,
-                "open": price - change * 0.5,
-                "high": price + abs(change) * 0.5,
-                "low": price - abs(change) * 0.5,
-                "close": price,
-                "volume": random.uniform(100, 10000),
-            })
-        return candles
+        raise RuntimeError(
+            f"No real market data available for {coin_id} from any source. "
+            "Cannot generate synthetic candles. Failing closed."
+        )
 
 
 class BacktestResult:

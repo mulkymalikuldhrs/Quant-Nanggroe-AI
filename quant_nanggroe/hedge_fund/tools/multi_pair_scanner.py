@@ -225,27 +225,6 @@ def spread_in_pips(pair_name):
 # valid_pairs  : list of dict {symbol, spread, bid, ask}  (forex, ENABLED, tradable)
 # skipped_pairs: list of dict {symbol, reason}            (non-forex / disabled / wide spread)
 
-MOCK_MODE = False
-
-def set_mock_mode(flag):
-    """Toggle mock mode (no MT5). Used by tests only."""
-    global MOCK_MODE
-    MOCK_MODE = bool(flag)
-
-# Mock universe for test/CI — 37 symbols: 27 forex (valid) + 10 non-forex (skipped).
-# Non-forex entries (XAUUSD etc.) are filtered to skipped, satisfying SL-jilat filter.
-_MOCK_FOREX = [p for p in SL_JILAT_PAIRS
-               if p[0] in ("EURUSD","GBPUSD","USDJPY","USDCHF","USDCAD","AUDUSD","NZDUSD",
-                           "EURGBP","EURJPY","EURCHF","EURCAD","EURAUD","EURNZD",
-                           "GBPJPY","GBPCHF","GBPCAD","GBPAUD","GBPNZD",
-                           "CHFJPY","CADJPY","AUDJPY","NZDJPY",
-                           "AUDCHF","AUDCAD","AUDNZD","NZDCAD","NZDCHF")]
-_MOCK_NONFOREX = [("XAUUSD",29,4016.09,4016.38),("XAGUSD",204,55.813,56.017),
-                  ("US30",118,52160.5,52172.3),("NAS100",118,28587.4,28599.2),
-                  ("SP500",122,7451.1,7463.3),("DAX40",34,24828.6,24832.0),
-                  ("BTCUSD",2976,64544.22,64573.98),("ETHUSD",498,1854.78,1859.76),
-                  ("XTIUSD",94,81.800,82.740),("XNGUSD",150,2.814,2.964)]
-
 def _is_forex(symbol):
     """Heuristic: 6-char uppercase symbol, base+quote both standard currencies."""
     if not isinstance(symbol, str) or len(symbol) != 6:
@@ -256,32 +235,21 @@ def _is_forex(symbol):
     CURRENCIES = ("USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD")
     return base in CURRENCIES and quote in CURRENCIES
 
-def _mock_scan():
-    valid, skipped = [], []
-    for p in _MOCK_FOREX:
-        sym, spread, bid, ask = p[0], p[2], p[9], p[8]
-        valid.append({"symbol": sym, "spread": spread, "bid": bid, "ask": ask})
-    for sym, spread, bid, ask in _MOCK_NONFOREX:
-        skipped.append({"symbol": sym, "reason": "non_forex"})
-    return valid, skipped
-
 def scan_all_pairs():
     """Scan ALL market symbols → return (valid_pairs, skipped_pairs).
 
-    Live mode (default): queries MT5 for every symbol, keeps forex + ENABLED +
-    tradable spread, returns real bid/ask/spread. Skipped = non-forex / disabled /
-    untradeable.
-    Mock mode (set_mock_mode(True)): returns static 37-symbol universe for tests.
+    Queries MT5 for every symbol, keeps forex + ENABLED + tradable spread,
+    returns real bid/ask/spread. Skipped = non-forex / disabled / untradeable.
+    Raises RuntimeError if MT5 is unreachable (fail-closed).
     """
-    if MOCK_MODE:
-        return _mock_scan()
-
     # Only tear down MT5 if WE initialized it; if the caller already had a live
     # terminal (e.g. the hedge fund pipeline), leave it connected.
     already_connected = mt5.terminal_info() is not None
     if not mt5.initialize(path=MT5_PATH):
-        # Fall back to static SL_JILAT_PAIRS-derived universe if MT5 unreachable
-        return _mock_scan()
+        raise RuntimeError(
+            "MT5 unavailable — cannot scan pairs without real market data. "
+            "Failing closed. No mock/simulated fallback."
+        )
 
     own_session = not already_connected
 

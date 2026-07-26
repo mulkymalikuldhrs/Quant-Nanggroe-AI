@@ -69,8 +69,7 @@ def submit_order(
     Submit an order to the broker.
 
     PRODUCTION: Uses ExecutionManager for real order routing through
-    PaperBroker (or live broker when configured).
-    Falls back to mock data only in _MOCK_MODE.
+    PaperBroker (or live broker when configured). Fails closed if unavailable.
 
     Args:
         symbol: Trading symbol

@@ -336,22 +336,32 @@ class MasterQuantNanggroeEngine:
         # ── DCC-GARCH integration ─────────────────────────────
         returns: Any | None = None,           # (n_days x n_assets) returns array
         dcc_garch_instance: Any | None = None, # pre-fitted DCCGARCH instance
+        # ── MSI / FRED integration ────────────────────────────
+        msi_api_key: str | None = None,       # FRED API key for MSI auto-eval
+        msi_instance: Any | None = None,       # pre-configured MacroSurpriseIndex
+        # ── SMT cointegration integration ─────────────────────
+        smt_price_data: Any | None = None,    # price DataFrame for cointegration SMT
+        smt_detector_instance: Any | None = None,  # pre-fitted CointegrationSMTDetector
     ) -> dict[str, Any]:
         """
         Run the full 4-phase evaluation pipeline end-to-end.
 
-        Extended with DCC-GARCH correlation/volatility estimates.
-        If a pre-fitted DCCGARCH instance is passed, the pipeline uses
-        dynamic correlation and GARCH vols for risk estimates.
-        Otherwise falls back to static correlation.
+        Extended with DCC-GARCH correlation/volatility estimates and
+        Macro Surprise Index (MSI) from FRED data.
+
+        If a pre-configured MSI instance or FRED API key is provided,
+        the pipeline auto-fetches economic data and computes MSI scores
+        for all tracked indicators, mapped to QNA event types.
 
         This is the main entry point for agentic/trading systems.
 
         Returns a complete decision dict with causal context, macro weather,
-        intermarket analysis, COT context, DCC correlation, and execution decision.
+        intermarket analysis, COT context, DCC correlation, MSI scores,
+        and execution decision.
         """
         result: dict[str, Any] = {
             "phase1_causal": {},
+            "phase1_msi": {},
             "phase2_weather": {},
             "phase2_cot": {},
             "phase2_smt": {},
@@ -400,17 +410,93 @@ class MasterQuantNanggroeEngine:
         )
         result["phase1_causal"] = {"event": event_type, "asset_biases": biases}
 
+        # Phase 1: Macro Surprise Index (auto-fetch from FRED if configured)
+        msi_results: dict[str, Any] = {}
+        if msi_instance is not None:
+            try:
+                if hasattr(msi_instance, "evaluate_all"):
+                    msi_instance.evaluate_all()
+                    msi_results = msi_instance.get_summary()
+                    logger.info(
+                        "MSI: %d indicators, %d significant surprises",
+                        msi_results.get("n_indicators", 0),
+                        msi_results.get("n_significant", 0),
+                    )
+            except Exception as e:
+                logger.debug("MSI instance eval failed: %s", e)
+        elif msi_api_key:
+            try:
+                from quant_nanggroe.engine.macro import MacroSurpriseIndex
+                msi = MacroSurpriseIndex(api_key=msi_api_key)
+                if msi.is_connected:
+                    msi.evaluate_all()
+                    msi_results = msi.get_summary()
+                    logger.info(
+                        "MSI auto-fetched: %d indicators, %d significant",
+                        msi_results.get("n_indicators", 0),
+                        msi_results.get("n_significant", 0),
+                    )
+            except Exception as e:
+                logger.debug("MSI auto-fetch failed: %s", e)
+        result["phase1_msi"] = {
+            "connected": bool(msi_results),
+            "n_significant": msi_results.get("n_significant", 0),
+            "events": msi_results.get("events", {}),
+            "threshold": self.surprise_threshold,
+        }
+
         # Phase 2: Macro weather
         weather = self.detect_macro_weather(
             dxy_change_pct=dxy_change, bond_zb_change_pct=bond_change
         )
         result["phase2_weather"] = {"classification": weather}
 
-        # Phase 2: SMT divergence
+        # Phase 2: SMT divergence — cointegration-based (Bennett 2022) + heuristic fallback
         smt_flag = False
-        if gold_highs and silver_highs:
-            smt_flag = self.check_smt_divergence(gold_highs, silver_highs)
-        result["phase2_smt"] = {"smt_divergence_detected": smt_flag}
+        smt_diag: dict[str, Any] = {"method": "none", "n_divergent": 0}
+
+        # Try cointegration-based detector first (requires price history)
+        # Reuse a cached detector, or create one from smt_price_data, or accept pre-fitted
+        if smt_detector_instance is not None:
+            # Pre-fitted detector provided — use it directly
+            self._smt_detector = smt_detector_instance
+
+        if smt_price_data is not None:
+            # Lazy-init detector from raw price data
+            try:
+                from quant_nanggroe.engine.intermarket import CointegrationSMTDetector
+
+                if not hasattr(self, "_smt_detector") or self._smt_detector is None:
+                    self._smt_detector = CointegrationSMTDetector(z_score_threshold=2.0)
+                if not self._smt_detector.fitted:
+                    self._smt_detector.fit(smt_price_data)
+            except ImportError:
+                pass
+            except Exception as e:
+                logger.debug("SMT lazy-fit failed: %s", e)
+
+        # Detect divergences from cached/configured detector
+        if hasattr(self, "_smt_detector") and self._smt_detector is not None:
+            if self._smt_detector.fitted:
+                detections = self._smt_detector.detect()
+                smt_flag = any(r.divergence_detected for r in detections.values())
+                smt_diag = {
+                    "method": "cointegration",
+                    "n_pairs": self._smt_detector.n_cointegrated,
+                    "n_divergent": sum(1 for r in detections.values() if r.divergence_detected),
+                    "blocked_symbols": self._smt_detector.get_blocked_symbols(),
+                }
+
+        # Fallback to heuristic if cointegration not available
+        if not smt_diag.get("method", "") in ("cointegration",) or not smt_diag.get("n_pairs", 0):
+            if gold_highs and silver_highs:
+                smt_flag = self.check_smt_divergence(gold_highs, silver_highs)
+                smt_diag["method"] = "heuristic"
+
+        result["phase2_smt"] = {
+            "smt_divergence_detected": smt_flag,
+            **smt_diag,
+        }
 
         # Phase 2: COT institutional positioning
         cot_status = "BALANCED"

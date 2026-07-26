@@ -1,7 +1,6 @@
 """Trade execution and position management."""
 
 import csv
-import random
 from datetime import datetime
 
 from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters, KellyMethod
@@ -124,22 +123,10 @@ def execute(sig, symbol="EURUSD"):
     sd = max(atr*2, 0.0010)
 
     if PAPER_TRADE:
-        price = random.uniform(1.05, 1.12) if sym == "EURUSD" else 100.0
-        if sig["bias"] == "buy":
-            p, sl, tp = price, round(price-sd,5), round(price+sd*2,5)
-            ot = "buy"
-        else:
-            p, sl, tp = price, round(price+sd,5), round(price-sd*2,5)
-            ot = "sell"
-
-        log.info(f"PAPER {sig['bias'].upper()} {lot} {sym} @ {p:.5f} SL={sl} TP={tp}")
-        with open(PAPER_LOG, 'a', newline='') as f:
-            w = csv.writer(f)
-            if not PAPER_LOG.exists() or PAPER_LOG.stat().st_size == 0:
-                w.writerow(["time","action","symbol","lot","price","sl","tp","atr","providers","mode"])
-            srcs = ",".join(v["source"] for v in sig.get("votes",[]))
-            w.writerow([datetime.now().isoformat(), f"paper_{sig['bias']}", sym, lot, p, sl, tp, round(atr,6), srcs, "paper"])
-        return f"paper_{sig['bias']}"
+        raise RuntimeError(
+            f"Paper trade blocked for {sym} — no real price available. "
+            "Cannot generate simulated price. Failing closed."
+        )
 
     if sig["bias"] == "buy":
         p, sl, tp, ot = t.ask, round(t.ask-sd,5), round(t.ask+sd*2,5), mt5.ORDER_TYPE_BUY
