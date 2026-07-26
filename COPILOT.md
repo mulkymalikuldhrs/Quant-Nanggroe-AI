@@ -1,7 +1,7 @@
-# GitHub Copilot Instructions — Quant Nanggroe AI v6.0.0
+# GitHub Copilot Instructions — Quant Nanggroe AI v6.1.0
 
 ## Entry Point
-Single entry: `python qna.py [cli|api|daemon|web|status|stop]`
+Single entry: `python qna.py [unified|api|daemon|hedge|status|stop]`
 
 ## Suggested Ignore Patterns
 - `paper_state/*.json` — auto-generated trading state.
@@ -18,8 +18,13 @@ Single entry: `python qna.py [cli|api|daemon|web|status|stop]`
 - `test:` Test changes
 - `chore:` Maintenance
 - `audit:` Codebase audit
+- `quant:` Quantitative engine addition
 
-## Key Locations
-- Strategies: `quant_nanggroe/engine/strategies/` (79+ registered, canonical) + legacy shim (139 frozen, backward-compat)
-- Risk: `quant_nanggroe/engine/risk/`
+## Key Locations — Updated v6.1.0
+- Strategies: `quant_nanggroe/engine/strategies/` (79+ registered)
+- Risk: `quant_nanggroe/engine/risk/` (+ **DCC-GARCH** 🆕)
+- Causal: `quant_nanggroe/engine/causal/` (5 modules 🆕)
+- HF Signals: `quant_nanggroe/hedge_fund/signals/core.py` (+ causal bias 🆕)
+- Pipeline: `quant_nanggroe/pipeline/macro_context.py` 🆕
+- Tests: `quant_nanggroe/tests/test_dcc_garch.py` (47 tests 🆕)
 - Docs: `docs/` (58 documents)

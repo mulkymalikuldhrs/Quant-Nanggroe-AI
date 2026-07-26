@@ -1,5 +1,5 @@
 # QNA — Autonomous Quant Hedge Fund: Real-Market War Plan
-**Version:** 1.0 (War Ready) | **Date:** 2026-07-25 | **Author:** Dhaher Labs
+**Version:** 1.1 (War Ready) | **Date:** 2026-07-26 | **Author:** Dhaher Labs
 **Status:** EXECUTE — no simulation, real capital path after gate
 
 ---
@@ -9,26 +9,28 @@
 
 QNA is NOT a research toy. It is a production autonomous hedge fund that:
 1. Runs 24/7 via Hermes profile crons (all 7 profiles, parallel)
-2. Generates signals from 100+ providers + 64 archive strategies
+2. Generates signals from 200+ providers + **real quantitative alpha engines**: DCC-GARCH, Causal Macro, COT, MSI, SMT
 3. Passes gate (Sharpe > 0.5, Return > 0%, DD > -25%)
 4. Executes to MT5 (Valetax demo → real broker)
 5. Self-evolves, self-corrects, self-heals — no human babysitting
 
 ---
 
-## 1. CURRENT STATE (Verified 2026-07-25)
+## 1. CURRENT STATE (Verified 2026-07-26)
 
 | Component | Status | Evidence |
 |-----------|--------|----------|
-| MT5 connector | ✅ EXISTS | `quant_nanggroe/connectors/mt5_broker.py` (169 lines, fail-closed) |
-| Risk guard | ✅ EXISTS | `quant_nanggroe/engine/risk/manager.py` — daily/weekly-loss veto wired |
-| Backtest engine | ✅ EXISTS | `scripts/backtest_dhaher_sltp.py` (SL/TP-aware) |
-| Strategy registry | ✅ EXISTS | `quant_nanggroe/engine/registry.py` — AutoRegistry v2 (active + archive) |
-| Decorator strategies | ✅ 7+ live | `adaptive_moving_average.py`, `dhaher_system.py`, etc. |
-| Archive strategies | ✅ 64 orphan | 133 strategy classes in `archive/` (not yet wired) |
-| API server | ✅ EXISTS | `quant_nanggroe/api/app.py` — 31 routes |
-| Cron runner | ✅ EXISTS | `qna-production-runner.py` (no_agent, silent) |
-| Profile crons | ⚠️ PAUSED | 4 pollution crons paused (need resume scoped to QNA) |
+| **DCC-GARCH correlation** | ✅ 47 tests | Dynamic cross-asset, auto-fit in live_engine |
+| **Causal Macro Engine** | ✅ 5 modules | Bias, MSI (FRED), COT (CFTC), SMT, Thesis Drift |
+| **Causal Bias → Signal** | ✅ All providers | boost/reduce/block on 10 core + 200+ evolved |
+| MT5 connector | ✅ EXISTS | `quant_nanggroe/connectors/mt5_broker.py` |
+| Risk guard | ✅ EXISTS | DCC-GARCH + Thesis Drift + daily/weekly veto |
+| Backtest engine | ✅ EXISTS | `scripts/backtest_dhaher_sltp.py` |
+| Strategy registry | ✅ EXISTS | AutoRegistry |
+| Strategies | ✅ 79+ registered | + causal bias filtering on all providers |
+| API server | ✅ EXISTS | `quant_nanggroe/api/app.py` |
+| Cron runner | ⚠️ Needs update | Must point to live_engine.py |
+| Profile crons | ⚠️ PAUSED | 4 pollution crons paused |
 
 **Gap to war:** archive strategies not registered, real MT5 not connected (Valetax IPC timeout), risk guard needs live PnL (not phantom).
 

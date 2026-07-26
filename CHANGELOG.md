@@ -1,5 +1,44 @@
 # Quant Nanggroe AI — Changelog
 
+## [2026-07-26] Quantitative Alpha Engines + Production Audit v2 + Docs Update
+
+### 🆕 DCC-GARCH Dynamic Cross-Asset Correlation (v6.1.0)
+- **`quant_nanggroe/engine/risk/dcc_garch.py`** — DCC-GARCH(1,1) via Python `arch` package
+- Auto-fit wired into `live_engine.py` execution cycle every N cycles
+- VRK Kelly weights with safety caps (max 0.5% per trade, max 25% per asset)
+- Env vars: `QNA_DCC_MEAN_CORR`, `QNA_DCC_MEAN_VOL_PCT`, `QNA_DCC_N_ASSETS`
+- Pre-filter passes returns data to `evaluate_full_pipeline()` for live DCC fitting
+- 47 unit tests: FX correlation structure, fit edge cases, VRK weight stability
+
+### 🆕 Causal Macro Engine Suite
+- **Causal Bias** (`engine/causal/causal_bias.py`) — Event → asset bias (-1.0 to +1.0)
+- **Macro Surprise Index** (`engine/causal/macro_surprise.py`) — FRED API surprises, |MSI| > 1.5σ triggers bias revision
+- **COT Tracker** (`engine/causal/cot_tracker.py`) — CFTC Commitment of Traders via `cot_reports`, percentile-based extreme positioning
+- **SMT Divergence** (`engine/causal/smt_divergence.py`) — Engle-Granger cointegration breakdown detection
+- **Thesis Drift Guard** (`engine/causal/thesis_drift_guard.py`) — 3-stage circuit breaker (monitor → warn → hard exit)
+
+### 🆕 Causal Bias → Signal Filter Wiring
+- **`hedge_fund/signals/core.py`** — SYMBOL_TO_FUTURES mapping (18 symbols), 3-level causal bias: boost/reduce/block
+- **`hedge_fund/signals/qna_strategies.py`** — apply_causal_bias on 200+ evolved providers
+- **`pipeline/macro_context.py`** — Safety-net macro filter reading `QNA_CAUSAL_BIAS_*` env vars
+- Double-filtering concern addressed: pipeline filter for non-HF signals, HF providers self-filter
+
+### 🔧 Production Audit Fixes (v6.1.0)
+- **PAPER_TRADE default inverted** → defaults to False (real execution by default)
+- **QNA_TRADING_ENABLED default** → True (no more manual opt-in)
+- **MT5 live = default** — paper broker is opt-in, not default
+- **PaperExchangeBroker** — simulated execution path only for config-overridden paper mode
+- **SyncPaperBroker synthetic order books** — removed for live mode; paper only as last resort
+
+### 📝 Docs Update (2026-07-26)
+- **README.md** — Updated with new quantitative alpha engines, architecture tree, gap status
+- **CHANGELOG.md** — This entry
+- **ARCHITECTURE.md** — Added causal engine, DCC-GARCH, signal filter layers
+- **TODO.md** — Updated progress on all new modules
+- **AGENTS.md / CLAUDE.md / COPILOT.md / CURSOR.md / GEMINI.md** — v6.1.0 sync
+- **FILE_LISTING.md** — Regenerated from current tree
+- **QNA_FULL_VIEW_AND_GAP.md** — Updated gap analysis reflecting new modules
+
 ## [2026-07-26] Hedge Fund Deep Audit - 56 Findings Fixed
 
 ### Critical (P0) Fixes

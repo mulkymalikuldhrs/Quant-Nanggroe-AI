@@ -1,4 +1,4 @@
-# Quant Nanggroe AI — Agent Instructions
+# Quant Nanggroe AI v6.1.0 — Agent Instructions
 
 ## How to Read This Repo
 Read in this order before making changes:
@@ -7,6 +7,12 @@ README → AGENTS → ARCHITECTURE → CHANGELOG → TODO → docs/00_VISION →
 → docs/02_ARCHITECTURE → docs/04_API → docs/19_RISK_REGISTER → docs/50_AGENT_COUNCIL
 ```
 `docs/` has 58+ documents (numbered 00-51 plus ADRs), covering architecture, API, risk, security, testing, roadmap, and more.
+
+**New in v6.1.0:**
+- Causal Engine Suite (`engine/causal/`) — 5 modules (bias, MSI, COT, SMT, thesis drift)
+- DCC-GARCH (`engine/risk/dcc_garch.py`) — Dynamic cross-asset correlation with 47 tests
+- Causal Bias → Signal Filter — All HF providers apply boost/reduce/block
+- Pipeline `macro_context.py` — Safety-net macro context provider
 
 ## Entry Points
 - **Primary**: `qna.py` — single unified launcher (modes: `unified`, `api`, `daemon`, `hedge`, `status`, `stop`). `unified` is the default mode (no subcommand needed). All others archived.
@@ -78,20 +84,29 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 - **Factory**: `factory.py` auto-creates the right pipeline for the detected mode
 - **Default**: `python qna.py` runs the unified pipeline in hedge mode
 
-## Hedge Fund Subpackage (`quant_nanggroe/hedge_fund/`) — v6.0.0 Refactored
+## Hedge Fund Subpackage (`quant_nanggroe/hedge_fund/`) — v6.1.0
 - **Monolith split**: `hedge_fund.py` (~6600 lines) → real submodules:
   - `utils/` — data, config, connection, indicators
-  - `signals/` — 4 active providers (core) + 237 evolved (experimental) + registry + aggregator
+  - **`signals/core.py`** — 10 core providers with **SYMBOL_TO_FUTURES** mapping + **`apply_causal_bias()`** 🆕
+  - **`signals/qna_strategies.py`** — 200+ evolved providers with **causal bias filtering** 🆕
+  - `signals/aggregator.py` — Signal voting + DXY context boost
   - `risk/` — gate.py, guard.py (fail-closed)
   - `execution/` — orders.py (trail_sl, execute)
   - `portfolio/` — main.py (run_once)
+- **Causal bias levels**: BOOST (+0.15 confidence), REDUCE (-0.15), BLOCK (confidence → 0)
 - **Backward-compat**: `hedge_fund.py` is now a thin re-export shim. All old imports keep working.
 
-## Risk System — v6.0.0 Unified Thresholds
+## Risk System — v6.1.0
 - **Single source of truth**: `engine/risk/constants.py` for ALL constitutional limits
-- **KillSwitch** reads thresholds from `constants.py` (was hardcoded per-class)
-- **Threshold mismatch FIXED**: weekly loss was 2.5% vs 4% across components → now both reference `WEEKLY_LOSS_LIMIT = 0.025`
-- **Weekly loss veto WIRED IN** (P0 audit fix): EngineRiskManager.can_trade() now checks weekly loss in addition to daily loss
+- **DCC-GARCH** (`engine/risk/dcc_garch.py`): Dynamic cross-asset correlation via `arch` package 🆕
+  - GARCH(1,1) volatility forecasts
+  - Dynamic Conditional Correlation matrix
+  - VRK Kelly weight computation with safety caps
+  - Auto-fit in `live_engine.py` every N cycles
+  - 47 unit tests
+- **Thesis Drift Guard** (`engine/causal/thesis_drift_guard.py`): 3-stage circuit breaker 🆕
+- **KillSwitch** reads thresholds from `constants.py`
+- **Weekly loss veto**: EngineRiskManager.can_trade() checks weekly + daily loss
 
 ## Exchange REST Clients — v6.0.0 Lazy Wiring
 - **10 clients** lazy-wired into `ExchangeFactory.create_rest_client()`: binance, bybit, coinbase, crypto_com, gemini, kraken, kucoin, okx, bitget, gate
@@ -146,16 +161,19 @@ uv run python qna.py hedge              # hedge fund aggregator
 
 ## Architecture Pitfalls
 - **`RiskCheckGate` is an alias** for `ConstitutionalRiskGuard` (line 461 of `checks.py`). Both names refer to the same class.
-- **Kill switch unit mismatch**: RiskManager passes P&L as percentages (0-100), but KillSwitch expects fractions (0-1). `ExecutionManager.execute_order()` converts via `/100.0` at the boundary.
+- **Kill switch unit mismatch**: RiskManager passes P&L as percentages (0-100), but KillSwitch expects fractions (0-1).
 - **Kill Switch C5**: Shared state file prevents split-brain across uvicorn workers. Call `configure_kill_switch_file()` at startup.
-- **Kill Switch thresholds MUST come from constants.py**: Do NOT hardcode daily/weekly limits in kill_switch.py or manager.py. All limits are in `engine/risk/constants.py`.
+- **Kill Switch thresholds MUST come from constants.py**: Do NOT hardcode daily/weekly limits.
+- **DCC-GARCH env vars**: `QNA_DCC_MEAN_CORR`, `QNA_DCC_MEAN_VOL_PCT`, `QNA_DCC_N_ASSETS` — set by auto-fit cycle, read by risk engine 🆕
+- **Causal bias env vars**: `QNA_CAUSAL_BIAS_*` — set by qna.py pre-filter, read by pipeline/macro_context.py 🆕
+- **MSI env vars**: `QNA_MSI_*` — set by Macro Surprise Index module 🆕
 - **Strategy auto-discovery**: Engine scans `engine/strategy/strategies/` for re-exports from canonical `engine/strategies/`.
-- **`conftest.py` overrides `DATABASE_URL`** at import time to `sqlite+aiosqlite:///test_qna.db` with test-only JWT/secret keys.
-- **JWT_SECRET sentinel**: Default `__UNSET_QNAI_JWT_SECRET__` causes boot refusal. Set `QNAI_JWT_SECRET=dev` for local dev.
-- **Risk limits**: Single source of truth is `engine/risk/constants.py`. Some limits are env-driven via `QNAI_*`, others are hardcoded Final.
-- **Constitutional risk is 3-layer**: settings → constants → checks/manager. All imports must come from `constants.py`, not settings directly.
-- **Telegram `ensure_telegram()`**: Call at startup — raises `QNAConfigurationError` with clear message if TELEGRAM_* env vars are missing.
-- **Exchange clients**: Use `ExchangeFactory.create_rest_client(exchange_name)` for any REST client. ccxt import is lazy — isolated in `exchange/__init__.py`.
+- **`conftest.py` overrides `DATABASE_URL`** at import time to `sqlite+aiosqlite:///test_qna.db`.
+- **JWT_SECRET sentinel**: Default `__UNSET_QNAI_JWT_SECRET__` causes boot refusal.
+- **Risk limits**: Single source of truth is `engine/risk/constants.py`.
+- **Telegram `ensure_telegram()`**: Call at startup.
+- **Exchange clients**: Use `ExchangeFactory.create_rest_client(exchange_name)`. ccxt lazy proxy in `exchange/__init__.py`.
+- **causal bias double-filtering**: HF providers self-filter; pipeline filter is safety net for non-HF signals only.
 
 ## Constraints
 - `asyncio_mode = "auto"` for pytest (no need for `@pytest.mark.asyncio` on async tests).

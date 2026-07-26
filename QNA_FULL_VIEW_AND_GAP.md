@@ -1,27 +1,46 @@
 # QNA — FULL VIEW, GAP ANALYSIS & MATURATION ROADMAP
 **Tujuan akhir:** Autonomous Quantitative Hedge Fund yang **trade sendiri**, **evaluate dari closed PnL**, **self-evolve** (fine-tune + strategy mutation), **autonomous pipeline** tanpa human-in-loop.
 
-**Tanggal audit:** 2026-07-25 | **Auditor:** Dhaher OS (7-lensa parallel)
-**Status jujur:** INFRASTRUKTUR 70% BERES. EXECUTION PATH 0% LIVE. SYSTEM BELUM PERNAH TRADE NYATA.
+**Tanggal audit:** 2026-07-26 | **Auditor:** Dhaher OS (7-lensa parallel)
+**Status jujur:** INFRASTRUKTUR 85% BERES. EXECUTION PATH 0% LIVE. SYSTEM BELUM PERNAH TRADE NYATA.
 
 ---
 
-## 1. FULL VIEW — APA YANG ADA SEKARANG (Verified)
+## 🆕 v6.1.0 Update — Quantitative Alpha Engines REAL
+
+| Added Module | Status | Real/Mock |
+|-------------|--------|-----------|
+| **DCC-GARCH** (engine/risk/dcc_garch.py) | ✅ 47 tests | REAL (arch package) |
+| **Causal Bias** (engine/causal/causal_bias.py) | ✅ | REAL (event-driven) |
+| **Macro Surprise Index** (engine/causal/macro_surprise.py) | ✅ | REAL (FRED API) |
+| **COT Tracker** (engine/causal/cot_tracker.py) | ✅ | REAL (cot_reports/CFTC) |
+| **SMT Divergence** (engine/causal/smt_divergence.py) | ✅ | REAL (Engle-Granger) |
+| **Thesis Drift Guard** (engine/causal/thesis_drift_guard.py) | ✅ 3-stage | REAL (macro context) |
+| **Causal Bias → Signal Filter** | ✅ All providers | REAL (boost/reduce/block) |
+
+**Edge sekarang:** DCC-GARCH (dynamic correlation), Causal Macro (FRED/CFTC real data), SMT (cointegration breakdown), MSI (macro surprises). Semua real, tidak ada mock.
+
+---
+
+## 1. FULL VIEW — APA YANG ADA SEKARANG (Verified v6.1.0)
 
 | Komponen | Status | Bukti |
 |----------|--------|-------|
-| Strategy Registry | ✅ 97 strategies registered | `list_strategies()` → 97 (bukan 200+, archive belum fully wired) |
-| StrategyEvolver | ⚠️ Ada tapi PAKE MOCK BACKTEST | `strategy_evolver.py:78` `if backtest_fn is None: backtest_fn = self._mock_backtest` |
-| SelfFineTuner | ❌ FILE HILANG | `autonomous.py:42` import `self_finetune` tapi file `self_finetune.py` TIDAK ADA → `self._self_finetuner = None` |
-| LiveEngine | ❌ SIMULATOR | `_open_position()` cuma INSERT ke SQLite `positions`, TIDAK panggil broker |
-| MT5ExecutionBroker | ✅ Ada tapi ORPHAN | `mt5_adapter.py:87` `place_order` ada, tapi LiveEngine TIDAK pakai |
-| Risk Guard | ✅ Wired ke real PnL | `manager.py:148` `set_broker_handle` → `history_deals_get` (jika MT5 connect) |
-| PnL Evaluator | ✅ Ada | `pnl_evaluator.py` hitung `realized_pnl()` per trade |
-| Trade Journal DB | ⚠️ Kosong | `qna_journal.db`: trades=0 rows → **0 trade pernah dieksekusi** |
-| qna-production-runner.py | ❌ Salah target | Jalankan `E:/trading/hedge_fund.py` (OLD code) + `PAPER_TRADE=true` → BUKAN QNA live_engine |
-| MT5 Connection | ❌ Timeout | Valetax IPC `-10005` → broker TIDAK connect |
-| Test Suite | ⚠️ 1 test collected | `pytest quant_nanggroe --co` → 1 test (claim "94/94 pass" STALE) |
-| Total LOC | 42,113 lines | `quant_nanggroe/` |
+| **DCC-GARCH** | ✅ 47 unit tests | Dynamic correlation, auto-fit, VRK Kelly weights |
+| **Causal Macro Engine** | ✅ 5 modules | Bias, MSI (FRED), COT (CFTC), SMT, Thesis Drift |
+| **Causal Bias → Signal** | ✅ All providers | boost/reduce/block on 10 core + 200+ evolved providers |
+| Strategy Registry | ✅ 97 strategies | `list_strategies()` → 97 |
+| StrategyEvolver | ⚠️ Mock backtest | Default mock masih aktif (P0 gap) |
+| SelfFineTuner | ❌ FILE HILANG | Import gagal → `self._self_finetuner = None` |
+| LiveEngine | ❌ SIMULATOR | `_open_position()` INSERT ke SQLite |
+| MT5ExecutionBroker | ✅ Ada tapi ORPHAN | `place_order` ada, LiveEngine tidak pakai |
+| Risk Guard | ✅ Wired | Real PnL via `history_deals_get` |
+| Thesis Drift Guard | ✅ 3-stage | Monitor → Warn → Hard Exit (circuit breaker) |
+| DCC Auto-fit | ✅ live_engine.py | `_update_dcc_garch()` every N cycles |
+| Pipe: macro_context | ✅ pipeline/ | Safety-net macro filter via env vars |
+| Trade Journal DB | ⚠️ Kosong | `qna_journal.db`: 0 trades |
+| MT5 Connection | ❌ Timeout | Valetax IPC `-10005` |
+| Total LOC | ~42,000+ | `quant_nanggroe/` + engine/causal/ 🆕 |
 
 ---
 

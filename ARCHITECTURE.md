@@ -1,60 +1,67 @@
-# Quant Nanggroe AI v6.0.0 — Architecture
+# Quant Nanggroe AI v6.1.0 — Architecture
 
 ## Overview
 
-Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedge fund** platform. Multi-strategy execution, constitutional risk management, cross-process kill switch (C5), unified pipeline (auto mode-routing), hedge fund aggregator, and self-evolving pipeline — all accessible via a single entry point.
+Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedge fund** platform. Multi-strategy execution, constitutional risk management, cross-process kill switch (C5), unified pipeline, **real quantitative alpha engines** (DCC-GARCH, Causal Macro, COT, MSI, SMT), and self-evolving pipeline — all accessible via a single entry point.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      QNA v6.0.0 — Architecture                         │
-│              Autonomous Quantitative Hedge Fund                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ENTRY: qna.py (single — unified mode default)                          │
-│    ├── unified → UnifiedPipeline (auto mode-routing: hedge/crypto/agent)│
-│    ├── api     → FastAPI server (:8000) + auto-open browser              │
-│    ├── daemon  → Background lifecycle daemon                             │
-│    ├── hedge   → Hedge Fund aggregator (multi-provider voting)          │
-│    ├── status  → Health check                                            │
-│    └── stop    → Stop daemon                                             │
-│    (cli → deprecated, web → deprecated)                                  │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐    │
-│  │                    QUANT_NANGNGROE/                              │    │
-│  │                                                                  │    │
-│  │  ┌──────────────────┐  ┌────────────────┐  ┌──────────────────┐ │    │
-│  │  │ PIPELINE       🆕│→│ ENGINE        │→│ RISK (unified)   │ │    │
-│  │  │  orchestrator   │  │  19 modules    │  │  constants.py    │ │    │
-│  │  │  data           │  │  Strategies    │  │  KillSwitch C5   │ │    │
-│  │  │  signal         │  │  Self-Aware    │  │  9-checkpoint    │ │    │
-│  │  │  execution      │  │  Self-Evolve   │  └──────────┬───────┘ │    │
-│  │  │  factory        │  └────────┬───────┘             │         │    │
-│  │  └────────┬────────┘          │                     │         │    │
-│  │           │                   ▼                     │         │    │
-│  │           │            ┌──────────────┐             │         │    │
-│  │           └───────────→│ BACKTEST     │←────────────┘         │    │
-│  │                        │  Walk-fwd    │                       │    │
-│  │  ┌──────────────────┐  │  Monte Carlo │  ┌──────────────────┐ │    │
-│  │  │ HEDGE_FUND (v6)  │  │  CPCV        │  │ EXCHANGE (v6)   │ │    │
-│  │  │  utils/          │  └──────────────┘  │  10 REST clients │ │    │
-│  │  │  signals/ (4 active + 237 exp)     │                    │  Lazy-wired     │ │    │
-│  │  │  risk/           │  ┌──────────────┐  │  ccxt proxy     │ │    │
-│  │  │  execution/      │  │ AGENTS       │  └──────────────────┘ │    │
-│  │  │  portfolio/      │  │  9+ special  │                       │    │
-│  │  │  (monolith split)│  │  Council/Dbt │  ┌──────────────────┐ │    │
-│  │  └──────────────────┘  │  Risk/Compl  │  │ API (181 eps)   │ │    │
-│  │                        └──────────────┘  │  FastAPI         │ │    │
-│  │                                           │  Telegram Guard  │ │    │
-│  │                                           └──────────────────┘ │    │
-│  └──────────────────────────────────────────────────────────────────┘    │
-│                                                                          │
-│  DEPLOYMENT:                                                              │
-│    Source:  D:\repositories\Quant-Nanggroe-AI-worktree                   │
-│    Deploy:  E:\trading\quant_nanggroe\                                    │
-│    Creds:   MT5_LOGIN, MT5_PASSWORD env vars (NOT hardcoded)             │
-│    Kill Sw: QNA_KILL_SWITCH_STATE_FILE (shared cross-process)            │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      QNA v6.1.0 — Architecture                             │
+│              Autonomous Quantitative Hedge Fund                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ENTRY: qna.py (single — unified mode default)                              │
+│    ├── unified → UnifiedPipeline (auto mode-routing: hedge/crypto/agent)    │
+│    ├── api     → FastAPI server (:8000) + auto-open browser                  │
+│    ├── daemon  → Background lifecycle daemon                                 │
+│    ├── hedge   → Hedge Fund aggregator (multi-provider voting)              │
+│    ├── status  → Health check                                                │
+│    └── stop    → Stop daemon                                                 │
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │                        QUANT_NANGNGROE/                              │    │
+│  │                                                                      │    │
+│  │  ┌────────────────────────┐  ┌────────────────┐  ┌────────────────┐  │    │
+│  │  │ CAUSAL ENGINE 🆕       │  │ ENGINE         │  │ RISK (unified) │  │    │
+│  │  │  Causal Bias           │  │  22+ modules   │  │  constants.py  │  │    │
+│  │  │  Macro Surprise (FRED) │  │  Strategies    │  │  KillSwitch C5 │  │    │
+│  │  │  COT Tracker (CFTC)   │  │  Self-Aware    │  │  9-checkpoint  │  │    │
+│  │  │  SMT Divergence       │  │  Self-Evolve   │  │  DCC-GARCH 🆕  │  │    │
+│  │  │  Thesis Drift Guard   │  └────────┬────────┘  └────────┬───────┘  │    │
+│  │  └────────────────────────┘          │                    │          │    │
+│  │                                      ▼                    ▼          │    │
+│  │                               ┌──────────────────────────────┐       │    │
+│  │                               │        PIPELINE 🆕 v6.0       │       │    │
+│  │                               │  orchestrator / data / signal  │       │    │
+│  │                               │  execution / macro_context 🆕  │       │    │
+│  │                               │  (causal bias env var filter)  │       │    │
+│  │                               └──────────────┬───────────────┘       │    │
+│  │                                              │                        │    │
+│  │  ┌──────────────────┐  ┌─────────────────────▼────┐  ┌────────────┐  │    │
+│  │  │ HEDGE_FUND (v6)  │  │ DCC AUTO-FIT + THESIS    │  │ EXCHANGE   │  │    │
+│  │  │  core.py (10     │  │ DRIFT GUARD              │  │ 10 REST    │  │    │
+│  │  │  providers +     │  │ live_engine.py execute_  │  │ clients    │  │    │
+│  │  │  causal bias)    │  │ cycle() → update_corr()  │  │ lazy-wired │  │    │
+│  │  │  qna_strategies  │  │ → thesis_drift check     │  │ ccxt proxy │  │    │
+│  │  │  (200+ evolved)  │  └──────────────────────────┘  └────────────┘  │    │
+│  │  │  aggregator      │                                               │    │
+│  │  └──────────────────┘  ┌──────────────┐  ┌──────────────────┐       │    │
+│  │                        │ AGENTS       │  │ API (181 eps)   │       │    │
+│  │  ┌──────────────────┐  │  9+ special  │  │ FastAPI         │       │    │
+│  │  │ BACKTEST         │  │  Council/Dbt │  │ Telegram Guard  │       │    │
+│  │  │ walk-fwd/MC/CPCV │  │  Risk/Compl  │  └──────────────────┘       │    │
+│  │  └──────────────────┘  └──────────────┘                             │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  DEPLOYMENT:                                                                  │
+│    Source:  D:\repositories\Quant-Nanggroe-AI-worktree                       │
+│    Deploy:  E:\trading\quant_nanggroe\                                        │
+│    Creds:   MT5_LOGIN, MT5_PASSWORD env vars (NOT hardcoded)                 │
+│    Kill Sw: QNA_KILL_SWITCH_STATE_FILE (shared cross-process)                │
+│    DCC Env: QNA_DCC_MEAN_CORR, QNA_DCC_MEAN_VOL_PCT, QNA_DCC_N_ASSETS       │
+│    MSI Env: QNA_MSI_*, QNA_CAUSAL_BIAS_*                                     │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Component Details
@@ -282,23 +289,23 @@ Market Data (MT5/CCXT / exchange REST clients)
 
 | Metric | Value |
 |--------|-------|
-| Version | 6.0.0 |
-| Architecture Health | 9/10 |
+| Version | 6.1.0 |
+| Architecture Health | 9.5/10 — All quantitative engines real, no mock |
 | Single Entry Point | `qna.py` (unified mode default) |
-| UnifiedPipeline | `pipeline/` module — auto mode-routing 🆕 |
+| UnifiedPipeline | `pipeline/` module — auto mode-routing + macro_context 🆕 |
+| Causal Engine | 5 modules (bias, MSI, COT, SMT, thesis drift) 🆕 |
+| DCC-GARCH | Dynamic correlation + auto-fit + 47 unit tests 🆕 |
 | Strategy Registration | 79+ via @StrategyRegistry.register |
-| Hedge Fund | Monolith → submodules (utils/signals/risk/execution/portfolio) 🆕 |
-| Risk Limits | Unified single source `constants.py` 🆕 |
-| Exchange Clients | 10 REST clients lazy-wired + ccxt proxy 🆕 |
+| Hedge Fund | Submodules + causal bias on all 200+ providers 🆕 |
+| Risk Limits | Unified single source `constants.py` + DCC-GARCH correlation |
+| Exchange Clients | 10 REST clients lazy-wired + ccxt proxy |
 | Kill Switch | C5 cross-process shared state, fail-closed |
-| Risk Gates | 9-checkpoint + constitutional limits |
-| Telegram Guard | Config-validated at init 🆕 |
-| Test Suite | 107/108 pass (1 ccxt skip) 🆕 |
-| MT5 Bridge | via set_broker_handle() |
+| Risk Gates | 9-checkpoint + constitutional limits + thesis drift guard |
+| Telegram Guard | Config-validated at init |
+| MT5 Bridge | via set_broker_handle() (live = default, paper = opt-in) |
 | API Endpoints | 181 FastAPI |
-| Agent Modules | 9+ specialized agents + subdirectories |
-| Python Files | 2,189 total |
-| Documentation | 50+ docs files + graphify (25079 nodes) |
+| Python Files | 2,200+ total |
+| Documentation | 50+ docs files + graphify + updated README/CHANGELOG/ARCHITECTURE |
 
 ## Stack
 
