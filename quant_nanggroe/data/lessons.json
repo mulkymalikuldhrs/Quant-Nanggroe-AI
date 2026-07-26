@@ -2338,5 +2338,239 @@
     "occurred_at": "2026-07-24T12:38:06.021926+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "23000626-5b0",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:35:57.880100+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "e66d7799-521",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:36:16.655947+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "9f00bc01-daf",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:36:32.838217+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "7cae444c-8fe",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:39:27.901725+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "3a14879a-ce7",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:47:00.042989+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "6ea7f671-48d",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:47:20.669845+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "45188688-c74",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:47:36.879200+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "9d39098f-11e",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:50:24.218088+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "84bd1f1c-739",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:57:27.117711+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "c9871480-041",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:57:45.058113+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "f6d07151-e43",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:58:00.345467+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "13d562df-cb4",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:58:51.500037+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2a929130-392",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:59:25.794472+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "ad42e0b2-83d",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T14:59:46.764743+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "65c6fadb-3ab",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T15:00:02.495071+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "ccd552e7-2e9",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T15:00:50.607851+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "561de649-e30",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T15:01:51.948895+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "385019af-ad7",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-26T15:02:08.015447+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

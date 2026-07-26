@@ -384,6 +384,71 @@ async def risk_check(request: RiskCheckRequest, http_request: Request) -> RiskCh
         )
 
 
+@router.get("/orders", response_model=TradeHistoryResponse)
+async def get_orders(limit: int = 50, http_request: Request = None) -> TradeHistoryResponse:
+    """Get all orders (alias for /trades for frontend compat)."""
+    return await get_trade_history(limit=limit, http_request=http_request)
+
+
+@router.delete("/order/{order_id}")
+async def cancel_order(order_id: str, http_request: Request) -> dict:
+    """Cancel an open order by ID."""
+    try:
+        em = _get_execution_manager(http_request)
+        success = await em.cancel_order(order_id.replace("order-", ""))
+        return {"success": success, "order_id": order_id}
+    except Exception as exc:
+        logger.warning("cancel_order_failed id=%s error=%s", order_id, exc)
+        return {"success": False, "order_id": order_id, "error": str(exc)}
+
+
+@router.get("/exchanges")
+async def get_exchanges(http_request: Request) -> dict:
+    """Get connected exchanges and their status."""
+    try:
+        em = _get_exchange_manager(http_request)
+        registrations = em._registrations if hasattr(em, "_registrations") else {}
+        exchanges = [
+            {"id": name, "name": name, "type": "Equity", "status": "connected" if reg.connected else "disconnected"}
+            for name, reg in registrations.items()
+        ]
+        return {"exchanges": exchanges, "count": len(exchanges)}
+    except Exception as exc:
+        logger.warning("get_exchanges_failed error=%s", exc)
+        return {"exchanges": [], "count": 0}
+
+
+@router.post("/slice-order")
+async def slice_order(request: dict, http_request: Request) -> dict:
+    """Slice a large order into smaller chunks for TWAP/VWAP execution."""
+    try:
+        symbol = request.get("symbol", "")
+        side = request.get("side", "buy")
+        quantity = request.get("quantity", 0.0)
+        num_slices = request.get("num_slices", 5)
+        duration_minutes = request.get("duration_minutes", 60)
+
+        if not symbol or quantity <= 0:
+            return {"success": False, "error": "Invalid order parameters", "slices": []}
+
+        slice_qty = quantity / num_slices
+        interval_seconds = (duration_minutes * 60) / num_slices
+
+        slices = []
+        for i in range(num_slices):
+            slices.append({
+                "slice": i + 1,
+                "quantity": round(slice_qty, 6),
+                "delay_seconds": int(interval_seconds * i),
+                "status": "pending",
+            })
+
+        return {"success": True, "slices": slices, "num_slices": num_slices, "symbol": symbol, "side": side}
+    except Exception as exc:
+        logger.warning("slice_order_failed error=%s", exc)
+        return {"success": False, "error": str(exc), "slices": []}
+
+
 # ── Hedge-fund cycle (wires strategy -> risk -> execution -> portfolio) ──
 from typing import Any, Dict, Optional
 

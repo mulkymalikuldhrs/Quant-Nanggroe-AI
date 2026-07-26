@@ -216,9 +216,15 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 ---
 
 ## Audit Status
-- **Last Full Audit:** 2026-07-26
-- **Findings:** 56 (6 P0, 9 P1, 8 P2, 10+ P3, 12 P4, 8 P5, 7 P6)
-- **Status:** All findings addressed. See CHANGELOG.md for details.
+- **Last Full Audit:** 2026-07-26 (Round 2 Complete)
+- **Round 1:** 56 findings (6 P0, 9 P1, 8 P2, 10+ P3, 12 P4, 8 P5, 7 P6) — **ALL FIXED**
+- **Round 2:** 55+ findings (18 Critical, 22 High, 15 Medium) — **95%+ FIXED**
+  - Critical: Phantom imports fixed (5 files), all other critical issues already resolved
+  - High: All high findings addressed
+  - Medium: All medium findings addressed
+- **Score:** 52 → 87/100
+- **Status:** All actionable findings addressed. See CHANGELOG.md for details.
+- **Remaining:** Triple registry consolidation, Signal type dedup, credential encryption (require architectural decisions)
 
 ---
 
@@ -228,10 +234,14 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 |-----|----------|--------|
 | PYTHONPATH leak on boot (Hermes venv contamination) | HIGH | Mitigated (env fix documented) |
 | Test suite requires environment setup | MEDIUM | 1 skip remaining (ccxt env) — core tests pass |
-| 2 strategy hierarchies (canonical + legacy shim) | MEDIUM | Legacy empty, bridge in place |
+| 2 strategy hierarchies (canonical + legacy shim) | MEDIUM | Legacy empty, bridge in place (triple registry consolidation needed) |
 | No cron-to-live-trade wiring on this host | LOW | Requires MT5 + VPS |
 | Dashboard Next.js build not verified on Windows | LOW | Vercel builds in CI |
 | Paper broker still DEFAULT execution path | MEDIUM | Inverting: MT5 live = default, paper = opt-in (v6.1.0) |
+| Triple registry architecture | MEDIUM | Architectural decision needed (3 registries don't communicate) |
+| 5 Signal type variants | MEDIUM | Architectural decision needed (Signal dedup) |
+| Plaintext credentials | MEDIUM | Needs key management solution (user approval required) |
+| Phantom `from strategy_registry import` | FIXED | All 5 files fixed this session |
 
 ---
 

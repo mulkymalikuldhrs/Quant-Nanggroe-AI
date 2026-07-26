@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from quant_nanggroe.engine.strategy.registry import (
+from quant_nanggroe.engine.strategies.registry import (
     StrategyMetaRegistry,
     StrategyMetadata,
     WalkForwardResult,

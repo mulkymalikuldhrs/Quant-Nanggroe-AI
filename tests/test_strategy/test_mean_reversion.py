@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategy.strategies.mean_reversion import MeanReversionStrategy
+from quant_nanggroe.engine.strategies.mean_reversion import MeanReversionStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
@@ -40,9 +40,7 @@ class TestMeanReversionStrategy:
         assert signal is None
 
     def test_bollinger_entry_below_lower_band(self, random_ohlcv_data):
-        strategy = MeanReversionStrategy(
-            params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"}
-        )
+        strategy = MeanReversionStrategy(params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"})
         df = random_ohlcv_data.copy()
         price = float(df["close"].iloc[-1])
         lower = float(df["close"].rolling(20).mean().iloc[-1] - 2.0 * df["close"].rolling(20).std().iloc[-1])
@@ -52,9 +50,7 @@ class TestMeanReversionStrategy:
                 assert signal.signal_type == SignalType.BUY
 
     def test_bollinger_entry_above_upper_band(self, random_ohlcv_data):
-        strategy = MeanReversionStrategy(
-            params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"}
-        )
+        strategy = MeanReversionStrategy(params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"})
         df = random_ohlcv_data.copy()
         price = float(df["close"].iloc[-1])
         upper = float(df["close"].rolling(20).mean().iloc[-1] + 2.0 * df["close"].rolling(20).std().iloc[-1])
@@ -64,9 +60,7 @@ class TestMeanReversionStrategy:
                 assert signal.signal_type == SignalType.SELL
 
     def test_signal_has_stop_loss(self, mean_reverting_data):
-        strategy = MeanReversionStrategy(
-            params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"}
-        )
+        strategy = MeanReversionStrategy(params={"strategy_type": "bollinger", "lookback": 20, "symbol": "TEST"})
         signal = None
         for i in range(strategy.warmup_period(), len(mean_reverting_data)):
             window = mean_reverting_data.iloc[: i + 1]
@@ -102,18 +96,13 @@ class TestMeanReversionStrategy:
 
     def test_insufficient_data_returns_none(self):
         strategy = MeanReversionStrategy()
-        data = pd.DataFrame({
-            "open": [100], "high": [101], "low": [99], "close": [100], "volume": [1000],
-        })
+        data = pd.DataFrame({"open": [100], "high": [101], "low": [99], "close": [100], "volume": [1000]})
         signal = strategy.generate_signal(data)
         assert signal is None
 
     def test_nan_prices_handled(self):
         strategy = MeanReversionStrategy()
-        data = pd.DataFrame({
-            "open": [np.nan] * 30, "high": [np.nan] * 30, "low": [np.nan] * 30,
-            "close": [np.nan] * 30, "volume": [1000] * 30,
-        })
+        data = pd.DataFrame({"open": [np.nan] * 30, "high": [np.nan] * 30, "low": [np.nan] * 30, "close": [np.nan] * 30, "volume": [1000] * 30})
         signal = strategy.generate_signal(data)
         assert signal is None
 

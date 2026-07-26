@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategy.strategies.crypto_specific import CryptoSpecificStrategy
+from quant_nanggroe.engine.strategies.crypto_specific import CryptoSpecificStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
@@ -26,21 +26,15 @@ class TestCryptoSpecificStrategy:
         assert "close" in strategy.required_columns()
 
     def test_required_columns_on_chain(self):
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "on_chain"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "on_chain"})
         assert "exchange_inflow" in strategy.required_columns()
 
     def test_warmup_period(self):
         strategy = CryptoSpecificStrategy(params={"lookback": 30})
         assert strategy.warmup_period() == 40
 
-    # --- Funding Rate Tests ---
-
     def test_funding_rate_arb_signal(self, funding_rate_data):
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "funding_rate_arb", "entry_threshold": 0.0005, "symbol": "BTC"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "funding_rate_arb", "entry_threshold": 0.0005, "symbol": "BTC"})
         signal = strategy.generate_signal(funding_rate_data)
         if signal is not None:
             assert isinstance(signal, Signal)
@@ -48,108 +42,58 @@ class TestCryptoSpecificStrategy:
             assert "funding_rate" in signal.evidence
 
     def test_funding_rate_high_positive(self):
-        """Test with artificially high positive funding rate."""
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "funding_rate_arb", "entry_threshold": 0.0001, "symbol": "BTC"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "funding_rate_arb", "entry_threshold": 0.0001, "symbol": "BTC"})
         n = 50
-        data = pd.DataFrame({
-            "close": 40000.0 + np.random.randn(n) * 100,
-            "volume": np.random.randint(100, 10000, n).astype(float),
-            "funding_rate": np.full(n, 0.001),  # High positive
-        })
+        data = pd.DataFrame({"close": 40000.0 + np.random.randn(n) * 100, "volume": np.random.randint(100, 10000, n).astype(float), "funding_rate": np.full(n, 0.001)})
         signal = strategy.generate_signal(data)
         assert signal is not None
-        assert signal.signal_type == SignalType.SELL  # Short perp
+        assert signal.signal_type == SignalType.SELL
 
     def test_funding_rate_high_negative(self):
-        """Test with artificially high negative funding rate."""
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "funding_rate_arb", "entry_threshold": 0.0001, "symbol": "BTC"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "funding_rate_arb", "entry_threshold": 0.0001, "symbol": "BTC"})
         n = 50
-        data = pd.DataFrame({
-            "close": 40000.0 + np.random.randn(n) * 100,
-            "volume": np.random.randint(100, 10000, n).astype(float),
-            "funding_rate": np.full(n, -0.001),  # High negative
-        })
+        data = pd.DataFrame({"close": 40000.0 + np.random.randn(n) * 100, "volume": np.random.randint(100, 10000, n).astype(float), "funding_rate": np.full(n, -0.001)})
         signal = strategy.generate_signal(data)
         assert signal is not None
-        assert signal.signal_type == SignalType.BUY  # Long perp
-
-    # --- Liquidation Cascade Tests ---
+        assert signal.signal_type == SignalType.BUY
 
     def test_liquidation_cascade_detection(self, random_ohlcv_data):
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "liquidation_cascade", "cascade_z_threshold": 2.0, "symbol": "BTC"}
-        )
-        # Create extreme price drop
+        strategy = CryptoSpecificStrategy(params={"mode": "liquidation_cascade", "cascade_z_threshold": 2.0, "symbol": "BTC"})
         data = random_ohlcv_data.copy()
-        data.iloc[-1, data.columns.get_loc("close")] = data["close"].iloc[-2] * 0.8  # 20% drop
-        data.iloc[-1, data.columns.get_loc("volume")] = data["volume"].mean() * 5  # Volume spike
-
+        data.iloc[-1, data.columns.get_loc("close")] = data["close"].iloc[-2] * 0.8
+        data.iloc[-1, data.columns.get_loc("volume")] = data["volume"].mean() * 5
         signal = strategy.generate_signal(data)
         if signal is not None:
             assert isinstance(signal, Signal)
             assert signal.signal_type in [SignalType.BUY, SignalType.SELL]
 
-    # --- On-Chain Tests ---
-
     def test_on_chain_signal(self):
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "on_chain", "symbol": "BTC"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "on_chain", "symbol": "BTC"})
         n = 50
-        data = pd.DataFrame({
-            "close": 40000.0 + np.random.randn(n) * 100,
-            "volume": np.random.randint(100, 10000, n).astype(float),
-            "exchange_inflow": np.random.randint(100, 1000, n).astype(float),
-            "exchange_outflow": np.random.randint(100, 1000, n).astype(float),
-            "whale_tx_count": np.random.randint(0, 10, n).astype(float),
-        })
+        data = pd.DataFrame({"close": 40000.0 + np.random.randn(n) * 100, "volume": np.random.randint(100, 10000, n).astype(float), "exchange_inflow": np.random.randint(100, 1000, n).astype(float), "exchange_outflow": np.random.randint(100, 1000, n).astype(float), "whale_tx_count": np.random.randint(0, 10, n).astype(float)})
         signal = strategy.generate_signal(data)
         if signal is not None:
             assert isinstance(signal, Signal)
 
-    # --- DEX Arb Tests ---
-
     def test_dex_arb_signal(self):
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "dex_arb", "entry_threshold": 0.001, "symbol": "BTC"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "dex_arb", "entry_threshold": 0.001, "symbol": "BTC"})
         n = 50
         cex_price = 40000.0 + np.random.randn(n) * 50
-        dex_price = cex_price * 1.005  # 0.5% premium on DEX
-        data = pd.DataFrame({
-            "close": cex_price,
-            "volume": np.random.randint(100, 10000, n).astype(float),
-            "dex_price": dex_price,
-            "cex_price": cex_price,
-        })
+        dex_price = cex_price * 1.005
+        data = pd.DataFrame({"close": cex_price, "volume": np.random.randint(100, 10000, n).astype(float), "dex_price": dex_price, "cex_price": cex_price})
         signal = strategy.generate_signal(data)
         if signal is not None:
             assert isinstance(signal, Signal)
             assert "spread" in signal.evidence
 
-    # --- MEV-Aware Tests ---
-
     def test_mev_aware_signal(self):
-        strategy = CryptoSpecificStrategy(
-            params={"mode": "mev_aware", "symbol": "SOL"}
-        )
+        strategy = CryptoSpecificStrategy(params={"mode": "mev_aware", "symbol": "SOL"})
         n = 50
-        data = pd.DataFrame({
-            "close": 100.0 + np.random.randn(n) * 2,
-            "volume": np.random.randint(100, 10000, n).astype(float),
-            "solana_tip": np.random.exponential(0.001, n),
-            "priority_fee": np.random.exponential(0.0001, n),
-        })
+        data = pd.DataFrame({"close": 100.0 + np.random.randn(n) * 2, "volume": np.random.randint(100, 10000, n).astype(float), "solana_tip": np.random.exponential(0.001, n), "priority_fee": np.random.exponential(0.0001, n)})
         signal = strategy.generate_signal(data)
         if signal is not None:
             assert isinstance(signal, Signal)
             assert signal.signal_type in [SignalType.BUY, SignalType.SELL, SignalType.HOLD]
-
-    # --- General Tests ---
 
     def test_insufficient_data(self):
         strategy = CryptoSpecificStrategy(params={"mode": "liquidation_cascade"})
@@ -158,17 +102,11 @@ class TestCryptoSpecificStrategy:
         assert signal is None
 
     def test_mode_routing(self, funding_rate_data):
-        """Test that mode correctly routes to sub-strategy."""
         strategy_fr = CryptoSpecificStrategy(params={"mode": "funding_rate_arb"})
         strategy_lc = CryptoSpecificStrategy(params={"mode": "liquidation_cascade"})
-
-        # Both should not error
         sig_fr = strategy_fr.generate_signal(funding_rate_data)
-        # LC needs different columns
         lc_data = funding_rate_data[["close", "volume"]].copy()
         sig_lc = strategy_lc.generate_signal(lc_data)
-
-        # Results may vary but should not crash
         if sig_fr is not None:
             assert isinstance(sig_fr, Signal)
         if sig_lc is not None:

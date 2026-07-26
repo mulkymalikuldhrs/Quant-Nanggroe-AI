@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategy.strategies.statistical_arbitrage import (
+from quant_nanggroe.engine.strategies.statistical_arbitrage import (
     StatisticalArbitrageStrategy,
 )
 from quant_nanggroe.types.signals import Signal, SignalType

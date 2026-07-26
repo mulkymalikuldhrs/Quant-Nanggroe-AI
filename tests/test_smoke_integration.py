@@ -136,7 +136,7 @@ class TestRiskSystemIntegration:
             state_path=str(temp_state_dir / "auto_disable_state.json"),
             paper_mode=True,
         )
-        returns = np.random.normal(0.001, 0.02, 30)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 30))
         ad.update("TestStrategy", returns)
         assert not ad.is_disabled("TestStrategy")
 

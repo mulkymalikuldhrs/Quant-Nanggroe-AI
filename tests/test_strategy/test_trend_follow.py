@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategy.strategies.trend_follow import TrendFollowStrategy
+from quant_nanggroe.engine.strategies.trend_follow_strategy import TrendFollowStrategy
+from quant_nanggroe.engine.strategies.registry import list_strategies
 from quant_nanggroe.types.signals import Signal, SignalType
 
 
@@ -36,7 +37,7 @@ class TestTrendFollowStrategy:
 
     def test_warmup_period(self):
         strategy = TrendFollowStrategy()
-        assert strategy.warmup_period() == 219  # 200 + 14 + 5
+        assert strategy.warmup_period() == 219
 
     def test_no_signal_insufficient_data(self, random_ohlcv_data):
         strategy = TrendFollowStrategy()
@@ -91,7 +92,6 @@ class TestTrendFollowStrategy:
         assert signal is None
 
     def test_list_strategies_includes_trend_follow(self):
-        from quant_nanggroe.engine.strategy.strategies import list_strategies
         assert "trend_follow" in list_strategies()
 
     def test_adx_strong_trend_produces_signal(self, trending_up_data):

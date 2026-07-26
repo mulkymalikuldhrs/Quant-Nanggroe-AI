@@ -3,171 +3,246 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QNA — Causal Engine Dashboard</title>
+<title>QNA — Causal Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --deep-charcoal: #1A1D20;
     --midnight-navy: #0F172A;
     --tactical-gold: #D9A441;
     --cyber-cyan: #00D1C7;
-    --dark-surface: #131620;
-    --card-bg: #1E2230;
+    --card-surface: #1E2230;
     --text-primary: #E8E8EA;
     --text-secondary: #8888AA;
-    --border-color: #2A2E40;
-    --success: #00D1C7;
-    --warning: #D9A441;
-    --danger: #FF4757;
-    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --border-struct: #2A2E40;
+    --crimson-alert: #FF4757;
+    --font-display: 'Geist', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Skeleton shimmer */
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--card-surface) 25%, var(--border-struct) 50%, var(--card-surface) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+    border-radius: 4px;
+  }
+  .skeleton-metric { width: 60%; height: 1.8rem; }
+  .skeleton-label { width: 40%; height: 0.75rem; margin-top: 6px; }
+  .skeleton-table { width: 100%; height: 120px; }
+  .skeleton-cell { height: 20px; width: 100%; margin-bottom: 6px; }
+
+  /* Stagger mount */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  [data-stagger] {
+    opacity: 0;
+    animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  [data-stagger="0"] { animation-delay: 0ms; }
+  [data-stagger="1"] { animation-delay: 80ms; }
+  [data-stagger="2"] { animation-delay: 160ms; }
+  [data-stagger="3"] { animation-delay: 240ms; }
+  [data-stagger="4"] { animation-delay: 320ms; }
+  [data-stagger="5"] { animation-delay: 400ms; }
+  [data-stagger="6"] { animation-delay: 480ms; }
+  [data-stagger="7"] { animation-delay: 560ms; }
+
+  /* Status dot pulse */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .status-dot.pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
   body {
-    font-family: var(--font-ui);
+    font-family: var(--font-display);
     background: var(--deep-charcoal);
     color: var(--text-primary);
     min-height: 100vh;
     padding: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .container { max-width: 1440px; margin: 0 auto; }
 
-  /* Header */
+  /* ── Header ─────────────────────────────── */
   .header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 16px 24px; background: var(--midnight-navy);
-    border: 1px solid var(--border-color); border-radius: 12px;
+    border: 1px solid var(--border-struct); border-radius: 10px;
     margin-bottom: 24px;
   }
   .header h1 {
-    font-family: var(--font-mono); font-size: 1.3rem;
+    font-family: var(--font-display); font-size: 1.15rem;
     color: var(--tactical-gold); font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: -0.02em;
   }
-  .header h1 span { color: var(--cyber-cyan); }
+  .header h1 span { color: var(--text-secondary); font-weight: 400; }
   .header-status {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 0.85rem; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 16px;
+    font-size: 0.8rem; color: var(--text-secondary);
   }
   .status-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--cyber-cyan); display: inline-block;
   }
-  .status-dot.warning { background: var(--warning); }
-  .status-dot.error { background: var(--danger); }
+  .status-dot.warning { background: var(--tactical-gold); }
+  .status-dot.error { background: var(--crimson-alert); }
 
-  /* Grid */
+  /* ── Grid ───────────────────────────────── */
   .grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px; margin-bottom: 20px;
   }
   .grid-wide { grid-column: 1 / -1; }
 
-  /* Cards */
+  /* ── Cards ──────────────────────────────── */
   .card {
-    background: var(--card-bg); border: 1px solid var(--border-color);
+    background: var(--card-surface); border: 1px solid var(--border-struct);
     border-radius: 10px; padding: 16px; position: relative;
+    transition: border-color 0.2s ease-out;
   }
+  .card:hover { border-color: rgba(217,164,65,0.3); }
   .card-header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 12px; font-size: 0.75rem;
+    margin-bottom: 12px; font-size: 0.75rem; font-weight: 500;
     text-transform: uppercase; letter-spacing: 1px;
     color: var(--text-secondary);
   }
-  .card-title { font-weight: 600; }
-  .card-body { font-size: 0.9rem; }
 
-  /* Metric display */
+  /* ── Metrics ────────────────────────────── */
   .metric-value {
     font-family: var(--font-mono); font-size: 1.8rem;
-    font-weight: 700; letter-spacing: -0.5px;
+    font-weight: 700; letter-spacing: -0.03em;
+    transition: color 0.3s ease-out;
   }
   .metric-positive { color: var(--cyber-cyan); }
-  .metric-negative { color: var(--danger); }
+  .metric-negative { color: var(--crimson-alert); }
   .metric-neutral { color: var(--tactical-gold); }
-  .metric-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+  .metric-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; font-weight: 400; }
 
-  /* Table */
+  /* ── Tables ─────────────────────────────── */
   .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
   .data-table th {
     text-align: left; padding: 6px 8px;
     color: var(--text-secondary); font-weight: 500;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-struct);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
   }
   .data-table td {
-    padding: 6px 8px; border-bottom: 1px solid rgba(42,46,64,0.5);
-    font-family: var(--font-mono); font-size: 0.8rem;
+    padding: 6px 8px; border-bottom: 1px solid rgba(42,46,64,0.4);
+    font-family: var(--font-mono); font-size: 0.78rem;
   }
+  .data-table tr:last-child td { border-bottom: none; }
   .data-table tr:hover td { background: rgba(0,209,199,0.04); }
-  .data-table .numeric { text-align: right; }
+  .data-table .numeric { text-align: right; font-weight: 500; }
 
-  /* Badge */
+  /* ── Badges ─────────────────────────────── */
   .badge {
     display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; font-family: var(--font-mono);
   }
-  .badge-running { background: rgba(0,209,199,0.15); color: var(--cyber-cyan); }
-  .badge-warning { background: rgba(217,164,65,0.15); color: var(--warning); }
-  .badge-danger { background: rgba(255,71,87,0.15); color: var(--danger); }
+  .badge-active { background: rgba(0,209,199,0.15); color: var(--cyber-cyan); }
+  .badge-warning { background: rgba(217,164,65,0.15); color: var(--tactical-gold); }
+  .badge-danger { background: rgba(255,71,87,0.15); color: var(--crimson-alert); }
   .badge-neutral { background: rgba(136,136,170,0.15); color: var(--text-secondary); }
 
-  /* Correlation Matrix */
-  .corr-matrix { display: grid; gap: 2px; margin: 8px 0; }
+  /* ── Correlation Matrix ─────────────────── */
+  .corr-wrapper { overflow-x: auto; padding-bottom: 4px; }
+  .corr-matrix { display: inline-grid; gap: 2px; }
   .corr-row { display: grid; gap: 2px; }
   .corr-cell {
     width: 32px; height: 24px; display: flex; align-items: center;
     justify-content: center; font-size: 0.6rem; font-family: var(--font-mono);
-    border-radius: 2px;
+    border-radius: 2px; font-weight: 500; transition: opacity 0.15s;
   }
+  .corr-cell:hover { opacity: 0.8; }
   .corr-cell.high-pos { background: rgba(0,209,199,0.5); color: #fff; }
   .corr-cell.med-pos { background: rgba(0,209,199,0.25); color: var(--text-primary); }
   .corr-cell.neutral { background: rgba(136,136,170,0.15); color: var(--text-secondary); }
   .corr-cell.med-neg { background: rgba(255,71,87,0.25); color: var(--text-primary); }
   .corr-cell.high-neg { background: rgba(255,71,87,0.5); color: #fff; }
   .corr-labels { display: flex; gap: 2px; margin-bottom: 2px; }
-  .corr-label { width: 32px; text-align: center; font-size: 0.55rem; color: var(--text-secondary); }
+  .corr-label { width: 32px; text-align: center; font-size: 0.5rem; color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500; }
 
-  /* Events */
-  .event-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 0; border-bottom: 1px solid rgba(42,46,64,0.3);
-  }
-  .event-row:last-child { border-bottom: none; }
-  .event-name { font-size: 0.8rem; }
-  .event-value { font-family: var(--font-mono); font-size: 0.85rem; }
-  .event-significant { color: var(--tactical-gold); font-weight: 600; }
-
-  /* Section dividers */
+  /* ── Section Titles ─────────────────────── */
   .section-title {
-    font-family: var(--font-mono); font-size: 0.9rem;
+    font-family: var(--font-display); font-size: 0.85rem;
     color: var(--tactical-gold); margin: 24px 0 12px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--border-color);
-    letter-spacing: 0.3px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border-struct);
+    font-weight: 600; letter-spacing: 0.02em;
   }
 
-  /* Refresh button */
-  .refresh-btn {
-    background: transparent; border: 1px solid var(--border-color);
+  /* ── Buttons ────────────────────────────── */
+  .btn {
+    background: transparent; border: 1px solid var(--border-struct);
     color: var(--text-secondary); padding: 6px 16px; border-radius: 6px;
-    cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+    cursor: pointer; font-size: 0.8rem; font-family: var(--font-display);
+    transition: all 0.2s ease-out; font-weight: 500;
   }
-  .refresh-btn:hover {
-    border-color: var(--cyber-cyan); color: var(--cyber-cyan);
+  .btn:hover { border-color: var(--tactical-gold); color: var(--tactical-gold); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--tactical-gold); border-color: var(--tactical-gold);
+    color: #0F172A; font-weight: 600;
   }
-  .refresh-btn:active { transform: scale(0.97); }
+  .btn-primary:hover { background: #c49432; border-color: #c49432; color: #0F172A; }
+  .btn-primary:active { transform: scale(0.97); }
 
-  /* Loading state */
-  .loading { opacity: 0.4; pointer-events: none; transition: opacity 0.3s; }
-
-  /* Tooltip */
-  .tooltip {
-    position: relative; cursor: help;
-    border-bottom: 1px dashed var(--border-color);
+  /* ── Inputs ─────────────────────────────── */
+  .input-group { margin-bottom: 8px; }
+  .input-label {
+    display: block; font-size: 0.7rem; color: var(--text-secondary);
+    margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;
   }
+  .input-field {
+    width: 100%; padding: 6px 8px; background: var(--midnight-navy);
+    color: var(--text-primary); border: 1px solid var(--border-struct);
+    border-radius: 4px; font-size: 0.85rem; font-family: var(--font-mono);
+    transition: border-color 0.2s ease-out;
+  }
+  .input-field:focus { outline: none; border-color: var(--tactical-gold); }
+  select.input-field { appearance: none; cursor: pointer; }
+  input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--border-struct); border-radius: 2px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tactical-gold); cursor: pointer; border: none; }
+
+  /* ── Pipeline Grid ──────────────────────── */
+  .pipeline-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.8rem;
+  }
+  .pipeline-phase { }
+  .pipeline-phase-title {
+    color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;
+  }
+  .pipeline-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .pipeline-key { color: var(--text-secondary); }
+  .pipeline-value { font-family: var(--font-mono); font-weight: 500; }
+
+  /* ── Selector ───────────────────────────── */
+  .event-selector { margin-top: 8px; }
+
+  .loading { opacity: 0.4; pointer-events: none; transition: opacity 0.3s ease-out; }
 
   @media (max-width: 768px) {
-    .grid { grid-template-columns: 1fr; }
+    body { padding: 12px; }
+    .grid { grid-template-columns: 1fr; gap: 12px; }
     .container { padding: 0; }
+    .header { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .header-status { width: 100%; flex-wrap: wrap; }
+    .pipeline-grid { grid-template-columns: 1fr; }
+    .metric-value { font-size: 1.4rem; }
   }
 </style>
 </head>
@@ -175,149 +250,151 @@
 <div class="container" id="app">
 
   <!-- Header -->
-  <div class="header">
-    <h1>QNA <span>CAUSAL ENGINE</span></h1>
+  <div class="header" data-stagger="0">
+    <h1>QNA <span>Causal Engine</span></h1>
     <div class="header-status">
-      <span class="status-dot" id="statusDot"></span>
+      <span class="status-dot pulse" id="statusDot"></span>
       <span id="statusText">Loading...</span>
-      <span>|</span>
-      <span id="updateTime">--</span>
-      <button class="refresh-btn" onclick="refreshAll()">&#x21bb; Refresh</button>
+      <span class="badge badge-active" id="dccBadge">DCC</span>
+      <button class="btn btn-primary" onclick="refreshAll()">Refresh</button>
     </div>
   </div>
 
   <!-- Top Metrics Row -->
   <div class="grid">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Macro Weather</span></div>
+    <div class="card" data-stagger="1">
+      <div class="card-header">Macro Weather</div>
       <div class="card-body">
-        <div class="metric-value" id="weatherValue" style="font-size:1.2rem">--</div>
+        <div class="skeleton skeleton-metric" id="weatherSkel"></div>
+        <div class="skeleton skeleton-label" id="weatherSkelLabel"></div>
+        <div class="metric-value metric-neutral" id="weatherValue" style="display:none">--</div>
         <div class="metric-label">Current regime classification</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">DCC Mean Correlation</span></div>
+    <div class="card" data-stagger="2">
+      <div class="card-header">Mean Correlation</div>
       <div class="card-body">
-        <div class="metric-value" id="dccCorrValue">0.00</div>
-        <div class="metric-label">Cross-asset dynamic correlation</div>
+        <div class="skeleton skeleton-metric" id="dccCorrSkel"></div>
+        <div class="skeleton skeleton-label" id="dccCorrSkelLabel"></div>
+        <div class="metric-value" id="dccCorrValue" style="display:none">0.00</div>
+        <div class="metric-label">DCC-GARCH cross-asset correlation</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">DCC Mean Volatility</span></div>
+    <div class="card" data-stagger="3">
+      <div class="card-header">Mean Volatility</div>
       <div class="card-body">
-        <div class="metric-value" id="dccVolValue">0.00%</div>
-        <div class="metric-label">Average GARCH vol across assets</div>
+        <div class="skeleton skeleton-metric" id="dccVolSkel"></div>
+        <div class="skeleton skeleton-label" id="dccVolSkelLabel"></div>
+        <div class="metric-value" id="dccVolValue" style="display:none">0.00%</div>
+        <div class="metric-label">Average GARCH volatility</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">DCC Assets</span></div>
+    <div class="card" data-stagger="4">
+      <div class="card-header">Model Assets</div>
       <div class="card-body">
-        <div class="metric-value" id="dccAssets">0</div>
+        <div class="skeleton skeleton-metric" id="dccAssetSkel"></div>
+        <div class="skeleton skeleton-label" id="dccAssetSkelLabel"></div>
+        <div class="metric-value" id="dccAssets" style="display:none">0</div>
         <div class="metric-label">Assets in correlation model</div>
       </div>
     </div>
   </div>
 
-  <!-- Correlation Matrix Section -->
-  <div class="section-title">&#x25B6; Correlation Matrix</div>
+  <!-- Correlation Matrix -->
+  <div class="section-title">Correlation Matrix</div>
   <div class="grid grid-wide">
-    <div class="card">
+    <div class="card" data-stagger="5">
       <div class="card-header">
-        <span class="card-title">DCC-GARCH Cross-Asset Correlation</span>
-        <span class="badge badge-running" id="dccStatusBadge">WAITING</span>
+        <span>DCC-GARCH Cross-Asset Correlation</span>
+        <span class="badge badge-active" id="corrBadge">WAITING</span>
       </div>
-      <div class="card-body" id="corrMatrixContainer">
-        <div style="color:var(--text-secondary); font-size:0.85rem;">Waiting for DCC-GARCH data...</div>
+      <div class="card-body corr-wrapper" id="corrContainer">
+        <div class="skeleton skeleton-table" id="corrSkel"></div>
+        <div id="corrMatrixContainer"></div>
       </div>
     </div>
   </div>
 
-  <!-- Causal Biases -->
-  <div class="section-title">&#x25B6; Causal Biases</div>
+  <!-- Causal + Weather Controls -->
+  <div class="section-title">Causal Biases</div>
   <div class="grid">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Asset Bias Scores</span></div>
+    <div class="card" data-stagger="6">
+      <div class="card-header">Asset Bias Scores</div>
       <div class="card-body" id="biasesContainer">
-        <div style="color:var(--text-secondary);">Select an event type...</div>
+        <div class="skeleton skeleton-table" id="biasSkel"></div>
+        <table class="data-table" id="biasTable" style="display:none">
+          <thead><tr><th>Asset</th><th class="numeric">Bias</th></tr></thead>
+          <tbody id="biasBody"></tbody>
+        </table>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Event Selector</span>
-      </div>
+    <div class="card" data-stagger="6">
+      <div class="card-header">Event Controls</div>
       <div class="card-body">
-        <select id="eventSelect" onchange="loadBiases()" style="width:100%; padding:8px; background:var(--midnight-navy); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
-          <option value="GEOPOLITICAL_SUPPLY_SHOCK">Geopolitical Supply Shock</option>
-          <option value="INFLATION_SURPRISE">Inflation Surprise</option>
-          <option value="RATE_CUT">Rate Cut</option>
-          <option value="RATE_HIKE">Rate Hike</option>
-          <option value="RISK_ON_MOMENTUM">Risk-On Momentum</option>
-          <option value="RISK_OFF_CRISIS">Risk-Off Crisis</option>
-        </select>
-        <div style="margin-top:8px;">
-          <label style="font-size:0.75rem; color:var(--text-secondary);">Risk Delta (0-100):</label>
-          <input type="range" id="riskDelta" min="0" max="100" value="40" oninput="loadBiases()" style="width:100%;">
-          <span id="riskDeltaLabel" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--tactical-gold);">40</span>
+        <div class="input-group">
+          <label class="input-label">Event Type</label>
+          <select class="input-field" id="eventSelect" onchange="loadBiases()">
+            <option value="GEOPOLITICAL_SUPPLY_SHOCK">Supply Shock</option>
+            <option value="INFLATION_SURPRISE">Inflation Surprise</option>
+            <option value="RATE_CUT">Rate Cut</option>
+            <option value="RATE_HIKE">Rate Hike</option>
+            <option value="RISK_ON_MOMENTUM">Risk-On Momentum</option>
+            <option value="RISK_OFF_CRISIS">Risk-Off Crisis</option>
+          </select>
         </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Macro Weather Input</span></div>
-      <div class="card-body">
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <div style="flex:1;">
-            <label style="font-size:0.7rem; color:var(--text-secondary);">DXY %</label>
-            <input type="number" id="dxyInput" value="0.4" step="0.1" style="width:100%; padding:6px; background:var(--midnight-navy); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-          </div>
-          <div style="flex:1;">
-            <label style="font-size:0.7rem; color:var(--text-secondary);">ZB1 %</label>
-            <input type="number" id="bondInput" value="0.3" step="0.1" style="width:100%; padding:6px; background:var(--midnight-navy); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-          </div>
+        <div class="input-group">
+          <label class="input-label">Risk Delta: <span id="riskDeltaLabel" style="color:var(--tactical-gold);font-family:var(--font-mono)">40</span></label>
+          <input type="range" id="riskDelta" min="0" max="100" value="40" oninput="loadBiases()">
         </div>
-        <button onclick="loadWeather()" class="refresh-btn" style="width:100%;">Check Weather</button>
+        <div class="input-group" style="margin-top:12px">
+          <label class="input-label">Macro Weather</label>
+          <div style="display:flex; gap:8px">
+            <div style="flex:1">
+              <label class="input-label" style="font-size:0.6rem">DXY %</label>
+              <input class="input-field" type="number" id="dxyInput" value="0.4" step="0.1">
+            </div>
+            <div style="flex:1">
+              <label class="input-label" style="font-size:0.6rem">ZB1 %</label>
+              <input class="input-field" type="number" id="bondInput" value="0.3" step="0.1">
+            </div>
+          </div>
+          <button class="btn" onclick="loadWeather()" style="width:100%; margin-top:8px">Check Weather</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- COT + MSI + SMT + Thesis -->
-  <div class="section-title">&#x25B6; Institutional Context</div>
+  <!-- Institutional Context -->
+  <div class="section-title">Institutional Context</div>
   <div class="grid">
-    <div class="card">
-      <div class="card-header"><span class="card-title">COT Positioning</span></div>
-      <div class="card-body" id="cotContainer">
-        <div style="color:var(--text-secondary);">Loading...</div>
-      </div>
+    <div class="card" data-stagger="7">
+      <div class="card-header">COT Positioning</div>
+      <div class="card-body" id="cotContainer"><div class="skeleton skeleton-table"></div></div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">SMT Divergence</span></div>
-      <div class="card-body" id="smtContainer">
-        <div style="color:var(--text-secondary);">Loading...</div>
-      </div>
+    <div class="card" data-stagger="7">
+      <div class="card-header">SMT Divergence</div>
+      <div class="card-body" id="smtContainer"><div class="skeleton skeleton-table"></div></div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Thesis Drift Guard</span></div>
-      <div class="card-body" id="thesisContainer">
-        <div style="color:var(--text-secondary);">Loading...</div>
-      </div>
+    <div class="card" data-stagger="7">
+      <div class="card-header">Thesis Drift</div>
+      <div class="card-body" id="thesisContainer"><div class="skeleton skeleton-table"></div></div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">CME Prices</span></div>
-      <div class="card-body" id="cmeContainer">
-        <div style="color:var(--text-secondary);">Loading...</div>
-      </div>
+    <div class="card" data-stagger="7">
+      <div class="card-header">CME Futures</div>
+      <div class="card-body" id="cmeContainer"><div class="skeleton skeleton-table"></div></div>
     </div>
   </div>
 
-  <!-- Pipeline Summary -->
-  <div class="section-title">&#x25B6; Pipeline Evaluation</div>
+  <!-- Pipeline -->
+  <div class="section-title">Pipeline Evaluation</div>
   <div class="grid grid-wide">
-    <div class="card">
+    <div class="card" data-stagger="7">
       <div class="card-header">
-        <span class="card-title">4-Phase Macro Pipeline</span>
-        <button onclick="loadPipeline()" class="refresh-btn">Evaluate</button>
+        <span>4-Phase Macro Pipeline</span>
+        <button class="btn" onclick="loadPipeline()">Evaluate</button>
       </div>
       <div class="card-body" id="pipelineContainer">
-        <div style="color:var(--text-secondary);">Click "Evaluate" to run the full pipeline...</div>
+        <div style="color:var(--text-secondary); font-size:0.85rem;">Run evaluation to view results</div>
       </div>
     </div>
   </div>
@@ -326,14 +403,6 @@
 
 <script>
 const API_BASE = '/api/causal';
-let refreshInterval = null;
-const STATUS_ENDPOINTS = [
-  { id: 'dcc', url: '/dcc/status' },
-  { id: 'cot', url: '/cot' },
-  { id: 'smt', url: '/smt/pairs' },
-  { id: 'thesis', url: '/thesis' },
-  { id: 'cme', url: '/cme/prices' },
-];
 
 async function fetchAPI(url) {
   try {
@@ -346,69 +415,75 @@ async function fetchAPI(url) {
   }
 }
 
-function formatNum(v, decimals=2) {
-  if (v === null || v === undefined) return '--';
-  return Number(v).toFixed(decimals);
+function show(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
 }
-
-function formatPct(v) {
-  if (v === null || v === undefined) return '--';
-  return `${Number(v).toFixed(2)}%`;
+function hide(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
 
 /* ── DCC Status ───────────────────────────────── */
 async function loadDCC() {
   const data = await fetchAPI('/dcc/status');
-  const statusDot = document.getElementById('statusDot');
-  const statusText = document.getElementById('statusText');
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  const badge = document.getElementById('dccBadge');
 
   if (!data || !data.fitted) {
-    document.getElementById('dccCorrValue').textContent = '0.00';
-    document.getElementById('dccVolValue').textContent = '0.00%';
-    document.getElementById('dccAssets').textContent = '0';
-    document.getElementById('dccStatusBadge').textContent = 'NOT FITTED';
-    document.getElementById('dccStatusBadge').className = 'badge badge-neutral';
-    statusDot.className = 'status-dot warning';
-    statusText.textContent = 'DCC not fitted';
+    hide(['dccCorrValue','dccVolValue','dccAssets']);
+    show(['dccCorrSkel','dccCorrSkelLabel','dccVolSkel','dccVolSkelLabel','dccAssetSkel','dccAssetSkelLabel']);
+    dot.className = 'status-dot warning pulse';
+    text.textContent = 'Not fitted';
+    badge.className = 'badge badge-warning';
+    badge.textContent = 'OFFLINE';
     return;
   }
 
-  document.getElementById('dccCorrValue').textContent = formatNum(data.mean_corr);
-  const corrEl = document.getElementById('dccCorrValue');
-  corrEl.className = 'metric-value ' + (data.mean_corr > 0.5 ? 'metric-positive' : data.mean_corr < -0.3 ? 'metric-negative' : 'metric-neutral');
+  hide(['dccCorrSkel','dccCorrSkelLabel','dccVolSkel','dccVolSkelLabel','dccAssetSkel','dccAssetSkelLabel']);
+  show(['dccCorrValue','dccVolValue','dccAssets']);
 
-  document.getElementById('dccVolValue').textContent = formatPct(data.mean_vol_pct);
-  document.getElementById('dccVolValue').className = 'metric-value ' + (data.mean_vol_pct > 5 ? 'metric-negative' : 'metric-neutral');
-  document.getElementById('dccAssets').textContent = data.n_assets;
-  document.getElementById('dccStatusBadge').textContent = 'FITTED';
-  document.getElementById('dccStatusBadge').className = 'badge badge-running';
-  statusDot.className = 'status-dot';
-  statusText.textContent = `DCC fitted (${data.n_assets} assets)`;
+  const corr = data.mean_corr || 0;
+  const vol = data.mean_vol_pct || 0;
+  const n = data.n_assets || 0;
 
-  // Correlation matrix
+  const ce = document.getElementById('dccCorrValue');
+  ce.textContent = corr.toFixed(2);
+  ce.className = 'metric-value ' + (corr > 0.5 ? 'metric-positive' : corr < -0.3 ? 'metric-negative' : 'metric-neutral');
+
+  const ve = document.getElementById('dccVolValue');
+  ve.textContent = vol.toFixed(2) + '%';
+  ve.className = 'metric-value ' + (vol > 5 ? 'metric-negative' : 'metric-neutral');
+
+  document.getElementById('dccAssets').textContent = n;
+  badge.className = 'badge badge-active';
+  badge.textContent = 'FITTED';
+  dot.className = 'status-dot pulse';
+  text.textContent = `${n} assets`;
+
   renderCorrMatrix(data);
 }
 
 function renderCorrMatrix(data) {
-  const container = document.getElementById('corrMatrixContainer');
-  if (!data.correlation_matrix || data.correlation_matrix.length === 0) {
-    container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.85rem;">No correlation data available.</div>';
+  if (!data.correlation_matrix || !data.correlation_matrix.length) {
+    document.getElementById('corrMatrixContainer').innerHTML = '';
     return;
   }
+  show(['corrMatrixContainer']);
+  hide(['corrSkel']);
 
   const mat = data.correlation_matrix;
-  const names = data.asset_names;
+  const names = data.asset_names || [];
   const n = mat.length;
-
-  let html = '<div class="corr-labels"><div style="width:32px;"></div>';
-  for (let j = 0; j < n; j++) {
-    html += `<div class="corr-label">${names[j]}</div>`;
-  }
-  html += '</div>';
-
+  let h = '<div class="corr-labels"><div style="width:32px"></div>' + names.map(n => `<div class="corr-label">${n.slice(0,4)}</div>`).join('') + '</div>';
   for (let i = 0; i < n; i++) {
-    html += '<div class="corr-row" style="grid-template-columns:32px repeat(' + n + ', 32px);">';
-    html += `<div class="corr-label" style="width:32px; line-height:24px;">${names[i]}</div>`;
+    h += '<div class="corr-row" style="grid-template-columns:32px repeat(' + n + ', 32px)">';
+    h += `<div class="corr-label" style="width:32px;line-height:24px">${names[i].slice(0,4)}</div>`;
     for (let j = 0; j < n; j++) {
       const v = mat[i][j];
       let cls = 'corr-cell neutral';
@@ -416,12 +491,12 @@ function renderCorrMatrix(data) {
       else if (v > 0.2) cls = 'corr-cell med-pos';
       else if (v < -0.5) cls = 'corr-cell high-neg';
       else if (v < -0.2) cls = 'corr-cell med-neg';
-      html += `<div class="${cls}" title="${names[j]}: ${v.toFixed(3)}">${v.toFixed(2)}</div>`;
+      h += `<div class="${cls}" title="${names[j]}: ${v.toFixed(3)}">${v.toFixed(2)}</div>`;
     }
-    html += '</div>';
+    h += '</div>';
   }
-
-  container.innerHTML = html;
+  document.getElementById('corrMatrixContainer').innerHTML = h;
+  document.getElementById('corrBadge').textContent = 'ACTIVE';
 }
 
 /* ── Causal Biases ──────────────────────────────── */
@@ -429,24 +504,18 @@ async function loadBiases() {
   const event = document.getElementById('eventSelect').value;
   const delta = document.getElementById('riskDelta').value;
   document.getElementById('riskDeltaLabel').textContent = delta;
-
   const data = await fetchAPI(`/biases?event=${event}&risk_delta=${delta}`);
-  const container = document.getElementById('biasesContainer');
-  if (!data || !data.asset_biases) {
-    container.innerHTML = '<div style="color:var(--text-secondary);">No data available.</div>';
-    return;
-  }
+  if (!data || !data.asset_biases) return;
 
-  const entries = Object.entries(data.asset_biases)
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-  let html = `<div style="margin-bottom:6px; font-size:0.7rem; color:var(--text-secondary);">${data.n_assets} assets | Event: ${data.event_type}</div>`;
-  html += '<table class="data-table"><thead><tr><th>Asset</th><th class="numeric">Bias</th></tr></thead><tbody>';
+  hide(['biasSkel']);
+  show(['biasTable']);
+  const entries = Object.entries(data.asset_biases).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  let h = '';
   for (const [asset, bias] of entries.slice(0, 12)) {
     const cls = bias > 0.3 ? 'metric-positive' : bias < -0.3 ? 'metric-negative' : 'metric-neutral';
-    html += `<tr><td>${asset}</td><td class="numeric ${cls}">${bias > 0 ? '+' : ''}${bias.toFixed(4)}</td></tr>`;
+    h += `<tr><td>${asset}</td><td class="numeric ${cls}">${bias > 0 ? '+' : ''}${bias.toFixed(4)}</td></tr>`;
   }
-  html += '</tbody></table>';
-  container.innerHTML = html;
+  document.getElementById('biasBody').innerHTML = h;
 }
 
 /* ── Macro Weather ──────────────────────────────── */
@@ -455,19 +524,25 @@ async function loadWeather() {
   const bond = document.getElementById('bondInput').value;
   const data = await fetchAPI(`/weather?dxy=${dxy}&bond=${bond}`);
   if (data) {
+    hide(['weatherSkel','weatherSkelLabel']);
+    show(['weatherValue']);
     const el = document.getElementById('weatherValue');
     el.textContent = data.classification;
-    el.className = 'metric-value ' + (data.classification === 'RISK_OFF' ? 'metric-negative' : data.classification === 'RISK_ON' ? 'metric-positive' : 'metric-neutral');
+    el.className = 'metric-value ' + (
+      data.classification === 'RISK_OFF' ? 'metric-negative' :
+      data.classification === 'RISK_ON' ? 'metric-positive' : 'metric-neutral'
+    );
   }
 }
 
 /* ── COT ────────────────────────────────────────── */
 async function loadCOT() {
-  const data = await fetchAPI('/cot');
   const container = document.getElementById('cotContainer');
-  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);">No COT data</div>'; return; }
+  const data = await fetchAPI('/cot');
+  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);font-size:0.85rem">No COT data</div>'; return; }
+  const sigClass = data.signal.includes('CROWDED') ? 'badge-warning' : 'badge-active';
   container.innerHTML = `
-    <div style="margin-bottom:6px;"><span class="badge ${data.signal.includes('CROWDED') ? 'badge-warning' : 'badge-running'}">${data.signal}</span></div>
+    <div style="margin-bottom:8px"><span class="badge ${sigClass}">${data.signal}</span></div>
     <table class="data-table">
       <tr><td>Extreme Long</td><td class="numeric">${data.n_extreme_long}</td></tr>
       <tr><td>Extreme Short</td><td class="numeric">${data.n_extreme_short}</td></tr>
@@ -477,58 +552,46 @@ async function loadCOT() {
 
 /* ── SMT ────────────────────────────────────────── */
 async function loadSMT() {
-  const data = await fetchAPI('/smt/pairs');
   const container = document.getElementById('smtContainer');
-  if (!data || !data.pairs) { container.innerHTML = '<div style="color:var(--text-secondary);">No SMT data</div>'; return; }
-  let html = '<table class="data-table"><thead><tr><th>Pair</th><th>Status</th><th class="numeric">Z-score</th></tr></thead><tbody>';
-  for (const [key, pair] of Object.entries(data.pairs)) {
-    const statusClass = pair.severity === 'severe' ? 'badge-danger' : pair.diverged ? 'badge-warning' : 'badge-running';
-    html += `<tr>
-      <td style="font-size:0.7rem;">${pair.pair_name}</td>
-      <td><span class="badge ${statusClass}" style="font-size:0.6rem;">${pair.diverged ? 'DIVERGED' : 'NORMAL'}</span></td>
-      <td class="numeric ${pair.diverged ? 'metric-negative' : 'metric-neutral'}">${pair.zscore.toFixed(2)}</td>
-    </tr>`;
+  const data = await fetchAPI('/smt/pairs');
+  if (!data || !data.pairs) { container.innerHTML = '<div style="color:var(--text-secondary);font-size:0.85rem">No SMT data</div>'; return; }
+  let h = '<table class="data-table"><thead><tr><th>Pair</th><th class="numeric">Z-score</th></tr></thead><tbody>';
+  for (const [, pair] of Object.entries(data.pairs)) {
+    const sc = pair.severity === 'severe' ? 'badge-danger' : pair.diverged ? 'badge-warning' : 'badge-active';
+    h += `<tr><td><span style="font-size:0.7rem">${pair.pair_name}</span></td><td class="numeric"><span class="badge ${sc}" style="margin-right:6px">${pair.diverged ? 'DIV' : 'OK'}</span>${pair.zscore.toFixed(2)}</td></tr>`;
   }
-  html += '</tbody></table>';
-  container.innerHTML = html;
+  h += '</tbody></table>';
+  container.innerHTML = h;
 }
 
 /* ── Thesis ─────────────────────────────────────── */
 async function loadThesis() {
-  const data = await fetchAPI('/thesis');
   const container = document.getElementById('thesisContainer');
-  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);">No thesis data</div>'; return; }
-  const stageClass = data.stage === 'STAGE_2_EXECUTE' ? 'badge-danger' : data.stage === 'STAGE_1_ALERT' ? 'badge-warning' : 'badge-running';
-  let html = `
-    <div style="margin-bottom:8px;">
-      <span class="badge ${stageClass}">${data.stage}</span>
-      <span style="margin-left:8px; font-size:0.8rem;">Action: <strong>${data.action}</strong></span>
-    </div>
-    <div style="font-size:0.75rem; color:var(--text-secondary);">${data.n_active_theses} active theses</div>`;
+  const data = await fetchAPI('/thesis');
+  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);font-size:0.85rem">No thesis data</div>'; return; }
+  const stCls = data.stage === 'STAGE_2_EXECUTE' ? 'badge-danger' : data.stage === 'STAGE_1_ALERT' ? 'badge-warning' : 'badge-active';
+  let h = `<div style="margin-bottom:8px"><span class="badge ${stCls}">${data.stage}</span><span style="margin-left:8px;font-size:0.8rem;color:var(--text-secondary)">${data.n_active_theses} theses</span></div>`;
   if (data.theses && Object.keys(data.theses).length > 0) {
-    html += '<table class="data-table"><thead><tr><th>Thesis</th><th>Stage</th><th class="numeric">Drift</th></tr></thead><tbody>';
+    h += '<table class="data-table"><thead><tr><th>Thesis</th><th class="numeric">Drift</th></tr></thead><tbody>';
     for (const [id, th] of Object.entries(data.theses)) {
-      html += `<tr><td style="font-size:0.7rem;">${th.description || id}</td>
-        <td>${th.stage}</td>
-        <td class="numeric">${th.drift_score.toFixed(3)}</td></tr>`;
+      h += `<tr><td style="font-size:0.7rem">${th.description || id}</td><td class="numeric">${th.drift_score.toFixed(3)}</td></tr>`;
     }
-    html += '</tbody></table>';
+    h += '</tbody></table>';
   }
-  container.innerHTML = html;
+  container.innerHTML = h;
 }
 
 /* ── CME Prices ─────────────────────────────────── */
 async function loadCME() {
-  const data = await fetchAPI('/cme/prices');
   const container = document.getElementById('cmeContainer');
-  if (!data || !data.prices) { container.innerHTML = '<div style="color:var(--text-secondary);">No price data</div>'; return; }
-  let html = `<div style="font-size:0.7rem; color:var(--text-secondary); margin-bottom:6px;">${data.n_symbols} symbols tracked</div>`;
-  html += '<table class="data-table"><thead><tr><th>Symbol</th><th class="numeric">Price</th></tr></thead><tbody>';
-  for (const [sym, price] of Object.entries(data.prices)) {
-    html += `<tr><td>${sym}</td><td class="numeric">${typeof price === 'number' ? price.toFixed(2) : price}</td></tr>`;
+  const data = await fetchAPI('/cme/prices');
+  if (!data || !data.prices) { container.innerHTML = '<div style="color:var(--text-secondary);font-size:0.85rem">No price data</div>'; return; }
+  let h = '<table class="data-table"><thead><tr><th>Symbol</th><th class="numeric">Price</th></tr></thead><tbody>';
+  for (const [sym, price] of Object.entries(data.prices).slice(0, 15)) {
+    h += `<tr><td>${sym}</td><td class="numeric">${typeof price === 'number' ? price.toFixed(2) : price}</td></tr>`;
   }
-  html += '</tbody></table>';
-  container.innerHTML = html;
+  h += '</tbody></table>';
+  container.innerHTML = h;
 }
 
 /* ── Pipeline ───────────────────────────────────── */
@@ -538,61 +601,41 @@ async function loadPipeline() {
   const event = document.getElementById('eventSelect').value;
   const data = await fetchAPI(`/pipeline?event=${event}&dxy=${dxy}&bond=${bond}`);
   const container = document.getElementById('pipelineContainer');
-  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);">Pipeline evaluation failed</div>'; return; }
+  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary)">Evaluation failed</div>'; return; }
   container.innerHTML = `
-    <div style="margin-bottom:12px; font-family:var(--font-mono); font-size:0.85rem; color:var(--tactical-gold);">${data.summary}</div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.8rem;">
+    <div style="margin-bottom:12px;font-family:var(--font-mono);font-size:0.85rem;color:var(--tactical-gold)">${data.summary}</div>
+    <div class="pipeline-grid">
       <div>
-        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 1 — Causal & Macro</div>
-        <div>Event: ${data.phase1_causal?.event_type || 'N/A'}</div>
-        <div>Biases: ${data.phase1_causal?.n_assets || 0} assets</div>
+        <div class="pipeline-phase-title">Phase 1 — Causal & Macro</div>
+        <div class="pipeline-row"><span class="pipeline-key">Event</span><span class="pipeline-value">${data.phase1_causal?.event_type || 'N/A'}</span></div>
+        <div class="pipeline-row"><span class="pipeline-key">Assets</span><span class="pipeline-value">${data.phase1_causal?.n_assets || 0}</span></div>
       </div>
       <div>
-        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 2 — Intermarket</div>
-        <div>Weather: ${data.phase2_weather?.classification || 'N/A'}</div>
-        <div>COT: ${data.phase2_cot?.status || 'N/A'}</div>
-        <div>DCC: ${data.phase2_dcc?.status || 'N/A'}</div>
+        <div class="pipeline-phase-title">Phase 2 — Intermarket</div>
+        <div class="pipeline-row"><span class="pipeline-key">Weather</span><span class="pipeline-value">${data.phase2_weather?.classification || 'N/A'}</span></div>
+        <div class="pipeline-row"><span class="pipeline-key">COT</span><span class="pipeline-value">${data.phase2_cot?.status || 'N/A'}</span></div>
       </div>
       <div>
-        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 3 — Strategy</div>
-        <div>SMC Signal: ${data.phase3_filter?.smc_signal_input || 'N/A'}</div>
-        <div>Executable: ${data.phase3_smc?.executable ? 'YES' : 'NO'}</div>
-        <div>Expectancy: ${data.phase3_smc?.system_expectancy || 0}</div>
+        <div class="pipeline-phase-title">Phase 3 — Strategy</div>
+        <div class="pipeline-row"><span class="pipeline-key">Executable</span><span class="pipeline-value">${data.phase3_smc?.executable ? 'YES' : 'NO'}</span></div>
+        <div class="pipeline-row"><span class="pipeline-key">Expectancy</span><span class="pipeline-value">${data.phase3_smc?.system_expectancy || 0}</span></div>
       </div>
       <div>
-        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 4 — Risk</div>
-        <div>Thesis: ${data.phase4_thesis_drift?.stage || 'N/A'}</div>
-        <div>Risk: ${data.phase4_risk?.calculated_risk_pct || 0}%</div>
+        <div class="pipeline-phase-title">Phase 4 — Risk</div>
+        <div class="pipeline-row"><span class="pipeline-key">Thesis</span><span class="pipeline-value">${data.phase4_thesis_drift?.stage || 'N/A'}</span></div>
+        <div class="pipeline-row"><span class="pipeline-key">Risk</span><span class="pipeline-value">${data.phase4_risk?.calculated_risk_pct || 0}%</span></div>
       </div>
     </div>`;
 }
 
 /* ── Refresh All ───────────────────────────────── */
 async function refreshAll() {
-  const btn = document.querySelector('.refresh-btn');
-  btn.textContent = 'Loading...';
-  btn.disabled = true;
-  document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
-
-  await Promise.all([
-    loadDCC(),
-    loadBiases(),
-    loadWeather(),
-    loadCOT(),
-    loadSMT(),
-    loadThesis(),
-    loadCME(),
-  ]);
-
-  btn.textContent = '\u21bb Refresh';
-  btn.disabled = false;
+  document.getElementById('statusText').textContent = 'Updating...';
+  await Promise.all([loadDCC(), loadBiases(), loadWeather(), loadCOT(), loadSMT(), loadThesis(), loadCME()]);
+  document.getElementById('statusText').textContent = document.getElementById('dccBadge').textContent === 'FITTED' ? 'Updated' : 'Not fitted';
 }
 
-/* ── Init ────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-  refreshAll();
-  setInterval(refreshAll, 30000);
-});
+document.addEventListener('DOMContentLoaded', () => { refreshAll(); setInterval(refreshAll, 30000); });
 </script>
 </body>
 </html>
