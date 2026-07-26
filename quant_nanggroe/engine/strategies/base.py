@@ -8,7 +8,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+import math
+
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,18 @@ class StrategySignal(BaseModel):
     direction: SignalDirection = SignalDirection.HOLD
     strength: SignalStrength = SignalStrength.MODERATE
     confidence: float = Field(0.0, ge=0.0, le=1.0)
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def _clamp_confidence(cls, v: Any) -> float:
+        # ponytail: clamp nan/inf (strategies sometimes emit NaN early in series)
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return 0.0
+        if not math.isfinite(f):
+            return 0.0
+        return max(0.0, min(1.0, f))
     entry_price: Optional[float] = None
     stop_loss: Optional[float] = None
     take_profit: Optional[float] = None
