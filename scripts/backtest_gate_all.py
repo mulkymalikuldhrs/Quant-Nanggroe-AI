@@ -1,158 +1,255 @@
-"""QNA Phase-2 — Backtest ALL registered strategies on REAL data, gate them.
-
-Real data: yfinance EURUSD=X M15, 60d window (max free horizon) -> ~5666 bars.
-Vectorized path for strategies exposing generate_signals(); throttled per-bar
-path (every K bars) for pure generate_signal() strategies (O(n^2) guard).
-Walk-forward 5-fold per strategy. Gate: Sharpe>0.5, Return>0%, DD>-25%.
-Writes results/gate_status.json.
 """
-import sys, json, time, logging
+QNA Phase 2 — Real backtest validation of ALL registered strategies.
+Real yfinance EURUSD=M15 data. 5-fold walk-forward. Gate: Sharpe>0.5, Return>0%, DD>-25%.
+
+Usage:
+  python scripts/backtest_gate_all.py [--budget 1500] [--interval 15m] [--period 60d]
+
+Resumable: strategies already in results/gate_status.json are skipped.
+Writes results/gate_status.json cumulatively.
+"""
+from __future__ import annotations
+import sys, time, json, argparse
 from pathlib import Path
-from datetime import datetime
-import numpy as np, pandas as pd, yfinance as yf
-logging.basicConfig(level=logging.ERROR)
-ROOT = Path(r"D:/repositories/Quant-Nanggroe-AI-worktree")
-sys.path.insert(0, str(ROOT))
-RESULT = ROOT / "results"; RESULT.mkdir(exist_ok=True)
-K = 20  # signal re-eval cadence (bars) for pure strategies
-from quant_nanggroe.engine.strategies.base import SignalDirection
+import numpy as np
+import pandas as pd
 
-# ── 1. REAL DATA ────────────────────────────────────────────────
-CACHE = Path(r"E:/scratchpad/eurusd_m15_60d.csv")
-if CACHE.exists():
-    df = pd.read_csv(CACHE, index_col=0, parse_dates=True)
-else:
-    d = yf.download("EURUSD=X", interval="15m", period="60d", auto_adjust=False, progress=False)
-    if isinstance(d.columns, pd.MultiIndex):
-        d.columns = d.columns.get_level_values(0)
-    d = d[["Open", "High", "Low", "Close", "Volume"]].dropna()
-    d.columns = [c.lower() for c in d.columns]
-    d.to_csv(CACHE); df = d
-close = df["close"].values.astype(float)
-high = df["high"].values.astype(float)
-low = df["low"].values.astype(float)
-n = len(df)
-tr = np.maximum(high - low, np.maximum(np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1))))
-tr[0] = high[0] - low[0]
-atr = pd.Series(tr).rolling(14).mean().values
+REPO = Path(r"D:/repositories/Quant-Nanggroe-AI-worktree")
+sys.path.insert(0, str(REPO))
+RESULTS = REPO / "results"
+RESULTS.mkdir(parents=True, exist_ok=True)
+GATE = RESULTS / "gate_status.json"
+CACHE = RESULTS / "eurusd_m15_cache.parquet"
 
-def atr_sl_tp(i, direction):
-    a = atr[i] if not np.isnan(atr[i]) else (high[i] - low[i])
-    if direction == 1:
-        return close[i] - a * 2.0, close[i] + a * 4.0
-    return close[i] + a * 2.0, close[i] - a * 4.0
+SYM = "EURUSD=X"
+ANN = 35040  # M15 bars/year (365*24*4)
 
-# ── 2. BACKTEST ENGINE (event-driven SL/TP) ───────────────────
-def run_backtest(entry, sl, tp, c, a):
-    m = len(c); cap = 1000.0; eq = np.empty(m); pos = 0; ep = esl = etp = 0.0
-    trades = wins = 0; pnl_sum = 0.0
-    for i in range(m):
-        p = c[i]
+import quant_nanggroe.engine.registry as reg
+from quant_nanggroe.engine.strategies.base import Strategy
+
+
+def load_data(interval: str, period: str) -> pd.DataFrame:
+    if CACHE.exists():
+        try:
+            df = pd.read_parquet(CACHE)
+            if len(df) > 1000:
+                print(f"  data cache hit: {len(df)} bars")
+                return df
+        except Exception:
+            pass
+    import yfinance as yf
+    raw = yf.download(SYM, period=period, interval=interval, auto_adjust=False, progress=False)
+    if isinstance(raw, tuple):  # yfinance >=1.x may return (data, errors)
+        raw = raw[0]
+    df = raw
+    if not isinstance(df, pd.DataFrame) or df.empty:
+        raise RuntimeError(f"yfinance returned no data: {type(raw)}")
+    df = df.rename(columns={c: c.lower() for c in df.columns})
+    df = df.loc[:, ["open", "high", "low", "close", "volume"]]
+    df.index = pd.to_datetime(df.index).tz_localize(None)
+    df = df.dropna(subset=["open", "high", "low", "close"])
+    df.to_parquet(CACHE)
+    print(f"  data downloaded: {len(df)} bars")
+    return df
+
+
+def backtest(close: np.ndarray, entries: np.ndarray, sl, tp, init: float = 1000.0):
+    """SL/TP-aware single-position backtest. entries in {-1,0,1}. sl/tp: np.ndarray or None."""
+    n = len(close)
+    eq = np.empty(n, dtype=float)
+    cap = float(init)
+    pos = 0
+    ep = 0.0
+    esl = np.nan
+    etp = np.nan
+    for i in range(n):
+        p = close[i]
         if pos != 0:
             if pos == 1:
-                if p <= esl: pnl = (esl - ep) / ep; cap += pnl * cap; pos = 0; trades += 1; pnl_sum += pnl; wins += 1 if pnl > 0 else 0
-                elif p >= etp: pnl = (etp - ep) / ep; cap += pnl * cap; pos = 0; trades += 1; pnl_sum += pnl; wins += 1 if pnl > 0 else 0
+                if (not np.isnan(esl)) and p <= esl:
+                    cap += (esl - ep) / ep * cap
+                    pos = 0
+                elif (not np.isnan(etp)) and p >= etp:
+                    cap += (etp - ep) / ep * cap
+                    pos = 0
             else:
-                if p >= esl: pnl = (ep - esl) / ep; cap += pnl * cap; pos = 0; trades += 1; pnl_sum += pnl; wins += 1 if pnl > 0 else 0
-                elif p <= etp: pnl = (ep - etp) / ep; cap += pnl * cap; pos = 0; trades += 1; pnl_sum += pnl; wins += 1 if pnl > 0 else 0
-        if pos == 0 and not np.isnan(entry[i]):
-            e = int(entry[i])
-            if e != 0 and not np.isnan(sl[i]) and not np.isnan(tp[i]):
-                pos = e; ep = p; esl = sl[i]; etp = tp[i]
-        eq[i] = cap + (p - ep) / ep * cap * pos if pos != 0 else cap
+                if (not np.isnan(esl)) and p >= esl:
+                    cap += (ep - esl) / ep * cap
+                    pos = 0
+                elif (not np.isnan(etp)) and p <= etp:
+                    cap += (ep - etp) / ep * cap
+                    pos = 0
+        # opposite signal closes
+        if pos != 0 and entries[i] == -pos:
+            cap += (p - ep) / ep * cap if pos == 1 else (ep - p) / ep * cap
+            pos = 0
+        # open
+        if pos == 0 and entries[i] != 0:
+            pos = 1 if entries[i] > 0 else -1
+            ep = p
+            esl = sl[i] if sl is not None else np.nan
+            etp = tp[i] if tp is not None else np.nan
+        eq[i] = cap + ((p - ep) / ep * cap if pos == 1 else (ep - p) / ep * cap if pos == -1 else 0.0)
     if pos != 0:
-        p = c[-1]; pnl = (p - ep) / ep if pos == 1 else (ep - p) / ep
-        cap += pnl * cap; trades += 1; pnl_sum += pnl; wins += 1 if pnl > 0 else 0
-    ret = (cap - 1000.0) / 1000.0 * 100.0
-    rc = pd.Series(eq).pct_change().dropna()
-    sharpe = np.sqrt(35040) * rc.mean() / rc.std() if rc.std() > 0 else 0.0
-    peak = np.maximum.accumulate(eq); dd = ((eq - peak) / peak).min() * 100
-    return {"return_pct": round(float(ret), 2), "sharpe": round(float(sharpe), 3),
-            "max_drawdown": round(float(dd), 2), "total_trades": int(trades),
-            "win_rate": round(100.0 * wins / trades, 1) if trades else 0.0}
+        last = close[-1]
+        cap += (last - ep) / ep * cap if pos == 1 else (ep - last) / ep * cap
+    return eq
 
-# ── 3. SIGNAL SERIES BUILDERS ──────────────────────────────────
-def build_signals_vectorized(inst):
-    try:
-        sig = inst.generate_signals(df)
-    except Exception as e:
-        return None, f"generate_signals err: {e}"
-    if "entry" not in sig.columns:
-        return None, "no entry column"
-    entry = sig["entry"].reindex(df.index).fillna(0).values.astype(float)
-    sl = sig["sl"].reindex(df.index).values.astype(float) if "sl" in sig.columns else np.full(n, np.nan)
-    tp = sig["tp"].reindex(df.index).values.astype(float) if "tp" in sig.columns else np.full(n, np.nan)
+
+def fold_metrics(eq: np.ndarray, n_folds: int = 5):
+    """Split equity into n_folds contiguous segments; aggregate OOS metrics."""
+    segs = np.array_split(eq, n_folds)
+    rets, shps, dds = [], [], []
+    for s in segs:
+        if len(s) < 5:
+            continue
+        r = (s[-1] / s[0] - 1.0) * 100.0
+        rets.append(r)
+        d = s.pct_change().dropna()
+        shp = np.sqrt(ANN) * d.mean() / d.std() if d.std() > 0 else 0.0
+        shps.append(shp)
+        peak = np.maximum.accumulate(s)
+        dd = ((s - peak) / peak).min() * 100.0
+        dds.append(dd)
+    if not rets:
+        return 0.0, 0.0, 0.0
+    total_ret = (float(np.prod([1 + r / 100 for r in rets])) - 1.0) * 100.0
+    agg_shp = float(np.mean(shps))
+    agg_dd = float(np.min(dds))
+    return round(total_ret, 2), round(agg_shp, 3), round(agg_dd, 2)
+
+
+def build_entries_df(strat, df: pd.DataFrame):
+    out = strat.generate_signals(df)
+    if not isinstance(out, pd.DataFrame) or "entry" not in out.columns:
+        return None
+    entries = out["entry"].astype(float).fillna(0.0).to_numpy()
+    sl = out["sl"].to_numpy() if "sl" in out.columns else None
+    tp = out["tp"].to_numpy() if "tp" in out.columns else None
+    return entries, sl, tp
+
+
+def build_entries_signal(strat, df: pd.DataFrame, deadline: float):
+    n = len(df)
+    entries = np.zeros(n)
+    sl = np.full(n, np.nan)
+    tp = np.full(n, np.nan)
+    closes = df["close"].to_numpy()
     for i in range(n):
-        if entry[i] != 0 and (np.isnan(sl[i]) or np.isnan(tp[i])):
-            sl[i], tp[i] = atr_sl_tp(i, 1 if entry[i] > 0 else -1)
-    return (entry, sl, tp), "vectorized"
-
-def build_signals_perbar(inst):
-    entry = np.zeros(n); sl = np.full(n, np.nan); tp = np.full(n, np.nan)
-    for i in range(0, n, K):
+        if time.time() > deadline:
+            break
         try:
-            sig = inst.generate_signal(df.iloc[: i + 1])
+            sig = strat.generate_signal(df.iloc[: i + 1])
         except Exception:
             continue
-        if sig.direction == SignalDirection.BUY:
-            entry[i] = 1; sl[i], tp[i] = atr_sl_tp(i, 1)
-        elif sig.direction == SignalDirection.SELL:
-            entry[i] = -1; sl[i], tp[i] = atr_sl_tp(i, -1)
-    return (entry, sl, tp), f"coarse_perbar(K={K})"
+        if sig is None:
+            continue
+        # direction
+        d = getattr(sig, "direction", None)
+        if d is None:
+            st = getattr(sig, "signal_type", None)
+            if st is not None:
+                d = st.value if hasattr(st, "value") else str(st)
+        if d is None:
+            continue
+        dv = d.value if hasattr(d, "value") else str(d)
+        if dv in ("BUY", "buy", 1):
+            entries[i] = 1.0
+        elif dv in ("SELL", "sell", -1):
+            entries[i] = -1.0
+        else:
+            continue
+        if getattr(sig, "stop_loss", None) is not None:
+            sl[i] = float(sig.stop_loss)
+        if getattr(sig, "take_profit", None) is not None:
+            tp[i] = float(sig.take_profit)
+    return entries, sl, tp
 
-# ── 4. WALK-FORWARD 5-FOLD ────────────────────────────────────
-folds = np.array_split(np.arange(n), 5)
-def gate_ok(m):
-    return m["sharpe"] > 0.5 and m["return_pct"] > 0 and m["max_drawdown"] > -25
 
-# ── 5. RUN ALL ────────────────────────────────────────────────
-t0 = time.time()
-from quant_nanggroe.engine.registry import list_strategies
-strats = list_strategies()
-results = []; passing = 0
-for name, cls in strats.items():
-    rec = {"strategy": name, "method": None, "error": None,
-           "sharpe": 0.0, "return_pct": 0.0, "max_drawdown": 0.0,
-           "total_trades": 0, "win_rate": 0.0, "gate_pass": False, "folds_passed": 0}
+def evaluate(name: str, strat, df: pd.DataFrame, budget_per: float):
+    close = df["close"].to_numpy()
+    deadline = time.time() + budget_per
     try:
-        inst = cls()
-    except Exception as e:
-        rec["error"] = f"instantiate: {e}"; results.append(rec); continue
-    if hasattr(inst, "generate_signals"):
-        sig, method = build_signals_vectorized(inst)
-    else:
-        sig, method = build_signals_perbar(inst)
-    rec["method"] = method
-    if sig is None:
-        rec["error"] = method; results.append(rec); continue
-    entry, sl, tp = sig
-    full = run_backtest(entry, sl, tp, close, atr)
-    rec.update({k: full[k] for k in ("return_pct", "sharpe", "max_drawdown", "total_trades", "win_rate")})
-    fold_metrics = []
-    fp = 0
-    for f in folds:
-        fm = run_backtest(entry[f[0]:f[-1] + 1], sl[f[0]:f[-1] + 1], tp[f[0]:f[-1] + 1], close[f[0]:f[-1] + 1], atr[f[0]:f[-1] + 1])
-        fold_metrics.append(fm)
-        if gate_ok(fm):
-            fp += 1
-    rec["folds_passed"] = fp
-    rec["gate_pass"] = gate_ok(full)
-    if rec["gate_pass"]:
-        passing += 1
-    results.append(rec)
+        built = build_entries_df(strat, df)
+        iface = "df"
+    except Exception:
+        built = None
+    if built is None:
+        try:
+            built = build_entries_signal(strat, df, deadline)
+            iface = "signal"
+        except Exception as e:
+            return {"strategy": name, "status": "error", "error": f"signal: {e}"}
+    entries, sl, tp = built
+    if sl is not None:
+        sl = np.asarray(sl, dtype=float)
+    if tp is not None:
+        tp = np.asarray(tp, dtype=float)
+    if np.count_nonzero(entries) == 0:
+        return {"strategy": name, "status": "no_trades", "interface": iface,
+                "sharpe": 0.0, "return_pct": 0.0, "max_drawdown": 0.0, "pass": False}
+    eq = backtest(close, entries, sl, tp)
+    total_ret, agg_shp, agg_dd = fold_metrics(eq, 5)
+    passed = (agg_shp > 0.5) and (total_ret > 0) and (agg_dd > -25)
+    return {"strategy": name, "status": "ok", "interface": iface,
+            "sharpe": agg_shp, "return_pct": total_ret, "max_drawdown": agg_dd,
+            "trades": int(np.count_nonzero(entries)), "pass": bool(passed)}
 
-out = {
-    "generated_at": datetime.now().isoformat(),
-    "symbol": "EURUSD", "timeframe": "M15",
-    "data_source": f"yfinance EURUSD=X 60d real ({n} bars)",
-    "gate": {"sharpe_min": 0.5, "return_min": 0.0, "dd_min": -25.0},
-    "walk_forward_folds": 5, "signal_cadence_K": K,
-    "total_strategies": len(strats), "gate_passing": passing,
-    "runtime_sec": round(time.time() - t0, 1),
-    "results": results,
-}
-(RESULT / "gate_status.json").write_text(json.dumps(out, indent=2, default=str))
-print(f"DONE {len(strats)} strategies in {out['runtime_sec']}s | PASS {passing}/{len(strats)}")
-for r in results:
-    if r["gate_pass"]:
-        print(f"  PASS {r['strategy']:35s} SR={r['sharpe']:.2f} R={r['return_pct']:+.1f}% DD={r['max_drawdown']:.1f}% folds={r['folds_passed']}/5 {r['method']}")
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--budget", type=float, default=1500.0)
+    ap.add_argument("--interval", default="15m")
+    ap.add_argument("--period", default="60d")
+    ap.add_argument("--per", type=float, default=40.0)
+    args = ap.parse_args()
+
+    start = time.time()
+    df = load_data(args.interval, args.period)
+
+    existing = {}
+    if GATE.exists():
+        try:
+            existing = json.loads(GATE.read_text())
+        except Exception:
+            existing = {}
+    done = existing.get("results", {})
+    print(f"Already evaluated: {len(done)}")
+
+    strats = reg.list_strategies()
+    order = sorted(strats.keys())
+    results = dict(done)
+    for name in order:
+        if name in results:
+            continue
+        if time.time() - start > args.budget:
+            print(f"  budget reached, stopping. {len(results)} evaluated.")
+            break
+        cls = strats[name]
+        try:
+            inst = reg.create_strategy(name) or cls()
+        except Exception as e:
+            results[name] = {"strategy": name, "status": "instantiate_error", "error": str(e), "pass": False}
+            GATE.write_text(json.dumps({"symbol": SYM, "interval": args.interval,
+                                        "period": args.period, "n_registered": len(strats),
+                                        "results": results}, indent=2, default=str))
+            continue
+        rec = evaluate(name, inst, df, args.per)
+        results[name] = rec
+        tag = "PASS" if rec.get("pass") else "fail"
+        print(f"  {name:40s} {tag} sr={rec.get('sharpe')} ret={rec.get('return_pct')} dd={rec.get('max_drawdown')} [{rec.get('status')}]")
+        # incremental save
+        GATE.write_text(json.dumps({"symbol": SYM, "interval": args.interval,
+                                    "period": args.period, "n_registered": len(strats),
+                                    "results": results}, indent=2, default=str))
+
+    passed = sum(1 for r in results.values() if r.get("pass"))
+    meta = {"symbol": SYM, "interval": args.interval, "period": args.period,
+            "n_registered": len(strats), "n_evaluated": len(results),
+            "n_pass": passed, "results": results}
+    GATE.write_text(json.dumps(meta, indent=2, default=str))
+    print(f"Backtest: {passed}/{len(strats)} pass gate (evaluated {len(results)})")
+
+
+if __name__ == "__main__":
+    main()
