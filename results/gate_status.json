@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-26T09:16:04.989110",
+  "generated_at": "2026-07-26T11:13:45.930998",
   "symbol": "EURUSD",
   "timeframe": "M15",
   "data_source": "yfinance EURUSD=X 60d real (5666 bars)",
@@ -12,7 +12,7 @@
   "signal_cadence_K": 20,
   "total_strategies": 73,
   "gate_passing": 13,
-  "runtime_sec": 273.7,
+  "runtime_sec": 386.0,
   "results": [
     {
       "strategy": "AdaptiveMovingAverageStrategy",
@@ -654,11 +654,11 @@
       "strategy": "KMeansRegimeStrategy",
       "method": "coarse_perbar(K=20)",
       "error": null,
-      "sharpe": -0.379,
-      "return_pct": -0.3,
-      "max_drawdown": -1.74,
-      "total_trades": 142,
-      "win_rate": 34.5,
+      "sharpe": -0.56,
+      "return_pct": -0.44,
+      "max_drawdown": -1.14,
+      "total_trades": 124,
+      "win_rate": 29.8,
       "gate_pass": false,
       "folds_passed": 2
     },
