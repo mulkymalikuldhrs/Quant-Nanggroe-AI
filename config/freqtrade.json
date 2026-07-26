@@ -1,10 +1,11 @@
 {
+  "_comment": "DEPRECATED: Freqtrade is no longer used in this project. This config is retained for reference only.",
   "max_open_trades": 3,
   "stake_currency": "USDT",
   "stake_amount": 50,
   "trading_mode": "futures",
   "margin_mode": "isolated",
-  "dry_run": true,
+  "dry_run": false,
   "exchange": {
     "name": "binance",
     "pair_whitelist": ["SOL/USDT", "ETH/USDT", "ARB/USDT", "WIF/USDT", "DOGE/USDT"],

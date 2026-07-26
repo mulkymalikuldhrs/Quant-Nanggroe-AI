@@ -29,7 +29,7 @@ class ICTStrategy(Strategy):
     - Judas Swing: False move before true direction
     """
 
-    name = "ict"
+    name = "ict_ote"
     description = "ICT methodology: kill zones, OTE, market structure"
 
     def __init__(self, parameters: Optional[StrategyParameters] = None) -> None:

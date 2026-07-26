@@ -5,7 +5,7 @@ from quant_nanggroe.hedge_fund.utils.config import log
 
 def risk_guard_approve(proposal):
     try:
-        from risk_guard import approve as rg_approve
+        from quant_nanggroe.hedge_fund.tools.risk_guard import approve as rg_approve
     except Exception as e:
         log.error(f"Risk guard import FAILED: {e}")
         return {"status": "VETOED", "reasons": [f"import_failed: {e}"]}

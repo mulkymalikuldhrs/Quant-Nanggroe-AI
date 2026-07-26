@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     # Trading API Keys
     alpaca_api_key: Optional[str] = None
     alpaca_api_secret: Optional[str] = None
-    alpaca_paper: bool = True
+    alpaca_paper: bool = False
     binance_api_key: Optional[str] = None
     binance_api_secret: Optional[str] = None
 
@@ -137,7 +137,7 @@ class Settings(BaseSettings):
         le=20.0,
     )
     risk_tier: str = Field(
-        default="demo",
+        default="live",
         description="Risk profile: 'demo' (lenient limits) or 'live' (strict constitutional limits).",
     )
 

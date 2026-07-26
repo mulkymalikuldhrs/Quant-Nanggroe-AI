@@ -14,6 +14,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from quant_nanggroe.pipeline.macro_context import MacroContextProvider
+
 log = logging.getLogger("QNA-Pipeline-Signal")
 
 
@@ -32,11 +34,12 @@ class Signal:
 class UnifiedSignalEngine:
     """Aggregates signals from multiple provider backends."""
 
-    def __init__(self):
+    def __init__(self, macro_context: MacroContextProvider | None = None):
         self._hf_aggregate: Any = None
         self._hf_providers: list[Any] = []
         self._strategy_runner: Any = None
         self._price_provider: Any = None
+        self._macro = macro_context or MacroContextProvider()
 
     def _lazy_hf(self):
         if self._hf_aggregate is not None:
@@ -73,7 +76,19 @@ class UnifiedSignalEngine:
             if fallback is not None:
                 signals.append(fallback)
 
-        return signals
+        filtered: list[Signal] = []
+        for sig in signals:
+            if sig.side in ("buy", "sell"):
+                side, conf, reason = self._macro.apply_macro_filter(symbol, sig.side, sig.confidence)
+                if side == "hold":
+                    log.info("Macro filter blocked %s %s: %s", symbol, sig.side, reason)
+                    continue
+                sig.confidence = conf
+                sig.reason = f"{sig.reason} | {reason}"
+                sig.metadata["macro_weather"] = self._macro.weather.to_dict()
+            filtered.append(sig)
+
+        return filtered
 
     def _try_hedge_fund(self, symbol: str) -> Optional[Signal]:
         self._lazy_hf()

@@ -29,10 +29,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# ── Mock mode flag ─────────────────────────────────────────────────────
-_MOCK_MODE = False
-
-
 # ── Lazy imports for real engine components ─────────────────────────────
 def _get_sentiment_tool():
     """Lazy-load SentimentTool from shared tools."""
@@ -208,88 +204,6 @@ async def _real_financial_data(symbol: str, data_type: str, period: str) -> Opti
     return None
 
 
-# ── Mock data fallbacks ─────────────────────────────────────────────────
-
-def _mock_web_search(query: str, num_results: int) -> dict:
-    logger.warning("MOCK MODE: Returning hardcoded search results for '%s'", query)
-    return {
-        "query": query,
-        "results": [
-            {
-                "title": f"Search result for: {query}",
-                "snippet": f"Financial data and analysis related to {query}",
-                "source": "web_search",
-                "timestamp": datetime.now().isoformat(),
-            }
-        ],
-        "num_results": num_results,
-        "_mock": True,
-    }
-
-
-def _mock_sec_filing(symbol: str, filing_type: str, years: int) -> dict:
-    logger.warning("MOCK MODE: Returning hardcoded SEC filing data for %s", symbol)
-    return {
-        "symbol": symbol.upper(),
-        "filing_type": filing_type,
-        "filings": [
-            {
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "type": filing_type,
-                "summary": f"Most recent {filing_type} filing for {symbol.upper()}",
-                "key_metrics": {
-                    "revenue_growth": "5.2%",
-                    "net_margin": "15.3%",
-                    "debt_to_equity": "0.45",
-                    "free_cash_flow": "Positive",
-                },
-            }
-        ],
-        "years_requested": years,
-        "_mock": True,
-    }
-
-
-def _mock_news_fetch(symbol: str, days_back: int, category: Optional[str]) -> dict:
-    logger.warning("MOCK MODE: Returning hardcoded news for %s", symbol)
-    return {
-        "symbol": symbol.upper(),
-        "articles": [
-            {
-                "title": f"Latest developments for {symbol.upper()}",
-                "source": "Financial Times",
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "sentiment": "neutral",
-                "relevance_score": 0.85,
-                "summary": f"Market analysis and recent developments affecting {symbol.upper()}.",
-            }
-        ],
-        "days_back": days_back,
-        "category": category,
-        "_mock": True,
-    }
-
-
-def _mock_financial_data(symbol: str, data_type: str, period: str) -> dict:
-    logger.warning("MOCK MODE: Returning hardcoded financial data for %s", symbol)
-    return {
-        "symbol": symbol.upper(),
-        "data_type": data_type,
-        "period": period,
-        "metrics": {
-            "market_cap": "2.5T",
-            "pe_ratio": 28.5,
-            "eps": 6.42,
-            "dividend_yield": "0.55%",
-            "beta": 1.15,
-            "52_week_high": 199.62,
-            "52_week_low": 164.08,
-            "avg_volume": "58.2M",
-        },
-        "_mock": True,
-    }
-
-
 # ═══════════════════════════════════════════════════════════════════════
 # LangChain @tool functions — PRODUCTION wired
 # ═══════════════════════════════════════════════════════════════════════
@@ -299,8 +213,7 @@ def web_search(query: str, num_results: int = 5) -> str:
     """
     Search the web for financial information and market data.
 
-    PRODUCTION: Attempts to use configured search APIs (Tavily, SerpAPI).
-    Falls back to mock data only in _MOCK_MODE.
+    PRODUCTION: Uses configured search APIs (Tavily, SerpAPI).
 
     Args:
         query: Search query string
@@ -309,58 +222,51 @@ def web_search(query: str, num_results: int = 5) -> str:
     Returns:
         JSON string with search results
     """
-    if not _MOCK_MODE:
-        settings = _get_settings()
-        # Try Tavily search API
-        tavily_key = getattr(settings, "tavily_api_key", None) if settings else None
-        if tavily_key:
-            try:
-                import json as _json
-                import urllib.request
+    settings = _get_settings()
+    # Try Tavily search API
+    tavily_key = getattr(settings, "tavily_api_key", None) if settings else None
+    if tavily_key:
+        try:
+            import json as _json
+            import urllib.request
 
-                url = "https://api.tavily.com/search"
-                payload = _json.dumps({
-                    "api_key": tavily_key,
-                    "query": query,
-                    "max_results": num_results,
-                }).encode()
-                req = urllib.request.Request(
-                    url, data=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    data = _json.loads(resp.read().decode())
+            url = "https://api.tavily.com/search"
+            payload = _json.dumps({
+                "api_key": tavily_key,
+                "query": query,
+                "max_results": num_results,
+            }).encode()
+            req = urllib.request.Request(
+                url, data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = _json.loads(resp.read().decode())
 
-                results = []
-                for r in data.get("results", []):
-                    results.append({
-                        "title": r.get("title", ""),
-                        "snippet": r.get("content", ""),
-                        "source": "tavily",
-                        "url": r.get("url", ""),
-                    })
+            results = []
+            for r in data.get("results", []):
+                results.append({
+                    "title": r.get("title", ""),
+                    "snippet": r.get("content", ""),
+                    "source": "tavily",
+                    "url": r.get("url", ""),
+                })
 
-                return json.dumps({  # PRODUCTION: Wired to real engine
-                    "query": query,
-                    "results": results,
-                    "num_results": len(results),
-                    "_source": "TavilyAPI",
-                }, indent=2)
-            except Exception as exc:
-                logger.error("Tavily search failed: %s", exc)
-                raise RuntimeError(
-                    f"Web search failed via Tavily: {exc}. "
-                    "Set _MOCK_MODE=True for mock fallback."
-                ) from exc
+            return json.dumps({  # PRODUCTION: Wired to real engine
+                "query": query,
+                "results": results,
+                "num_results": len(results),
+                "_source": "TavilyAPI",
+            }, indent=2)
+        except Exception as exc:
+            logger.error("Tavily search failed: %s", exc)
+            raise RuntimeError(
+                f"Web search failed via Tavily: {exc}."
+            ) from exc
 
-        # No API key configured
-        raise RuntimeError(
-            "No search API key configured (tavily_api_key). "
-            "Configure an API key or set _MOCK_MODE=True."
-        )
-
-    # Mock fallback
-    return json.dumps(_mock_web_search(query, num_results), indent=2)
+    raise RuntimeError(
+        "No search API key configured (tavily_api_key)."
+    )
 
 
 @tool
@@ -369,7 +275,6 @@ def sec_filing(symbol: str, filing_type: str = "10-K", years: int = 1) -> str:
     Retrieve SEC filing data for a given symbol.
 
     PRODUCTION: Uses SEC EDGAR API for real filing data.
-    Falls back to mock data only in _MOCK_MODE.
 
     Args:
         symbol: Stock ticker symbol (e.g., AAPL)
@@ -379,61 +284,55 @@ def sec_filing(symbol: str, filing_type: str = "10-K", years: int = 1) -> str:
     Returns:
         JSON string with SEC filing data
     """
-    if not _MOCK_MODE:
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-            if not loop.is_running():
-                result = loop.run_until_complete(
-                    _real_sec_filing(symbol, filing_type, years)
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if not loop.is_running():
+            result = loop.run_until_complete(
+                _real_sec_filing(symbol, filing_type, years)
+            )
+            if result is not None:
+                return json.dumps(result, indent=2, default=str)
+        else:
+            # Try synchronous SEC EDGAR request
+            try:
+                import json as _json
+                import urllib.request
+                url = (
+                    f"https://efts.sec.gov/LATEST/search-index?"
+                    f"q=%22{symbol}%22&forms={filing_type}"
                 )
-                if result is not None:
-                    return json.dumps(result, indent=2, default=str)
-            else:
-                # Try synchronous SEC EDGAR request
-                try:
-                    import json as _json
-                    import urllib.request
-                    url = (
-                        f"https://efts.sec.gov/LATEST/search-index?"
-                        f"q=%22{symbol}%22&forms={filing_type}"
-                    )
-                    req = urllib.request.Request(
-                        url,
-                        headers={"User-Agent": "QuantNanggroeAI/2.0 research@nanggroe.ai"},
-                    )
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        data = _json.loads(resp.read().decode())
-                    filings = []
-                    for hit in data.get("hits", {}).get("hits", [])[:years]:
-                        source = hit.get("_source", {})
-                        filings.append({
-                            "date": source.get("file_date", ""),
-                            "type": source.get("form_type", filing_type),
-                            "summary": source.get("display_names", [symbol])[0] if source.get("display_names") else f"{filing_type} filing",
-                        })
-                    return json.dumps({  # PRODUCTION: Wired to real engine
-                        "symbol": symbol.upper(),
-                        "filing_type": filing_type,
-                        "filings": filings,
-                        "years_requested": years,
-                        "_source": "SEC_EDGAR_API",
-                    }, indent=2)
-                except Exception as exc:
-                    logger.error("SEC EDGAR sync fetch failed: %s", exc)
-        except Exception as exc:
-            logger.error("SEC filing fetch failed for %s: %s", symbol, exc)
-            raise RuntimeError(
-                f"Failed to fetch SEC filings for {symbol}: {exc}. "
-                "Set _MOCK_MODE=True for mock fallback."
-            ) from exc
-
-    # Mock fallback
-    if _MOCK_MODE:
-        return json.dumps(_mock_sec_filing(symbol, filing_type, years), indent=2)
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "QuantNanggroeAI/2.0 research@nanggroe.ai"},
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = _json.loads(resp.read().decode())
+                filings = []
+                for hit in data.get("hits", {}).get("hits", [])[:years]:
+                    source = hit.get("_source", {})
+                    filings.append({
+                        "date": source.get("file_date", ""),
+                        "type": source.get("form_type", filing_type),
+                        "summary": source.get("display_names", [symbol])[0] if source.get("display_names") else f"{filing_type} filing",
+                    })
+                return json.dumps({  # PRODUCTION: Wired to real engine
+                    "symbol": symbol.upper(),
+                    "filing_type": filing_type,
+                    "filings": filings,
+                    "years_requested": years,
+                    "_source": "SEC_EDGAR_API",
+                }, indent=2)
+            except Exception as exc:
+                logger.error("SEC EDGAR sync fetch failed: %s", exc)
+    except Exception as exc:
+        logger.error("SEC filing fetch failed for %s: %s", symbol, exc)
+        raise RuntimeError(
+            f"Failed to fetch SEC filings for {symbol}: {exc}."
+        ) from exc
 
     raise RuntimeError(
-        f"Cannot fetch SEC filings for {symbol}: real engine unavailable and _MOCK_MODE=False."
+        f"Cannot fetch SEC filings for {symbol}: real engine unavailable."
     )
 
 
@@ -448,7 +347,6 @@ def news_fetch(
 
     PRODUCTION: Uses SentimentTool for real news aggregation from
     Alpha Vantage, Polygon, and yfinance APIs.
-    Falls back to mock data only in _MOCK_MODE.
 
     Args:
         symbol: Stock ticker symbol
@@ -458,29 +356,23 @@ def news_fetch(
     Returns:
         JSON string with news articles
     """
-    if not _MOCK_MODE:
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-            if not loop.is_running():
-                result = loop.run_until_complete(
-                    _real_news_fetch(symbol, days_back, category)
-                )
-                if result is not None:
-                    return json.dumps(result, indent=2, default=str)
-        except Exception as exc:
-            logger.error("News fetch failed for %s: %s", symbol, exc)
-            raise RuntimeError(
-                f"Failed to fetch news for {symbol}: {exc}. "
-                "Set _MOCK_MODE=True for mock fallback."
-            ) from exc
-
-    # Mock fallback
-    if _MOCK_MODE:
-        return json.dumps(_mock_news_fetch(symbol, days_back, category), indent=2)
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if not loop.is_running():
+            result = loop.run_until_complete(
+                _real_news_fetch(symbol, days_back, category)
+            )
+            if result is not None:
+                return json.dumps(result, indent=2, default=str)
+    except Exception as exc:
+        logger.error("News fetch failed for %s: %s", symbol, exc)
+        raise RuntimeError(
+            f"Failed to fetch news for {symbol}: {exc}."
+        ) from exc
 
     raise RuntimeError(
-        f"Cannot fetch news for {symbol}: real engine unavailable and _MOCK_MODE=False."
+        f"Cannot fetch news for {symbol}: real engine unavailable."
     )
 
 
@@ -495,7 +387,6 @@ def financial_data(
 
     PRODUCTION: Uses yfinance for real financial data (overview, income,
     balance, cashflow, metrics).
-    Falls back to mock data only in _MOCK_MODE.
 
     Args:
         symbol: Stock ticker symbol
@@ -505,29 +396,23 @@ def financial_data(
     Returns:
         JSON string with financial data
     """
-    if not _MOCK_MODE:
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-            if not loop.is_running():
-                result = loop.run_until_complete(
-                    _real_financial_data(symbol, data_type, period)
-                )
-                if result is not None:
-                    return json.dumps(result, indent=2, default=str)
-        except Exception as exc:
-            logger.error("Financial data fetch failed for %s: %s", symbol, exc)
-            raise RuntimeError(
-                f"Failed to fetch financial data for {symbol}: {exc}. "
-                "Set _MOCK_MODE=True for mock fallback."
-            ) from exc
-
-    # Mock fallback
-    if _MOCK_MODE:
-        return json.dumps(_mock_financial_data(symbol, data_type, period), indent=2)
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if not loop.is_running():
+            result = loop.run_until_complete(
+                _real_financial_data(symbol, data_type, period)
+            )
+            if result is not None:
+                return json.dumps(result, indent=2, default=str)
+    except Exception as exc:
+        logger.error("Financial data fetch failed for %s: %s", symbol, exc)
+        raise RuntimeError(
+            f"Failed to fetch financial data for {symbol}: {exc}."
+        ) from exc
 
     raise RuntimeError(
-        f"Cannot fetch financial data for {symbol}: real engine unavailable and _MOCK_MODE=False."
+        f"Cannot fetch financial data for {symbol}: real engine unavailable."
     )
 
 

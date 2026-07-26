@@ -1,4 +1,5 @@
 """Tests for PaperExchangeBroker."""
+import asyncio
 import unittest
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
 from quant_nanggroe.types.orders import OrderSide, OrderType
@@ -22,13 +23,15 @@ class TestPaperExchangeBroker(unittest.TestCase):
         self.broker.add_ohlcv("BTC/USDT", ohlcv)
         self.assertGreater(self.broker.get_price("BTC/USDT"), 0)
 
-    async def test_place_order(self):
-        self.broker = PaperExchangeBroker(initial_capital=10000.0)
-        ohlcv = OHLCV(symbol="BTC/USDT", timestamp=datetime.now(timezone.utc), open=67000.0, high=68000.0, low=66000.0, close=67000.0, volume=1000.0)
-        self.broker.add_ohlcv("BTC/USDT", ohlcv)
-        order = await self.broker.place_order(symbol="BTC/USDT", side=OrderSide.BUY, order_type=OrderType.MARKET, quantity=0.5)
-        self.assertIsNotNone(order)
-        self.assertEqual(order.symbol, "BTC/USDT")
+    def test_place_order(self):
+        async def _async_test():
+            broker = PaperExchangeBroker(initial_capital=10000.0)
+            ohlcv = OHLCV(symbol="BTC/USDT", timestamp=datetime.now(timezone.utc), open=67000.0, high=68000.0, low=66000.0, close=67000.0, volume=1000.0)
+            broker.add_ohlcv("BTC/USDT", ohlcv)
+            order = await broker.place_order(symbol="BTC/USDT", side=OrderSide.BUY, order_type=OrderType.MARKET, quantity=0.5)
+            self.assertIsNotNone(order)
+            self.assertEqual(order.symbol, "BTC/USDT")
+        asyncio.run(_async_test())
 
     def test_get_portfolio_no_trades(self):
         import asyncio

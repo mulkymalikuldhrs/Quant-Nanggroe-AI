@@ -91,6 +91,7 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 - **Single source of truth**: `engine/risk/constants.py` for ALL constitutional limits
 - **KillSwitch** reads thresholds from `constants.py` (was hardcoded per-class)
 - **Threshold mismatch FIXED**: weekly loss was 2.5% vs 4% across components → now both reference `WEEKLY_LOSS_LIMIT = 0.025`
+- **Weekly loss veto WIRED IN** (P0 audit fix): EngineRiskManager.can_trade() now checks weekly loss in addition to daily loss
 
 ## Exchange REST Clients — v6.0.0 Lazy Wiring
 - **10 clients** lazy-wired into `ExchangeFactory.create_rest_client()`: binance, bybit, coinbase, crypto_com, gemini, kraken, kucoin, okx, bitget, gate

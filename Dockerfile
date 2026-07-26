@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════════════════════════════════════╗
 # ║      Quant-Nanggroe-AI  —  Multi-stage Docker Build                ║
-# ║      poetry-based install  |  python:3.12-slim                     ║
+# ║      uv-based install  |  python:3.12-slim                         ║
 # ╚══════════════════════════════════════════════════════════════════════╝
 
 # ── Stage 1: Builder ─────────────────────────────────────────────────
@@ -8,18 +8,17 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies and poetry
+# Install build dependencies and uv
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl build-essential && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir poetry
+    pip install --no-cache-dir uv
 
 # Copy dependency metadata first (layer cache)
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 
 # Install runtime dependencies only (no dev)
-RUN poetry config virtualenvs.in-project true && \
-    poetry install --no-dev --no-interaction --no-ansi
+RUN uv sync --no-dev --no-install-project
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime

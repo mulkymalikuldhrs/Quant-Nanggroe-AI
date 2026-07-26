@@ -179,15 +179,16 @@ class UnifiedExecutionRouter:
             except Exception as e:
                 log.debug("Engine execution failed: %s", e)
 
-        # 5. Dict fallback
+        # 5. No backend available — reject instead of pretending fill succeeded (P0 FIX)
         return {
             "symbol": symbol,
             "side": side,
             "qty": qty,
             "price": price,
-            "fill_id": None,
+            "status": "rejected",
+            "mode": "no_backend",
+            "error": "All execution backends unavailable",
             "strategy": "pipeline",
-            "mode": "fallback",
         }
 
     def get_balance(self) -> float:
@@ -198,9 +199,7 @@ class UnifiedExecutionRouter:
                 pass
         if self._mt5 is not None:
             try:
-                acct = self._mt5.get_account()
-                if acct:
-                    return float(getattr(acct, "balance", 0))
+                return float(self._mt5.get_balance())  # P0 FIX: MT5Broker has get_balance(), not get_account()
             except Exception:
                 pass
         return 0.0

@@ -1,14 +1,13 @@
-# Claude-Specific Instructions — Quant Nanggroe AI v5.1.0
+# Claude-Specific Instructions — Quant Nanggroe AI v6.0.0
 
 ## Entry Point
-- **Single**: `qna.py` — modes: `cli|api|daemon|web|status|stop`
+- **Single**: `qna.py` — modes: `unified|api|daemon|hedge|status|stop`
 - All legacy launchers archived to `archive/launchers/`
 
 ## Key Files
 - `qna.py` — Single entry point (unified launcher).
 - `quant_nanggroe/engine/standalone.py` — Zero-dependency autonomous runner.
-- `quant_nanggroe/cli.py` — CLI interface.
-- `quant_nanggroe/api/app.py` — FastAPI factory (179 endpoints).
+- `quant_nanggroe/api/app.py` — FastAPI factory (179+ endpoints).
 - `quant_nanggroe/engine/agentic/autonomous.py` — Autonomous pipeline orchestration.
 - `quant_nanggroe/engine/risk/` — 9-checkpoint constitutional risk gate.
 - `pyproject.toml` — Dependencies with `uv`.

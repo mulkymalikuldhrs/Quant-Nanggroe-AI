@@ -27,7 +27,7 @@ class ICTStrategy(Strategy):
     Supports modes: fvg, order_block, displacement, all.
     """
 
-    name = "ict"
+    name = "ict_strategy"
     description = "ICT: FVG, order block, displacement, all"
 
     def __init__(self, parameters: Optional[StrategyParameters] = None) -> None:

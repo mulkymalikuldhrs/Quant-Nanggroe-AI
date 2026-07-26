@@ -6,16 +6,25 @@ If this breaks, AutonomousPipeline.run() crashes for any COT-auto-discovered str
 """
 import sys
 import os
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from quant_nanggroe.engine.data.cot_provider import COTProvider, COTAnalyzer
 
 
+@pytest.mark.skipif(
+    not os.environ.get("QNA_TEST_LIVE_NETWORK"),
+    reason="Skipped: requires live network (set QNA_TEST_LIVE_NETWORK=1 to enable)"
+)
 def test_cot_provider_has_fetch():
     assert hasattr(COTProvider(), "fetch")
 
 
+@pytest.mark.skipif(
+    not os.environ.get("QNA_TEST_LIVE_NETWORK"),
+    reason="Skipped: requires live network (set QNA_TEST_LIVE_NETWORK=1 to enable)"
+)
 def test_analyzer_generate_signal_contract():
     provider = COTProvider()
     provider.fetch()

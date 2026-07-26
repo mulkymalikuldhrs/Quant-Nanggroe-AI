@@ -53,31 +53,51 @@ class MSNRStrategy(Strategy):
             ll = l.rolling(lookback).min()
             rng = hh - ll
 
+            # ATR for SL/TP calculation
+            tr = pd.concat([
+                h - l,
+                (h - c.shift(1)).abs(),
+                (l - c.shift(1)).abs()
+            ], axis=1).max(axis=1)
+            atr = tr.rolling(14).mean()
+
             last = -1
             break_up = c.iloc[last] > hh.iloc[last - 1] and rng.iloc[last] > 0
             break_dn = c.iloc[last] < ll.iloc[last - 1] and rng.iloc[last] > 0
 
             if break_up:
+                entry = float(c.iloc[last])
+                atr_val = float(atr.iloc[last]) if not pd.isna(atr.iloc[last]) else entry * 0.01
+                sl = entry - 1.5 * atr_val
+                tp = entry + 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
                     symbol=kwargs.get("symbol", ""),
                     direction=SignalDirection.BUY,
                     strength=SignalStrength.MODERATE,
                     confidence=0.55,
-                    entry_price=float(c.iloc[last]),
+                    entry_price=entry,
+                    stop_loss=sl,
+                    take_profit=tp,
                     reasoning="MSNR: close broke above recent HH (bullish S/R breakout)",
-                    indicators={"hh": float(hh.iloc[last]), "ll": float(ll.iloc[last])},
+                    indicators={"hh": float(hh.iloc[last]), "ll": float(ll.iloc[last]), "atr": atr_val},
                 )
             if break_dn:
+                entry = float(c.iloc[last])
+                atr_val = float(atr.iloc[last]) if not pd.isna(atr.iloc[last]) else entry * 0.01
+                sl = entry + 1.5 * atr_val
+                tp = entry - 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
                     symbol=kwargs.get("symbol", ""),
                     direction=SignalDirection.SELL,
                     strength=SignalStrength.MODERATE,
                     confidence=0.55,
-                    entry_price=float(c.iloc[last]),
+                    entry_price=entry,
+                    stop_loss=sl,
+                    take_profit=tp,
                     reasoning="MSNR: close broke below recent LL (bearish S/R breakout)",
-                    indicators={"hh": float(hh.iloc[last]), "ll": float(ll.iloc[last])},
+                    indicators={"hh": float(hh.iloc[last]), "ll": float(ll.iloc[last]), "atr": atr_val},
                 )
             return self._hold("No S/R breakout")
         except Exception as e:  # pragma: no cover

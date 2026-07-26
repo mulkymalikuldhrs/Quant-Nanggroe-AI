@@ -134,7 +134,7 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
 
 @router.get("/performance")
 async def get_portfolio_performance(http_request: Request) -> dict[str, Any]:
-    """Get portfolio performance metrics (stub — not wired to real engine)."""
+    """FIXME: Stub — not wired to real engine. Returns hardcoded zeros. Wire to PerformanceTracker."""
     return {
         "total_return": 0.0,
         "cagr": 0.0,

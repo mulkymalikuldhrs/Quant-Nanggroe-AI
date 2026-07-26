@@ -392,7 +392,9 @@ class MarketGrounding:
                 "grounding_yfinance_unavailable",
                 extra={"symbol": symbol},
             )
-            return self._generate_mock_price(symbol)
+            raise RuntimeError(
+                "Real price source unavailable — yfinance not installed"
+            )
 
         try:
             ticker = yf.Ticker(symbol)
@@ -445,28 +447,6 @@ class MarketGrounding:
                 extra={"symbol": symbol, "error": str(exc)},
             )
             return None
-
-    def _generate_mock_price(self, symbol: str) -> GroundedPrice:
-        """Generate a mock price for testing when yfinance is unavailable.
-
-        Prices are deterministic based on symbol hash.
-        """
-        # Deterministic mock based on symbol
-        hash_val = hash(symbol) % 10000
-        base_price = 50 + (hash_val % 500)
-        change = (hash_val % 100 - 50) / 1000.0
-
-        return GroundedPrice(
-            symbol=symbol,
-            current_price=base_price * (1 + change),
-            open_price=base_price,
-            high_price=base_price * 1.02,
-            low_price=base_price * 0.98,
-            volume=1e6,
-            previous_close=base_price,
-            change_pct=round(change * 100, 2),
-            source="mock",
-        )
 
     # ── Prompt Rendering ─────────────────────────────────────────────
 

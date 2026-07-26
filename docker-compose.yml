@@ -38,7 +38,7 @@ services:
       dockerfile: Dockerfile
     container_name: qna-worker
     restart: unless-stopped
-    command: ["python", "-m", "quant_nanggroe.worker"]
+    command: ["python", "-m", "quant_nanggroe.engine.worker"]
     env_file:
       - path: .env
         required: false

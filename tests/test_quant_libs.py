@@ -1,4 +1,12 @@
-"""Tests for quant library integration wrappers."""
+"""Tests for quant library integration wrappers.
+
+These are graceful-degradation tests — they verify the wrappers return None
+when optional dependencies (vollib, pyql, ffn) are not installed.
+
+TODO: Add functional tests for OptionsPricer, FixedIncomeCalculator,
+PortfolioMetrics when libraries are installed (e.g. mark with
+@pytest.mark.integration and test actual pricing/calculations).
+"""
 
 from quant_nanggroe.data.models.options import OptionsPricer, OptionPrice
 from quant_nanggroe.data.models.fixed_income import FixedIncomeCalculator

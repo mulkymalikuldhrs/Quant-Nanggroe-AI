@@ -1,5 +1,58 @@
 # Quant Nanggroe AI — Changelog
 
+## [2026-07-26] Hedge Fund Deep Audit - 56 Findings Fixed
+
+### Critical (P0) Fixes
+- Fixed phantom positions: position recording now only happens after confirmed fill
+- Fixed fake execution: dict fallback returns `status: rejected` instead of fake fill
+- Fixed `get_balance()` method call in pipeline execution
+- Added weekly loss veto check to EngineRiskManager.can_trade()
+- Unified risk limits: live_engine.py now imports from constants.py instead of using hardcoded values
+- Created `backtest_pipeline.py` for hedge fund gate check
+
+### Strategy & Data Integrity (P1) Fixes
+- Added `synthetic: True/False` flag to distinguish real vs fake kline data
+- Resolved ICT strategy name collision: renamed secondary to `ict_ote`
+- Consolidated Dhaher System duplicates with deprecation marker
+- Re-enabled SSL verification with graceful fallback for ISP blocking
+- Added ATR-based SL/TP to MSNR and MeanReversion strategies
+- Updated SMC strategy SL from fixed-pct to ATR-relative
+- Aligned `config/risk.json` with `engine/risk/constants.py`
+- Extended SMC FVG detection window from 3 to 20 candles
+
+### Infrastructure (P2) Fixes
+- Fixed bare imports in hedge_fund/portfolio/main.py
+- Corrected Docker worker module reference
+- Fixed create_pipeline() invalid kwargs
+- Unified log level env var to QNAI_LOG_LEVEL
+- Updated Dockerfile from Poetry to uv
+- Marked PipelineScheduler as unused with TODO
+
+### Mock/Simulation (P3) Fixes
+- Verified all _MOCK_MODE defaults are False
+- Added TODO markers to stub API routes
+- Documented inline strategy duplication in live_engine.py
+
+### Configuration (P4) Fixes
+- Added deprecation markers to dead configs (freqtrade.json, .env.template)
+- Added security warnings to mt5_accounts.yaml
+- Updated system_config.yaml version to 6.0.0
+- Added TODO comments for hardcoded values requiring config migration
+
+### Documentation (P5) Fixes
+- Updated CLAUDE.md, GEMINI.md, COPILOT.md, CURSOR.md to v6.0.0
+- Updated docs/01_PRD.md and docs/02_ARCHITECTURE.md versions
+- Corrected weekly veto status in docs/19_RISK_REGISTER.md
+- Fixed inflated test count in docs/09_TESTING.md
+- Corrected file count in README.md
+
+### Test Quality (P6) Fixes
+- Fixed async test in test_paper_broker.py
+- Added TODO markers for untested critical paths
+- Added skip decorators for network-dependent tests
+
+---
+
 ## v6.0.0 — Production Readiness Audit + UnifiedPipeline + Monolith Split (2026-07-26)
 
 ### 🏭 UnifiedPipeline Module (New)

@@ -37,7 +37,8 @@ class AIHFBridge:
                 ext = await self._fetch_external(symbol)
                 if ext: signals.extend(ext)
             except Exception as exc: logger.warning("AIHF ext failed: %s", exc)
-        if not signals: signals = self._generate_simulated(symbol)
+        if not signals:
+            raise RuntimeError(f"AIHF bridge: no external signals for {symbol}. Check AIHF path or network connectivity.")
         self._cache[symbol] = (now, signals)
         return signals
 
@@ -50,11 +51,6 @@ class AIHFBridge:
                 return [AIHFSignal(action=AIHFAction(a.get("action","hold")), confidence=float(a.get("confidence",0.5)), agent_name=a.get("name","unknown"), reasoning=a.get("reasoning","")) for a in data.get("agents",[])]
         except Exception as exc: logger.debug("AIHF fetch failed: %s", exc)
         return []
-
-    def _generate_simulated(self, symbol: str) -> list[AIHFSignal]:
-        random.seed(hash(symbol) % (2**32))
-        agents = ["warren_buffett","ray_dalio","peter_lynch","michael_burry","cathie_wood","stanley_druckenmiller","george_soros","paul_tudor_jones","jim_simons","david_einhorn","bill_ackman","carl_icahn","howard_marks","john_paulson","ken_griffin","steve_cohen","charlie_munger","ben_graham","phil_fisher","john_bogle"]
-        return [AIHFSignal(action=AIHFAction.BUY if r<0.35 else (AIHFAction.SELL if r<0.65 else AIHFAction.HOLD), confidence=random.uniform(0.3,0.9), agent_name=a, reasoning="simulated") for a in agents for r in [random.random()]]
 
     def get_stats(self) -> dict[str, Any]:
         return {"hf_path": self._hf_path or "not set", "cached_symbols": list(self._cache.keys()), "cache_ttl": self._cache_ttl}

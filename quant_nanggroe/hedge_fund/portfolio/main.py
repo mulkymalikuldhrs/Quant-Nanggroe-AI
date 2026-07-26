@@ -81,7 +81,7 @@ def run_once(target_symbol=None):
         symbol = target_symbol
         if not symbol:
             try:
-                from multi_pair_scanner import get_valid_pairs
+                from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import get_valid_pairs
                 pairs = get_valid_pairs()
                 if pairs:
                     symbol = pairs[0]
@@ -122,17 +122,6 @@ def run_once(target_symbol=None):
             signal = aggregate(symbol)
             log.info(f"DECISION: {signal['bias']} (conf={signal['confidence']:.2f})")
             if signal["bias"] in ("buy", "sell"):
-                try:
-                    from risk_guard import approve as rg_approve
-                except Exception as e:
-                    log.error(f"Risk guard import FAILED - blocking trade (fail-closed): {e}")
-                    if not _config.PAPER_TRADE:
-                        try:
-                            mt5.shutdown()
-                        except Exception:
-                            pass
-                    return
-
                 acct = mt5.account_info() if (MT5_AVAILABLE and not _config.PAPER_TRADE) else None
                 real_balance = acct.balance if acct else 1000.0
                 real_daily_pnl = 0.0

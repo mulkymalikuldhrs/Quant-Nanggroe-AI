@@ -16,7 +16,6 @@ Usage
     manager = ExchangeManager()
     manager.register("binance", binance_broker, role="primary")
     manager.register("bybit", bybit_broker, role="failover")
-    manager.register("paper", paper_broker, role="failover")
 
     await manager.connect_all()
 

@@ -141,9 +141,6 @@ class AutoDisableManager:
         )
         perf.total_updates += 1
 
-        if self._paper_mode:
-            return True
-
         trailing_sharpe = self._compute_trailing_sharpe(pnl_series)
 
         if perf.disabled:

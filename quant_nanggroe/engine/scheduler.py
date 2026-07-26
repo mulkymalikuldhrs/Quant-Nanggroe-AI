@@ -1,6 +1,11 @@
 """Pipeline Scheduler — runs AutonomousPipeline periodically.
 
-Usage:
+TODO (FIX 22): This module is currently DEAD CODE — never wired into any entry point
+(qna.py, live_engine.py, or daemon). Either:
+  1. Wire into qna.py or live_engine.py to activate periodic pipeline runs, OR
+  2. Remove this file if scheduling is handled elsewhere (e.g. adaptive pipeline).
+
+Usage (if wired):
     from quant_nanggroe.engine.scheduler import PipelineScheduler
 
     scheduler = PipelineScheduler(interval_minutes=15)

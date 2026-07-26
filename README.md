@@ -45,7 +45,7 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/ -v --tb=short
 ## Architecture
 
 ```
-quant_nanggroe/                          (753 .py files, 125K+ lines)
+quant_nanggroe/                          (~694 .py files, 125K+ lines)
 ├── pipeline/                            → UnifiedPipeline — auto mode-routing (hedge/crypto/agentic) 🆕 v6.0.0
 │   ├── orchestrator.py                  → Pipeline orchestration & lifecycle
 │   ├── data.py                          → Data ingestion & normalization
@@ -117,7 +117,7 @@ The canonical strategy pipeline lives in `quant_nanggroe/engine/strategies/` wit
 | Choppiness Index | `choppiness_index.py` | Trend vs. ranging market |
 | +32 more .py files (signal adapters, wrappers, legacy bridges) | | |
 
-**Total: 9 registered strategies + 35+ additional .py files** including signal adapters, wrappers, and experimental modules.
+**Total: 9 registered strategies + 35+ additional .py files** including signal adapters, wrappers, and experimental modules. (Note: exact count of .py files depends on whether legacy archived strategies in `archive/` are included — ~45+ in canonical path, ~139 legacy frozen.)
 
 **Legacy path** `quant_nanggroe/engine/strategy/strategies/` is a backward-compat shim only (empty directory with re-export `__init__.py`).
 
@@ -159,6 +159,13 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 - 18 route pages: trading, risk, portfolio, backtest, agents, brokers, strategies, etc.
 - Next.js API proxy rewrite for same-origin requests
 - Glassmorphism design system (Apple macOS Liquid Glass × Bloomberg Terminal)
+
+---
+
+## Audit Status
+- **Last Full Audit:** 2026-07-26
+- **Findings:** 56 (6 P0, 9 P1, 8 P2, 10+ P3, 12 P4, 8 P5, 7 P6)
+- **Status:** All findings addressed. See CHANGELOG.md for details.
 
 ---
 

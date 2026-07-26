@@ -35,6 +35,7 @@ from quant_nanggroe.providers.data_manager import DataManager
 from quant_nanggroe.notifier import send_telegram, format_heartbeat, format_error_message
 from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline, LiveSignal
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, configure_kill_switch_file
+from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN_PCT, MAX_POSITION_SIZE_PCT  # P0 FIX: single source of truth
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +47,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("QNA-Live")
 
+# TODO: Asset allocations should come from config, not hardcoded here
 ASSETS = [
     {"symbol": "BTCUSDT",    "coin_gecko_id": "bitcoin",      "allocation": 0.25},
     {"symbol": "ETHUSDT",    "coin_gecko_id": "ethereum",     "allocation": 0.18},
@@ -60,6 +62,7 @@ ASSET_CG_MAP = {a["symbol"]: a["coin_gecko_id"] for a in ASSETS}
 ASSET_SYMBOLS = [a["symbol"] for a in ASSETS]
 CG_IDS = ",".join(a["coin_gecko_id"] for a in ASSETS)
 
+# TODO: TP targets should come from config, not hardcoded here
 TP_TARGETS = {
     "SMC": 0.05,
     "Momentum": 0.08,
@@ -67,10 +70,11 @@ TP_TARGETS = {
     "Grid": 0.03,
     "TrendStrength": 0.06,
 }
+# TODO: Risk limits should use constants.py, not hardcoded values here
 TRAILING_STOP_PCT = 0.03
 REBALANCE_THRESHOLD = 0.05
-MAX_DRAWDOWN = 0.15
-MAX_POSITION_PCT = 0.25
+MAX_DRAWDOWN = MAX_DRAWDOWN_PCT  # P0 FIX: was 0.15 (15%), constants says 0.10 (10%)
+MAX_POSITION_PCT = MAX_POSITION_SIZE_PCT  # P0 FIX: was 0.25 (25%), constants says 0.10 (10%)
 MAX_POSITIONS_TOTAL = 3
 HEARTBEAT_INTERVAL = 10
 CLEANUP_INTERVAL = 10
@@ -148,6 +152,7 @@ def init_db():
             portfolio_value REAL
         )
     """)
+    # TODO: Starting capital should come from config, not hardcoded
     db.execute("INSERT OR IGNORE INTO portfolio VALUES ('balance', 10000.0)")
     db.execute("INSERT OR IGNORE INTO portfolio VALUES ('peak', 10000.0)")
     db.execute("INSERT OR IGNORE INTO portfolio VALUES ('total_trades', 0)")
@@ -167,6 +172,13 @@ def init_db():
 BinanceConnector = EnginePriceProvider  # backward compat alias for auto_aware
 
 # ─── Strategies ────────────────────────────────────────────────────
+# FIXME (FIX 29): The 5 inline strategy classes below (SMCStrategy,
+# MomentumStrategy, MeanReversionStrategy, GridTradingStrategy,
+# TrendStrengthStrategy) are FALLBACK/LEGACY implementations.
+# Canonical implementations live in quant_nanggroe/engine/strategies/.
+# These are only used when the adaptive pipeline has no signals for a
+# symbol (see _execute_signals fallback branch). Do NOT add new logic
+# here — extend engine/strategies/ instead.
 
 class Strategy:
     def __init__(self, name: str, params: Dict = None):
@@ -645,6 +657,7 @@ class LiveEngine:
         tp_target = TP_TARGETS.get(strategy, 0.05)
         tp_price = price * (1 + tp_target)
         # Phase A: push real order through wired execution manager (MT5 or paper)
+        # P0 FIX: only record position AFTER confirming fill — no phantom positions on failure
         try:
             result = self._exec.execute_signal(
                 type("Sig", (), {"symbol": symbol, "side": "buy", "strategy": strategy,
@@ -652,17 +665,31 @@ class LiveEngine:
                                  "take_profit": tp_price})(),
                 price, self.risk.get_balance())
             mode = (result or {}).get("mode", "unknown")
+            status = (result or {}).get("status", "")
+            # Reject if backend explicitly rejected the order or returned no fill
+            if status in ("rejected", "failed") or (result or {}).get("fill_id") is False:
+                log.error(f"ORDER REJECTED {symbol} ({strategy}): {result}")
+                return
             log.info(f"ORDER SENT {symbol} {qty:.4f} @ {price:.2f} ({strategy}) -> {mode}")
+            # Ledger insert only after confirmed fill (audit trail)
+            self.db.execute(
+                "INSERT INTO positions (symbol, side, entry_price, quantity, entry_time, "
+                "highest_since_entry, strategy, take_profit) VALUES (?,?,?,?,?,?,?,?)",
+                (symbol, "long", price, qty, now, price, strategy, tp_price)
+            )
+            self.db.commit()
+            log.info(f"BUY {symbol} {qty:.4f} @ {price:.2f} ({strategy})")
         except Exception as e:
             log.error(f"Live order failed {symbol}: {e}")
-        # Ledger insert (audit trail, always kept in sync)
-        self.db.execute(
-            "INSERT INTO positions (symbol, side, entry_price, quantity, entry_time, "
-            "highest_since_entry, strategy, take_profit) VALUES (?,?,?,?,?,?,?,?)",
-            (symbol, "long", price, qty, now, price, strategy, tp_price)
-        )
-        self.db.commit()
-        log.info(f"BUY {symbol} {qty:.4f} @ {price:.2f} ({strategy})")
+            return  # P0 FIX: do NOT record position on exception
+        # Register position with ThesisDriftGuard for macro thesis monitoring
+        try:
+            event_type = os.environ.get("QNA_MACRO_EVENT", "UNKNOWN")
+            self.production["risk"].thesis_register_position(
+                symbol, "long", event_type=event_type, entry_price=price,
+            )
+        except Exception as e:
+            log.debug("Thesis register: %s", e)
 
     def _close_position(self, pos: dict, price: float, reason: str = "signal"):
         remaining = pos["quantity"] - pos["exited_qty"]
@@ -671,17 +698,23 @@ class LiveEngine:
         pnl = (price - pos["entry_price"]) * remaining
         balance = self.risk.get_balance()
         new_balance = balance + pnl
-        # Phase A: send real close order through wired broker (MT5 or paper)
+        # Phase A: send real close order through wired execution manager (MT5, paper, or engine)
         try:
-            mt5 = getattr(self._exec, "_mt5", None) if hasattr(self, "_exec") else None
-            if mt5 is not None and mt5.connected:
-                from quant_nanggroe.connectors.broker_base import Order
-                mt5.place_order(Order(
-                    symbol=pos["symbol"], side="sell", quantity=remaining,
-                    order_type="market", price=price))
-                log.info(f"MT5 CLOSE SENT {pos['symbol']} {remaining}")
+            close_signal = type("Sig", (), {
+                "symbol": pos["symbol"], "side": "sell", "strategy": pos.get("strategy", ""),
+                "stop_loss": None, "take_profit": None,
+            })()
+            result = self._exec.execute_signal(close_signal, price, balance)
+            mode = (result or {}).get("mode", "unknown")
+            log.info(f"CLOSE ORDER SENT {pos['symbol']} {remaining:.4f} @ {price:.2f} -> {mode}")
         except Exception as e:
             log.error(f"Live close failed {pos['symbol']}: {e}")
+            # record lesson — import here to avoid circular or missing import
+            try:
+                from quant_nanggroe.engine_production_bridge import _record_lesson
+                _record_lesson(e, f"close_position {pos['symbol']}")
+            except Exception:
+                pass
         self.db.execute("UPDATE portfolio SET value=? WHERE key='balance'", (new_balance,))
         self.db.execute("UPDATE portfolio SET value=value+1 WHERE key='total_trades'")
         if pnl > 0:
@@ -699,6 +732,11 @@ class LiveEngine:
         self.db.execute("UPDATE positions SET status='closed' WHERE id=?", (pos["id"],))
         self.db.commit()
         self.perf.record_trade_result(pos["strategy"], total_pnl)
+        # Unregister from thesis drift guard
+        try:
+            self.production["risk"].thesis_unregister(pos["symbol"])
+        except Exception as e:
+            log.debug("Thesis unregister: %s", e)
         log.info(f"SELL {pos['symbol']} @ {price:.2f} | PnL: ${pnl:.2f} | Reason: {reason} | "
                  f"Balance: ${new_balance:.2f}")
 
@@ -917,6 +955,40 @@ class LiveEngine:
         if self.production["risk"].is_kill_switch_triggered():
             log.critical("KILL SWITCH ACTIVE — halting all trading")
             return
+
+        # ── Thesis Drift Guard: check macro context against active positions ──
+        if self.cycle_count % 3 == 0:  # check every 3 cycles
+            try:
+                macro_event = os.environ.get("QNA_MACRO_EVENT", "")
+                weather = os.environ.get("QNA_MACRO_WEATHER", "NEUTRAL_MIXED")
+                cot_signal = os.environ.get("QNA_COT_SIGNAL", "BALANCED")
+                smt = os.environ.get("QNA_SMT_DIVERGENCE", "false").lower() == "true"
+                self._thesis_result = self.production["risk"].thesis_check(
+                    event_type=macro_event or "UNKNOWN",
+                    weather=weather,
+                    cot_signal=cot_signal,
+                    smt_divergence=smt,
+                )
+                if self._thesis_result.get("has_hard_exit"):
+                    log.critical(
+                        "THESIS DRIFT HARD EXIT triggered — closing invalidated positions"
+                    )
+                    for sym, pos_data in self._thesis_result.get("positions", {}).items():
+                        if pos_data.get("stage") == "HARD_EXIT":
+                            live_pos = self._get_open_position(sym)
+                            if live_pos:
+                                price = self.prices.get(sym, 0)
+                                if price > 0:
+                                    log.warning(
+                                        "THESIS HARD EXIT: closing %s at %.2f (%s)",
+                                        sym, price, pos_data.get("latest_contradictions", []),
+                                    )
+                                    self._close_position(
+                                        live_pos, price,
+                                        f"thesis_hard_exit_{macro_event}",
+                                    )
+            except Exception as e:
+                log.debug("Thesis drift check: %s", e)
         
         self.prices = self.data.get_all_prices()
         if not self.prices:

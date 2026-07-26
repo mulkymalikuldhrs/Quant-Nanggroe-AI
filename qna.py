@@ -53,7 +53,7 @@ PID_DIR = Path("data/daemons")
 PID_FILE = PID_DIR / "qna_daemon.pid"
 
 # ── Logging ─────────────────────────────────────────────────────────
-LOG_LEVEL = os.environ.get("QNA_LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = os.environ.get("QNAI_LOG_LEVEL", os.environ.get("QNA_LOG_LEVEL", "INFO")).upper()
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -501,7 +501,24 @@ def _import_quant_nanggroe() -> bool:
 # ══════════════════════════════════════════════════════════════════════
 
 def run_hedge(args: argparse.Namespace) -> int:
-    """Run the multi-provider hedge fund aggregator."""
+    """Run the multi-provider hedge fund aggregator.
+
+    Reads causal macro context from env vars (set by unified mode's pre-filter):
+      - QNA_CAUSAL_BIAS_{ASSET}: Directional bias (-1.0 to +1.0) per CME futures symbol
+        e.g. QNA_CAUSAL_BIAS_GC1! = +0.72 (Gold bias)
+      - QNA_MACRO_WEATHER: Risk-On / Risk-Off / NEUTRAL_MIXED
+      - QNA_COT_STATUS: EXTREME_LONG_OVERBOUGHT / EXTREME_SHORT_OVERSOLD / BALANCED
+
+    Also reads DCC-GARCH dynamic correlation context:
+      - QNA_DCC_MEAN_CORR: Mean DCC correlation across assets
+      - QNA_DCC_MEAN_VOL_PCT: Mean GARCH volatility %%
+      - QNA_DCC_N_ASSETS: Number of assets in the correlation model
+
+    Signal providers and strategy selectors should read these to filter
+    signals by macro context. Example:
+      bias_gc = float(os.environ.get("QNA_CAUSAL_BIAS_GC1!", "0"))
+      if bias_gc < 0.3 and signal == "BUY" on XAUUSD: skip
+    """
     print(BANNER)
     symbols = args.symbols or ["EURUSD"]
     print(f"🛡️  Hedge Fund Aggregator — symbols: {', '.join(symbols)}")
@@ -510,6 +527,40 @@ def run_hedge(args: argparse.Namespace) -> int:
         import os
         os.environ["PAPER_TRADE"] = "true"
     print()
+
+    # Log macro context if available from causal pre-filter
+    weather = os.environ.get("QNA_MACRO_WEATHER", "")
+    cot = os.environ.get("QNA_COT_STATUS", "")
+    biases = {k: v for k, v in os.environ.items() if k.startswith("QNA_CAUSAL_BIAS_")}
+    if weather or cot or biases:
+        logger.info(
+            "Macro context active: weather=%s cot=%s biases=%d assets",
+            weather, cot, len(biases),
+        )
+
+    # Log DCC-GARCH dynamic correlation context if available
+    dcc_mean_corr = os.environ.get("QNA_DCC_MEAN_CORR", "")
+    dcc_mean_vol = os.environ.get("QNA_DCC_MEAN_VOL_PCT", "")
+    if dcc_mean_corr:
+        logger.info(
+            "DCC-GARCH context: mean_corr=%s mean_vol=%s%%",
+            dcc_mean_corr, dcc_mean_vol or "?",
+        )
+
+    # Log COT institutional positioning context if available
+    cot_signal = os.environ.get("QNA_COT_SIGNAL", "")
+    cot_symbol = os.environ.get("QNA_COT_SYMBOL", "")
+    if cot_signal:
+        logger.info(
+            "COT context: %s=%s (grade=%s, action=%s)",
+            cot_symbol or "?",
+            cot_signal,
+            os.environ.get("QNA_COT_GRADE", "?"),
+            os.environ.get("QNA_COT_ACTION", "?"),
+        )
+
+    # Thesis Drift Guard runs intra-engine in LiveEngine.execute_cycle()
+    # and is not exposed via env vars (engine-internal concern).
 
     # Try the new pipeline module first
     try:
@@ -594,7 +645,7 @@ def run_unified(args: argparse.Namespace) -> int:
         print("  Agentic mode: running agent orchestration pipeline...")
         try:
             from quant_nanggroe.pipeline.factory import create_pipeline
-            pipeline = create_pipeline(config={"mode": "agentic"})
+            pipeline = create_pipeline()
             import asyncio
             result = asyncio.run(pipeline.run())
             print(f"  ✅ Pipeline complete: {result}")
@@ -610,7 +661,7 @@ def run_unified(args: argparse.Namespace) -> int:
         print("  Crypto mode: running crypto pipeline...")
         try:
             from quant_nanggroe.pipeline.factory import create_pipeline
-            pipeline = create_pipeline(config={"mode": "crypto"})
+            pipeline = create_pipeline()
             import asyncio
             result = asyncio.run(pipeline.run())
             print(f"  ✅ Pipeline complete: {result}")
@@ -626,6 +677,64 @@ def run_unified(args: argparse.Namespace) -> int:
 
     if mode == "hedge":
         print("  Hedge mode: delegating to run_hedge...")
+        # Run causal macro pre-filter before hedge execution
+        macro_event = os.environ.get("QNA_MACRO_EVENT", "")
+        if macro_event:
+            try:
+                from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
+                causal = MasterQuantNanggroeEngine()
+                dxy = float(os.environ.get("QNA_DXY_CHANGE", "0"))
+                bond = float(os.environ.get("QNA_BOND_CHANGE", "0"))
+                # Phase 1-2: Macro context only (weather, biases, COT)
+                # SMC alignment (Phase 3-4) requires a trade signal, which
+                # doesn't exist yet at this pipeline stage. The macro context
+                # is exposed via env for downstream signal generation to use.
+                pre_filter = causal.evaluate_full_pipeline(
+                    event_type=macro_event,
+                    geopolitical_risk_delta=float(os.environ.get("QNA_GEOPOLITICAL_RISK", "0")),
+                    dxy_change=dxy,
+                    bond_change=bond,
+                    smc_signal="HOLD",  # no signal yet — macro context only
+                )
+                logger.info("Causal macro context: %s", pre_filter["summary"])
+                # Expose macro context to downstream via env vars
+                for asset, bias in pre_filter.get("phase1_causal", {}).get("asset_biases", {}).items():
+                    os.environ[f"QNA_CAUSAL_BIAS_{asset}"] = str(bias)
+                weather = pre_filter.get("phase2_weather", {}).get("classification", "UNKNOWN")
+                os.environ["QNA_MACRO_WEATHER"] = weather
+                cot = pre_filter.get("phase2_cot", {}).get("status", "UNKNOWN")
+                os.environ["QNA_COT_STATUS"] = cot
+                # Expose DCC-GARCH dynamic correlation context
+                dcc = pre_filter.get("phase2_dcc", {})
+                if dcc.get("mean_corr") is not None:
+                    os.environ["QNA_DCC_MEAN_CORR"] = str(dcc["mean_corr"])
+                    os.environ["QNA_DCC_MEAN_VOL_PCT"] = str(dcc.get("mean_vol_pct", ""))
+                    os.environ["QNA_DCC_N_ASSETS"] = str(dcc.get("n_assets", 0))
+                # Expose detailed COT signal from phase2_cot (if available from COTAnalyzer)
+                cot_detail = pre_filter.get("phase2_cot", {})
+                cot_status = cot_detail.get("status", "UNKNOWN")
+                os.environ["QNA_COT_STATUS"] = cot_status
+                if cot_detail.get("analyzer_used"):
+                    os.environ["QNA_COT_SYMBOL"] = str(cot_detail.get("symbol", ""))
+                    os.environ["QNA_COT_SIGNAL"] = cot_status
+                    os.environ["QNA_COT_GRADE"] = str(cot_detail.get("grade", ""))
+                    os.environ["QNA_COT_ACTION"] = str(cot_detail.get("action", ""))
+                    pct = cot_detail.get("percentile_noncomm")
+                    if pct is not None:
+                        os.environ["QNA_COT_PERCENTILE"] = str(pct)
+
+                if pre_filter.get("phase2_smt", {}).get("smt_divergence_detected"):
+                    logger.warning("SMT divergence detected between correlated pairs — review positions")
+                logger.info(
+                    "Macro context: weather=%s cot=%s biases=%s",
+                    weather, cot,
+                    {k: round(float(v), 2) for k, v in os.environ.items()
+                     if k.startswith("QNA_CAUSAL_BIAS_")},
+                )
+            except Exception as e:
+                logger.debug("Causal pre-filter unavailable: %s", e)
+        else:
+            logger.info("No macro event set. Set QNA_MACRO_EVENT to enable causal macro context.")
         return run_hedge(args)
 
     # mode == "auto" (default)

@@ -1,9 +1,14 @@
 import unittest, os, sys
+import pytest
 # Ensure repository root is on the import path
 repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(repo_root)
 from quant_nanggroe.engine_bridge import EnginePriceProvider
 
+@pytest.mark.skipif(
+    not os.environ.get("QNA_TEST_LIVE_NETWORK"),
+    reason="Skipped: requires live network (set QNA_TEST_LIVE_NETWORK=1 to enable)"
+)
 class TestEnginePriceProvider(unittest.TestCase):
     def setUp(self):
         # Use short cache TTL for test speed

@@ -1,4 +1,4 @@
-# Cursor IDE Instructions — Quant Nanggroe AI v5.1.0
+# Cursor IDE Instructions — Quant Nanggroe AI v6.0.0
 
 ## Entry Point
 Single entry: `python qna.py [cli|api|daemon|web|status|stop]`

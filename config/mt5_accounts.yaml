@@ -1,12 +1,9 @@
-# MT5 Account Configuration
-# 1. Set VALETAX_PASSWORD as environment variable (recommended)
-# 2. Or replace ${VALETAX_PASSWORD} with your actual password
-# 3. To find your server: open MT5 → File → Login → copy "Server" field
+# WARNING: Contains live account credentials. Ensure this file is in .gitignore.
+# MT5 Account Configuration — PRODUCTION
 accounts:
-  - name: "MT5 Demo"
+  - name: "MT5 Live"
     broker: mt5
-    login: 372044706        # Your MT5 demo login
-    server: "ValetaxIntl-Live2"  # Your MT5 server (hyphen, not underscore)
-    password: "${VALETAX_PASSWORD}"  # Set VALETAX_PASSWORD env var
-    paper: true  # true = demo/paper mode (false = real money live trading)
-
+    login: 372044706
+    server: "ValetaxIntl-Live2"
+    password: "${VALETAX_PASSWORD}"
+    paper: false

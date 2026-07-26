@@ -23,18 +23,24 @@ router = APIRouter()
 
 @router.get("/sentiment")
 async def get_market_sentiment() -> dict[str, Any]:
-    """Get overall market sentiment indicator (stub — not wired to real engine)."""
+    """Get overall market sentiment from Fear & Greed + macro weather."""
+    try:
+        import requests
+        fg_resp = requests.get("https://api.alternative.me/fng/?limit=1", timeout=5)
+        fg_data = fg_resp.json()
+        fgi = int(fg_data["data"][0]["value"])
+    except Exception:
+        fgi = None
+
+    from quant_nanggroe.engine.causal.weather_matrix import MacroWeatherEngine
+    weather = MacroWeatherEngine()
+    weather_regime = weather.to_dict().get("current_regime", "UNKNOWN")
+
     return {
-        "overall": "neutral",
-        "fear_greed_index": 52,
-        "signals": {
-            "technical": "bullish",
-            "on_chain": "neutral",
-            "news": "bearish",
-        },
-        "status": "not_implemented",
-        "_stub": True,
-        "message": "Market sentiment not wired to real data source",
+        "overall": "bullish" if fgi and fgi > 60 else "bearish" if fgi and fgi < 40 else "neutral",
+        "fear_greed_index": fgi,
+        "macro_weather": weather_regime,
+        "status": "ok",
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -175,7 +181,7 @@ async def detect_regime(request: MarketRegimeRequest) -> MarketRegimeResponse:
 
 @router.get("/pressure/{symbol}")
 async def get_pressure(symbol: str) -> dict[str, Any]:
-    """Get current pressure analysis for a symbol (stub — not wired to real engine)."""
+    """FIXME: Stub — not wired to real engine. Replace with real order flow / CVD analysis."""
     return {
         "symbol": symbol,
         "buy_pressure": 0.55,

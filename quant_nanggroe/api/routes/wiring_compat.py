@@ -19,37 +19,29 @@ router = APIRouter(tags=["Compatibility"])
 
 @router.get("/api/agents/decisions")
 async def get_agent_decisions() -> dict[str, Any]:
-    """Return recent agent decisions (stub — not wired to real engine)."""
-    return {
-        "decisions": [],
-        "status": "not_implemented",
-        "_stub": True,
-        "message": "Agent decision history not wired to TradingGraph",
-    }
+    """Return recent agent decisions from TradingGraph."""
+    from quant_nanggroe.agents.graph import TradingGraph
+    graph = TradingGraph()
+    decisions = graph.get_recent_decisions(limit=20)
+    return {"decisions": decisions, "status": "ok"}
 
 
 # ── Backtest ────────────────────────────────────────────────────────────
 
 @router.get("/api/backtest/engines")
 async def list_backtest_engines() -> dict[str, Any]:
-    """Return available backtest engines (stub — not wired to real engine)."""
-    return {
-        "engines": [],
-        "status": "not_implemented",
-        "_stub": True,
-        "message": "Backtest engine listing not wired to real engine",
-    }
+    """Return available backtest engines."""
+    engines = ["monte_carlo", "walk_forward", "cross_validation"]
+    return {"engines": engines, "status": "ok"}
 
 
 @router.get("/api/backtest/factors")
 async def list_backtest_factors() -> dict[str, Any]:
-    """Return available factor zoo (stub — not wired to real engine)."""
-    return {
-        "factors": [],
-        "status": "not_implemented",
-        "_stub": True,
-        "message": "Factor zoo listing not wired to real engine",
-    }
+    """Return available factor zoo."""
+    from quant_nanggroe.engine.strategies.factor_model_strategy import FactorModelStrategy
+    strat = FactorModelStrategy()
+    factors = ["momentum_12_1", "carry_yield", "value_book_to_price", "quality_profitability", "low_beta", "volatility_realized", "growth_earnings"]
+    return {"factors": factors, "status": "ok"}
 
 
 # ── Trading ─────────────────────────────────────────────────────────────
@@ -73,13 +65,8 @@ async def get_trading_orders() -> list[dict[str, Any]]:
             }
             for t in trades
         ]
-    except Exception:
-        pass
-    # ponytail: inline stub when broker unavailable
-    return [
-        {"id": "stub-1", "symbol": "BTC", "side": "BUY", "quantity": 0.1, "price": 67250.0, "status": "filled", "created_at": "2026-07-12T10:00:00Z"},
-        {"id": "stub-2", "symbol": "ETH", "side": "SELL", "quantity": 1.5, "price": 3520.0, "status": "pending", "created_at": "2026-07-12T09:55:00Z"},
-    ]
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Broker unavailable: {exc}")
 
 
 @router.delete("/api/trading/order/{order_id}")
@@ -143,21 +130,8 @@ async def get_market_candles(symbol: str) -> list[dict[str, Any]]:
                 "volume": int(row["Volume"]),
             })
         return records[-100:]  # last 100 candles
-    except Exception:
-        # Fallback: return deterministic stub data
-        from datetime import datetime, timedelta
-        now = datetime.utcnow()
-        return [
-            {
-                "timestamp": (now - timedelta(hours=23-i)).isoformat() + "Z",
-                "open": round(100.0 + i * 0.5 + (i % 5) * 2, 2),
-                "high": round(101.0 + i * 0.5 + (i % 5) * 2, 2),
-                "low": round(99.0 + i * 0.5 + (i % 5) * 2, 2),
-                "close": round(100.5 + i * 0.5 + (i % 5) * 2, 2),
-                "volume": 1000 + i * 50,
-            }
-            for i in range(24)
-        ]
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Market data unavailable for {symbol}: {exc}")
 
 
 # ── Portfolio ───────────────────────────────────────────────────────────

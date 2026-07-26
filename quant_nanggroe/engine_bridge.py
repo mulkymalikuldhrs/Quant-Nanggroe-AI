@@ -238,17 +238,26 @@ class EnginePriceProvider:
                 time.sleep(sleep)
 
     def _request(self, url: str, timeout: int = 15) -> Optional[dict]:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
         for attempt in range(3):
             try:
+                ctx = ssl.create_default_context()
                 req = urllib.request.Request(url)
                 req.add_header("User-Agent", "QNA/2.0")
                 with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
                     return json.loads(resp.read())
             except Exception as e:
-                log.debug(f"HTTP attempt {attempt+1}/3 fail: {e}")
+                log.debug(f"HTTP attempt {attempt+1}/3 (ssl=on) fail: {e}")
+                try:
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                    req = urllib.request.Request(url)
+                    req.add_header("User-Agent", "QNA/2.0")
+                    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+                        log.warning(f"SSL bypass fallback used for {url}")
+                        return json.loads(resp.read())
+                except Exception as e2:
+                    log.debug(f"HTTP attempt {attempt+1}/3 (ssl=off) fail: {e2}")
                 if attempt < 2:
                     time.sleep(1 * (2 ** attempt))
         return None
@@ -329,6 +338,7 @@ class EnginePriceProvider:
                         "low": float(entry[3]),
                         "close": float(entry[4]),
                         "volume": 0.0,
+                        "synthetic": False,
                     })
             candles = candles[-limit:]
             if self._cache:
@@ -349,6 +359,7 @@ class EnginePriceProvider:
                     "timestamp": int(r[0]),
                     "open": float(r[1]), "high": float(r[2]),
                     "low": float(r[3]), "close": float(r[4]), "volume": float(r[5]),
+                    "synthetic": False,
                 } for r in raw]
         return []
 
@@ -364,6 +375,7 @@ class EnginePriceProvider:
             candles.append({
                 "timestamp": ts, "open": base, "high": base * 1.0005,
                 "low": base * 0.9995, "close": base, "volume": random.uniform(1, 20),
+                "synthetic": True,
             })
         return candles
 
@@ -508,6 +520,17 @@ class EngineRiskManager:
         open_count = self.get_open_position_count()
         if open_count >= MAX_POSITIONS_TOTAL:
             return False, f"Max positions ({MAX_POSITIONS_TOTAL}) reached"
+        # P0 FIX: weekly loss veto — was completely missing, could blow past 3% weekly limit
+        balance = self.get_balance()
+        if balance > 0 and self._weekly_pnl < 0:
+            weekly_loss_pct = abs(self._weekly_pnl) / balance
+            if weekly_loss_pct >= self.MAX_WEEKLY_LOSS:
+                return False, f"Weekly loss {weekly_loss_pct:.1%} exceeds {self.MAX_WEEKLY_LOSS:.1%}"
+        # P0 FIX: daily loss veto using real tracked PnL
+        if balance > 0 and self._daily_pnl < 0:
+            daily_loss_pct = abs(self._daily_pnl) / balance
+            if daily_loss_pct >= self.MAX_DAILY_LOSS:
+                return False, f"Daily loss {daily_loss_pct:.1%} exceeds {self.MAX_DAILY_LOSS:.1%}"
         return True, "ok"
 
     def position_size(self, price: float, kelly: float = 1.0) -> float:
@@ -536,6 +559,16 @@ class EngineRiskManager:
         open_count = self.get_open_position_count()
         if open_count >= MAX_POSITIONS_TOTAL:
             return {**result, "verdict": "VETOED", "reason": f"Max positions ({MAX_POSITIONS_TOTAL})"}
+        # P0 FIX: weekly loss veto in check_trade (mirrors can_trade)
+        balance = self.get_balance()
+        if balance > 0 and self._weekly_pnl < 0:
+            weekly_loss_pct = abs(self._weekly_pnl) / balance
+            if weekly_loss_pct >= self.MAX_WEEKLY_LOSS:
+                return {**result, "verdict": "VETOED", "reason": f"Weekly loss {weekly_loss_pct:.1%}"}
+        if balance > 0 and self._daily_pnl < 0:
+            daily_loss_pct = abs(self._daily_pnl) / balance
+            if daily_loss_pct >= self.MAX_DAILY_LOSS:
+                return {**result, "verdict": "VETOED", "reason": f"Daily loss {daily_loss_pct:.1%}"}
         return result
 
     @property

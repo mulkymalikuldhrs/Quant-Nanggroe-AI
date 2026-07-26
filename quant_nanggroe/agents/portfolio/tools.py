@@ -27,10 +27,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# ── Mock mode flag ─────────────────────────────────────────────────────
-_MOCK_MODE = False
-
-
 # ── Lazy imports for real engine components ─────────────────────────────
 def _get_risk_parity_optimizer():
     """Lazy-load RiskParityOptimizer from engine."""
@@ -68,7 +64,6 @@ def optimize_portfolio(
 
     PRODUCTION: Uses RiskParityOptimizer for real risk parity allocation
     and MarketDataTool for real volatility estimation.
-    Falls back to mock data only in _MOCK_MODE.
 
     Args:
         symbols: List of symbols to include
@@ -79,83 +74,21 @@ def optimize_portfolio(
     Returns:
         JSON string with optimized allocation
     """
-    if not _MOCK_MODE:
-        # PRODUCTION: Wired to real engine — try RiskParityOptimizer
-        optimizer = _get_risk_parity_optimizer()
-        mdt = _get_market_data_tool()
+    # PRODUCTION: Wired to real engine — try RiskParityOptimizer
+    optimizer = _get_risk_parity_optimizer()
+    mdt = _get_market_data_tool()
 
-        if optimizer is not None and method == "risk_parity":
-            try:
-                import asyncio
+    if optimizer is not None and method == "risk_parity":
+        try:
+            import asyncio
 
-                import numpy as np
+            import numpy as np
 
-                # Fetch real price data for volatility estimation
-                returns_data = {}
-                if mdt is not None:
-                    loop = asyncio.get_event_loop()
-                    if not loop.is_running():
-                        for sym in symbols:
-                            try:
-                                ohlcv = loop.run_until_complete(
-                                    mdt.get_ohlcv(sym, "1d", limit=60)
-                                )
-                                closes = [c["close"] for c in ohlcv.get("candles", [])]
-                                if len(closes) > 1:
-                                    rets = np.diff(closes) / closes[:-1]
-                                    returns_data[sym] = rets
-                            except Exception as exc:
-                                logger.debug("Failed to fetch data for %s: %s", sym, exc)
-
-                if returns_data:
-                    # Build returns matrix
-                    min_len = min(len(v) for v in returns_data.values())
-                    returns_matrix = np.column_stack([
-                        v[-min_len:] for v in returns_data.values()
-                    ])
-                    valid_symbols = list(returns_data.keys())
-
-                    result = optimizer.optimize(returns_matrix, valid_symbols)
-
-                    allocation = {}
-                    for sym, weight in result.weights.items():
-                        allocation[sym] = round(weight * 100, 2)
-
-                    # Add missing symbols with 0 allocation
-                    for sym in symbols:
-                        if sym not in allocation:
-                            allocation[sym] = 0.0
-
-                    return json.dumps({  # PRODUCTION: Wired to real engine
-                        "method": method,
-                        "allocation": allocation,
-                        "expected_return": round(result.expected_return, 4),
-                        "expected_volatility": round(result.portfolio_volatility, 4),
-                        "sharpe_ratio": round(result.sharpe_ratio, 4),
-                        "risk_free_rate": risk_free_rate,
-                        "number_of_positions": len(valid_symbols),
-                        "diversification_score": round(1.0 - max(result.risk_contributions.values()), 4) if result.risk_contributions else 0.75,
-                        "convergence": result.convergence,
-                        "timestamp": datetime.now().isoformat(),
-                        "_source": "RiskParityOptimizer",
-                    }, indent=2)
-            except Exception as exc:
-                logger.error("RiskParityOptimizer failed: %s", exc)
-                raise RuntimeError(
-                    f"Failed to optimize portfolio: {exc}. "
-                    "Set _MOCK_MODE=True for mock fallback."
-                ) from exc
-
-        # Fallback: simple inverse-volatility weighting with real data
-        if mdt is not None:
-            try:
-                import asyncio
-
-                import numpy as np
-
+            # Fetch real price data for volatility estimation
+            returns_data = {}
+            if mdt is not None:
                 loop = asyncio.get_event_loop()
                 if not loop.is_running():
-                    vols = {}
                     for sym in symbols:
                         try:
                             ohlcv = loop.run_until_complete(
@@ -164,61 +97,100 @@ def optimize_portfolio(
                             closes = [c["close"] for c in ohlcv.get("candles", [])]
                             if len(closes) > 1:
                                 rets = np.diff(closes) / closes[:-1]
-                                vols[sym] = float(np.std(rets)) * np.sqrt(252)
-                        except Exception:
-                            pass
+                                returns_data[sym] = rets
+                        except Exception as exc:
+                            logger.debug("Failed to fetch data for %s: %s", sym, exc)
 
-                    if vols:
-                        # Inverse volatility weighting
-                        inv_vols = {s: 1.0 / v for s, v in vols.items()}
-                        total = sum(inv_vols.values())
-                        allocation = {s: round(v / total * 100, 2) for s, v in inv_vols.items()}
-                        # Add missing symbols
-                        for sym in symbols:
-                            if sym not in allocation:
-                                allocation[sym] = 0.0
+            if returns_data:
+                # Build returns matrix
+                min_len = min(len(v) for v in returns_data.values())
+                returns_matrix = np.column_stack([
+                    v[-min_len:] for v in returns_data.values()
+                ])
+                valid_symbols = list(returns_data.keys())
 
-                        avg_vol = sum(vols.values()) / len(vols)
-                        return json.dumps({  # PRODUCTION: Wired to real engine
-                            "method": method,
-                            "allocation": allocation,
-                            "expected_volatility": round(avg_vol, 4),
-                            "sharpe_ratio": round((expected_returns or {}).get(symbols[0], 0.08) / avg_vol, 4) if avg_vol > 0 and symbols else 0.0,
-                            "risk_free_rate": risk_free_rate,
-                            "number_of_positions": len(vols),
-                            "diversification_score": round(1.0 / len(vols), 4),
-                            "timestamp": datetime.now().isoformat(),
-                            "_source": "InverseVolatility_MarketDataTool",
-                        }, indent=2)
-            except Exception as exc:
-                logger.error("Inverse volatility calculation failed: %s", exc)
-                raise RuntimeError(
-                    f"Failed to optimize portfolio: {exc}. "
-                    "Set _MOCK_MODE=True for mock fallback."
-                ) from exc
+                result = optimizer.optimize(returns_matrix, valid_symbols)
 
-    # Mock fallback
-    if _MOCK_MODE:
-        logger.warning("MOCK MODE: Returning hardcoded portfolio allocation")
-        n = len(symbols)
-        equal_weight = 1.0 / n if n > 0 else 0.0
-        allocation = {sym: round(equal_weight * 100, 2) for sym in symbols}
-        return json.dumps({
-            "method": method,
-            "allocation": allocation,
-            "expected_return": 0.08,
-            "expected_volatility": 0.12,
-            "sharpe_ratio": 0.25,
-            "risk_free_rate": risk_free_rate,
-            "number_of_positions": n,
-            "diversification_score": 0.75,
-            "timestamp": datetime.now().isoformat(),
-            "_mock": True,
-        }, indent=2)
+                allocation = {}
+                for sym, weight in result.weights.items():
+                    allocation[sym] = round(weight * 100, 2)
+
+                # Add missing symbols with 0 allocation
+                for sym in symbols:
+                    if sym not in allocation:
+                        allocation[sym] = 0.0
+
+                return json.dumps({  # PRODUCTION: Wired to real engine
+                    "method": method,
+                    "allocation": allocation,
+                    "expected_return": round(result.expected_return, 4),
+                    "expected_volatility": round(result.portfolio_volatility, 4),
+                    "sharpe_ratio": round(result.sharpe_ratio, 4),
+                    "risk_free_rate": risk_free_rate,
+                    "number_of_positions": len(valid_symbols),
+                    "diversification_score": round(1.0 - max(result.risk_contributions.values()), 4) if result.risk_contributions else 0.75,
+                    "convergence": result.convergence,
+                    "timestamp": datetime.now().isoformat(),
+                    "_source": "RiskParityOptimizer",
+                }, indent=2)
+        except Exception as exc:
+            logger.error("RiskParityOptimizer failed: %s", exc)
+            raise RuntimeError(
+                f"Failed to optimize portfolio: {exc}."
+            ) from exc
+
+    # Fallback: simple inverse-volatility weighting with real data
+    if mdt is not None:
+        try:
+            import asyncio
+
+            import numpy as np
+
+            loop = asyncio.get_event_loop()
+            if not loop.is_running():
+                vols = {}
+                for sym in symbols:
+                    try:
+                        ohlcv = loop.run_until_complete(
+                            mdt.get_ohlcv(sym, "1d", limit=60)
+                        )
+                        closes = [c["close"] for c in ohlcv.get("candles", [])]
+                        if len(closes) > 1:
+                            rets = np.diff(closes) / closes[:-1]
+                            vols[sym] = float(np.std(rets)) * np.sqrt(252)
+                    except Exception:
+                        pass
+
+                if vols:
+                    # Inverse volatility weighting
+                    inv_vols = {s: 1.0 / v for s, v in vols.items()}
+                    total = sum(inv_vols.values())
+                    allocation = {s: round(v / total * 100, 2) for s, v in inv_vols.items()}
+                    # Add missing symbols
+                    for sym in symbols:
+                        if sym not in allocation:
+                            allocation[sym] = 0.0
+
+                    avg_vol = sum(vols.values()) / len(vols)
+                    return json.dumps({  # PRODUCTION: Wired to real engine
+                        "method": method,
+                        "allocation": allocation,
+                        "expected_volatility": round(avg_vol, 4),
+                        "sharpe_ratio": round((expected_returns or {}).get(symbols[0], 0.08) / avg_vol, 4) if avg_vol > 0 and symbols else 0.0,
+                        "risk_free_rate": risk_free_rate,
+                        "number_of_positions": len(vols),
+                        "diversification_score": round(1.0 / len(vols), 4),
+                        "timestamp": datetime.now().isoformat(),
+                        "_source": "InverseVolatility_MarketDataTool",
+                    }, indent=2)
+        except Exception as exc:
+            logger.error("Inverse volatility calculation failed: %s", exc)
+            raise RuntimeError(
+                f"Failed to optimize portfolio: {exc}."
+            ) from exc
 
     raise RuntimeError(
-        "Cannot optimize portfolio: real engine unavailable and _MOCK_MODE=False. "
-        "Install required dependencies or set _MOCK_MODE=True."
+        "Cannot optimize portfolio: real engine unavailable."
     )
 
 

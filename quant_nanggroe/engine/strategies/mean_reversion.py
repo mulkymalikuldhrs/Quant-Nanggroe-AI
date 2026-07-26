@@ -51,6 +51,14 @@ class MeanReversionStrategy(Strategy):
             os_ = float(self._parameters.get("oversold", 20))
             ob_ = float(self._parameters.get("overbought", 80))
 
+            # ATR for SL/TP calculation
+            tr = pd.concat([
+                h - l,
+                (h - c.shift(1)).abs(),
+                (l - c.shift(1)).abs()
+            ], axis=1).max(axis=1)
+            atr = tr.rolling(14).mean()
+
             low_k = l.rolling(kp).min()
             high_k = h.rolling(kp).max()
             stoch_k = 100 * (c - low_k) / (high_k - low_k)
@@ -60,8 +68,11 @@ class MeanReversionStrategy(Strategy):
             k = stoch_k.values[last]
             d = stoch_d.values[last]
             close = float(c.values[last])
+            atr_val = float(atr.iloc[last]) if not pd.isna(atr.iloc[last]) else close * 0.01
 
             if k < os_ and k > d:
+                sl = close - 1.5 * atr_val
+                tp = close + 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
                     symbol=kwargs.get("symbol", ""),
@@ -69,10 +80,14 @@ class MeanReversionStrategy(Strategy):
                     strength=SignalStrength.MODERATE,
                     confidence=0.6,
                     entry_price=close,
+                    stop_loss=sl,
+                    take_profit=tp,
                     reasoning=f"MeanRev: stochastic oversold ({k:.1f}) K crossed above D",
-                    indicators={"stoch_k": float(k), "stoch_d": float(d)},
+                    indicators={"stoch_k": float(k), "stoch_d": float(d), "atr": atr_val},
                 )
             if k > ob_ and k < d:
+                sl = close + 1.5 * atr_val
+                tp = close - 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
                     symbol=kwargs.get("symbol", ""),
@@ -80,8 +95,10 @@ class MeanReversionStrategy(Strategy):
                     strength=SignalStrength.MODERATE,
                     confidence=0.6,
                     entry_price=close,
+                    stop_loss=sl,
+                    take_profit=tp,
                     reasoning=f"MeanRev: stochastic overbought ({k:.1f}) K crossed below D",
-                    indicators={"stoch_k": float(k), "stoch_d": float(d)},
+                    indicators={"stoch_k": float(k), "stoch_d": float(d), "atr": atr_val},
                 )
             return self._hold("No stochastic signal")
         except Exception as e:  # pragma: no cover

@@ -102,17 +102,26 @@ class SMCStrategy(Strategy):
             recent_low = min(low[-20:]) if len(low) >= 20 else min(low)
             recent_high = max(high[-20:]) if len(high) >= 20 else max(high)
 
+            # ATR for SL/TP
+            if len(close) >= 15:
+                tr_vals = []
+                for i in range(1, len(close)):
+                    tr_vals.append(max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1])))
+                atr = sum(tr_vals[-14:]) / min(14, len(tr_vals))
+            else:
+                atr = (recent_high - recent_low) * 0.01
+
             if bullish_count > bearish_count:
                 direction = SignalDirection.BUY
-                sl = recent_low * 0.995
-                tp = current_price + (current_price - sl) * 2
+                sl = current_price - 1.5 * atr
+                tp = current_price + 3.0 * atr
                 strength = SignalStrength.STRONG if bullish_count >= 2 else SignalStrength.MODERATE
                 confidence = min(0.5 + bullish_count * 0.15, 0.9)
                 reasoning = f"SMC Bullish: {bullish_count} bullish patterns ({', '.join(s.get('type','') for s in signals_found if s.get('direction')=='bullish')})"
             elif bearish_count > bullish_count:
                 direction = SignalDirection.SELL
-                sl = recent_high * 1.005
-                tp = current_price - (sl - current_price) * 2
+                sl = current_price + 1.5 * atr
+                tp = current_price - 3.0 * atr
                 strength = SignalStrength.STRONG if bearish_count >= 2 else SignalStrength.MODERATE
                 confidence = min(0.5 + bearish_count * 0.15, 0.9)
                 reasoning = f"SMC Bearish: {bearish_count} bearish patterns"
@@ -143,18 +152,24 @@ class SMCStrategy(Strategy):
             return None
 
         min_gap_pct = self._parameters.get("fvg_min_gap_pct", 0.001)
+        scan_window = min(20, len(high) - 2)
 
-        # Bullish FVG: gap between candle[i-2].low and candle[i].high
-        if low[-1] > high[-3]:
-            gap_pct = (low[-1] - high[-3]) / close[-1]
-            if gap_pct >= min_gap_pct:
-                return {"type": "fvg_bullish", "direction": "bullish", "gap_pct": round(gap_pct, 4)}
+        # Scan for FVGs in the lookback window
+        for offset in range(scan_window):
+            idx = -(offset + 3)
+            if abs(idx) > len(high):
+                break
+            # Bullish FVG: gap between candle[i-2].low and candle[i].high
+            if low[-1] > high[idx]:
+                gap_pct = (low[-1] - high[idx]) / close[-1]
+                if gap_pct >= min_gap_pct:
+                    return {"type": "fvg_bullish", "direction": "bullish", "gap_pct": round(gap_pct, 4), "bars_back": offset + 3}
 
-        # Bearish FVG: gap between candle[i-2].high and candle[i].low
-        if high[-1] < low[-3]:
-            gap_pct = (low[-3] - high[-1]) / close[-1]
-            if gap_pct >= min_gap_pct:
-                return {"type": "fvg_bearish", "direction": "bearish", "gap_pct": round(gap_pct, 4)}
+            # Bearish FVG: gap between candle[i-2].high and candle[i].low
+            if high[-1] < low[idx]:
+                gap_pct = (low[idx] - high[-1]) / close[-1]
+                if gap_pct >= min_gap_pct:
+                    return {"type": "fvg_bearish", "direction": "bearish", "gap_pct": round(gap_pct, 4), "bars_back": offset + 3}
 
         return None
 

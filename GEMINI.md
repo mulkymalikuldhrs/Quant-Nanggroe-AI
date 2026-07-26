@@ -1,4 +1,4 @@
-# Quant Nanggroe AI — Gemini Instructions v5.1.0-p2
+# Quant Nanggroe AI — Gemini Instructions v6.0.0
 
 **Autonomous Quantitative Hedge Fund** — Single Entry Point: `qna.py`
 
@@ -45,7 +45,7 @@ quant_nanggroe/
 4. **Walk-forward fine-tuning** for core 4 strategies needs market data fetch on this host
 
 ## Single Entry Point
-- `python qna.py [cli|api|daemon|web|status|stop]` — primary entry point
+- `python qna.py [unified|api|daemon|hedge|status|stop]` — primary entry point
 - `launch.bat [api|cli|daemon|test|status]` — clean PYTHONPATH launcher
 - `PYTHONPATH="" .venv/Scripts/python -m ...` — raw alternative
 

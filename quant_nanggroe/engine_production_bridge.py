@@ -101,10 +101,10 @@ class ProductionStrategyRunner:
             from quant_nanggroe.engine.strategies.registry import list_strategies
             self.available = list_strategies()
             to_load = [
-                ("MeanReversion", {"lookback": 20, "entry_z": 2.0, "exit_z": 0.5}),
-                ("Momentum", {"lookback": 20, "fast": 10, "slow": 30}),
-                ("RegimeBased", {"lookback": 30}),
-                ("CryptoSpecific", {"lookback": 20}),
+                ("mean_rev", {"lookback": 20, "entry_z": 2.0, "exit_z": 0.5}),
+                ("trend_follow", {"lookback": 20, "fast": 10, "slow": 30}),
+                ("regime_detection", {"lookback": 30}),
+                ("crypto_specific", {"lookback": 20}),
             ]
             for name, params in to_load:
                 if name not in self.available:
@@ -491,13 +491,16 @@ class ProductionExecutionManager:
 # ---------------------------------------------------------------------------
 
 class RiskEnforcer:
-    """Wires engine/risk/ for kill switch, drawdown, position sizing."""
+    """Wires engine/risk/ for kill switch, drawdown, position sizing, DCC-GARCH, COT, and thesis drift guard."""
     
     def __init__(self, db=None):
         self.db = db
         self._kill_switch = None
         self._drawdown = None
         self._sizer = None
+        self._dcc: Any = None  # DCCGARCH instance
+        self._cot: Any = None  # COTAnalyzer instance
+        self._thesis: Any = None  # ThesisDriftGuard instance
         self._daily_pnl = 0.0
         self._weekly_pnl = 0.0
         self._lazy_init()
@@ -507,6 +510,9 @@ class RiskEnforcer:
             from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchConfig
             from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
             from quant_nanggroe.engine.risk.position_sizing import PositionSizer
+            from quant_nanggroe.engine.risk.dcc_garch import DCCGARCH
+            from quant_nanggroe.engine.risk.thesis_drift_guard import ThesisDriftGuard
+            from quant_nanggroe.engine.cot import COTAnalyzer
             initial_equity = 10000.0
             if self.db is not None:
                 try:
@@ -518,13 +524,93 @@ class RiskEnforcer:
             self._kill_switch = KillSwitch(KillSwitchConfig())
             self._drawdown = DrawdownMonitor(max_drawdown=0.15, initial_equity=initial_equity)
             self._sizer = PositionSizer()
-            log.info("RiskEnforcer: KillSwitch + Drawdown + Sizer loaded")
+            self._dcc = DCCGARCH(dcc_a=0.05, dcc_b=0.90, target_vol=0.15, safety_factor=0.25)
+            self._cot = COTAnalyzer(years_history=3)
+            self._thesis = ThesisDriftGuard(advisory_threshold=1, warning_threshold=2)
+            log.info("RiskEnforcer: KillSwitch + Drawdown + Sizer + DCC-GARCH + COT + ThesisDriftGuard loaded")
         except Exception as e:
             log.debug(f"Risk engine partial: {e}")
     
     def update_pnl(self, daily_pnl: float, weekly_pnl: float) -> None:
         self._daily_pnl = daily_pnl
         self._weekly_pnl = weekly_pnl
+
+    # ── DCC-GARCH correlation / volatility interface ────────────────────────
+
+    def update_correlation(self, returns: Any) -> bool:
+        """
+        Fetch historical returns and re-fit DCC-GARCH.
+
+        Args:
+            returns: (n_days x n_assets) DataFrame of historical returns.
+
+        Returns:
+            True if fit succeeded.
+        """
+        if self._dcc is None:
+            return False
+        try:
+            import numpy as np
+            import pandas as pd
+            if isinstance(returns, np.ndarray):
+                returns = pd.DataFrame(returns)
+            if returns.empty or returns.shape[0] < 30:
+                log.debug("DCC-GARCH: insufficient returns data (%d rows)", len(returns))
+                return False
+            self._dcc.fit(returns)
+            return self._dcc.fitted
+        except Exception as e:
+            log.debug("DCC-GARCH update failed: %s", e)
+            return False
+
+    def get_correlation_matrix(self) -> Any:
+        """Latest DCC correlation matrix (n_assets x n_assets)."""
+        if self._dcc is not None and self._dcc.fitted:
+            return self._dcc.correlation
+        return None
+
+    def get_volatilities(self) -> Any:
+        """Latest GARCH volatilities array (n_assets,)."""
+        if self._dcc is not None and self._dcc.fitted:
+            return self._dcc.volatilities
+        return None
+
+    def get_covariance_matrix(self) -> Any:
+        """Latest covariance matrix derived from DCC-GARCH."""
+        if self._dcc is not None and self._dcc.fitted:
+            return self._dcc.covariance
+        return None
+
+    def get_dcc_kelly_weights(
+        self,
+        expected_returns: Any,
+        target_vol: Optional[float] = None,
+    ) -> Any:
+        """
+        Compute Volatility-Regulated Kelly weights from DCC-GARCH.
+
+        Args:
+            expected_returns: (n_assets,) array of expected returns.
+            target_vol: Optional override for target portfolio volatility.
+
+        Returns:
+            (n_assets,) array of portfolio weights, or zeros if not fitted.
+        """
+        if self._dcc is None or not self._dcc.fitted:
+            import numpy as np
+            return np.zeros(len(expected_returns))
+        return self._dcc.kelly_weights(
+            expected_returns=expected_returns,
+            target_vol=target_vol,
+        )
+
+    def get_dcc_status(self) -> dict:
+        """DCC-GARCH diagnostic summary."""
+        if self._dcc is not None and self._dcc.fitted:
+            return self._dcc.get_status()
+        return {"fitted": False, "n_assets": 0}
+
+    # ── Kill switch / drawdown ─────────────────────────────────────────────
 
     def is_kill_switch_triggered(self) -> bool:
         if self._kill_switch:
@@ -585,6 +671,82 @@ class RiskEnforcer:
         # Fallback: fixed fraction
         return (balance * kelly * 0.1) / max(price, 1)
     
+    # ── COT institutional positioning interface ─────────────────────────────
+
+    def load_cot_data(self) -> bool:
+        """Fetch and load COT data."""
+        if self._cot is None:
+            return False
+        try:
+            return self._cot.fetch_history()
+        except Exception as e:
+            log.debug("COT load failed: %s", e)
+            return False
+
+    def evaluate_cot(self, symbol: str = "GC1!") -> dict:
+        """Evaluate COT positioning for a CME futures symbol."""
+        if self._cot is None:
+            return {"signal": "NOT_LOADED", "symbol": symbol}
+        if not self._cot.is_loaded:
+            if not self.load_cot_data():
+                return {"signal": "LOAD_FAILED", "symbol": symbol}
+        return self._cot.evaluate(symbol)
+
+    def get_cot_summary(self) -> dict:
+        """Get summary of current COT landscape."""
+        if self._cot is None or not self._cot.is_loaded:
+            return {"loaded": False, "n_extreme": 0, "signals": {}}
+        return self._cot.get_summary()
+
+    def get_cot_available_symbols(self) -> list:
+        """List CME symbols with available COT data."""
+        if self._cot is not None:
+            return self._cot.available_symbols
+        return []
+
+    # ── Thesis Drift Guard interface ─────────────────────────────────────────
+
+    def thesis_register_position(
+        self, symbol: str, side: str, event_type: str = "UNKNOWN",
+        entry_price: float = 0.0,
+    ) -> bool:
+        """Register a position for thesis drift monitoring."""
+        if self._thesis is None:
+            return False
+        try:
+            from quant_nanggroe.engine.risk.thesis_drift_guard import TradeThesis
+            thesis = TradeThesis(
+                direction="bullish" if side == "long" else "bearish",
+                event_type=event_type,
+            )
+            self._thesis.register_position(symbol, side, thesis, entry_price)
+            return True
+        except Exception as e:
+            log.debug("Thesis register failed: %s", e)
+            return False
+
+    def thesis_check(
+        self, event_type: str, weather: str = "NEUTRAL_MIXED",
+        cot_signal: str = "BALANCED", smt_divergence: bool = False,
+    ) -> dict:
+        """Run thesis drift check against macro context."""
+        if self._thesis is None:
+            return {"has_hard_exit": False, "stage_int": 0, "positions": {}}
+        return self._thesis.check_all(event_type, weather, cot_signal, smt_divergence)
+
+    def thesis_unregister(self, symbol: str) -> None:
+        """Remove a position from thesis monitoring."""
+        if self._thesis is not None:
+            self._thesis.unregister_position(symbol)
+
+    def thesis_get_status(self) -> dict:
+        """Get thesis drift guard diagnostics."""
+        if self._thesis is None:
+            return {"active": False, "n_positions": 0}
+        return self._thesis.get_status()
+
+    # ── Signal filtering ────────────────────────────────────────────────────
+
     def filter_signals(self, signals: List[Signal]) -> List[Signal]:
         """Remove signals that violate risk rules."""
         if self.is_kill_switch_triggered():

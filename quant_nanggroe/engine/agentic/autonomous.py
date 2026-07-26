@@ -39,7 +39,7 @@ except ImportError:
 
 try:
     from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
-    from quant_nanggroe.engine.strategy.strategies.self_finetune import SelfFineTuner
+    from quant_nanggroe.engine.strategies.self_finetune import SelfFineTuner
     _HAS_STRATEGY_EVOLVER = True
 except ImportError:
     StrategyEvolver = None

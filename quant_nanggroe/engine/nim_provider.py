@@ -386,8 +386,11 @@ class NIMProvider:
         if ollama_response is not None:
             return ollama_response
 
-        # Final fallback: Mock
-        return self._mock_response(prompt, selected_model, task_type)
+        # All providers failed — raise, do not mock
+        raise RuntimeError(
+            f"NIM provider: all backends failed for model={selected_model} "
+            f"task={task_type}. Set NVIDIA_API_KEY or start local Ollama."
+        )
 
     # ── NIM API Call ─────────────────────────────────────────────────
 
@@ -592,58 +595,6 @@ class NIMProvider:
             )
 
         return None
-
-    # ── Mock Fallback ────────────────────────────────────────────────
-
-    @staticmethod
-    def _mock_response(
-        prompt: str,
-        model: str,
-        task_type: TaskType,
-    ) -> NIMResponse:
-        """Generate a mock response when all providers fail.
-
-        All mock responses are prefixed with [MOCK] so consumers
-        can detect simulated data.
-
-        Args:
-            prompt: Original prompt.
-            model: Model that was requested.
-            task_type: Task type.
-
-        Returns:
-            NIMResponse with mock content.
-        """
-        task_hints = {
-            TaskType.REASONING: "After careful analysis and step-by-step reasoning,",
-            TaskType.ANALYSIS: "Based on the analytical framework,",
-            TaskType.QUICK: "Quick assessment:",
-            TaskType.VISION: "Visual analysis indicates that",
-            TaskType.GENERAL: "In summary,",
-        }
-
-        hint = task_hints.get(task_type, "")
-        content = (
-            f"[MOCK] {hint} regarding your query about "
-            f"'{prompt[:100]}...': This is a simulated response "
-            f"from {model}. No real LLM inference was performed. "
-            f"Install aiohttp and configure API keys for real responses."
-        )
-
-        return NIMResponse(
-            content=content,
-            model=model,
-            task_type=task_type,
-            usage={
-                "prompt_tokens": len(prompt) // 4,
-                "completion_tokens": len(content) // 4,
-                "total_tokens": (len(prompt) + len(content)) // 4,
-            },
-            latency_ms=0.0,
-            cost_usd=0.0,
-            source="mock",
-            is_mock=True,
-        )
 
     # ── Model Selection ──────────────────────────────────────────────
 
