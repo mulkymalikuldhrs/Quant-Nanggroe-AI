@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-07-26T15:36:01.776816",
+  "timestamp": "2026-07-27T04:46:11.638413",
   "symbol": "EURUSD",
   "timeframe": "M15",
   "bars": 5666,
   "source": "yfinance EURUSD=X (real, 60d)",
-  "registered": 73,
+  "registered": 77,
   "archive_registered": 0,
   "passed": 9,
   "results": [
@@ -34,6 +34,15 @@
       "wf_sharpe": -7.396,
       "pass": true,
       "status": "ok"
+    },
+    {
+      "strategy": "AlternativeDataStrategy",
+      "sharpe": 0.0,
+      "return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "wf_sharpe": 0.0,
+      "pass": false,
+      "status": "flat"
     },
     {
       "strategy": "AMDXStrategy",
@@ -288,6 +297,15 @@
       "status": "flat"
     },
     {
+      "strategy": "FactorModelStrategy",
+      "sharpe": 0.0,
+      "return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "wf_sharpe": 0.0,
+      "pass": false,
+      "status": "flat"
+    },
+    {
       "strategy": "FiboStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -487,10 +505,10 @@
     },
     {
       "strategy": "KMeansRegimeStrategy",
-      "sharpe": -0.76,
-      "return_pct": -3.61,
-      "max_dd_pct": -4.13,
-      "wf_sharpe": -0.67,
+      "sharpe": -0.542,
+      "return_pct": -2.73,
+      "max_dd_pct": -3.45,
+      "wf_sharpe": -0.58,
       "pass": false,
       "status": "ok"
     },
@@ -549,6 +567,15 @@
       "status": "ok"
     },
     {
+      "strategy": "MicrostructureAlphaStrategy",
+      "sharpe": 0.0,
+      "return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "wf_sharpe": 0.0,
+      "pass": false,
+      "status": "flat"
+    },
+    {
       "strategy": "MSNRStrategy",
       "sharpe": -1.543,
       "return_pct": -1.7,
@@ -586,10 +613,10 @@
     },
     {
       "strategy": "SMCStrategy",
-      "sharpe": -0.163,
-      "return_pct": -0.56,
-      "max_dd_pct": -2.24,
-      "wf_sharpe": -0.322,
+      "sharpe": -0.166,
+      "return_pct": -0.53,
+      "max_dd_pct": -2.97,
+      "wf_sharpe": -0.584,
       "pass": false,
       "status": "ok"
     },
@@ -601,6 +628,15 @@
       "wf_sharpe": 0.0,
       "pass": false,
       "status": "no_signal"
+    },
+    {
+      "strategy": "StatisticalArbitrageStrategy",
+      "sharpe": 0.0,
+      "return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "wf_sharpe": 0.0,
+      "pass": false,
+      "status": "flat"
     },
     {
       "strategy": "TradeBobbySMCStrategy",
@@ -631,10 +667,10 @@
     },
     {
       "strategy": "UnifiedRetailStrategy",
-      "sharpe": -0.222,
-      "return_pct": -0.37,
-      "max_dd_pct": -2.69,
-      "wf_sharpe": -0.658,
+      "sharpe": -1.224,
+      "return_pct": -2.25,
+      "max_dd_pct": -4.05,
+      "wf_sharpe": -1.995,
       "pass": false,
       "status": "ok"
     },
