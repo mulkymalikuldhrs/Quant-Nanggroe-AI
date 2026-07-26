@@ -18,7 +18,7 @@ log = logging.getLogger('dhaher_test')
 
 # ── Imports ──
 import strategies.dhaher_system
-from strategy_registry import get_strategy as gs
+from quant_nanggroe.engine.strategy.strategies import get_strategy as gs
 from multi_pair_scanner import scan_all_pairs, set_mock_mode
 import MetaTrader5 as mt5
 import pandas as pd

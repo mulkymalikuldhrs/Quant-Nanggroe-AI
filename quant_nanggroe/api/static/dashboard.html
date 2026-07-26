@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QNA — Causal Engine Dashboard</title>
+<style>
+  :root {
+    --deep-charcoal: #1A1D20;
+    --midnight-navy: #0F172A;
+    --tactical-gold: #D9A441;
+    --cyber-cyan: #00D1C7;
+    --dark-surface: #131620;
+    --card-bg: #1E2230;
+    --text-primary: #E8E8EA;
+    --text-secondary: #8888AA;
+    --border-color: #2A2E40;
+    --success: #00D1C7;
+    --warning: #D9A441;
+    --danger: #FF4757;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--deep-charcoal);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1440px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; background: var(--midnight-navy);
+    border: 1px solid var(--border-color); border-radius: 12px;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-family: var(--font-mono); font-size: 1.3rem;
+    color: var(--tactical-gold); font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .header h1 span { color: var(--cyber-cyan); }
+  .header-status {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 0.85rem; color: var(--text-secondary);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyber-cyan); display: inline-block;
+  }
+  .status-dot.warning { background: var(--warning); }
+  .status-dot.error { background: var(--danger); }
+
+  /* Grid */
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px; margin-bottom: 20px;
+  }
+  .grid-wide { grid-column: 1 / -1; }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 16px; position: relative;
+  }
+  .card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-secondary);
+  }
+  .card-title { font-weight: 600; }
+  .card-body { font-size: 0.9rem; }
+
+  /* Metric display */
+  .metric-value {
+    font-family: var(--font-mono); font-size: 1.8rem;
+    font-weight: 700; letter-spacing: -0.5px;
+  }
+  .metric-positive { color: var(--cyber-cyan); }
+  .metric-negative { color: var(--danger); }
+  .metric-neutral { color: var(--tactical-gold); }
+  .metric-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .data-table th {
+    text-align: left; padding: 6px 8px;
+    color: var(--text-secondary); font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .data-table td {
+    padding: 6px 8px; border-bottom: 1px solid rgba(42,46,64,0.5);
+    font-family: var(--font-mono); font-size: 0.8rem;
+  }
+  .data-table tr:hover td { background: rgba(0,209,199,0.04); }
+  .data-table .numeric { text-align: right; }
+
+  /* Badge */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-running { background: rgba(0,209,199,0.15); color: var(--cyber-cyan); }
+  .badge-warning { background: rgba(217,164,65,0.15); color: var(--warning); }
+  .badge-danger { background: rgba(255,71,87,0.15); color: var(--danger); }
+  .badge-neutral { background: rgba(136,136,170,0.15); color: var(--text-secondary); }
+
+  /* Correlation Matrix */
+  .corr-matrix { display: grid; gap: 2px; margin: 8px 0; }
+  .corr-row { display: grid; gap: 2px; }
+  .corr-cell {
+    width: 32px; height: 24px; display: flex; align-items: center;
+    justify-content: center; font-size: 0.6rem; font-family: var(--font-mono);
+    border-radius: 2px;
+  }
+  .corr-cell.high-pos { background: rgba(0,209,199,0.5); color: #fff; }
+  .corr-cell.med-pos { background: rgba(0,209,199,0.25); color: var(--text-primary); }
+  .corr-cell.neutral { background: rgba(136,136,170,0.15); color: var(--text-secondary); }
+  .corr-cell.med-neg { background: rgba(255,71,87,0.25); color: var(--text-primary); }
+  .corr-cell.high-neg { background: rgba(255,71,87,0.5); color: #fff; }
+  .corr-labels { display: flex; gap: 2px; margin-bottom: 2px; }
+  .corr-label { width: 32px; text-align: center; font-size: 0.55rem; color: var(--text-secondary); }
+
+  /* Events */
+  .event-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid rgba(42,46,64,0.3);
+  }
+  .event-row:last-child { border-bottom: none; }
+  .event-name { font-size: 0.8rem; }
+  .event-value { font-family: var(--font-mono); font-size: 0.85rem; }
+  .event-significant { color: var(--tactical-gold); font-weight: 600; }
+
+  /* Section dividers */
+  .section-title {
+    font-family: var(--font-mono); font-size: 0.9rem;
+    color: var(--tactical-gold); margin: 24px 0 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border-color);
+    letter-spacing: 0.3px;
+  }
+
+  /* Refresh button */
+  .refresh-btn {
+    background: transparent; border: 1px solid var(--border-color);
+    color: var(--text-secondary); padding: 6px 16px; border-radius: 6px;
+    cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+  }
+  .refresh-btn:hover {
+    border-color: var(--cyber-cyan); color: var(--cyber-cyan);
+  }
+  .refresh-btn:active { transform: scale(0.97); }
+
+  /* Loading state */
+  .loading { opacity: 0.4; pointer-events: none; transition: opacity 0.3s; }
+
+  /* Tooltip */
+  .tooltip {
+    position: relative; cursor: help;
+    border-bottom: 1px dashed var(--border-color);
+  }
+
+  @media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+    .container { padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="container" id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>QNA <span>CAUSAL ENGINE</span></h1>
+    <div class="header-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Loading...</span>
+      <span>|</span>
+      <span id="updateTime">--</span>
+      <button class="refresh-btn" onclick="refreshAll()">&#x21bb; Refresh</button>
+    </div>
+  </div>
+
+  <!-- Top Metrics Row -->
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Macro Weather</span></div>
+      <div class="card-body">
+        <div class="metric-value" id="weatherValue" style="font-size:1.2rem">--</div>
+        <div class="metric-label">Current regime classification</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">DCC Mean Correlation</span></div>
+      <div class="card-body">
+        <div class="metric-value" id="dccCorrValue">0.00</div>
+        <div class="metric-label">Cross-asset dynamic correlation</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">DCC Mean Volatility</span></div>
+      <div class="card-body">
+        <div class="metric-value" id="dccVolValue">0.00%</div>
+        <div class="metric-label">Average GARCH vol across assets</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">DCC Assets</span></div>
+      <div class="card-body">
+        <div class="metric-value" id="dccAssets">0</div>
+        <div class="metric-label">Assets in correlation model</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correlation Matrix Section -->
+  <div class="section-title">&#x25B6; Correlation Matrix</div>
+  <div class="grid grid-wide">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">DCC-GARCH Cross-Asset Correlation</span>
+        <span class="badge badge-running" id="dccStatusBadge">WAITING</span>
+      </div>
+      <div class="card-body" id="corrMatrixContainer">
+        <div style="color:var(--text-secondary); font-size:0.85rem;">Waiting for DCC-GARCH data...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Causal Biases -->
+  <div class="section-title">&#x25B6; Causal Biases</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Asset Bias Scores</span></div>
+      <div class="card-body" id="biasesContainer">
+        <div style="color:var(--text-secondary);">Select an event type...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Event Selector</span>
+      </div>
+      <div class="card-body">
+        <select id="eventSelect" onchange="loadBiases()" style="width:100%; padding:8px; background:var(--midnight-navy); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+          <option value="GEOPOLITICAL_SUPPLY_SHOCK">Geopolitical Supply Shock</option>
+          <option value="INFLATION_SURPRISE">Inflation Surprise</option>
+          <option value="RATE_CUT">Rate Cut</option>
+          <option value="RATE_HIKE">Rate Hike</option>
+          <option value="RISK_ON_MOMENTUM">Risk-On Momentum</option>
+          <option value="RISK_OFF_CRISIS">Risk-Off Crisis</option>
+        </select>
+        <div style="margin-top:8px;">
+          <label style="font-size:0.75rem; color:var(--text-secondary);">Risk Delta (0-100):</label>
+          <input type="range" id="riskDelta" min="0" max="100" value="40" oninput="loadBiases()" style="width:100%;">
+          <span id="riskDeltaLabel" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--tactical-gold);">40</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Macro Weather Input</span></div>
+      <div class="card-body">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <div style="flex:1;">
+            <label style="font-size:0.7rem; color:var(--text-secondary);">DXY %</label>
+            <input type="number" id="dxyInput" value="0.4" step="0.1" style="width:100%; padding:6px; background:var(--midnight-navy); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.7rem; color:var(--text-secondary);">ZB1 %</label>
+            <input type="number" id="bondInput" value="0.3" step="0.1" style="width:100%; padding:6px; background:var(--midnight-navy); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+          </div>
+        </div>
+        <button onclick="loadWeather()" class="refresh-btn" style="width:100%;">Check Weather</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COT + MSI + SMT + Thesis -->
+  <div class="section-title">&#x25B6; Institutional Context</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><span class="card-title">COT Positioning</span></div>
+      <div class="card-body" id="cotContainer">
+        <div style="color:var(--text-secondary);">Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">SMT Divergence</span></div>
+      <div class="card-body" id="smtContainer">
+        <div style="color:var(--text-secondary);">Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Thesis Drift Guard</span></div>
+      <div class="card-body" id="thesisContainer">
+        <div style="color:var(--text-secondary);">Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">CME Prices</span></div>
+      <div class="card-body" id="cmeContainer">
+        <div style="color:var(--text-secondary);">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Summary -->
+  <div class="section-title">&#x25B6; Pipeline Evaluation</div>
+  <div class="grid grid-wide">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">4-Phase Macro Pipeline</span>
+        <button onclick="loadPipeline()" class="refresh-btn">Evaluate</button>
+      </div>
+      <div class="card-body" id="pipelineContainer">
+        <div style="color:var(--text-secondary);">Click "Evaluate" to run the full pipeline...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = '/api/causal';
+let refreshInterval = null;
+const STATUS_ENDPOINTS = [
+  { id: 'dcc', url: '/dcc/status' },
+  { id: 'cot', url: '/cot' },
+  { id: 'smt', url: '/smt/pairs' },
+  { id: 'thesis', url: '/thesis' },
+  { id: 'cme', url: '/cme/prices' },
+];
+
+async function fetchAPI(url) {
+  try {
+    const resp = await fetch(`${API_BASE}${url}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
+  } catch (e) {
+    console.error(`API error ${url}:`, e);
+    return null;
+  }
+}
+
+function formatNum(v, decimals=2) {
+  if (v === null || v === undefined) return '--';
+  return Number(v).toFixed(decimals);
+}
+
+function formatPct(v) {
+  if (v === null || v === undefined) return '--';
+  return `${Number(v).toFixed(2)}%`;
+}
+
+/* ── DCC Status ───────────────────────────────── */
+async function loadDCC() {
+  const data = await fetchAPI('/dcc/status');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+
+  if (!data || !data.fitted) {
+    document.getElementById('dccCorrValue').textContent = '0.00';
+    document.getElementById('dccVolValue').textContent = '0.00%';
+    document.getElementById('dccAssets').textContent = '0';
+    document.getElementById('dccStatusBadge').textContent = 'NOT FITTED';
+    document.getElementById('dccStatusBadge').className = 'badge badge-neutral';
+    statusDot.className = 'status-dot warning';
+    statusText.textContent = 'DCC not fitted';
+    return;
+  }
+
+  document.getElementById('dccCorrValue').textContent = formatNum(data.mean_corr);
+  const corrEl = document.getElementById('dccCorrValue');
+  corrEl.className = 'metric-value ' + (data.mean_corr > 0.5 ? 'metric-positive' : data.mean_corr < -0.3 ? 'metric-negative' : 'metric-neutral');
+
+  document.getElementById('dccVolValue').textContent = formatPct(data.mean_vol_pct);
+  document.getElementById('dccVolValue').className = 'metric-value ' + (data.mean_vol_pct > 5 ? 'metric-negative' : 'metric-neutral');
+  document.getElementById('dccAssets').textContent = data.n_assets;
+  document.getElementById('dccStatusBadge').textContent = 'FITTED';
+  document.getElementById('dccStatusBadge').className = 'badge badge-running';
+  statusDot.className = 'status-dot';
+  statusText.textContent = `DCC fitted (${data.n_assets} assets)`;
+
+  // Correlation matrix
+  renderCorrMatrix(data);
+}
+
+function renderCorrMatrix(data) {
+  const container = document.getElementById('corrMatrixContainer');
+  if (!data.correlation_matrix || data.correlation_matrix.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.85rem;">No correlation data available.</div>';
+    return;
+  }
+
+  const mat = data.correlation_matrix;
+  const names = data.asset_names;
+  const n = mat.length;
+
+  let html = '<div class="corr-labels"><div style="width:32px;"></div>';
+  for (let j = 0; j < n; j++) {
+    html += `<div class="corr-label">${names[j]}</div>`;
+  }
+  html += '</div>';
+
+  for (let i = 0; i < n; i++) {
+    html += '<div class="corr-row" style="grid-template-columns:32px repeat(' + n + ', 32px);">';
+    html += `<div class="corr-label" style="width:32px; line-height:24px;">${names[i]}</div>`;
+    for (let j = 0; j < n; j++) {
+      const v = mat[i][j];
+      let cls = 'corr-cell neutral';
+      if (v > 0.5) cls = 'corr-cell high-pos';
+      else if (v > 0.2) cls = 'corr-cell med-pos';
+      else if (v < -0.5) cls = 'corr-cell high-neg';
+      else if (v < -0.2) cls = 'corr-cell med-neg';
+      html += `<div class="${cls}" title="${names[j]}: ${v.toFixed(3)}">${v.toFixed(2)}</div>`;
+    }
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+/* ── Causal Biases ──────────────────────────────── */
+async function loadBiases() {
+  const event = document.getElementById('eventSelect').value;
+  const delta = document.getElementById('riskDelta').value;
+  document.getElementById('riskDeltaLabel').textContent = delta;
+
+  const data = await fetchAPI(`/biases?event=${event}&risk_delta=${delta}`);
+  const container = document.getElementById('biasesContainer');
+  if (!data || !data.asset_biases) {
+    container.innerHTML = '<div style="color:var(--text-secondary);">No data available.</div>';
+    return;
+  }
+
+  const entries = Object.entries(data.asset_biases)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  let html = `<div style="margin-bottom:6px; font-size:0.7rem; color:var(--text-secondary);">${data.n_assets} assets | Event: ${data.event_type}</div>`;
+  html += '<table class="data-table"><thead><tr><th>Asset</th><th class="numeric">Bias</th></tr></thead><tbody>';
+  for (const [asset, bias] of entries.slice(0, 12)) {
+    const cls = bias > 0.3 ? 'metric-positive' : bias < -0.3 ? 'metric-negative' : 'metric-neutral';
+    html += `<tr><td>${asset}</td><td class="numeric ${cls}">${bias > 0 ? '+' : ''}${bias.toFixed(4)}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* ── Macro Weather ──────────────────────────────── */
+async function loadWeather() {
+  const dxy = document.getElementById('dxyInput').value;
+  const bond = document.getElementById('bondInput').value;
+  const data = await fetchAPI(`/weather?dxy=${dxy}&bond=${bond}`);
+  if (data) {
+    const el = document.getElementById('weatherValue');
+    el.textContent = data.classification;
+    el.className = 'metric-value ' + (data.classification === 'RISK_OFF' ? 'metric-negative' : data.classification === 'RISK_ON' ? 'metric-positive' : 'metric-neutral');
+  }
+}
+
+/* ── COT ────────────────────────────────────────── */
+async function loadCOT() {
+  const data = await fetchAPI('/cot');
+  const container = document.getElementById('cotContainer');
+  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);">No COT data</div>'; return; }
+  container.innerHTML = `
+    <div style="margin-bottom:6px;"><span class="badge ${data.signal.includes('CROWDED') ? 'badge-warning' : 'badge-running'}">${data.signal}</span></div>
+    <table class="data-table">
+      <tr><td>Extreme Long</td><td class="numeric">${data.n_extreme_long}</td></tr>
+      <tr><td>Extreme Short</td><td class="numeric">${data.n_extreme_short}</td></tr>
+      <tr><td>Balanced</td><td class="numeric">${data.n_balanced}</td></tr>
+    </table>`;
+}
+
+/* ── SMT ────────────────────────────────────────── */
+async function loadSMT() {
+  const data = await fetchAPI('/smt/pairs');
+  const container = document.getElementById('smtContainer');
+  if (!data || !data.pairs) { container.innerHTML = '<div style="color:var(--text-secondary);">No SMT data</div>'; return; }
+  let html = '<table class="data-table"><thead><tr><th>Pair</th><th>Status</th><th class="numeric">Z-score</th></tr></thead><tbody>';
+  for (const [key, pair] of Object.entries(data.pairs)) {
+    const statusClass = pair.severity === 'severe' ? 'badge-danger' : pair.diverged ? 'badge-warning' : 'badge-running';
+    html += `<tr>
+      <td style="font-size:0.7rem;">${pair.pair_name}</td>
+      <td><span class="badge ${statusClass}" style="font-size:0.6rem;">${pair.diverged ? 'DIVERGED' : 'NORMAL'}</span></td>
+      <td class="numeric ${pair.diverged ? 'metric-negative' : 'metric-neutral'}">${pair.zscore.toFixed(2)}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* ── Thesis ─────────────────────────────────────── */
+async function loadThesis() {
+  const data = await fetchAPI('/thesis');
+  const container = document.getElementById('thesisContainer');
+  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);">No thesis data</div>'; return; }
+  const stageClass = data.stage === 'STAGE_2_EXECUTE' ? 'badge-danger' : data.stage === 'STAGE_1_ALERT' ? 'badge-warning' : 'badge-running';
+  let html = `
+    <div style="margin-bottom:8px;">
+      <span class="badge ${stageClass}">${data.stage}</span>
+      <span style="margin-left:8px; font-size:0.8rem;">Action: <strong>${data.action}</strong></span>
+    </div>
+    <div style="font-size:0.75rem; color:var(--text-secondary);">${data.n_active_theses} active theses</div>`;
+  if (data.theses && Object.keys(data.theses).length > 0) {
+    html += '<table class="data-table"><thead><tr><th>Thesis</th><th>Stage</th><th class="numeric">Drift</th></tr></thead><tbody>';
+    for (const [id, th] of Object.entries(data.theses)) {
+      html += `<tr><td style="font-size:0.7rem;">${th.description || id}</td>
+        <td>${th.stage}</td>
+        <td class="numeric">${th.drift_score.toFixed(3)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  container.innerHTML = html;
+}
+
+/* ── CME Prices ─────────────────────────────────── */
+async function loadCME() {
+  const data = await fetchAPI('/cme/prices');
+  const container = document.getElementById('cmeContainer');
+  if (!data || !data.prices) { container.innerHTML = '<div style="color:var(--text-secondary);">No price data</div>'; return; }
+  let html = `<div style="font-size:0.7rem; color:var(--text-secondary); margin-bottom:6px;">${data.n_symbols} symbols tracked</div>`;
+  html += '<table class="data-table"><thead><tr><th>Symbol</th><th class="numeric">Price</th></tr></thead><tbody>';
+  for (const [sym, price] of Object.entries(data.prices)) {
+    html += `<tr><td>${sym}</td><td class="numeric">${typeof price === 'number' ? price.toFixed(2) : price}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* ── Pipeline ───────────────────────────────────── */
+async function loadPipeline() {
+  const dxy = document.getElementById('dxyInput').value;
+  const bond = document.getElementById('bondInput').value;
+  const event = document.getElementById('eventSelect').value;
+  const data = await fetchAPI(`/pipeline?event=${event}&dxy=${dxy}&bond=${bond}`);
+  const container = document.getElementById('pipelineContainer');
+  if (!data) { container.innerHTML = '<div style="color:var(--text-secondary);">Pipeline evaluation failed</div>'; return; }
+  container.innerHTML = `
+    <div style="margin-bottom:12px; font-family:var(--font-mono); font-size:0.85rem; color:var(--tactical-gold);">${data.summary}</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.8rem;">
+      <div>
+        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 1 — Causal & Macro</div>
+        <div>Event: ${data.phase1_causal?.event_type || 'N/A'}</div>
+        <div>Biases: ${data.phase1_causal?.n_assets || 0} assets</div>
+      </div>
+      <div>
+        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 2 — Intermarket</div>
+        <div>Weather: ${data.phase2_weather?.classification || 'N/A'}</div>
+        <div>COT: ${data.phase2_cot?.status || 'N/A'}</div>
+        <div>DCC: ${data.phase2_dcc?.status || 'N/A'}</div>
+      </div>
+      <div>
+        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 3 — Strategy</div>
+        <div>SMC Signal: ${data.phase3_filter?.smc_signal_input || 'N/A'}</div>
+        <div>Executable: ${data.phase3_smc?.executable ? 'YES' : 'NO'}</div>
+        <div>Expectancy: ${data.phase3_smc?.system_expectancy || 0}</div>
+      </div>
+      <div>
+        <div style="color:var(--text-secondary); font-size:0.7rem; margin-bottom:4px;">Phase 4 — Risk</div>
+        <div>Thesis: ${data.phase4_thesis_drift?.stage || 'N/A'}</div>
+        <div>Risk: ${data.phase4_risk?.calculated_risk_pct || 0}%</div>
+      </div>
+    </div>`;
+}
+
+/* ── Refresh All ───────────────────────────────── */
+async function refreshAll() {
+  const btn = document.querySelector('.refresh-btn');
+  btn.textContent = 'Loading...';
+  btn.disabled = true;
+  document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
+
+  await Promise.all([
+    loadDCC(),
+    loadBiases(),
+    loadWeather(),
+    loadCOT(),
+    loadSMT(),
+    loadThesis(),
+    loadCME(),
+  ]);
+
+  btn.textContent = '\u21bb Refresh';
+  btn.disabled = false;
+}
+
+/* ── Init ────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  refreshAll();
+  setInterval(refreshAll, 30000);
+});
+</script>
+</body>
+</html>

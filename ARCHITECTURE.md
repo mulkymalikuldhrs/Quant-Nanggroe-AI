@@ -46,7 +46,9 @@ Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedg
 │  │  │  (200+ evolved)  │  └──────────────────────────┘  └────────────┘  │    │
 │  │  │  aggregator      │                                               │    │
 │  │  └──────────────────┘  ┌──────────────┐  ┌──────────────────┐       │    │
-│  │                        │ AGENTS       │  │ API (181 eps)   │       │    │
+│  │                        │ AGENTS       │  │ API (196 eps)  │
+│  │                        │  9+ special   │  │  Causal API 🆕 │
+│  │                        │  Council/Dbt  │  │  Telegram Gd   │
 │  │  ┌──────────────────┐  │  9+ special  │  │ FastAPI         │       │    │
 │  │  │ BACKTEST         │  │  Council/Dbt │  │ Telegram Guard  │       │    │
 │  │  │ walk-fwd/MC/CPCV │  │  Risk/Compl  │  └──────────────────┘       │    │
@@ -293,8 +295,11 @@ Market Data (MT5/CCXT / exchange REST clients)
 | Architecture Health | 9.5/10 — All quantitative engines real, no mock |
 | Single Entry Point | `qna.py` (unified mode default) |
 | UnifiedPipeline | `pipeline/` module — auto mode-routing + macro_context 🆕 |
-| Causal Engine | 5 modules (bias, MSI, COT, SMT, thesis drift) 🆕 |
-| DCC-GARCH | Dynamic correlation + auto-fit + 47 unit tests 🆕 |
+| Causal Engine | 6 modules + CME provider + DCCState singleton 🆕 |
+| Causal Engine API | **15+ endpoints** 🆕 — full REST access to all causal modules |
+| Dashboard | **Unified HTML dashboard** 🆕 — Tactical Gold palette, auto-refresh |
+| DCC-GARCH | Dynamic correlation + auto-fit + DCCState shared state + 47 unit tests |
+| Pipeline Orphans | **macro_context.py fixed** 🆕 — orphaned imports replaced
 | Strategy Registration | 79+ via @StrategyRegistry.register |
 | Hedge Fund | Submodules + causal bias on all 200+ providers 🆕 |
 | Risk Limits | Unified single source `constants.py` + DCC-GARCH correlation |
@@ -313,7 +318,7 @@ Market Data (MT5/CCXT / exchange REST clients)
 |-------|-----------|
 | Language | Python 3.11+ |
 | Package Manager | `uv` (not pip, not poetry) |
-| API Server | FastAPI (181 endpoints) |
+| API Server | FastAPI (196+ endpoints) — including **causal engine** 🆕 |
 | Pipeline | `quant_nanggroe/pipeline/` — auto mode-routing 🆕 |
 | Dashboard | Next.js + React + Recharts + Zustand |
 | Broker | MetaTrader5 (env vars for credentials) |
@@ -333,4 +338,4 @@ Market Data (MT5/CCXT / exchange REST clients)
 
 ---
 
-*v6.0.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+*v6.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*

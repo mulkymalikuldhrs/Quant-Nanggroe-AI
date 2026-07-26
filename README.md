@@ -51,7 +51,7 @@ quant_nanggroe/                          (~700+ .py files, 130K+ lines)
 │   ├── data.py                          → Data ingestion & normalization
 │   ├── signal.py                        → Signal generation & aggregation
 │   ├── execution.py                     → Order execution pipeline
-│   ├── macro_context.py                 → Macro context provider (causal bias, weather, COT) 🆕 v6.1.0
+│   ├── macro_context.py                 → 🆕 Rewritten: orphan imports fixed, 5-stage stacked filters
 │   └── factory.py                       → Pipeline factory with auto mode detection
 ├── api/                                 → FastAPI server (181 endpoints)
 ├── engine/                              → Core trading engine (22+ modules)
@@ -159,6 +159,38 @@ The kill switch implements a **C5 convergence model** where every KillSwitch() i
 | **COT Tracker** | Institutional positioning percentile | `cot_reports` (CFTC) |
 | **SMT Divergence** | Cointegration breakdown detection | Engle-Granger test on real prices |
 | **Thesis Drift Guard** | 3-stage circuit breaker | Live macro context |
+| **CME Price Provider** | Futures/spot prices + returns cache | EnginePriceProvider + yfinance |
+| **DCCState Singleton** | Shared DCC-GARCH state across modules | Ring buffer, cached correlation |
+
+### 🆕 Causal Engine API (15+ Endpoints)
+
+All causal engine data exposed via FastAPI at `/api/causal/*`:
+- `/biases` — Event-driven asset bias scores
+- `/weather` — Macro weather classification
+- `/dcc/status` — DCC-GARCH correlation matrix + volatilities
+- `/dcc/correlation` — Full correlation matrix
+- `/dcc/pair` — Pair correlation lookup
+- `/dcc/refresh` — Force DCC re-fit with latest data
+- `/cme/prices` — Live CME futures prices
+- `/cme/returns` — Log returns data
+- `/cot` — COT institutional positioning
+- `/msi` — Macro Surprise Index (FRED)
+- `/smt`, `/smt/pairs` — SMT divergence detection
+- `/thesis` — Thesis drift guard status
+- `/pipeline` — Full 4-phase pipeline evaluation
+- `/status` — Aggregated engine status
+
+### 🆕 Unified Dashboard
+
+Single HTML dashboard with the **Tactical Gold palette** (`#1A1D20`, `#0F172A`, `#D9A441`, `#00D1C7`):
+- Real-time DCC correlation matrix heatmap
+- Causal bias interactive selector (6 event types)
+- COT positioning panel
+- SMT divergence alerts per pair
+- Thesis drift guard status
+- CME price feed
+- 30-second auto-refresh
+- Served at `http://localhost:8000/dashboard.html`
 
 ### 🆕 Causal Bias → Signal Filter Wiring
 
@@ -207,17 +239,20 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 
 | Domain | Status |
 |--------|--------|
-| Architecture Health | 9/10 — Clean single entry point + unified pipeline |
-| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate, unified constants, **DCC-GARCH** 🆕 |
-| Causal Macro Engine | 🆕 **Causal bias + COT + MSI + SMT + Thesis Drift** — all production-grade |
+| Architecture Health | 9.5/10 — All engines real, shared DCC state, pipeline orphans fixed |
+| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate, unified constants, **DCC-GARCH + DCCState** 🆕 |
+| Causal Macro Engine | 🆕 **Bias + MSI + COT + SMT + Thesis + CME Provider** — all production-grade |
+| Causal Engine API | **15+ endpoints** 🆕 — full REST access to all causal modules |
+| Dashboard | 🆕 **Unified HTML dashboard** with Tactical Gold palette, auto-refresh |
 | Strategies | 79+ registered via StrategyRegistry + legacy bridge |
 | Hedge Fund | Multi-provider aggregator + **causal bias filtering** on all providers 🆕 |
-| UnifiedPipeline | v6.0.0 — auto mode-routing (hedge/crypto/agentic) + **macro_context.py** 🆕 |
-| DCC-GARCH Tests | **47 tests** 🆕 — FX correlation, fit edge cases, VRK weight stability |
-| Documentation | 50+ docs files |
-| Test Suite | Core tests pass + DCC unit tests |
+| UnifiedPipeline | v6.1.0 — auto mode-routing + **macro_context.py orphan fix** 🆕 |
+| DCC-GARCH Tests | **47 tests** — FX correlation, fit edge cases, VRK weight stability |
+| Pipeline Orphans | **All fixed** 🆕 - macro_context.py imports real modules |
+| Documentation | 50+ docs files + **full v6.1.0 sync** |
+| Test Suite | Core tests pass + DCC unit tests + causal engine integration |
 | Security | Secrets via env vars, Telegram config validated |
-| Issues Resolved | 50+ (98%+) |
+| Issues Resolved | 55+ (99%+) |
 
 ---
 
@@ -225,7 +260,7 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 
 ```
 Dhaher Labs Ecosystem
-├── Quant-Nanggroe-AI    🟢 v6.0.0    ← YOU ARE HERE
+├── Quant-Nanggroe-AI    🟢 v6.1.0    ← YOU ARE HERE
 ├── Autonomous-Organism  🟢 v5.4.1    Live on Vercel
 ├── BlackHornet          🟢            110+ agents, Codeberg sync
 ├── Seulanga-RAG         🟢            Merged GitLab

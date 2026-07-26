@@ -145,7 +145,7 @@ def mtf_signal(mtf_data, style_name, strategy_func):
 # ── Strategy Wrapper (ubah strategy registry → signal dict) ──
 def strategy_wrapper(strategy_name, **params):
     """Wrap strategy registry jadi fungsi signal untuk MTF"""
-    from strategy_registry import get_strategy
+    from quant_nanggroe.engine.strategy.strategies import get_strategy
     
     def wrapper(df):
         if df is None or len(df) < 60: return {"signal": 0, "confidence": 0}

@@ -155,7 +155,7 @@ def signal_sma(symbol="EURUSD"):
 def signal_wyckoff(symbol="EURUSD"):
     try:
         sys.path.insert(0, str(SRC))
-        from strategy_registry import WyckoffStrategy
+        from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
         df = get_historical_mt5(symbol, count=100)
         if df is None or len(df) < 60:
             return {"bias": "neutral", "confidence": 0, "source": "wyckoff"}

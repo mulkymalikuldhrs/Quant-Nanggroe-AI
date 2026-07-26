@@ -1,110 +1,194 @@
+"""
+Macro Context Provider
+======================
+Integrates all causal macro engines into the pipeline as upstream signal context.
+Provides macro weather filtering, causal bias alignment, COT positioning checks,
+SMT divergence detection, and thesis drift guard for every pipeline run.
+
+v6.1.0: Fixed orphaned imports, duplicate instances, and filter short-circuit.
+All filters stack cumulatively instead of short-circuiting on first trigger.
+"""
+
 from __future__ import annotations
 
 import logging
-from typing import Any
+import os
+from typing import Any, Dict, List, Optional, Tuple
 
-from quant_nanggroe.engine.causal.master_engine import MasterQuantNanggroeEngine
-from quant_nanggroe.engine.causal.lead_lag import FuturesLeadLagMatrix
-from quant_nanggroe.engine.causal.weather_matrix import MacroWeatherEngine, WeatherRegime
-from quant_nanggroe.engine.causal.cot_provider import COTProvider
-from quant_nanggroe.engine.causal.thesis_guard import ThesisDriftGuard
+import numpy as np
+import pandas as pd
+
+from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
+from quant_nanggroe.engine.causal.cme_provider import CMEPriceProvider
+from quant_nanggroe.engine.risk.dcc_state import DCCState
 
 logger = logging.getLogger("QNA-MacroContext")
 
 
 class MacroContextProvider:
-    """Integrates all macro engines into the pipeline as upstream context."""
+    """
+    Integrates all macro engines into the pipeline as upstream context.
 
-    def __init__(self):
-        self.master = MasterQuantNanggroeEngine()
-        self.lead_lag = FuturesLeadLagMatrix()
-        self.weather = MacroWeatherEngine()
-        self.cot = COTProvider()
-        self.thesis = ThesisDriftGuard()
+    All data flows through MasterQuantNanggroeEngine — no duplicate
+    sub-engine instances. The 5-stage filter applies cumulatively.
+    """
 
-    def get_signal_context(self, symbol: str) -> dict[str, Any]:
-        spot = self.lead_lag.resolve_spot(symbol) or symbol
-        futures_pair = self.lead_lag.get_pair(symbol) or self.lead_lag.get_pair(spot)
+    SYMBOL_TO_FUTURES = {
+        "XAUUSD": "GC1!", "XAGUSD": "SI1!", "GOLD": "GC1!", "SILVER": "SI1!",
+        "US500": "ES1!", "SPX": "ES1!", "SP500": "ES1!",
+        "NAS100": "NQ1!", "US100": "NQ1!",
+        "US30": "YM1!", "DJI": "YM1!", "DOW": "YM1!",
+        "EURUSD": "6E1!", "GBPUSD": "6B1!", "USDJPY": "6J1!",
+        "AUDUSD": "6A1!", "USDCAD": "6C1!", "USDCHF": "6S1!",
+        "DXY": "DXY",
+        "US10Y": "ZN1!", "US30Y": "ZB1!",
+        "BTCUSDT": "BTC1!", "BTCUSD": "BTC1!", "BTC": "BTC1!",
+        "ETHUSDT": "ETH1!", "ETHUSD": "ETH1!", "ETH": "ETH1!",
+        "USOIL": "CL1!", "UKOIL": "CL1!", "WTI": "CL1!",
+        "NG": "NG1!", "NATGAS": "NG1!",
+    }
 
-        context: dict[str, Any] = {
+    def __init__(self, enable_fred: bool = False, enable_cot: bool = False):
+        # Single master engine — all sub-engines live here
+        self.master = MasterQuantNanggroeEngine(
+            enable_fred=enable_fred, enable_cot=enable_cot,
+        )
+        self.cme = CMEPriceProvider()
+        self.dcc = DCCState()
+
+    def _resolve_futures(self, symbol: str) -> str:
+        return self.SYMBOL_TO_FUTURES.get(symbol.upper(), symbol.upper())
+
+    def get_signal_context(self, symbol: str) -> Dict[str, Any]:
+        futures = self._resolve_futures(symbol)
+        context: Dict[str, Any] = {
             "macro_bias": 0.0,
             "macro_weather": "UNKNOWN",
             "cot_signal": "neutral",
-            "lead_lag": {},
-            "weather_profile": {},
+            "cot_percentile": None,
+            "dcc_mean_corr": None,
+            "dcc_mean_vol": None,
+            "dcc_n_assets": 0,
+            "smt_diverged": False,
+            "smt_zscore": None,
             "thesis_ok": True,
+            "futures_symbol": futures,
+            "msi_n_significant": 0,
         }
 
-        weather_bias = self.weather.bias_for_asset(symbol)
-        if weather_bias != 0:
-            context["macro_bias"] = weather_bias
-        context["macro_weather"] = self.weather.to_dict()["current_regime"]
-        context["weather_profile"] = self.weather.to_dict()
+        dcc_status = self.dcc.get_status()
+        context["dcc_mean_corr"] = dcc_status.get("mean_corr")
+        context["dcc_mean_vol"] = dcc_status.get("mean_vol_pct")
+        context["dcc_n_assets"] = dcc_status.get("n_assets", 0)
 
-        cot_pos = self.cot.evaluate_positioning(symbol)
-        context["cot_signal"] = cot_pos.get("signal", "neutral")
+        raw_bias = os.environ.get(f"QNA_CAUSAL_BIAS_{futures}", "")
+        if raw_bias:
+            try:
+                context["macro_bias"] = float(raw_bias)
+            except (ValueError, TypeError):
+                pass
 
-        if futures_pair:
-            context["lead_lag"] = {
-                "futures": futures_pair.futures,
-                "spot": futures_pair.spot,
-                "asset_class": futures_pair.asset_class.value,
-                "lead_lag_type": futures_pair.lead_lag.value,
-                "correlated_pairs": futures_pair.correlated_pairs or [],
-            }
+        weather = os.environ.get("QNA_MACRO_WEATHER", "")
+        if weather:
+            context["macro_weather"] = weather
 
-        thesis_check = self.thesis.check_macro_surprise_thesis(0.0, symbol, "HOLD")
-        context["thesis_ok"] = not thesis_check.get("alarm", False)
+        cot_signal = os.environ.get("QNA_COT_SIGNAL", "")
+        if cot_signal:
+            context["cot_signal"] = cot_signal.lower()
+        cot_pct = os.environ.get("QNA_COT_PERCENTILE", "")
+        if cot_pct:
+            try:
+                context["cot_percentile"] = float(cot_pct)
+            except (ValueError, TypeError):
+                pass
+
+        smt_flag = os.environ.get("QNA_SMT_DIVERGENCE", "false").lower()
+        context["smt_diverged"] = smt_flag == "true"
+
+        msi_n = os.environ.get("QNA_MSI_N_SIGNIFICANT", "")
+        if msi_n:
+            try:
+                context["msi_n_significant"] = int(msi_n)
+            except (ValueError, TypeError):
+                pass
 
         return context
 
-    def apply_macro_filter(self, symbol: str, signal_side: str, confidence: float) -> tuple[str, float, str]:
+    def apply_macro_filter(
+        self,
+        symbol: str,
+        signal_side: str,
+        confidence: float,
+    ) -> Tuple[str, float, str]:
+        """
+        Apply macro filters cumulatively — all stages stack.
+
+        Returns (filtered_side, filtered_confidence, reason_chain).
+        """
         context = self.get_signal_context(symbol)
+        reasons: List[str] = []
+        current_side = signal_side
+        current_conf = confidence
 
-        # Macro weather override
-        weather_signal = self.weather.signal_for_asset(symbol)
-        if weather_signal and weather_signal != signal_side:
-            weather_bias = self.weather.bias_for_asset(symbol)
-            if abs(weather_bias) > 0.6:
-                return ("hold", 0.0, f"Weather {context['macro_weather']} blocks {signal_side} ({weather_signal} preferred)")
+        # Stage 1: Macro weather
+        weather = context["macro_weather"]
+        if weather == "RISK_OFF" and current_side == "buy":
+            current_conf *= 0.7
+            reasons.append(f"Weather({weather}) x0.7")
+        elif weather == "RISK_ON" and current_side == "sell":
+            current_conf *= 0.7
+            reasons.append(f"Weather({weather}) x0.7")
 
-        # COT extreme filter
-        cot_signal = context["cot_signal"]
-        if cot_signal in ("extremely_overbought", "extremely_oversold"):
-            if (cot_signal == "extremely_overbought" and signal_side == "buy") or (cot_signal == "extremely_oversold" and signal_side == "sell"):
-                confidence = confidence * 0.5
-                return (signal_side, confidence, f"COT {cot_signal} reduces confidence for {signal_side}")
-
-        # Causal bias filter from env vars
-        # NOTE: HF providers already apply causal bias internally via apply_causal_bias().
-        # This pipeline-level filter catches signals from non-HF sources (strategies, agentic).
-        import os as _os
-        from quant_nanggroe.hedge_fund.signals.core import SYMBOL_TO_FUTURES
-
-        futures = SYMBOL_TO_FUTURES.get(symbol.upper(), symbol.upper())
-        raw_bias = _os.environ.get(f"QNA_CAUSAL_BIAS_{futures}", "")
-        if raw_bias:
-            try:
-                causal_bias = float(raw_bias)
-            except (ValueError, TypeError):
-                causal_bias = 0.0
-        else:
-            causal_bias = 0.0
-
-        if causal_bias != 0.0:
-            direction = 1 if signal_side == "buy" else -1
-            alignment = direction * causal_bias
-            if alignment < -0.3:
-                if abs(alignment) > 0.6:
-                    return ("hold", 0.0, f"Causal bias {causal_bias:+.2f} blocks {signal_side}")
-                confidence = max(confidence * (1.0 - abs(alignment) * 0.5), 0.0)
-                return (signal_side, confidence, f"Causal bias {causal_bias:+.2f} reduces {signal_side} (conf {confidence:.2f})")
+        # Stage 2: Causal bias alignment
+        bias = context["macro_bias"]
+        if bias != 0.0:
+            direction = 1 if current_side == "buy" else -1
+            alignment = direction * bias
+            if alignment < -0.5:
+                current_side = "hold"
+                current_conf = 0.0
+                reasons.append(f"Bias({bias:+.2f}) BLOCKED")
+            elif alignment < -0.2:
+                current_conf *= max(0.3, 1.0 - abs(alignment))
+                reasons.append(f"Bias({bias:+.2f}) x{max(0.3, 1.0 - abs(alignment)):.2f}")
             elif alignment > 0.3:
-                confidence = min(confidence * (1.0 + abs(causal_bias) * 0.3), 1.0)
-                return (signal_side, confidence, f"Causal bias {causal_bias:+.2f} boosts {signal_side} (conf {confidence:.2f})")
+                current_conf = min(current_conf * 1.3, 1.0)
+                reasons.append(f"Bias({bias:+.2f}) BOOST")
+            else:
+                reasons.append(f"Bias({bias:+.2f}) OK")
 
-        # Thesis check blocks trades if macro surprise contradicts
-        if not context["thesis_ok"]:
-            return ("hold", 0.0, "Macro surprise contradicts trade direction")
+        # Stage 3: COT extreme filter
+        cot = context["cot_signal"]
+        if "crowded_long" in str(cot) and current_side == "buy":
+            current_conf *= 0.5
+            reasons.append(f"COT({cot}) x0.5")
+        elif "crowded_short" in str(cot) and current_side == "sell":
+            current_conf *= 0.5
+            reasons.append(f"COT({cot}) x0.5")
 
-        return (signal_side, confidence, "Macro filter passed")
+        # Stage 4: SMT divergence
+        if context.get("smt_diverged") and current_side != "hold":
+            current_side = "hold"
+            current_conf = 0.0
+            reasons.append("SMT_DIVERGED BLOCKED")
+
+        # Stage 5: Thesis drift
+        if current_side != "hold":
+            thesis_check = self.master.check_thesis_drift({
+                "macro_weather": weather,
+                "cot_status": os.environ.get("QNA_COT_SIGNAL", "BALANCED"),
+                "dcc_mean_corr": context["dcc_mean_corr"],
+                "dcc_mean_vol": context["dcc_mean_vol"],
+                "asset_biases": {context["futures_symbol"]: context["macro_bias"]},
+                "event_type": os.environ.get("QNA_MACRO_EVENT", "UNKNOWN"),
+            })
+            if thesis_check.get("stage") == "STAGE_2_EXECUTE":
+                current_side = "hold"
+                current_conf = 0.0
+                reasons.append(f"Thesis({thesis_check.get('action')}) BLOCKED")
+
+        reason_chain = " | ".join(reasons) if reasons else "Passed"
+        return (current_side, round(current_conf, 4), reason_chain)
+
+
+__all__ = ["MacroContextProvider"]

@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger('dhaher_bt')
 
 import strategies.dhaher_system
-from strategy_registry import get_strategy
+from quant_nanggroe.engine.strategy.strategies import get_strategy
 from backtest_pipeline import get_historical, gate_decision
 from risk_module import kelly_fraction, strategy_score
 

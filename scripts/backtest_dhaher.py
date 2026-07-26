@@ -21,7 +21,7 @@ from backtest_pipeline import get_historical, backtest, walk_forward, gate_decis
 # ── Import DhaherSystem ──
 sys.path.insert(0, str(SRC / 'strategies'))
 import strategies.dhaher_system
-from strategy_registry import get_strategy
+from quant_nanggroe.engine.strategy.strategies import get_strategy
 
 def run():
     log.info("═══════════════════════════════════════")

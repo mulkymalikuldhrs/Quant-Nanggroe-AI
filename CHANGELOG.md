@@ -1,5 +1,60 @@
 # Quant Nanggroe AI — Changelog
 
+## [2026-07-26] Causal Engine API + Dashboard + Shared DCC State + Pipeline Orphan Fix (v6.1.0)
+
+### 🆕 DCC State Shared Singleton
+- **`engine/risk/dcc_state.py`** — Module-level `DCCState` singleton with `get_dcc_state()` accessor
+- Ring buffer (500 rows) for returns data, correlation matrix caching
+- `get_status()` — Dict for API/dashboard consumption
+- `get_correlation_matrix()` — Full correlation matrix as nested lists (JSON-ready)
+- `get_pair_correlation()` — Single pair lookup by asset name
+- `kelly_weights()` — Volatility-Regulated Kelly from cached DCC state
+- Shared across: MacroContextProvider, API endpoints, LiveEngine
+
+### 🆕 CME Futures Price Provider
+- **`engine/causal/cme_provider.py`** — 17 futures↔spot pairs with Yahoo Finance conversion
+- Dual-backend price fetching: EnginePriceProvider (spot) + yfinance (futures via `GC=F`, `ES=F`, etc.)
+- Log returns computation with ring buffer caching for DCC-GARCH fitting
+- `get_all_prices()` — Watchlist prices for 11 top-liquidity CME symbols
+- `YAHOO_FUTURES_MAP` — Correct symbol conversion for Yahoo Finance compatibility
+
+### 🆕 Causal Engine API Router (15+ Endpoints)
+- **`api/routes/causal_engine.py`** — Complete FastAPI router at `/api/causal/*`
+- Endpoints: `/biases`, `/weather`, `/dcc/status`, `/dcc/correlation`, `/dcc/pair`, `/dcc/refresh`
+- Endpoints: `/cme/prices`, `/cme/returns`, `/cot`, `/msi`, `/smt`, `/smt/pairs`
+- Endpoints: `/thesis`, `/pipeline`, `/status`
+- Shared engine instances (module-level lazy singletons)
+- Registered in `api/app.py` at startup
+
+### 🆕 Unified Dashboard
+- **`api/static/dashboard.html`** — Single HTML dashboard with new palette
+- Colors: `#1A1D20` Deep Charcoal, `#0F172A` Midnight Navy, `#D9A441` Tactical Gold, `#00D1C7` Cyber Cyan
+- DCC correlation matrix heatmap, causal bias interactive selector (6 event types)
+- COT positioning panel, SMT divergence alerts, thesis drift guard status
+- CME price feed, pipeline evaluation, 30-second auto-refresh
+- All data from `/api/causal/*` endpoints
+
+### 🔧 Pipeline Orphan Fix + Architecture Cleanup
+- **`pipeline/macro_context.py`** — Orphaned imports replaced (was referencing `master_engine`, `lead_lag`, `weather_matrix`, `cot_provider`, `thesis_guard` which never existed)
+- Now imports from `quant_nanggroe.engine.causal` — real modules
+- 5-stage filter now **stacks cumulatively** instead of short-circuiting
+- Duplicate COT instances eliminated (uses master engine's instances)
+- Yam Finance symbol conversion fixed in `cme_provider.py`
+
+### 🐛 Bug Fixes
+- **Double API prefix fixed** — `api/app.py` was adding duplicate `/api/causal` prefix to the causal router
+- **Dead import removed** — `timedelta` removed from `thesis_drift_guard.py`
+- **`adfuller` import fixed** — From `scipy.stats` to `statsmodels.tsa.stattools`
+- **COT duplicate instances** — `macro_context.py` no longer creates independent COT tracker
+
+### 📝 Docs Update (2026-07-26)
+- **README.md** — Updated with DCCState, CME provider, API endpoints, dashboard, project status
+- **CHANGELOG.md** — This entry
+- **ARCHITECTURE.md** — Added DCCState/CME/API/dashboard to diagrams
+- **AGENTS.md** — Updated commands, new modules, API endpoints
+- **qna.py** — Version bumped to 6.1.0
+- **`__init__.py` / `pyproject.toml`** — Version bumped to 6.1.0
+
 ## [2026-07-26] Quantitative Alpha Engines + Production Audit v2 + Docs Update
 
 ### 🆕 DCC-GARCH Dynamic Cross-Asset Correlation (v6.1.0)

@@ -253,7 +253,12 @@ class MasterQuantNanggroeEngine:
             return {"status": "unavailable"}
 
         try:
-            self._dcc.fit(returns)
+            if not self._dcc.fitted:
+                self._dcc.fit(returns)
+
+            if not self._dcc.fitted:
+                return {"status": "fit_failed"}
+
             return {
                 "status": "fitted",
                 "mean_corr": float(

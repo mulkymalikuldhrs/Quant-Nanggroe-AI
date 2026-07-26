@@ -9,10 +9,14 @@ README → AGENTS → ARCHITECTURE → CHANGELOG → TODO → docs/00_VISION →
 `docs/` has 58+ documents (numbered 00-51 plus ADRs), covering architecture, API, risk, security, testing, roadmap, and more.
 
 **New in v6.1.0:**
-- Causal Engine Suite (`engine/causal/`) — 5 modules (bias, MSI, COT, SMT, thesis drift)
+- Causal Engine Suite (`engine/causal/`) — 6 modules (bias, MSI, COT, SMT, thesis drift, CME provider)
+- DCCState Singleton (`engine/risk/dcc_state.py`) — Shared DCC-GARCH state across modules
+- CME Price Provider (`engine/causal/cme_provider.py`) — 17 futures↔spot pairs, Yahoo Finance compatible
 - DCC-GARCH (`engine/risk/dcc_garch.py`) — Dynamic cross-asset correlation with 47 tests
 - Causal Bias → Signal Filter — All HF providers apply boost/reduce/block
-- Pipeline `macro_context.py` — Safety-net macro context provider
+- Pipeline `macro_context.py` — ORPHAN FIX: replaced non-existent imports with real modules
+- Causal Engine API (`api/routes/causal_engine.py`) — 15+ endpoints at `/api/causal/*`
+- Dashboard (`api/static/dashboard.html`) — Unified UI with Tactical Gold palette
 
 ## Entry Points
 - **Primary**: `qna.py` — single unified launcher (modes: `unified`, `api`, `daemon`, `hedge`, `status`, `stop`). `unified` is the default mode (no subcommand needed). All others archived.
@@ -148,12 +152,18 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 PYTHONPATH="" uv run python -m pytest tests/ -v --tb=short   # full suite
 PYTHONPATH="" uv run python -m pytest tests/path/to_test.py   # single file
 
-# Build dashboard
-cd dashboard && npm run build
+# Causal Engine API endpoints (15+)
+curl http://localhost:8000/api/causal/status           # Aggregated engine status
+curl http://localhost:8000/api/causal/dcc/status        # DCC correlation matrix
+curl http://localhost:8000/api/causal/cme/prices        # Live CME futures prices
+curl http://localhost:8000/api/causal/biases?event=RATE_CUT  # Causal biases
+
+# Dashboard (served by API server)
+open http://localhost:8000/dashboard.html
 
 # Run
 uv run python qna.py                    # UnifiedPipeline (default mode, auto hedge routing)
-uv run python qna.py api                # API server + auto browser
+uv run python qna.py api                # API server + dashboard + auto browser
 uv run python qna.py api --no-browser   # no auto-open
 uv run python qna.py status             # health check
 uv run python qna.py hedge              # hedge fund aggregator

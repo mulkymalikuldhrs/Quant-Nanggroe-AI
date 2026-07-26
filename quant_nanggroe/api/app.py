@@ -374,6 +374,10 @@ def create_app() -> FastAPI:
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
     app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
 
+    # ── Causal Engine (v6.1.0) ────────────────────────────────────
+    from quant_nanggroe.api.routes.causal_engine import router as causal_router
+    app.include_router(causal_router)  # router already has /api/causal prefix
+
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")
     async def health_check():
