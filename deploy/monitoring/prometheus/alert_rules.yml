@@ -8,7 +8,7 @@ groups:
       - alert: HighAPILatency
         expr: |
           histogram_quantile(0.95,
-            sum(rate(http_request_duration_seconds_bucket{job="agentic-ai-app"}[5m])) by (le)
+            sum(rate(http_request_duration_seconds_bucket{job="qn-ai-app"}[5m])) by (le)
           ) > 2.0
         for: 5m
         labels:
@@ -22,7 +22,7 @@ groups:
       - alert: HighAPILatencyCritical
         expr: |
           histogram_quantile(0.95,
-            sum(rate(http_request_duration_seconds_bucket{job="agentic-ai-app"}[5m])) by (le)
+            sum(rate(http_request_duration_seconds_bucket{job="qn-ai-app"}[5m])) by (le)
           ) > 5.0
         for: 3m
         labels:
@@ -36,9 +36,9 @@ groups:
       - alert: HighErrorRate
         expr: |
           (
-            sum(rate(http_requests_total{job="agentic-ai-app",code=~"5.."}[5m]))
+            sum(rate(http_requests_total{job="qn-ai-app",code=~"5.."}[5m]))
             /
-            sum(rate(http_requests_total{job="agentic-ai-app"}[5m]))
+            sum(rate(http_requests_total{job="qn-ai-app"}[5m]))
           ) > 0.05
         for: 5m
         labels:
@@ -51,9 +51,9 @@ groups:
       - alert: HighErrorRateCritical
         expr: |
           (
-            sum(rate(http_requests_total{job="agentic-ai-app",code=~"5.."}[5m]))
+            sum(rate(http_requests_total{job="qn-ai-app",code=~"5.."}[5m]))
             /
-            sum(rate(http_requests_total{job="agentic-ai-app"}[5m]))
+            sum(rate(http_requests_total{job="qn-ai-app"}[5m]))
           ) > 0.15
         for: 3m
         labels:
@@ -66,7 +66,7 @@ groups:
       # ── Service Down Alert ─────────────────────────────────────────
       - alert: ServiceDown
         expr: |
-          up{job="agentic-ai-app"} == 0
+          up{job="qn-ai-app"} == 0
         for: 1m
         labels:
           severity: critical

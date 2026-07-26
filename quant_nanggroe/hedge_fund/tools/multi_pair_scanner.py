@@ -26,7 +26,6 @@ LEVERAGE = 2000
 # All values LIVE from Valetax MT5 server — NOT static estimates
 
 SL_JILAT_PAIRS = [
-    # ═══════════════ MAJORS (7) ═══════════════
     ("EURUSD",  "EURUSD.vx",  99,  "ENABLED", 0.57, "EUR", 100000, 5, 1.14429,  1.14330),
     ("GBPUSD",  "GBPUSD.vx",  105, "ENABLED", 0.67, "GBP", 100000, 5, 1.34606,  1.34501),
     ("USDJPY",  "USDJPY.vx",  119, "ENABLED", 0.50, "USD", 100000, 3, 162.464,  162.345),
@@ -35,7 +34,6 @@ SL_JILAT_PAIRS = [
     ("AUDUSD",  "AUDUSD.vx",  102, "ENABLED", 0.35, "AUD", 100000, 5, 0.69873,  0.69771),
     ("NZDUSD",  "NZDUSD.vx",  109, "ENABLED", 0.29, "NZD", 100000, 5, 0.58484,  0.58375),
 
-    # ═══════════════ EURO CROSSES (6) ═══════════════
     ("EURGBP",  "EURGBP.vx",  107, "ENABLED", 0.57, "EUR", 100000, 5, 0.85061,  0.84954),
     ("EURJPY",  "EURJPY.vx",  124, "ENABLED", 0.57, "EUR", 100000, 3, 185.829,  185.705),
     ("EURCHF",  "EURCHF.vx",  121, "ENABLED", 0.57, "EUR", 100000, 5, 0.92415,  0.92294),
@@ -43,27 +41,23 @@ SL_JILAT_PAIRS = [
     ("EURAUD",  "EURAUD.vx",  109, "ENABLED", 0.57, "EUR", 100000, 5, 1.63867,  1.63758),
     ("EURNZD",  "EURNZD.vx",  375, "ENABLED", 0.57, "EUR", 100000, 5, 1.95945,  1.95570),
 
-    # ═══════════════ POUND CROSSES (5) ═══════════════
     ("GBPJPY",  "GBPJPY.vx",  117, "ENABLED", 0.67, "GBP", 100000, 3, 218.576,  218.459),
     ("GBPCHF",  "GBPCHF.vx",  126, "ENABLED", 0.67, "GBP", 100000, 5, 1.08704,  1.08578),
     ("GBPCAD",  "GBPCAD.vx",  136, "ENABLED", 0.67, "GBP", 100000, 5, 1.88683,  1.88547),
     ("GBPAUD",  "GBPAUD.vx",  133, "ENABLED", 0.67, "GBP", 100000, 5, 1.92776,  1.92643),
     ("GBPNZD",  "GBPNZD.vx",  388, "ENABLED", 0.67, "GBP", 100000, 5, 2.30481,  2.30093),
 
-    # ═══════════════ YEN CROSSES (4) ═══════════════
     ("CHFJPY",  "CHFJPY.vx",  131, "ENABLED", 0.62, "CHF", 100000, 3, 201.224,  201.093),
     ("CADJPY",  "CADJPY.vx",  126, "ENABLED", 0.36, "CAD", 100000, 3, 115.921,  115.795),
     ("AUDJPY",  "AUDJPY.vx",  123, "ENABLED", 0.35, "AUD", 100000, 3, 113.452,  113.329),
     ("NZDJPY",  "NZDJPY.vx",  139, "ENABLED", 0.29, "NZD", 100000, 3, 94.963,   94.824),
 
-    # ═══════════════ AUD/NZ CROSSES (5) ═══════════════
     ("AUDCHF",  "AUDCHF.vx",  111, "ENABLED", 0.35, "AUD", 100000, 5, 0.56432,  0.56321),
     ("AUDCAD",  "AUDCAD.vx",  111, "ENABLED", 0.35, "AUD", 100000, 5, 0.97930,  0.97819),
     ("AUDNZD",  "AUDNZD.vx",  148, "ENABLED", 0.35, "AUD", 100000, 5, 1.19573,  1.19425),
     ("NZDCAD",  "NZDCAD.vx",  125, "ENABLED", 0.29, "NZD", 100000, 5, 0.81969,  0.81844),
     ("NZDCHF",  "NZDCHF.vx",  108, "ENABLED", 0.29, "NZD", 100000, 5, 0.47231,  0.47123),
 
-    # ═══════════════ COMMODITIES & METALS ═══════════════
     ("XAUUSD",  "XAUUSD.vx",  29,  "ENABLED", 2.01, "USD", 100,    2, 4016.38,  4016.09),
     ("XAGUSD",  "XAGUSD.vx",  204, "ENABLED", 2.80, "USD", 5000,   3, 56.017,   55.813),
     ("XAUEUR",  "XAUEUR.vx",  90,  "ENABLED", 2.01, "EUR", 100,    2, 3512.12,  3511.22),
@@ -71,12 +65,10 @@ SL_JILAT_PAIRS = [
     ("XPDUSD",  "XPDUSD.vx",  2168,"ENABLED", 63.08,"USD", 100,    2, 1261.54,  1239.86),
     ("XPTUSD",  "XPTUSD.vx",  1777,"ENABLED", 80.20,"USD", 100,    2, 1603.99,  1586.22),
 
-    # ═══════════════ ENERGIES ═══════════════
     ("XBRUSD",  "XBRUSD.vx",  94,  "ENABLED", 4.42, "USD", 1000,   2, 88.440,   87.500),
     ("XNGUSD",  "XNGUSD.vx",  150, "ENABLED", 14.82,"USD", 10000,  3, 2.964,    2.814),
     ("XTIUSD",  "XTIUSD.vx",  94,  "ENABLED", 4.14, "USD", 1000,   2, 82.740,   81.800),
 
-    # ═══════════════ INDICES ═══════════════
     ("US30",    "US30.vx",    118, "ENABLED", 26.09,"USD", 10,     1, 52172.3,  52160.5),
     ("NAS100",  "NAS100.vx",  118, "ENABLED", 28.60,"USD", 10,     1, 28599.2,  28587.4),
     ("SP500",   "SP500.vx",   122, "ENABLED", 7.46, "USD", 10,     1, 7463.3,   7451.1),
@@ -88,7 +80,6 @@ SL_JILAT_PAIRS = [
     ("FRA40",   "FRA40.vx",   43,  "ENABLED", 4.78, "EUR", 10,     1, 8348.9,   8344.6),
     ("HK50",    "HK50.vx",    190, "ENABLED", 3.14, "HKD", 10,     1, 24617.8,  24598.8),
 
-    # ═══════════════ CRYPTO ═══════════════
     ("BTCUSD",  "BTCUSD.vx",  2976,"ENABLED", 6.46, "USD", 1,      2, 64573.98, 64544.22),
     ("ETHUSD",  "ETHUSD.vx",  498, "ENABLED", 1.86, "USD", 10,     2, 1859.76,  1854.78),
     ("XRPUSD",  "XRPUSD.vx",  122, "ENABLED", 1.10, "USD", 10000,  4, 1.0993,   1.0871),
@@ -286,12 +277,10 @@ def scan_all_pairs():
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print(f"╔{'═'*78}╗")
     print(f"║  MULTI-PAIR SCANNER — Valetax MT5 Live Data{' ' * 38}║")
     print(f"║  Server: {SERVER:<20} Leverage: 1:{LEVERAGE:<5}       ║")
     print(f"║  Pairs in SL_JILAT_PAIRS: {len(SL_JILAT_PAIRS)}{' ' * 43}║")
     print(f"║  Forex: {len(SL_JILAT_FOREX)} | Short-Only: {len(SL_JILAT_SHORT_ONLY)} | Enabled: {len(SL_JILAT_ENABLED)} | Disabled: {len(SL_JILAT_DISABLED)}{' ' * 7}║")
-    print(f"╚{'═'*78}╝")
 
     if len(sys.argv) > 1 and sys.argv[1] == "--live":
         print("\nLaunching live MT5 scan...")

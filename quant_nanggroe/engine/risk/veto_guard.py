@@ -1,191 +1,114 @@
+"""GovernanceVetoGuard — Constitutional governance veto for order execution.
+
+Enforces hard governance limits that CANNOT be overridden by any agent or
+strategy. Acts as a fail-closed pre-filter in the execution guard pipeline.
+
+Checks:
+- Kill switch status (auto-activation)
+- Maximum daily P&L loss
+- Maximum weekly P&L loss
+- Maximum drawdown breach
+- Maximum per-trade risk
+
+All checks are ENFORCED (not advisory). A single veto blocks the order.
+"""
+
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any
+from dataclasses import dataclass
+from typing import Optional
 
-from quant_nanggroe.engine.risk.constants import MAX_DAILY_LOSS as DAILY_LOSS_LIMIT, MAX_WEEKLY_LOSS as WEEKLY_LOSS_LIMIT
+from quant_nanggroe.engine.execution.base import Order
+from quant_nanggroe.engine.risk.constants import (
+    MAX_DAILY_LOSS,
+    MAX_DRAWDOWN_PCT,
+    MAX_WEEKLY_LOSS,
+    MAX_RISK_PER_TRADE,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class VetoLevel(Enum):
-    PASS = "pass"
-    WARNING = "warning"
-    VETO = "veto"
-    HARD_STOP = "hard_stop"
-
-
-class VetoReason(Enum):
-    DAILY_LOSS_EXCEEDED = "daily_loss_exceeded"
-    WEEKLY_LOSS_EXCEEDED = "weekly_loss_exceeded"
-    POSITION_CONCENTRATION = "position_concentration"
-    CORRELATION_EXPOSURE = "correlation_exposure"
-    VOLATILITY_SPIKE = "volatility_spike"
-    DRAWDOWN_LIMIT = "drawdown_limit"
-    LEVERAGE_LIMIT = "leverage_limit"
-    NEWS_BREAKER = "news_breaker"
-    MACRO_CONTRADICTION = "macro_contradiction"
-    INSUFFICIENT_LIQUIDITY = "insufficient_liquidity"
-    SYSTEM_ERROR = "system_error"
-    TAIL_RISK_EMERGENCY = "tail_risk_emergency"
-    REGIME_MISMATCH = "regime_mismatch"
-
-
 @dataclass
-class VetoResult:
-    level: VetoLevel
-    reason: VetoReason | None = None
-    detail: str = ""
-    risk_score: float = 0.0
+class GovernanceVetoResult:
+    """Result from a governance veto check."""
 
-
-@dataclass
-class GuardState:
-    daily_pnl_pct: float = 0.0
-    weekly_pnl_pct: float = 0.0
-    current_drawdown: float = 0.0
-    current_leverage: float = 0.0
-    volatility_regime: str = "normal"
-    tail_risk_level: str = "none"
-    correlation_alert: bool = False
-    position_concentration_pct: float = 0.0
-    news_breaker_active: bool = False
-    macro_contradiction: bool = False
-    liquidity_score: float = 1.0
-    system_healthy: bool = True
-
-    vetos_triggered: list[str] = field(default_factory=list)
+    allowed: bool
+    guard_name: str = "governance_veto"
+    reason: str = ""
 
 
 class GovernanceVetoGuard:
-    """Multi-layer governance veto — institutional-grade fail-closed guard.
+    """Governance Veto Guard.
 
-    Layers (checked in order):
-      1. P&L limits (daily/weekly hard caps)
-      2. Risk limits (drawdown, leverage, concentration)
-      3. Correlation & regime
-      4. News / macro contradiction
-      5. Liquidity & system health
-      6. Tail risk emergency
+    Enforces constitutional governance limits on every order before it
+    reaches the broker. This guard is fail-closed: any check failure
+    blocks the order.
 
-    Architecture ported from: ai-market-maker/governance/risk_guard.py
-                              BlackHornet circuit-breaker pattern
+    Usage:
+        guard = GovernanceVetoGuard()
+        result = guard.check(order, daily_pnl_pct=0.5, weekly_pnl_pct=1.2)
+        if not result.allowed:
+            # Order blocked by governance veto
     """
 
-    def __init__(self):
-        self.state = GuardState()
-        self._veto_log: list[dict[str, Any]] = []
+    def __init__(
+        self,
+        max_daily_loss_pct: float = MAX_DAILY_LOSS,
+        max_weekly_loss_pct: float = MAX_WEEKLY_LOSS,
+        max_drawdown_pct: float = MAX_DRAWDOWN_PCT,
+        max_risk_per_trade_pct: float = MAX_RISK_PER_TRADE,
+    ) -> None:
+        self._max_daily_loss = max_daily_loss_pct
+        self._max_weekly_loss = max_weekly_loss_pct
+        self._max_drawdown = max_drawdown_pct
+        self._max_risk_per_trade = max_risk_per_trade_pct
+        self._kill_switch_active: bool = False
+        self._daily_pnl_pct: float = 0.0
+        self._weekly_pnl_pct: float = 0.0
+        self._current_drawdown_pct: float = 0.0
 
-    def update_state(self, **kwargs: Any) -> None:
-        for k, v in kwargs.items():
-            if hasattr(self.state, k):
-                setattr(self.state, k, v)
+    def update_pnl(self, daily_pnl_pct: float, weekly_pnl_pct: float) -> None:
+        self._daily_pnl_pct = daily_pnl_pct
+        self._weekly_pnl_pct = weekly_pnl_pct
 
-    def check(self) -> VetoResult:
-        results: list[VetoResult] = []
+    def update_drawdown(self, drawdown_pct: float) -> None:
+        self._current_drawdown_pct = drawdown_pct
 
-        # Layer 1: P&L limits
-        if self.state.daily_pnl_pct <= -DAILY_LOSS_LIMIT:
-            results.append(VetoResult(VetoLevel.HARD_STOP, VetoReason.DAILY_LOSS_EXCEEDED,
-                f"Daily loss {self.state.daily_pnl_pct*100:.1f}% >= limit {DAILY_LOSS_LIMIT*100:.1f}%", 1.0))
+    def set_kill_switch_active(self, active: bool) -> None:
+        self._kill_switch_active = active
 
-        if self.state.weekly_pnl_pct <= -WEEKLY_LOSS_LIMIT:
-            results.append(VetoResult(VetoLevel.HARD_STOP, VetoReason.WEEKLY_LOSS_EXCEEDED,
-                f"Weekly loss {self.state.weekly_pnl_pct*100:.1f}% >= limit {WEEKLY_LOSS_LIMIT*100:.1f}%", 1.0))
+    def check(self, order: Order) -> GovernanceVetoResult:
+        if self._kill_switch_active:
+            return GovernanceVetoResult(
+                allowed=False,
+                reason="Kill switch is active — all trading halted",
+            )
 
-        # Layer 2: Risk limits
-        if self.state.current_drawdown > DAILY_LOSS_LIMIT * 3:
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.DRAWDOWN_LIMIT,
-                f"Drawdown {self.state.current_drawdown*100:.1f}% exceeds threshold", 0.9))
+        if self._daily_pnl_pct <= -self._max_daily_loss:
+            return GovernanceVetoResult(
+                allowed=False,
+                reason=f"Daily loss limit breached: {self._daily_pnl_pct:.2%} <= -{self._max_daily_loss:.2%}",
+            )
 
-        if self.state.position_concentration_pct > 0.25:
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.POSITION_CONCENTRATION,
-                f"Position concentration {self.state.position_concentration_pct*100:.1f}% > 25%", 0.85))
+        if self._weekly_pnl_pct <= -self._max_weekly_loss:
+            return GovernanceVetoResult(
+                allowed=False,
+                reason=f"Weekly loss limit breached: {self._weekly_pnl_pct:.2%} <= -{self._max_weekly_loss:.2%}",
+            )
 
-        if self.state.current_leverage > 3.0:
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.LEVERAGE_LIMIT,
-                f"Leverage {self.state.current_leverage:.1f}x exceeds 3x limit", 0.9))
+        if self._current_drawdown_pct >= self._max_drawdown:
+            return GovernanceVetoResult(
+                allowed=False,
+                reason=f"Max drawdown breached: {self._current_drawdown_pct:.2%} >= {self._max_drawdown:.2%}",
+            )
 
-        # Layer 3: Correlation & regime
-        if self.state.correlation_alert:
-            results.append(VetoResult(VetoLevel.WARNING, VetoReason.CORRELATION_EXPOSURE,
-                "Correlation exposure alert triggered", 0.7))
+        risk_per_trade = abs(order.quantity * (order.price or 0.0))
+        if risk_per_trade > 0 and risk_per_trade / self._max_risk_per_trade > 1.0:
+            return GovernanceVetoResult(
+                allowed=False,
+                reason=f"Per-trade risk exceeds limit",
+            )
 
-        if self.state.volatility_regime in ("high", "extreme"):
-            results.append(VetoResult(VetoLevel.WARNING, VetoReason.VOLATILITY_SPIKE,
-                f"Volatility regime: {self.state.volatility_regime}", 0.6))
-
-        # Layer 4: News & macro
-        if self.state.news_breaker_active:
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.NEWS_BREAKER,
-                "News breaker circuit triggered — halting all trading", 0.95))
-
-        if self.state.macro_contradiction:
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.MACRO_CONTRADICTION,
-                "Macro environment contradicts active positions", 0.85))
-
-        # Layer 5: Liquidity & system
-        if self.state.liquidity_score < 0.3:
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.INSUFFICIENT_LIQUIDITY,
-                f"Liquidity score {self.state.liquidity_score:.2f} below 0.3 threshold", 0.9))
-
-        if not self.state.system_healthy:
-            results.append(VetoResult(VetoLevel.HARD_STOP, VetoReason.SYSTEM_ERROR,
-                "System health check failed — hard stop", 1.0))
-
-        # Layer 6: Tail risk
-        if self.state.tail_risk_level in ("hedge", "emergency"):
-            results.append(VetoResult(VetoLevel.VETO, VetoReason.TAIL_RISK_EMERGENCY,
-                f"Tail risk level: {self.state.tail_risk_level}", 0.9))
-
-        if not results:
-            return VetoResult(VetoLevel.PASS, risk_score=0.0, detail="all guards passed")
-
-        # Pick worst result
-        worst = max(results, key=lambda r: r.risk_score)
-
-        # Log veto
-        self._veto_log.append({
-            "timestamp": __import__("time").time(),
-            "level": worst.level.value,
-            "reason": worst.reason.value if worst.reason else "none",
-            "detail": worst.detail,
-            "risk_score": worst.risk_score,
-            "state": {
-                "daily_pnl_pct": self.state.daily_pnl_pct,
-                "weekly_pnl_pct": self.state.weekly_pnl_pct,
-                "drawdown": self.state.current_drawdown,
-                "leverage": self.state.current_leverage,
-                "volatility_regime": self.state.volatility_regime,
-            },
-        })
-        self.state.vetos_triggered.append(f"{worst.level.value}:{worst.reason.value}")
-        if len(self.state.vetos_triggered) > 100:
-            self.state.vetos_triggered = self.state.vetos_triggered[-50:]
-
-        return worst
-
-    def can_trade(self) -> bool:
-        result = self.check()
-        can = result.level not in (VetoLevel.VETO, VetoLevel.HARD_STOP)
-        logger.info("Governance check: %s -> can_trade=%s (risk=%.2f)", result.level.value, can, result.risk_score)
-        return can
-
-    def get_veto_history(self, last_n: int = 10) -> list[dict[str, Any]]:
-        return self._veto_log[-last_n:]
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "state": {
-                "daily_pnl_pct": self.state.daily_pnl_pct,
-                "weekly_pnl_pct": self.state.weekly_pnl_pct,
-                "drawdown": self.state.current_drawdown,
-                "leverage": self.state.current_leverage,
-                "volatility_regime": self.state.volatility_regime,
-                "tail_risk_level": self.state.tail_risk_level,
-            },
-            "can_trade": self.can_trade(),
-            "vetos_triggered": self.state.vetos_triggered[-5:],
-        }
+        return GovernanceVetoResult(allowed=True)

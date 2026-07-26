@@ -18,6 +18,8 @@ from quant_nanggroe.pipeline.macro_context import MacroContextProvider
 
 log = logging.getLogger("QNA-Pipeline-Signal")
 
+MIN_CONFIDENCE_THRESHOLD: float = 0.3
+
 
 @dataclass
 class Signal:
@@ -86,7 +88,19 @@ class UnifiedSignalEngine:
                 sig.confidence = conf
                 sig.reason = f"{sig.reason} | {reason}"
                 sig.metadata["macro_weather"] = self._macro.weather.to_dict()
+
+            if sig.side in ("buy", "sell") and sig.confidence < MIN_CONFIDENCE_THRESHOLD:
+                log.warning(
+                    "Confidence filter dropped %s %s: conf=%.3f < %.3f",
+                    symbol, sig.side, sig.confidence, MIN_CONFIDENCE_THRESHOLD,
+                )
+                continue
+
             filtered.append(sig)
+
+        if not filtered and any(s.side in ("buy", "sell") for s in signals):
+            hold_reason = f"All {len(signals)} signals filtered below MIN_CONFIDENCE_THRESHOLD={MIN_CONFIDENCE_THRESHOLD}"
+            log.warning("No trade for %s: %s", symbol, hold_reason)
 
         return filtered
 
@@ -112,13 +126,31 @@ class UnifiedSignalEngine:
             log.debug("Hedge fund signal failed for %s: %s", symbol, e)
         return None
 
+    @staticmethod
+    def _ohlcv_data(data: Optional[dict]) -> Optional[dict]:
+        if data is None or not isinstance(data, dict):
+            return None
+        price = data.get("close") or data.get("price")
+        if price is None:
+            return data
+        price = float(price)
+        if "close" not in data:
+            data = dict(data)
+            data["open"] = float(data.get("open", price))
+            data["high"] = float(data.get("high", price))
+            data["low"] = float(data.get("low", price))
+            data["close"] = price
+            data["volume"] = float(data.get("volume", 0))
+        return data
+
     def _try_strategies(self, symbol: str, data: Optional[dict] = None) -> list[Signal]:
         runner = self._lazy_strategy_runner()
         if runner is None:
             return []
         signals: list[Signal] = []
         try:
-            price = float(data.get("price", 0)) if data and isinstance(data, dict) and data.get("price") else 0.0
+            data = self._ohlcv_data(data)
+            price = float(data.get("close", 0)) if data and isinstance(data, dict) else 0.0
             if hasattr(runner, "run_strategies"):
                 raw_signals = runner.run_strategies(symbol, price)
                 if isinstance(raw_signals, list):
@@ -165,13 +197,9 @@ class UnifiedSignalEngine:
         try:
             from quant_nanggroe.engine.agentic.autonomous import AutonomousPipeline
             ap = AutonomousPipeline()
-            import asyncio
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                raw = loop.run_until_complete(ap.run(symbol=symbol, use_llm=False))
-            finally:
-                loop.close()
+            from quant_nanggroe.pipeline.orchestrator import _get_pipeline_loop
+            loop = _get_pipeline_loop()
+            raw = loop.run_until_complete(ap.run(symbol=symbol, use_llm=False))
             if hasattr(raw, "success") and raw.success:
                 side = getattr(raw, "signal", "hold")
                 confidence = float(getattr(raw, "confidence", 0.0))

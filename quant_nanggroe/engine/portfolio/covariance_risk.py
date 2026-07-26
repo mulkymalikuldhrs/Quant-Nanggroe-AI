@@ -44,14 +44,53 @@ class CovarianceRiskOptimizer:
         return float(np.sqrt(max(0.0, var)))
 
     def risk_parity_weights(self, cov_matrix: np.ndarray) -> np.ndarray:
-        """Calculate Equal Risk Contribution (Risk Parity) weights across assets."""
+        """Calculate Equal Risk Contribution (Risk Parity) weights across assets.
+
+        Uses the full covariance matrix so correlated assets (e.g. BTC/ETH)
+        are not overweighted.  Falls back to diagonal-only when the matrix is
+        singular or unavailable.
+        """
         n_assets = cov_matrix.shape[0]
-        # Inverse volatility weighting approximation
+
+        if cov_matrix is None or cov_matrix.size == 0:
+            logger.warning(
+                "cov_matrix is None/empty — falling back to inverse-volatility weighting"
+            )
+            return self._diagonal_risk_parity_weights(cov_matrix)
+
+        eigenvalues = np.linalg.eigvalsh(cov_matrix)
+        if np.any(eigenvalues < 1e-10):
+            logger.warning(
+                "Covariance matrix near-singular (min eigenvalue=%.2e) — "
+                "falling back to diagonal risk parity",
+                eigenvalues.min(),
+            )
+            return self._diagonal_risk_parity_weights(cov_matrix)
+
+        weights = np.ones(n_assets) / n_assets
+        for _ in range(200):
+            port_vol = np.sqrt(weights @ cov_matrix @ weights)
+            if port_vol < 1e-12:
+                return np.ones(n_assets) / n_assets
+            mrc = cov_matrix @ weights / port_vol
+            risk_contrib = weights * mrc
+            avg_rc = np.mean(risk_contrib)
+            if avg_rc < 1e-12:
+                return np.ones(n_assets) / n_assets
+            target_rc = np.full(n_assets, avg_rc)
+            weights = weights * (target_rc / (risk_contrib + 1e-15))
+            weights = weights / np.sum(weights)
+
+        logger.warning("Risk parity did not converge after 200 iterations")
+        return weights
+
+    def _diagonal_risk_parity_weights(self, cov_matrix: np.ndarray) -> np.ndarray:
+        """Fallback: inverse-volatility weighting using only the diagonal."""
+        n_assets = cov_matrix.shape[0]
         variances = np.diag(cov_matrix)
         stdevs = np.sqrt(np.maximum(1e-8, variances))
         inv_stdevs = 1.0 / stdevs
-        weights = inv_stdevs / np.sum(inv_stdevs)
-        return weights
+        return inv_stdevs / np.sum(inv_stdevs)
 
     def scale_weights_for_target_vol(self, weights: np.ndarray, cov_matrix: np.ndarray) -> Tuple[np.ndarray, float]:
         """Scale position weights to match target portfolio volatility."""

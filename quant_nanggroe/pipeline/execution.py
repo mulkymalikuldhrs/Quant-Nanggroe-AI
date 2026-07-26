@@ -11,6 +11,10 @@ import logging
 import time
 from typing import Any, Optional
 
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+from quant_nanggroe.engine.risk.manager import RiskManager as EngineRiskManager
+from quant_nanggroe.engine.risk import constants as risk_constants
+
 log = logging.getLogger("QNA-Pipeline-Exec")
 
 
@@ -28,6 +32,8 @@ class UnifiedExecutionRouter:
         self._paper: Any = None
         self._engine: Any = None
         self._production: Any = None
+        self._kill_switch: KillSwitch | None = None
+        self._risk_manager: EngineRiskManager | None = None
 
     def _lazy_mt5(self):
         if self._mt5 is not None:
@@ -85,6 +91,18 @@ class UnifiedExecutionRouter:
         except Exception as e:
             log.debug("ProductionExecutionManager unavailable: %s", e)
 
+    def _reject(self, symbol: str, side: str, price: float, qty: float, error: str) -> dict:
+        return {
+            "symbol": symbol,
+            "side": side,
+            "qty": qty,
+            "price": price,
+            "status": "rejected",
+            "mode": "risk_gate",
+            "error": error,
+            "strategy": "pipeline",
+        }
+
     def execute(
         self,
         symbol: str,
@@ -98,15 +116,42 @@ class UnifiedExecutionRouter:
         if side not in ("buy", "sell"):
             return None
 
-        if qty is None or qty <= 0:
-            qty = max(0.001, 100.0 / price) if price > 0 else 0.001
+        # ── 1. Risk gate: KillSwitch ──────────────────────────────────
+        if self._kill_switch is None:
+            self._kill_switch = KillSwitch()
+        if not self._kill_switch.can_trade():
+            return self._reject(symbol, side, price, qty or 0.0, "Kill switch active — trading halted")
 
-        # 1. ProductionExecutionManager (has full MT5 > Paper > Engine chain)
+        # ── 2. Risk gate: daily/weekly loss limits ────────────────────
+        balance = self.get_balance()
+        if balance <= 0:
+            balance = 10000.0  # fallback if no broker connected
+        if self._risk_manager is None:
+            self._risk_manager = EngineRiskManager(initial_equity=balance)
+        risk_check = self._risk_manager.check_trade(
+            symbol=symbol,
+            direction=side.upper(),
+            lot_size=qty or 0.01,
+            entry=price,
+            stop_loss=sl or price * 0.95,
+            account_balance=balance,
+        )
+        if risk_check.get("verdict") != "APPROVED":
+            reason = risk_check.get("reason", "Risk check vetoed")
+            log.warning("Risk gate vetoed %s %s: %s", symbol, side, reason)
+            return self._reject(symbol, side, price, qty or 0.0, reason)
+
+        # ── 3. Position sizing from constants ─────────────────────────
+        if qty is None or qty <= 0:
+            max_pos_value = balance * risk_constants.MAX_POSITION_SIZE_PCT
+            qty = max(0.001, max_pos_value / price) if price > 0 else 0.001
+
+        # ── 4. ProductionExecutionManager (has full MT5 > Paper > Engine chain) ──
         self._lazy_production()
         if self._production is not None:
             try:
                 sig = _SignalStub(symbol, side, confidence, price, sl, tp)
-                result = self._production.execute_signal(sig, price, 10000.0)
+                result = self._production.execute_signal(sig, price, balance)
                 if result is not None:
                     return result
             except Exception as e:

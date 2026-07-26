@@ -248,12 +248,12 @@ class RegimeAwareExecution:
     
     def select_strategies(self, regime: str) -> List[str]:
         mapping = {
-            "trending_up": ["Momentum", "CryptoSpecific"],
-            "trending_down": ["MeanReversion", "CryptoSpecific"],
-            "ranging": ["MeanReversion", "RegimeBased"],
-            "volatile": ["MeanReversion"],
+            "trending_up": ["trend_follow", "crypto_specific"],
+            "trending_down": ["mean_rev", "crypto_specific"],
+            "ranging": ["mean_rev", "regime_detection"],
+            "volatile": ["mean_rev"],
             "crisis": [],
-            "unknown": ["MeanReversion", "Momentum"],
+            "unknown": ["mean_rev", "trend_follow"],
         }
         return mapping.get(regime, list(mapping.values())[0])
 

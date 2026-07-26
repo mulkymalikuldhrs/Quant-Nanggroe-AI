@@ -54,7 +54,7 @@ quant_nanggroe/                          (~694 .py files, 125K+ lines)
 │   └── factory.py                       → Pipeline factory with auto mode detection
 ├── api/                                 → FastAPI server (181 endpoints)
 ├── engine/                              → Core trading engine (19 modules)
-│   ├── strategies/                      → CANONICAL — 9 registered strategies (@register decorator)
+│   ├── strategies/                      → CANONICAL — 79+ registered strategies (@register decorator)
 │   │   └── registry.py                  → StrategyRegistry auto-discovery
 │   ├── strategy/strategies/             → LEGACY BRIDGE — backward-compat shim only (empty, routes via __init__)
 │   ├── risk/                            → Constitutional risk: 9-checkpoint gate, KillSwitch, drawdown monitor
@@ -72,7 +72,7 @@ quant_nanggroe/                          (~694 .py files, 125K+ lines)
 │   ├── mtf.py                           → Multi-timeframe analysis
 │   ├── multipair.py                     → Multi-pair scanner
 │   ├── runner.py                        → Hedge fund runner
-│   ├── signals/                         → 247 providers: core (10) + evolved (237) + registry + aggregator
+│   ├── signals/                         → 4 active providers (core) + 237 evolved (experimental) + registry + aggregator
 │   ├── risk/                            → gate.py, guard.py (fail-closed)
 │   ├── execution/                       → orders.py (trail_sl, execute)
 │   ├── portfolio/                       → main.py (run_once)
@@ -102,22 +102,22 @@ quant_nanggroe/                          (~694 .py files, 125K+ lines)
 
 ### Strategy Pipeline
 
-The canonical strategy pipeline lives in `quant_nanggroe/engine/strategies/` with **9 registered strategies** via `@StrategyRegistry.register` decorator:
+The canonical strategy pipeline lives in `quant_nanggroe/engine/strategies/` with **79+ registered strategies** via `@StrategyRegistry.register` decorator. Key strategies include:
 
-| Strategy | File | Description |
-|----------|------|-------------|
-| SMC | `smc_strategy.py` | Smart Money Concepts — OB, FVG, liquidity sweep, BOS/CHOCH |
-| Wyckoff | — | Spring/upthrust, volume ratio, SoS/SoW |
-| MSNR | `msnr.py` | Multi-timeframe confluence |
-| MeanRev | `mean_reversion.py` | OU process, half-life, Bollinger, z-score |
-| ADX | `adx_strategy.py` | Trend strength |
-| Aroon | `aroon_strategy.py` | Trend change detection |
-| Bollinger Squeeze | `bollinger_squeeze.py` | Volatility breakout |
-| CCI | `cci_strategy.py` | Commodity Channel Index |
-| Choppiness Index | `choppiness_index.py` | Trend vs. ranging market |
-| +32 more .py files (signal adapters, wrappers, legacy bridges) | | |
+| Registered Name | File | Description |
+|-----------------|------|-------------|
+| smc | `smc_strategy.py` | Smart Money Concepts — OB, FVG, liquidity sweep, BOS/CHOCH |
+| wyckoff | `wyckoff.py` | Spring/upthrust, volume ratio, SoS/SoW |
+| msnr | `msnr.py` | Multi-timeframe confluence |
+| mean_rev | `mean_reversion.py` | OU process, half-life, Bollinger, z-score |
+| trend_follow | `trend_follow_strategy.py` | Trend following |
+| dhaher_system | `dhaher_system.py` | Meta-strategy / Dhaher System |
+| ict | `ict_strategy.py` | ICT concepts |
+| market_profile | `market_profile.py` | Market Profile |
+| tsmom | `tsmom_strategy.py` | Time-Series Momentum |
+| +70+ more .py files | | (See STRATEGY_CATALOG.md for full list) |
 
-**Total: 9 registered strategies + 35+ additional .py files** including signal adapters, wrappers, and experimental modules. (Note: exact count of .py files depends on whether legacy archived strategies in `archive/` are included — ~45+ in canonical path, ~139 legacy frozen.)
+**Total: 79+ registered strategies** across canonical `engine/strategies/` (including signal adapters, wrappers, experimental modules). Legacy path has 139 frozen strategies in backward-compat shim.
 
 **Legacy path** `quant_nanggroe/engine/strategy/strategies/` is a backward-compat shim only (empty directory with re-export `__init__.py`).
 
@@ -188,7 +188,7 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 |--------|--------|
 | Architecture Health | 9/10 — Clean single entry point + unified pipeline |
 | Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate, unified constants |
-| Strategies | 9 registered via StrategyRegistry + legacy bridge |
+| Strategies | 79+ registered via StrategyRegistry + legacy bridge |
 | Hedge Fund | Multi-provider aggregator split into real submodules (v6.0.0) |
 | UnifiedPipeline | 🆕 v6.0.0 — auto mode-routing (hedge/crypto/agentic) |
 | Documentation | 50+ docs files |

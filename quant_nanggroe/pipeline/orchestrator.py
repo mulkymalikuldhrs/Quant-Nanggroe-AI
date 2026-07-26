@@ -26,6 +26,27 @@ from quant_nanggroe.pipeline.execution import UnifiedExecutionRouter
 
 log = logging.getLogger("QNA-Pipeline")
 
+_pipeline_loop: Optional[asyncio.AbstractEventLoop] = None
+
+
+def _get_pipeline_loop() -> asyncio.AbstractEventLoop:
+    global _pipeline_loop
+    if _pipeline_loop is not None and not _pipeline_loop.is_closed():
+        return _pipeline_loop
+    try:
+        _pipeline_loop = asyncio.get_event_loop()
+    except RuntimeError:
+        _pipeline_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_pipeline_loop)
+    return _pipeline_loop
+
+
+def _close_pipeline_loop() -> None:
+    global _pipeline_loop
+    if _pipeline_loop is not None and not _pipeline_loop.is_closed():
+        _pipeline_loop.close()
+    _pipeline_loop = None
+
 FOREX_SYMBOLS = {
     "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD",
     "AUDUSD", "NZDUSD", "EURGBP", "EURJPY", "GBPJPY",
@@ -121,12 +142,8 @@ class UnifiedPipeline:
             return PipelineResult.empty(symbol, mode="agentic", error="AutonomousPipeline not available")
 
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                raw = loop.run_until_complete(ap.run(symbol=symbol, use_llm=False))
-            finally:
-                loop.close()
+            loop = _get_pipeline_loop()
+            raw = loop.run_until_complete(ap.run(symbol=symbol, use_llm=False))
 
             sla_ms = (time.perf_counter() - t0) * 1000
             signal = getattr(raw, "signal", "hold")

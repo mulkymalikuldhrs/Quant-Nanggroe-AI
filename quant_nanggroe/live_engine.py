@@ -79,6 +79,7 @@ MAX_POSITIONS_TOTAL = 3
 HEARTBEAT_INTERVAL = 10
 CLEANUP_INTERVAL = 10
 REPORT_INTERVAL = 5
+DCC_UPDATE_INTERVAL = 10    # re-fit DCC-GARCH correlation every 10 cycles
 
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
@@ -622,6 +623,68 @@ class LiveEngine:
             return False, reason
         return True, "ok"
 
+    def _update_dcc_garch(self):
+        """Auto-fit DCC-GARCH from candle data for dynamic correlation tracking.
+
+        Computes log returns from available asset candles, builds a DataFrame,
+        and calls RiskEnforcer.update_correlation() to re-fit the model.
+
+        Runs every DCC_UPDATE_INTERVAL cycles.
+        """
+        try:
+            import pandas as pd
+            import numpy as np
+
+            # Gather close prices for all available assets
+            close_data: dict[str, list[float]] = {}
+            n_obs = 0
+            for sym in ASSET_SYMBOLS:
+                candles = self.asset_candles.get(sym, [])
+                if len(candles) < 30:
+                    continue
+                closes = [c["close"] for c in candles]
+                if len(closes) > n_obs:
+                    n_obs = len(closes)
+                close_data[sym] = closes
+
+            if len(close_data) < 2:
+                log.debug("DCC auto-fit: need at least 2 assets with 30+ candles")
+                return
+
+            # Align to same length (shortest)
+            min_len = min(len(v) for v in close_data.values())
+            if min_len < 30:
+                log.debug("DCC auto-fit: insufficient data (%d obs)", min_len)
+                return
+
+            aligned = {sym: prices[-min_len:] for sym, prices in close_data.items()}
+            df = pd.DataFrame(aligned)
+
+            # Compute log returns
+            log_returns = np.log(df / df.shift(1)).dropna()
+            if len(log_returns) < 30:
+                log.debug("DCC auto-fit: insufficient returns (%d rows)", len(log_returns))
+                return
+
+            # Fit DCC-GARCH via RiskEnforcer
+            success = self.production["risk"].update_correlation(log_returns)
+            if success:
+                status = self.production["risk"].get_dcc_status()
+                log.info(
+                    "DCC-GARCH auto-fit: %d assets, mean vol=%.2f%%, mean corr=%.4f",
+                    status.get("n_assets", 0),
+                    status.get("mean_vol_pct", 0),
+                    status.get("mean_corr", 0),
+                )
+                # Expose DCC context via env vars for downstream providers
+                os.environ["QNA_DCC_MEAN_CORR"] = str(status.get("mean_corr", 0))
+                os.environ["QNA_DCC_MEAN_VOL_PCT"] = str(status.get("mean_vol_pct", 0))
+                os.environ["QNA_DCC_N_ASSETS"] = str(status.get("n_assets", 0))
+            else:
+                log.debug("DCC-GARCH auto-fit failed")
+        except Exception as e:
+            log.debug("DCC auto-fit error: %s", e)
+
     def _sync_broker_positions(self):
         """Phase A: reconcile open positions in ledger with broker (MT5 or paper)
         so the engine does not double-open when restarted live."""
@@ -956,6 +1019,10 @@ class LiveEngine:
             log.critical("KILL SWITCH ACTIVE — halting all trading")
             return
 
+        # ── DCC-GARCH: auto-fit dynamic correlation every N cycles ──
+        if self.cycle_count > 0 and self.cycle_count % DCC_UPDATE_INTERVAL == 0:
+            self._update_dcc_garch()
+
         # ── Thesis Drift Guard: check macro context against active positions ──
         if self.cycle_count % 3 == 0:  # check every 3 cycles
             try:
@@ -1192,6 +1259,19 @@ class LiveEngine:
             f"Drawdown {dd:.2%} | Open positions {open_pos} | "
             f"Prod strats {prod_strats} | Errors {self.total_errors}"
         )
+
+        # Append DCC-GARCH correlation insight to heartbeat
+        try:
+            dcc_status = self.production["risk"].get_dcc_status()
+            if dcc_status.get("fitted"):
+                log.info(
+                    "DCC-GARCH: mean_corr=%.4f mean_vol=%.2f%% (%d assets)",
+                    dcc_status.get("mean_corr", 0),
+                    dcc_status.get("mean_vol_pct", 0),
+                    dcc_status.get("n_assets", 0),
+                )
+        except Exception:
+            pass
         msg = format_heartbeat(self.cycle_count, balance, portfolio_value,
                                dd, open_pos, self.total_errors)
         send_telegram(msg)

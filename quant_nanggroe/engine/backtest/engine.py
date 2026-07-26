@@ -151,7 +151,8 @@ class BacktestEngine:
         prices = prices.rename(columns={c: c.lower() for c in prices.columns})
         symbols = list(prices.columns)
 
-        # ponytail: precompute annualized vol per symbol once (O(n)); notional scaled to vol_target
+        # ponytail: precompute annualized rolling vol per symbol; shift(1) to avoid
+        # look-ahead bias: at bar i the vol used is from bars [i-window, i-1].
         # infer bars/year from actual index spacing (1h -> ~8760, daily -> 252)
         if len(prices) > 1:
             med_delta = prices.index.to_series().diff().median()
@@ -159,11 +160,13 @@ class BacktestEngine:
         else:
             bars_per_year = self.config.bars_per_year
         ann_factor = np.sqrt(bars_per_year)
-        vol_by_symbol = {}
+
+        vol_window = 20
+        rolling_vol_by_symbol: Dict[str, pd.Series] = {}
         for sym in symbols:
             if sym in prices.columns:
-                rets = prices[sym].pct_change().dropna()
-                vol_by_symbol[sym] = rets.std() * ann_factor if len(rets) > 1 else 0.0
+                rets = prices[sym].pct_change()
+                rolling_vol_by_symbol[sym] = rets.rolling(window=vol_window, min_periods=max(1, vol_window // 2)).std().shift(1) * ann_factor
 
         for i, (timestamp, price_row) in enumerate(prices.iterrows()):
             if timestamp not in shifted_signals.index:

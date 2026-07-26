@@ -29,7 +29,7 @@ _RESOLUTION_MAP = {
     TimeFrame.M15: "15",
     TimeFrame.M30: "30",
     TimeFrame.H1: "60",
-    TimeFrame.H4: "60",  # Finnhub has no 4h, use 60min
+    TimeFrame.H4: "60",  # Finnhub has no 4h, use 60min — explicit fallback warning
     TimeFrame.D1: "D",
     TimeFrame.W1: "W",
     TimeFrame.MO1: "M",
@@ -38,6 +38,8 @@ _RESOLUTION_MAP = {
 
 class TokenBucket:
     """Token bucket rate limiter (class-level, shared across instances)."""
+
+    _warned_fallbacks: set[str] = set()
 
     def __init__(self, rate: float, capacity: int) -> None:
         self._rate = rate
@@ -66,6 +68,9 @@ class TokenBucket:
 class _CacheEntry:
     value: Any
     expires_at: float
+
+
+_TIMEFRAME_FALLBACK_WARNED: set[str] = set()
 
 
 class FinnhubProvider:
@@ -351,6 +356,14 @@ class FinnhubProviderAdapter(DataProvider):
         limit: int = 500,
     ) -> List[OHLCV]:
         resolution = _RESOLUTION_MAP.get(timeframe, "D")
+        if timeframe == TimeFrame.H4 and resolution == "60":
+            if "H4_fallback" not in FinnhubProvider._warned_fallbacks:
+                FinnhubProvider._warned_fallbacks.add("H4_fallback")
+                logger.warning(
+                    "H4 data unavailable for %s — falling back to H1 (60min). "
+                    "Results may be incorrect for H4-scale strategies.",
+                    symbol,
+                )
         df = await self._wrapped.get_stock_candle(symbol, resolution=resolution, count=limit)
         if df.empty:
             return []

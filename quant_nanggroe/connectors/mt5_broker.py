@@ -68,38 +68,54 @@ class MT5Broker(BrokerConnector):
                 raise RuntimeError(f"MT5 init exception: {e}")
         raise RuntimeError("MT5 init failed after retries: IPC timeout")
 
+    _TRANSIENT_RETCODES = {"TRADE_RETCODE_REQUOTE", "TRADE_RETCODE_TIMEOUT"}
+
     def place_order(self, order: Order) -> str:
         if not self.connected:
             raise RuntimeError("not connected")
         sym = _mt5_symbol(order.symbol)
         if not self._mt5.symbol_select(sym, True):
             raise RuntimeError(f"MT5 symbol unavailable: {sym}")
-        tick = self._mt5.symbol_info_tick(sym)
-        if tick is None:
-            raise RuntimeError(f"no tick for {sym}")
+
         req = {
             "action": self._mt5.TRADE_ACTION_DEAL,
             "symbol": sym,
             "volume": float(order.quantity),
             "type": self._mt5.ORDER_TYPE_BUY if order.side == "buy" else self._mt5.ORDER_TYPE_SELL,
-            "price": tick.ask if order.side == "buy" else tick.bid,
             "deviation": 20,
             "magic": self.magic,
-            # P0 fix: use FOK filling — Valetax demo reports filling_mode=1 (FOK),
-            # IOC is rejected. FOK is the safe universal choice for market orders.
             "type_filling": self._mt5.ORDER_FILLING_FOK,
             "type_time": self._mt5.ORDER_TIME_GTC,
         }
-        # P0 fix: carry protective SL/TP from the strategy/risk gate into the order.
-        # Without this, positions open with NO protection (the original bug).
         if order.stop_loss is not None:
             req["sl"] = float(order.stop_loss)
         if order.take_profit is not None:
             req["tp"] = float(order.take_profit)
-        res = self._mt5.order_send(req)
-        if res.retcode != self._mt5.TRADE_RETCODE_DONE:
-            raise RuntimeError(f"MT5 order failed: {res.retcode} {res.comment}")
-        return str(res.order)
+
+        max_retries = 2
+        last_error = None
+        for attempt in range(max_retries):
+            # Refresh tick price on each attempt (requote = stale price)
+            tick = self._mt5.symbol_info_tick(sym)
+            if tick is None:
+                raise RuntimeError(f"no tick for {sym}")
+            req["price"] = tick.ask if order.side == "buy" else tick.bid
+
+            res = self._mt5.order_send(req)
+            if res.retcode == self._mt5.TRADE_RETCODE_DONE:
+                return str(res.order)
+
+            last_error = res
+            retcode_name = getattr(res, "retcode_name", str(res.retcode))
+            if retcode_name in self._TRANSIENT_RETCODES or res.retcode in (10009, 10013):
+                import time as _t
+                _t.sleep(1.0 * (attempt + 1))
+                continue
+            break
+
+        code = getattr(last_error, "retcode", "unknown") if last_error else "unknown"
+        comment = getattr(last_error, "comment", "") if last_error else ""
+        raise RuntimeError(f"MT5 order failed after retries: retcode={code} comment={comment}")
 
     def get_positions(self) -> List[Position]:
         if not self.connected:  # ponytail: fail-closed, consistent with get_balance/place_order

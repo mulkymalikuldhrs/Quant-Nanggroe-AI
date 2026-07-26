@@ -75,6 +75,34 @@ class MacroContextProvider:
                 confidence = confidence * 0.5
                 return (signal_side, confidence, f"COT {cot_signal} reduces confidence for {signal_side}")
 
+        # Causal bias filter from env vars
+        # NOTE: HF providers already apply causal bias internally via apply_causal_bias().
+        # This pipeline-level filter catches signals from non-HF sources (strategies, agentic).
+        import os as _os
+        from quant_nanggroe.hedge_fund.signals.core import SYMBOL_TO_FUTURES
+
+        futures = SYMBOL_TO_FUTURES.get(symbol.upper(), symbol.upper())
+        raw_bias = _os.environ.get(f"QNA_CAUSAL_BIAS_{futures}", "")
+        if raw_bias:
+            try:
+                causal_bias = float(raw_bias)
+            except (ValueError, TypeError):
+                causal_bias = 0.0
+        else:
+            causal_bias = 0.0
+
+        if causal_bias != 0.0:
+            direction = 1 if signal_side == "buy" else -1
+            alignment = direction * causal_bias
+            if alignment < -0.3:
+                if abs(alignment) > 0.6:
+                    return ("hold", 0.0, f"Causal bias {causal_bias:+.2f} blocks {signal_side}")
+                confidence = max(confidence * (1.0 - abs(alignment) * 0.5), 0.0)
+                return (signal_side, confidence, f"Causal bias {causal_bias:+.2f} reduces {signal_side} (conf {confidence:.2f})")
+            elif alignment > 0.3:
+                confidence = min(confidence * (1.0 + abs(causal_bias) * 0.3), 1.0)
+                return (signal_side, confidence, f"Causal bias {causal_bias:+.2f} boosts {signal_side} (conf {confidence:.2f})")
+
         # Thesis check blocks trades if macro surprise contradicts
         if not context["thesis_ok"]:
             return ("hold", 0.0, "Macro surprise contradicts trade direction")

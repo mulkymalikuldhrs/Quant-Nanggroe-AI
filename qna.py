@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
 """
-╔══════════════════════════════════════════════════════════════════════╗
-║            Quant Nanggroe AI — Unified Launcher                    ║
-║                                                                    ║
-║   Modes:                                                           ║
-║     qna unified   → [DEFAULT] Auto-detect & orchestrate everything ║
-║     qna api       → FastAPI server (port 8000)                      ║
-║     qna daemon    → Background daemon with agent lifecycle          ║
-║     qna hedge     → Hedge Fund aggregator (multi-provider voting)   ║
-║     qna status    → System health & status                          ║
-║     qna cli       → [DEPRECATED] Interactive CLI shell              ║
-║     qna web       → [DEPRECATED] Legacy Flask web UI (port 5000)   ║
-║                                                                    ║
-║   Built by Dhaher Labs — Quant Nanggroe Hedge Fund                 ║
-╚══════════════════════════════════════════════════════════════════════╝
 
    This is the SINGLE source of truth for all entry points.
    All other entry points (main.py, cli.py, daemon_manager.py,
@@ -64,19 +50,11 @@ logger = logging.getLogger("QNA")
 # ── Banner ──────────────────────────────────────────────────────────
 
 BANNER = f"""
-╔══════════════════════════════════════════════════════════════════════╗
-║          Quant Nanggroe AI v{__version__:<29}║
-║          Agentic Trading Intelligence OS                            ║
-║                                                                    ║
-║          Built by Dhaher Labs — Quant Nanggroe Hedge Fund          ║
-╚══════════════════════════════════════════════════════════════════════╝
 """
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  AGENT CONFIGURATION — Single source of truth
 #  (main.py and daemon_manager.py delegate here via load_agent_config)
-# ══════════════════════════════════════════════════════════════════════
 
 DEFAULT_AGENTS: Dict[str, Dict[str, Any]] = {
     # ── Verified existing agent modules only ───────────
@@ -121,9 +99,7 @@ def load_agent_config() -> Dict[str, Dict[str, Any]]:
     return agents
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: CLI
-# ══════════════════════════════════════════════════════════════════════
 
 def run_cli(args: argparse.Namespace) -> int:
     """[DEPRECATED] Run interactive CLI shell. Use unified mode instead."""
@@ -183,9 +159,7 @@ def _print_cli_help() -> None:
 """)
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: API Server
-# ══════════════════════════════════════════════════════════════════════
 
 def run_api(args: argparse.Namespace) -> int:
     """Start the FastAPI server."""
@@ -221,9 +195,7 @@ def run_api(args: argparse.Namespace) -> int:
     return 0
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: Daemon
-# ══════════════════════════════════════════════════════════════════════
 
 class DaemonRunner:
     """Background daemon that manages agent lifecycle."""
@@ -401,9 +373,7 @@ def run_daemon(args: argparse.Namespace) -> int:
     return 0
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: Web UI (Legacy)
-# ══════════════════════════════════════════════════════════════════════
 
 def run_web(args: argparse.Namespace) -> int:
     """[DEPRECATED] Start the legacy Flask web UI. Use api mode instead."""
@@ -427,9 +397,7 @@ def run_web(args: argparse.Namespace) -> int:
     return 0
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: Status / Health Check
-# ══════════════════════════════════════════════════════════════════════
 
 def run_status(args: argparse.Namespace) -> int:
     """Show system status and health."""
@@ -496,9 +464,7 @@ def _import_quant_nanggroe() -> bool:
         return False
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: Hedge Fund Aggregator
-# ══════════════════════════════════════════════════════════════════════
 
 def run_hedge(args: argparse.Namespace) -> int:
     """Run the multi-provider hedge fund aggregator.
@@ -631,9 +597,7 @@ def run_hedge(args: argparse.Namespace) -> int:
         logger.error("Hedge Fund error: %s", e)
         return 1
 
-# ══════════════════════════════════════════════════════════════════════
 #  MODE: Unified — Auto-detect & orchestrate
-# ══════════════════════════════════════════════════════════════════════
 
 def run_unified(args: argparse.Namespace) -> int:
     """Run in unified mode — auto-detect and orchestrate all subsystems.
@@ -655,7 +619,7 @@ def run_unified(args: argparse.Namespace) -> int:
             from quant_nanggroe.pipeline.factory import create_pipeline
             pipeline = create_pipeline()
             import asyncio
-            result = asyncio.run(pipeline.run())
+            result = asyncio.run(pipeline.run(symbol="BTC/USDT"))
             print(f"  ✅ Pipeline complete: {result}")
             return 0
         except ImportError:
@@ -671,7 +635,7 @@ def run_unified(args: argparse.Namespace) -> int:
             from quant_nanggroe.pipeline.factory import create_pipeline
             pipeline = create_pipeline()
             import asyncio
-            result = asyncio.run(pipeline.run())
+            result = asyncio.run(pipeline.run(symbol="BTC/USDT"))
             print(f"  ✅ Pipeline complete: {result}")
             return 0
         except ImportError:
@@ -697,12 +661,42 @@ def run_unified(args: argparse.Namespace) -> int:
                 # SMC alignment (Phase 3-4) requires a trade signal, which
                 # doesn't exist yet at this pipeline stage. The macro context
                 # is exposed via env for downstream signal generation to use.
+                #
+                # Build returns data for DCC-GARCH from available market data
+                # (best-effort — if no data available, DCC phase is skipped).
+                _returns_data = None
+                try:
+                    from quant_nanggroe.engine_bridge import EnginePriceProvider as _EPP
+                    import pandas as pd
+                    import numpy as np
+                    _provider = _EPP()
+                    _klines_data: dict[str, list[float]] = {}
+                    for _sym in ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]:
+                        try:
+                            _klines = _provider.get_klines(_sym, interval="1h", limit=50)
+                            if _klines and len(_klines) >= 30:
+                                _klines_data[_sym] = [c["close"] for c in _klines]
+                        except Exception:
+                            pass
+                    if len(_klines_data) >= 2:
+                        _min_n = min(len(v) for v in _klines_data.values())
+                        _aligned = {s: v[-_min_n:] for s, v in _klines_data.items()}
+                        _df = pd.DataFrame(_aligned)
+                        _returns_data = np.log(_df / _df.shift(1)).dropna()
+                        logger.info(
+                            "DCC returns data: %d rows x %d assets",
+                            len(_returns_data), len(_returns_data.columns),
+                        )
+                except Exception as _e:
+                    logger.debug("DCC returns fetch unavailable: %s", _e)
+
                 pre_filter = causal.evaluate_full_pipeline(
                     event_type=macro_event,
                     geopolitical_risk_delta=float(os.environ.get("QNA_GEOPOLITICAL_RISK", "0")),
                     dxy_change=dxy,
                     bond_change=bond,
                     smc_signal="HOLD",  # no signal yet — macro context only
+                    returns=_returns_data,  # pass returns for DCC-GARCH fitting
                 )
                 logger.info("Causal macro context: %s", pre_filter["summary"])
                 # Expose macro context to downstream via env vars
@@ -764,7 +758,7 @@ def run_unified(args: argparse.Namespace) -> int:
         pipeline = create_pipeline()
         import asyncio
         print("  ✅ Pipeline found. Running unified pipeline...")
-        result = asyncio.run(pipeline.run())
+        result = asyncio.run(pipeline.run(symbol="BTC/USDT"))
         print(f"  ✅ Pipeline complete: {result}")
         return 0
     except ImportError:
@@ -782,7 +776,6 @@ def run_unified(args: argparse.Namespace) -> int:
     return run_hedge(args)
 
 
-# ══════════════════════════════════════════════════════════════════════
 
 def _auto_open_browser(url: str) -> None:
     """Open browser to URL if QNA_AUTO_OPEN is set (or default True)."""
@@ -795,9 +788,7 @@ def _auto_open_browser(url: str) -> None:
             logger.debug("Auto-open browser failed: %s", e)
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  CLI ARGUMENT PARSER
-# ══════════════════════════════════════════════════════════════════════
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
@@ -877,9 +868,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-# ══════════════════════════════════════════════════════════════════════
 #  MAIN ENTRY POINT
-# ══════════════════════════════════════════════════════════════════════
 
 def main() -> int:
     """Main entry point — routes to the selected mode."""

@@ -26,6 +26,7 @@ from quant_nanggroe.engine.execution.guards.max_position import MaxPositionGuard
 from quant_nanggroe.engine.execution.guards.whitelist import WhitelistGuard
 from quant_nanggroe.engine.execution.order import OrderManager
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+from quant_nanggroe.engine.risk.veto_guard import GovernanceVetoGuard
 
 if TYPE_CHECKING:
     from quant_nanggroe.engine.risk.manager import RiskManager
@@ -64,6 +65,7 @@ class ExecutionManager:
         self._cooldown_guard = CooldownGuard()
         self._max_position_guard = MaxPositionGuard()
         self._whitelist_guard = WhitelistGuard()
+        self._governance_veto = GovernanceVetoGuard()
         # ponytail: default ACTIVE switch — bare ExecutionManager() is enforced, not silently open
         self._kill_switch: Optional[KillSwitch] = KillSwitch()
         self._risk_manager: Optional["RiskManager"] = None
@@ -145,6 +147,8 @@ class ExecutionManager:
             Fill if order was executed, None if rejected.
         """
         # 1. Run guard pipeline
+        self._governance_veto.update_pnl(daily_pnl_pct, weekly_pnl_pct)
+        self._governance_veto.update_drawdown(max_drawdown_pct)
         guard_result = self._run_guards(order)
         if not guard_result.allowed:
             logger.warning(
@@ -379,6 +383,13 @@ class ExecutionManager:
         result = self._as_guard_result(self._whitelist_guard.check(order), "whitelist")
         if not result.allowed:
             return GuardResult(False, "whitelist", result.reason)
+
+        # Governance veto — fail-closed constitutional check
+        gov_result = self._as_guard_result(
+            self._governance_veto.check(order), "governance_veto"
+        )
+        if not gov_result.allowed:
+            return GuardResult(False, "governance_veto", gov_result.reason)
 
         # Custom guards
         for guard in self._guards:

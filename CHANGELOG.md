@@ -68,7 +68,7 @@
 ### 🔪 hedge_fund Monolith Split
 - **`hedge_fund.py` (~6600 lines)** — split into real submodules:
   - `hedge_fund/utils/` — data, config, connection, indicators
-  - `hedge_fund/signals/` — 247 providers in core (10) + evolved (237) + registry + aggregator
+  - `hedge_fund/signals/` — 4 active providers (core) + 237 evolved (experimental) + registry + aggregator
   - `hedge_fund/risk/` — gate.py, guard.py (fail-closed)
   - `hedge_fund/execution/` — orders.py (trail_sl, execute)
   - `hedge_fund/portfolio/` — main.py (run_once)
@@ -177,7 +177,7 @@
 - Strategy pipeline consolidated to canonical path: `quant_nanggroe/engine/strategies/`
 - Legacy path `quant_nanggroe/engine/strategy/strategies/` reduced to backward-compat shim (empty directory with re-export)
 - StrategyRegistry with `@register` decorator as single source of truth
-- 9 registered strategies via decorator, 35+ additional .py files
+- 79+ registered strategies via decorator
 
 ### 📦 hedge_fund Subpackage
 - `quant_nanggroe/hedge_fund/` — multi-provider executive aggregator

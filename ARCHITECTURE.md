@@ -37,7 +37,7 @@ Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedg
 │  │  ┌──────────────────┐  │  Monte Carlo │  ┌──────────────────┐ │    │
 │  │  │ HEDGE_FUND (v6)  │  │  CPCV        │  │ EXCHANGE (v6)   │ │    │
 │  │  │  utils/          │  └──────────────┘  │  10 REST clients │ │    │
-│  │  │  signals/ (247)  │                    │  Lazy-wired     │ │    │
+│  │  │  signals/ (4 active + 237 exp)     │                    │  Lazy-wired     │ │    │
 │  │  │  risk/           │  ┌──────────────┐  │  ccxt proxy     │ │    │
 │  │  │  execution/      │  │ AGENTS       │  └──────────────────┘ │    │
 │  │  │  portfolio/      │  │  9+ special  │                       │    │
@@ -89,7 +89,7 @@ Auto-routes between hedge, crypto, and agentic modes based on config. Default mo
 
 | Module | Purpose |
 |--------|---------|
-| `strategies/` | 🔴 CANONICAL — 9 registered via @StrategyRegistry.register + 35+ .py files |
+| `strategies/` | 🔴 CANONICAL — 79+ registered via @StrategyRegistry.register |
 | `strategy/` | 🟡 LEGACY BRIDGE — backward-compat shim only (empty dir, re-export) |
 | `risk/` | 9-checkpoint constitutional risk gate, KillSwitch C5, RiskManager |
 | `risk/checks.py` | ConstitutionalRiskGuard (= RiskCheckGate alias) |
@@ -117,7 +117,7 @@ Auto-routes between hedge, crypto, and agentic modes based on config. Default mo
 │                                                                │
 │  StrategyConsolidationGate:                                     │
 │                                                                │
-│  CANONICAL PATH (v5.1.0)                                       │
+│  CANONICAL PATH (v6.0.0)                                       │
 │    quant_nanggroe/engine/strategies/                            │
 │    ├── registry.py            ← StrategyRegistry + @register   │
 │    ├── smc_strategy.py        ← @StrategyRegistry.register     │
@@ -134,7 +134,7 @@ Auto-routes between hedge, crypto, and agentic modes based on config. Default mo
 │    quant_nanggroe/engine/strategy/strategies/                  │
 │    └── __init__.py            ← Re-exports from canonical      │
 │                                                                │
-│  9 registered strategies + 35+ .py files in canonical path     │
+│  79+ registered strategies in canonical path     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -191,7 +191,7 @@ hedge_fund/
 ├── mtf.py                   ← Multi-timeframe analysis
 ├── multipair.py             ← Multi-pair scanner
 ├── utils/                   ← Extracted: data, config, connection, indicators
-├── signals/                 ← 247 providers: core (10) + evolved (237) + registry + aggregator
+├── signals/                 ← 4 active providers (core) + 237 evolved (experimental) + registry + aggregator
 ├── risk/                    ← gate.py, guard.py (fail-closed)
 ├── execution/               ← orders.py (trail_sl, execute)
 ├── portfolio/               ← main.py (run_once)
@@ -251,7 +251,7 @@ Market Data (MT5/CCXT / exchange REST clients)
     ▼
 ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
 │ PIPELINE (v6)   │───▶│ ENGINE           │───▶│ RISK (unified)  │
-│  orchestrator   │    │  Strategies (9+) │    │  constants.py   │
+│  orchestrator   │    │  Strategies (79+)│    │  constants.py   │
 │  data→signal→exe│    │  Self-Aware      │    │  KillSwitch C5  │
 │  auto mode-rt   │    │  Self-Evolve     │    │  9-checkpoint   │
 └──────────────────┘    └──────────────────┘    └────────┬─────────┘
@@ -286,8 +286,7 @@ Market Data (MT5/CCXT / exchange REST clients)
 | Architecture Health | 9/10 |
 | Single Entry Point | `qna.py` (unified mode default) |
 | UnifiedPipeline | `pipeline/` module — auto mode-routing 🆕 |
-| Strategy Registration | 9 via @StrategyRegistry.register |
-| Strategy Files | 45 .py files in canonical path |
+| Strategy Registration | 79+ via @StrategyRegistry.register |
 | Hedge Fund | Monolith → submodules (utils/signals/risk/execution/portfolio) 🆕 |
 | Risk Limits | Unified single source `constants.py` 🆕 |
 | Exchange Clients | 10 REST clients lazy-wired + ccxt proxy 🆕 |

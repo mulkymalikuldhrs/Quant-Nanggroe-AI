@@ -20,6 +20,6 @@ Single entry: `python qna.py [cli|api|daemon|web|status|stop]`
 - `audit:` Codebase audit
 
 ## Key Locations
-- Strategies: `quant_nanggroe/engine/strategy/strategies/` (139 active)
+- Strategies: `quant_nanggroe/engine/strategies/` (79+ registered, canonical) + legacy shim (139 frozen, backward-compat)
 - Risk: `quant_nanggroe/engine/risk/`
 - Docs: `docs/` (58 documents)

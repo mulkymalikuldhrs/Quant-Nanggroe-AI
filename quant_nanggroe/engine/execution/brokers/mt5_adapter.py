@@ -7,6 +7,7 @@ adapter bridges them. No new broker logic — only sync->async + type mapping.
 from __future__ import annotations
 
 import logging
+import time
 from typing import List, Optional
 
 from quant_nanggroe.connectors.broker_base import Order as ConnOrder
@@ -23,6 +24,10 @@ from quant_nanggroe.engine.execution.base import (
 from quant_nanggroe.connectors.mt5_broker import MT5Broker
 
 logger = logging.getLogger(__name__)
+
+# MT5 TRADE_RETCODE values that warrant a single retry (stale price / slow server)
+_MT5_REQUOTE = 10004
+_MT5_TIMEOUT = 10013
 
 _SIDE_MAP = {"BUY": "buy", "SELL": "sell"}
 _REV_SIDE = {"buy": OrderSide.BUY, "sell": OrderSide.SELL}
@@ -72,30 +77,77 @@ class MT5ExecutionBroker(Broker):
         return AccountInfo(balance=bal, equity=bal, margin_available=bal, buying_power=bal)
 
     async def submit_order(self, order: Order) -> Order:
-        try:
-            conn_order = ConnOrder(
-                symbol=order.symbol,
-                side=_SIDE_MAP.get(order.side.value, "buy"),
-                quantity=order.quantity,
-                order_type=order.order_type.value.lower(),
-                price=order.price,
-                # P0 fix: carry protective SL/TP into the connector order so the
-                # broker receives sl/tp on open (previously dropped -> naked positions).
-                stop_loss=order.stop_loss,
-                take_profit=order.take_profit,
-            )
-            result = self._mt5.place_order(conn_order)
-            if result:
-                order.status = OrderStatus.FILLED
+        max_attempts = 2
+        last_err = None
+        for attempt in range(max_attempts):
+            try:
+                conn_order = ConnOrder(
+                    symbol=order.symbol,
+                    side=_SIDE_MAP.get(order.side.value, "buy"),
+                    quantity=order.quantity,
+                    order_type=order.order_type.value.lower(),
+                    price=order.price,
+                    stop_loss=order.stop_loss,
+                    take_profit=order.take_profit,
+                )
+                result = self._mt5.place_order(conn_order)
+                if not result:
+                    order.status = OrderStatus.REJECTED
+                    order.metadata["reason"] = "MT5 order rejected"
+                    order.metadata["error_code"] = "REJECTED"
+                    return order
+
                 price = await self.get_price(order.symbol)
+                if price <= 0:
+                    if attempt < max_attempts - 1:
+                        logger.warning(
+                            "MT5 fill price=0 on attempt %d for %s, retrying",
+                            attempt + 1, order.symbol,
+                        )
+                        time.sleep(1.0)
+                        continue
+                    order.status = OrderStatus.REJECTED
+                    order.metadata["reason"] = f"MT5 returned zero fill price after {max_attempts} attempts"
+                    order.metadata["error_code"] = "ZERO_PRICE"
+                    logger.error(
+                        "Order %s rejected: fill price=0 after %d attempts for %s",
+                        order.id, max_attempts, order.symbol,
+                    )
+                    return order
+
+                order.status = OrderStatus.FILLED
                 order.metadata["fill_price"] = price
                 order.metadata["broker_order_id"] = result
-            else:
+                order.metadata["error_code"] = "OK"
+                return order
+
+            except RuntimeError as exc:
+                last_err = exc
+                err_str = str(exc)
+                is_transient = any(code in err_str for code in ("10004", "10013", "REQUOTE", "TIMEOUT"))
+                if is_transient and attempt < max_attempts - 1:
+                    logger.warning(
+                        "MT5 transient error on attempt %d for %s: %s",
+                        attempt + 1, order.symbol, err_str,
+                    )
+                    time.sleep(1.0)
+                    continue
                 order.status = OrderStatus.REJECTED
-                order.metadata["reason"] = "MT5 order rejected"
-        except Exception as e:
-            order.status = OrderStatus.REJECTED
-            order.metadata["reason"] = str(e)
+                order.metadata["reason"] = err_str
+                order.metadata["error_code"] = "MT5_ERROR"
+                logger.error("MT5 submit_order failed: %s", err_str)
+                return order
+
+            except Exception as e:
+                order.status = OrderStatus.REJECTED
+                order.metadata["reason"] = str(e)
+                order.metadata["error_code"] = "EXCEPTION"
+                logger.error("MT5 submit_order exception: %s", e, exc_info=True)
+                return order
+
+        order.status = OrderStatus.REJECTED
+        order.metadata["reason"] = f"MT5 order failed after {max_attempts} attempts: {last_err}"
+        order.metadata["error_code"] = "MAX_RETRIES"
         return order
 
     async def cancel_order(self, order_id: str) -> bool:

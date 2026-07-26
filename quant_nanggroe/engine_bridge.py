@@ -399,7 +399,7 @@ class EngineRiskManager:
         self.MAX_POSITION_PCT = 0.10
         self.MAX_DAILY_LOSS = 0.01
         self.MAX_WEEKLY_LOSS = 0.03
-        self.MAX_DRAWDOWN = 0.15
+        self.MAX_DRAWDOWN = 0.10
         try:
             from quant_nanggroe.engine.risk.constants import (
                 MAX_RISK_PER_TRADE, MAX_POSITION_SIZE_PCT,

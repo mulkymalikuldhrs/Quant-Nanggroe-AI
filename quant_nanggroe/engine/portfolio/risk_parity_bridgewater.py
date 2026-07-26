@@ -63,18 +63,42 @@ class RiskParityAllocator:
         symbols = list(volatilities.keys())
         vols = np.array([max(volatilities[s], 0.01) for s in symbols])
 
-        inv_vol = 1.0 / vols
-        weights = inv_vol / np.sum(inv_vol)
-        scaled = weights / np.max(weights)
+        cov = np.diag(vols ** 2)
+        if correlations:
+            for (a, b), corr in correlations.items():
+                if a in symbols and b in symbols:
+                    i, j = symbols.index(a), symbols.index(b)
+                    cov[i, j] = corr * vols[i] * vols[j]
+                    cov[j, i] = cov[i, j]
 
-        risk_contrib = scaled * vols / np.sum(scaled * vols)
+        eigenvalues = np.linalg.eigvalsh(cov)
+        if np.any(eigenvalues < 1e-10):
+            logger.warning(
+                "Bridgewater parity: covariance matrix near-singular "
+                "(min eigenvalue=%.2e) — using pseudoinverse",
+                eigenvalues.min(),
+            )
+            cov = np.linalg.pinv(cov)
 
-        rc_std = float(np.std(risk_contrib))
-        logger.info("Risk parity: %d assets, rc_std=%.4f", n, rc_std)
+        weights = np.ones(n) / n
+        for _ in range(200):
+            port_vol = np.sqrt(weights @ cov @ weights)
+            if port_vol < 1e-12:
+                return {s: 1.0 / n for s in symbols}
+            mrc = cov @ weights / port_vol
+            risk_contrib = weights * mrc
+            avg_rc = np.mean(risk_contrib)
+            if avg_rc < 1e-12:
+                return {s: 1.0 / n for s in symbols}
+            target_rc = np.full(n, avg_rc)
+            weights = weights * (target_rc / (risk_contrib + 1e-15))
+            weights = weights / np.sum(weights)
+
+        logger.warning("Bridgewater risk parity did not converge after 200 iterations")
 
         result: dict[str, float] = {}
         for i, s in enumerate(symbols):
-            result[s] = float(scaled[i])
+            result[s] = float(weights[i])
 
         return result
 

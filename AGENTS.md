@@ -81,7 +81,7 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 ## Hedge Fund Subpackage (`quant_nanggroe/hedge_fund/`) — v6.0.0 Refactored
 - **Monolith split**: `hedge_fund.py` (~6600 lines) → real submodules:
   - `utils/` — data, config, connection, indicators
-  - `signals/` — 247 providers (core 10 + evolved 237) + registry + aggregator
+  - `signals/` — 4 active providers (core) + 237 evolved (experimental) + registry + aggregator
   - `risk/` — gate.py, guard.py (fail-closed)
   - `execution/` — orders.py (trail_sl, execute)
   - `portfolio/` — main.py (run_once)
@@ -102,7 +102,7 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/                        # Tes
 - `ensure_telegram()` — fail-closed: raises `QNAConfigurationError` with clear message
 
 ## Strategy System
-- **Canonical:** `quant_nanggroe/engine/strategies/` (9 registered via `@StrategyRegistry.register` + 35+ .py files)
+- **Canonical:** `quant_nanggroe/engine/strategies/` (79+ registered via `@StrategyRegistry.register`)
 - **Legacy (archived):** Path is a backward-compat shim — `quant_nanggroe/engine/strategy/strategies/` (empty directory with re-export `__init__.py`)
 - **Registry pattern:** `@StrategyRegistry.register` decorator on each strategy class
 - All imports via `engine.strategy.strategies` keep working transparently through the shim

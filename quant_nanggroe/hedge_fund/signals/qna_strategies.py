@@ -17,12 +17,13 @@ Strategy types:
 
 import sys as _sys
 
+from quant_nanggroe.hedge_fund.signals.core import apply_causal_bias
 from quant_nanggroe.hedge_fund.utils.config import log
 from quant_nanggroe.hedge_fund.utils.data import get_historical_mt5
 
 
 def _evolved_signal(module_name, strategy_name, symbol="EURUSD"):
-    """Generic MUE-X evolved strategy wrapper."""
+    """Generic MUE-X evolved strategy wrapper with causal bias filtering."""
     try:
         _sys.path.insert(0, r"E:\mue-x\genes\qna_strategies")
         mod = __import__(module_name, fromlist=["generate_signal"])
@@ -35,9 +36,9 @@ def _evolved_signal(module_name, strategy_name, symbol="EURUSD"):
             return {"bias":"neutral","confidence":0,"source":strategy_name}
         last = result.iloc[-1]
         if last.get('entry',0) == 1:
-            return {"bias":"buy","confidence":0.55,"source":strategy_name}
+            return apply_causal_bias({"bias":"buy","confidence":0.55,"source":strategy_name}, symbol)
         if last.get('entry',0) == -1:
-            return {"bias":"sell","confidence":0.55,"source":strategy_name}
+            return apply_causal_bias({"bias":"sell","confidence":0.55,"source":strategy_name}, symbol)
     except Exception as e:
         log.warning(f"MUE-X {strategy_name} err: {e}")
     return {"bias":"neutral","confidence":0,"source":strategy_name}

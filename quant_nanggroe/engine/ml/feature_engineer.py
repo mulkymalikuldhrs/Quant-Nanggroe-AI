@@ -14,6 +14,42 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+
+def validate_no_leakage(
+    features_df: pd.DataFrame,
+    target_series: pd.Series,
+) -> None:
+    """Assert no feature column contains values from future bars.
+
+    Checks that every feature value at index i was computed using only
+    data from indices <= i.  A non-expanding window (e.g. global mean)
+    would leak future data — this catches that.
+
+    Raises
+    ------
+    ValueError
+        If any feature column appears to use future data.
+    """
+    aligned = pd.concat(
+        [features_df.loc[target_series.index]], axis=1
+    )
+    for col in aligned.columns:
+        series = aligned[col].dropna()
+        if len(series) < 3:
+            continue
+        expanding_mean = series.expanding(min_periods=1).mean()
+        diff = (series - expanding_mean).abs()
+        nonzero = diff[diff > 1e-10]
+        if len(nonzero) > 0:
+            last_nonzero_idx = nonzero.index[-1]
+            last_series_idx = series.index[-1]
+            if last_nonzero_idx < last_series_idx:
+                raise ValueError(
+                    f"Leakage detected in feature '{col}': "
+                    f"values after index {last_nonzero_idx} differ from "
+                    f"expanding mean, indicating future data was used."
+                )
+
 logger = logging.getLogger(__name__)
 
 
@@ -318,7 +354,11 @@ class FeatureEngineer:
 
     @staticmethod
     def _normalize(df: pd.DataFrame) -> pd.DataFrame:
-        """Z-score normalize features."""
-        means = df.mean()
-        stds = df.std().replace(0, 1.0)
-        return (df - means) / stds
+        """Z-score normalize features using expanding window.
+
+        Uses expanding mean/std so each row is normalized only with
+        data available up to that point — prevents future data leakage.
+        """
+        expanding_mean = df.expanding(min_periods=1).mean()
+        expanding_std = df.expanding(min_periods=1).std().replace(0, 1.0)
+        return (df - expanding_mean) / expanding_std

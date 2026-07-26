@@ -61,6 +61,8 @@ def calculate_kelly_size(
 ) -> dict:
     """Kelly Criterion position sizing with fractional scaling.
 
+    Delegates to quant_nanggroe.engine.risk.kelly for the core calculation.
+
     Args:
         win_rate: Win rate as decimal (0.6 = 60%)
         avg_win: Average win amount
@@ -74,18 +76,22 @@ def calculate_kelly_size(
     if avg_loss == 0:
         return {"error": "Average loss cannot be zero"}
 
-    b = avg_win / avg_loss
-    p = win_rate
-    q = 1 - p
+    from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
 
-    kelly_pct = (b * p - q) / b
-    kelly_pct = max(0.0, min(kelly_pct, 1.0))
+    kelly = KellyCriterion()
+    method = KellyMethod.FRACTIONAL_KELLY if kelly_fraction < 1.0 else KellyMethod.FULL_KELLY
+    params = KellyParameters(
+        win_rate=win_rate,
+        avg_win=avg_win,
+        avg_loss=avg_loss,
+    )
+    result = kelly.calculate_kelly(params, method)
 
-    fractional_kelly = kelly_pct * kelly_fraction
+    fractional_kelly = result.adjusted_fraction * kelly_fraction
     suggested_position = account_balance * fractional_kelly
 
     return {
-        "kelly_pct": round(kelly_pct * 100, 2),
+        "kelly_pct": round(result.optimal_fraction * 100, 2),
         "fractional_kelly": round(fractional_kelly * 100, 2),
         "suggested_position": round(suggested_position, 2),
         "kelly_fraction": kelly_fraction,

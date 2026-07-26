@@ -9,7 +9,7 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 ```
 [ Entry Point ]         ██████████ 100% (Single: qna.py, unified mode default)
 [ UnifiedPipeline ]     ██████████ 100% (pipeline/ module — auto mode-routing) 🆕
-[ Strategy Pipeline ]   ██████████ 100% (9 registered via @StrategyRegistry, canonical path)
+[ Strategy Pipeline ]   ██████████ 100% (79+ registered via @StrategyRegistry, canonical path)
 [ Kill Switch C5 ]      ██████████ 100% (Cross-process shared state, fail-closed)
 [ Risk Engine ]         ██████████ 100% (9-Checkpoint Gate, Kill Switch, Weekly Veto, unified constants)
 [ hedge_fund ]          ██████████ 100% (Monolith split → real submodules) 🆕
@@ -28,7 +28,7 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 
 - [x] **v6.0.0 Production Readiness Audit** — Full audit disproved "0% live" suspicion; codebase confirmed production-viable
 - [x] **UnifiedPipeline Module** — `quant_nanggroe/pipeline/` with auto mode-routing (hedge/crypto/agentic)
-- [x] **hedge_fund Monolith Split** — ~6600 lines → utils/, signals/ (247 providers), risk/, execution/, portfolio/ + backward-compat shim
+- [x] **hedge_fund Monolith Split** — ~6600 lines → utils/, signals/ (4 active + 237 experimental), risk/, execution/, portfolio/ + backward-compat shim
 - [x] **Risk Unification** — KillSwitch thresholds now reference `constants.py` single source of truth (0.8% daily, 2.5% weekly); threshold mismatch fixed
 - [x] **Exchange REST Lazy Wiring** — 10 orphaned clients wired into ExchangeFactory; ccxt import failure isolated via lazy proxy
 - [x] **Telegram Config Validation** — `validate_telegram_config()` + `ensure_telegram()` fail-closed
@@ -94,7 +94,7 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 | Risk Engine | A+ | ✅ Unified constants, KillSwitch references constants.py, threshold mismatch fixed |
 | UnifiedPipeline | A | ✅ `quant_nanggroe/pipeline/` — auto mode-routing |
 | Kill Switch C5 | A | ✅ Cross-process shared state, fail-closed, Path-A + Path-B |
-| Strategies (Canonical) | A | ✅ 9 registered via @StrategyRegistry, full signal gen |
+| Strategies (Canonical) | A | ✅ 79+ registered via @StrategyRegistry, full signal gen |
 | Architecture | A | ✅ Clean modular, single entry point, unified pipeline |
 | hedge_fund | A+ | ✅ Monolith split into real submodules (utils/signals/risk/execution/portfolio) |
 | Exchange Clients | A | ✅ 10 REST clients lazy-wired, ccxt import failure isolated |

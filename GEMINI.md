@@ -12,7 +12,7 @@ launch.bat api
 ```
 
 ## Context
-Multi-strategy execution (34 active strategies via AutoRegistry v3, 138 legacy strategies archived), constitutional risk management (9-checkpoint gate, Kill Switch dual-path, weekly loss veto), self-evolving pipeline. Python 3.11 in `.venv`.
+Multi-strategy execution (79+ registered strategies via @StrategyRegistry, 139 legacy strategies archived), constitutional risk management (9-checkpoint gate, Kill Switch dual-path, weekly loss veto), self-evolving pipeline. Python 3.11 in `.venv`.
 
 ## Architecture
 ```

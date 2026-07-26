@@ -263,6 +263,21 @@ class RiskManager:
             _daily_abs = daily_pnl_pct / 100.0 * account_balance
         if weekly_pnl_pct != 0.0:
             _weekly_abs = weekly_pnl_pct / 100.0 * account_balance
+
+        # Suspicious zero PnL check: if there's been trading activity but PnL
+        # reports 0.0, the PnL sync likely isn't wired to live broker P&L.
+        if self.state.trade_count_week > 0 and _weekly_abs == 0.0:
+            logger.warning(
+                "Weekly PnL is 0.0 after %d trades this week — PnL sync may not "
+                "be connected to live broker. Weekly loss veto will be a no-op.",
+                self.state.trade_count_week,
+            )
+        if self.state.trade_count_today > 0 and _daily_abs == 0.0:
+            logger.warning(
+                "Daily PnL is 0.0 after %d trades today — PnL sync may not "
+                "be connected to live broker. Daily loss veto will be a no-op.",
+                self.state.trade_count_today,
+            )
         result = self.check_gate.evaluate(
             symbol=symbol,
             direction=direction,
@@ -829,9 +844,8 @@ class RiskManager:
             self.kill_switch.activate("AUTO_MAX_DRAWDOWN")
             logger.critical("KILL SWITCH: Maximum drawdown breached (%.2f%% >= %.2f%%)", self.drawdown_monitor.current_drawdown * 100, MAX_DRAWDOWN * 100)
 
-    # ═══════════════════════════════════════════════════════════════════
+
     # Per-Asset Risk Budgets (P1-26)
-    # ═══════════════════════════════════════════════════════════════════
 
     def set_asset_budget(
         self,
@@ -957,9 +971,7 @@ class RiskManager:
             "remaining_budget": max_loss - daily_loss_pct,
         }
 
-    # ═══════════════════════════════════════════════════════════════════
     # Concentration Limits (P1-32)
-    # ═══════════════════════════════════════════════════════════════════
 
     def check_concentration(
         self,
@@ -1027,9 +1039,7 @@ class RiskManager:
             "limit_pct": MAX_TOTAL_CONCENTRATION,
         }
 
-    # ═══════════════════════════════════════════════════════════════════
     # Cost-Aware Budget (P1-32)
-    # ═══════════════════════════════════════════════════════════════════
 
     @property
     def cost_budget_remaining(self) -> float:

@@ -5,6 +5,7 @@ Combines all data providers into a single interface.
 Auto-fallback: if one provider fails, tries the next.
 """
 
+import os
 import time
 import logging
 from typing import Dict, List, Optional, Any
