@@ -110,7 +110,7 @@
   .card {
     background: var(--card-surface); border: 1px solid var(--border-struct);
     border-radius: 10px; padding: 16px; position: relative;
-    transition: border-color 0.2s ease-out;
+    transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .card:hover { border-color: rgba(217,164,65,0.3); }
   .card-header {
@@ -122,7 +122,7 @@
 
   /* ── Metrics ────────────────────────────── */
   .metric-value {
-    font-family: var(--font-mono); font-size: 1.8rem;
+    font-family: var(--font-mono); font-size: clamp(1.2rem, 4vw, 1.8rem);
     font-weight: 700; letter-spacing: -0.03em;
     transition: color 0.3s ease-out;
   }
@@ -189,7 +189,7 @@
     background: transparent; border: 1px solid var(--border-struct);
     color: var(--text-secondary); padding: 6px 16px; border-radius: 6px;
     cursor: pointer; font-size: 0.8rem; font-family: var(--font-display);
-    transition: all 0.2s ease-out; font-weight: 500;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); font-weight: 500;
   }
   .btn:hover { border-color: var(--tactical-gold); color: var(--tactical-gold); }
   .btn:active { transform: scale(0.97); }
@@ -242,7 +242,7 @@
     .header { flex-direction: column; gap: 12px; align-items: flex-start; }
     .header-status { width: 100%; flex-wrap: wrap; }
     .pipeline-grid { grid-template-columns: 1fr; }
-    .metric-value { font-size: 1.4rem; }
+    .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
   }
 </style>
 </head>
