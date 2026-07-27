@@ -487,27 +487,31 @@ class AutonomousSelfLoopOrchestrator:
         try:
             from quant_nanggroe.engine_production_bridge import ProductionStrategyRunner
             from quant_nanggroe.data.providers.coingecko_provider import CoinGeckoProvider
+            from quant_nanggroe.data.providers.yahoo import YahooFinanceProvider
 
             runner = ProductionStrategyRunner()
             if not runner.strategies:
                 return signals
 
-            # QNA symbol -> (CoinGecko symbol, CoinGecko coin_id)
+            # QNA symbol -> (Yahoo symbol, CoinGecko coin_id)
+            # CoinGecko gives spot price (Binance is geo-blocked here);
+            # Yahoo gives reliable OHLCV history without an API key.
             symbols = {
-                "BTCUSDT": ("BTC", "bitcoin"),
-                "ETHUSDT": ("ETH", "ethereum"),
+                "BTCUSDT": ("BTC-USD", "bitcoin"),
+                "ETHUSDT": ("ETH-USD", "ethereum"),
             }
-            provider = CoinGeckoProvider()
+            price_provider = CoinGeckoProvider()
+            ohlcv_provider = YahooFinanceProvider()
 
             async def _fetch():
                 prices: Dict[str, float] = {}
                 market_data: Dict[str, List[Dict]] = {}
-                for qna_sym, (cg_sym, cg_id) in symbols.items():
+                for qna_sym, (yf_sym, cg_id) in symbols.items():
                     try:
-                        price = await provider.get_price(cg_id)
+                        price = await price_provider.get_price(cg_id)
                         if price and price > 0:
                             prices[qna_sym] = float(price)
-                        ohlcv = await provider.get_ohlcv(cg_sym, TimeFrame.H1, limit=100)
+                        ohlcv = await ohlcv_provider.get_ohlcv(yf_sym, TimeFrame.H1, limit=100)
                         market_data[qna_sym] = [
                             {
                                 "open": c.open,

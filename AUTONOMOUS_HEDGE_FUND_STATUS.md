@@ -383,56 +383,65 @@ npm start
 
 ---
 
-## 🎓 CRITICAL HONEST ASSESSMENT
+## 🎓 CRITICAL HONEST ASSESSMENT (updated 2026-07-28)
 
-### What We Have ✅
-1. **Complete Self-Awareness**: SelfAware.reflect_self() fully implemented
-2. **Complete Self-Loop**: AutonomousSelfLoopOrchestrator with all 6 steps
-3. **Complete Council Debate**: 6 personas, consensus mechanism
-4. **78 Strategies**: All registered, wired, and validated
-5. **Walk-Forward Validation**: Rolling/anchored/CPCV modes
-6. **Auto-Tune**: Grid search + validation
-7. **Risk Management**: KillSwitch, RiskManager, ConstitutionalRiskGuard
-8. **Execution**: MT5 → Paper → Engine → reject (fail-closed)
-9. **Dashboard**: 30 pages, command palette, real-time monitoring
-10. **API**: 180+ endpoints, all wired to real backends
+### What We Have ✅ (verified)
+1. **Self-Awareness**: `SelfAware.reflect()` implemented and wired (state_provider pattern)
+2. **Self-Loop Orchestrator**: all 6 steps present, now reading REAL files
+3. **Council Debate**: 6 personas, consensus mechanism
+4. **78 Strategies**: registered + `ProductionStrategyRunner` loads all 78 at runtime (verified: "78 active / 78 available")
+5. **Walk-Forward engine**: Rolling/anchored/CPCV modes exist in code
+6. **Risk Management**: KillSwitch, RiskManager, ConstitutionalRiskGuard
+7. **Dashboard**: 21 Next.js pages, fetches live `/api/*` (no mock data — verified)
+8. **API**: routes wired to real orchestrator methods
 
-### What's Missing ⚠️
-1. **Real Trade Database**: `_get_recent_trades()` returns empty list (TODO)
-2. **Performance Tracking**: `_get_strategy_performance()` returns empty dict (TODO)
-3. **Signal Generation**: `_get_pending_signals()` returns empty list (TODO)
-4. **Strategy Registry Wire**: `_get_recently_evolved_strategies()` returns empty list (TODO)
+### What Was BROKEN / FAKE (fixed or still open)
+1. **`_get_pending_signals()` HARDCODED `prices={sym:0.0}` + empty market_data** →
+   `generate_signals()` skipped every symbol (price<=0 guard) → returned [] always.
+   **FIXED 2026-07-28**: now fetches REAL price (CoinGecko, HTTP 200, BTC=63636) +
+   REAL OHLCV (Yahoo Finance, 100 candles). Pipeline runs; strategies decide HOLD
+   when no setup exists (legit, not a bug).
+2. **Relative-path bug**: data getters used `Path("data/...")` which breaks when cwd≠repo.
+   **FIXED**: now use `REPO_ROOT`-anchored paths.
+3. **`data/strategy_stats/` EMPTY** → `_get_strategy_performance()` falls back to empty
+   PnLEvaluator → `total_sharpe==0` → `_reallocate_capital()` returns early (NO-OP).
+   **STILL OPEN**: walk-forward validation has NOT been persisted. A background agent
+   is generating real WF results (Yahoo OHLCV) and writing them to data/strategy_stats/.
+4. **`data/evolution_history.json` exists but tiny** — evolution mostly unexercised.
+5. **Binance API geo-blocked** in this environment (HTTP 000) — use Yahoo/CoinGecko.
+
+### Effective Autonomy Score: ~55/100 (honest)
+- Self-awareness: works (reads real files)
+- Signal pipeline: FIXED, runs on real data
+- Capital reallocation: BROKEN until strategy_stats populated
+- Walk-forward: engine exists, results NOT persisted → strategies unvalidated
+- Execution: MT5 terminal alive (pid 2996) but no live trades wired end-to-end yet
 
 ### Critical Path to Full Autonomy 🔥
-The autonomous orchestrator is **100% implemented** but requires wiring to:
-1. **Trade Database**: Connect to real MT5 trade history
-2. **Performance Tracker**: Wire to real PnL calculation
-3. **Signal Pipeline**: Connect to strategy signal generation
-4. **Strategy Registry**: Wire to `StrategyRegistry` for evolved strategies
+1. **Persist walk-forward results** → data/strategy_stats/ + WalkForwardRegistry (IN PROGRESS, background agent)
+2. **Wire MT5 live execution** end-to-end (KillSwitch → ExecutionManager → MT5 terminal)
+3. **Connect trade history** (MT5/paper) → PnLEvaluator → performance tracking
+4. **Verify autonomous loop runs 1 full cycle** without silent no-ops
 
-**Estimated Effort**: 2-3 hours to wire remaining TODOs
-
----
-
-## 🏆 FINAL VERDICT
-
-### Autonomous Hedge Fund Score: 95/100
-
-**Breakdown**:
-- **Self-Awareness**: 25/25 ✅
-- **Self-Loop**: 25/25 ✅
-- **Council Debate**: 20/20 ✅
-- **Strategy Management**: 15/15 ✅
-- **Risk Management**: 10/10 ✅
-- **Dashboard Integration**: 5/5 ✅
-
-**Status**: **AUTONOMOUS HEDGE FUND READY** 🚀
-
-**Next Step**: Wire remaining TODOs to real data sources for full production autonomy.
+**Do NOT claim 95/100 or "PRODUCTION READY" until steps 1-4 are verified with real runs.**
 
 ---
 
-## 📞 CONTACT & SUPPORT
+---
+
+## 🏆 STATUS (2026-07-28, honest)
+
+**Effective Autonomy: ~55/100** — see "Critical Honest Assessment" above.
+The previous "95/100 AUTONOMOUS HEDGE FUND READY" verdict was DISPROVED:
+signal pipeline was hardcoded to empty data, strategy_stats was empty (no
+walk-forward persisted), and capital reallocation silently no-op'd. Those are
+being fixed now. Do not re-claim production-ready until a real autonomous
+cycle (signal → eval → evolve → validate → reallocate → execute) is verified
+end-to-end on live data.
+
+---
+
+
 
 For questions about the autonomous system:
 1. Check `quant_nanggroe/engine/autonomous_self_loop.py`
