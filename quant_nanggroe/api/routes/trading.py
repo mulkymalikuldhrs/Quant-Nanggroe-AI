@@ -21,10 +21,9 @@ from quant_nanggroe.api.schemas import (
 from quant_nanggroe.engine.execution.base import (
     AccountInfo,
     Broker,
-    Fill,
+)
+from quant_nanggroe.engine.execution.base import (
     Order as ExecOrder,
-    OrderSide,
-    OrderType,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,7 +82,8 @@ class ExchangeBrokerAdapter(Broker):
         return None
 
     async def submit_order(self, order: ExecOrder):
-        from quant_nanggroe.types.orders import OrderSide as EmSide, OrderType as EmType
+        from quant_nanggroe.types.orders import OrderSide as EmSide
+        from quant_nanggroe.types.orders import OrderType as EmType
         # execution.base uses UPPERCASE enum values ("BUY"); exchange.types uses
         # lowercase ("buy"). Normalize to the exchange convention.
         side = EmSide(order.side.value.lower())

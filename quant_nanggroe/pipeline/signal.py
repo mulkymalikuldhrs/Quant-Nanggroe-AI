@@ -14,6 +14,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from quant_nanggroe.engine.causal.models import CausalContext
 from quant_nanggroe.pipeline.macro_context import MacroContextProvider
 
 log = logging.getLogger("QNA-Pipeline-Signal")
@@ -42,12 +43,21 @@ class UnifiedSignalEngine:
         self._strategy_runner: Any = None
         self._price_provider: Any = None
         self._macro = macro_context or MacroContextProvider()
+        self._causal_ctx: CausalContext | None = None
+
+    def set_causal_context(self, ctx: CausalContext | None) -> None:
+        """Provide a CausalContext for macro bias in signal aggregation.
+        
+        When set, it is forwarded to the hedge fund aggregator so each
+        signal provider receives typed macro bias instead of env vars.
+        """
+        self._causal_ctx = ctx
 
     def _lazy_hf(self):
         if self._hf_aggregate is not None:
             return
         try:
-            from quant_nanggroe.hedge_fund.hedge_fund import aggregate, ALL_PROVIDERS, CORE_PROVIDERS
+            from quant_nanggroe.hedge_fund.hedge_fund import ALL_PROVIDERS, CORE_PROVIDERS, aggregate
             self._hf_aggregate = aggregate
             self._hf_providers = list(ALL_PROVIDERS or CORE_PROVIDERS or [])
         except Exception as e:
@@ -63,8 +73,11 @@ class UnifiedSignalEngine:
             log.debug("ProductionStrategyRunner unavailable: %s", e)
         return self._strategy_runner
 
-    def generate_signals(self, symbol: str, data: Optional[dict] = None) -> list[Signal]:
+    def generate_signals(self, symbol: str, data: Optional[dict] = None, ctx: Optional[CausalContext] = None) -> list[Signal]:
         signals: list[Signal] = []
+
+        if ctx is not None:
+            self._causal_ctx = ctx
 
         hf_signal = self._try_hedge_fund(symbol)
         if hf_signal is not None:
@@ -81,7 +94,7 @@ class UnifiedSignalEngine:
         filtered: list[Signal] = []
         for sig in signals:
             if sig.side in ("buy", "sell"):
-                side, conf, reason = self._macro.apply_macro_filter(symbol, sig.side, sig.confidence)
+                side, conf, reason = self._macro.apply_macro_filter(symbol, sig.side, sig.confidence, causal_ctx=self._causal_ctx)
                 if side == "hold":
                     log.info("Macro filter blocked %s %s: %s", symbol, sig.side, reason)
                     continue
@@ -109,7 +122,7 @@ class UnifiedSignalEngine:
         if self._hf_aggregate is None:
             return None
         try:
-            result = self._hf_aggregate(symbol)
+            result = self._hf_aggregate(symbol, ctx=self._causal_ctx)
             bias = result.get("bias", "neutral")
             confidence = float(result.get("confidence", 0.0))
             if bias in ("buy", "sell") and confidence > 0:

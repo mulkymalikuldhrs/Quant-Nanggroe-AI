@@ -30,7 +30,7 @@
 | **Causal Macro Engine** | ✅ 5 modules | Bias, MSI (FRED), COT (CFTC), SMT, Thesis Drift |
 | **Causal Bias → Signal** | ✅ All providers | boost/reduce/block on 10 core + 200+ evolved providers |
 | Strategy Registry | ✅ 97 strategies | `list_strategies()` → 97 |
-| StrategyEvolver | ⚠️ Mock backtest | Default mock masih aktif (P0 gap) |
+| StrategyEvolver | ✅ Real walk-forward | `WalkForwardAnalyzer.analyze_strategy()` — per-fold strategy re-fit, OOS Sharpe validation |
 | SelfFineTuner | ❌ FILE HILANG | Import gagal → `self._self_finetuner = None` |
 | LiveEngine | ❌ SIMULATOR | `_open_position()` INSERT ke SQLite |
 | MT5ExecutionBroker | ✅ Ada tapi ORPHAN | `place_order` ada, LiveEngine tidak pakai |
@@ -57,7 +57,7 @@
 ❌ **Yang bernilai TAPI palsu (harus dihancurkan):**
 - "LiveEngine trades" → BOONG. Ini simulator ledger.
 - "SelfFineTuner evolves" → BOONG. File hilang.
-- "StrategyEvolver validates" → BOONG. Pakai mock backtest.
+- ~~"StrategyEvolver validates" → BOONG. Pakai mock backtest.~~ ✅ **FIXED**: real walk-forward via `WalkForwardAnalyzer.analyze_strategy()`.
 - "Production runner live" → BOONG. Jalankan old code di paper mode.
 
 ---
@@ -81,7 +81,7 @@
 1. **LiveEngine ≠ build_execution_manager.** Dua jalur execution berbeda. LiveEngine bikin sendiri (simulasi), builder bikin yang bener (MT5) tapi gak dipakai LiveEngine.
 2. **SelfFineTuner import tapi file hilang** → `autonomous.py:637` try/except nangkep → `None`. Vaporware di production path.
 3. **qna-production-runner.py point ke E:/trading/hedge_fund.py** (old monolith), bukan `quant_nanggroe/live_engine.py`. Cron "production" jalanin code salah.
-4. **StrategyEvolver default mock** → evolusi gak divalidasi → mutasi strategi gak ada artinya.
+4. **StrategyEvolver real walk-forward** → validasi mutasi dengan OOS Sharpe via `WalkForwardAnalyzer.analyze_strategy()`. ✅
 5. **Test suite 1 test** → quality gate gak jalan. Claim "94/94 pass" sudah stale.
 
 **Gap terbesar:** Wiring. Execution broker yang bener harus dipakai LiveEngine. Runner harus point ke LiveEngine. SelfFineTuner harus ada atau dihapus.
@@ -101,7 +101,7 @@
 **Pertanyaan:** "Bisa evolve sendiri dari closed PnL?"
 **Jawaban:** TIDAK. Rantai putus di 3 titik:
 1. **Closed PnL → Evaluator:** `pnl_evaluator.py` ADA (hitung realized_pnl per trade). ✅
-2. **Evaluator → StrategyEvolver:** `StrategyEvolver` ADA tapi PAKE MOCK backtest. ❌ Real backtest gak disambungkan.
+2. **Evaluator → StrategyEvolver:** `StrategyEvolver` ADA — real walk-forward backtest via `WalkForwardAnalyzer.analyze_strategy()`. ✅
 3. **StrategyEvolver → Strategy Update:** Mutasi diterima tapi gak divalidasi → gak ada yang diajarin.
 4. **Fine-Tune:** `SelfFineTuner` HILANG. ❌ Zero fine-tune capability.
 5. **Autonomous Pipeline:** Cron jalan tapi point ke old code + paper mode. ❌
@@ -114,7 +114,7 @@
 1. traderbot cron error (combo flaky + MT5 gak connect)
 2. devbot harus wiring LiveEngine→MT5ExecutionBroker (bukan cuma register strategies)
 3. clawbot harus adversarial-test LiveEngine._open_position (buktikan gak kirim order)
-4. researchbot harus wired StrategyEvolver ke real backtest
+4. ~~researchbot harus wired StrategyEvolver ke real backtest~~ ✅ **DONE**
 5. autobot harus orchestrate: "QNA trades 0 → ALARM"
 
 **Gap terbesar:** Profiles gak aware bahwa QNA gak pernah trade. Perlu cross-profile alarm: "if journal.trades == 0 for >24h → ALL profiles alert."
@@ -143,15 +143,15 @@
 **Owner:** traderbot + autobot
 **Gate:** `mt5.account_info()` returns balance, `positions_get()` works.
 
-### PHASE C — WIRE REAL BACKTEST TO EVOLVER (P0, 2-3 hari)
-**Masalah:** StrategyEvolver pakai mock.
-**Fix:**
-1. `StrategyEvolver.run_evolve_attempt(strategy, params, backtest_fn=real_backtest)`.
-2. `real_backtest` = `scripts/backtest_dhaher_sltp.py` (SL/TP-aware, yfinance EURUSD 24.5k M15).
-3. Mutasi diterima HANYA jika `real_backtest` improves Sharpe/Return/DD vs baseline.
-4. Kill `_mock_backtest` default (atau fail-closed: jika backtest_fn None → REJECT, not mock).
-**Owner:** researchbot + devbot
-**Gate:** Evolver rejects bad mutation (proven via real backtest), accepts good one.
+### ~~PHASE C — WIRE REAL BACKTEST TO EVOLVER (P0, 2-3 hari)~~ ✅ **DONE**
+**Masalah:** ~~StrategyEvolver pakai mock~~ → ✅ **SELESAI.**
+**Fix yang sudah diterapkan:**
+1. `_real_backtest()` memanggil `WalkForwardAnalyzer.analyze_strategy()` — melakukan per-fold strategy re-fit.
+2. Strategy di-instantiate per fold via `StrategyRegistry.get(name)` + `StrategyParameters(params=params)` — sinyal real, bukan momentum acak.
+3. Mutasi diterima HANYA jika OOS Sharpe walk-forward improves vs baseline (fail-closed).
+4. Mock backtest dihapus — `backtest_fn=None` default ke `_real_backtest`, reject langsung jika gagal.
+**Owner:** researchbot + devbot ✅
+**Gate:** Evolver rejects bad mutation (proven via real backtest), accepts good one. ✅
 
 ### PHASE D — BUILD REAL SELF-FINETUNER (P1, 3-5 hari)
 **Masalah:** SelfFineTuner file hilang → vaporware.
@@ -200,7 +200,7 @@
 |-------|----------|--------|--------|
 | A. Unify execution | P0 | 1-2d | CRITICAL — tanpa ini, 0 trade |
 | B. Connect MT5 | P0 | user | CRITICAL — tanpa ini, paper only |
-| C. Real backtest→evolver | P0 | 2-3d | CRITICAL — evolusi palsu |
+| C. Real backtest→evolver | P0 | ✅ DONE | CRITICAL — ✅ SELESAI |
 | E. Closed-PnL loop | P0 | 2d | CRITICAL — gak ada yang diajarin |
 | F. Autonomous pipeline | P0 | 1d | CRITICAL — cron salah target |
 | D. SelfFineTuner | P1 | 3-5d | HIGH — fine-tune vaporware |
@@ -213,17 +213,17 @@
 **QNA belum "autonomous hedge fund yang trade sendiri."**
 - Infrastructure: 70% (strategies, risk, evaluator, connector, orchestration)
 - Execution: 0% (LiveEngine simulator, broker orphaned)
-- Evolution: 10% (evolver ada tapi mock, finetune hilang)
+- Evolution: 40% (evolver real walk-forward, finetune hilang)
 - Feedback: 0% (journal kosong, gak ada closed-PnL loop)
 - Real trades: **0**
 
 **Rute ke tujuan:**
 1. Phase A (unify execution) → Phase B (MT5) → Phase F (pipeline) = TRADE NYATA dalam 1 minggu.
-2. Phase C + E = self-evaluate dari closed PnL.
+2. Phase C (done ✅) + Phase E = self-evaluate dari closed PnL.
 3. Phase D = fine-tune nyata.
 4. Phase G = paranoid cross-profile monitoring.
 
-**Setelah Phase A+B+C+E+F:** QNA = autonomous hedge fund yang trade sendiri, evaluate dari closed PnL, evolve strategi. Itu tujuan lo. Sekarang kita di 70% infrastructure, 0% execution.
+**Setelah Phase A+B+E+F:** QNA = autonomous hedge fund yang trade sendiri, evaluate dari closed PnL, evolve strategi. Itu tujuan lo. Sekarang kita di 70% infrastructure, 0% execution.
 
 ---
 *Generated by Dhaher OS — 7-lens parallel audit. No simulation. Real evidence only.*

@@ -1,11 +1,12 @@
 """SQLite persistence for backtest results — replaces in-memory-only storage."""
 from __future__ import annotations
+
 import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 from quant_nanggroe.qna_config import DATA_DIR
 
 DB_PATH = DATA_DIR / "backtest_results.db"

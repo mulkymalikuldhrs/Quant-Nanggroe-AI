@@ -9,7 +9,4 @@ __all__ = [
     'tools',
 ]
 
-from . import client
-from . import protocol
-from . import server
-from . import tools
+from . import client, protocol, server, tools

@@ -3,12 +3,14 @@
 import csv
 from datetime import datetime
 
-from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters, KellyMethod
+from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
 from quant_nanggroe.hedge_fund.utils.config import (
-    LOG_FILE, PAPER_LOG, PAPER_TRADE, log, mt5,
+    LOG_FILE,
+    PAPER_TRADE,
+    log,
+    mt5,
 )
 from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
-
 
 _MT5_CREDS_CHECKED = False
 
@@ -42,7 +44,17 @@ def trail_sl(pos, tf=mt5.TIMEFRAME_M1, step_pips=10):
     return None
 
 
-def kelly_lot_size(balance, symbol, confidence):
+def kelly_lot_size(balance, symbol, confidence=0.5):
+    """Compute position lot size using FractionalKelly × signal confidence.
+
+    Args:
+        balance: Account balance in quote currency.
+        symbol: Trading symbol (e.g. "EURUSD").
+        confidence: Signal confidence 0-1 (default 0.5).
+
+    Returns:
+        Lot size rounded to 2 decimals, minimum 0.01.
+    """
     try:
         kelly = FractionalKelly(fraction=0.25)
         params = KellyParameters(

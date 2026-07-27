@@ -8,6 +8,4 @@ __all__ = [
     'sentiment',
 ]
 
-from . import calendar
-from . import cot
-from . import sentiment
+from . import calendar, cot, sentiment

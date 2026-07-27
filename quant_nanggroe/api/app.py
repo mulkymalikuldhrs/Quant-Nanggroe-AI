@@ -40,7 +40,12 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from starlette.responses import Response
 
-from quant_nanggroe.api.middleware import AuthMiddleware, RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
+from quant_nanggroe.api.middleware import (
+    AuthMiddleware,
+    RateLimitMiddleware,
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+)
 from quant_nanggroe.config import get_settings
 from quant_nanggroe.security.auth import APIKeyAuth, JWTAuth, UserRole
 
@@ -299,20 +304,19 @@ def create_app() -> FastAPI:
     app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
-    from quant_nanggroe.api.routes.brokers import router as brokers_router
     from quant_nanggroe.api.routes import (
-        agents,
         agentic,
+        agents,
         analytics,
-        backtest,
         autonomous,
-        brokers,
+        backtest,
         channels,
         colony,
         council,
         credentials,
         debate,
         ecosystem,
+        ensemble,
         fred,
         market,
         memory,
@@ -325,17 +329,18 @@ def create_app() -> FastAPI:
         scheduler,
         sec_edgar,
         security,
+        security_tools,
         signal_generator,
         strategies,
         strategy,
         tools,
         trading,
-        ws,
         whatsapp,
         wiring_compat,
-        ensemble,
-        security_tools,
+        ws,
+        otto_proxy,
     )
+    from quant_nanggroe.api.routes.brokers import router as brokers_router
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
@@ -368,6 +373,8 @@ def create_app() -> FastAPI:
     app.include_router(security.router, prefix="/api", tags=["Security"])
     app.include_router(security_tools.router, prefix="/api/security-tools", tags=["Security Tools"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
+    app.include_router(otto_proxy.router, prefix="/api/otto", tags=["Otto"])
+
     app.include_router(wiring_compat.router)
     app.include_router(ensemble.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used

@@ -12,13 +12,10 @@ Kill switch levels:
 
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import os
-import tempfile
 import threading
-import time
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
@@ -159,6 +156,10 @@ class KillSwitch:
     Monitors portfolio and market conditions, automatically
     activating when safety thresholds are breached.
 
+    All activation/deactivation/reset events are recorded in an
+    append-only audit trail file (QNA_KILL_SWITCH_AUDIT_LOG env var)
+    for regulatory compliance and post-mortem analysis.
+
     Usage::
 
         ks = KillSwitch()
@@ -189,6 +190,35 @@ class KillSwitch:
             KillSwitchLevel.LEVEL_2: [],
             KillSwitchLevel.LEVEL_3: [],
         }
+        # Persistent audit trail — append-only JSONL for regulatory compliance
+        self._audit_log_path: Optional[Path] = None
+        audit_env = os.environ.get("QNA_KILL_SWITCH_AUDIT_LOG")
+        if audit_env:
+            self._audit_log_path = Path(audit_env)
+            self._audit_log_path.parent.mkdir(parents=True, exist_ok=True)
+        elif self._ks_file:
+            # Default: same directory as state file
+            self._audit_log_path = self._ks_file.with_name("kill_switch_audit.jsonl")
+            self._audit_log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _audit_log_event(self, event: KillSwitchEvent) -> None:
+        """Write event to append-only audit log for regulatory compliance."""
+        if not self._audit_log_path:
+            return
+        try:
+            entry = {
+                "event_id": event.event_id,
+                "level": event.level.value,
+                "trigger": event.trigger.value,
+                "previous_level": event.previous_level.value,
+                "reason": event.reason,
+                "auto_activated": event.auto_activated,
+                "timestamp": event.timestamp.isoformat(),
+            }
+            with open(str(self._audit_log_path), "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, default=str) + "\n")
+        except Exception as e:
+            logger.warning("Kill switch audit log write failed: %s", e)
 
     # ── Backward-compatible API ────────────────────────────────────────
 
@@ -229,6 +259,15 @@ class KillSwitch:
                 break
         logger.info("Kill switch reset via confirmation: %s → NONE", previous_level.value)
         self._flush()  # C5: persist reset so other procs stop halting
+        # Audit log the reset event
+        try:
+            self._audit_log_event(KillSwitchEvent(
+                level=KillSwitchLevel.NONE,
+                previous_level=previous_level,
+                reason="Emergency reset via confirmation",
+            ))
+        except Exception:
+            pass
         return {"status": "RESET"}
 
     # ── Cross-process reconcile / flush (C5) ───────────────────────────
@@ -364,6 +403,9 @@ class KillSwitch:
         # C5: persist to shared file so every proc/worker sees one truth
         self._flush()
 
+        # P2: append-only audit log for regulatory compliance
+        self._audit_log_event(event)
+
         # Log and notify
         logger.critical(
             "KILL SWITCH ACTIVATED: Level %s (trigger: %s, reason: %s)",
@@ -379,8 +421,13 @@ class KillSwitch:
 
         return event
 
-    def deactivate(self, reason: str = "Manual deactivation") -> Optional[KillSwitchEvent]:
+    def deactivate(self, reason: str = "Manual deactivation", force: bool = False) -> Optional[KillSwitchEvent]:
         """Deactivate the kill switch.
+
+        Args:
+            reason: Reason for deactivation.
+            force: If True, bypass cooldown and level-3 approval.
+                   Use only after explicit human review.
 
         Returns
         -------
@@ -390,8 +437,15 @@ class KillSwitch:
         if self._status != KillSwitchStatus.ACTIVE:
             return None
 
-        # Check cooldown
-        if self._activated_at:
+        # Level 3 requires approval (unless forced)
+        if self._current_level == KillSwitchLevel.LEVEL_3 and self._config.level_3_requires_approval and not force:
+            if not self._level3_approved:
+                logger.warning("Level 3 deactivation requires explicit approval — call approve_level3_deactivation() or pass force=True")
+                return None
+            self._level3_approved = False  # reset after use
+
+        # Check cooldown (bypassed if forced)
+        if not force and self._activated_at:
             elapsed = (datetime.now(timezone.utc) - self._activated_at).total_seconds() / 60
             required_cooldown = (
                 self._config.level_2_cooldown_minutes
@@ -404,13 +458,6 @@ class KillSwitch:
                     elapsed, required_cooldown,
                 )
                 return None
-
-        # Level 3 requires approval
-        if self._current_level == KillSwitchLevel.LEVEL_3 and self._config.level_3_requires_approval:
-            if not self._level3_approved:
-                logger.warning("Level 3 deactivation requires explicit approval — call approve_level3_deactivation()")
-                return None
-            self._level3_approved = False  # reset after use
 
         previous_level = self._current_level
         self._current_level = KillSwitchLevel.NONE
@@ -427,11 +474,13 @@ class KillSwitch:
                 break
 
         logger.info("Kill switch deactivated: %s → NONE (reason: %s)", previous_level.value, reason)
-        return KillSwitchEvent(
+        deact_event = KillSwitchEvent(
             level=KillSwitchLevel.NONE,
             previous_level=previous_level,
             reason=reason,
         )
+        self._audit_log_event(deact_event)
+        return deact_event
 
     def approve_level3_deactivation(self) -> None:
         """Approve Level 3 deactivation. Must be called before deactivate() will succeed."""

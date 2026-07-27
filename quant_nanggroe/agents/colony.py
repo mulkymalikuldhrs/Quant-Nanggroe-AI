@@ -6,30 +6,26 @@ heartbeat monitoring, and resource balancing across the colony.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from .base import BaseAgent
 from ..types import (
     AgentSpec,
     AgentType,
-    AutonomyLevel,
     ColonyConfig,
     HandType,
     Task,
-    TaskResult,
 )
-from ..agents.state import AgentState
+from .base import BaseAgent
+
 # Hands module not available in this deployment — import guard
 # Colony hands are managed by the colony orchestration system at engine level
 try:
     from ..engine.colony.hands import Hand, HandManager
 except ImportError:
     # Define stub types so colony agent can at least import
-    from dataclasses import dataclass
     from typing import Any, Dict, List
     class Hand:
         """Stub hand type — real implementation in engine.colony.hands."""

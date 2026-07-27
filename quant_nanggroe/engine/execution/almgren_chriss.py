@@ -12,11 +12,11 @@ Extended with:
 - Real-time market data updates
 - Multi-asset execution
 """
-from typing import Dict, List, Optional, Tuple, Any, Callable
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-import numpy as np
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

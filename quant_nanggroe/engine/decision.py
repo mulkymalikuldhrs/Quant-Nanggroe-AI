@@ -168,7 +168,7 @@ class DecisionSynthesisEngine:
             sell_pressure: Normalized sell pressure (0-1)
             confidence: Signal confidence (0-1)
             volatility: Market volatility level
-            daily_pnl_pct: Current daily PnL percentage
+            daily_pnl_pct: Current daily PnL as a fraction of equity (range [0, 1])
 
         Returns:
             DecisionResult with action, risk_clearance, and details

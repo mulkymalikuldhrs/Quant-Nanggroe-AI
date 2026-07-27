@@ -13,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 
 QNA_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = QNA_DIR / "data"
@@ -44,8 +44,8 @@ class BacktestRunner:
 
     def run_pipeline(self, days=365, max_strategies=0, top_n=20):
         """Full pipeline: fetch → generate → backtest → select → deploy."""
-        from quant_nanggroe.backtest.strategy_factory import StrategyFactory, TEMPLATES
         from quant_nanggroe.backtest.backtester import Backtester, DataFetcher
+        from quant_nanggroe.backtest.strategy_factory import TEMPLATES, StrategyFactory
 
         log("=" * 60)
         log("QNA BACKTEST PIPELINE STARTED")

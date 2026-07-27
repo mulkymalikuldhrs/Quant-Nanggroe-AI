@@ -3,7 +3,9 @@
 import pandas as pd
 
 from quant_nanggroe.hedge_fund.utils.config import (
-    MT5_AVAILABLE, PAPER_TRADE, log, mt5,
+    MT5_AVAILABLE,
+    PAPER_TRADE,
+    mt5,
 )
 
 

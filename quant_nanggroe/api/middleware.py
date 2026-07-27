@@ -54,20 +54,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._apikey = api_key_auth or APIKeyAuth()
         self._exclude_paths = exclude_paths or {"/health", "/metrics", "/docs",
                                                 "/openapi.json", "/favicon.ico"}
-        # ponytail: fail-closed — dev mode only with explicit opt-in, never silent
-        self._insecure_optin = os.environ.get("QNAI_ALLOW_INSECURE_DEV", "").lower() in ("1", "true", "yes")
-        self._dev_mode = (not bool(os.environ.get("QNAI_API_KEY", ""))) and self._insecure_optin
-        if self._dev_mode:
-            logger.warning("Auth BYPASSED — QNAI_ALLOW_INSECURE_DEV=true and no QNAI_API_KEY set")
-        elif not os.environ.get("QNAI_API_KEY", ""):
-            logger.warning("No QNAI_API_KEY set; auth ENFORCED (all /api/* require token). Set QNAI_ALLOW_INSECURE_DEV=true to disable (dev only).")
+        # Auth is always enforced. No bypass mechanisms.
+        if not os.environ.get("QNAI_API_KEY", ""):
+            logger.warning("No QNAI_API_KEY set; auth ENFORCED (all /api/* require token).")
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         path = request.url.path
-
-        # Dev mode: skip auth entirely
-        if self._dev_mode:
-            return await call_next(request)
 
         # Bypass auth for public endpoints
         if path in self._exclude_paths or path.startswith(("/docs", "/redoc", "/openapi.json")):
@@ -76,16 +68,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Bypass auth for static files (dashboard UI)
         if not path.startswith("/api/"):
             return await call_next(request)
-
-        # ponytail: lo bilang "ini mesin uang, jangan pakai auth". Localhost bypass.
-        # FIX S1: Gate behind env var to prevent unauthenticated admin access in production.
-        client = request.client
-        if client and client.host in ("127.0.0.1", "::1", "localhost"):
-            if os.environ.get("QNAI_ALLOW_LOCALHOST_BYPASS", "0") == "1":
-                request.state.user_id = "local"
-                request.state.user_role = UserRole.ADMIN
-                return await call_next(request)
-            # else: fall through to normal auth
 
         auth_header = request.headers.get("Authorization", "")
         if not auth_header:

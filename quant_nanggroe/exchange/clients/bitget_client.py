@@ -12,7 +12,6 @@ import base64
 import hashlib
 import hmac
 import logging
-import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode

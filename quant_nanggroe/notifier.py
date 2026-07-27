@@ -11,11 +11,11 @@ unified implementation for signal-oriented workflows.
 """
 
 import functools
-import os
 import json
 import logging
-import urllib.request
+import os
 import urllib.error
+import urllib.request
 
 log = logging.getLogger("QNA.Notifier")
 

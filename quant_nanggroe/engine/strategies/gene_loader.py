@@ -1,8 +1,11 @@
 """Gene Loader - MUE-X Gene Discovery & Registration."""
 from __future__ import annotations
-import importlib, inspect, logging
+
+import inspect
+import logging
 from pathlib import Path
 from typing import Any, Optional
+
 logger = logging.getLogger(__name__)
 
 class GeneLoader:

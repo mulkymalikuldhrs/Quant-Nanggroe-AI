@@ -57,6 +57,7 @@ class PaperBroker(Broker):
         self._order_history: List[Order] = []
         self._fill_history: List[Fill] = []
         self._pending_orders: List[Order] = []
+        self._rng = random.Random(42)  # deterministic seed for reproducible tests
 
     @property
     def name(self) -> str:
@@ -157,7 +158,7 @@ class PaperBroker(Broker):
             self._capital += order.quantity * exec_price - commission
 
         # Simulate partial fill for large orders (random 50-100% fill)
-        fill_ratio = random.uniform(0.5, 1.0) if order.quantity > 10 else 1.0
+        fill_ratio = self._rng.uniform(0.5, 1.0) if order.quantity > 10 else 1.0
         fill_qty = order.quantity * fill_ratio
 
         # Update position
@@ -285,7 +286,7 @@ class PaperBroker(Broker):
                     self._capital += order.quantity * exec_price - commission
 
                 # Partial fill simulation
-                fill_ratio = random.uniform(0.5, 1.0) if order.quantity > 10 else 1.0
+                fill_ratio = self._rng.uniform(0.5, 1.0) if order.quantity > 10 else 1.0
                 fill_qty = order.quantity * fill_ratio
 
                 self._update_position(order, exec_price, fill_qty)

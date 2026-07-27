@@ -36,9 +36,8 @@ COPY --from=builder /build/.venv /app/.venv
 # Set PATH to include venv binaries
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy application source
+# Copy application source (NOT config/ — credentials come from env vars at runtime)
 COPY quant_nanggroe/ ./quant_nanggroe/
-COPY config/       ./config/
 COPY data/         ./data/
 COPY qna.py        ./qna.py
 

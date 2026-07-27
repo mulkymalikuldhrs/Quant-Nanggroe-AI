@@ -190,8 +190,8 @@ class RiskAgent(BaseAgent):
         Args:
             signals: Proposed trading signals
             portfolio_state: Current portfolio state
-            daily_pnl_pct: Daily PnL percentage
-            weekly_pnl_pct: Weekly PnL percentage
+            daily_pnl_pct: Daily PnL as a fraction of equity (range [0, 1])
+            weekly_pnl_pct: Weekly PnL as a fraction of equity (range [0, 1])
             trades_today: Number of trades executed today
 
         Returns:
@@ -220,7 +220,9 @@ class RiskAgent(BaseAgent):
         ))
 
         # Checkpoint 2: Daily loss < 1%
-        daily_loss = abs(min(0, daily_pnl_pct / 100)) if daily_pnl_pct < 0 else 0
+        # daily_pnl_pct is a fraction of equity (range [0, 1]), consistent
+        # with the engine-level fraction convention (MAX_DAILY_LOSS = 0.01).
+        daily_loss = abs(min(0, daily_pnl_pct)) if daily_pnl_pct < 0 else 0
         checkpoints.append(RiskCheckpoint(
             name="2_daily_loss",
             value=f"{daily_loss:.4f}",
@@ -230,7 +232,8 @@ class RiskAgent(BaseAgent):
         ))
 
         # Checkpoint 3: Weekly loss < 3%
-        weekly_loss = abs(min(0, weekly_pnl_pct / 100)) if weekly_pnl_pct < 0 else 0
+        # weekly_pnl_pct is a fraction of equity (range [0, 1]).
+        weekly_loss = abs(min(0, weekly_pnl_pct)) if weekly_pnl_pct < 0 else 0
         checkpoints.append(RiskCheckpoint(
             name="3_weekly_loss",
             value=f"{weekly_loss:.4f}",
@@ -402,10 +405,11 @@ class RiskAgent(BaseAgent):
                 "ERROR", "position_size",
             ))
 
-        if daily_pnl_pct < 0 and abs(daily_pnl_pct) / 100 >= MAX_DAILY_LOSS:
+        # daily_pnl_pct is a fraction of equity (range [0, 1]).
+        if daily_pnl_pct < 0 and abs(daily_pnl_pct) >= MAX_DAILY_LOSS:
             checks.append(TradeVerdict(
                 TRADE_VERDICT_REJECTED,
-                f"Daily loss {abs(daily_pnl_pct):.2f}% >= max {MAX_DAILY_LOSS*100:.0f}%",
+                f"Daily loss {abs(daily_pnl_pct)*100:.2f}% >= max {MAX_DAILY_LOSS*100:.0f}%",
                 "CRITICAL", "daily_loss",
             ))
 

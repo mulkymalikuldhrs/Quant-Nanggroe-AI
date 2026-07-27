@@ -6,6 +6,4 @@ __all__ = [
     'whitelist',
 ]
 
-from . import cooldown
-from . import max_position
-from . import whitelist
+from . import cooldown, max_position, whitelist

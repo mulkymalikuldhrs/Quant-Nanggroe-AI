@@ -5,12 +5,23 @@ Combines all data providers into a single interface.
 Auto-fallback: if one provider fails, tries the next.
 """
 
-import time
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+import os
+import time
+from typing import Dict, List, Optional
 
 log = logging.getLogger("QNA.DataManager")
+
+
+def _ssl_ctx():
+    import ssl
+    verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = verify
+    ctx.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+    if not verify:
+        log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
+    return ctx
 
 from .crypto_provider import CryptoProvider
 from .finnhub_provider import FinnhubProvider
@@ -33,11 +44,8 @@ class DataManager:
     def _init_coingecko(self):
         if self._coingecko_session is not None:
             return
-        import ssl
         import urllib.request
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        ctx = _ssl_ctx()
         self._coingecko_session = urllib.request.build_opener()
         headers = [
             ("User-Agent", "QNA/1.0"),
@@ -104,7 +112,6 @@ class DataManager:
         self.__class__._last_cg_call = time.time()
 
     def get_crypto_prices(self, coin_ids: str) -> Dict[str, float]:
-        import ssl, urllib.request
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_ids}&vs_currencies=usd"
         data = self._coingecko_get(url)
         if data:

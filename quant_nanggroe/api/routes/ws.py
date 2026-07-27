@@ -360,8 +360,9 @@ async def websocket_stream(websocket: WebSocket) -> None:
         await websocket.close(code=4001, reason="Missing auth token")
         return
     try:
-        from quant_nanggroe.security.auth import JWTAuth
         import os
+
+        from quant_nanggroe.security.auth import JWTAuth
         secret = os.environ.get("QNAI_JWT_SECRET", "")
         if not secret:
             await websocket.close(code=4001, reason="Server auth not configured")

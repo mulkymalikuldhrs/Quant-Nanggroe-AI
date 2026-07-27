@@ -30,12 +30,12 @@ from quant_nanggroe.engine.causal.causal_bias import (
     CausalBiasEngine,
     CausalKnowledgeGraph,
 )
+from quant_nanggroe.engine.causal.cot_tracker import (
+    COTAnalyzer,
+    COTTracker,
+)
 from quant_nanggroe.engine.causal.macro_surprise import (
     MacroSurpriseIndex,
-)
-from quant_nanggroe.engine.causal.cot_tracker import (
-    COTTracker,
-    COTAnalyzer,
 )
 from quant_nanggroe.engine.causal.smt_divergence import (
     SMTDivergenceDetector,

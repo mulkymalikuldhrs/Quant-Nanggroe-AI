@@ -23,14 +23,13 @@ References:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from scipy import stats as sp_stats
-from scipy.optimize import minimize, linprog
 
 logger = logging.getLogger(__name__)
 

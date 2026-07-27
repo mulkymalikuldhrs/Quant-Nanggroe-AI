@@ -219,8 +219,8 @@ async def get_signals() -> dict[str, Any]:
 async def mt5_market_data(symbol: str) -> dict[str, Any]:
     """Live market data from MT5 terminal — price, OHLCV, orderbook."""
     try:
-        from quant_nanggroe.exchange.mt5_broker import MT5Broker
         from quant_nanggroe.exchange.base import ExchangeConfig
+        from quant_nanggroe.exchange.mt5_broker import MT5Broker
 
         config = ExchangeConfig(exchange_id="mt5")
         broker = MT5Broker(config)

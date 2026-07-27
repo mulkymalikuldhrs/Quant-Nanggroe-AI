@@ -10,7 +10,6 @@ from fastapi import APIRouter, HTTPException
 from quant_nanggroe.engine.agentic import (
     AutonomousPipeline,
     SelfCorrection,
-    discover_strategies,
     get_autonomous_pipeline,
     register_free_providers,
 )

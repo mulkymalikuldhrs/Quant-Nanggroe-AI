@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import json
-import time
-from typing import Dict, List, Optional
-from datetime import datetime
+from typing import Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from quant_nanggroe.engine.strategy.strategies import (
-    list_strategies,
+from quant_nanggroe.engine.strategies import (
     create_strategy,
+    list_strategies,
 )
 
 # Metadata with REAL backtest results — verified 2026-07-14.
@@ -121,10 +118,12 @@ def get_strategy_metadata(name: str) -> dict:
     elif any(x in name for x in ["carry_trade", "trend_following_cta", "mean_reversion_stat"]): cat = "trend"
     elif any(x in name for x in ["options_straddle", "macro_rates", "macro_fx"]): cat = "macro"
     return {"description": name.replace("_", " ").title(), "category": cat, "asset_classes": [], "timeframes": []}
-from quant_nanggroe.engine.strategy.strategy_selector import (
-    StrategySelector,
-    AdaptiveStrategyEngine,
-)
+try:
+    from quant_nanggroe.engine.strategy.strategy_selector import StrategySelector
+    _HAS_SELECTOR = True
+except ImportError:
+    StrategySelector = None  # type: ignore
+    _HAS_SELECTOR = False
 
 router = APIRouter()
 
@@ -277,6 +276,8 @@ async def get_strategy_detail(name: str):
 @router.get("/selector/strategies")
 async def get_selected_strategies(regime: str = "ranging", top_n: int = 3):
     """Get top N strategies for a given market regime."""
+    if not _HAS_SELECTOR:
+        return {"regime": regime, "selected": [], "note": "selector unavailable"}
     selector = StrategySelector(top_n=top_n)
     selected = selector.select(regime)
     return {

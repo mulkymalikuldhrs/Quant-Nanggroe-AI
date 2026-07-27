@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timedelta
 from typing import Any, Optional
 
 log = logging.getLogger("QNA-Pipeline-Data")

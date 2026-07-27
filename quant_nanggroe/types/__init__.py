@@ -14,13 +14,5 @@ __all__ = [
 ]
 
 # Agent types — AgentSpec, AgentType, AutonomyLevel, HandType, ColonyConfig, Task, TaskResult
-from . import agent
+from . import agent, decisions, engine, market, orders, positions, risk, signals
 from .agent import AgentSpec, AgentType, AutonomyLevel, ColonyConfig, HandType, Task, TaskResult
-
-from . import decisions
-from . import engine
-from . import market
-from . import orders
-from . import positions
-from . import risk
-from . import signals

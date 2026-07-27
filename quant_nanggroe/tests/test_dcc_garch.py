@@ -19,11 +19,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from quant_nanggroe.engine.risk.dcc_garch import (
     DCCGARCH,
-    compute_dcc_corr,
-    dcc_kelly_weights,
-    dcc_garch_pipeline,
-    garch_vol_forecast,
     _nearest_pd,
+    compute_dcc_corr,
+    dcc_garch_pipeline,
+    dcc_kelly_weights,
+    garch_vol_forecast,
 )
 
 # ── Suppress arch package convergence warnings in tests ──────────

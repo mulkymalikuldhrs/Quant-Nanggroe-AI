@@ -1,8 +1,8 @@
 # Package init
 # NOTE: Client imports are LAZY to avoid ccxt dependency issues at import time.
 # Use get_client_class() or AVAILABLE_CLIENTS dict to access classes.
-from typing import Dict, Type
 import logging
+from typing import Dict, Type
 
 from quant_nanggroe.exchange.clients.base_rest_client import BaseRestClient
 

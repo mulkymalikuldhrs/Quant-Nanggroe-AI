@@ -14,8 +14,8 @@ ponytail: one combined signal, no dashboard, no UI. Pure function.
 
 from __future__ import annotations
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def squeeze_breakout(

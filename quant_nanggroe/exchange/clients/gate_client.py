@@ -13,7 +13,6 @@ import hmac
 import logging
 import time
 from datetime import datetime
-from decimal import ROUND_DOWN, Decimal
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode
 

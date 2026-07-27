@@ -2,15 +2,29 @@
 Uses ONLY working providers (urllib-based, no external deps).
 Fallback chain: Bybit → OKX → CoinGecko → Finnhub → FRED."""
 
-import json, time, ssl, urllib.request, urllib.error, logging
+import json
+import logging
+import os
+import ssl
+import time
+import urllib.error
+import urllib.request
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
 
 log = logging.getLogger("QNA.DataBridge")
 
-CTX = ssl.create_default_context()
-CTX.check_hostname = False
-CTX.verify_mode = ssl.CERT_NONE
+
+def _ssl_ctx():
+    verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = verify
+    ctx.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+    if not verify:
+        log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
+    return ctx
+
+
+CTX = _ssl_ctx()
 
 CG_TO_SYMBOL = {
     "bitcoin": "BTCUSDT", "ethereum": "ETHUSDT", "solana": "SOLUSDT",

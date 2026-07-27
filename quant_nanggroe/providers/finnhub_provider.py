@@ -7,12 +7,11 @@ Free tier: 60 calls/min, real-time WebSocket (limited symbols).
 API key from credentials.md (if set) or environment variable.
 """
 
-import os
-import time
 import json
 import logging
+import os
+import time
 from typing import Dict, List, Optional
-from datetime import datetime
 
 log = logging.getLogger("QNA.Finnhub")
 
@@ -33,7 +32,8 @@ class FinnhubProvider:
         self.last_call = time.time()
 
     def _get(self, endpoint: str, params: Dict = None) -> Optional[Dict]:
-        import urllib.request, urllib.parse
+        import urllib.parse
+        import urllib.request
         self._rate_limit()
         params = params or {}
         params["token"] = self.api_key

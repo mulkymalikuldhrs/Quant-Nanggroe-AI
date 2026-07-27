@@ -97,12 +97,15 @@ class Portfolio:
 
     @property
     def equity(self) -> float:
-        """Total portfolio equity (cash + unrealized P&L)."""
+        """Total portfolio equity (cash + position market values).
+
+        For a long position the market value is +size × current_price.
+        For a short position the liability is  −size × current_price.
+        """
         total = self.cash
         for symbol, pos in self.positions.items():
             current_price = self._current_prices.get(symbol, pos.entry_price)
-            pnl = self._calc_unrealized_pnl(pos, current_price)
-            total += abs(pos.size * pos.entry_price) + pnl
+            total += pos.direction * pos.size * current_price
         return total
 
     @property
@@ -123,22 +126,29 @@ class Portfolio:
         """Get the current position for a symbol."""
         return self.positions.get(symbol)
 
-    def can_open_position(self, price: float, size: float, commission: float) -> bool:
+    def can_open_position(self, price: float, size: float, commission: float, direction: int = 1) -> bool:
         """Check if a new position can be opened.
 
         Args:
             price: Entry price.
             size: Position size.
             commission: Commission for the trade.
+            direction: 1 for long, -1 for short.
 
         Returns:
             True if the position can be opened.
         """
-        required = abs(size * price) + commission
-        if required > self.cash:
-            return False
         if len(self.positions) >= self.max_positions:
             return False
+        if direction == 1:
+            # Long: need cash to buy the shares
+            required = abs(size * price) + commission
+            if required > self.cash:
+                return False
+        else:
+            # Short: sale proceeds increase cash; only commission costs cash
+            if commission > self.cash:
+                return False
         return True
 
     def open_position(
@@ -172,14 +182,19 @@ class Portfolio:
             self.close_position(symbol, price, timestamp, "replacement")
 
         cost = abs(size * price) + commission
-        if cost > self.cash:
-            # Reduce size to fit available capital
+        if cost > self.cash and direction == 1:
+            # Reduce size to fit available capital (long only)
             available = self.cash - commission
             if available <= 0:
                 return None
             size = available / price
+            cost = abs(size * price) + commission
 
-        self.cash -= cost
+        if direction == 1:
+            self.cash -= cost
+        else:
+            # Short: receive sale proceeds (abs(size*price)) minus commission
+            self.cash += abs(size * price) - commission
 
         pos = Position(
             symbol=symbol,
@@ -193,7 +208,20 @@ class Portfolio:
         )
         self.positions[symbol] = pos
         self._entry_bar[symbol] = self._bar_count
-        return None  # Opening trade is not a completed trade
+        return TradeRecord(
+            symbol=symbol,
+            direction=direction,
+            entry_price=price,
+            exit_price=price,
+            entry_time=timestamp,
+            exit_time=timestamp,
+            size=size,
+            pnl=-commission,
+            pnl_pct=-commission / (abs(size * price) + 1e-10) * 100.0,
+            exit_reason="open",
+            commission=commission,
+            holding_bars=0,
+        )
 
     def close_position(
         self,
@@ -222,7 +250,12 @@ class Portfolio:
         pnl_pct = pnl / entry_value * 100.0 if entry_value > 0 else 0.0
 
         # Return capital + P&L
-        self.cash += entry_value + pnl
+        if pos.direction == 1:
+            # Long: sell shares → cash increases by sale proceeds
+            self.cash += entry_value + pnl
+        else:
+            # Short: buy back shares → cash decreases by cost to close
+            self.cash -= abs(pos.size * price)
 
         holding_bars = self._bar_count - self._entry_bar.get(symbol, self._bar_count)
 

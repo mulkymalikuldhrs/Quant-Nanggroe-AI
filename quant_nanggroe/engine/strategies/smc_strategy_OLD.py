@@ -2,11 +2,10 @@
 OLD SMC Strategy — archived before library upgrade
 Original implementation from strategy_registry.py lines 86-118
 """
-import pandas as pd
-import numpy as np
-from quant_nanggroe.engine.strategies.registry import StrategyRegistry
-from quant_nanggroe.engine.strategies.base import Strategy
 from quant_nanggroe.engine.strategies._df_signal_adapter import DFStrategyAdapter
+from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+
 
 @StrategyRegistry.register
 class SMCStrategy_OLD(DFStrategyAdapter, Strategy):

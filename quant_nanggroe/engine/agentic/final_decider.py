@@ -1,10 +1,12 @@
 """Final Decider - One Final Veto."""
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
+
 logger = logging.getLogger(__name__)
 
 class Action(str, Enum):
@@ -98,7 +100,7 @@ class FinalDecider:
         if portfolio.position_count >= portfolio.max_positions:
             return _veto(Action.HOLD, "Max positions", ["positions"])
         try:
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod, compute_kelly
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters, compute_kelly
             kp = KellyParameters(win_rate=best.confidence**1.5, avg_win=0.02, avg_loss=0.01, fraction=0.25, max_drawdown=risk.max_drawdown, current_drawdown=risk.current_drawdown)
             kf = compute_kelly(kp, method=KellyMethod.FRACTIONAL).f_star * regime_mult
             kf = min(kf, 0.25)

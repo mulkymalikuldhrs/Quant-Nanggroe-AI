@@ -17,12 +17,11 @@ Usage:
 """
 
 import json
-import math
-import time
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 log = logging.getLogger("QNA-AutoAware")
 

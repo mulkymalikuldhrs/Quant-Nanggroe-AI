@@ -10,7 +10,6 @@ import pandas as pd
 
 from quant_nanggroe.engine.strategies.base import (
     SignalDirection,
-    SignalStrength,
     Strategy,
     StrategyParameters,
     StrategySignal,

@@ -32,8 +32,8 @@ Usage:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 import numpy as np
@@ -41,7 +41,6 @@ import pandas as pd
 
 from quant_nanggroe.engine.macro.economic_calendar import (
     EconomicCalendarProvider,
-    ECONOMIC_INDICATORS_REGISTRY,
 )
 
 logger = logging.getLogger(__name__)

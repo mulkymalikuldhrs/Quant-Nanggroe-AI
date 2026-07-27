@@ -1,9 +1,10 @@
-# WARNING: Contains live account credentials. Ensure this file is in .gitignore.
-# MT5 Account Configuration — PRODUCTION
+# WARNING: This file uses env-var interpolation only.
+# Set QNA_MT5_LOGIN, QNA_MT5_SERVER, QNA_MT5_PASSWORD in your environment or .env file.
+# NEVER commit real credentials. This file is gitignored.
 accounts:
   - name: "MT5 Live"
     broker: mt5
-    login: 372044706
-    server: "ValetaxIntl-Live2"
-    password: "${VALETAX_PASSWORD}"
+    login: "${QNA_MT5_LOGIN}"
+    server: "${QNA_MT5_SERVER}"
+    password: "${QNA_MT5_PASSWORD}"
     paper: false

@@ -119,7 +119,7 @@ class PerformanceMetrics:
         max_dd_duration = self._calc_max_drawdown_duration(equity_series)
 
         # ── Sharpe Ratio ──────────────────────────────────────────────
-        sharpe = float(returns.mean() / (returns.std() + 1e-10) * np.sqrt(self.bars_per_year))
+        sharpe = float(returns.mean() / max(returns.std(), 1e-10) * np.sqrt(self.bars_per_year))
 
         # ── Sortino Ratio ─────────────────────────────────────────────
         downside = returns[returns < 0]

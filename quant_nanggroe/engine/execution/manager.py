@@ -17,7 +17,7 @@ import os
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from quant_nanggroe.engine.execution.base import Broker, Fill, Order
 from quant_nanggroe.engine.execution.fill import FillTracker
@@ -130,6 +130,45 @@ class ExecutionManager:
         """
         self._kill_switch = kill_switch
 
+    # ── Public API for external consumers (builder, live_engine) ──
+
+    def get_risk_manager(self) -> Optional["RiskManager"]:
+        """Return the attached RiskManager, or None."""
+        return self._risk_manager
+
+    def get_brokers(self) -> Dict[str, Broker]:
+        """Return a shallow copy of the broker map (name → Broker)."""
+        return dict(self._brokers)
+
+    def get_primary_broker_name(self) -> Optional[str]:
+        """Return the name of the primary broker."""
+        return self._primary_broker
+
+    def get_broker(self, name: str) -> Optional[Broker]:
+        """Return a broker by name, or None if not registered."""
+        return self._brokers.get(name)
+
+    def set_broker_handle(self, mt5_handle) -> None:
+        """Attach a live MT5 handle to the RiskManager for realized PnL sync.
+
+        Replaces the fragile em._risk_manager.set_broker_handle(mt5)
+        private-attribute access pattern used by builder.py.
+        """
+        if self._risk_manager is not None:
+            self._risk_manager.set_broker_handle(mt5_handle)
+        else:
+            logger.warning("set_broker_handle called but no RiskManager attached")
+
+    def get_mt5_connector(self):
+        """Return the raw MT5Broker connector if one is registered, else None.
+
+        Used by live_engine.py for broker position sync on startup.
+        """
+        for b in self._brokers.values():
+            if hasattr(b, "_mt5"):
+                return b._mt5
+        return None
+
     async def execute_order(
         self,
         order: Order,
@@ -146,9 +185,19 @@ class ExecutionManager:
         Returns:
             Fill if order was executed, None if rejected.
         """
+        # All downstream consumers (guard, kill switch, RiskManager) take FRACTION
+        # pnl (config thresholds: 0.015 == 1.5%). Convert once at this boundary so
+        # every layer reads the same fraction convention — this closes the 100x silent
+        # under-report that occurred when feeding snapshot fractions (returned by
+        # current_risk_snapshot) into check_trade which expected percent.
+        ks_daily = daily_pnl_pct / 100.0
+        ks_weekly = weekly_pnl_pct / 100.0
+        ks_drawdown = max_drawdown_pct / 100.0
+        ks_volatility = volatility_pct / 100.0
+
         # 1. Run guard pipeline
-        self._governance_veto.update_pnl(daily_pnl_pct, weekly_pnl_pct)
-        self._governance_veto.update_drawdown(max_drawdown_pct)
+        self._governance_veto.update_pnl(ks_daily, ks_weekly)
+        self._governance_veto.update_drawdown(ks_drawdown)
         guard_result = self._run_guards(order)
         if not guard_result.allowed:
             logger.warning(
@@ -170,18 +219,6 @@ class ExecutionManager:
         if broker is None:
             logger.error("No broker available for order %s", order.id)
             return None
-
-        # KillSwitch.check_auto_activate / check_warning take FRACTION pnl
-        # (config thresholds: 0.015 == 1.5%), but execute_order's contract and
-        # RiskManager.check_trade use PERCENT (0-100). Convert once at this
-        # boundary so both layers read the same incoming percent values in
-        # their correct units — otherwise the constitutional risk veto is dead
-        # on the combined path (pitfall #11: kill switch over-fires as 100x
-        # fraction, or risk never sees the loss).
-        ks_daily = daily_pnl_pct / 100.0
-        ks_weekly = weekly_pnl_pct / 100.0
-        ks_drawdown = max_drawdown_pct / 100.0
-        ks_volatility = volatility_pct / 100.0
 
         # 3. Kill switch — ENFORCED (not just a warning)
         if self._kill_switch is not None:
@@ -243,10 +280,10 @@ class ExecutionManager:
                 entry=order.price or 0.0,
                 stop_loss=order.stop_price or 0.0,
                 account_balance=account_balance,
-                # Convert execution-layer percent P&L into the absolute equity fraction
-                # the constitutional gate expects (daily_pnl_pct/100 * balance).
-                daily_pnl_pct=daily_pnl_pct,
-                weekly_pnl_pct=weekly_pnl_pct,
+                # daily_pnl_pct is already converted to fraction at line 181;
+                # check_trade now expects fraction (range [0, 1]).
+                daily_pnl_pct=ks_daily,
+                weekly_pnl_pct=ks_weekly,
             )
             if verdict.get("verdict") == "VETOED":
                 logger.critical(

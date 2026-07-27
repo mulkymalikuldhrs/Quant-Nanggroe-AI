@@ -7,7 +7,7 @@ the ExchangeInterface abstraction (async, Pydantic models) for external consumer
 """
 from typing import List
 
-from quant_nanggroe.connectors.broker_base import BrokerConnector, Order, Position, BrokerType
+from quant_nanggroe.connectors.broker_base import BrokerConnector, BrokerType, Order, Position
 
 
 def _mt5_symbol(qna_symbol: str) -> str:

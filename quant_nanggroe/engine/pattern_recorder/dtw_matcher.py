@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class DTWPatternMatcher:
     def __init__(self, sakoe_chiba_band: int = 5):
         self.band = sakoe_chiba_band

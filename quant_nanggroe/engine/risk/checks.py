@@ -41,12 +41,14 @@ from quant_nanggroe.engine.risk.constants import (
     MAX_RISK_PER_TRADE as _MAX_RISK_PER_TRADE_FRAC,  # 0.005 (fraction)
 )
 from quant_nanggroe.engine.risk.constants import (
+    MAX_SECTOR_EXPOSURE_PCT as _MAX_SECTOR_EXPOSURE_FRAC,  # 0.30 (fraction)
+)
+from quant_nanggroe.engine.risk.constants import (
     MAX_WEEKLY_LOSS as _MAX_WEEKLY_LOSS_FRAC,  # 0.03 (fraction)
 )
 from quant_nanggroe.engine.risk.constants import (
-    MAX_SECTOR_EXPOSURE_PCT as _MAX_SECTOR_EXPOSURE_FRAC,  # 0.30 (fraction)
-    SECTOR_MAP,
     SECTOR_DEFAULT,
+    SECTOR_MAP,
 )
 
 # Convert fractions to percentages for this module's API (backward compat)

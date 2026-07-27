@@ -17,14 +17,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from quant_nanggroe.engine.execution.base import Order
 from quant_nanggroe.engine.risk.constants import (
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,
-    MAX_WEEKLY_LOSS,
     MAX_RISK_PER_TRADE,
+    MAX_WEEKLY_LOSS,
 )
 
 logger = logging.getLogger(__name__)

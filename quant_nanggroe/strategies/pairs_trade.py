@@ -7,9 +7,10 @@ Simplified: uses correlation proxy + z-score of ratio.
 Full cointegration requires statsmodels (available).
 """
 
-import numpy as np
-from typing import List, Dict, Tuple, Optional
 import logging
+from typing import Dict, List
+
+import numpy as np
 
 log = logging.getLogger("QNA.Pairs")
 

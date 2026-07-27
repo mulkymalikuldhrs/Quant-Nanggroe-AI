@@ -19,12 +19,12 @@ Endpoint:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request
 
-from quant_nanggroe.types.orders import OrderSide, OrderType
 from quant_nanggroe.exchange.base import ExchangeError
+from quant_nanggroe.types.orders import OrderSide, OrderType
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

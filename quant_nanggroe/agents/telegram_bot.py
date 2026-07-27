@@ -9,12 +9,11 @@ Based on:
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -154,10 +153,10 @@ async def analyze_and_signal(
     sys.path.insert(0, os.getenv("PYTHONPATH", ""))
 
     try:
-        from quant_nanggroe.engine.smc.engine import SMCEngine
         from quant_nanggroe.engine.risk.atr_sl import calculate_atr_sl
+        from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, TradeAction, TradeRequest
         from quant_nanggroe.engine.risk.sizing import calculate_position_size
-        from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, TradeRequest, TradeAction
+        from quant_nanggroe.engine.smc.engine import SMCEngine
 
         engine = SMCEngine()
         risk_gate = ConstitutionalRiskGuard()

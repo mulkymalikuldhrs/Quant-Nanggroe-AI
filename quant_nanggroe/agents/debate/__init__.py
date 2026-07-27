@@ -11,10 +11,5 @@ __all__ = [
     'risk_debate',
 ]
 
-from . import council_logger
-from . import engine
-from .engine import Signal, AgentOpinion, RiskMetrics, RiskManager, DebateResult, DebateEngine
-from . import graph
-from . import reflection
-from . import research_debate
-from . import risk_debate
+from . import council_logger, engine, graph, reflection, research_debate, risk_debate
+from .engine import AgentOpinion, DebateEngine, DebateResult, RiskManager, RiskMetrics, Signal

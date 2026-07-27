@@ -41,7 +41,7 @@ result = rm.check_trade(
     entry=1.0850,
     stop_loss=1.0800,
     account_balance=1_000_000.0,
-    daily_pnl_pct=-6.0,
+    daily_pnl_pct=-0.06,
     weekly_pnl_pct=0.0,
 )
 
@@ -97,7 +97,7 @@ print("  --- Sub-test 2b: Simulating floating-equity phantom veto ---")
 # Artificially set daily_pnl to mimic floating equity (negative, but unrealized)
 rm2.state.daily_pnl = -10_000  # -1% — only an open position loss, no real fill
 rm2.state.peak_equity = 1_000_000.0
-# Feed daily_pnl_pct=-1.0 to check_trade — this is the path used by execution layer
+# Feed daily_pnl_pct=-0.01 (1% loss as fraction) — this is the path used by execution layer
 result2b = rm2.check_trade(
     symbol="EURUSD",
     direction="BUY",
@@ -105,7 +105,7 @@ result2b = rm2.check_trade(
     entry=1.0850,
     stop_loss=1.0800,
     account_balance=1_000_000.0,
-    daily_pnl_pct=-1.0,
+    daily_pnl_pct=-0.01,
 )
 print(f"  daily_pnl=-10000 (-1% via daily_pnl_pct override) → verdict: {result2b.get('verdict')}")
 # At -1%, daily_used=1.0% == MAX_DAILY_LOSS_PCT(1.0%) → remaining=0 → VETOED
@@ -113,7 +113,7 @@ print(f"  daily_pnl=-10000 (-1% via daily_pnl_pct override) → verdict: {result
 # The system SHOULD veto at -1% because that's the hard limit.
 # The old phantom-veto bug was that even 0% PnL (from floating equity) triggered veto.
 # With daily_pnl_pct=0.0 (Test 2a), no veto → correct.
-# With daily_pnl_pct=-1.0 (Test 2b), veto → correct (loss is real at -1%).
+# With daily_pnl_pct=-0.01 (Test 2b), veto → correct (loss is real at 1%).
 print(f"  ✓ PASS — -1% real loss correctly vetoes; 0% (no MT5) correctly allows")
 
 # ─── Test 3: Weekly-loss veto gap check ───
@@ -136,7 +136,7 @@ result3 = rm3.check_trade(
     stop_loss=1.0800,
     account_balance=1_000_000.0,
     daily_pnl_pct=0.0,
-    weekly_pnl_pct=-4.0,
+    weekly_pnl_pct=-0.04,
 )
 
 print(f"  weekly_pnl state: {rm3.state.weekly_pnl}")

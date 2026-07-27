@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from quant_nanggroe.exchange.manager import ExchangeManager
 from quant_nanggroe.agents.tools.execution import ExecutionTool
+from quant_nanggroe.exchange.manager import ExchangeManager
 from quant_nanggroe.strategies.trend_follow import TrendFollow
 
 logger = logging.getLogger(__name__)

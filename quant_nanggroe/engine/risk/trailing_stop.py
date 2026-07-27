@@ -1,8 +1,9 @@
 """Trailing stop loss — monitors positions and auto-closes when price reverses."""
 from __future__ import annotations
+
 import logging
+from dataclasses import dataclass
 from typing import Dict, Optional
-from dataclasses import dataclass, field
 
 log = logging.getLogger("QNA.TrailingStop")
 

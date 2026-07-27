@@ -24,9 +24,8 @@ Usage:
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from quant_nanggroe.security.keyvault import KeyVault
 
@@ -328,7 +327,6 @@ credential_manager = CredentialManager()
 # CLI: quick audit
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    import sys
     status = credential_manager.check_all()
     print(status.report())
 

@@ -24,8 +24,7 @@ except ImportError:
             return f
         return decorator
 
-from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters, KellyMethod
-
+from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
 
 logger = logging.getLogger(__name__)
 

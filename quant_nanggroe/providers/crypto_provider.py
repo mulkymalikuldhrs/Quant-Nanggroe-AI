@@ -5,11 +5,10 @@ Direct REST API calls to Bybit, OKX, Kraken, CoinGecko.
 No external dependencies beyond urllib + json (stdlib).
 """
 
-import time
-import json
 import logging
+import os
+import time
 from typing import Dict, List, Optional
-from datetime import datetime
 
 log = logging.getLogger("QNA.CryptoProvider")
 
@@ -21,9 +20,12 @@ def _get_ctx():
     global _CTX
     if _CTX is None:
         import ssl
+        verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
         _CTX = ssl.create_default_context()
-        _CTX.check_hostname = False
-        _CTX.verify_mode = ssl.CERT_NONE
+        _CTX.check_hostname = verify
+        _CTX.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+        if not verify:
+            log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
     return _CTX
 
 

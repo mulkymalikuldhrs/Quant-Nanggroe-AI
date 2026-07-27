@@ -12,10 +12,4 @@ __all__ = [
     'vector',
 ]
 
-from . import journal
-from . import knowledge
-from . import knowledge_graph
-from . import paging
-from . import session
-from . import seulanga_bridge
-from . import vector
+from . import journal, knowledge, knowledge_graph, paging, session, seulanga_bridge, vector

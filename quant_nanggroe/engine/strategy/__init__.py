@@ -1,24 +1,10 @@
-"""Strategy engine: loading, registry, parser, and multi-timeframe."""
+"""Legacy strategy engine package — most modules removed in path consolidation.
 
-# Package init
+Only ``strategies`` sub-package remains as a backward-compat shim
+(``quant_nanggroe.engine.strategy.strategies``). All strategy logic lives
+in ``quant_nanggroe.engine.strategies``.
+"""
 
-__all__ = [
-    'backtest_adapter',
-
-    'loader',
-    'multi_timeframe',
-    'parser',
-    'regime_strategy',
-    'registry',
-    'schema',
-    'strategy_selector',
-]
-
-from . import backtest_adapter
-from . import loader
-from . import multi_timeframe
-from . import parser
-from . import regime_strategy
-from . import registry
-from . import schema
-from . import strategy_selector
+# Backward-compat: anything that was imported from this package before
+# cleanup will get the strategies shim.
+from . import strategies  # noqa: F401

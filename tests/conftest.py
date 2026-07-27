@@ -6,7 +6,6 @@ Pytest Configuration — Shared Fixtures for Quant-Nanggroe-AI Test Suite
 from __future__ import annotations
 
 import os
-from typing import Generator
 
 import pytest
 import numpy as np

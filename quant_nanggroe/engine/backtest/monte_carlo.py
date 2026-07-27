@@ -90,6 +90,7 @@ class MonteCarloSimulator:
         num_simulations: int = 1000,
         random_seed: Optional[int] = None,
         confidence_levels: Optional[List[float]] = None,
+        bars_per_year: int = 252,
     ) -> None:
         """Initialize Monte Carlo simulator.
 
@@ -97,10 +98,12 @@ class MonteCarloSimulator:
             num_simulations: Number of Monte Carlo simulations to run.
             random_seed: Optional seed for reproducibility.
             confidence_levels: List of confidence levels for CIs (default: [0.90, 0.95, 0.99]).
+            bars_per_year: Number of bars per year for annualization (default: 252).
         """
         self.num_simulations = num_simulations
         self.random_seed = random_seed
         self.confidence_levels = confidence_levels or [0.90, 0.95, 0.99]
+        self.bars_per_year = bars_per_year
 
     def simulate_trade_shuffle(
         self,
@@ -485,8 +488,8 @@ class MonteCarloSimulator:
 
     # ── Metric computation ────────────────────────────────────────────
 
-    @staticmethod
     def _calc_metric(
+        self,
         pnl_array: np.ndarray,
         initial_capital: float,
         metric: str,
@@ -494,6 +497,7 @@ class MonteCarloSimulator:
         """Calculate a metric from a P&L array."""
         cumulative_pnl = np.cumsum(pnl_array)
         equity = initial_capital + cumulative_pnl
+        ann_factor = np.sqrt(self.bars_per_year)
 
         if metric == "total_return":
             return float(equity[-1] / initial_capital - 1)
@@ -505,29 +509,31 @@ class MonteCarloSimulator:
             returns = np.diff(equity) / np.maximum(equity[:-1], 1e-10)
             if len(returns) < 2 or np.std(returns) < 1e-10:
                 return 0.0
-            return float(np.mean(returns) / np.std(returns) * np.sqrt(252))
+            return float(np.mean(returns) / np.std(returns) * ann_factor)
         elif metric in ("sortino", "sortino_ratio"):
             returns = np.diff(equity) / np.maximum(equity[:-1], 1e-10)
             downside = returns[returns < 0]
             if len(downside) < 2 or np.std(downside) < 1e-10:
                 return 0.0
-            return float(np.mean(returns) / np.std(downside) * np.sqrt(252))
+            return float(np.mean(returns) / np.std(downside) * ann_factor)
         elif metric in ("calmar", "calmar_ratio"):
+            n = len(equity)
             total_ret = float(equity[-1] / initial_capital - 1)
+            cagr = float((1 + total_ret) ** (self.bars_per_year / max(n, 1)) - 1) if total_ret > -1 else -1.0
             peak = np.maximum.accumulate(equity)
             dd = (equity - peak) / np.maximum(peak, 1e-10)
             max_dd = abs(float(np.min(dd)))
             if max_dd < 1e-10:
                 return 0.0
-            return total_ret / max_dd
+            return cagr / max_dd
         elif metric == "win_rate":
             wins = np.sum(pnl_array > 0)
             return float(wins / len(pnl_array)) if len(pnl_array) > 0 else 0.0
         else:
             return float(equity[-1] / initial_capital - 1)
 
-    @staticmethod
     def _calc_equity_metric(
+        self,
         equity: pd.Series,
         initial_capital: float,
         metric: str,
@@ -535,6 +541,8 @@ class MonteCarloSimulator:
         """Calculate a metric from an equity curve."""
         if len(equity) < 2:
             return 0.0
+
+        ann_factor = np.sqrt(self.bars_per_year)
 
         if metric == "total_return":
             return float(equity.iloc[-1] / initial_capital - 1)
@@ -546,21 +554,23 @@ class MonteCarloSimulator:
             returns = equity.pct_change().dropna()
             if len(returns) < 2 or returns.std() < 1e-10:
                 return 0.0
-            return float(returns.mean() / returns.std() * np.sqrt(252))
+            return float(returns.mean() / returns.std() * ann_factor)
         elif metric in ("sortino", "sortino_ratio"):
             returns = equity.pct_change().dropna()
             downside = returns[returns < 0]
             if len(downside) < 2 or downside.std() < 1e-10:
                 return 0.0
-            return float(returns.mean() / downside.std() * np.sqrt(252))
+            return float(returns.mean() / downside.std() * ann_factor)
         elif metric in ("calmar", "calmar_ratio"):
+            n = len(equity)
             total_ret = float(equity.iloc[-1] / initial_capital - 1)
+            cagr = float((1 + total_ret) ** (self.bars_per_year / max(n, 1)) - 1) if total_ret > -1 else -1.0
             peak = equity.cummax()
             dd = (equity - peak) / np.maximum(peak, 1e-10)
             max_dd = abs(float(dd.min()))
             if max_dd < 1e-10:
                 return 0.0
-            return total_ret / max_dd
+            return cagr / max_dd
         elif metric == "win_rate":
             returns = equity.pct_change().dropna()
             if len(returns) == 0:

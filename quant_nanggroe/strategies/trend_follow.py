@@ -9,9 +9,10 @@ Ensemble of trend signals across multiple timeframes:
 Combined via sigmoid-weighted ensemble.
 """
 
-import numpy as np
-from typing import List, Dict
 import logging
+from typing import Dict, List
+
+import numpy as np
 
 log = logging.getLogger("QNA.TrendFollow")
 

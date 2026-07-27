@@ -25,7 +25,6 @@ PROJECT_ROOT = Path(__file__).parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # ── Environment sanitize (strip Hermes venv leak) ──────────────
-import os
 _hermes_paths = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" in p.lower()]
 if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]

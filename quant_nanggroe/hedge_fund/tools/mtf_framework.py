@@ -2,12 +2,12 @@
 Multi-Timeframe Trading Framework
 Support: Intraday 1/2, Swing 1/2, Scalping — semua pasangan timeframe
 """
-import sys, logging
+import logging
+import sys
 from pathlib import Path
-from datetime import datetime
-import pandas as pd
-import numpy as np
+
 import MetaTrader5 as mt5
+import pandas as pd
 
 _HF_TOOLS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HF_TOOLS_DIR))
@@ -145,7 +145,7 @@ def mtf_signal(mtf_data, style_name, strategy_func):
 # ── Strategy Wrapper (ubah strategy registry → signal dict) ──
 def strategy_wrapper(strategy_name, **params):
     """Wrap strategy registry jadi fungsi signal untuk MTF"""
-    from quant_nanggroe.engine.strategy.strategies import get_strategy
+    from quant_nanggroe.engine.strategies import get_strategy_metadata as get_strategy
     
     def wrapper(df):
         if df is None or len(df) < 60: return {"signal": 0, "confidence": 0}

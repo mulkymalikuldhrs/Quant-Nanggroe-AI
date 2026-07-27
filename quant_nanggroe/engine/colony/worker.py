@@ -9,10 +9,10 @@ from __future__ import annotations
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from quant_nanggroe.engine.colony.message_bus import Message, MessageBus
-from quant_nanggroe.engine.colony.tasks import Task, TaskStatus, TaskType
+from quant_nanggroe.engine.colony.tasks import Task, TaskStatus
 
 
 @dataclass

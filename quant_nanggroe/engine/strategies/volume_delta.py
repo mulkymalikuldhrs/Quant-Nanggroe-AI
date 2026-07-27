@@ -9,7 +9,7 @@ Ported from ai-hedge-fund/src/strategies/unified_retail_strategy.py (VolumeDelta
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd

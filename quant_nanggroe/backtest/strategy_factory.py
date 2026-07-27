@@ -11,7 +11,7 @@ Usage:
 """
 
 import math
-from typing import List, Dict, Callable, Optional
+from typing import Callable, Dict, List
 
 
 class StrategyVariant:

@@ -1,6 +1,6 @@
 # Strategy Consolidation Audit Report
 
-**Date:** 2026-07-25
+**Date:** 2026-07-25 (Updated 2026-07-27 — v6.2.0 Naming Fix)
 **Scope:** Quant-Nanggroe-AI dual strategy directories
 **Old Path:** `quant_nanggroe/engine/strategy/strategies/` (139 .py files)
 **New Path:** `quant_nanggroe/engine/strategies/` (29 .py files)
@@ -14,6 +14,8 @@ The new path `__init__.py` loads strategies from **two sources**:
 2. **Legacy bridge** — Imports the remaining 110 files from the old path via a shim loop
 
 The old path `__init__.py` is a backward-compat shim that re-exports from `quant_nanggroe.engine.strategies.*` and delegates `create_strategy()` to `StrategyRegistry.create()`.
+
+**v6.2.0 update:** The walk-forward metadata store in `engine/strategy/registry.py` was renamed from `StrategyRegistry` to `WalkForwardRegistry` to eliminate the dual-class-name collision documented in previous audits. The class registry in `engine/strategies/registry.py` retains the `StrategyRegistry` name — the two are now distinct and self-documenting.
 
 **Both paths work** in production — but the old-path strategies are bridged at import time, not migrated.
 

@@ -1,25 +1,25 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.1
   python: circleci/python@2.1
 
 jobs:
   lint:
     docker:
-      - image: cimg/node:20
+      - image: cimg/python:3.12
     steps:
       - checkout
-      - run: npm ci || pip install -r requirements.txt || true
-      - run: npm run lint || ruff check . || true
+      - run: pip install -e ".[dev]"
+      - run: ruff check quant_nanggroe/
 
   test:
     docker:
-      - image: cimg/node:20
+      - image: cimg/python:3.12
     steps:
       - checkout
-      - run: npm ci || pip install -r requirements.txt || true
-      - run: npm test || pytest || true
+      - run: pip install -e ".[dev]"
+      - run: pip install pytest pytest-cov
+      - run: pytest tests/ --cov=quant_nanggroe --cov-report=term-missing --cov-fail-under=50 -x
 
 workflows:
   ci:

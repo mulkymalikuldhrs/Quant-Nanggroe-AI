@@ -15,12 +15,14 @@ Integrasi dengan existing QNA agent system (LangGraph).
 """
 
 from __future__ import annotations
+
 import logging
-import numpy as np
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

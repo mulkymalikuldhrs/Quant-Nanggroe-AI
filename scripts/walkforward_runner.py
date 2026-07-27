@@ -4,7 +4,7 @@ Usage:
     PYTHONPATH="" .venv/Scripts/python scripts/walkforward_runner.py
 
 Output:
-    Stores WalkForwardResult in strategy/registry.py's StrategyRegistry.
+    Stores WalkForwardResult in strategy/registry.py's WalkForwardRegistry.
     Prints summary table of in-sample vs out-of-sample Sharpe per strategy.
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry as LiveRegistry
 from quant_nanggroe.engine.strategies.base import StrategyParameters
 from quant_nanggroe.engine.strategy.registry import (
-    StrategyRegistry as WalkforwardRegistry,
+    WalkForwardRegistry as WalkforwardRegistry,
     WalkForwardResult,
 )
 

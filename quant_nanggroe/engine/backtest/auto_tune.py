@@ -10,17 +10,17 @@ import itertools
 import json
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.backtest.backtester import Backtester
+from quant_nanggroe.engine.backtest.backtester import Backtester
+from quant_nanggroe.engine.backtest.engine import BacktestConfig
 from quant_nanggroe.engine.backtest.persistence import save_run
-from quant_nanggroe.engine.strategy.strategies import BaseStrategy
-from quant_nanggroe.engine.strategy.loader import create_strategy
+from quant_nanggroe.engine.strategies import create_strategy
 
 log = logging.getLogger("QNA.AutoTune")
 
@@ -88,7 +88,15 @@ class AutoTuner:
         self.n_windows = n_windows
         self.train_pct = train_pct
         self.min_trades = min_trades
-        self.backtester = Backtester()
+
+        # Infer bars_per_year from data index spacing
+        if len(data) > 1 and hasattr(data.index, "to_series"):
+            med_delta = data.index.to_series().diff().median()
+            _bpy = int(pd.Timedelta(days=365) / med_delta) if med_delta is not None and med_delta.total_seconds() > 0 else 252
+        else:
+            _bpy = 252
+
+        self.backtester = Backtester(BacktestConfig(bars_per_year=_bpy))
 
     def _create_walk_forward_windows(self) -> List[Tuple[pd.DataFrame, pd.DataFrame]]:
         """Create train/val windows for walk-forward validation."""

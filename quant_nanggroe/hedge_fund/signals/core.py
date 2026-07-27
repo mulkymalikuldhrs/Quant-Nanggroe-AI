@@ -1,10 +1,8 @@
 """Core signal providers — built-in strategies that run locally or call external ecosystems.
 
-Each provider now reads QNA_CAUSAL_BIAS_* env vars (set by the causal macro pre-filter
-in qna.py) to adjust its signal confidence based on macro context.
-
-    bias_gc = float(os.environ.get("QNA_CAUSAL_BIAS_GC1!", "0"))
-    bias_es = float(os.environ.get("QNA_CAUSAL_BIAS_ES1!", "0"))
+Each provider now accepts an optional ctx: CausalContext parameter for macro
+bias adjustment. When ctx is provided, apply_causal_bias() uses ctx.bias_for()
+instead of the deprecated QNA_CAUSAL_BIAS_* env var protocol.
 
 If the causal bias strongly contradicts a provider's signal, confidence is
 reduced. If it aligns, confidence is boosted.
@@ -13,11 +11,13 @@ reduced. If it aligns, confidence is boosted.
 import os
 import subprocess
 import sys
+import warnings
 from datetime import datetime
+from typing import Optional
 
+from quant_nanggroe.engine.causal.models import CausalContext
 from quant_nanggroe.hedge_fund.utils.config import SRC, log
 from quant_nanggroe.hedge_fund.utils.data import get_historical_mt5
-
 
 # ──────────────────────────────────────────────────────────────────────
 #  Causal bias lookup — symbol → CME futures → env var
@@ -55,13 +55,19 @@ SYMBOL_TO_FUTURES = {
 def causal_bias_score(symbol: str) -> float:
     """Read the causal macro bias for a trading symbol from QNA_CAUSAL_BIAS_* env vars.
 
+    .. deprecated::
+       Use CausalContext.bias_for(symbol) instead.
+
     Returns a float in [-1.0, 1.0]:
         > 0.3  → bullish macro context for this symbol
         < -0.3 → bearish macro context for this symbol
         0.0    → no macro context available
-
-    The env vars are set by qna.py's causal pre-filter (run_unified --mode hedge).
     """
+    warnings.warn(
+        "causal_bias_score() is deprecated. Use CausalContext.bias_for() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     futures = SYMBOL_TO_FUTURES.get(symbol.upper(), symbol.upper())
     raw = os.environ.get(f"QNA_CAUSAL_BIAS_{futures}", "")
     if not raw:
@@ -74,7 +80,7 @@ def causal_bias_score(symbol: str) -> float:
         return 0.0
 
 
-def apply_causal_bias(signal: dict, symbol: str) -> dict:
+def apply_causal_bias(signal: dict, symbol: str, ctx: Optional[CausalContext] = None) -> dict:
     """Apply causal macro bias to a provider's signal result.
 
     Adjusts confidence based on macro context:
@@ -87,6 +93,8 @@ def apply_causal_bias(signal: dict, symbol: str) -> dict:
     Args:
         signal: Provider result dict with 'bias' and 'confidence' keys.
         symbol: Trading symbol for bias lookup.
+        ctx: Optional CausalContext. If provided, uses ctx.bias_for()
+             instead of QNA_CAUSAL_BIAS_* env vars.
 
     Returns:
         Updated signal dict with adjusted confidence/neutral.
@@ -96,7 +104,7 @@ def apply_causal_bias(signal: dict, symbol: str) -> dict:
     if bias == "neutral" or confidence <= 0:
         return signal
 
-    cb = causal_bias_score(symbol)
+    cb = ctx.bias_for(symbol) if ctx is not None else causal_bias_score(symbol)
     if cb == 0.0:
         return signal  # no macro context — pass through
 
@@ -139,20 +147,20 @@ def apply_causal_bias(signal: dict, symbol: str) -> dict:
 # ──────────────────────────────────────────────────────────────────────
 
 
-def signal_sma(symbol="EURUSD"):
+def signal_sma(symbol="EURUSD", ctx=None):
     df = get_historical_mt5(symbol, count=100, tf=15)
     if df is None or len(df) < 50:
         return {"bias": "neutral", "confidence": 0, "source": "sma"}
     c = df['close'].values
     s20, s50 = sum(c[-20:]) / 20, sum(c[-50:]) / 50
     if s20 > s50:
-        return apply_causal_bias({"bias": "buy", "confidence": 0.6, "source": "sma"}, symbol)
+        return apply_causal_bias({"bias": "buy", "confidence": 0.6, "source": "sma"}, symbol, ctx=ctx)
     if s20 < s50:
-        return apply_causal_bias({"bias": "sell", "confidence": 0.6, "source": "sma"}, symbol)
+        return apply_causal_bias({"bias": "sell", "confidence": 0.6, "source": "sma"}, symbol, ctx=ctx)
     return {"bias": "neutral", "confidence": 0, "source": "sma"}
 
 
-def signal_wyckoff(symbol="EURUSD"):
+def signal_wyckoff(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, str(SRC))
         from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
@@ -173,28 +181,28 @@ def signal_wyckoff(symbol="EURUSD"):
                     break
             confidence = max(0.4, 0.65 - idx_pos * 0.08)
             if entry == 1:
-                return apply_causal_bias({"bias": "buy", "confidence": min(1.0, confidence), "source": "wyckoff"}, symbol)
+                return apply_causal_bias({"bias": "buy", "confidence": min(1.0, confidence), "source": "wyckoff"}, symbol, ctx=ctx)
             elif entry == -1:
-                return apply_causal_bias({"bias": "sell", "confidence": min(1.0, confidence), "source": "wyckoff"}, symbol)
+                return apply_causal_bias({"bias": "sell", "confidence": min(1.0, confidence), "source": "wyckoff"}, symbol, ctx=ctx)
     except Exception as e:
         log.warning(f"Wyckoff err: {e}")
     return {"bias": "neutral", "confidence": 0, "source": "wyckoff"}
 
 
-def signal_aihf(symbol="EURUSD"):
+def signal_aihf(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/ai-hedge-fund')
         from src.main import run_hedge_fund
         res = run_hedge_fund({"symbol": symbol})
         b = "neutral" if res.get("decision", "hold") == "hold" else res["decision"]
         return apply_causal_bias(
-            {"bias": b, "confidence": res.get("confidence", 0.5), "source": "aihf"}, symbol)
+            {"bias": b, "confidence": res.get("confidence", 0.5), "source": "aihf"}, symbol, ctx=ctx)
     except Exception as e:
         log.warning(f"AIHF err: {e}")
         return {"bias": "neutral", "confidence": 0, "source": "aihf"}
 
 
-def signal_hidden(symbol="EURUSD"):
+def signal_hidden(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/hidden-regime')
         import yfinance as yf
@@ -216,13 +224,13 @@ def signal_hidden(symbol="EURUSD"):
                         reg = state_labels[current_state]
                         if reg in m:
                             return apply_causal_bias(
-                                {"bias": m[reg], "confidence": 0.45, "source": "hidden"}, symbol)
+                                {"bias": m[reg], "confidence": 0.45, "source": "hidden"}, symbol, ctx=ctx)
     except Exception as e:
         log.warning(f"Hidden err: {e}")
     return {"bias": "neutral", "confidence": 0, "source": "hidden"}
 
 
-def signal_tradingagents(symbol="EURUSD"):
+def signal_tradingagents(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/tradingagents')
         from tradingagents.default_config import DEFAULT_CONFIG
@@ -243,27 +251,27 @@ def signal_tradingagents(symbol="EURUSD"):
         bias = _ta_rank.get(str(rating).strip().lower(), "neutral")
         conf = 0.5 if bias != "neutral" else 0.0
         return apply_causal_bias(
-            {"bias": bias, "confidence": conf, "source": "tradingagents"}, symbol)
+            {"bias": bias, "confidence": conf, "source": "tradingagents"}, symbol, ctx=ctx)
     except Exception as e:
         log.warning(f"TradingAgents err: {e}")
         return {"bias": "neutral", "confidence": 0, "source": "tradingagents"}
 
 
-def signal_aitrader(symbol="EURUSD"):
+def signal_aitrader(symbol="EURUSD", ctx=None):
     try:
         r = subprocess.run(["node", "src/index.js", f"--symbol={symbol}"],
                            cwd="E:/AI-Trader", capture_output=True, text=True, timeout=15)
         out = r.stdout.lower()
         if "buy" in out:
-            return apply_causal_bias({"bias": "buy", "confidence": 0.5, "source": "aitrader"}, symbol)
+            return apply_causal_bias({"bias": "buy", "confidence": 0.5, "source": "aitrader"}, symbol, ctx=ctx)
         if "sell" in out:
-            return apply_causal_bias({"bias": "sell", "confidence": 0.5, "source": "aitrader"}, symbol)
+            return apply_causal_bias({"bias": "sell", "confidence": 0.5, "source": "aitrader"}, symbol, ctx=ctx)
     except Exception:
         pass
     return {"bias": "neutral", "confidence": 0, "source": "aitrader"}
 
 
-def signal_langalpha(symbol="EURUSD"):
+def signal_langalpha(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/LangAlpha')
         from ptc_cli.main import research
@@ -273,13 +281,13 @@ def signal_langalpha(symbol="EURUSD"):
             if b == "hold":
                 b = "neutral"
             return apply_causal_bias(
-                {"bias": b, "confidence": res.get("confidence", 0.4), "source": "langalpha"}, symbol)
+                {"bias": b, "confidence": res.get("confidence", 0.4), "source": "langalpha"}, symbol, ctx=ctx)
     except Exception:
         pass
     return {"bias": "neutral", "confidence": 0, "source": "langalpha"}
 
 
-def signal_aimarketmaker(symbol="EURUSD"):
+def signal_aimarketmaker(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/ai-market-maker')
         from aimm.execution.executor import execute_strategy as aimm_execute
@@ -289,13 +297,13 @@ def signal_aimarketmaker(symbol="EURUSD"):
             if bias == "hold":
                 bias = "neutral"
             return apply_causal_bias(
-                {"bias": bias, "confidence": res.get("confidence", 0.5), "source": "aimm"}, symbol)
+                {"bias": bias, "confidence": res.get("confidence", 0.5), "source": "aimm"}, symbol, ctx=ctx)
     except Exception as e:
         log.warning(f"AIMM err: {e}")
     return {"bias": "neutral", "confidence": 0, "source": "aimm"}
 
 
-def signal_kronos(symbol="EURUSD"):
+def signal_kronos(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/trading')
         import pandas as pd
@@ -318,16 +326,16 @@ def signal_kronos(symbol="EURUSD"):
                     sig = int(last.get('entry', 0))
                     if sig > 0:
                         return apply_causal_bias(
-                            {"bias": "buy", "confidence": 0.55, "source": "kronos"}, symbol)
+                            {"bias": "buy", "confidence": 0.55, "source": "kronos"}, symbol, ctx=ctx)
                     elif sig < 0:
                         return apply_causal_bias(
-                            {"bias": "sell", "confidence": 0.55, "source": "kronos"}, symbol)
+                            {"bias": "sell", "confidence": 0.55, "source": "kronos"}, symbol, ctx=ctx)
     except Exception as e:
         log.warning(f"Kronos err: {e}")
     return {"bias": "neutral", "confidence": 0, "source": "kronos"}
 
 
-def signal_pyportfolioopt(symbol="EURUSD"):
+def signal_pyportfolioopt(symbol="EURUSD", ctx=None):
     try:
         sys.path.insert(0, 'E:/PyPortfolioOpt')
         from pypfopt.efficient_frontier import EfficientFrontier
@@ -346,7 +354,7 @@ def signal_pyportfolioopt(symbol="EURUSD"):
                 w = weights[symbol]
                 return apply_causal_bias(
                     {"bias": "buy" if w > 0 else "sell", "confidence": min(abs(w), 1.0),
-                     "source": "ppo", "weight": w}, symbol)
+                     "source": "ppo", "weight": w}, symbol, ctx=ctx)
         except Exception:
             pass
     except Exception as e:

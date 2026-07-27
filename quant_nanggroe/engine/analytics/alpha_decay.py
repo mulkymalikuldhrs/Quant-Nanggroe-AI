@@ -22,16 +22,18 @@ class DecayResult:
 
 
 class AlphaDecayDetector:
-    def __init__(self, lookback: int = 60, decay_threshold: float = -0.1):
+    def __init__(self, lookback: int = 60, decay_threshold: float = -0.1, bars_per_year: int = 252):
         self._lookback = lookback
         self._decay_threshold = decay_threshold
+        self._bars_per_year = bars_per_year
 
     def detect(self, returns: np.ndarray, signals: np.ndarray) -> DecayResult:
         if len(returns) < self._lookback:
             return DecayResult(0.0, 0.0, 0.0, 0.0, None, False, "Insufficient data")
 
+        ann_factor = np.sqrt(self._bars_per_year)
         rolling_sharpe = np.array([
-            np.mean(returns[max(0, i - 20):i + 1]) / max(np.std(returns[max(0, i - 20):i + 1]), 1e-10) * np.sqrt(252)
+            np.mean(returns[max(0, i - 20):i + 1]) / max(np.std(returns[max(0, i - 20):i + 1]), 1e-10) * ann_factor
             for i in range(len(returns))
         ])
 

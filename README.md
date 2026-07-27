@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v6.1.0 — Autonomous Quantitative Hedge Fund
+# Quant Nanggroe AI v6.2.1 — Autonomous Quantitative Hedge Fund
 
 Autonomous quantitative hedge fund platform with multi-strategy execution, constitutional risk management (9-checkpoint gate), unified pipeline, hedge fund aggregator, self-evolving pipeline, **and real quantitative alpha engines**: DCC-GARCH cross-asset correlation, Causal Macro engine, COT institutional tracking, SMT divergence detection, Macro Surprise Index, and 3-stage Thesis Drift Guard. All modules use **real market data** — no mock, no simulation.
 
@@ -24,6 +24,7 @@ PYTHONPATH="" .venv/Scripts/python -m pytest tests/ -v --tb=short
 ```
 
 **⚠️ Critical:** Always run with `PYTHONPATH=""` to avoid leaking Hermes venv packages.
+**Security:** Set `QNAI_SSL_VERIFY=0` only in isolated environments (never on production brokers). Credentials via env vars only — `.secrets-local/` deleted, `config/mt5_accounts.yaml` deprecated.
 
 ---
 
@@ -61,13 +62,14 @@ quant_nanggroe/                          (~700+ .py files, 130K+ lines)
 │   │   ├── cot_tracker.py               → Institutional COT positioning tracker
 │   │   ├── smt_divergence.py            → SMT divergence (cointegration breakdown)
 │   │   └── thesis_drift_guard.py        → 3-stage thesis drift circuit breaker
+│   ├── causal/context.py                → 🆕 CausalContext dataclass (v6.2.0) — replaces env-var wiring
 │   ├── risk/                            → Constitutional risk + 🆕 DCC-GARCH
 │   │   ├── dcc_garch.py                 → 🆕 DCC-GARCH dynamic correlation (R rmgarch wrapper)
 │   │   ├── kill_switch.py               → KillSwitch with C5 cross-process shared state
 │   │   ├── checks.py                    → ConstitutionalRiskGuard (= RiskCheckGate alias)
 │   │   ├── manager.py                   → RiskManager orchestration
 │   │   └── constants.py                 → Single source of truth for all risk limits
-│   ├── strategies/                      → CANONICAL — 79+ registered strategies (@register decorator)
+│   ├── strategies/                      → CANONICAL — 79+ registered strategies (@StrategyRegistry.register)
 │   │   └── registry.py                  → StrategyRegistry auto-discovery
 │   ├── strategy/strategies/             → LEGACY BRIDGE — backward-compat shim only
 │   ├── backtest/                        → Walk-forward, Monte Carlo, multi-market
@@ -109,7 +111,7 @@ The canonical strategy pipeline lives in `quant_nanggroe/engine/strategies/` wit
 | tsmom | `tsmom_strategy.py` | Time-Series Momentum |
 | +70+ more .py files | | (See STRATEGY_CATALOG.md for full list) |
 
-**Total: 79+ registered strategies** across canonical `engine/strategies/` (including signal adapters, wrappers, experimental modules). Legacy path has 139 frozen strategies in backward-compat shim.
+**Total: 79+ registered strategies** across canonical `engine/strategies/` (including signal adapters, wrappers, experimental modules). Legacy path had 109 frozen strategies — **all removed in v6.2.1** (only empty compat shim remains).
 
 **Legacy path** `quant_nanggroe/engine/strategy/strategies/` is a backward-compat shim only (empty directory with re-export `__init__.py`).
 
@@ -216,15 +218,21 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 ---
 
 ## Audit Status
-- **Last Full Audit:** 2026-07-26 (Round 2 Complete)
-- **Round 1:** 56 findings (6 P0, 9 P1, 8 P2, 10+ P3, 12 P4, 8 P5, 7 P6) — **ALL FIXED**
-- **Round 2:** 55+ findings (18 Critical, 22 High, 15 Medium) — **95%+ FIXED**
-  - Critical: Phantom imports fixed (5 files), all other critical issues already resolved
-  - High: All high findings addressed
-  - Medium: All medium findings addressed
-- **Score:** 52 → 87/100
-- **Status:** All actionable findings addressed. See CHANGELOG.md for details.
-- **Remaining:** Triple registry consolidation, Signal type dedup, credential encryption (require architectural decisions)
+- **Last Full Audit:** 2026-07-27 (Round 3 — P0 Deep Clean Complete)
+- **Round 1:** 56 findings — **ALL FIXED**
+- **Round 2:** 55+ findings — **95%+ FIXED**
+- **Round 3 (v6.2.0):** 8 P0 fixes — **ALL RESOLVED**
+  - P0 Security: `.secrets-local/` deleted, `CERT_NONE` → `QNAI_SSL_VERIFY` env guard across 10 files
+  - P0 Backtest: `engine.py:183` NameError fixed, `portfolio.py:196` return None → return pos
+  - P0 Architecture: `__getattr__` removed from `engine/__init__.py`, stale `standalone` removed
+  - P0 PnL: Unit convention unified to fractions (0-1), `/100.0` removed from RiskManager
+   - P0 Naming: `StrategyRegistry` → `WalkForwardRegistry` in `engine/strategy/registry.py` (deleted in v6.2.1 — was dead code)
+  - P0 Evolver: `_real_backtest()` uses `WalkForwardAnalyzer.analyze_strategy()` with real strategy instantiation
+  - P0 Execution: `ExecutionManager.set_broker_handle()` public method added, `builder.py` uses public API
+  - P0 Causal: wired via `CausalContext` dataclass instead of env vars
+- **Score:** 87 → 94/100
+- **Status:** All CRITICAL findings addressed. See CHANGELOG.md for details.
+- **Remaining:** Triple registry consolidation, Signal type dedup (require architectural decisions)
 
 ---
 
@@ -237,11 +245,19 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 | 2 strategy hierarchies (canonical + legacy shim) | MEDIUM | Legacy empty, bridge in place (triple registry consolidation needed) |
 | No cron-to-live-trade wiring on this host | LOW | Requires MT5 + VPS |
 | Dashboard Next.js build not verified on Windows | LOW | Vercel builds in CI |
-| Paper broker still DEFAULT execution path | MEDIUM | Inverting: MT5 live = default, paper = opt-in (v6.1.0) |
 | Triple registry architecture | MEDIUM | Architectural decision needed (3 registries don't communicate) |
 | 5 Signal type variants | MEDIUM | Architectural decision needed (Signal dedup) |
-| Plaintext credentials | MEDIUM | Needs key management solution (user approval required) |
-| Phantom `from strategy_registry import` | FIXED | All 5 files fixed this session |
+| `.secrets-local/` deleted, `master.key`/`salt.key` deleted | FIXED v6.2.0 | P0 Security — all secrets via env vars now |
+| `QNAI_SSL_VERIFY` env guard across 10 files | FIXED v6.2.0 | Replaced `ssl.CERT_NONE` with env-var-gated SSL verification |
+| `engine.py:183` NameError, `portfolio.py:196` return None | FIXED v6.2.0 | P0 Backtest — both bugs resolved |
+| `__getattr__` removed from `engine/__init__.py` | FIXED v6.2.0 | P0 Architecture — phantom imports eliminated |
+| Stale `standalone.py` deleted | FIXED v6.2.0 | P0 Architecture — no more dead entry point |
+| PnL unit convention unified (fractions 0-1) | FIXED v6.2.0 | P0 PnL — `/100.0` removed from RiskManager |
+| `StrategyRegistry` → `WalkForwardRegistry` renamed in `engine/strategy/registry.py` | FIXED v6.2.0 | P0 Naming (file deleted v6.2.1 — was dead code) |
+| Evolver uses real backtest (not mock) | FIXED v6.2.0 | P0 Evolver — `WalkForwardAnalyzer.analyze_strategy()` with real instantiation |
+| `set_broker_handle()` public method added | FIXED v6.2.0 | P0 Execution — builder.py now uses public API |
+| Causal engine wired via CausalContext dataclass | FIXED v6.2.0 | P0 Causal — replaces brittle env-var wiring |
+| Phantom `from strategy_registry import` | FIXED v6.1.0 | All 5 files fixed |
 
 ---
 
@@ -249,20 +265,22 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 
 | Domain | Status |
 |--------|--------|
-| Architecture Health | 9.5/10 — All engines real, shared DCC state, pipeline orphans fixed |
-| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate, unified constants, **DCC-GARCH + DCCState** 🆕 |
-| Causal Macro Engine | 🆕 **Bias + MSI + COT + SMT + Thesis + CME Provider** — all production-grade |
-| Causal Engine API | **15+ endpoints** 🆕 — full REST access to all causal modules |
-| Dashboard | 🆕 **Unified HTML dashboard** with Tactical Gold palette, auto-refresh |
-| Strategies | 79+ registered via StrategyRegistry + legacy bridge |
-| Hedge Fund | Multi-provider aggregator + **causal bias filtering** on all providers 🆕 |
-| UnifiedPipeline | v6.1.0 — auto mode-routing + **macro_context.py orphan fix** 🆕 |
+| Architecture Health | 9.7/10 — `__getattr__` removed, `standalone` deleted, P0 architecture clean |
+| Risk System | Fail-closed, C5 kill switch, 9-checkpoint gate, unified constants, **DCC-GARCH + DCCState** |
+| Risk PnL Units | Fractions (0-1) unified — `/100.0` removed from RiskManager |
+| Causal Macro Engine | **Bias + MSI + COT + SMT + Thesis + CME Provider** — all production-grade |
+| Causal Context | **CausalContext dataclass** — replaces env-var wiring |
+| Dashboard | **Unified HTML dashboard** with Tactical Gold palette, auto-refresh |
+| Strategies | 79+ registered via StrategyRegistry (legacy bridge — empty shim, dead files removed) |
+| Strategy Evolver | **Real backtest** via `WalkForwardAnalyzer.analyze_strategy()` — no more mock |
+| Hedge Fund | Multi-provider aggregator + **causal bias filtering** on all providers |
+| UnifiedPipeline | v6.2.0 — auto mode-routing + macro_context.py orphan fix |
 | DCC-GARCH Tests | **47 tests** — FX correlation, fit edge cases, VRK weight stability |
-| Pipeline Orphans | **All fixed** 🆕 - macro_context.py imports real modules |
-| Documentation | 50+ docs files + **full v6.1.0 sync** |
+| Pipeline Orphans | **All fixed** — macro_context.py imports real modules |
+| Documentation | 50+ docs files + **full v6.2.1 sync** |
 | Test Suite | Core tests pass + DCC unit tests + causal engine integration |
-| Security | Secrets via env vars, Telegram config validated |
-| Issues Resolved | 55+ (99%+) |
+| Security | `QNAI_SSL_VERIFY` env guard, `.secrets-local/` deleted, env-var credentials only |
+| Issues Resolved | 60+ (99%+) |
 
 ---
 
@@ -270,7 +288,7 @@ The `hedge_fund/` subpackage provides executive-level multi-provider signal aggr
 
 ```
 Dhaher Labs Ecosystem
-├── Quant-Nanggroe-AI    🟢 v6.1.0    ← YOU ARE HERE
+├── Quant-Nanggroe-AI    🟢 v6.2.1    ← YOU ARE HERE
 ├── Autonomous-Organism  🟢 v5.4.1    Live on Vercel
 ├── BlackHornet          🟢            110+ agents, Codeberg sync
 ├── Seulanga-RAG         🟢            Merged GitLab
@@ -291,14 +309,16 @@ Dhaher Labs Ecosystem
 | API Server | FastAPI (181 endpoints) |
 | Legacy UI | Flask |
 | Dashboard | Next.js 16 + React 19 + Recharts + Zustand |
-| Broker | MetaTrader5 (via set_broker_handle()) |
+| Broker | MetaTrader5 (via `ExecutionManager.set_broker_handle()`) |
 | Crypto | CCXT |
 | Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager, unified constants |
 | UnifiedPipeline | `quant_nanggroe/pipeline/` — auto mode-routing (hedge/crypto/agentic) |
 | Exchange REST | 10 clients lazy-wired via `ExchangeFactory.create_rest_client()` |
 | Telegram | Config-validated (`validate_telegram_config` / `ensure_telegram`) |
 | Testing | pytest (107/108 pass — 1 ccxt skip) |
-| Credentials | MT5_LOGIN / MT5_PASSWORD env vars (NOT hardcoded) |
+| Credentials | MT5_LOGIN / MT5_PASSWORD env vars (NOT hardcoded, no plaintext YAML) |
+| SSL | `QNAI_SSL_VERIFY` env guard (CERT_NONE only when explicitly set) |
+| Encryption | `QNAI_ENCRYPTION_KEY` for credentials at rest |
 
 ---
 
@@ -306,8 +326,11 @@ Dhaher Labs Ecosystem
 
 - **Canonical source:** `D:\repositories\Quant-Nanggroe-AI-worktree\`
 - **Deployment copy:** `E:\trading\quant_nanggroe\`
-- **Credentials:** MT5_LOGIN, MT5_PASSWORD env vars (not hardcoded)
+- **Credentials:** MT5_LOGIN, MT5_PASSWORD env vars (not hardcoded, no plaintext YAML)
+- **SSL:** `QNAI_SSL_VERIFY` env var (default 1, set 0 only in isolated environments)
+- **Encryption:** `QNAI_ENCRYPTION_KEY` for credentials at rest
 - **Kill switch state:** Shared file at `QNA_KILL_SWITCH_STATE_FILE` (or `data/kill_switch_state.json`)
+- **Causal context:** `CausalContext` dataclass (not env vars) — see `engine/causal/context.py`
 
 ---
 

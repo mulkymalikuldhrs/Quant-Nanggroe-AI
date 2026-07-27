@@ -8,14 +8,13 @@ Ported from Vibe-Trading/agent/src/shadow_account/codegen.py
 
 from __future__ import annotations
 
-import logging
-import re
-import textwrap
 import ast
+import logging
+import textwrap
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from quant_nanggroe.engine.shadow.extractor import ExtractedRule, ExtractedStrategy
+from quant_nanggroe.engine.shadow.extractor import ExtractedStrategy
 
 logger = logging.getLogger(__name__)
 

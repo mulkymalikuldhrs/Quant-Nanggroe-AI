@@ -12,8 +12,6 @@ import logging
 import random
 from typing import Any
 
-from quant_nanggroe.engine.risk.constants import CONFIDENCE_THRESHOLD
-
 logger = logging.getLogger(__name__)
 
 COUNCIL_PERSONAS: list[tuple[str, str, str]] = [

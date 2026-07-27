@@ -12,10 +12,20 @@ Walk-forward analysis addresses overfitting by:
 Supported modes:
 - Rolling: Fixed-size training window that slides forward
 - Anchored: Expanding training window (anchored to start of data)
-- Combinatorial Purged Cross-Validation (CPCV): Multiple overlapping train/test splits
+- CPCV (RECOMMENDED): Combinatorial Purged Cross-Validation with
+  purging and embargo from de Prado (AFML Ch.12).  Evaluates across
+  ALL combinations of train/test splits, not a single path.
 
 Reference: Robert Pardo, "The Evaluation and Optimization of Trading Strategies"
 Reference: Marcos López de Prado, "Advances in Financial Machine Learning" (for CPCV)
+
+**IMPORTANT — Per-Fold Re-Fitting:**
+``analyze()`` now raises ``DeprecationWarning`` when called with pre-computed
+signals (no ``strategy_class``).  This is because pre-computed signals contain
+lookahead bias when the strategy involves any fitted model (cointegration,
+GARCH, HMM, ML, etc.).  Use ``analyze_strategy()`` instead, which re-instantiates
+and re-fits the strategy on **every training fold**, eliminating lookahead bias.
+CPCV mode also supports per-fold re-fitting when ``strategy_class`` is provided.
 """
 
 from __future__ import annotations
@@ -27,7 +37,9 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.backtest.cpcv import CombinatorialPurgedCV
 from quant_nanggroe.types.signals import SignalType
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,14 +109,15 @@ class WalkForwardAnalyzer:
         engine: Any,  # BacktestEngine
         train_window: int = 252,
         test_window: int = 63,
-        mode: str = "rolling",
+        mode: str = "cpcv",
         anchored: bool = False,
         min_observations: int = 60,
-        purge_gap: int = 0,
+        purge_gap: int = 5,
         # CPCV parameters
         n_groups: int = 6,
         n_test_groups: int = 2,
-        embargo: int = 0,
+        embargo: int = 3,
+        force_precomputed: bool = False,
     ) -> None:
         """Initialize walk-forward analyzer.
 
@@ -112,14 +125,19 @@ class WalkForwardAnalyzer:
             engine: BacktestEngine instance.
             train_window: Training window in bars.
             test_window: Test window in bars.
-            mode: Walk-forward mode ('rolling', 'anchored', 'cpcv').
+            mode: Walk-forward mode ('cpcv' (default), 'rolling', 'anchored').
+                  CPCV is the RECOMMENDED default — see class docstring.
             anchored: If True, use anchored walk-forward (expanding window).
                      Equivalent to mode='anchored'.
             min_observations: Minimum observations required for a valid window.
             purge_gap: Number of bars between train and test to prevent leakage.
+                       Default 5 for CPCV (was 0 in v1 — edge case risk).
             n_groups: Number of groups for CPCV mode.
             n_test_groups: Number of test groups for CPCV mode.
             embargo: Number of bars to embargo after test period (CPCV).
+            force_precomputed: If True, suppress the DeprecationWarning in
+                               :meth:`analyze` when called without
+                               ``strategy_class`` (legacy callers only).
         """
         self.engine = engine
         self.train_window = train_window
@@ -134,27 +152,35 @@ class WalkForwardAnalyzer:
         self.n_groups = n_groups
         self.n_test_groups = n_test_groups
         self.embargo = embargo
+        self.force_precomputed = force_precomputed
 
     def analyze(
         self,
         prices: pd.DataFrame,
         signals: pd.DataFrame,
+        strategy_class: Optional[type] = None,
+        strategy_params: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Run walk-forward analysis on pre-computed signals.
+        """Run walk-forward analysis.
 
-        .. warning::
+        **When ``strategy_class`` is provided** delegates to
+        :meth:`analyze_strategy` with per-fold re-fitting (recommended).
 
-            This method accepts pre-computed signals — it does **not** re-fit
-            the strategy on each fold. Use only for strategies that require
-            no model fitting (e.g., simple technical indicators).
-            For strategies with fitted models (cointegration, GARCH, HMM, ML),
-            use :meth:`analyze_strategy` instead, which re-fits per fold and
-            eliminates lookahead bias.
+        **When ``strategy_class`` is None** falls back to pre-computed signals
+        and emits a ``DeprecationWarning`` — the caller MUST set
+        ``force_precomputed=True`` on the constructor to suppress the warning
+        for legacy strategies that genuinely cannot be re-fitted per fold
+        (e.g., simple technical indicators with no trainable parameters).
 
         Args:
             prices: Price data with DatetimeIndex.
             signals: Signal data with same index.
+            strategy_class: **Required** for new code.  Strategy class for
+                per-fold re-fitting.  When provided, signals are regenerated
+                per fold using the strategy's ``generate_signal`` method,
+                eliminating lookahead bias.
+            strategy_params: Parameters passed to the strategy constructor.
             **kwargs: Additional arguments passed to engine.run().
 
         Returns:
@@ -166,8 +192,32 @@ class WalkForwardAnalyzer:
                 - mode: Walk-forward mode used
                 - oos_equity_curve: Combined OOS equity curve
         """
+        if strategy_class is not None:
+            return self.analyze_strategy(
+                prices=prices,
+                strategy_class=strategy_class,
+                strategy_params=strategy_params or {},
+                purge_gap=self.purge_gap,
+                embargo=self.embargo,
+                **kwargs,
+            )
+
+        # Pre-computed-signals path — deprecated unless explicitly opted in
+        if not self.force_precomputed:
+            import warnings
+            warnings.warn(
+                "WalkForwardAnalyzer.analyze() called with pre-computed signals "
+                "(no strategy_class).  This does NOT re-fit the strategy per fold "
+                "and produces lookahead-biased results for any strategy with "
+                "trainable parameters.  Pass strategy_class + strategy_params for "
+                "per-fold re-fitting, or set force_precomputed=True on the "
+                "constructor to suppress this warning for legacy strategies.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         if self.mode == "cpcv":
-            return self._analyze_cpcv(prices, signals, **kwargs)
+            return self._analyze_cpcv(prices, signals, strategy_class=strategy_class, strategy_params=strategy_params or {}, **kwargs)
 
         n_bars = len(prices)
         total_window = self.train_window + self.test_window + self.purge_gap
@@ -477,113 +527,96 @@ class WalkForwardAnalyzer:
         self,
         prices: pd.DataFrame,
         signals: pd.DataFrame,
+        strategy_class: Optional[type] = None,
+        strategy_params: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """Run Combinatorial Purged Cross-Validation (CPCV).
 
-        Based on de Prado's CPCV method:
-        1. Divide data into n_groups
-        2. Form all combinations of n_test_groups for testing
-        3. Train on remaining groups (with purge/embargo)
-        4. Collect all OOS results
+        Uses :class:`~quant_nanggroe.engine.backtest.cpcv.CombinatorialPurgedCV`
+        for proper purging and embargo (de Prado, AFML Ch.12), then runs a
+        backtest on every train/test split.
+
+        When ``strategy_class`` is provided, signals are regenerated
+        per fold using the strategy's ``generate_signal`` method,
+        eliminating lookahead bias from pre-computed signals.
 
         Args:
             prices: Price data.
-            signals: Signal data.
+            signals: Signal data (used as fallback when strategy_class is None).
+            strategy_class: Optional strategy class for per-fold re-fitting.
+            strategy_params: Parameters passed to the strategy constructor.
             **kwargs: Additional arguments.
 
         Returns:
             CPCV results dict.
         """
         n_bars = len(prices)
+        timestamps = list(range(n_bars))
+
+        # Dynamically adjust n_groups so each group is large enough
         n_groups = self.n_groups
         group_size = n_bars // n_groups
-
         if group_size < self.min_observations:
             logger.warning(
                 "CPCV: Group size %d < min_observations %d. Reducing n_groups.",
                 group_size, self.min_observations,
             )
             n_groups = max(2, n_bars // self.min_observations)
-            group_size = n_bars // n_groups
 
-        # Generate all combinations of test groups
-        from itertools import combinations
-        test_combos = list(combinations(range(n_groups), self.n_test_groups))
+        # Build the CombinatorialPurgedCV splitter
+        cpcv_splitter = CombinatorialPurgedCV(
+            n_groups=n_groups,
+            n_test_groups=self.n_test_groups,
+            purge_gap=self.purge_gap,
+            embargo=self.embargo,
+            min_train_fraction=self.min_observations / max(n_bars, 1),
+        )
+
+        # Use split_detailed for metadata-rich splits
+        detailed_splits = cpcv_splitter.split_detailed(timestamps)
 
         windows: List[WalkForwardResult] = []
         oos_returns: List[float] = []
         oos_sharpes: List[float] = []
-        oos_trade_counts: List[int] = []  # ponytail: per-fold trade count for return-per-trade
+        oos_trade_counts: List[int] = []
         oos_equity_parts: List[pd.Series] = []
 
-        for test_group_indices in test_combos:
-            test_groups = set(test_group_indices)
-            train_groups = set(range(n_groups)) - test_groups
+        for split_info in detailed_splits:
+            train_indices = split_info.train_indices
+            test_indices = split_info.test_indices
 
-            # Build train/test index masks
-            train_indices = []
-            test_indices = []
-
-            for g in train_groups:
-                start = g * group_size
-                end = start + group_size if g < n_groups - 1 else n_bars
-                train_indices.extend(range(start, min(end, n_bars)))
-
-            for g in test_groups:
-                start = g * group_size
-                end = start + group_size if g < n_groups - 1 else n_bars
-                # Apply embargo
-                emb_start = start + self.embargo
-                test_indices.extend(range(emb_start, min(end, n_bars)))
-
-            if not train_indices or not test_indices:
+            if len(train_indices) < self.min_observations or len(test_indices) < 10:
                 continue
 
-            # Apply purge: remove indices from train that are within purge_gap of test
-            if self.purge_gap > 0:
-                test_set = set(test_indices)
-                purged_train = []
-                for idx in train_indices:
-                    is_purged = any(
-                        abs(idx - t) <= self.purge_gap
-                        for t in test_set
-                    )
-                    if not is_purged:
-                        purged_train.append(idx)
-                train_indices = purged_train
-
-            if len(train_indices) < self.min_observations:
-                continue
-
-            # Sort indices
-            train_indices = sorted(train_indices)
-            test_indices = sorted(test_indices)
-
-            # Extract data slices
             train_prices = prices.iloc[train_indices]
-            train_signals = signals.iloc[train_indices]
             test_prices = prices.iloc[test_indices]
-            test_signals = signals.iloc[test_indices]
 
-            if len(train_prices) < self.min_observations or len(test_prices) < 10:
-                continue
+            # Generate signals per fold if strategy_class is provided
+            if strategy_class is not None:
+                try:
+                    strategy = strategy_class(**(strategy_params or {}))
+                    train_signals = self._generate_strategy_signals(strategy, train_prices)
+                    test_signals = self._generate_strategy_signals(strategy, test_prices)
+                except Exception as e:
+                    logger.warning("CPCV fold strategy generation failed: %s", e)
+                    continue
+            else:
+                train_signals = signals.iloc[train_indices]
+                test_signals = signals.iloc[test_indices]
 
             try:
-                # Run in-sample backtest
                 is_result = self.engine.run(train_prices, train_signals, **kwargs)
                 is_metrics = is_result.get("metrics", {})
                 is_trades = is_metrics.get("total_trades", 0)
 
-                # Run out-of-sample backtest
                 oos_result = self.engine.run(test_prices, test_signals, **kwargs)
                 oos_metrics = oos_result.get("metrics", {})
                 oos_trades = oos_metrics.get("total_trades", 0)
             except Exception as e:
-                logger.warning(f"CPCV window failed: {e}")
+                logger.warning("CPCV window failed: %s", e)
                 continue
 
-            # Calculate degradation
             is_sharpe = is_metrics.get("sharpe_ratio", 0.0)
             oos_sharpe = oos_metrics.get("sharpe_ratio", 0.0)
             degradation = oos_sharpe / is_sharpe if abs(is_sharpe) > 1e-10 else 0.0
@@ -609,12 +642,10 @@ class WalkForwardAnalyzer:
             oos_sharpes.append(oos_sharpe)
             oos_trade_counts.append(max(oos_trades, 1))
 
-            # Collect OOS equity curve parts
             oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
             if len(oos_eq) > 0:
                 oos_equity_parts.append(oos_eq)
 
-        # Calculate statistics
         aggregate = self._calculate_aggregate(windows, oos_returns, oos_sharpes, oos_trade_counts)
         degradation_stats = self._calculate_degradation_stats(windows)
         stability = self._calculate_stability(windows, oos_sharpes, oos_returns)
@@ -628,7 +659,7 @@ class WalkForwardAnalyzer:
             "mode": "cpcv",
             "n_groups": n_groups,
             "n_test_groups": self.n_test_groups,
-            "n_combinations": len(test_combos),
+            "n_combinations": len(detailed_splits),
             "oos_equity_curve": oos_equity_curve,
         }
 

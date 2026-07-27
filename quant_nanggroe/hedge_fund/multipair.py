@@ -6,19 +6,19 @@ Logs all activity to data/trades.csv
 Packaged version of E:/trading/hedge_fund_multipair.py for QNA integration.
 Imports support tools from the local ``tools`` subpackage.
 """
-import sys
-import logging
 import csv
+import logging
 import os
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 _TOOLS_DIR = Path(__file__).resolve().parent / "tools"
 sys.path.insert(0, str(_TOOLS_DIR))
 
-from mtf_framework import load_mtf, mtf_signal, strategy_wrapper, STYLES
-from risk_module import adaptive_risk
 import MetaTrader5 as mt5
+from mtf_framework import STYLES, load_mtf, mtf_signal, strategy_wrapper
+from risk_module import adaptive_risk
 
 _HF_DIR = Path(__file__).resolve().parent
 _DATA_DIR = _HF_DIR.parent / "data"

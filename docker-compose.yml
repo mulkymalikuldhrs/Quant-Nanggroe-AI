@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   api:
     build:
@@ -13,8 +11,8 @@ services:
       - path: .env
         required: false
     environment:
-      - QNAI_REDIS_URL=redis://redis:6379/0
-      - QNAI_ALPACA_PAPER=true
+      - QNAI_REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - QNAI_SSL_VERIFY=1
     depends_on:
       redis:
         condition: service_healthy
@@ -38,13 +36,13 @@ services:
       dockerfile: Dockerfile
     container_name: qna-worker
     restart: unless-stopped
-    command: ["python", "-m", "quant_nanggroe.engine.worker"]
+    command: ["python", "qna.py", "daemon"]
     env_file:
       - path: .env
         required: false
     environment:
-      - QNAI_REDIS_URL=redis://redis:6379/0
-      - QNAI_ALPACA_PAPER=true
+      - QNAI_REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - QNAI_SSL_VERIFY=1
     depends_on:
       redis:
         condition: service_healthy
@@ -55,16 +53,25 @@ services:
     volumes:
       - qna_data:/app/data
       - qna_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json, pathlib; p = pathlib.Path('data/daemons/qna_daemon.pid'); exit(0 if p.exists() and p.read_text().strip() else '1')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   redis:
     image: redis:7-alpine
     container_name: qna-redis
     restart: unless-stopped
-    # FIX S8: Redis only accessible within Docker network (no host port mapping)
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
+    # FIX S8: Redis requires authentication — no host port mapping
     volumes:
       - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

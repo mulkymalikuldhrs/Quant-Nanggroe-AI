@@ -17,13 +17,13 @@ Architecture:
 from __future__ import annotations
 
 import logging
-import time
 import threading
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from quant_nanggroe.engine.causal.smt_divergence import SMTDivergenceDetector
 from quant_nanggroe.engine.causal.cme_provider import CMEPriceProvider
+from quant_nanggroe.engine.causal.smt_divergence import SMTDivergenceDetector
 
 logger = logging.getLogger(__name__)
 

@@ -40,8 +40,8 @@ _HAS_KNOWLEDGE_GRAPH = False
 
 try:
     from quant_nanggroe.memory.vector import (
-        VectorStore,
         CollectionName,
+        VectorStore,
         get_vector_store,
     )
 
@@ -61,8 +61,8 @@ except ImportError:
 
 try:
     from quant_nanggroe.memory.knowledge_graph import (
-        KnowledgeGraph,
         EntityType,
+        KnowledgeGraph,
         RelationType,
     )
 

@@ -8,6 +8,4 @@ __all__ = [
     'options',
 ]
 
-from . import fixed_income
-from . import metrics
-from . import options
+from . import fixed_income, metrics, options

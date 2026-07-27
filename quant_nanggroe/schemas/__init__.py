@@ -9,7 +9,4 @@ __all__ = [
     'signals',
 ]
 
-from . import market
-from . import orders
-from . import positions
-from . import signals
+from . import market, orders, positions, signals

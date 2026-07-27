@@ -180,7 +180,7 @@ class BacktestEngine:
             # 2. Execute trades based on signals
             self._execute_bar(
                 symbols, signal_row, price_row, timestamp,
-                portfolio, vol_by_symbol, shifted_signals,
+                portfolio, rolling_vol_by_symbol, shifted_signals,
                 position_sizer, execution_model, all_trades,
             )
 
@@ -553,7 +553,7 @@ class BacktestEngine:
                 open_commission = self.execution.calc_commission(
                     abs(size), exec_price, is_closing=False
                 )
-                if portfolio.can_open_position(exec_price, size, open_commission):
+                if portfolio.can_open_position(exec_price, size, open_commission, direction=target_direction):
                     trade = portfolio.open_position(
                         symbol=symbol,
                         direction=target_direction,

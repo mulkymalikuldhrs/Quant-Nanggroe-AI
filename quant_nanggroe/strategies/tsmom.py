@@ -8,9 +8,10 @@ Works on any asset: stocks, crypto, FX, futures
 Reference: Moskowitz, Ooi, Pedersen (2012), Journal of Financial Economics
 """
 
-import numpy as np
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, List
+
+import numpy as np
 
 log = logging.getLogger("QNA.TSMOM")
 

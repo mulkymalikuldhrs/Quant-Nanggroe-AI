@@ -5,21 +5,19 @@ Wyckoff Volume Spread across 5 trading styles
 Packaged version of E:/trading/hedge_fund_mtf.py for QNA integration.
 Imports support tools from the local ``tools`` subpackage (no E:/trading dependency).
 """
-import sys
 import logging
-import json
-import os
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # Ensure local tools are importable
 _TOOLS_DIR = Path(__file__).resolve().parent / "tools"
 sys.path.insert(0, str(_TOOLS_DIR))
 
-from mtf_framework import STYLES, load_mtf, mtf_signal, strategy_wrapper
-from risk_module import adaptive_risk
-from risk_guard import approve as risk_guard_approve
 import MetaTrader5 as mt5
+from mtf_framework import STYLES, load_mtf, mtf_signal, strategy_wrapper
+from risk_guard import approve as risk_guard_approve
+from risk_module import adaptive_risk
 
 try:
     from market_context import market_context

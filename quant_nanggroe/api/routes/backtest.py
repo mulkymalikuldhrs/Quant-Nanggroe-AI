@@ -85,7 +85,7 @@ def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
 
         from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine, MarketType
         from quant_nanggroe.engine.backtest.loaders.yfinance_loader import YFinanceLoader
-        from quant_nanggroe.engine.strategy.strategies import create_strategy, list_strategies
+        from quant_nanggroe.engine.strategies import create_strategy
 
         # Mark as running
         _backtests[backtest_id]["status"] = "RUNNING"
@@ -298,8 +298,9 @@ async def list_backtests() -> dict[str, Any]:
 @router.get("/strategies")
 async def list_strategies() -> list[dict[str, Any]]:
     """List available strategies from the live registry."""
-    from quant_nanggroe.engine.strategy.strategies import list_strategies as _list, create_strategy
     from quant_nanggroe.api.routes.strategies import get_strategy_metadata
+    from quant_nanggroe.engine.strategies import create_strategy
+    from quant_nanggroe.engine.strategies import list_strategies as _list
 
     result = []
     for name in _list():

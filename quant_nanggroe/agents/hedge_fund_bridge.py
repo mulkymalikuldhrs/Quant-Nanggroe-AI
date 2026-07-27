@@ -1,9 +1,11 @@
 """Hedge Fund Bridge - Weighted Vote from 10+ Providers."""
 from __future__ import annotations
-import json, logging
+
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
+
 logger = logging.getLogger(__name__)
 
 @dataclass

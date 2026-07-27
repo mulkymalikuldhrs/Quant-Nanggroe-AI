@@ -14,15 +14,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from quant_nanggroe.pipeline.data import UnifiedDataProvider
-from quant_nanggroe.pipeline.signal import UnifiedSignalEngine
 from quant_nanggroe.pipeline.execution import UnifiedExecutionRouter
+from quant_nanggroe.pipeline.signal import UnifiedSignalEngine
 
 log = logging.getLogger("QNA-Pipeline")
 
@@ -168,7 +165,7 @@ class UnifiedPipeline:
     def _run_hedge(self, symbol: str) -> PipelineResult:
         t0 = time.perf_counter()
         try:
-            from quant_nanggroe.hedge_fund.hedge_fund import run_once, aggregate, calc_atr
+            from quant_nanggroe.hedge_fund.hedge_fund import aggregate, run_once
             if self._hedge_run_once is None:
                 self._hedge_run_once = run_once
             # run_once has no return value — it executes inline.

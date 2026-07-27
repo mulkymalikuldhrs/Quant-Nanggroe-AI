@@ -69,8 +69,8 @@ class WyckoffAdapter(SignalAdapter):
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
         try:
             # Try QNA's built-in Wyckoff first
+            from quant_nanggroe.engine.strategies.base import SignalDirection, StrategyParameters
             from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
-            from quant_nanggroe.engine.strategies.base import StrategyParameters, SignalDirection
             df = kwargs.get("dataframe")
             if df is None or len(df) < 60:
                 return None
@@ -285,7 +285,6 @@ class MultiTimeframeAdapter(SignalAdapter):
         try:
             from quant_nanggroe.engine.strategies.base import (
                 SignalDirection,
-                StrategyParameters,
             )
             from quant_nanggroe.engine.strategies.multi_timeframe_strategy import (
                 MultiTimeframeStrategy,

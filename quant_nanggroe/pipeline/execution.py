@@ -8,12 +8,11 @@ Replaces the 3 separate fallback chains across the codebase.
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any, Optional
 
+from quant_nanggroe.engine.risk import constants as risk_constants
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.manager import RiskManager as EngineRiskManager
-from quant_nanggroe.engine.risk import constants as risk_constants
 
 log = logging.getLogger("QNA-Pipeline-Exec")
 
@@ -41,8 +40,9 @@ class UnifiedExecutionRouter:
         if not self.allow_live:
             return
         try:
-            from quant_nanggroe.connectors.mt5_broker import MT5Broker
             import os
+
+            from quant_nanggroe.connectors.mt5_broker import MT5Broker
             self._mt5 = MT5Broker(
                 login=int(os.environ.get("MT5_LOGIN", "0")),
                 password=os.environ.get("MT5_PASSWORD", ""),

@@ -38,7 +38,7 @@ _BANNER = """
 
 
 @click.group()
-@click.version_option(version="5.1.0", prog_name="qnai")
+@click.version_option(version="6.1.0", prog_name="qnai")
 def main():
     """Quant Nanggroe AI — Agentic Trading Intelligence OS."""
     pass

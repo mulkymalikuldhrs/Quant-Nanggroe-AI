@@ -58,14 +58,16 @@ class ExecutionSimulator:
             config = ExecutionConfig()
         self.config = config
 
-        # Apply market defaults if not explicitly set
+        # Apply market defaults only when the user did NOT change the field
+        # from the base ExecutionConfig default (i.e. they didn't express a
+        # preference).  If they set it explicitly, respect that order.
         defaults = self.MARKET_DEFAULTS.get(config.market, {})
-        if config.commission_rate == 0.001 and config.market != "equity":
+        if config.commission_rate == ExecutionConfig().commission_rate and config.market != "equity":
             self._commission_rate = defaults.get("commission_rate", config.commission_rate)
         else:
             self._commission_rate = config.commission_rate
 
-        if config.slippage_bps == 5.0 and config.market != "equity":
+        if config.slippage_bps == ExecutionConfig().slippage_bps and config.market != "equity":
             self._slippage_bps = defaults.get("slippage_bps", config.slippage_bps)
         else:
             self._slippage_bps = config.slippage_bps

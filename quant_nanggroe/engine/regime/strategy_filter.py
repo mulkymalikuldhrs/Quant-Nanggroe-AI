@@ -1,7 +1,9 @@
 """Regime Strategy Filter - Filter Strategies by Regime Compatibility."""
 from __future__ import annotations
+
 import logging
-from typing import Any, Optional
+from typing import Optional
+
 logger = logging.getLogger(__name__)
 
 _RM = {

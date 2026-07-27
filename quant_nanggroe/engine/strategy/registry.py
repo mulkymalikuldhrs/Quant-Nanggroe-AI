@@ -8,6 +8,7 @@ of truth for strategy state.
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -117,7 +118,7 @@ class _RegistryEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class StrategyRegistry:
+class WalkForwardRegistry:
     """Central registry for all trading strategies with walk-forward framework."""
 
     def __init__(self, alpha_decay: Optional[Any] = None) -> None:
@@ -219,7 +220,7 @@ class StrategyRegistry:
             json.dump(data, f, cls=_RegistryEncoder, indent=2)
 
     @classmethod
-    def from_json(cls, path: str) -> StrategyRegistry:
+    def from_json(cls, path: str) -> WalkForwardRegistry:
         with open(path) as f:
             raw = json.load(f)
         registry = cls()
@@ -234,7 +235,7 @@ class StrategyRegistry:
 
 
 def compute_factor_exposures(
-    registry: StrategyRegistry,
+    registry: "WalkForwardRegistry",
     strategy_name: str,
     returns: pd.Series,
     factors: pd.DataFrame,
@@ -242,7 +243,7 @@ def compute_factor_exposures(
     """Run factor regression on a strategy and store results in registry.
 
     Args:
-        registry: StrategyRegistry instance.
+        registry: WalkForwardRegistry instance.
         strategy_name: Name of the registered strategy.
         returns: Strategy returns Series.
         factors: Factor returns DataFrame.
@@ -277,7 +278,7 @@ def compute_factor_exposures(
 
 
 def sharpe_ci_to_registry(
-    registry: StrategyRegistry,
+    registry: "WalkForwardRegistry",
     strategy_name: str,
     returns: pd.Series,
     n_bootstrap: int = 5_000,
@@ -286,7 +287,7 @@ def sharpe_ci_to_registry(
     """Compute bootstrap CI on Sharpe and store in registry.
 
     Args:
-        registry: StrategyRegistry instance.
+        registry: WalkForwardRegistry instance.
         strategy_name: Name of the registered strategy.
         returns: Strategy returns Series.
         n_bootstrap: Number of bootstrap replications.
@@ -317,5 +318,17 @@ def sharpe_ci_to_registry(
     return result
 
 
-# Backwards-compatible alias used by tests / downstream code.
-StrategyMetaRegistry = StrategyRegistry
+def __getattr__(name: str) -> Any:
+    if name == "StrategyRegistry":
+        warnings.warn(
+            "StrategyRegistry is deprecated, use WalkForwardRegistry instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return WalkForwardRegistry
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+StrategyMetaRegistry = WalkForwardRegistry
+
+__all__ = ["WalkForwardRegistry", "StrategyMetaRegistry"]

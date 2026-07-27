@@ -5,9 +5,10 @@ import threading
 import time
 
 from quant_nanggroe.hedge_fund.utils.config import (
-    CREDS, MT5_AVAILABLE, TERMINAL, log, mt5,
+    CREDS,
+    TERMINAL,
+    mt5,
 )
-
 
 _MT5_CREDS_CHECKED = False
 

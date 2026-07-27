@@ -15,11 +15,9 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
-import pandas as pd
-
 from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
 from quant_nanggroe.engine.causal.cme_provider import CMEPriceProvider
+from quant_nanggroe.engine.causal.models import CausalContext
 from quant_nanggroe.engine.risk.dcc_state import DCCState
 
 logger = logging.getLogger("QNA-MacroContext")
@@ -59,7 +57,7 @@ class MacroContextProvider:
     def _resolve_futures(self, symbol: str) -> str:
         return self.SYMBOL_TO_FUTURES.get(symbol.upper(), symbol.upper())
 
-    def get_signal_context(self, symbol: str) -> Dict[str, Any]:
+    def get_signal_context(self, symbol: str, causal_ctx: Optional[CausalContext] = None) -> Dict[str, Any]:
         futures = self._resolve_futures(symbol)
         context: Dict[str, Any] = {
             "macro_bias": 0.0,
@@ -81,12 +79,17 @@ class MacroContextProvider:
         context["dcc_mean_vol"] = dcc_status.get("mean_vol_pct")
         context["dcc_n_assets"] = dcc_status.get("n_assets", 0)
 
-        raw_bias = os.environ.get(f"QNA_CAUSAL_BIAS_{futures}", "")
-        if raw_bias:
-            try:
-                context["macro_bias"] = float(raw_bias)
-            except (ValueError, TypeError):
-                pass
+        # Use CausalContext if provided, otherwise fall back to env vars
+        if causal_ctx is not None:
+            context["macro_bias"] = causal_ctx.bias_for(futures)
+            context["macro_weather"] = causal_ctx.macro_regime.upper()
+        else:
+            raw_bias = os.environ.get(f"QNA_CAUSAL_BIAS_{futures}", "")
+            if raw_bias:
+                try:
+                    context["macro_bias"] = float(raw_bias)
+                except (ValueError, TypeError):
+                    pass
 
         weather = os.environ.get("QNA_MACRO_WEATHER", "")
         if weather:
@@ -119,13 +122,21 @@ class MacroContextProvider:
         symbol: str,
         signal_side: str,
         confidence: float,
+        causal_ctx: Optional[CausalContext] = None,
     ) -> Tuple[str, float, str]:
         """
         Apply macro filters cumulatively — all stages stack.
 
+        Args:
+            symbol: Trading symbol.
+            signal_side: Raw signal side ('buy' / 'sell' / 'hold').
+            confidence: Raw signal confidence.
+            causal_ctx: Optional CausalContext. When provided, used as the
+                        macro bias source instead of QNA_* env vars.
+
         Returns (filtered_side, filtered_confidence, reason_chain).
         """
-        context = self.get_signal_context(symbol)
+        context = self.get_signal_context(symbol, causal_ctx=causal_ctx)
         reasons: List[str] = []
         current_side = signal_side
         current_conf = confidence

@@ -7,10 +7,15 @@ module adds the gate: mutate → validate via backtest → only promote if impro
 Ponytail: minimal (~150 lines), focused on ONE gap — no framework, just a gate.
 """
 from __future__ import annotations
-import json, time
+
+import json
+import logging
+import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from dataclasses import dataclass, field, asdict
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class EvolveAttempt:
@@ -32,7 +37,7 @@ class EvolveConfig:
     validation_bars: int = 500          # bars of recent data for backtest
     max_consecutive_rejects: int = 5    # stop evolving if too many rejects
     history_path: str = "data/evolution_history.json"
-    metric: str = "profit_factor"       # primary metric for comparison
+    metric: str = "sharpe"       # primary metric for comparison
 
 class StrategyEvolver:
     """Gate that validates strategy mutations before accepting them.
@@ -44,6 +49,9 @@ class StrategyEvolver:
             # promote mutated params to active
             apply_new_params(decision)
     """
+
+    # Class-level data cache: key = (symbol, period, interval) → DataFrame
+    _data_cache: dict[tuple[str, str, str], "pd.DataFrame"] = {}
 
     def __init__(self, config: Optional[EvolveConfig] = None):
         self.config = config or EvolveConfig()
@@ -68,8 +76,9 @@ class StrategyEvolver:
             baseline_params: Current active parameters.
             mutated_params: Proposed new parameters from MUE-X evolution.
             backtest_fn: Optional callable(strategy_name, params) -> dict
-                         of metrics. Must return {"profit_factor": float, ...}.
-                         If None, a mock backtest is used (for testing only).
+                         of metrics. Must return {"sharpe": float, ...}.
+                         If None, a real walk-forward backtest is used
+                         (via WalkForwardAnalyzer.analyze_strategy).
 
         Returns:
             EvolveAttempt with accepted=True/False.
@@ -85,7 +94,7 @@ class StrategyEvolver:
             return EvolveAttempt(
                 timestamp=time.time(), strategy_name=strategy_name,
                 baseline_params=baseline_params, mutated_params=mutated_params,
-                metric=metric, baseline_value=0.0, mutated_value=0.0,
+                metric=self.config.metric, baseline_value=0.0, mutated_value=0.0,
                 accepted=False, reason="REAL BACKTEST FAILED — reject (fail-closed)")
         mutated_metrics = backtest_fn(strategy_name, mutated_params)
         if mutated_metrics is None:
@@ -93,7 +102,7 @@ class StrategyEvolver:
             return EvolveAttempt(
                 timestamp=time.time(), strategy_name=strategy_name,
                 baseline_params=baseline_params, mutated_params=mutated_params,
-                metric=metric, baseline_value=baseline_metrics.get(metric, 0.0),
+                metric=self.config.metric, baseline_value=baseline_metrics.get(self.config.metric, 0.0),
                 mutated_value=0.0, accepted=False,
                 reason="MUTATED BACKTEST FAILED — reject (fail-closed)")
 
@@ -160,71 +169,118 @@ class StrategyEvolver:
 
     # ── Internal ──────────────────────────────────────────────────
 
-    def _real_backtest(self, name: str, params: dict) -> dict:
-        """Phase C: real backtest via QNA BacktestEngine (yfinance data).
-        Returns metrics dict; fail-closed: if backtest fails, return None so the
-        caller rejects (never mock)."""
+    def _real_backtest(self, name: str, params: dict) -> dict | None:
+        """Phase C: real walk-forward backtest via the strategy's own signals.
+        
+        Uses WalkForwardAnalyzer.analyze_strategy() to instantiate the real
+        strategy per fold and generate its actual signals — no placebo momentum.
+        Returns aggregate OOS Sharpe as the primary fitness metric.
+        Fail-closed: returns None if anything fails.
+        """
         try:
-            import yfinance as yf
-            import pandas as pd
-            import numpy as np
             import warnings
+
+            import pandas as pd
+            import yfinance as yf
             warnings.filterwarnings("ignore")
 
-            # Fetch EURUSD M15 data via yfinance (14 days ~ 13k bars)
+            # Ponytail: cache fetched data so baseline + mutated calls
+            # (and repeated evolutions) share one download.
             sym = "EURUSD=X"
-            df = yf.Ticker(sym).history(period="14d", interval="15m")
-            if df is None or df.empty:
-                # Fallback to daily data
-                df = yf.Ticker(sym).history(period="3mo", interval="1d")
+            cache_key = (sym, "1mo_15m")
+            cached = self._data_cache.get(cache_key)
+            if cached is not None and len(cached) > 0:
+                df = cached
+            else:
+                df = yf.Ticker(sym).history(period="1mo", interval="15m")
+                if df is None or df.empty:
+                    cache_key = (sym, "6mo_1d")
+                    cached = self._data_cache.get(cache_key)
+                    if cached is not None and len(cached) > 0:
+                        df = cached
+                    else:
+                        df = yf.Ticker(sym).history(period="6mo", interval="1d")
+                if df is not None and not df.empty:
+                    self._data_cache[cache_key] = df
             if df is None or df.empty:
                 return None
 
-            # Normalize columns
+            # Flatten MultiIndex columns (yfinance returns MultiIndex for FX)
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
-            df.columns = [c.lower() for c in df.columns]
 
-            # Build simple signal based on strategy name/params
-            close = df["close"].values
-            lookback = params.get("lookback", 20)
-            atr_mult = params.get("atr_mult", 1.5)
+            # Get the real strategy class from the registry
+            from quant_nanggroe.engine.strategies.base import StrategyParameters
+            from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
-            # Generate signals: momentum-based
-            signals = pd.Series(0.0, index=df.index)
-            for i in range(lookback, len(close)):
-                ret = (close[i] - close[i-lookback]) / close[i-lookback]
-                if ret > atr_mult * 0.01:
-                    signals.iloc[i] = 1.0
-                elif ret < -atr_mult * 0.01:
-                    signals.iloc[i] = -1.0
+            strategy_class = StrategyRegistry.get(name)
+            if strategy_class is None:
+                logger.error("Strategy '%s' not found in registry", name)
+                return None
 
-            # Run QNA BacktestEngine
-            from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
-            config = BacktestConfig(
+            # Set up backtest engine and walk-forward analyzer
+            from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
+            from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
+
+            med_delta = df.index.to_series().diff().median()
+            bars_per_year = int(pd.Timedelta(days=365) / med_delta) if med_delta is not None and med_delta.total_seconds() > 0 else 35040
+
+            engine = BacktestEngine(BacktestConfig(
                 initial_capital=10000.0,
                 commission_rate=0.001,
                 slippage_bps=5.0,
-                bars_per_year=35040,  # M15 bars/year
+                bars_per_year=bars_per_year,
+            ))
+
+            n_bars = len(df)
+            train_window = max(120, int(n_bars * 0.6))
+            test_window = max(60, int(n_bars * 0.2))
+            if train_window + test_window >= n_bars:
+                return None
+
+            analyzer = WalkForwardAnalyzer(
+                engine=engine,
+                train_window=train_window,
+                test_window=test_window,
+                mode="rolling",
+                min_observations=60,
             )
-            engine = BacktestEngine(config)
 
-            # Prepare prices df (single column with 'close' renamed to symbol)
-            prices = df[["close"]].rename(columns={"close": sym})
-            signals_df = signals.to_frame(name=sym)
+            # Walk-forward with per-fold strategy re-fit — eliminates lookahead bias
+            wf_result = analyzer.analyze_strategy(
+                prices=df,
+                strategy_class=strategy_class,
+                strategy_params={"parameters": StrategyParameters(params=params)},
+                purge_gap=5,
+                embargo=3,
+            )
 
-            result = engine.run(prices, signals_df)
-            metrics = result.get("metrics", {})
+            windows = wf_result.get("windows", [])
+            if not windows:
+                return None
+
+            aggregate = wf_result.get("aggregate", {})
+            oos_sharpe = aggregate.get("avg_oos_sharpe", 0.0)
+            oos_return = aggregate.get("avg_oos_return", 0.0)
+            oos_max_dd = aggregate.get("avg_oos_max_dd", 0.0)
+            oos_win_rate = aggregate.get("win_rate", 0.0)
+
+            # Profit factor from OOS fold returns
+            oos_returns_list = [w.out_of_sample_return for w in windows]
+            pos = sum(r for r in oos_returns_list if r > 0) or 0.0
+            neg = abs(sum(r for r in oos_returns_list if r < 0)) or 0.0
+            profit_factor = pos / neg if neg > 0 else (10.0 if pos > 0 else 1.0)
 
             return {
-                "profit_factor": metrics.get("profit_factor", 0.0),
-                "sharpe": metrics.get("sharpe_ratio", 0.0),
-                "win_rate": metrics.get("win_rate", 0.0) * 100,
-                "total_return_pct": metrics.get("total_return", 0.0) * 100,
-                "max_drawdown_pct": metrics.get("max_drawdown", 0.0) * 100,
+                "sharpe": oos_sharpe,
+                "profit_factor": profit_factor,
+                "win_rate": oos_win_rate,
+                "total_return_pct": oos_return * 100,
+                "max_drawdown_pct": oos_max_dd * 100,
+                "n_folds": len(windows),
             }
         except Exception as e:
-            log.error(f"Real backtest failed for {name}: {e}")
+            logger.error("Real backtest failed for %s: %s", name, e)
             return None
 
     def _persist_history(self, attempt: EvolveAttempt) -> None:
@@ -264,4 +320,5 @@ class StrategyEvolver:
             f"(limit {self.config.max_consecutive_rejects}). Manual review needed."
         )
         # Also record as a file for cron monitoring
-        Path("data/evolve_halt_warnings.txt").open("a").write(msg + "\n")
+        with Path("data/evolve_halt_warnings.txt").open("a") as f:
+            f.write(msg + "\n")

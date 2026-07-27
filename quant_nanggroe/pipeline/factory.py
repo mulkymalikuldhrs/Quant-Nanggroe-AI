@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from quant_nanggroe.pipeline.data import UnifiedDataProvider
-from quant_nanggroe.pipeline.signal import UnifiedSignalEngine
 from quant_nanggroe.pipeline.execution import UnifiedExecutionRouter
-from quant_nanggroe.pipeline.orchestrator import UnifiedPipeline, PipelineResult
+from quant_nanggroe.pipeline.orchestrator import UnifiedPipeline
+from quant_nanggroe.pipeline.signal import UnifiedSignalEngine
 
 log = logging.getLogger("QNA-Pipeline-Factory")
 

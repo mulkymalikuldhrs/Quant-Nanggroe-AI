@@ -8,6 +8,4 @@ __all__ = [
     'validation',
 ]
 
-from . import math
-from . import time
-from . import validation
+from . import math, time, validation

@@ -1,4 +1,3 @@
-import numpy as np
 
 try:
     import plotly.graph_objects as go

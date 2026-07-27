@@ -55,6 +55,10 @@ from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
 from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.var import VaRCalculator
+from quant_nanggroe.engine.risk.volatility_regime_har import (
+    RegimeSwitchingHAR,
+    VolRegime,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +126,47 @@ class RiskManager:
         self._veto_count: int = 0
         self._approval_count: int = 0
 
+        # Regime multipliers (volatility-regime-aware adjustments)
+        # Maps VolRegime -> {constitutional_limit_key: multiplier}
+        # Applied BEFORE the constitutional gate to meet tighter limits
+        # in high-vol regimes. Low-vol gets looser, extreme gets strictest.
+        self.REGIME_MULTIPLIERS: dict[VolRegime, dict[str, float]] = {
+            VolRegime.LOW: {
+                "risk_per_trade": 1.5,   # 0.75% max (1.5x base 0.5%)
+                "daily_loss": 1.0,       # 1% (no change)
+                "weekly_loss": 1.0,      # 3% (no change)
+                "position_pct": 1.5,     # 15% (1.5x base 10%)
+            },
+            VolRegime.NORMAL: {
+                "risk_per_trade": 1.0,   # 0.5% (base)
+                "daily_loss": 1.0,       # 1% (base)
+                "weekly_loss": 1.0,      # 3% (base)
+                "position_pct": 1.0,     # 10% (base)
+            },
+            VolRegime.ELEVATED: {
+                "risk_per_trade": 0.5,   # 0.25% (half)
+                "daily_loss": 0.8,       # 0.8%
+                "weekly_loss": 0.8,      # 2.4%
+                "position_pct": 0.5,     # 5%
+            },
+            VolRegime.HIGH: {
+                "risk_per_trade": 0.25,  # 0.125%
+                "daily_loss": 0.5,       # 0.5%
+                "weekly_loss": 0.5,      # 1.5%
+                "position_pct": 0.25,    # 2.5%
+            },
+            VolRegime.EXTREME: {
+                "risk_per_trade": 0.1,   # 0.05%
+                "daily_loss": 0.25,      # 0.25%
+                "weekly_loss": 0.25,     # 0.75%
+                "position_pct": 0.1,     # 1%
+            },
+        }
+        self._current_vol_regime: VolRegime = VolRegime.NORMAL
+        self._current_vol_regime_mult: dict[str, float] = \
+            self.REGIME_MULTIPLIERS[VolRegime.NORMAL]
+        self._vol_regime_detector: RegimeSwitchingHAR | None = RegimeSwitchingHAR()
+
         # Per-asset risk budgets (P1-26)
         self.asset_budgets: Dict[str, Dict[str, float]] = {}
         self.asset_daily_pnl: Dict[str, float] = {}
@@ -153,6 +198,84 @@ class RiskManager:
         """
         self._mt5_handle = mt5_handle
 
+    # ── Vol regime-aware risk limits ──────────────────────────────────
+
+    def feed_vol_regime_returns(self, log_returns: list[float]) -> VolRegime:
+        """Feed log returns to the HAR volatility regime detector.
+
+        Call this periodically (e.g. every bar / every minute) from the
+        trading loop so that ``check_trade`` uses the latest regime context.
+        If never called, the detector defaults to ``VolRegime.NORMAL`` (no
+        adjustment).
+
+        Args:
+            log_returns: Sequential log returns for the current asset or
+                         portfolio. Accumulated internally by the HAR model.
+
+        Returns:
+            The detected ``VolRegime``.
+        """
+        for r in log_returns:
+            self._vol_regime_detector.add_return(r)
+        forecast = self._vol_regime_detector.forecast()
+        self._current_vol_regime = forecast.regime
+        self._current_vol_regime_mult = \
+            self.REGIME_MULTIPLIERS.get(forecast.regime, self.REGIME_MULTIPLIERS[VolRegime.NORMAL])
+        logger.info(
+            "Vol regime updated: %s (confidence=%.2f, sizing_factor=%.4f)",
+            forecast.regime.value, forecast.confidence,
+            self._vol_regime_detector.get_position_sizing_factor(),
+        )
+        return forecast.regime
+
+    def _enforce_vol_regime(
+        self,
+        daily_pnl: float,
+        weekly_pnl: float,
+        account_balance: float,
+    ) -> dict[str, Any] | None:
+        """Pre-gate veto check: enforce regime-adjusted loss limits.
+
+        Returns a VETOED result dict if the regime-adjusted limit is breached,
+        or ``None`` if the trade should proceed to the constitutional gate.
+        """
+        regime = self._current_vol_regime
+        mult = self._current_vol_regime_mult
+        eff_daily_limit = MAX_DAILY_LOSS * mult["daily_loss"]
+        eff_weekly_limit = MAX_WEEKLY_LOSS * mult["weekly_loss"]
+
+        if account_balance > 0:
+            daily_pnl_frac = daily_pnl / account_balance
+            weekly_pnl_frac = weekly_pnl / account_balance
+
+            if daily_pnl_frac <= -eff_daily_limit:
+                return {
+                    "verdict": "VETOED",
+                    "reason": f"VOL_REGIME_DAILY_LOSS: {daily_pnl_frac:.2%} exceeds "
+                              f"regime-adjusted {eff_daily_limit:.2%} ({regime.value})",
+                    "vol_regime": regime.value,
+                    "vol_regime_mult": mult,
+                }
+            if weekly_pnl_frac <= -eff_weekly_limit:
+                return {
+                    "verdict": "VETOED",
+                    "reason": f"VOL_REGIME_WEEKLY_LOSS: {weekly_pnl_frac:.2%} exceeds "
+                              f"regime-adjusted {eff_weekly_limit:.2%} ({regime.value})",
+                    "vol_regime": regime.value,
+                    "vol_regime_mult": mult,
+                }
+        return None
+
+    @property
+    def vol_regime_state(self) -> dict[str, Any]:
+        """Current vol-regime detection state for reporting."""
+        return {
+            "regime": self._current_vol_regime.value,
+            "multipliers": dict(self._current_vol_regime_mult),
+            "sizing_factor": self._vol_regime_detector.get_position_sizing_factor()
+            if self._vol_regime_detector else 1.0,
+        }
+
     def _sync_realized_pnl(self) -> None:
         """P0 fix: pull today's + this-week's realized P&L from the live broker.
 
@@ -179,7 +302,8 @@ class RiskManager:
             # recovered day is no longer blocked.
             self.state.daily_pnl = day_pnl
             self.state.weekly_pnl = week_pnl
-            # Equity: realized daily + peak (drawdown monitor uses peak).
+            # Equity: peak + realized PnL. Use initial_equity as base
+            # so that drawdown is never understated on recovery days.
             self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
             self._auto_check_kill_switch()
         except Exception as e:
@@ -211,9 +335,9 @@ class RiskManager:
             stop_loss: Stop loss price.
             account_balance: Current account balance.
             take_profit: Optional take profit price.
-            daily_pnl_pct: Real-time daily P&L % from the execution layer
-                (e.g. broker-reported). Feeds the constitutional daily-loss veto.
-            weekly_pnl_pct: Real-time weekly P&L % from the execution layer.
+            daily_pnl_pct: Real-time daily P&L as a fraction of account equity
+                (range [0, 1], e.g. -0.06 for a 6% loss). Feeds the constitutional daily-loss veto.
+            weekly_pnl_pct: Real-time weekly P&L as a fraction of account equity (range [0, 1]).
 
         Returns:
             Dict with verdict, checkpoints, and risk metrics.
@@ -252,17 +376,37 @@ class RiskManager:
                 "failed_checkpoints": ["daily_trades"],
             }
 
+        # Vol-regime pre-gate veto: enforce tighter loss limits before the
+        # constitutional gate. In high-vol regimes the allowable loss is
+        # smaller, so this veto trips BEFORE the absolute gate.
+        _daily_abs_raw = self.state.daily_pnl
+        _weekly_abs_raw = self.state.weekly_pnl
+        if daily_pnl_pct != 0.0:
+            _daily_abs_raw = daily_pnl_pct * account_balance
+        if weekly_pnl_pct != 0.0:
+            _weekly_abs_raw = weekly_pnl_pct * account_balance
+        _regime_veto = self._enforce_vol_regime(_daily_abs_raw, _weekly_abs_raw, account_balance)
+        if _regime_veto is not None:
+            return {
+                **_regime_veto,
+                "symbol": symbol,
+                "direction": direction.upper(),
+                "failed_checkpoints": ["vol_regime_daily_loss", "vol_regime_weekly_loss"],
+                "timestamp": datetime.now().isoformat(),
+            }
+
         # 9-checkpoint gate. Use broker-synced PnL when available (live mode),
         # but also accept the daily_pnl_pct parameter when passed explicitly
         # (test/combined path without a live broker).
         _daily_abs = self.state.daily_pnl
         _weekly_abs = self.state.weekly_pnl
-        # If the execution layer passed a non-zero PnL %, use it as override
+        # If the execution layer passed a non-zero PnL fraction, use it as override
         # (covers the combined path where no broker is syncing realized PnL).
+        # daily_pnl_pct is a fraction of account equity (range [0, 1]).
         if daily_pnl_pct != 0.0:
-            _daily_abs = daily_pnl_pct / 100.0 * account_balance
+            _daily_abs = daily_pnl_pct * account_balance
         if weekly_pnl_pct != 0.0:
-            _weekly_abs = weekly_pnl_pct / 100.0 * account_balance
+            _weekly_abs = weekly_pnl_pct * account_balance
 
         # Suspicious zero PnL check: if there's been trading activity but PnL
         # reports 0.0, the PnL sync likely isn't wired to live broker P&L.

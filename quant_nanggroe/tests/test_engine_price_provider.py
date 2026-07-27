@@ -1,8 +1,12 @@
-import unittest, os, sys
+import os
+import sys
+import unittest
+
 # Ensure repository root is on the import path
 repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(repo_root)
 from quant_nanggroe.engine_bridge import EnginePriceProvider
+
 
 class TestEnginePriceProvider(unittest.TestCase):
     def setUp(self):

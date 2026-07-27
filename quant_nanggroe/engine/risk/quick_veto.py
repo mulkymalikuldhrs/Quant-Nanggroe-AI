@@ -29,9 +29,14 @@ from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.engine.risk.constants import (
     MAX_DAILY_LOSS as _MAX_DAILY_LOSS_FRAC,
+)
+from quant_nanggroe.engine.risk.constants import (
     MAX_DRAWDOWN_PCT as _MAX_DRAWDOWN_FRAC,
+)
+from quant_nanggroe.engine.risk.constants import (
     MAX_LEVERAGE as _MAX_LEVERAGE,
-    MAX_RISK_PER_TRADE as _MAX_RISK_PER_TRADE_FRAC,
+)
+from quant_nanggroe.engine.risk.constants import (
     MAX_POSITION_SIZE_PCT as _MAX_POSITION_SIZE_FRAC,
 )
 from quant_nanggroe.engine.risk.manager import RiskManager

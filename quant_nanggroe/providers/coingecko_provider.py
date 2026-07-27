@@ -3,21 +3,32 @@ CoinGecko Klines Provider (backward-compat cached version)
 ===========================================================
 """
 
-import time
 import json
 import logging
-from typing import Dict, List, Optional
-from pathlib import Path
+import time
+from typing import Dict, List
 
 log = logging.getLogger("QNA.CoinGecko")
+
+
+def _ssl_ctx():
+    import os
+    import ssl
+    verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = verify
+    ctx.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+    if not verify:
+        log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
+    return ctx
+
 
 _klines_cache: Dict[str, tuple] = {}
 CACHE_TTL = 30
 
 
 def get_klines_cached(symbol: str, limit: int = 100) -> List[Dict]:
-    import ssl, urllib.request
-    from datetime import datetime
+    import urllib.request
 
     now = time.time()
     cache_key = f"{symbol}_{limit}"
@@ -38,9 +49,7 @@ def get_klines_cached(symbol: str, limit: int = 100) -> List[Dict]:
 
     url = (f"https://api.coingecko.com/api/v3/coins/{cg_id}"
            f"/market_chart?vs_currency=usd&days=1")
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = _ssl_ctx()
 
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "QNA/1.0"})

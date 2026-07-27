@@ -17,10 +17,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-import pandas as pd
-
 from quant_nanggroe.data.providers.base import DataProvider
-from quant_nanggroe.types.market import OHLCV, MarketData, OrderBook, Ticker, TimeFrame
+from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 
 logger = logging.getLogger(__name__)
 

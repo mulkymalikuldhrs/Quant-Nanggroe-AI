@@ -19,7 +19,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.data.providers.base import DataProvider
 from quant_nanggroe.types.market import OHLCV, MarketData, OrderBook, Ticker, TimeFrame

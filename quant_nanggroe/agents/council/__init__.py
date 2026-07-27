@@ -5,5 +5,4 @@ __all__ = [
     'voting',
 ]
 
-from . import debate
-from . import voting
+from . import debate, voting

@@ -22,9 +22,9 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -719,9 +719,6 @@ class NautilusTraderAdapter(TradingAdapter):
         """
         try:
             from nautilus_trader.backtest.engine import BacktestEngine as NTBacktestEngine
-            from nautilus_trader.config import BacktestRunConfig
-            from nautilus_trader.model.currencies import USD
-            from nautilus_trader.model.objects import Money
 
             # Create engine with basic configuration
             # Full configuration would be done via BacktestRunConfig

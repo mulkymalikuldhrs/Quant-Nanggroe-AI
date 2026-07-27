@@ -36,7 +36,12 @@ for mod_name in _modules:
     except ImportError as e:
         log.debug("Skipped %s: %s", mod_name, e)
 
-# ── Legacy bridge REMOVED ─────────────────────────────────────
-# The old path (quant_nanggroe.engine.strategy.strategies) only
-# contains backward-compat shims that re-export from this directory
-# or from archive.  They are imported on demand, not auto-loaded.
+# ── Public convenience API ────────────────────────────────────
+from quant_nanggroe.engine.strategies.registry import (
+    StrategyRegistry,
+    create_strategy,
+    get_strategy_metadata,
+    list_strategies,
+)
+
+__all__ = ["create_strategy", "list_strategies", "get_strategy_metadata", "StrategyRegistry"]

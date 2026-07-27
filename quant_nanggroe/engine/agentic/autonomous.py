@@ -21,10 +21,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional, List
+from typing import Any
 
-from quant_nanggroe.engine.self_aware import SelfAware, SelfState, Reflection
-from quant_nanggroe.engine.correction import SelfCorrect
+from quant_nanggroe.engine.self_aware import Reflection, SelfAware, SelfState
 
 # Module-level import degradation tracker
 import_warnings: list[str] = []
@@ -38,8 +37,8 @@ except ImportError:
     import_warnings.append("AutoRegistry unavailable — auto-discovery disabled")
 
 try:
-    from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
     from quant_nanggroe.engine.strategies.self_finetune import SelfFineTuner
+    from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
     _HAS_STRATEGY_EVOLVER = True
 except ImportError:
     StrategyEvolver = None
@@ -48,6 +47,7 @@ except ImportError:
     import_warnings.append("StrategyEvolver/SelfFineTuner unavailable — strategy evolution disabled")
 
 import asyncio
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -791,8 +791,8 @@ class AutonomousPipeline:
             regime = "unknown"
             regime_confidence = 0.0
             try:
-                from quant_nanggroe.engine.market_state import MarketRegimeDetector
                 from quant_nanggroe.engine.autoswitch import REGIME_STRATEGY_MAP, StrategyType
+                from quant_nanggroe.engine.market_state import MarketRegimeDetector
                 closes = df["close"].tolist() if "close" in df.columns else []
                 volumes = df["volume"].tolist() if "volume" in df.columns else None
                 detector = MarketRegimeDetector()
@@ -926,7 +926,7 @@ class AutonomousPipeline:
             try:
                 s25.status = "running"
                 t0 = time.perf_counter()
-                from quant_nanggroe.engine.agentic.council import convene_council, DEBATE_THRESHOLD
+                from quant_nanggroe.engine.agentic.council import DEBATE_THRESHOLD, convene_council
                 if confidence < DEBATE_THRESHOLD:
                     debate = convene_council(symbol=symbol, proposed_signal=signal_type, proposed_confidence=confidence, price=current_price, regime=regime)
                     s25.duration_ms = (time.perf_counter() - t0) * 1000
@@ -986,7 +986,13 @@ class AutonomousPipeline:
             # ── Step 4.5: Final Decider ─────────────────────────────────
             if self._final_decider is not None and current_price > 0:
                 try:
-                    from quant_nanggroe.engine.agentic.final_decider import RegimeState, StrategySignal, PortfolioState, RiskState, Action
+                    from quant_nanggroe.engine.agentic.final_decider import (
+                        Action,
+                        PortfolioState,
+                        RegimeState,
+                        RiskState,
+                        StrategySignal,
+                    )
                     regime_state = RegimeState(regime=regime if regime != "unknown" else "neutral", confidence=regime_confidence)
                     agg_signal = StrategySignal(
                         strategy_name="ensemble", symbol=symbol,
@@ -1131,8 +1137,8 @@ class AutonomousPipeline:
         """Generate signal via ensemble. If compatible_strategies provided, filters by regime."""
         if strategy_name:
             try:
-                from quant_nanggroe.engine.strategy.strategies import create_strategy
-                strategy = create_strategy(strategy_name)
+                from quant_nanggroe.engine.strategies import create_strategy
+                strategy = create_strategy(strategy_name, lifecycle=self._lifecycle)
             except (ImportError, ValueError) as exc:
                 return "hold", 0.0, f"Strategy not found: {exc}"
             result = strategy.generate_signal(df) if hasattr(strategy, 'generate_signal') else None
@@ -1176,7 +1182,7 @@ class AutonomousPipeline:
         priority = regime_priority.get(regime, regime_priority["unknown"])
 
         try:
-            from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
+            from quant_nanggroe.engine.strategies import create_strategy, list_strategies
             all_names = list_strategies()
             if self._lifecycle:
                 active = set(self._lifecycle.get_active_strategies())
@@ -1208,7 +1214,7 @@ class AutonomousPipeline:
         signals: list[tuple[str, float, str, str]] = []
         for name in candidates:
             try:
-                strat = create_strategy(name)
+                strat = create_strategy(name, lifecycle=self._lifecycle)
                 result = strat.generate_signal(df)
                 sig, conf, reason = self._extract_signal(result, name)
                 if sig != "hold" and conf > 0.0:
@@ -1347,6 +1353,7 @@ class AutonomousPipeline:
         if data is not None:
             return data
         import asyncio
+
         import pandas as pd
         dm = self._ensure_data_manager()
         if dm is not None:
@@ -1455,7 +1462,7 @@ class AutonomousPipeline:
 
     async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None) -> dict[str, Any]:
         try:
-            from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
+            from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
             em = self._em
             side = OrderSide.BUY if signal == "buy" else (OrderSide.SELL if signal == "sell" else None)
             if side is None:

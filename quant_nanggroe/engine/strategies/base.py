@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import logging
+import math
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
-
-import math
 
 from pydantic import BaseModel, Field, field_validator
 

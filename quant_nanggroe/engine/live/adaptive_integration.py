@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 
 log = logging.getLogger("QNA.LiveIntegration")
@@ -70,10 +69,9 @@ class AdaptiveSignalPipeline:
     def _load_strategies(self):
         """Load all 15 strategies from the engine registry."""
         try:
-            from quant_nanggroe.engine.strategy.loader import create_strategy
-            from quant_nanggroe.engine.strategies.registry import (
+            from quant_nanggroe.engine.strategies import (
+                create_strategy,
                 list_strategies,
-                get_strategy_metadata,
             )
             names = list_strategies()
             for name in names:
@@ -86,19 +84,40 @@ class AdaptiveSignalPipeline:
                 f"AdaptiveSignalPipeline: {len(self._strategies)} strategies loaded"
             )
 
-            from quant_nanggroe.engine.strategy.strategy_selector import (
-                AdaptiveStrategyEngine,
-                StrategySelector,
-            )
-            sel = self._selector or StrategySelector(
-                performance_window=20, min_signals=3, top_n=3
-            )
-            self._adaptive_engine = AdaptiveStrategyEngine(
-                selector=sel, regime_engine=self._regime_engine
-            )
+            try:
+                from quant_nanggroe.engine.strategy.strategy_selector import (
+                    AdaptiveStrategyEngine,
+                    StrategySelector,
+                )
+                sel = self._selector or StrategySelector(
+                    performance_window=20, min_signals=3, top_n=3
+                )
+                self._adaptive_engine = AdaptiveStrategyEngine(
+                    selector=sel, regime_engine=self._regime_engine
+                )
+            except ImportError:
+                log.warning("StrategySelector unavailable — adaptive selection disabled")
             self._loaded = True
         except Exception as e:
             log.warning(f"Adaptive signal pipeline load failed: {e}")
+
+    def _apply_mtf_wrapper(self, strategy, ltf_df, htf_df, mtf_df):
+        """Apply MTF alignment wrapper. Gracefully degrades if old module gone."""
+        try:
+            from quant_nanggroe.engine.strategy.multi_timeframe import (
+                MultiTimeframeStrategy,
+            )
+            mtf = MultiTimeframeStrategy(
+                strategy=strategy,
+                htf_data=htf_df,
+                mtf_data=mtf_df,
+                ltf_data=ltf_df,
+                require_alignment="all",
+            )
+            return mtf.align_signals()
+        except ImportError:
+            log.debug("MTF wrapper unavailable — falling back to single-TF signal")
+            return strategy.generate_signal(ltf_df)
 
     def _to_dataframe(self, candles: List[Dict]) -> Optional[pd.DataFrame]:
         if not candles:
@@ -177,17 +196,7 @@ class AdaptiveSignalPipeline:
             for name, strategy in self._strategies.items():
                 try:
                     if self.enable_mtf and htf_df is not None and mtf_df is not None:
-                        from quant_nanggroe.engine.strategy.multi_timeframe import (
-                            MultiTimeframeStrategy,
-                        )
-                        mtf = MultiTimeframeStrategy(
-                            strategy=strategy,
-                            htf_data=htf_df,
-                            mtf_data=mtf_df,
-                            ltf_data=df,
-                            require_alignment="all",
-                        )
-                        signal = mtf.align_signals()
+                        signal = self._apply_mtf_wrapper(strategy, df, htf_df, mtf_df)
                     else:
                         signal = strategy.generate_signal(df)
 

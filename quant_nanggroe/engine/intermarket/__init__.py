@@ -13,10 +13,10 @@ Usage:
 """
 
 from quant_nanggroe.engine.intermarket.cointegration_smt import (
-    CointegrationSMTDetector,
-    CointegratedPair,
-    SMTDivergenceResult,
     CORRELATED_PAIRS,
+    CointegratedPair,
+    CointegrationSMTDetector,
+    SMTDivergenceResult,
 )
 
 __all__ = [

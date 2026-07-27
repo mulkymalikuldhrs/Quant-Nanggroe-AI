@@ -87,6 +87,32 @@ SECTOR_MAP: dict[str, str] = {
 }
 SECTOR_DEFAULT: str = "other"
 
+# ─── MT5 Symbol Mapping ──────────────────────────────────────────
+# MT5 uses different symbol names than our internal format.
+# This map ensures correct price lookups, SL/TP placement, and PnL calculation.
+# Keys are internal symbols, values are MT5 terminal symbol names.
+MT5_SYMBOL_MAP: dict[str, str] = {
+    "BTCUSDT": "BTCUSD",
+    "ETHUSDT": "ETHUSD",
+    "SOLUSDT": "SOLUSD",
+    "BNBUSDT": "BNBUSD",
+    "AVAXUSDT": "AVAXUSD",
+    "LINKUSDT": "LINKUSD",
+    "XRPUSDT": "XRPUSD",
+    "ADAUSDT": "ADAUSD",
+    "EURUSD": "EURUSD",
+    "GBPUSD": "GBPUSD",
+    "USDJPY": "USDJPY",
+    "USDCAD": "USDCAD",
+    "AUDUSD": "AUDUSD",
+    "NZDUSD": "NZDUSD",
+    "XAUUSD": "XAUUSD",
+    "XAGUSD": "XAGUSD",
+    "USOIL": "USOIL",
+    "UKOIL": "UKOIL",
+}
+MT5_SYMBOL_DEFAULT: str = ""
+
 # ─── Kill Switch Thresholds (early warning BEFORE hard limits) ──────────────
 # Kill switch triggers BEFORE the constitutional hard limits are hit,
 # providing an early warning buffer. This prevents the system from
@@ -97,3 +123,35 @@ SECTOR_DEFAULT: str = "other"
 
 KILL_SWITCH_DAILY_PNL: Final[float] = -0.008    # Kill switch at -0.8% daily PnL (before 1% hard limit)
 KILL_SWITCH_WEEKLY_PNL: Final[float] = -0.025   # Kill switch at -2.5% weekly PnL (before 3% hard limit)
+
+# ─── Live Engine Constants ──────────────────────────────────
+# These are the single source of truth for live_engine.py.
+# Import from here instead of hardcoding values inline.
+
+ASSET_ALLOCATIONS: Final[dict[str, float]] = {
+    "BTCUSDT": 0.25,
+    "ETHUSDT": 0.18,
+    "SOLUSDT": 0.14,
+    "BNBUSDT": 0.11,
+    "AVAXUSDT": 0.08,
+    "LINKUSDT": 0.08,
+    "XRPUSDT": 0.08,
+    "ADAUSDT": 0.08,
+}
+
+TP_TARGETS: Final[dict[str, float]] = {
+    "SMC": 0.05,
+    "Momentum": 0.08,
+    "MeanReversion": 0.04,
+    "Grid": 0.03,
+    "TrendStrength": 0.06,
+}
+
+TRAILING_STOP_PCT: Final[float] = 0.03
+REBALANCE_THRESHOLD: Final[float] = 0.05
+MAX_POSITIONS_TOTAL: Final[int] = 3
+HEARTBEAT_INTERVAL: Final[int] = 10
+CLEANUP_INTERVAL: Final[int] = 10
+REPORT_INTERVAL: Final[int] = 5
+DCC_UPDATE_INTERVAL: Final[int] = 10
+STARTING_CAPITAL: Final[float] = 10000.0

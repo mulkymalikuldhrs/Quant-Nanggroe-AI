@@ -10,9 +10,10 @@ ML-driven return prediction using engineered features:
 Fits in ~512MB RAM on Termux with restricted feature set.
 """
 
-import numpy as np
-from typing import List, Dict, Optional
 import logging
+from typing import Dict, List, Optional
+
+import numpy as np
 
 log = logging.getLogger("QNA.XGBoost")
 

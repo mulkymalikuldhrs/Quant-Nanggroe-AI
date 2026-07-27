@@ -21,13 +21,11 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import numpy as np
-import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
-from quant_nanggroe.engine.causal.cme_provider import CMEPriceProvider, CME_FUTURES_MAP
+from quant_nanggroe.engine.causal.cme_provider import CME_FUTURES_MAP, CMEPriceProvider
 from quant_nanggroe.engine.risk.dcc_state import get_dcc_state
 
 router = APIRouter(prefix="/api/causal", tags=["Causal Engine"])

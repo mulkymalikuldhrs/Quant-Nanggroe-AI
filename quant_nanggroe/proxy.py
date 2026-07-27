@@ -6,10 +6,11 @@ If the proxy is unavailable or causes an error, the function falls back to a
 direct request.
 """
 
-import os
 import logging
+import os
+from typing import Any, Optional
+
 import requests
-from typing import Optional, Any
 
 log = logging.getLogger("QNA.Proxy")
 

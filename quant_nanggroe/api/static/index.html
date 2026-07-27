@@ -181,10 +181,10 @@ body {
   </div>
 
   <div class="card card-full">
-    <h2>Strategy Health</h2>
+    <h2>Strategy Registry <span id="strategyCount" style="font-weight:400;color:#5a7a9a"></span></h2>
     <div style="overflow-x:auto"><table class="strategy-table" id="strategyTable">
       <thead><tr>
-        <th>Strategy</th><th>Status</th><th>Sharpe</th><th>PSR</th><th>DSR</th><th>Auto-Disable</th><th>Verdict</th>
+        <th>Strategy</th><th>Status</th><th>Sharpe</th><th>PSR</th><th>Assets</th><th>Description</th><th>Verdict</th>
       </tr></thead>
       <tbody id="strategyBody"></tbody>
     </table></div>
@@ -215,7 +215,7 @@ const STATE_FILES = [
   { key: 'pid', path: '../paper_state/daemon.pid' },
 ];
 
-const STRATEGY_NAMES = ['Momentum','RegimeBased','PairsTrading','StatisticalArbitrage','VolatilityArbitrage','MeanReversion','CryptoSpecific','MarketMaking'];
+let _LIVE_STRATEGIES = []; // populated from /api/strategies/list
 
 async function fetchFile(path, type) {
   try {
@@ -265,11 +265,21 @@ async function loadState() {
 
   renderDashboard(results);
 
+  // Also reload strategies from API (won't block dashboard render)
+  fetchStrategies();
+
   $('refreshTimestamp').textContent = new Date().toLocaleString();
   btn.disabled = false; btn.textContent = 'Refresh';
 }
 
 function renderDashboard(d) {
+  // Cache for strategy table re-render when live API arrives
+  window._lastState = d.state;
+  window._lastPnl = d.pnl;
+  window._lastAutoDisable = d.autoDisable;
+  window._lastTuned = d.tuned;
+  window._lastAlpha = d.alpha;
+
   const state = d.state;
   const pid = d.pid;
   const pnlRows = d.pnl ? parseCSV(d.pnl) : [];
@@ -344,46 +354,7 @@ function renderDashboard(d) {
     $('stat-drawdown').textContent = 'Waiting for engine...';
   }
 
-  // Strategy Health
-  const tbody = $('strategyBody');
-  tbody.innerHTML = '';
-  const alphaStrs = alpha ? alpha.strategies || {} : {};
-
-  const hasAnyStratData = STRATEGY_NAMES.some(s => {
-    const ad = autoDisable ? (autoDisable.strategies || {})[s] : null;
-    const alphaStrat = alphaStrs[s] || null;
-    const tunedStrat = tuned ? (tuned.strategies || {})[s] : null;
-    return ad || alphaStrat || tunedStrat;
-  });
-
-  if (!hasAnyStratData && !alpha && !autoDisable && (!tuned || Object.keys(tuned).length === 0)) {
-    tbody.innerHTML = '<tr><td colspan="7" class="no-data">Waiting for engine...</td></tr>';
-  } else {
-    for (const sname of STRATEGY_NAMES) {
-      const tr = document.createElement('tr');
-      const ad = autoDisable ? (autoDisable.strategies || {})[sname] : null;
-      const alphaStrat = alphaStrs[sname] || null;
-      const tunedStrat = tuned ? (tuned.strategies || {})[sname] : null;
-
-      const disabled = ad ? ad.disabled : false;
-      const sharpe = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_sharpe', null) : (tunedStrat ? tunedStrat.default_sharpe : null);
-      const psr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_psr', null) : null;
-      const dsr = alphaStrat ? getValOr(alphaStrat, 'aggregate.mean_dsr', null) : null;
-      const verdict = alphaStrat ? getValOr(alphaStrat, 'verdict', '—') : (tunedStrat ? '—' : '—');
-      const reason = ad ? ad.disabled_reason || '' : '';
-
-      tr.innerHTML = `
-        <td><strong>${sname}</strong></td>
-        <td><span class="badge ${disabled ? 'badge-disabled' : 'badge-active'}">${disabled ? 'DISABLED' : 'ACTIVE'}</span></td>
-        <td>${sharpe !== null ? (typeof sharpe === 'number' ? sharpe.toFixed(4) : sharpe) : '—'}</td>
-        <td>${psr !== null ? psr : '—'}</td>
-        <td>${dsr !== null ? dsr : '—'}</td>
-        <td style="font-size:11px;color:#5a7a9a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${reason.replace(/"/g,'&quot;')}">${reason ? reason : (disabled ? 'Auto-disabled' : '—')}</td>
-        <td>${verdict !== '—' ? `<span class="badge ${verdict === 'PASS' ? 'badge-pass' : 'badge-fail'}">${verdict}</span>` : '—'}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
+  // Strategy Health — rendered by fetchStrategies() + renderStrategyTable()
 
   // Anomaly Alerts
   if (anomaly && anomaly.alerts && Array.isArray(anomaly.alerts)) {
@@ -567,6 +538,65 @@ function connectWebSocket() {
   };
 }
 
+// ── Live Strategies from Canonical Registry ─────────────────────
+async function fetchStrategies() {
+  try {
+    const resp = await fetch('/api/strategies/list', { cache: 'no-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    _LIVE_STRATEGIES = data.strategies || [];
+    // Update header count + strategy card subtitle
+    const countEl = document.getElementById('strategyCount');
+    if (countEl) countEl.textContent = `— ${_LIVE_STRATEGIES.length} strategies`;
+    // Re-render strategy table with live data
+    renderStrategyTable();
+  } catch (e) {
+    console.warn('fetchStrategies:', e);
+    _LIVE_STRATEGIES = [];
+  }
+}
+
+function renderStrategyTable() {
+  const d = {
+    state: window._lastState || null,
+    pnl: window._lastPnl || null,
+    autoDisable: window._lastAutoDisable || null,
+    tuned: window._lastTuned || null,
+    alpha: window._lastAlpha || null,
+  };
+  // Re-render just the strategy section of dashboard
+  const tbody = document.getElementById('strategyBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const alphaStrs = d.alpha ? d.alpha.strategies || {} : {};
+  const strategies = _LIVE_STRATEGIES.length > 0 ? _LIVE_STRATEGIES : null;
+  const autoDisable = d.autoDisable;
+
+  if (strategies) {
+    for (const s of strategies) {
+      const tr = document.createElement('tr');
+      const sname = s.name;
+      const ad = autoDisable ? (autoDisable.strategies || {})[sname] : null;
+      const bt = s.backtest || {};
+      const disabled = ad ? ad.disabled : (!s.enabled);
+      const sharpe = bt.btc_sharpe || null;
+      const verdict = bt.verdict || '—';
+      const reason = ad ? ad.disabled_reason || '' : '';
+      tr.innerHTML = `
+        <td><strong>${sname}</strong><br><span style="font-size:10px;color:#5a7a9a">${s.category || '—'}</span></td>
+        <td><span class="badge ${disabled ? 'badge-disabled' : 'badge-active'}">${disabled ? 'DISABLED' : 'ACTIVE'}</span></td>
+        <td>${sharpe !== null ? sharpe.toFixed(4) : '—'}</td>
+        <td>—</td>
+        <td>${s.asset_classes ? s.asset_classes.join(', ') : '—'}</td>
+        <td style="font-size:11px;color:#5a7a9a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.description || reason || '—'}</td>
+        <td>${verdict !== '—' ? `<span class="badge ${verdict === 'KEEP' || verdict === 'PASS' ? 'badge-pass' : verdict === 'ELIMINATE' ? 'badge-fail' : 'badge-disabled'}">${verdict}</span>` : '—'}</td>`;
+      tbody.appendChild(tr);
+    }
+  } else {
+    tbody.innerHTML = '<tr><td colspan="7" class="no-data">Waiting for engine or API...</td></tr>';
+  }
+}
+
 // ── API Modules Status — pings every endpoint once ──────────────
 const MODULE_ENDPOINTS = [
   { path:'/api/geopolitics/list',   label:'Geopolitics',    cat:'Macro' },
@@ -605,8 +635,13 @@ async function pingModules() {
 }
 
 // Auto-load on page load + auto-refresh every 30s
-document.addEventListener('DOMContentLoaded', () => { loadState(); pingModules(); });
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  fetchStrategies(); // also fires on loadState completion, but ensure it starts early
+  pingModules();
+});
 setInterval(loadState, 30000);
+setInterval(fetchStrategies, 60000);  // refresh strategy registry every 60s
 setInterval(pingModules, 60000);  // module health every 60s
 </script>
 </body>

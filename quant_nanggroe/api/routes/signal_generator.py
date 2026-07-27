@@ -44,7 +44,7 @@ async def generate_signal(body: GenerateSignalRequest) -> dict[str, Any]:
     """Generate a real signal from a strategy using live market data."""
     try:
         # Load strategy
-        from quant_nanggroe.engine.strategy.strategies import create_strategy
+        from quant_nanggroe.engine.strategies import create_strategy
         strategy = create_strategy(body.strategy)
         
         # Load live data via yfinance

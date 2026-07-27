@@ -9,21 +9,19 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from quant_nanggroe.engine.strategies.registry import (
-    list_strategies,
-    StrategyRegistry,
-    get_strategy_metadata,
-)
 from quant_nanggroe.engine.strategies.base import (
+    SignalAction,
+    SignalDirection,
+    SignalStrength,
     Strategy,
     StrategyParameters,
     StrategySignal,
-)
-from quant_nanggroe.engine.strategies.base import (
-    SignalDirection,
-    SignalStrength,
-    SignalAction,
     StrategyType,
+)
+from quant_nanggroe.engine.strategies.registry import (
+    StrategyRegistry,
+    get_strategy_metadata,
+    list_strategies,
 )
 
 # Backward compat: old code uses BaseStrategy, new code uses Strategy
@@ -32,14 +30,21 @@ BaseStrategy = Strategy
 log = logging.getLogger(__name__)
 
 
-def create_strategy(name: str, *args, **kwargs) -> Any:
-    """Backward-compatible create_strategy — delegates to StrategyRegistry.create."""
+def create_strategy(name: str, lifecycle=None, *args, **kwargs) -> Any:
+    """Backward-compatible create_strategy — delegates to StrategyRegistry.create.
+
+    Args:
+        name: Strategy name.
+        lifecycle: Optional StrategyLifecycleManager to enforce ACTIVE-only creation.
+        *args: Positional args (legacy compatibility, forwarded to params).
+        **kwargs: Keyword arguments forwarded to the strategy's init.
+    """
     if args or kwargs:
         params = StrategyParameters()
         for k, v in kwargs.items():
             params.set(k, v)
-        return StrategyRegistry.create(name, parameters=params)
-    return StrategyRegistry.create(name)
+        return StrategyRegistry.create(name, parameters=params, lifecycle=lifecycle)
+    return StrategyRegistry.create(name, lifecycle=lifecycle)
 
 
 def get_strategy(name: str):

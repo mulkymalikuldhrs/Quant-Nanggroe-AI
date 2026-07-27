@@ -9,9 +9,4 @@ __all__ = [
     'protection',
 ]
 
-from . import almgren_chriss
-from . import base
-from . import fill
-from . import manager
-from . import order
-from . import protection
+from . import almgren_chriss, base, fill, manager, order, protection

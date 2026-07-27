@@ -16,7 +16,6 @@ from typing import Any, List, Optional
 import httpx
 
 from quant_nanggroe.data.providers.base import DataProvider
-from quant_nanggroe.types.market import OrderBook, Ticker
 
 logger = logging.getLogger(__name__)
 

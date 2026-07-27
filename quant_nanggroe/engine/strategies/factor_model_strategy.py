@@ -9,7 +9,6 @@ from quant_nanggroe.engine.strategies.base import (
     SignalDirection,
     SignalStrength,
     Strategy,
-    StrategyParameters,
     StrategySignal,
 )
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry

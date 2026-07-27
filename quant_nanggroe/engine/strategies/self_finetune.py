@@ -15,14 +15,14 @@ import json
 import logging
 import random
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from quant_nanggroe.engine.strategies.strategy_evolver import (
-    StrategyEvolver,
     EvolveAttempt,
     EvolveConfig,
+    StrategyEvolver,
 )
 
 logger = logging.getLogger(__name__)
@@ -144,8 +144,7 @@ class SelfFineTuner:
                     best_val = metric_val
                     best_params = dict(mutated_params)
                     best_metrics = {
-                        "profit_factor": attempt.mutated_value,
-                        "sharpe": attempt.mutated_value,
+                        attempt.metric: attempt.mutated_value,
                         "metric": attempt.metric,
                         "baseline": attempt.baseline_value,
                         "improvement_pct": (

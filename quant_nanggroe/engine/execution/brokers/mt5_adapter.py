@@ -11,17 +11,17 @@ import time
 from typing import List, Optional
 
 from quant_nanggroe.connectors.broker_base import Order as ConnOrder
+from quant_nanggroe.connectors.mt5_broker import MT5Broker
 from quant_nanggroe.engine.execution.base import (
     AccountInfo,
     Broker,
-    Fill,
     Order,
     OrderSide,
     OrderStatus,
     OrderType,
     PositionInfo,
 )
-from quant_nanggroe.connectors.mt5_broker import MT5Broker
+from quant_nanggroe.engine.risk.constants import MT5_SYMBOL_MAP
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +33,53 @@ _SIDE_MAP = {"BUY": "buy", "SELL": "sell"}
 _REV_SIDE = {"buy": OrderSide.BUY, "sell": OrderSide.SELL}
 
 
+class CircuitBreaker:
+    """Simple circuit breaker for broker adapter.
+
+    Trips after `threshold` consecutive failures within `window_seconds`.
+    Once tripped, all operations are blocked for `recovery_seconds`.
+    """
+
+    def __init__(self, threshold: int = 5, window_seconds: float = 60.0, recovery_seconds: float = 300.0) -> None:
+        self._threshold = threshold
+        self._window_seconds = window_seconds
+        self._recovery_seconds = recovery_seconds
+        self._failures: list[float] = []
+        self._tripped_at: Optional[float] = None
+
+    @property
+    def is_tripped(self) -> bool:
+        if self._tripped_at is None:
+            return False
+        if time.monotonic() - self._tripped_at > self._recovery_seconds:
+            self._tripped_at = None
+            self._failures.clear()
+            logger.info("Circuit breaker reset after recovery window")
+            return False
+        return True
+
+    def record_success(self) -> None:
+        self._failures.clear()
+
+    def record_failure(self) -> None:
+        now = time.monotonic()
+        # Prune failures outside the window
+        self._failures = [t for t in self._failures if now - t <= self._window_seconds]
+        self._failures.append(now)
+        if len(self._failures) >= self._threshold:
+            self._tripped_at = now
+            logger.critical(
+                "Circuit breaker TRIPPED: %d failures in %.0fs — blocking orders for %.0fs",
+                self._threshold, self._window_seconds, self._recovery_seconds,
+            )
+
+
 class MT5ExecutionBroker(Broker):
     """Wraps a connected MT5Broker into the async execution-engine Broker ABC."""
 
     def __init__(self, mt5: MT5Broker) -> None:
         self._mt5 = mt5
+        self._circuit_breaker = CircuitBreaker()
 
     @property
     def name(self) -> str:
@@ -77,7 +119,15 @@ class MT5ExecutionBroker(Broker):
         return AccountInfo(balance=bal, equity=bal, margin_available=bal, buying_power=bal)
 
     async def submit_order(self, order: Order) -> Order:
-        max_attempts = 2
+        # Circuit breaker gate — fail-fast if tripped
+        if self._circuit_breaker.is_tripped:
+            order.status = OrderStatus.REJECTED
+            order.metadata["reason"] = "Circuit breaker tripped — MT5 unavailable"
+            order.metadata["error_code"] = "CIRCUIT_BREAKER"
+            logger.critical("Order %s rejected: circuit breaker tripped", order.id)
+            return order
+
+        max_attempts = 3
         last_err = None
         for attempt in range(max_attempts):
             try:
@@ -92,6 +142,7 @@ class MT5ExecutionBroker(Broker):
                 )
                 result = self._mt5.place_order(conn_order)
                 if not result:
+                    self._circuit_breaker.record_failure()
                     order.status = OrderStatus.REJECTED
                     order.metadata["reason"] = "MT5 order rejected"
                     order.metadata["error_code"] = "REJECTED"
@@ -104,8 +155,10 @@ class MT5ExecutionBroker(Broker):
                             "MT5 fill price=0 on attempt %d for %s, retrying",
                             attempt + 1, order.symbol,
                         )
-                        time.sleep(1.0)
+                        self._circuit_breaker.record_failure()
+                        time.sleep(0.5 * (2 ** attempt))  # exponential backoff
                         continue
+                    self._circuit_breaker.record_failure()
                     order.status = OrderStatus.REJECTED
                     order.metadata["reason"] = f"MT5 returned zero fill price after {max_attempts} attempts"
                     order.metadata["error_code"] = "ZERO_PRICE"
@@ -115,6 +168,8 @@ class MT5ExecutionBroker(Broker):
                     )
                     return order
 
+                # Success — reset circuit breaker
+                self._circuit_breaker.record_success()
                 order.status = OrderStatus.FILLED
                 order.metadata["fill_price"] = price
                 order.metadata["broker_order_id"] = result
@@ -130,8 +185,9 @@ class MT5ExecutionBroker(Broker):
                         "MT5 transient error on attempt %d for %s: %s",
                         attempt + 1, order.symbol, err_str,
                     )
-                    time.sleep(1.0)
+                    time.sleep(0.5 * (2 ** attempt))
                     continue
+                self._circuit_breaker.record_failure()
                 order.status = OrderStatus.REJECTED
                 order.metadata["reason"] = err_str
                 order.metadata["error_code"] = "MT5_ERROR"
@@ -139,12 +195,14 @@ class MT5ExecutionBroker(Broker):
                 return order
 
             except Exception as e:
+                self._circuit_breaker.record_failure()
                 order.status = OrderStatus.REJECTED
                 order.metadata["reason"] = str(e)
                 order.metadata["error_code"] = "EXCEPTION"
                 logger.error("MT5 submit_order exception: %s", e, exc_info=True)
                 return order
 
+        self._circuit_breaker.record_failure()
         order.status = OrderStatus.REJECTED
         order.metadata["reason"] = f"MT5 order failed after {max_attempts} attempts: {last_err}"
         order.metadata["error_code"] = "MAX_RETRIES"
@@ -185,10 +243,17 @@ class MT5ExecutionBroker(Broker):
         return out
 
     async def get_price(self, symbol: str) -> float:
-        # ponytail: reuse MT5Broker tick via place_order path is overkill; read directly.
-        import MetaTrader5 as mt5  # already imported by MT5Broker.connect
-        sym = symbol.replace("-", "").upper()
-        tick = mt5.symbol_info_tick(sym)
+        """Fetch the current ask price for a symbol via MT5.
+
+        Uses MT5_SYMBOL_MAP for correct symbol translation
+        (e.g. BTCUSDT → BTCUSD). Falls back to the raw symbol
+        if no mapping exists, then uppercased and stripped of hyphens.
+        """
+        import MetaTrader5 as mt5
+        mt5_sym = MT5_SYMBOL_MAP.get(symbol)
+        if not mt5_sym:
+            mt5_sym = symbol.replace("-", "").upper()
+        tick = mt5.symbol_info_tick(mt5_sym)
         return float(tick.ask if tick else 0.0)
 
     def get_rates(self, symbol: str, timeframe=None, count: int = 200):

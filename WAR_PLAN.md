@@ -1,6 +1,6 @@
 # QNA — Autonomous Quant Hedge Fund: Real-Market War Plan
-**Version:** 1.1 (War Ready) | **Date:** 2026-07-26 | **Author:** Dhaher Labs
-**Status:** EXECUTE — no simulation, real capital path after gate
+**Version:** 1.2 (War Ready) | **Date:** 2026-07-27 | **Author:** Dhaher Labs
+**Status:** EXECUTE — execution/risk system hardened, circuit breaker deployed, audit trail live
 
 ---
 
@@ -16,23 +16,27 @@ QNA is NOT a research toy. It is a production autonomous hedge fund that:
 
 ---
 
-## 1. CURRENT STATE (Verified 2026-07-26)
+## 1. CURRENT STATE (Verified 2026-07-27)
 
 | Component | Status | Evidence |
 |-----------|--------|----------|
 | **DCC-GARCH correlation** | ✅ 47 tests | Dynamic cross-asset, auto-fit in live_engine |
 | **Causal Macro Engine** | ✅ 5 modules | Bias, MSI (FRED), COT (CFTC), SMT, Thesis Drift |
 | **Causal Bias → Signal** | ✅ All providers | boost/reduce/block on 10 core + 200+ evolved |
-| MT5 connector | ✅ EXISTS | `quant_nanggroe/connectors/mt5_broker.py` |
-| Risk guard | ✅ EXISTS | DCC-GARCH + Thesis Drift + daily/weekly veto |
-| Backtest engine | ✅ EXISTS | `scripts/backtest_dhaher_sltp.py` |
-| Strategy registry | ✅ EXISTS | AutoRegistry |
-| Strategies | ✅ 79+ registered | + causal bias filtering on all providers |
-| API server | ✅ EXISTS | `quant_nanggroe/api/app.py` |
-| Cron runner | ⚠️ Needs update | Must point to live_engine.py |
-| Profile crons | ⚠️ PAUSED | 4 pollution crons paused |
+| **MT5 connector** | ✅ EXISTS + circuit breaker | `quant_nanggroe/connectors/mt5_broker.py`, `mt5_adapter.py` with CB 5-fail/60s/5min recovery |
+| **MT5 Symbol Mapping** | ✅ SYMBOL_MAP | `constants.py` dict for 18 pairs — no more naive `.replace()` |
+| **Risk guard** | ✅ DCC-GARCH + Thesis Drift + Circuit Breaker | Daily/weekly veto, fail-closed kill switch w/ audit trail |
+| **Execution Manager** | ✅ Public API sealed | No private `_brokers`/`_mt5` access from builder or live_engine |
+| **Backtest engine** | ✅ EXISTS | `scripts/backtest_dhaher_sltp.py` |
+| **Strategy registry** | ✅ EXISTS | AutoRegistry |
+| **Strategies** | ✅ 79+ registered | + causal bias filtering on all providers |
+| **API server** | ✅ EXISTS | `quant_nanggroe/api/app.py` |
+| **Kill Switch** | ✅ Force override + audit trail | Append-only JSONL, cooldown bypass for emergency |
+| **Paper Broker** | ✅ Deterministic | Seeded RNG (42) for reproducible tests |
+| **Cron runner** | ⚠️ Needs update | Must point to live_engine.py |
+| **Profile crons** | ⚠️ PAUSED | 4 pollution crons paused |
 
-**Gap to war:** archive strategies not registered, real MT5 not connected (Valetax IPC timeout), risk guard needs live PnL (not phantom).
+**Gap to war:** archive strategies not registered, real MT5 not connected (Valetax IPC timeout), risk guard PnL verified via real MT5 history_deals_get (not phantom) — confirmed alive on Path-A and Path-B. WEEKLY veto ABSENT on both paths (P1 priority).
 
 ---
 
@@ -90,7 +94,7 @@ QNA is NOT a research toy. It is a production autonomous hedge fund that:
 ### PHASE 6 — Self-Evolution Loop (P1)
 **Goal:** QNA improves without human input.
 - [x] StrategyEvolver module exists
-- [ ] Wire `_trigger_evolution` to real backtest (not mock)
+- [x] **Wire `_trigger_evolution` to real backtest** — v6.2.0: `_real_backtest()` uses `WalkForwardAnalyzer.analyze_strategy()` with real strategy instantiation (no more mock jitter)
 - [ ] MUE-X bridge: 60+ genes → strategy mutations → register
 - [ ] Self-aware: detect regime, adapt risk
 - **Owner:** devbot + researchbot
@@ -127,11 +131,17 @@ BlackHornet = colony orchestrator (PSO swarm, ABC role-switching).
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Strategies registered | 200+ | 7 active + 64 archive (wired: 7) |
+| Strategies registered | 200+ | 79+ canonical + legacy bridge |
+| Risk guard | Fail-closed | Wired, v6.2.0: `set_broker_handle()` fixed, PnL fractions unified, real PnL connected |
+| Strategy evolver | Real backtest | v6.2.0: `WalkForwardAnalyzer.analyze_strategy()` — mock removed |
+| SSL verification | Env-guarded | v6.2.0: `QNAI_SSL_VERIFY` across 10 files |
+| Credentials | Env vars only | v6.2.0: `.secrets-local/` deleted, YAML deprecated |
+| PnL units | Unified fractions | v6.2.0: RiskManager + KillSwitch both use 0-1 |
+| Exec bridge | Public API | v6.2.0: `ExecutionManager.set_broker_handle()` |
+| Causal wiring | Dataclass | v6.2.0: `CausalContext` replaces env vars |
 | Strategies gate-passing | 50+ | ~6 historical |
 | MT5 connection | Live (real broker) | Valetax demo (IPC timeout) |
 | Daily trades | 3-10 | 0 (SCAN-ONLY) |
-| Risk guard | Fail-closed | Wired, needs live PnL |
 | Profile crons | 7 healthy | 4 paused |
 | BlackHornet bridge | Live | Startup wired |
 

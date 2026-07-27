@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["tools"])

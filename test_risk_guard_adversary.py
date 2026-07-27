@@ -46,7 +46,7 @@ check("Reason is AUTO_DAILY_LIMIT", result["reason"] == "KILL_SWITCH_ACTIVE")
 # ── Test 2: Phantom veto — no MT5 handle, paper mode ────────────────
 print("\n=== Test 2: Phantom veto (no broker, paper mode) ===")
 rm2 = RiskManager(initial_equity=100_000.0)
-# In paper mode: no MT5 handle, daily_pnl=0, but check_trade receives daily_pnl_pct=-6.0
+# In paper mode: no MT5 handle, daily_pnl=0, but check_trade receives daily_pnl_pct=-0.06
 # Does the kill switch AUTO-ACTIVATE from the daily_pnl_pct parameter?
 
 # Set up the kill switch as inactive first
@@ -55,7 +55,8 @@ assert not rm2.kill_switch.is_active, "Kill switch should start inactive"
 result2 = rm2.check_trade(
     symbol="EURUSD", direction="BUY", lot_size=0.01,
     entry=1.0850, stop_loss=1.0800, account_balance=100_000.0,
-    daily_pnl_pct=-6.0,  # -6% daily loss reported by execution layer
+    # daily_pnl_pct is fraction of equity: -0.06 == 6% loss
+    daily_pnl_pct=-0.06,
     weekly_pnl_pct=0.0,
 )
 # BUG EXPECTED: kill switch will NOT auto-activate because

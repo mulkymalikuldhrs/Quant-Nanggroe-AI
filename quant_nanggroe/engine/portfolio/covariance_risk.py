@@ -7,7 +7,7 @@ and Risk Parity position weights to manage multi-asset portfolio risk.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 

@@ -14,8 +14,8 @@ Usage:
 
 from quant_nanggroe.engine.macro.economic_calendar import EconomicCalendarProvider
 from quant_nanggroe.engine.macro.macro_surprise_index import (
-    MacroSurpriseIndex,
     ECONOMIC_INDICATORS,
+    MacroSurpriseIndex,
     MSIResult,
 )
 

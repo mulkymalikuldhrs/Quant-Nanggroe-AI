@@ -15,13 +15,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from quant_nanggroe.engine.agentic.adapters import fetch_all_signals
 from quant_nanggroe.engine.agentic.voting import (
     Bias,
     Signal,
     SignalVotingSystem,
     VoteResult,
 )
-from quant_nanggroe.engine.agentic.adapters import fetch_all_signals
 
 logger = logging.getLogger(__name__)
 

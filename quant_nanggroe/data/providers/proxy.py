@@ -13,7 +13,7 @@ import logging
 import os
 import shlex
 import subprocess
-from typing import Optional, Any
+from typing import Any, Optional
 
 log = logging.getLogger("QNA.Proxy")
 

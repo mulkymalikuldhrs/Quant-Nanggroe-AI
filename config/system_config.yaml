@@ -160,7 +160,7 @@ web_interface:
   # WebSocket settings
   websocket:
     enabled: true
-    cors_origins: "*"
+    cors_origins: ["http://localhost:3000", "http://localhost:8000"]
     ping_interval: 25
     ping_timeout: 60
     
@@ -238,7 +238,7 @@ security:
     
     cors:
       enabled: true
-      origins: "*"
+      origins: ["http://localhost:3000", "http://localhost:8000"]
       methods: ["GET", "POST", "PUT", "DELETE"]
       headers: ["Content-Type", "Authorization"]
   

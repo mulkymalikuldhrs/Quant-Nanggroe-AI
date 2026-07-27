@@ -11,32 +11,44 @@ DO NOT modify existing engine/ files — this bridge adapts them for live_engine
 """
 
 import json
+import logging
 import os
 import socket
-import sqlite3
 import ssl
 import time
-import logging
-import urllib.request
 import urllib.error
-from datetime import datetime, timedelta
+import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 log = logging.getLogger("QNA-Bridge")
 
+
+def _ssl_ctx():
+    verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = verify
+    ctx.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+    if not verify:
+        log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
+    return ctx
+
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 MAX_POSITIONS_TOTAL = 3
 
-ASSSET_MAP = {
+ASSET_MAP = {
     "BTCUSDT": "bitcoin",
     "ETHUSDT": "ethereum",
     "SOLUSDT": "solana",
     "BNBUSDT": "binancecoin",
 }
-SYMBOL_TO_CG = {v: k for k, v in ASSSET_MAP.items()}
-CG_IDS = ",".join(ASSSET_MAP.values())
+# Backward-compat alias for any modules referencing the old typo
+ASSSET_MAP = ASSET_MAP
+SYMBOL_TO_CG = {v: k for k, v in ASSET_MAP.items()}
+CG_IDS = ",".join(ASSET_MAP.values())
 
 
 class DNSBypass:
@@ -51,9 +63,7 @@ class DNSBypass:
     @classmethod
     def _get_doh_ctx(cls):
         if cls._doh_ctx is None:
-            cls._doh_ctx = ssl.create_default_context()
-            cls._doh_ctx.check_hostname = False
-            cls._doh_ctx.verify_mode = ssl.CERT_NONE
+            cls._doh_ctx = _ssl_ctx()
         return cls._doh_ctx
 
     @classmethod
@@ -88,9 +98,7 @@ class DNSBypass:
     def _raw_https(cls, ip: str, sni_hostname: str, host_header: str, path: str, timeout: int = 10) -> Optional[dict]:
         """Make HTTPS request to IP with custom SNI and Host header.
         Retries 3x with exponential backoff on failure."""
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        ctx = _ssl_ctx()
         last_err = None
         for attempt in range(3):
             try:
@@ -239,7 +247,7 @@ class EnginePriceProvider:
     def _request(self, url: str, timeout: int = 15) -> Optional[dict]:
         for attempt in range(3):
             try:
-                ctx = ssl.create_default_context()
+                ctx = _ssl_ctx()
                 req = urllib.request.Request(url)
                 req.add_header("User-Agent", "QNA/2.0")
                 with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
@@ -270,21 +278,21 @@ class EnginePriceProvider:
 
         result = {}
         # 1. Try exchange bypass (Bybit -> OKX) for all symbols
-        for symbol in ASSSET_MAP:
+        for symbol in ASSET_MAP:
             p = self._exchange.get_price(symbol)
             if p:
                 result[symbol] = p
 
         # 2. Fill missing from CoinGecko
-        missing = [s for s in ASSSET_MAP if s not in result]
+        missing = [s for s in ASSET_MAP if s not in result]
         if missing:
             self._rate_limit()
-            ids = ",".join(ASSSET_MAP[s] for s in missing)
+            ids = ",".join(ASSET_MAP[s] for s in missing)
             url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
             data = self._request(url)
             if data:
                 for symbol in missing:
-                    coin_id = ASSSET_MAP[symbol]
+                    coin_id = ASSET_MAP[symbol]
                     entry = data.get(coin_id, {})
                     usd_price = entry.get("usd")
                     if usd_price is not None:
@@ -305,7 +313,7 @@ class EnginePriceProvider:
         return prices.get(symbol)
 
     def get_klines(self, symbol: str, interval: str = "1m", limit: int = 60) -> List[Dict]:
-        coin_id = ASSSET_MAP.get(symbol)
+        coin_id = ASSET_MAP.get(symbol)
         if not coin_id:
             return []
         cache_key = f"klines_{symbol}_{interval}_{limit}"
@@ -402,8 +410,11 @@ class EngineRiskManager:
         self.MAX_DRAWDOWN = 0.10
         try:
             from quant_nanggroe.engine.risk.constants import (
-                MAX_RISK_PER_TRADE, MAX_POSITION_SIZE_PCT,
-                MAX_DAILY_LOSS, MAX_WEEKLY_LOSS, MAX_DRAWDOWN_PCT,
+                MAX_DAILY_LOSS,
+                MAX_DRAWDOWN_PCT,
+                MAX_POSITION_SIZE_PCT,
+                MAX_RISK_PER_TRADE,
+                MAX_WEEKLY_LOSS,
             )
             self.MAX_RISK_PER_TRADE = MAX_RISK_PER_TRADE
             self.MAX_POSITION_PCT = MAX_POSITION_SIZE_PCT

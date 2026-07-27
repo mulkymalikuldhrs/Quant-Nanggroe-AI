@@ -15,7 +15,6 @@ import logging
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlencode
 
 from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeError, OrderError
 from quant_nanggroe.exchange.clients.base_rest_client import (
@@ -24,7 +23,7 @@ from quant_nanggroe.exchange.clients.base_rest_client import (
 )
 from quant_nanggroe.types.market import OrderBook, OrderBookLevel
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide
+from quant_nanggroe.types.positions import Position
 
 logger = logging.getLogger(__name__)
 

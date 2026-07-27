@@ -38,14 +38,13 @@ from quant_nanggroe.exchange.base import (
     OrderError,
     WebSocketCallback,
 )
+from quant_nanggroe.exchange.guards import GuardPipeline, build_default_guard_pipeline
 from quant_nanggroe.exchange.solana.jupiter import (
     SOL_MINT,
     USDC_MINT,
     JupiterV6Client,
 )
 from quant_nanggroe.exchange.solana.wallet import SolanaWallet
-from quant_nanggroe.exchange.guards import build_default_guard_pipeline
-from quant_nanggroe.exchange.guards import GuardPipeline
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
 from quant_nanggroe.types.positions import Portfolio, Position

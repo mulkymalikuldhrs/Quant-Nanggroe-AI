@@ -18,10 +18,10 @@ import os
 import platform
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+
 log = logging.getLogger("QNA.WARP")
 
 WARP_API_BASE = "https://api.cloudflareclient.com/v0a1922"
@@ -106,7 +106,7 @@ def _warp_api_get(endpoint: str, token: str) -> Optional[dict]:
 def _generate_keypair() -> Tuple[str, str]:
     try:
         from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-        from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, PublicFormat
+        from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, PublicFormat
         priv = X25519PrivateKey.generate()
         priv_b64 = priv.private_bytes(Encoding.Raw, PrivateFormat.Raw, NoEncryption())
         priv_key = __import__("base64").b64encode(priv_b64).decode()

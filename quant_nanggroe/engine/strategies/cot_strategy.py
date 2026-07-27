@@ -5,12 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.strategies.base import (
     SignalDirection,
-    SignalStrength,
     Strategy,
     StrategyParameters,
     StrategySignal,
@@ -38,7 +36,7 @@ class COTStrategy(Strategy):
 
     def _load_cot(self, data: pd.DataFrame) -> Optional[Dict]:
         try:
-            from quant_nanggroe.engine.data.cot_provider import COTProvider, COTAnalyzer
+            from quant_nanggroe.engine.data.cot_provider import COTAnalyzer, COTProvider
             provider = COTProvider()
             provider.fetch()
             analyzer = COTAnalyzer(provider)

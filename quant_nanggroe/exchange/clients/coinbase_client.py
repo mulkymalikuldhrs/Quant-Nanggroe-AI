@@ -23,7 +23,7 @@ from quant_nanggroe.exchange.clients.base_rest_client import (
 )
 from quant_nanggroe.types.market import OrderBook, OrderBookLevel
 from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide
+from quant_nanggroe.types.positions import Position
 
 logger = logging.getLogger(__name__)
 

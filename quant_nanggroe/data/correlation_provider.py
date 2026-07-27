@@ -9,7 +9,7 @@ Standalone provider (not a DataProvider subclass) that computes:
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 import yfinance as yf

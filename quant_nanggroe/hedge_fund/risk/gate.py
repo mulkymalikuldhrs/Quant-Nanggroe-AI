@@ -4,7 +4,7 @@ import json
 import subprocess
 import sys
 
-from quant_nanggroe.hedge_fund.utils.config import GATE_FILE, _QNA_DIR, log
+from quant_nanggroe.hedge_fund.utils.config import _QNA_DIR, GATE_FILE
 
 
 def check_gate():

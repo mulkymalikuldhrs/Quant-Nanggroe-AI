@@ -14,14 +14,16 @@ Key insight: v1.0 required OB + BOS + trend simultaneously → too restrictive,
 only catches the strongest moves but misses 73% of good trades.
 v1.1 uses partial confluence: need 2/4 patterns + trend consistency.
 """
-import pandas as pd
-import numpy as np
 import sys
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from quant_nanggroe.engine.strategies.registry import StrategyRegistry
-from quant_nanggroe.engine.strategies.base import Strategy
 from quant_nanggroe.engine.strategies._df_signal_adapter import DFStrategyAdapter
+from quant_nanggroe.engine.strategies.base import Strategy
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register

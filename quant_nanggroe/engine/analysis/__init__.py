@@ -7,5 +7,4 @@ __all__ = [
     'factors',
 ]
 
-from . import bootstrap
-from . import factors
+from . import bootstrap, factors

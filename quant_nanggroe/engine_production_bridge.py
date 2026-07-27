@@ -17,9 +17,8 @@ from __future__ import annotations
 import logging
 import os
 import time
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 log = logging.getLogger("QNA-Prod")
 
@@ -97,20 +96,19 @@ class ProductionStrategyRunner:
     
     def _load_strategies(self):
         try:
-            from quant_nanggroe.engine.strategy.loader import create_strategy
-            from quant_nanggroe.engine.strategies.registry import list_strategies
+            from quant_nanggroe.engine.strategies import create_strategy, list_strategies
             self.available = list_strategies()
             to_load = [
-                ("mean_rev", {"lookback": 20, "entry_z": 2.0, "exit_z": 0.5}),
-                ("trend_follow", {"lookback": 20, "fast": 10, "slow": 30}),
-                ("regime_detection", {"lookback": 30}),
-                ("crypto_specific", {"lookback": 20}),
+                "mean_rev",
+                "trend_follow",
+                "regime_detection",
+                "crypto_specific",
             ]
-            for name, params in to_load:
+            for name in to_load:
                 if name not in self.available:
                     continue
                 try:
-                    self.strategies[name] = create_strategy(name, params)
+                    self.strategies[name] = create_strategy(name)
                     log.info(f"  Loaded strategy: {name}")
                 except Exception as e:
                     log.debug(f"  Skip {name}: {e}")
@@ -272,6 +270,7 @@ class SyncPaperBroker:
         if self._broker is not None:
             return
         import asyncio
+
         from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
         self._broker = PaperExchangeBroker(initial_capital=self._capital)
         try:
@@ -285,6 +284,7 @@ class SyncPaperBroker:
     def place_order(self, symbol: str, side: str, qty: float, price: float) -> Optional[Dict]:
         self._ensure()
         import asyncio
+
         from quant_nanggroe.types.orders import OrderSide, OrderType
         os = OrderSide.BUY if side == "buy" else OrderSide.SELL
         try:
@@ -507,12 +507,12 @@ class RiskEnforcer:
     
     def _lazy_init(self):
         try:
-            from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchConfig
-            from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
-            from quant_nanggroe.engine.risk.position_sizing import PositionSizer
-            from quant_nanggroe.engine.risk.dcc_garch import DCCGARCH
-            from quant_nanggroe.engine.risk.thesis_drift_guard import ThesisDriftGuard
             from quant_nanggroe.engine.cot import COTAnalyzer
+            from quant_nanggroe.engine.risk.dcc_garch import DCCGARCH
+            from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
+            from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchConfig
+            from quant_nanggroe.engine.risk.position_sizing import PositionSizer
+            from quant_nanggroe.engine.risk.thesis_drift_guard import ThesisDriftGuard
             initial_equity = 10000.0
             if self.db is not None:
                 try:
@@ -772,7 +772,7 @@ class AutomatedBacktestRunner:
     
     def _lazy_init(self):
         try:
-            from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+            from quant_nanggroe.engine.backtest.engine import BacktestEngine
             self._engine = BacktestEngine()
             log.info("BacktestEngine loaded")
         except Exception as e:

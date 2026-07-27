@@ -32,15 +32,15 @@ router = APIRouter(prefix="/colony", tags=["colony"])
 
 _HAS_COLONY_ENGINE = False
 try:
+    from quant_nanggroe.engine.colony.message_bus import MessageBus  # noqa: F401 — used via orchestrator.bus
     from quant_nanggroe.engine.colony.orchestrator import ColonyOrchestrator
     from quant_nanggroe.engine.colony.tasks import Task, TaskStatus, TaskType
     from quant_nanggroe.engine.colony.worker import (  # noqa: F401 — used in _create_default_orchestrator
-        StrategyWorker,
-        RiskWorker,
         DataWorker,
         ExecutionWorker,
+        RiskWorker,
+        StrategyWorker,
     )
-    from quant_nanggroe.engine.colony.message_bus import MessageBus  # noqa: F401 — used via orchestrator.bus
 
     _HAS_COLONY_ENGINE = True
 except ImportError:

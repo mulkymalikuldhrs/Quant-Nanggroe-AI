@@ -54,7 +54,7 @@ class SystemConfig:
             "enabled": True,
         }
         self.security = {
-            "api": {"authentication": {"enabled": False}},
+            "api": {"authentication": {"enabled": True}},
         }
         
         # Try to load YAML config if available

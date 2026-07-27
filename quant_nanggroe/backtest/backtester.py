@@ -12,13 +12,27 @@ Usage:
 """
 
 import json
+import logging
 import math
+import os
+import ssl
 import time
 import urllib.request
-import ssl
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List
+
+log = logging.getLogger(__name__)
+
+
+def _ssl_ctx():
+    verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = verify
+    ctx.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+    if not verify:
+        log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
+    return ctx
 
 
 class DataFetcher:
@@ -30,9 +44,7 @@ class DataFetcher:
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     def _request(self, url, timeout=30):
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        ctx = _ssl_ctx()
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "QNA/2.0")
         return urllib.request.urlopen(req, timeout=timeout, context=ctx)

@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v6.1.0 — Architecture
+# Quant Nanggroe AI v6.2.0 — Architecture
 
 ## Overview
 
@@ -6,7 +6,7 @@ Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedg
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      QNA v6.1.0 — Architecture                             │
+│                      QNA v6.2.0 — Architecture                             │
 │              Autonomous Quantitative Hedge Fund                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
@@ -22,32 +22,33 @@ Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedg
 │  │                        QUANT_NANGNGROE/                              │    │
 │  │                                                                      │    │
 │  │  ┌────────────────────────┐  ┌────────────────┐  ┌────────────────┐  │    │
-│  │  │ CAUSAL ENGINE 🆕       │  │ ENGINE         │  │ RISK (unified) │  │    │
+│  │  │ CAUSAL ENGINE          │  │ ENGINE         │  │ RISK (unified) │  │    │
 │  │  │  Causal Bias           │  │  22+ modules   │  │  constants.py  │  │    │
 │  │  │  Macro Surprise (FRED) │  │  Strategies    │  │  KillSwitch C5 │  │    │
 │  │  │  COT Tracker (CFTC)   │  │  Self-Aware    │  │  9-checkpoint  │  │    │
-│  │  │  SMT Divergence       │  │  Self-Evolve   │  │  DCC-GARCH 🆕  │  │    │
-│  │  │  Thesis Drift Guard   │  └────────┬────────┘  └────────┬───────┘  │    │
+│  │  │  SMT Divergence       │  │  Self-Evolve   │  │  DCC-GARCH     │  │    │
+│  │  │  Thesis Drift Guard   │  │  WalkForwardReg│  │  ✓ fractions   │  │    │
+│  │  │  CausalContext v6.2.0 │  └────────┬────────┘  └────────┬───────┘  │    │
 │  │  └────────────────────────┘          │                    │          │    │
 │  │                                      ▼                    ▼          │    │
 │  │                               ┌──────────────────────────────┐       │    │
-│  │                               │        PIPELINE 🆕 v6.0       │       │    │
+│  │                               │        PIPELINE v6.0          │       │    │
 │  │                               │  orchestrator / data / signal  │       │    │
-│  │                               │  execution / macro_context 🆕  │       │    │
-│  │                               │  (causal bias env var filter)  │       │    │
+│  │                               │  execution / macro_context    │       │    │
+│  │                               │  (CausalContext filter)       │       │    │
 │  │                               └──────────────┬───────────────┘       │    │
 │  │                                              │                        │    │
 │  │  ┌──────────────────┐  ┌─────────────────────▼────┐  ┌────────────┐  │    │
 │  │  │ HEDGE_FUND (v6)  │  │ DCC AUTO-FIT + THESIS    │  │ EXCHANGE   │  │    │
 │  │  │  core.py (10     │  │ DRIFT GUARD              │  │ 10 REST    │  │    │
-│  │  │  providers +     │  │ live_engine.py execute_  │  │ clients    │  │    │
-│  │  │  causal bias)    │  │ cycle() → update_corr()  │  │ lazy-wired │  │    │
+│  │  │  providers +     │  │ live_engine.py execute_   │  │ clients    │  │    │
+│  │  │  causal bias)    │  │ cycle() → update_corr()   │  │ lazy-wired │  │    │
 │  │  │  qna_strategies  │  │ → thesis_drift check     │  │ ccxt proxy │  │    │
 │  │  │  (200+ evolved)  │  └──────────────────────────┘  └────────────┘  │    │
 │  │  │  aggregator      │                                               │    │
 │  │  └──────────────────┘  ┌──────────────┐  ┌──────────────────┐       │    │
 │  │                        │ AGENTS       │  │ API (196 eps)  │
-│  │                        │  9+ special   │  │  Causal API 🆕 │
+│  │                        │  9+ special   │  │  Causal API    │
 │  │                        │  Council/Dbt  │  │  Telegram Gd   │
 │  │  ┌──────────────────┐  │  9+ special  │  │ FastAPI         │       │    │
 │  │  │ BACKTEST         │  │  Council/Dbt │  │ Telegram Guard  │       │    │
@@ -58,10 +59,12 @@ Quant Nanggroe AI (QNA) is an **institutional-grade autonomous quantitative hedg
 │  DEPLOYMENT:                                                                  │
 │    Source:  D:\repositories\Quant-Nanggroe-AI-worktree                       │
 │    Deploy:  E:\trading\quant_nanggroe\                                        │
-│    Creds:   MT5_LOGIN, MT5_PASSWORD env vars (NOT hardcoded)                 │
+│    Creds:   MT5_LOGIN, MT5_PASSWORD env vars (no plaintext YAML)             │
 │    Kill Sw: QNA_KILL_SWITCH_STATE_FILE (shared cross-process)                │
 │    DCC Env: QNA_DCC_MEAN_CORR, QNA_DCC_MEAN_VOL_PCT, QNA_DCC_N_ASSETS       │
-│    MSI Env: QNA_MSI_*, QNA_CAUSAL_BIAS_*                                     │
+│    MSI Env: QNA_MSI_*, QNA_CAUSAL_BIAS_* (overridden by CausalContext)       │
+│    SSL:     QNAI_SSL_VERIFY=1 (default verify, 0 to disable)                 │
+│    Encrypt: QNAI_ENCRYPTION_KEY for credentials at rest                      │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -94,19 +97,21 @@ Auto-browser disabled via `--no-browser` or `QNA_AUTO_OPEN=0`.
 
 Auto-routes between hedge, crypto, and agentic modes based on config. Default mode: hedge.
 
-### 2. Engine (`quant_nanggroe/engine/`) — 19 Modules
+### 2. Engine (`quant_nanggroe/engine/`) — 18 Modules
 
 | Module | Purpose |
 |--------|---------|
-| `strategies/` | 🔴 CANONICAL — 79+ registered via @StrategyRegistry.register |
+| `causal/` | Causal macro engine: bias, MSI (FRED), COT (CFTC), SMT, thesis drift, + **CausalContext** dataclass (v6.2.0) |
+| `strategies/` | 🔴 CANONICAL — 79+ registered via @WalkForwardRegistry.register |
 | `strategy/` | 🟡 LEGACY BRIDGE — backward-compat shim only (empty dir, re-export) |
+| `strategy/registry.py` | 🔵 WalkForwardRegistry (v6.2.0) — walk-forward metadata store (renamed from StrategyRegistry) |
 | `risk/` | 9-checkpoint constitutional risk gate, KillSwitch C5, RiskManager |
 | `risk/checks.py` | ConstitutionalRiskGuard (= RiskCheckGate alias) |
 | `risk/kill_switch.py` | C5 cross-process shared state, 3-level activation (thresholds from constants.py) |
 | `risk/constants.py` | **Single source of truth** for ALL constitutional limits (v6.0.0) |
-| `risk/manager.py` | RiskManager orchestration |
-| `backtest/` | Walk-forward, Monte Carlo, CPCV |
-| `execution/` | TWAP/VWAP order slicing, Builder, Almgren-Chriss |
+| `risk/manager.py` | RiskManager orchestration — **PnL units unified to fractions** (v6.2.0) |
+| `backtest/` | Walk-forward, Monte Carlo, CPCV — **NameError + return-None fixed** (v6.2.0) |
+| `execution/` | TWAP/VWAP order slicing, Builder, Almgren-Chriss — **set_broker_handle() public** (v6.2.0) |
 | `agentic/` | Autonomous agent pipeline (LangGraph orchestration) |
 | `portfolio/` | Portfolio construction, Kelly sizing, risk parity |
 | `factors/` | Alpha factor library |
@@ -115,7 +120,6 @@ Auto-routes between hedge, crypto, and agentic modes based on config. Default mo
 | `correction.py` | Error recording and lesson-based prevention |
 | `autoswitch.py` | Strategy auto-switching logic |
 | `registry.py` | Auto-discovery component registry |
-| `standalone.py` | Zero-dependency autonomous runner |
 | `engine_production_bridge.py` | Production bridge with C5 kill switch init |
 
 ### 3. Strategy System — StrategyConsolidationGate
@@ -126,7 +130,7 @@ Auto-routes between hedge, crypto, and agentic modes based on config. Default mo
 │                                                                │
 │  StrategyConsolidationGate:                                     │
 │                                                                │
-│  CANONICAL PATH (v6.0.0)                                       │
+│  CANONICAL PATH (v6.2.0)                                       │
 │    quant_nanggroe/engine/strategies/                            │
 │    ├── registry.py            ← StrategyRegistry + @register   │
 │    ├── smc_strategy.py        ← @StrategyRegistry.register     │
@@ -139,11 +143,17 @@ Auto-routes between hedge, crypto, and agentic modes based on config. Default mo
 │    ├── choppiness_index.py    ← @StrategyRegistry.register     │
 │    └── +30 more .py files     ← Signal adapters, wrappers      │
 │                                                                │
+│  WALK-FORWARD METADATA STORE (v6.2.0 rename)                   │
+│    quant_nanggroe/engine/strategy/registry.py                  │
+│    └── WalkForwardRegistry    ← Renamed from StrategyRegistry  │
+│                                (disambiguates from class       │
+│                                 registry above)                │
+│                                                                │
 │  LEGACY BRIDGE (backward compat shim)                          │
 │    quant_nanggroe/engine/strategy/strategies/                  │
 │    └── __init__.py            ← Re-exports from canonical      │
 │                                                                │
-│  79+ registered strategies in canonical path     │
+│  79+ registered strategies in canonical path                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -291,23 +301,27 @@ Market Data (MT5/CCXT / exchange REST clients)
 
 | Metric | Value |
 |--------|-------|
-| Version | 6.1.0 |
-| Architecture Health | 9.5/10 — All quantitative engines real, no mock |
+| Version | 6.2.0 |
+| Architecture Health | 9.7/10 — `__getattr__` removed, `standalone` deleted, no mock |
+| Security | `QNAI_SSL_VERIFY` env guard, `.secrets-local/` deleted, env-var credentials |
+| PnL Unit Convention | Fractions (0-1) unified — RiskManager + KillSwitch agree |
+| Strategy Registry Naming | `WalkForwardRegistry` — disambiguated from class registry |
+| Strategy Evolver | Real backtest via `WalkForwardAnalyzer.analyze_strategy()` |
 | Single Entry Point | `qna.py` (unified mode default) |
-| UnifiedPipeline | `pipeline/` module — auto mode-routing + macro_context 🆕 |
-| Causal Engine | 6 modules + CME provider + DCCState singleton 🆕 |
-| Causal Engine API | **15+ endpoints** 🆕 — full REST access to all causal modules |
-| Dashboard | **Unified HTML dashboard** 🆕 — Tactical Gold palette, auto-refresh |
+| UnifiedPipeline | `pipeline/` module — auto mode-routing + macro_context |
+| Causal Engine | 6 modules + CME provider + DCCState singleton + **CausalContext** dataclass |
+| Causal Engine API | **15+ endpoints** — full REST access to all causal modules |
+| Dashboard | **Unified HTML dashboard** — Tactical Gold palette, auto-refresh |
 | DCC-GARCH | Dynamic correlation + auto-fit + DCCState shared state + 47 unit tests |
-| Pipeline Orphans | **macro_context.py fixed** 🆕 — orphaned imports replaced
-| Strategy Registration | 79+ via @StrategyRegistry.register |
-| Hedge Fund | Submodules + causal bias on all 200+ providers 🆕 |
+| Pipeline Orphans | **All fixed** — macro_context.py orphaned imports fixed
+| Strategy Registration | 79+ via @WalkForwardRegistry.register |
+| Hedge Fund | Submodules + causal bias on all 200+ providers |
 | Risk Limits | Unified single source `constants.py` + DCC-GARCH correlation |
 | Exchange Clients | 10 REST clients lazy-wired + ccxt proxy |
 | Kill Switch | C5 cross-process shared state, fail-closed |
 | Risk Gates | 9-checkpoint + constitutional limits + thesis drift guard |
 | Telegram Guard | Config-validated at init |
-| MT5 Bridge | via set_broker_handle() (live = default, paper = opt-in) |
+| MT5 Bridge | via `ExecutionManager.set_broker_handle()` (v6.2.0 public API) |
 | API Endpoints | 181 FastAPI |
 | Python Files | 2,200+ total |
 | Documentation | 50+ docs files + graphify + updated README/CHANGELOG/ARCHITECTURE |
@@ -318,13 +332,15 @@ Market Data (MT5/CCXT / exchange REST clients)
 |-------|-----------|
 | Language | Python 3.11+ |
 | Package Manager | `uv` (not pip, not poetry) |
-| API Server | FastAPI (196+ endpoints) — including **causal engine** 🆕 |
-| Pipeline | `quant_nanggroe/pipeline/` — auto mode-routing 🆕 |
+| API Server | FastAPI (196+ endpoints) — including causal engine |
+| Pipeline | `quant_nanggroe/pipeline/` — auto mode-routing |
 | Dashboard | Next.js + React + Recharts + Zustand |
-| Broker | MetaTrader5 (env vars for credentials) |
+| Broker | MetaTrader5 via `ExecutionManager.set_broker_handle()` (env vars only, no YAML) |
 | Crypto | CCXT + 10 REST clients (lazy-wired) |
-| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager, unified constants |
-| Telegram | Config-validated (`validate_telegram_config` + `ensure_telegram`) 🆕 |
+| Risk Engine | ConstitutionalRiskGuard, KillSwitch C5, RiskManager, unified constants, unified PnL fractions |
+| Telegram | Config-validated (`validate_telegram_config` + `ensure_telegram`) |
+| SSL | `QNAI_SSL_VERIFY` env guard (default verify) |
+| Encryption | `QNAI_ENCRYPTION_KEY` for credentials at rest |
 | Testing | pytest (107/108 pass — 1 ccxt skip) |
 
 ## Known Architecture Issues
@@ -338,4 +354,20 @@ Market Data (MT5/CCXT / exchange REST clients)
 
 ---
 
-*v6.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+## v6.2.0 Resolved Architecture Issues
+
+| Issue | Resolution |
+|-------|-----------|
+| `__getattr__` masking phantom imports in `engine/__init__.py` | Removed — explicit imports only |
+| `standalone.py` stale dead entry point | Deleted — superseded by `qna.py` |
+| `StrategyRegistry` name conflict (two classes, same name) | Renamed walk-forward variant to `WalkForwardRegistry` |
+| `attach_mt5_handle()` typo — MT5 handle never attached to RiskManager | `set_broker_handle()` public method, builder uses correct API |
+| RiskManager/KillSwitch PnL unit mismatch | Unified to fractions (0-1), `/100.0` removed |
+| StrategyEvolver mock backtest (random jitter) | Replaced with real `WalkForwardAnalyzer.analyze_strategy()` |
+| `ssl.CERT_NONE` in 10 files — silent SSL bypass | `QNAI_SSL_VERIFY` env guard |
+| `.secrets-local/` with plaintext keys | Deleted, credentials via env vars only |
+| Causal engine wiring via env vars | `CausalContext` dataclass |
+
+---
+
+*v6.2.0 — Built with fury from Aceh, Indonesia 🇮🇩*

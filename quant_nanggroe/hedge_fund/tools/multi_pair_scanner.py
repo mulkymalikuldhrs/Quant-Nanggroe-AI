@@ -9,10 +9,10 @@ Server: ValetaxIntl-Live2 | Account: 372044706 (Demo QNA) | Leverage: 1:2000
 Status: ALL 53 pairs fully ENABLED (both buy & sell) as of last live check
 """
 
-import MetaTrader5 as mt5
-import sys
 import json
-from datetime import datetime
+import sys
+
+import MetaTrader5 as mt5
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
 MT5_PATH = "C:\\Program Files\\MetaTrader 5\\terminal64.exe"

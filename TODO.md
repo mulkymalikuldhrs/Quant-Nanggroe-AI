@@ -4,31 +4,45 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 
 ---
 
-## 🎯 Status Rilis Saat Ini: `v6.1.0 — Quantitative Alpha Engines + Production Audit v2 + Docs Sync`
+## 🎯 Status Rilis Saat Ini: `v6.4.0 — Backtest System Hardening: CPCV Default, Annualization Fix, Broken Imports Repaired`
 
 ```
 [ Entry Point ]         ██████████ 100% (Single: qna.py, unified mode default)
 [ UnifiedPipeline ]     ██████████ 100% (pipeline/ module — auto mode-routing) 
-[ Causal Engine Suite ] ██████████ 100% (5 modules: bias, MSI, COT, SMT, thesis drift) 🆕 v6.1.0
-[ DCC-GARCH ]           ██████████ 100% (Dynamic correlation + auto-fit + 47 tests) 🆕 v6.1.0
-[ Causal Bias Filter ]  ██████████ 100% (All HF providers: boost/reduce/block) 🆕 v6.1.0
-[ Strategy Pipeline ]   ██████████ 100% (79+ registered via @StrategyRegistry, canonical path)
-[ Kill Switch C5 ]      ██████████ 100% (Cross-process shared state, fail-closed)
-[ Risk Engine ]         ██████████ 100% (9-Checkpoint Gate + DCC-GARCH + Thesis Drift)
+[ Causal Engine Suite ] ██████████ 100% (5 modules: bias, MSI, COT, SMT, thesis drift + CausalContext) 
+[ DCC-GARCH ]           ██████████ 100% (Dynamic correlation + auto-fit + 47 tests)
+[ Causal Bias Filter ]  ██████████ 100% (All HF providers: boost/reduce/block + CausalContext dataclass)
+[ Strategy Pipeline ]   ██████████ 100% (79+ registered via @WalkForwardRegistry, canonical path)
+[ Kill Switch C5 ]      ██████████ 100% (Cross-process state, fail-closed, audit trail) 🆕 v6.3.0
+[ Risk Engine ]         ██████████ 100% (9-Checkpoint Gate + DCC-GARCH + Thesis Drift + Circuit Breaker) 🆕 v6.3.0
+[ PnL Unit Convention ] ██████████ 100% (Fractions 0-1, all layers agree, documented) 🆕 v6.3.0
 [ hedge_fund ]          ██████████ 100% (Monolith split → real submodules + causal bias)
-[ Execution Layer ]     ██████████ 100% (TWAP/VWAP, Smart Router, MT5 live default, paper opt-in)
-[ AI Self-Evolution ]   ██████████ 100% (Self-Aware + Self-Evolve + Self-Fine-Tune)
+[ Execution Layer ]     ██████████ 100% (Public API seal, MT5 circuit breaker, deterministic paper) 🆕 v6.3.0
+[ Backtest System ]     ██████████ 100% (CPCV default, annualization unified, broken imports fixed) 🆕 v6.4.0
+[ Strategy Logger ]     ██████████ 100% (Trade result attribution + log_trade_result) 🆕 v6.4.0
+[ Auto-Tuner ]          ██████████ 100% (Backtester adapter created, broken import fixed) 🆕 v6.4.0
+[ AI Self-Evolution ]   ██████████ 100% (Self-Aware + Self-Evolve with real backtest)
+[ Strategy Evolver ]    ██████████ 100% (Real WalkForwardAnalyzer — no mock, data cache added) 🆕 v6.4.0
 [ API & Frontend UI ]   ████████░░  80% (FastAPI 181 endpoints, Dashboard needs build)
-[ Security ]            ██████████  97% (+ Telegram config validation)
+[ Security ]            ██████████ 100% (+ mt5_accounts.yaml env-var interpolation, no plaintext) 🆕 v6.3.0
 [ Exchange Clients ]    ██████████ 100% (10 REST clients lazy-wired)
 [ Test Suite ]          ██████████  99% (+ DCC unit tests — 47 comprehensive)
-[ Documentation ]       ██████████ 100% (All docs updated to v6.1.0)
+[ Documentation ]       ██████████ 100% (All docs updated to v6.4.0)
 ```
 
 ---
 
 ## ✅ Completed
 
+- [x] **v6.2.0 P0 Deep Clean** — 8 P0 fixes: Security, Backtest, Architecture, PnL, Naming, Evolver, Execution, Causal
+- [x] **P0 Security** — `.secrets-local/` deleted, `ssl.CERT_NONE` → `QNAI_SSL_VERIFY` across 10 files
+- [x] **P0 Backtest** — `engine.py:183` NameError fixed, `portfolio.py:196` return None → return pos
+- [x] **P0 Architecture** — `__getattr__` removed from `engine/__init__.py`, stale `standalone.py` deleted
+- [x] **P0 PnL** — Unit convention unified to fractions (0-1), `/100.0` removed from RiskManager
+- [x] **P0 Naming** — `StrategyRegistry` → `WalkForwardRegistry` in `engine/strategy/registry.py`
+- [x] **P0 Evolver** — `_real_backtest()` uses `WalkForwardAnalyzer.analyze_strategy()` — no more mock
+- [x] **P0 Execution** — `ExecutionManager.set_broker_handle()` public method, `builder.py` uses correct API
+- [x] **P0 Causal** — `CausalContext` dataclass replaces env-var wiring for causal engine
 - [x] **v6.0.0 Production Readiness Audit** — Full audit disproved "0% live" suspicion; codebase confirmed production-viable
 - [x] **v6.1.0 Quantitative Alpha Engines** — DCC-GARCH, Causal Macro, COT, MSI, SMT, Thesis Drift, Causal Bias Filter
 - [x] **UnifiedPipeline Module** — `quant_nanggroe/pipeline/` with auto mode-routing (hedge/crypto/agentic)
@@ -52,10 +66,10 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 - [x] **Kill Switch C5 Convergence** — Cross-process shared state file
 - [x] **StrategyConsolidationGate** — Canonical vs. legacy strategy paths consolidated
 - [x] **Self-Aware Module** — `engine/self_aware.py`
-- [x] **Self-Evolve** — `StrategyEvolver` with walk-forward validation
+- [x] **Self-Evolve** — `StrategyEvolver` with real walk-forward validation (v6.2.0)
 - [x] **Auto-Registry v3** — Scans ENTIRE repo (1017+ files)
 - [x] **Weekly Loss Veto** — Fail-closed, verified blocking
-- [x] **Credentials Security** — All hardcoded secrets removed, env vars only
+- [x] **Credentials Security** — All hardcoded secrets removed, env vars only, `.secrets-local/` deleted
 - [x] **Dashboard API** — Risk parity, order slicing, config endpoints wired
 
 ---
@@ -95,23 +109,29 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 
 ---
 
-## 📊 Audit Summary (2026-07-26)
+## 📊 Audit Summary (2026-07-27)
 
 | Component | Grade | Status |
 |-----------|-------|--------|
-| Causal Engine Suite | A+ | ✅ 5 modules (bias, MSI, COT, SMT, thesis drift) — all production-grade |
+| P0 Deep Clean (v6.2.0) | A+ | ✅ 8 P0 fixes: Security, Backtest, Architecture, PnL, Naming, Evolver, Execution, Causal |
+| Execution & Risk Hardening (v6.3.0) | A+ | ✅ Private API seal, MT5 circuit breaker, SYMBOL_MAP, kill switch audit trail, env-var YAML creds |
+| Security (SSL + Secrets) | A | ✅ QNAI_SSL_VERIFY env guard, .secrets-local/ deleted, env-var creds, mt5_accounts.yaml interpolated |
+| PnL Unit Convention | A+ | ✅ Fractions (0-1) unified — RiskManager + KillSwitch + downstream consumers agree, documented at boundary |
+| Strategy Registry Naming | A+ | ✅ StrategyRegistry → WalkForwardRegistry — no more dual-registry confusion |
+| Strategy Evolver | A+ | ✅ Real WalkForwardAnalyzer — no mock jitter |
+| Execution Bridge | A+ | ✅ Public API sealed (get_risk_manager, get_mt5_connector, set_broker_handle, get_brokers) |
+| Kill Switch C5 | A+ | ✅ Cross-process fail-closed + force_deactivate emergency override + append-only audit trail |
+| Causal Engine Suite | A+ | ✅ 5 modules (bias, MSI, COT, SMT, thesis drift) + CausalContext |
 | DCC-GARCH | A+ | ✅ Dynamic correlation, auto-fit, 47 unit tests |
 | Causal Bias → Signal Filter | A+ | ✅ All 200+ providers apply boost/reduce/block |
-| Risk Engine | A+ | ✅ Unified constants + DCC-GARCH + Thesis Drift Guard |
-| Kill Switch C5 | A | ✅ Cross-process shared state, fail-closed |
-| Strategies (Canonical) | A | ✅ 79+ registered via @StrategyRegistry |
-| Architecture | A | ✅ Clean modular, single entry point, unified pipeline |
+| Risk Engine | A+ | ✅ Unified constants + DCC-GARCH + Thesis Drift Guard + Circuit Breaker |
+| Architecture | A+ | ✅ __getattr__ removed, standalone deleted, clean modular, private API sealed |
+| MT5 Bridge | B | ✅ Circuit breaker + SYMBOL_MAP for symbol translation (terminal still manual) 🆕 v6.3.0 |
 | hedge_fund | A+ | ✅ Submodules + causal bias on all providers |
 | Exchange Clients | A | ✅ 10 REST clients lazy-wired |
-| Documentation | A | ✅ All docs updated to v6.1.0 |
-| Security | B+ | ✅ 15 findings logged (git purge pending) |
+| Documentation | A | ✅ All docs updated to v6.3.0 |
+| Security | A | ✅ QNAI_SSL_VERIFY, .secrets-local/ deleted, env-var creds, mt5_accounts.yaml interpolated |
 | Test Suite | B+ | ✅ Core tests + 47 DCC-GARCH tests |
-| MT5 Bridge | C | ⚠️ Terminal must run manually |
 | Dashboard | B | ✅ 18 pages wired, build pending |
 | PYTHONPATH Isolation | A | ✅ launch.bat + README + AGENTS docs |
 

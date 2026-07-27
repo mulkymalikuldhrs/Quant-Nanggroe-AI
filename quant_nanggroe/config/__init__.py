@@ -7,6 +7,5 @@ __all__ = [
     'settings',
 ]
 
-from . import logging_config
-from . import settings
+from . import logging_config, settings
 from .settings import Settings, get_settings

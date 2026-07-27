@@ -14,12 +14,12 @@ Usage:
     signal = analyzer.evaluate("GC1!")  # Returns signal dict
 """
 
-from quant_nanggroe.engine.cot.cot_fetcher import COTFetcher
 from quant_nanggroe.engine.cot.cot_analyzer import (
-    COTAnalyzer,
     CME_TO_COT_MAP,
     POSITIONING_SIGNAL,
+    COTAnalyzer,
 )
+from quant_nanggroe.engine.cot.cot_fetcher import COTFetcher
 
 __all__ = [
     "COTFetcher",

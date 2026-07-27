@@ -2,11 +2,10 @@
 Market Context — fundamental + sentiment data untuk adaptive trading
 DXY, Yield, COT, Currency Strength, Sentiment, News Impact
 """
-import sys, json, logging
+import json
+import logging
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
-import urllib.request
-import urllib.parse
 
 _HF_TOOLS_DIR = Path(__file__).resolve().parent
 SRC = _HF_TOOLS_DIR
@@ -89,7 +88,8 @@ def get_cot():
     
     # Try CFTC Socrata API (all futures including gold/silver)
     try:
-        import urllib.request, json, re
+        import json
+        import urllib.request
         url = "https://publicreporting.cftc.gov/resource/yywx-7w5s.json?$limit=20"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -151,8 +151,6 @@ def get_hawkish_dovish():
     cached = _cached('hawk_dove', 86400)
     if cached: return cached
     try:
-        import urllib.request, json, re
-        from urllib.parse import quote
         # Fetch latest Fed fund futures to gauge sentiment
         import yfinance as yf
         fed_futures = yf.Ticker("ZF=F")
@@ -183,7 +181,6 @@ def get_geopolitics():
     cached = _cached('geopolitics', 3600)
     if cached: return cached
     try:
-        import urllib.request, json
         # Use GDACS (Global Disaster Alert) or simple news scoring
         # For a lightweight approach, sample a known news feed
         score = 30  # default moderate-low
@@ -277,7 +274,8 @@ def economic_calendar(days=3):
     if cached: return cached
     result = {"events": [], "next_event": None, "total": 0}
     try:
-        import urllib.request, json
+        import json
+        import urllib.request
         url = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
         resp = urllib.request.urlopen(url, timeout=10)
         data = json.loads(resp.read())

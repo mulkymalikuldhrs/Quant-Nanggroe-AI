@@ -13,8 +13,8 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from ..types import AgentSpec, AgentType, Task
 from .base import BaseAgent
-from ..types import AgentSpec, AgentType, Task, TaskResult
 
 logger = logging.getLogger(__name__)
 

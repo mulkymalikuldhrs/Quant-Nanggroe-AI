@@ -12,7 +12,7 @@ Ported from ai-hedge-fund/src/strategies/unified_retail_strategy.py (MarketProfi
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd

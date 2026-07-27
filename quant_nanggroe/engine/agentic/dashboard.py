@@ -11,13 +11,12 @@ Runs as a simple terminal dashboard or API endpoint.
 """
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from quant_nanggroe.engine.agentic.voting import SignalVotingSystem, Signal, Bias
 from quant_nanggroe.engine.agentic.adapters import ALL_ADAPTERS
+from quant_nanggroe.engine.agentic.voting import SignalVotingSystem
 from quant_nanggroe.engine.risk.enhanced_analytics import EnhancedRiskAnalytics
 from quant_nanggroe.engine.scanner.multi_pair import MultiPairScanner
 

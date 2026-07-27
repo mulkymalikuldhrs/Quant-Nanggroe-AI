@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE, MAX_POSITION_SIZE_PCT
+from quant_nanggroe.engine.risk.constants import MAX_POSITION_SIZE_PCT, MAX_RISK_PER_TRADE
 
 
 @dataclass

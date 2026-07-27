@@ -113,8 +113,11 @@ class BenchmarkManager:
         cov_matrix = np.cov(sr.values, br.values)
         beta = cov_matrix[0, 1] / (cov_matrix[1, 1] + 1e-10) if cov_matrix[1, 1] > 0 else 1.0
 
-        # Alpha (annualized)
-        alpha = float((sr.mean() - br.mean()) * bars_per_year)
+        # Alpha (annualized) — CAPM: alpha = (R_strat - Rf) - beta * (R_bench - Rf)
+        rfr_per_bar = risk_free_rate / bars_per_year
+        excess_strat = sr.mean() - rfr_per_bar
+        excess_bench = br.mean() - rfr_per_bar
+        alpha = float((excess_strat - beta * excess_bench) * bars_per_year)
 
         # Strategy total return
         strat_total = float((1 + sr).prod() - 1)

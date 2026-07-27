@@ -41,8 +41,8 @@ async def ensemble_vote(req: VoteRequest):
     tradingagents, mtf) with the primary strategy signal using weighted consensus.
     """
     try:
-        from quant_nanggroe.engine.agentic.voting import SignalVotingSystem, Signal, Bias
         from quant_nanggroe.engine.agentic.adapters import ALL_ADAPTERS, fetch_all_signals
+        from quant_nanggroe.engine.agentic.voting import Bias, Signal, SignalVotingSystem
 
         voter = SignalVotingSystem()
         bias_map = {"buy": Bias.BUY, "sell": Bias.SELL, "neutral": Bias.NEUTRAL}

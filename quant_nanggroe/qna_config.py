@@ -8,10 +8,9 @@ All paths are relative to PROJECT_ROOT for full portability.
 from __future__ import annotations
 
 import os
-import platform
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 __all__ = [
     "PROJECT_ROOT", "DATA_DIR", "LOG_DIR", "CONFIG_DIR",

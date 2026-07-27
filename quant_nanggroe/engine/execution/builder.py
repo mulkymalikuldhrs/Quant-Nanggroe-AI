@@ -25,6 +25,7 @@ _CONFIG_PATH = os.path.join(
 
 _em_singleton = None
 _em_lock = threading.Lock()
+_connection_tasks: list = []  # Track async broker connection tasks for monitoring
 
 
 def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
@@ -79,10 +80,9 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                         em.add_broker(MT5ExecutionBroker(mt5), primary=is_live)
                         # P0 fix: give RiskManager the live MT5 handle so the
                         # daily/weekly-loss veto reads REALIZED PnL, not 0.0.
-                        # (method is set_broker_handle — NOT attach_mt5_handle.
-                        #  Previous code called attach_mt5_handle (doesn't exist),
-                        #  so the handle was NEVER attached and PnL stayed 0.0.)
-                        em._risk_manager.set_broker_handle(mt5)
+                        # Use the public set_broker_handle() method — NOT
+                        # em._risk_manager (private attribute access).
+                        em.set_broker_handle(mt5)
                         wired += 1
                         logger.info("LIVE MT5 wired: %s (primary=%s)", acc.get("name"), is_live)
                     else:
@@ -91,26 +91,35 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                     logger.warning("allow_live=True but no MT5 connected — paper only, no market trades")
             except Exception as exc:
                 logger.error("build_execution_manager live wiring failed: %s", exc)
+                raise
 
-        # Connect all brokers — PaperBroker connects synchronously, others async
+        # Connect all brokers — PaperBroker connects synchronously, others async with tracking
         import asyncio
-        for b in em._brokers.values():
+
+        from quant_nanggroe.engine.execution.brokers.paper import PaperBroker as _PaperBroker
+        for b in em.get_brokers().values():
             try:
                 # PaperBroker: connect synchronously (no network)
-                if type(b).__name__ == "PaperBroker":
+                if isinstance(b, _PaperBroker):
                     b._connected = True
                     logger.info("PaperBroker: Connected (simulated)")
                 else:
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            asyncio.ensure_future(b.connect())
-                        else:
-                            loop.run_until_complete(b.connect())
-                    except RuntimeError:
-                        pass  # will connect lazily on first order
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        task = asyncio.ensure_future(b.connect())
+                        _connection_tasks.append(task)
+                        task.add_done_callback(lambda t: logger.info(
+                            "Broker %s async connect completed: success=%s",
+                            getattr(b, "name", "?"),
+                            not t.cancelled() and not t.exception(),
+                        ))
+                    else:
+                        loop.run_until_complete(b.connect())
             except Exception as exc:
                 logger.warning("broker %s connect failed: %s", getattr(b, "name", "?"), exc)
+
+        if _connection_tasks:
+            logger.info("Broker async connection tasks: %d pending", len(_connection_tasks))
 
         _em_singleton = em
         return _em_singleton

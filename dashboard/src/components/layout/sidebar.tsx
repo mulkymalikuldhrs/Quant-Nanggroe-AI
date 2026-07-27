@@ -35,6 +35,7 @@ const navItems: NavItem[] = [
   { href: "/memory", label: "Memory", icon: Memory, category: "analysis" },
   { href: "/colony", label: "Colony", icon: Network, category: "analysis" },
   { href: "/qna-status", label: "QNA Status", icon: Activity, category: "analysis" },
+  { href: "/orderflow", label: "Order Flow", icon: BarChart3, category: "trading", badge: "🔥" },
   { href: "/security", label: "Security", icon: Shield, category: "system" },
   { href: "/tools", label: "Tools", icon: Cog, category: "system" },
   { href: "/channels", label: "Channels", icon: Radio, category: "system" },

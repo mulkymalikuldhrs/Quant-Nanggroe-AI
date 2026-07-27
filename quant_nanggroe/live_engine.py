@@ -10,11 +10,14 @@ Usage:
   python3 live_engine.py [start|stop|restart|status|dashboard]
 """
 
-import os, sys, json, time, random, math, logging, sqlite3
-import urllib.request, urllib.error, ssl
+import json
+import logging
+import os
+import sqlite3
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 # GLOBAL FLAG: Route all strategy signal generation through the adaptive pipeline
 # (loads ALL 73+ registered strategies via registry, not just 4 hardcoded).
@@ -26,16 +29,27 @@ LOG_DIR = QNA_DIR / "logs"
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 
+from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline
+from quant_nanggroe.engine.risk.constants import (
+    ASSET_ALLOCATIONS,
+    CLEANUP_INTERVAL,
+    DCC_UPDATE_INTERVAL,
+    HEARTBEAT_INTERVAL,
+    MAX_DRAWDOWN_PCT,
+    MAX_POSITION_SIZE_PCT,
+    MAX_POSITIONS_TOTAL,
+    REBALANCE_THRESHOLD,
+    REPORT_INTERVAL,
+    TP_TARGETS,
+    TRAILING_STOP_PCT,
+)
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
 from quant_nanggroe.engine_bridge import EnginePriceProvider, EngineRiskManager, StalePositionAnalyzer
 from quant_nanggroe.engine_production_bridge import create_production_engine
-from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline, LiveSignal
-from quant_nanggroe.strategies.tsmom import TSMOM
-from quant_nanggroe.strategies.trend_follow import TrendFollow
+from quant_nanggroe.notifier import format_error_message, format_heartbeat, send_telegram
 from quant_nanggroe.providers.data_manager import DataManager
-from quant_nanggroe.notifier import send_telegram, format_heartbeat, format_error_message
-from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline, LiveSignal
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, configure_kill_switch_file
-from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN_PCT, MAX_POSITION_SIZE_PCT  # P0 FIX: single source of truth
+from quant_nanggroe.strategies.trend_follow import TrendFollow
+from quant_nanggroe.strategies.tsmom import TSMOM
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,39 +61,35 @@ logging.basicConfig(
 )
 log = logging.getLogger("QNA-Live")
 
-# TODO: Asset allocations should come from config, not hardcoded here
+# Asset allocations sourced from constants.py (single source of truth).
 ASSETS = [
-    {"symbol": "BTCUSDT",    "coin_gecko_id": "bitcoin",      "allocation": 0.25},
-    {"symbol": "ETHUSDT",    "coin_gecko_id": "ethereum",     "allocation": 0.18},
-    {"symbol": "SOLUSDT",    "coin_gecko_id": "solana",       "allocation": 0.14},
-    {"symbol": "BNBUSDT",    "coin_gecko_id": "binancecoin",  "allocation": 0.11},
-    {"symbol": "AVAXUSDT",   "coin_gecko_id": "avalanche-2",  "allocation": 0.08},
-    {"symbol": "LINKUSDT",   "coin_gecko_id": "chainlink",     "allocation": 0.08},
-    {"symbol": "XRPUSDT",    "coin_gecko_id": "ripple",       "allocation": 0.08},
-    {"symbol": "ADAUSDT",    "coin_gecko_id": "cardano",      "allocation": 0.08},
+    {"symbol": sym, "coin_gecko_id": cg_id, "allocation": alloc}
+    for sym, cg_id, alloc in [
+        ("BTCUSDT", "bitcoin", ASSET_ALLOCATIONS["BTCUSDT"]),
+        ("ETHUSDT", "ethereum", ASSET_ALLOCATIONS["ETHUSDT"]),
+        ("SOLUSDT", "solana", ASSET_ALLOCATIONS["SOLUSDT"]),
+        ("BNBUSDT", "binancecoin", ASSET_ALLOCATIONS["BNBUSDT"]),
+        ("AVAXUSDT", "avalanche-2", ASSET_ALLOCATIONS["AVAXUSDT"]),
+        ("LINKUSDT", "chainlink", ASSET_ALLOCATIONS["LINKUSDT"]),
+        ("XRPUSDT", "ripple", ASSET_ALLOCATIONS["XRPUSDT"]),
+        ("ADAUSDT", "cardano", ASSET_ALLOCATIONS["ADAUSDT"]),
+    ]
 ]
 ASSET_CG_MAP = {a["symbol"]: a["coin_gecko_id"] for a in ASSETS}
 ASSET_SYMBOLS = [a["symbol"] for a in ASSETS]
 CG_IDS = ",".join(a["coin_gecko_id"] for a in ASSETS)
 
-# TODO: TP targets should come from config, not hardcoded here
-TP_TARGETS = {
-    "SMC": 0.05,
-    "Momentum": 0.08,
-    "MeanReversion": 0.04,
-    "Grid": 0.03,
-    "TrendStrength": 0.06,
-}
-# TODO: Risk limits should use constants.py, not hardcoded values here
-TRAILING_STOP_PCT = 0.03
-REBALANCE_THRESHOLD = 0.05
-MAX_DRAWDOWN = MAX_DRAWDOWN_PCT  # P0 FIX: was 0.15 (15%), constants says 0.10 (10%)
-MAX_POSITION_PCT = MAX_POSITION_SIZE_PCT  # P0 FIX: was 0.25 (25%), constants says 0.10 (10%)
-MAX_POSITIONS_TOTAL = 3
-HEARTBEAT_INTERVAL = 10
-CLEANUP_INTERVAL = 10
-REPORT_INTERVAL = 5
-DCC_UPDATE_INTERVAL = 10    # re-fit DCC-GARCH correlation every 10 cycles
+# TP targets sourced from constants.py.
+TP_TARGETS = TP_TARGETS
+TRAILING_STOP_PCT = TRAILING_STOP_PCT
+REBALANCE_THRESHOLD = REBALANCE_THRESHOLD
+MAX_DRAWDOWN = MAX_DRAWDOWN_PCT
+MAX_POSITION_PCT = MAX_POSITION_SIZE_PCT
+MAX_POSITIONS_TOTAL = MAX_POSITIONS_TOTAL
+HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL
+CLEANUP_INTERVAL = CLEANUP_INTERVAL
+REPORT_INTERVAL = REPORT_INTERVAL
+DCC_UPDATE_INTERVAL = DCC_UPDATE_INTERVAL
 
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
@@ -632,8 +642,8 @@ class LiveEngine:
         Runs every DCC_UPDATE_INTERVAL cycles.
         """
         try:
-            import pandas as pd
             import numpy as np
+            import pandas as pd
 
             # Gather close prices for all available assets
             close_data: dict[str, list[float]] = {}
@@ -689,11 +699,10 @@ class LiveEngine:
         """Phase A: reconcile open positions in ledger with broker (MT5 or paper)
         so the engine does not double-open when restarted live."""
         try:
-            # Only meaningful when a live/paper broker is wired
             if not hasattr(self, "_exec") or self._exec is None:
                 return
-            # MT5 path: pull live positions into ledger (idempotent)
-            mt5 = getattr(self._exec, "_mt5", None)
+            # Use public API — not self._exec._mt5 (private, always None)
+            mt5 = self._exec.get_mt5_connector()
             if mt5 is not None and mt5.connected:
                 for p in mt5.get_positions():
                     sym = p.symbol

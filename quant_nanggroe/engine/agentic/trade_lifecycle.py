@@ -18,15 +18,10 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from quant_nanggroe.engine.analytics.pnl_evaluator import (
-        ClosedTrade, PnLEvaluator, TradeEvaluationResult,
-    )
-    from quant_nanggroe.engine.agentic.autonomous import (
-        SelfCorrection, SlaMetrics, LessonSeverity,
-    )
+    pass
 
 logger = logging.getLogger(__name__)
 

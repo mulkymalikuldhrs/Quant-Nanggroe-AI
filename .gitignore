@@ -19,22 +19,6 @@ build/
 venv/
 env/
 
-# ── Backups / Artifacts ──────────────────────────────────────────────
-backups/
-backup_env/
-
-# ── Context Cache ────────────────────────────────────────────────────
-context_cache/
-context_cache.json
-.env
-
-# ── Testing ───────────────────────────────────────────────────────────
-.pytest_cache/
-.coverage
-htmlcov/
-.mypy_cache/
-.ruff_cache/
-
 # ── IDE ───────────────────────────────────────────────────────────────
 .vscode/
 .idea/
@@ -43,22 +27,42 @@ htmlcov/
 *~
 .DS_Store
 
-# ── Jupyter ───────────────────────────────────────────────────────────
-.ipynb_checkpoints/
+# ── Testing ───────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-# ── Logs ──────────────────────────────────────────────────────────────
+# ── Data & Logs ───────────────────────────────────────────────────────
+/data/
 logs/
 *.log
-
-# ── Data ──────────────────────────────────────────────────────────────
-/data/
 *.db
 *.sqlite3
 dev_qna.db
 test_qna.db
+paper_state/
+/data/cached_ohlcv/
+
+# ── Secrets & Credentials ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.secrets-local/
+config/credentials.json
+config/mt5_accounts.yaml
+config/credentials.json.bak
+config/freqtrade.json
+*_key.pem
+*.p12
+*.jks
+metatrader-mcp.env
+*.mcp.env
 
 # ── Kill Switch State ─────────────────────────────────────────────────
 .kill_switch_state.json
+data/kill_switch_state.json
 
 # ── Docker ────────────────────────────────────────────────────────────
 docker-compose.override.yml
@@ -70,84 +74,44 @@ out/
 .nuxt/
 .cache/
 *.tsbuildinfo
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
 
-# ── Secrets ───────────────────────────────────────────────────────────
-.env
-.env.local
-.env.*.local
-*_key.pem
-*.p12
-*.jks
-
-# ── Build Artifacts ──────────────────────────────────────────────────
+# ── Build Artifacts ───────────────────────────────────────────────────
 *.tar.gz
 *.zip
 
 # ── OS ────────────────────────────────────────────────────────────────
 Thumbs.db
 Desktop.ini
-cluster2-repos/
 
-# Runtime state artifacts
-paper_state/
-/data/cached_ohlcv/
+# ── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
 
-# Large files (removed from tracking)
-skills/design/design-templates/
-packages/deer-flow/
-packages/crucix/
-Agentic_AI_System_Prompts.docx
-screenshots/
+# ── Context Cache ─────────────────────────────────────────────────────
+context_cache.json
+data/context_cache/
+
+# ── Generated / Copied (from other repos) ──────────────────────────
+graphify-out/
+docs/
+backups/
+
+# ── Archived & Removed ────────────────────────────────────────────────
+/archive/
+/docs/worklog.md
+
+# ── Hermes ────────────────────────────────────────────────────────────
+.hermes/desktop-attachments/
+
+# ── Media ─────────────────────────────────────────────────────────────
 *.mp4
 *.jpg
 *.docx
 
-# Archived legacy packages
-/archive/
-# Restructured paths (moved to subdirs)
-/quant_nanggroe/scripts/
-/quant_nanggroe/database/alembic.ini
-/docs/worklog.md
-
-
-# Graphify knowledge-graph artifacts (regenerable via: graphify update .)
-graphify-out/
-
-# Legacy backup from integration cleanup
-_removed_legacy/
-
-# Dhaher Labs external backup
-_dhaher_backups/
-D:/_dhaher_backups/
-# Windows artifacts
+# ── Runtime State ─────────────────────────────────────────────────────
+api_stderr.log
+api_stdout.log
 nul
 dashboard/nul
-
-# ── Generated / Copied (from other repos) ──────────────────────────
-graphify-out/
-skills/
-packages/
-ai_multicolony/
-docs/
-node_modules/
-
-# local secrets (real creds, never commit)
-.secrets-local/
-
-# QNA: never commit plaintext credentials (env-only via KeyVault)
-config/credentials.json
-config/mt5_accounts.yaml
-config/credentials.json.bak
-config/mt5_accounts.yaml
-
-# Hermes desktop attachments (contained live credentials in git history)
-.hermes/desktop-attachments/
-data/context_cache/
-
-# SECURITY: non-standard env filenames MUST never be tracked
-metatrader-mcp.env
-*.mcp.env
-
-# QNA: config files with secrets (env vars used instead)
-config/freqtrade.json
-config/mt5_accounts.yaml

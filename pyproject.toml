@@ -105,7 +105,6 @@ dev = [
 
 [project.scripts]
 qnai = "quant_nanggroe.cli:main"
-qna-standalone = "quant_nanggroe.standalone:main"
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
