@@ -4,7 +4,7 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 
 ---
 
-## 🎯 Status Rilis Saat Ini: `v6.4.0 — Backtest System Hardening: CPCV Default, Annualization Fix, Broken Imports Repaired`
+## 🎯 Status Rilis Saat Ini: `v6.5.0 — Full Autonomous Wiring: All Mocks Eliminated, All APIs Mounted`
 
 ```
 [ Entry Point ]         ██████████ 100% (Single: qna.py, unified mode default)
@@ -23,11 +23,11 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 [ Auto-Tuner ]          ██████████ 100% (Backtester adapter created, broken import fixed) 🆕 v6.4.0
 [ AI Self-Evolution ]   ██████████ 100% (Self-Aware + Self-Evolve with real backtest)
 [ Strategy Evolver ]    ██████████ 100% (Real WalkForwardAnalyzer — no mock, data cache added) 🆕 v6.4.0
-[ API & Frontend UI ]   ████████░░  80% (FastAPI 181 endpoints, Dashboard needs build)
+[ API & Frontend UI ]   █████████░  95% (All mocks eliminated, pipeline/config routes mounted) 🆕 v6.5.0
 [ Security ]            ██████████ 100% (+ mt5_accounts.yaml env-var interpolation, no plaintext) 🆕 v6.3.0
 [ Exchange Clients ]    ██████████ 100% (10 REST clients lazy-wired)
 [ Test Suite ]          ██████████  99% (+ DCC unit tests — 47 comprehensive)
-[ Documentation ]       ██████████ 100% (All docs updated to v6.4.0)
+[ Documentation ]       ██████████ 100% (All docs updated to v6.5.0) 🆕 v6.5.0
 ```
 
 ---
@@ -71,6 +71,18 @@ Dokumen ini adalah **peta jalan resmi (Master TODO)** pengembangan platform **Qu
 - [x] **Weekly Loss Veto** — Fail-closed, verified blocking
 - [x] **Credentials Security** — All hardcoded secrets removed, env vars only, `.secrets-local/` deleted
 - [x] **Dashboard API** — Risk parity, order slicing, config endpoints wired
+- [x] **Phase 1 Audit** — 12 categories: COT redirect, colony workers, portfolio API, market pressure, TradingAdapter, PipelineSignal, credential stubs, daemon COT, indicators
+- [x] **Phase 2A: Pipeline Self-Loop** — StrategyRegistry → SignalEngine, WalkForward → Strategy Selection, Scheduler → daemon, Self-evolution loop in AutonomousPipeline
+- [x] **Phase 2B: Dashboard Wiring** — Pipeline/Strategies/Colony pages wired to live APIs, mock data eliminated
+- [x] **Phase 2C: Dead Code Cleanup** — `colony_stub.py` deleted, scheduler docstring fixed, numpy strategies deprecated
+- [x] **Phase 2D: Environment** — pandas/statsmodels compatibility fixed, ruff lint verified
+- [x] **v6.5.0 Autonomous Wiring Audit** — Skeptical senior quant engineer audit identified and fixed 6 critical gaps:
+  - 3 wrong import paths in autonomous_self_loop.py (PnLEvaluator, SelfAware, DebateEngine)
+  - SelfAware API mismatch (reflect_self → reflect with state_provider)
+  - 4 TODO stubs wired to real data sources (trades, performance, evolved strategies, signals)
+  - ExecutionManager.set_strategy_allocations() phantom call removed
+  - Duplicate autonomous router removed from app.py
+  - Dashboard/API self-awareness interface aligned
 
 ---
 

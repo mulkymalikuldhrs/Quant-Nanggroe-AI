@@ -68,8 +68,7 @@ class MacroPulseDaemon:
     def fetch_macro_data(self) -> dict:
         """Fetch all macro tickers from Yahoo Finance."""
         if yf is None:
-            logger.warning("yfinance not installed, using mock data")
-            return self._mock_data()
+            raise RuntimeError("yfinance not installed. Run: pip install yfinance")
 
         results = {}
         all_tickers = {**MACRO_TICKERS, **{k: k for k in SECTOR_ETFS}, **MAG7_TICKERS}
@@ -89,21 +88,9 @@ class MacroPulseDaemon:
                     results[symbol] = {"price": 0, "change_pct": 0, "name": symbol}
         except Exception as e:
             logger.error(f"Failed to fetch macro data: {e}")
-            return self._mock_data()
+            raise
 
         return results
-
-    def _mock_data(self) -> dict:
-        """Mock data for when yfinance is unavailable."""
-        import random
-        mock = {}
-        for symbol in list(MACRO_TICKERS.keys()) + list(MAG7_TICKERS.keys()):
-            mock[symbol] = {
-                "price": random.uniform(100, 1000),
-                "change_pct": random.uniform(-3, 3),
-                "name": MACRO_TICKERS.get(symbol) or MAG7_TICKERS.get(symbol, symbol),
-            }
-        return mock
 
     def calculate_regime(self, data: dict) -> dict:
         """Calculate market regime from macro data."""

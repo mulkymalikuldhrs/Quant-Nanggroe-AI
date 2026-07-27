@@ -6,6 +6,79 @@
 
 ---
 
+## 🆕 Phase 2 — Autonomous Wiring (Post-Audit Fixes)
+
+| Fix | Status | Detail |
+|-----|--------|--------|
+| **COT Provider Redirect** | ✅ DONE | `engine/data/cot_provider.py` → delegates to real `engine/cot/` (COTAnalyzer + COTFetcher) |
+| **Colony Workers Wired** | ✅ DONE | 4 workers → StrategyRegistry, ConstitutionalRiskGuard, ExchangeManager, ProductionExecutionManager |
+| **Portfolio API → PnLEvaluator** | ✅ DONE | Real trade history, Sharpe, Sortino, drawdown |
+| **Market Pressure → VolumeDelta** | ✅ DONE | Real OHLCV data via VolumeDeltaStrategy |
+| **TradingAdapter → Strategy Consensus** | ✅ DONE | StrategyRegistry-based consensus replaces placeholder |
+| **PipelineSignal Dataclass** | ✅ DONE | Replaced duck-typed `_SignalStub` with typed `PipelineSignal` |
+| **Credential Stubs Cleaned** | ✅ DONE | Stub file references → "not implemented" messages |
+| **Daemon COT Fetcher** | ✅ DONE | Delegates to real `engine/cot/COTFetcher` |
+| **Indicators Expanded** | ✅ DONE | 5 DataFrame indicators: ATR, RSI, SMA, EMA, Bollinger Bands |
+| **StrategyRegistry → SignalEngine** | ✅ DONE | Direct fallback path in `UnifiedSignalEngine._try_strategies()` |
+| **Walk-Forward → Strategy Selection** | ✅ DONE | `ProductionStrategyRunner` filters by OOS Sharpe + decay |
+| **Scheduler → Daemon** | ✅ DONE | `qna.py daemon` starts PipelineScheduler when `QNA_SCHEDULER_ENABLED` |
+| **Self-Evolution Loop** | ✅ DONE | `run_batch()` → PnL score → StrategyEvolver → WalkForward → redeploy |
+| **Colony API → Real Orchestrator** | ✅ DONE | `colony.py` uses ColonyOrchestrator, `colony_stub.py` deleted |
+| **Dashboard Mock Eliminated** | ✅ DONE | Pipeline/Strategies/Colony pages wired to live APIs |
+| **Walk-Forward in Strategies API** | ✅ DONE | `/api/backtest/strategies` returns per-strategy WF validation status |
+| **pandas/statsmodels Fixed** | ✅ DONE | pandas 3.0.5 + statsmodels 0.14.5 compatible |
+
+## 🆕 Phase 3 — Full Autonomous Wiring (Deep Audit)
+
+| Fix | Status | Detail |
+|-----|--------|--------|
+| **Pipeline Status API Mounted** | ✅ DONE | `pipeline_status.router` now mounted in `app.py` — `/api/pipeline/status` was 404 |
+| **Config API Mounted** | ✅ DONE | `config.router` now mounted — `/config` route was 404 |
+| **Channels API Fixed** | ✅ DONE | Returns `Channel[]` array (was `dict`), wired to env-based discovery |
+| **Channels → Real Connectors** | ✅ DONE | Send routes to Telegram/WhatsApp connectors, not mock echo |
+| **Ecosystem → Real Services** | ✅ DONE | Status/overview wired to KillSwitch, StrategyRegistry, ExchangeManager |
+| **Exchange List → Real** | ✅ DONE | `/api/exchange/list` reads from ExchangeManager, not hardcoded Alpaca/Binance |
+| **Security Events → Real Audit** | ✅ DONE | Reads from kill switch audit log, removed hardcoded `/root/paper_runs/` path |
+| **Settings Mock Removed** | ✅ DONE | No more hardcoded fake API keys on backend failure |
+| **Risk Page Mock Removed** | ✅ DONE | Shows error state instead of 32-line fabricated risk data |
+| **Agents Mock Removed** | ✅ DONE | No more "simulate if API unavailable" fallback |
+| **Trading Comment Fixed** | ✅ DONE | Removed misleading "Mock accounts" comment (was already using real API) |
+| **Factors Coming Soon Removed** | ✅ DONE | Banner removed, factor data from real `/api/backtest/factors` |
+| **Channels Coming Soon Removed** | ✅ DONE | Banner + hardcoded message feed removed |
+| **Backtest Fallback Removed** | ✅ DONE | Dead `FALLBACK_RESULT` constant (22 lines) removed |
+| **Routes __init__ Fixed** | ✅ DONE | `config` and `pipeline_status` added to exports |
+
+## 🆕 Phase 4 — Deep Functional Audit (Self-Loop, Debate, Walk-Forward)
+
+| Fix | Status | Detail |
+|-----|--------|--------|
+| **Debate API → Real Engine** | ✅ DONE | `/api/debate/new` now runs TradingDebateGraph (Bull/Bear + Risk debate) instead of returning hardcoded data |
+| **Debate API → Weighted Vote** | ✅ DONE | New `/api/debate/weighted` endpoint runs real DebateEngine with weighted multi-agent voting |
+| **Debate List → Capabilities** | ✅ DONE | `/api/debate/list` returns 3 real debate modes (TradingDebateGraph, WeightedVote, Council) instead of fake topics |
+| **Debate Detail → Real Info** | ✅ DONE | `/api/debate/{id}` returns architecture details for each debate mode |
+| **Walk-Forward Real Backtest** | ✅ DONE | `_post_batch_evolution()` now runs real AutomatedBacktestRunner with yfinance candles instead of recording zero-value WalkForwardResults |
+| **Walk-Forward Strategy Instantiation** | ✅ DONE | Mutated strategies are instantiated via StrategyRegistry.create() with mutated params applied before backtest |
+| **Lint Cleanup** | ✅ DONE | Removed unused `unresolved_lessons`, `risk_step`, `reason` variables from autonomous.py |
+
+### Audit Findings (No Fix Needed — Already Working)
+
+| Component | Status | Detail |
+|-----------|--------|--------|
+| **Self-Loop** | ✅ WORKING | `run_batch()` → `_post_batch_evolution()` → PnLEvaluator → StrategyEvolver → WalkForward → SelfFineTuner |
+| **Self-Aware** | ✅ WORKING | `reflect_self()` called after every `run()`, uses real pipeline state (equity, drawdown, veto ratio) |
+| **Council Debate** | ✅ WORKING | Step 2.5 in autonomous.py, 6 investor personas (Buffett, Lynch, Dalio, Burry, Wood, Druckenmiller) |
+| **78 Strategies** | ✅ WORKING | 78 strategy files, 25+ @StrategyRegistry.register, loaded by discover_strategies() |
+| **Pipeline Orchestrator** | ✅ WORKING | UnifiedPipeline routes forex→hedge, crypto→crypto, default→agentic with graceful fallback |
+| **Execution Layer** | ✅ WORKING | MT5 → Paper → Engine → reject (fail-closed), TrailingStop, state_writer |
+| **Risk Gate** | ✅ WORKING | KillSwitch + RiskManager.check_trade() + confidence floor (0.15) |
+| **Scheduler** | ✅ WORKING | PipelineScheduler wired into app.py lifespan and qna.py daemon |
+| **TradeLifecycle** | ✅ WORKING | Closed trade → PnLEvaluator → evolve_callback → _trigger_evolution |
+| **Personas** | ✅ WORKING | 6 persona agents in agents/personas/ (base_investor.py + 6 implementations) |
+| **DebateGraph** | ✅ WORKING | Full Bull/Bear research debate + Conservative/Neutral/Aggressive risk debate |
+| **Reflection** | ✅ WORKING | Reflector + Propagator + SignalProcessor in agents/debate/reflection.py |
+
+---
+
 ## 🆕 v6.1.0 Update — Quantitative Alpha Engines REAL
 
 | Added Module | Status | Real/Mock |

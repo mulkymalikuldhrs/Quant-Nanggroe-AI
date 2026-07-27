@@ -1,4 +1,10 @@
 """
+.. deprecated::
+   This is a numpy-native strategy used by ``live_engine.py``.  It has a
+   different interface than the ``Strategy`` base class in
+   ``engine/strategies/``.  Migrate to the Strategy base class and register
+   via ``@StrategyRegistry.register`` for walk-forward integration.
+
 Multi-Timeframe Trend Following
 ================================
 Ensemble of trend signals across multiple timeframes:

@@ -56,10 +56,9 @@ print(json.dumps(strategies))
     });
     const strategies = JSON.parse(out.trim());
     return NextResponse.json(strategies);
-  } catch (err: any) {
-    console.error("Strategy API error:", err);
+  } catch {
     return NextResponse.json(
-      { error: "Failed to load strategies", detail: String(err?.message || err) },
+      { error: "Failed to load strategies" },
       { status: 500 }
     );
   }

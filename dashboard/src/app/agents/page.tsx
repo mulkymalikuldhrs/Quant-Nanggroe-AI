@@ -82,7 +82,7 @@ export default function AgentsPage() {
     fetchAgents();
   }, [fetchAgents]);
 
-  // Use store agents if available, fall back to mock
+  // Use store agents if available, show empty state otherwise
   const agents = storeAgents.length > 0
     ? storeAgents.map(a => ({
         id: a.name?.toLowerCase().replace(/\s+/g, "_") || a.name,
@@ -108,9 +108,8 @@ export default function AgentsPage() {
     setError(null);
     try {
       await agentsApi.run({ symbol: runSymbol } as AgentRunRequest);
-    } catch {
-      // Simulate if API unavailable
-      await new Promise((r) => setTimeout(r, 3000));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Agent pipeline unavailable");
     } finally {
       setIsRunning(false);
     }

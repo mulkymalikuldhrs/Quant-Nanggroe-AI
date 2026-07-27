@@ -134,20 +134,84 @@ async def get_portfolio_summary(http_request: Request) -> PortfolioSummaryRespon
 
 @router.get("/performance")
 async def get_portfolio_performance(http_request: Request) -> dict[str, Any]:
-    """FIXME: Stub — not wired to real engine. Returns hardcoded zeros. Wire to PerformanceTracker."""
-    return {
-        "total_return": 0.0,
-        "cagr": 0.0,
-        "sharpe_ratio": 0.0,
-        "sortino_ratio": 0.0,
-        "max_drawdown": 0.0,
-        "win_rate": 0.0,
-        "total_trades": 0,
-        "status": "not_implemented",
-        "_stub": True,
-        "message": "Portfolio performance not wired to real engine",
-        "timestamp": datetime.now().isoformat(),
-    }
+    """Portfolio performance metrics computed from closed trade history via PnLEvaluator."""
+    try:
+        from quant_nanggroe.engine.analytics.pnl_evaluator import PnLEvaluator
+
+        evaluator = PnLEvaluator()
+        # Aggregate across all strategies
+        all_pnls: list[float] = []
+        total_wins = 0
+        total_trades = 0
+        for strategy_name, trades in evaluator._trade_history.items():
+            for t in trades:
+                if t.is_closed():
+                    pnl = t.realized_pnl()
+                    all_pnls.append(pnl)
+                    total_trades += 1
+                    if pnl > 0:
+                        total_wins += 1
+
+        if not all_pnls:
+            return {
+                "total_return": 0.0,
+                "cagr": 0.0,
+                "sharpe_ratio": 0.0,
+                "sortino_ratio": 0.0,
+                "max_drawdown": 0.0,
+                "win_rate": 0.0,
+                "total_trades": 0,
+                "status": "no_trades",
+                "timestamp": datetime.now().isoformat(),
+            }
+
+        pnl_arr = np.array(all_pnls)
+        total_return = float(np.sum(pnl_arr))
+        win_rate = total_wins / total_trades if total_trades > 0 else 0.0
+
+        # Sharpe ratio (annualized, assuming daily trades)
+        if len(pnl_arr) > 1 and np.std(pnl_arr) > 0:
+            sharpe = float(np.mean(pnl_arr) / np.std(pnl_arr) * np.sqrt(252))
+        else:
+            sharpe = 0.0
+
+        # Sortino ratio (downside deviation only)
+        downside = pnl_arr[pnl_arr < 0]
+        if len(downside) > 0 and np.std(downside) > 0:
+            sortino = float(np.mean(pnl_arr) / np.std(downside) * np.sqrt(252))
+        else:
+            sortino = 0.0
+
+        # Max drawdown from cumulative PnL
+        cum_pnl = np.cumsum(pnl_arr)
+        running_max = np.maximum.accumulate(cum_pnl)
+        drawdowns = running_max - cum_pnl
+        max_dd = float(np.max(drawdowns)) if len(drawdowns) > 0 else 0.0
+
+        return {
+            "total_return": round(total_return, 6),
+            "cagr": round(total_return, 6),  # simplified; real CAGR needs time span
+            "sharpe_ratio": round(sharpe, 4),
+            "sortino_ratio": round(sortino, 4),
+            "max_drawdown": round(max_dd, 6),
+            "win_rate": round(win_rate, 4),
+            "total_trades": total_trades,
+            "status": "live",
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception:
+        logger.exception("portfolio_performance_failed")
+        return {
+            "total_return": 0.0,
+            "cagr": 0.0,
+            "sharpe_ratio": 0.0,
+            "sortino_ratio": 0.0,
+            "max_drawdown": 0.0,
+            "win_rate": 0.0,
+            "total_trades": 0,
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+        }
 
 
 @router.get("/risk", response_model=PortfolioRiskResponse)

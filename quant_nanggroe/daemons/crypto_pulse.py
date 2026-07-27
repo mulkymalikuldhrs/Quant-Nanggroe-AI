@@ -50,7 +50,7 @@ class CryptoPulseDaemon:
     async def fetch_coingecko(self) -> list:
         """Fetch crypto prices from CoinGecko."""
         if httpx is None:
-            return self._mock_prices()
+            raise RuntimeError("httpx not installed. Run: pip install httpx")
         try:
             async with httpx.AsyncClient(timeout=15) as client:
                 resp = await client.get(COINGECKO_URL, params=COINGECKO_PARAMS)
@@ -69,7 +69,7 @@ class CryptoPulseDaemon:
                 ]
         except Exception as e:
             logger.error(f"CoinGecko fetch failed: {e}")
-            return self._mock_prices()
+            raise
 
     async def fetch_funding_rates(self) -> dict:
         """Fetch Binance perpetual funding rates."""
@@ -109,14 +109,6 @@ class CryptoPulseDaemon:
         except Exception as e:
             logger.error(f"Fear & Greed fetch failed: {e}")
             return {"value": 50, "classification": "Neutral"}
-
-    def _mock_prices(self) -> list:
-        """Mock data when API unavailable."""
-        import random
-        return [
-            {"id": cid, "symbol": csym, "price": random.uniform(100, 70000), "change_24h": random.uniform(-5, 5), "market_cap": 0, "volume_24h": 0}
-            for cid, csym in CRYPTO_MAP.items()
-        ]
 
     async def run_once(self) -> dict:
         """Run one fetch cycle."""

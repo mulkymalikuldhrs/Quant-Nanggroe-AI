@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const OrderFlowMap = dynamic(() => import("@/components/OrderFlowMap"), {
   ssr: false,
@@ -32,6 +32,29 @@ const POPULAR_INSTRUMENTS = [
 export default function OrderFlowPage() {
   const [selected, setSelected] = useState(POPULAR_INSTRUMENTS[0]);
   const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Close picker when clicking outside
+  useEffect(() => {
+    if (!showPicker) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showPicker]);
+
+  // Close picker on Escape key
+  useEffect(() => {
+    if (!showPicker) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowPicker(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showPicker]);
 
   return (
     <div className="h-screen flex flex-col">
@@ -41,7 +64,7 @@ export default function OrderFlowPage() {
         <span className="text-white/20">|</span>
         <span className="text-white/40">🔥 Order Flow</span>
         <div className="ml-auto flex items-center gap-2">
-          <div className="relative">
+          <div className="relative" ref={pickerRef}>
             <button
               onClick={() => setShowPicker(!showPicker)}
               className="px-2 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded text-xs text-white font-bold hover:bg-white/[0.08] transition-colors"

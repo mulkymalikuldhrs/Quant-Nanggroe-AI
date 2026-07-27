@@ -100,6 +100,8 @@ dashboard/src/
 | **Memory** | `/memory` | Memory search/filter, store memory, type-colored cards |
 | **Factors** | `/factors` | Alpha factor zoo explorer, IC/returns, factor pipeline builder, correlation heatmap |
 | **Settings** | `/settings` | API keys, broker credentials (MT4/MT5/cTrader), exchange configs, LLM keys, risk limits, agent models, system toggles |
+| **OrderFlow** | `/orderflow` | Bookmap-style visualization — heatmap, trade bubbles, DOM ladder, CVD, VWAP (shared with SahamEngineAI) |
+| **TradeBobby** | Sidebar panels | Macro Pulse, COT Positioning, Crypto Pulse, Setup Tracker, Agent Brief (daemon API connected) |
 
 ---
 
@@ -161,6 +163,17 @@ Requires the Quant Nanggroe Python backend running on port 8000:
 
 ```bash
 python qna.py api
+```
+
+### Running Daemons (for TradeBobby panels)
+
+```bash
+# From the project root
+cd quant_nanggroe/daemons
+python -c "from macro_pulse import MacroPulseDaemon; MacroPulseDaemon().run_once()"
+python -c "from crypto_pulse import CryptoPulseDaemon; CryptoPulseDaemon().run_sync()"
+python -c "from cot_fetcher import COTFetcherDaemon; COTFetcherDaemon().run_once()"
+python -c "from news_scanner import NewsScannerDaemon; NewsScannerDaemon().run_once()"
 ```
 
 ---

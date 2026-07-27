@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import pandas as pd
 import math
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
@@ -94,6 +95,7 @@ class StrategyParameters(BaseModel):
 
 
 class Strategy(ABC):
+    """Original Strategy class (now also exposed as BaseStrategy for legacy imports)."""
     """Abstract base class for all trading strategies.
 
     Every strategy must implement generate_signal() and
@@ -163,6 +165,105 @@ class Strategy(ABC):
         return f"<{self.__class__.__name__}(name={self.name})>"
 
 
+# Legacy BaseStrategy compatible with older tests
+class BaseStrategy(ABC):
+    """Legacy BaseStrategy providing a simple interface and utility methods.
+
+    Expected by older test suite. Supports name, params, warm‑up tracking,
+    data validation, and static technical‑analysis helpers.
+    """
+
+    def __init__(self, name: str, params: Optional[Dict[str, Any]] = None):
+        self.name = name
+        self.params = params or {}
+        self.is_warmed_up = False
+
+    @abstractmethod
+    def generate_signal(self, data: pd.DataFrame):
+        """Generate a trading signal given market data."""
+        ...
+
+    @abstractmethod
+    def required_columns(self) -> list[str]:
+        """Return list of required DataFrame columns."""
+        ...
+
+    @abstractmethod
+    def warmup_period(self) -> int:
+        """Minimum number of rows required before strategy is considered warmed up."""
+        ...
+
+    def validate_data(self, data: Optional[pd.DataFrame]) -> bool:
+        """Validate incoming DataFrame.
+
+        Returns ``True`` if data contains required columns and meets the warm‑up
+        period, otherwise ``False``. Raises ``ValueError`` if required columns
+        are missing.
+        """
+        if data is None or data.empty:
+            self.is_warmed_up = False
+            return False
+        missing = [c for c in self.required_columns() if c not in data.columns]
+        if missing:
+            raise ValueError("missing required columns")
+        if len(data) < self.warmup_period():
+            self.is_warmed_up = False
+            return False
+        self.is_warmed_up = True
+        return True
+
+    @staticmethod
+    def compute_sma(series: pd.Series, period: int) -> pd.Series:
+        return series.rolling(window=period, min_periods=period).mean()
+
+    @staticmethod
+    def compute_ema(series: pd.Series, period: int) -> pd.Series:
+        return series.ewm(span=period, adjust=False, min_periods=period).mean()
+
+    @staticmethod
+    def compute_rsi(series: pd.Series, period: int = 14) -> pd.Series:
+        delta = series.diff()
+        gain = delta.clip(lower=0)
+        loss = (-delta).clip(lower=0)
+        avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+        avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+        rs = avg_gain / (avg_loss + 1e-10)
+        return 100.0 - (100.0 / (1.0 + rs))
+
+    @staticmethod
+    def compute_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+        tr1 = high - low
+        tr2 = (high - close.shift(1)).abs()
+        tr3 = (low - close.shift(1)).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        return tr.rolling(window=period, min_periods=period).mean()
+
+    @staticmethod
+    def compute_bollinger_bands(series: pd.Series, period: int = 20, num_std: float = 2.0):
+        middle = series.rolling(window=period, min_periods=period).mean()
+        std = series.rolling(window=period, min_periods=period).std()
+        upper = middle + num_std * std
+        lower = middle - num_std * std
+        return upper, middle, lower
+
+    @staticmethod
+    def compute_macd(series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
+        fast_ema = series.ewm(span=fast, adjust=False).mean()
+        slow_ema = series.ewm(span=slow, adjust=False).mean()
+        macd = fast_ema - slow_ema
+        sig = macd.ewm(span=signal, adjust=False).mean()
+        return macd, sig, macd - sig
+
+    @staticmethod
+    def compute_zscore(series: pd.Series, period: int):
+        rm = series.rolling(window=period, min_periods=period).mean()
+        rs = series.rolling(window=period, min_periods=period).std()
+        return (series - rm) / (rs + 1e-10)
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}(name={self.name}, params={self.params})>"
+
+
 __all__ = [
     "SignalDirection",
     "SignalStrength",
@@ -170,5 +271,6 @@ __all__ = [
     "StrategySignal",
     "StrategyParameters",
     "Strategy",
+    "BaseStrategy",
     "StrategyType",
 ]

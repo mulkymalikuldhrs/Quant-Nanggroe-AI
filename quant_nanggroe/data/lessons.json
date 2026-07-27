@@ -2572,5 +2572,18 @@
     "occurred_at": "2026-07-26T15:02:08.015447+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "277a25ff-973",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for INVALID-SYMBOL-12345",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-27T19:25:56.480334+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

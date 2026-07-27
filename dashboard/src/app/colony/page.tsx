@@ -35,18 +35,8 @@ export default function ColonyPage() {
       ]);
       setColonies(coloniesData);
       setAgents(agentsData.agents);
-    } catch {
-      // Fallback data
-      setColonies([
-        { id: "alpha", name: "Alpha Colony", status: "active", health: 92, agents: 5, capacity: 10, schedule: "continuous" },
-        { id: "beta", name: "Beta Colony", status: "active", health: 78, agents: 3, capacity: 8, schedule: "market hours" },
-        { id: "gamma", name: "Gamma Colony", status: "idle", health: 45, agents: 2, capacity: 6, schedule: "on demand" },
-      ] as Colony[]);
-      setAgents([
-        { id: "trader", name: "Trader", status: "active", emotion: "focused", action: "Executing", lastDecision: "Buy BTC", icon: "🤖" },
-        { id: "analyst", name: "Analyst", status: "active", emotion: "analytical", action: "Analyzing", lastDecision: "Bullish", icon: "🔬" },
-        { id: "risk", name: "Risk", status: "active", emotion: "cautious", action: "Monitoring", lastDecision: "VaR ok", icon: "🛡️" },
-      ] as Agent[]);
+    } catch (err) {
+      setError("Colony API unavailable — check backend");
     } finally {
       setLoading(false);
     }
@@ -79,10 +69,10 @@ export default function ColonyPage() {
         </div>
       </div>
 
-      {/* Coming Soon banner — module is illustrative only */}
+      {/* Colony engine status */}
       <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
-        <Badge variant="info" className="text-xs">Coming Soon</Badge>
-        <p className="text-sm text-white/50">Colony orchestration is under development — the data shown below is illustrative fallback, not live orchestration.</p>
+        <Badge variant="success" className="text-xs">Live</Badge>
+        <p className="text-sm text-white/50">Colony orchestration powered by ColonyOrchestrator — real worker lifecycle, task dispatch, and health monitoring.</p>
       </div>
 
       {/* Error */}

@@ -1,4 +1,10 @@
 """
+.. deprecated::
+   This is a numpy-native strategy used by ``live_engine.py``.  It has a
+   different interface than the ``Strategy`` base class in
+   ``engine/strategies/``.  Migrate to the Strategy base class and register
+   via ``@StrategyRegistry.register`` for walk-forward integration.
+
 Pairs Trading via Cointegration (Gatev, Goetzmann, Rouwenhorst 2006)
 ====================================================================
 Find cointegrated pairs, trade mean reversion of spread.

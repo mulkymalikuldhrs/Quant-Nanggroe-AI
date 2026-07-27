@@ -7,10 +7,11 @@ import { StatusCard } from "@/components/shared/status-card";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
-import { apiRequest } from "@/lib/api-client";
-import type { Strategy } from "@/lib/api-client";
+import { apiRequest, backtestApi } from "@/lib/api-client";
+import type { Strategy, WalkForwardStatus } from "@/lib/api-client";
 import { cn, formatPercent } from "@/lib/utils";
 import {
   Zap,
@@ -23,6 +24,11 @@ import {
   Settings,
   AlertCircle,
   RefreshCw,
+  Search,
+  Filter,
+  TrendingUp,
+  TrendingDown,
+  FlaskConical,
 } from "lucide-react";
 
 export default function StrategiesPage() {
@@ -30,22 +36,46 @@ export default function StrategiesPage() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [wfStatus, setWfStatus] = useState<WalkForwardStatus | null>(null);
 
   const loadStrategies = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiRequest<Strategy[]>("/api/backtest/strategies");
-      setStrategies(data);
+      const [strats, wf] = await Promise.allSettled([
+        apiRequest<Strategy[]>("/api/backtest/strategies"),
+        backtestApi.walkForwardStatus(),
+      ]);
+      if (strats.status === "fulfilled") setStrategies(strats.value);
+      if (wf.status === "fulfilled") setWfStatus(wf.value);
     } catch (err) {
-      // Fallback to mock data if backend unavailable
-      setError(null);
+      setError("Backend unavailable — showing cached data");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { loadStrategies(); }, []);
+
+  // Filter strategies
+  const filteredStrategies = strategies.filter((s) => {
+    const matchesSearch = searchQuery === "" ||
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === "all" || s.category === filterCategory;
+    const matchesStatus = filterStatus === "all" ||
+      (filterStatus === "active" && s.enabled) ||
+      (filterStatus === "inactive" && !s.enabled) ||
+      (filterStatus === "keep" && (s as any).backtest?.verdict === "KEEP") ||
+      (filterStatus === "validated" && wfStatus?.strategies.some((w) => w.name === s.id));
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  // Get unique categories
+  const categories = Array.from(new Set(strategies.map((s) => s.category).filter(Boolean))).sort();
 
   const strategyColumns = [
     {
@@ -87,6 +117,22 @@ export default function StrategiesPage() {
         const bt = (row.backtest as any) || {};
         const dd = bt.max_dd_pct ?? 0;
         return <span className="font-mono text-orange-400">{dd.toFixed(2)}%</span>;
+      },
+    },
+    {
+      key: "wf",
+      header: "Walk-Fwd",
+      render: (row: Record<string, unknown>) => {
+        const wf = (row.walk_forward as any) || {};
+        if (!wf.validated) return <span className="text-white/20 text-[10px]">—</span>;
+        const sharp = wf.oos_sharpe ?? 0;
+        const decayed = wf.decayed;
+        return (
+          <span className={cn("font-mono text-[10px]", decayed ? "text-red-400" : sharp >= 0 ? "text-emerald-400" : "text-red-400")}>
+            {decayed ? "DECAY" : `S=${sharp.toFixed(2)}`}
+            {wf.n_windows ? ` (${wf.n_windows}w)` : ""}
+          </span>
+        );
       },
     },
     {
@@ -144,20 +190,65 @@ export default function StrategiesPage() {
             <Zap className="w-5 h-5 text-amber-400" />
             Strategy Management
           </h1>
-          <p className="text-sm text-white/40 mt-0.5">Strategy lifecycle, schema & backtest adapters</p>
+          <p className="text-sm text-white/40 mt-0.5">
+            {strategies.length} registered strategies • Walk-forward validated
+          </p>
         </div>
-        <Button variant="glow">
-          <Plus className="w-3.5 h-3.5 mr-1.5" />
-          New Strategy
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={loadStrategies} disabled={loading}>
+            <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", loading && "animate-spin")} />
+            Refresh
+          </Button>
+          <Button variant="glow">
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            New Strategy
+          </Button>
+        </div>
       </div>
 
       {/* Strategy Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatusCard title="Active Strategies" value={String(strategies.filter(s => { const bt = (s as any).backtest; return bt && bt.verdict === "KEEP"; }).length)} variant="success" />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatusCard title="Total" value={String(strategies.length)} variant="info" />
-        <StatusCard title="Avg Return" value={(() => { const avg = strategies.reduce((s, st) => { const bt = (st as any).backtest; return s + (bt?.btc_return || 0); }, 0) / (strategies.length || 1); return avg.toFixed(1) + "%"; })()} variant="success" />
+        <StatusCard title="Active" value={String(strategies.filter((s) => s.enabled).length)} variant="success" />
+        <StatusCard title="KEEP" value={String(strategies.filter((s) => { const bt = (s as any).backtest; return bt && bt.verdict === "KEEP"; }).length)} variant="success" />
+        <StatusCard title="WF Validated" value={String(wfStatus?.validated_count || 0)} variant="info" />
         <StatusCard title="Avg Sharpe" value={(() => { const avg = strategies.reduce((s, st) => { const bt = (st as any).backtest; return s + (bt?.btc_sharpe || 0); }, 0) / (strategies.length || 1); return avg.toFixed(2); })()} />
+      </div>
+
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search strategies..."
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/70 outline-none"
+          >
+            <option value="all">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/70 outline-none"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="keep">KEEP</option>
+            <option value="validated">WF Validated</option>
+          </select>
+        </div>
       </div>
 
       <Tabs defaultValue="list">
@@ -169,10 +260,10 @@ export default function StrategiesPage() {
         </TabsList>
 
         <TabsContent value="list">
-          <ChartCard title="Strategies" subtitle="All trading strategies" className="mt-3">
+          <ChartCard title="Strategies" subtitle={`${filteredStrategies.length} of ${strategies.length} strategies`} className="mt-3">
             <DataTable
               columns={strategyColumns}
-              data={strategies as unknown as Record<string, unknown>[]}
+              data={filteredStrategies as unknown as Record<string, unknown>[]}
               onRowClick={(row) => setSelectedStrategy(row.id as string)}
             />
           </ChartCard>

@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v6.2.0 — Agent Instructions
+# Quant Nanggroe AI v6.5.0 — Agent Instructions
 
 ## 🚨 PYTHONPATH Contamination (Critical)
 Hermes-managed shells leak a `PYTHONPATH` with `pydantic_core` compiled for Python 3.11 ABI, causing `ModuleNotFoundError` on the system Python 3.14+.
@@ -75,9 +75,42 @@ tests/                          ← test suite
 ```
 
 ### Strategy Registry
-- Strategies register via `@StrategyRegistry.register` decorator in `engine/strategies/`. The walk-forward metadata registry (`engine/strategy/registry.py`) was renamed to `WalkForwardRegistry` in v6.2.0 to disambiguate, and subsequently removed in v6.2.1 (was dead code).
-- The legacy path `engine/strategy/strategies/` is a **backward-compat shim only** — empty directory with a re-export `__init__.py`. All legacy strategy files (109 files, 3.2 MB) were removed in v6.2.1.
+- Strategies register via `@StrategyRegistry.register` decorator in `engine/strategies/`. The walk-forward metadata registry (`engine/strategy/registry.py`) is `WalkForwardRegistry`.
+- The legacy path `engine/strategy/strategies/` is a **backward-compat shim only** — empty directory with a re-export `__init__.py`.
 - Old imports via `engine.strategy.strategies` keep working through the shim.
+- Numpy-native strategies in `quant_nanggroe/strategies/` (trend_follow, tsmom, pairs_trade, xgboost_alpha) are deprecated — they should migrate to the Strategy base class.
+
+### Pipeline Self-Loop (v6.5.0)
+- `UnifiedSignalEngine._try_strategies()` has two-tier fallback: ProductionStrategyRunner → direct StrategyRegistry.
+- `ProductionStrategyRunner._load_strategies()` filters by WalkForwardRegistry: strategies with negative OOS Sharpe or decayed are excluded.
+- `AutomatedBacktestRunner` stores walk-forward results in WalkForwardRegistry and exposes `is_strategy_viable()`.
+- `AutonomousPipeline.run_batch()` triggers `_post_batch_evolution()`: PnL score → StrategyEvolver mutate → WalkForward validate → WalkForwardRegistry update.
+- `PipelineScheduler` is wired into `qna.py daemon` (via `QNA_SCHEDULER_ENABLED` env var) and `api/app.py` lifespan.
+
+### Colony (v6.5.0)
+- `api/routes/colony.py` uses real `ColonyOrchestrator` from `engine/colony/` with graceful fallback.
+- `colony_stub.py` has been deleted.
+- Colony workers are wired to: StrategyWorker → StrategyRegistry, RiskWorker → ConstitutionalRiskGuard, DataWorker → ExchangeManager, ExecutionWorker → ProductionExecutionManager.
+
+### Dashboard & API Wiring (v6.5.0)
+- `pipeline_status.router` and `config.router` are mounted in `app.py` (were missing — caused 404s).
+- `channels.py` returns `Channel[]` array (not dict), discovers channels from env vars (`QNAI_TELEGRAM_BOT_TOKEN`, `QNAI_WHATSAPP_TOKEN`, etc.).
+- `ecosystem.py` routes read from real KillSwitch, StrategyRegistry, ExchangeManager — no hardcoded data.
+- All dashboard pages show error states instead of mock data when backend is unavailable.
+- No "Coming Soon" banners remain. No hardcoded fallback data in any dashboard page.
+
+### Debate System (v6.5.0)
+- Three debate modes wired into `/api/debate/`:
+  - **TradingDebateGraph** (`agents/debate/graph.py`): Full Bull/Bear research debate + Conservative/Neutral/Aggressive risk debate. POST `/api/debate/new` with `symbol` field.
+  - **DebateEngine** (`agents/debate/engine.py`): Weighted multi-agent vote. POST `/api/debate/weighted` with opinions array.
+  - **Council** (`engine/agentic/council.py`): 6 investor personas debate low-confidence signals. Wired into autonomous pipeline step 2.5.
+- Council debate runs automatically in `AutonomousPipeline.run()` when confidence < 0.65.
+- Reflection/Propagator/SignalProcessor in `agents/debate/reflection.py` (requires LLM).
+
+### Self-Evolution Loop (v6.5.0)
+- `_post_batch_evolution()` runs real walk-forward backtest via `AutomatedBacktestRunner` with yfinance candles.
+- Mutated strategies are instantiated via `StrategyRegistry.create()` with mutated params applied.
+- No more zero-value WalkForwardResult records — real backtest engine computes Sharpe, returns, max DD.
 
 ### Kill Switch C5
 - **File-backed shared state** (`QNA_KILL_SWITCH_STATE_FILE`) — all processes read/write the same file to prevent split-brain across uvicorn workers.

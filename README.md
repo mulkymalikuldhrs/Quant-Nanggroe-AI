@@ -182,6 +182,9 @@ All causal engine data exposed via FastAPI at `/api/causal/*`:
 - `/pipeline` — Full 4-phase pipeline evaluation
 - `/status` — Aggregated engine status
 
+### Otto Proxy API (`/api/otto/*`)
+Pass‑through proxy to the local Otto MCP service (port 8765). Supports all HTTP methods; queries and bodies are forwarded unchanged.
+
 ### 🆕 Unified Dashboard
 
 Single HTML dashboard with the **Tactical Gold palette** (`#1A1D20`, `#0F172A`, `#D9A441`, `#00D1C7`):
@@ -193,6 +196,32 @@ Single HTML dashboard with the **Tactical Gold palette** (`#1A1D20`, `#0F172A`, 
 - CME price feed
 - 30-second auto-refresh
 - Served at `http://localhost:8000/dashboard.html`
+
+### 🔥 OrderFlowMap (Shared Component)
+
+Bookmap-style visualization for crypto/forex instruments. Shared component with SahamEngineAI.
+- Source: `repositories/shared/orderflow-map/OrderFlowMap.tsx`
+- Wrapper: `dashboard/src/components/OrderFlowMap.tsx` (BTC-USD defaults, no badge)
+- Features: Heatmap, trade bubbles, DOM ladder, CVD, VWAP, keyboard shortcuts
+- Page: `/orderflow` with instrument picker (click-outside-to-close)
+
+### 📊 TradeBobby Panels (Daemon API Connected)
+
+- **MacroPulsePanel** — VIX, DXY, Gold, Oil, 10Y, SPX, NAS + regime detection
+- **CryptoPulsePanel** — BTC, ETH, SOL, BNB prices + funding rates + Fear & Greed
+- **COTPanel** — CFTC Commitment of Traders positioning data
+- **AgentBriefPanel** — News sentiment scan with headlines
+
+All panels fetch from Next.js API routes (`/api/macro-pulse`, `/api/crypto-pulse`, `/api/cot-data`, `/api/news-scan`) which read daemon JSON output files.
+
+### 🐍 Python Daemons (`quant_nanggroe/daemons/`)
+
+| Daemon | Data Source | Output File | Interval |
+|--------|-----------|-------------|----------|
+| `macro_pulse.py` | Yahoo Finance | `data/macro/macro_pulse.json` | 5 min |
+| `crypto_pulse.py` | CoinGecko + Binance | `data/crypto/crypto_pulse.json` | 5 min |
+| `cot_fetcher.py` | CFTC | `data/cot/cot_data.json` | Weekly |
+| `news_scanner.py` | Google News RSS | `data/news/news_scan.json` | 30 min |
 
 ### 🆕 Causal Bias → Signal Filter Wiring
 

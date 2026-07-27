@@ -253,16 +253,22 @@ export default function PipelinePage() {
                   ))}
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => console.log(`Run ${component.id}`)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-emerald-500/20 active:scale-95">
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-emerald-500/20 active:scale-95"
+                    title={`Run ${component.id}`}
+                  >
                     <Play className="w-3 h-3" /> Run
                   </button>
-                  <button onClick={() => console.log(`Configure ${component.id}`)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/60 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-white/[0.06] active:scale-95">
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/60 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-white/[0.06] active:scale-95"
+                    title={`Configure ${component.id}`}
+                  >
                     <Sliders className="w-3 h-3" /> Configure
                   </button>
-                  <button onClick={() => console.log(`Logs ${component.id}`)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/40 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-white/[0.06] active:scale-95">
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/40 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-white/[0.06] active:scale-95"
+                    title={`View logs for ${component.id}`}
+                  >
                     <FileText className="w-3 h-3" /> Logs
                   </button>
                 </div>

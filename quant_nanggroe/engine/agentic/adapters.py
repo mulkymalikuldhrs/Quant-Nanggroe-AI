@@ -250,7 +250,7 @@ class TradingAgentsValidator:
     """2nd-opinion arbitrator.
 
     Cross-checks the primary consensus (VoteResult) against the independent
-    TradingAgents signal. It does NOT join the pooled vote — it only CONFIRMs,
+    TradingAgents signal. It does NOT join the pooled vote — it only CONFIRMS,
     CONTRADICTs, or ABSTAINS. This guarantees a broken/disabled external model
     can never silently swing a trade: worst case it abstains.
     """
@@ -599,16 +599,48 @@ class SmcAdapter(SignalAdapter):
 
 
 class TradingAdapter(SignalAdapter):
-    """E:/trading — legacy trading system adapter (placeholder).
+    """QNA internal strategy consensus adapter.
 
-    Returns NEUTRAL with low confidence until fully wired.
+    Aggregates signals from registered strategies via StrategyRegistry
+    to produce a consensus bias signal.
     """
     source_name = "trading"
     timeout = 15
 
     def fetch_signal(self, symbol: str, **kwargs) -> Signal | None:
         try:
-            return Signal(Bias.NEUTRAL, 0.1, self.source_name)
+            dataframe = kwargs.get("dataframe")
+            if dataframe is None or dataframe.empty:
+                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+            from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+            strategies = StrategyRegistry.create_all()
+            if not strategies:
+                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+            buy_score = 0.0
+            sell_score = 0.0
+            count = 0
+            for strat in strategies[:20]:  # limit to avoid timeout
+                try:
+                    sig = strat.generate_signal(dataframe, symbol=symbol)
+                    if sig is None:
+                        continue
+                    direction = sig.direction.value if hasattr(sig, "direction") else "hold"
+                    conf = float(getattr(sig, "confidence", 0.0))
+                    if direction == "buy":
+                        buy_score += conf
+                    elif direction == "sell":
+                        sell_score += conf
+                    count += 1
+                except Exception:
+                    continue
+            if count == 0 or (buy_score == 0 and sell_score == 0):
+                return Signal(Bias.NEUTRAL, 0.0, self.source_name)
+            total = buy_score + sell_score
+            if buy_score > sell_score:
+                return Signal(Bias.BUY, min(buy_score / max(total, 1), 0.85), self.source_name)
+            elif sell_score > buy_score:
+                return Signal(Bias.SELL, min(sell_score / max(total, 1), 0.85), self.source_name)
+            return Signal(Bias.NEUTRAL, 0.0, self.source_name)
         except Exception as exc:
             logger.debug("TradingAdapter failed: %s", exc)
             return None

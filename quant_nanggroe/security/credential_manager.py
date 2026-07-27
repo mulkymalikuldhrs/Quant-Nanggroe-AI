@@ -123,7 +123,7 @@ SERVICES: List[ServiceDef] = [
 
     # ── Blockchain / Web3 ──────────────────────────────────────────────
     ServiceDef("infura", "Infura / Ethereum Node", ["INFURA_PROJECT_ID"],
-               "quant_nanggroe/connectors/web3_plugin.py (stub)", category="blockchain"),
+               "not implemented — web3 connector pending", category="blockchain"),
     ServiceDef("helius", "Helius (Solana RPC)", ["HELIUS_API_KEY"],
                "n/a — no codebase usage found", category="blockchain"),
     ServiceDef("steem", "Steem Blockchain", [],
@@ -132,7 +132,7 @@ SERVICES: List[ServiceDef] = [
 
     # ── Infrastructure ──────────────────────────────────────────────────
     ServiceDef("github", "GitHub Tokens", ["GITHUB_TOKEN", "GH_TOKEN"],
-               "quant_nanggroe/connectors/github_integration.py (stub)", category="infra"),
+               "not implemented — GitHub integration pending", category="infra"),
     ServiceDef("supabase", "Supabase", ["SUPABASE_URL", "SUPABASE_SERVICE_KEY", "SUPABASE_ANON_KEY"],
                ".env.template (no QNAI_ prefix found)", category="infra"),
     ServiceDef("vercel", "Vercel", ["VERCEL_TOKEN", "VERCEL_PROJECT_ID"],

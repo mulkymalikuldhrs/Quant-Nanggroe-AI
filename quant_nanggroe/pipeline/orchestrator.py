@@ -233,6 +233,15 @@ class UnifiedPipeline:
             return PipelineResult.empty(symbol, mode="crypto", error=str(e))
 
     def run(self, symbol: str, mode: str = "auto") -> PipelineResult:
+        # Reentrancy guard: this sync entrypoint drives its own event loop and
+        # would deadlock/crash if invoked from inside a running async context.
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pass  # no running loop — safe
+        else:
+            raise RuntimeError("UnifiedPipeline.run() cannot be called from a running async context; use the async path")
+
         chosen = self._mode_resolver(symbol, mode)
         log.info("Pipeline run: symbol=%s mode=%s resolved=%s", symbol, mode, chosen)
 

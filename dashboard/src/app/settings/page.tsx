@@ -55,6 +55,7 @@ export default function SettingsPage() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ok: boolean; text: string} | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>([]);
   const [brokers, setBrokers] = useState<BrokerEntry[]>([]);
@@ -83,16 +84,7 @@ export default function SettingsPage() {
       setRiskLimits(d.riskLimits ?? {});
       setSystemToggles(d.systemToggles ?? {});
     } catch {
-      // fallback to mock data if backend unavailable
-      setApiKeys([
-        { id: "alpaca", name: "Alpaca API", key: "PKALPACA****X9K2", status: "connected", lastUsed: "2m ago" },
-        { id: "binance", name: "Binance API", key: "BIN****mK7p", status: "connected", lastUsed: "5m ago" },
-        { id: "coinbase", name: "Coinbase API", key: "CBPRO****j3Ln", status: "connected", lastUsed: "12m ago" },
-        { id: "polygon", name: "Polygon.io", key: "POLY****qR5v", status: "connected", lastUsed: "1h ago" },
-        { id: "openai", name: "OpenAI API", key: "sk-****wM8p", status: "connected", lastUsed: "3m ago" },
-      ]);
-      setRiskLimits({ maxPositionSize: 10, maxSectorExposure: 40, maxVaR: 10000, maxDrawdown: 5, maxLeverage: 2, defaultStopLoss: 2, defaultTakeProfit: 5 });
-      setSystemToggles({ liveTrading: true, autoRebalance: false, killSwitchOnLoss: true, emotionalLockout: true, riskChecksRequired: true, paperTradingMode: false });
+      setError("Backend unavailable — configure credentials via environment variables");
     }
   }, []);
 

@@ -11,12 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { backtestApi } from "@/lib/api-client";
-import type { BacktestResult, Strategy } from "@/lib/api-client";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import type { BacktestResult, Strategy, WalkForwardResult, TuneResult } from "@/lib/api-client";
+import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 import {
   FlaskConical,
   Play,
   RefreshCw,
+  TrendingUp,
+  Settings,
+  Zap,
 } from "lucide-react";
 import {
   AreaChart,
@@ -27,28 +30,6 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-
-// ── Fallback data ──────────────────────────────────────────────────
-
-const FALLBACK_RESULT: BacktestResult = {
-  id: "bt-1", strategy: "momentum_alpha", symbol: "AAPL",
-  startDate: "2023-01-01", endDate: "2024-01-01",
-  initialCapital: 100000, finalValue: 124500,
-  totalReturn: 24.5, sharpe: 1.82, maxDrawdown: 8.5, winRate: 62,
-  totalTrades: 184,
-  equityCurve: Array.from({ length: 24 }, (_, i) => ({
-    date: `2023-${String(i + 1).padStart(2, "0")}-01`,
-    value: 100000 + i * 1020 + (i % 5) * 200,
-  })),
-  drawdownCurve: Array.from({ length: 24 }, (_, i) => ({
-    date: `2023-${String(i + 1).padStart(2, "0")}-01`,
-    value: -Math.abs(Math.sin(i * 0.5) * 8),
-  })),
-  monteCarlo: {
-    simulations: 1000, meanReturn: 18.5, p5Return: -5.2, p95Return: 42.1,
-    worstCase: -18.3, bestCase: 68.4,
-  },
-};
 
 export default function BacktestPage() {
   const [symbol, setSymbol] = useState("AAPL");
@@ -61,6 +42,15 @@ export default function BacktestPage() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [engines, setEngines] = useState<string[]>([]);
+  
+  // Walk-Forward state
+  const [wfResult, setWfResult] = useState<WalkForwardResult | null>(null);
+  const [isRunningWF, setIsRunningWF] = useState(false);
+  
+  // Tune state
+  const [tuneResult, setTuneResult] = useState<TuneResult | null>(null);
+  const [isRunningTune, setIsRunningTune] = useState(false);
+  const [paramGrid, setParamGrid] = useState('{"lookback": [10, 20, 30], "threshold": [0.02, 0.05, 0.1]}');
 
   useEffect(() => {
     Promise.allSettled([
@@ -104,12 +94,58 @@ export default function BacktestPage() {
       });
       const res = await backtestApi.getResult(data.id);
       setResult(res);
-    } catch (err) {
-      console.error("Backtest run failed:", err);
+    } catch {
+      // Backtest failed - result stays null
     } finally {
       clearInterval(interval);
       setProgress(100);
       setTimeout(() => { setIsRunning(false); setProgress(0); }, 500);
+    }
+  };
+
+  const handleRunWF = async () => {
+    setIsRunningWF(true);
+    setWfResult(null);
+    try {
+      const res = await backtestApi.runWalkForward({
+        strategy,
+        symbol,
+        mode: "rolling",
+        train_window: 252,
+        test_window: 63,
+      });
+      setWfResult(res);
+    } catch {
+      // Walk-forward failed - result stays null
+    } finally {
+      setIsRunningWF(false);
+    }
+  };
+
+  const handleRunTune = async () => {
+    setIsRunningTune(true);
+    setTuneResult(null);
+    try {
+      let parsedGrid: Record<string, unknown> = {};
+      try {
+        parsedGrid = JSON.parse(paramGrid);
+      } catch {
+        alert("Invalid parameter grid JSON");
+        setIsRunningTune(false);
+        return;
+      }
+      const res = await backtestApi.tune({
+        strategy,
+        symbol,
+        param_grid: parsedGrid,
+        n_windows: 3,
+        top_n: 5,
+      });
+      setTuneResult(res);
+    } catch {
+      // Tune failed - result stays null
+    } finally {
+      setIsRunningTune(false);
     }
   };
 
@@ -291,6 +327,144 @@ export default function BacktestPage() {
         </TabsContent>
       </Tabs>
       )}
+
+      {/* Walk-Forward Tab */}
+      <Tabs defaultValue="backtest">
+        <TabsList>
+          <TabsTrigger value="backtest">Backtest</TabsTrigger>
+          <TabsTrigger value="walkforward">Walk-Forward</TabsTrigger>
+          <TabsTrigger value="tune">Auto-Tune</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="walkforward">
+          <ChartCard title="Walk-Forward Validation" subtitle="Rolling window out-of-sample testing">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Strategy</label>
+                <Select value={strategy} onChange={(e) => setStrategy(e.target.value)} options={strategyOptions} />
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Symbol</label>
+                <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+              </div>
+              <div className="flex items-end">
+                <Button variant="glow" onClick={handleRunWF} disabled={isRunningWF} className="w-full">
+                  {isRunningWF ? <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
+                  {isRunningWF ? "Validating..." : "Run Walk-Forward"}
+                </Button>
+              </div>
+            </div>
+
+            {wfResult && (
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                  <StatusCard title="Folds" value={String(wfResult.n_folds)} />
+                  <StatusCard title="Mean IS Sharpe" value={wfResult.aggregate.mean_is_sharpe.toFixed(2)} variant="info" />
+                  <StatusCard title="Mean OOS Sharpe" value={wfResult.aggregate.mean_oos_sharpe.toFixed(2)} variant={wfResult.aggregate.mean_oos_sharpe > 0 ? "success" : "danger"} />
+                  <StatusCard title="Degradation" value={`${(wfResult.aggregate.degradation_ratio * 100).toFixed(0)}%`} variant={wfResult.aggregate.degradation_ratio < 0.3 ? "success" : "warning"} />
+                  <StatusCard title="Stability" value={`${(wfResult.stability.overall_stability * 100).toFixed(0)}%`} variant={wfResult.stability.overall_stability > 0.6 ? "success" : "warning"} />
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="p-2 text-left text-white/40">Fold</th>
+                        <th className="p-2 text-right text-white/40">IS Sharpe</th>
+                        <th className="p-2 text-right text-white/40">OOS Sharpe</th>
+                        <th className="p-2 text-right text-white/40">IS Return</th>
+                        <th className="p-2 text-right text-white/40">OOS Return</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {wfResult.folds.map((fold) => (
+                        <tr key={fold.fold} className="border-b border-white/5">
+                          <td className="p-2 text-white/70">#{fold.fold}</td>
+                          <td className="p-2 text-right font-mono text-emerald-400">{fold.is_sharpe.toFixed(2)}</td>
+                          <td className="p-2 text-right font-mono text-blue-400">{fold.oos_sharpe.toFixed(2)}</td>
+                          <td className="p-2 text-right font-mono text-emerald-400">{(fold.is_return * 100).toFixed(1)}%</td>
+                          <td className="p-2 text-right font-mono text-blue-400">{(fold.oos_return * 100).toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </ChartCard>
+        </TabsContent>
+
+        <TabsContent value="tune">
+          <ChartCard title="Auto-Tune" subtitle="Grid search + walk-forward optimization">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Strategy</label>
+                  <Select value={strategy} onChange={(e) => setStrategy(e.target.value)} options={strategyOptions} />
+                </div>
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Symbol</label>
+                  <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Parameter Grid (JSON)</label>
+                <textarea
+                  value={paramGrid}
+                  onChange={(e) => setParamGrid(e.target.value)}
+                  className="w-full h-24 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/70 font-mono outline-none resize-none"
+                  placeholder='{"lookback": [10, 20, 30], "threshold": [0.02, 0.05]}'
+                />
+              </div>
+
+              <Button variant="glow" onClick={handleRunTune} disabled={isRunningTune}>
+                {isRunningTune ? <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />}
+                {isRunningTune ? "Tuning..." : "Run Auto-Tune"}
+              </Button>
+
+              {tuneResult && (
+                <div className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    <StatusCard title="Evaluated" value={String(tuneResult.n_evaluated)} />
+                    <StatusCard title="Windows" value={String(tuneResult.n_windows)} />
+                    <StatusCard title="Best Sharpe" value={tuneResult.results.length > 0 ? tuneResult.results[0].sharpe.toFixed(2) : "—"} variant="success" />
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="p-2 text-left text-white/40">Rank</th>
+                          <th className="p-2 text-left text-white/40">Parameters</th>
+                          <th className="p-2 text-right text-white/40">Sharpe</th>
+                          <th className="p-2 text-right text-white/40">Return</th>
+                          <th className="p-2 text-right text-white/40">Max DD</th>
+                          <th className="p-2 text-right text-white/40">Win Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tuneResult.results.map((r, i) => (
+                          <tr key={i} className="border-b border-white/5">
+                            <td className="p-2 text-white/70">#{i + 1}</td>
+                            <td className="p-2 font-mono text-xs text-white/60">
+                              {Object.entries(r.params).map(([k, v]) => `${k}=${v}`).join(", ")}
+                            </td>
+                            <td className="p-2 text-right font-mono text-emerald-400">{r.sharpe.toFixed(2)}</td>
+                            <td className="p-2 text-right font-mono text-blue-400">{(r.return_pct * 100).toFixed(1)}%</td>
+                            <td className="p-2 text-right font-mono text-red-400">{(r.max_dd * 100).toFixed(1)}%</td>
+                            <td className="p-2 text-right font-mono text-white/70">{(r.win_rate * 100).toFixed(0)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ChartCard>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

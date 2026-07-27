@@ -8,6 +8,7 @@ Replaces the 3 separate fallback chains across the codebase.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from quant_nanggroe.engine.risk import constants as risk_constants
@@ -15,6 +16,28 @@ from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.manager import RiskManager as EngineRiskManager
 
 log = logging.getLogger("QNA-Pipeline-Exec")
+
+
+@dataclass
+class PipelineSignal:
+    """Typed signal for pipeline execution — replaces duck-typed _SignalStub.
+
+    Attributes:
+        symbol: Trading symbol (e.g., "EURUSD", "BTC-USD")
+        side: Trade direction ("buy" or "sell")
+        confidence: Signal confidence (0.0 to 1.0)
+        price: Entry price
+        stop_loss: Stop loss price (optional)
+        take_profit: Take profit price (optional)
+        strategy: Source strategy name
+    """
+    symbol: str
+    side: str
+    confidence: float
+    price: float
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    strategy: str = "pipeline"
 
 
 class UnifiedExecutionRouter:
@@ -33,6 +56,7 @@ class UnifiedExecutionRouter:
         self._production: Any = None
         self._kill_switch: KillSwitch | None = None
         self._risk_manager: EngineRiskManager | None = None
+        self._warned_synthetic_balance = False
 
     def _lazy_mt5(self):
         if self._mt5 is not None:
@@ -101,7 +125,19 @@ class UnifiedExecutionRouter:
             "mode": "risk_gate",
             "error": error,
             "strategy": "pipeline",
+            "executed": False,
         }
+
+    @staticmethod
+    def _mark_executed(result: dict) -> dict:
+        """Set 'executed' honestly: True only when a fill/order is confirmed present."""
+        if result.get("status") == "rejected":
+            result.setdefault("executed", False)
+        elif result.get("ticket") is not None or result.get("fill_id") is not None or result.get("status") is not None:
+            result.setdefault("executed", True)
+        else:
+            result.setdefault("executed", False)
+        return result
 
     def execute(
         self,
@@ -125,7 +161,14 @@ class UnifiedExecutionRouter:
         # ── 2. Risk gate: daily/weekly loss limits ────────────────────
         balance = self.get_balance()
         if balance <= 0:
-            balance = 10000.0  # fallback if no broker connected
+            if self.allow_live:
+                # fail-closed: never size live trades off a synthetic balance
+                return self._reject(symbol, side, price, qty or 0.0,
+                                    "Live mode: broker balance unavailable — failing closed")
+            if not self._warned_synthetic_balance:
+                log.warning("Paper mode: no broker balance available — using synthetic 10000.0")
+                self._warned_synthetic_balance = True
+            balance = 10000.0
         if self._risk_manager is None:
             self._risk_manager = EngineRiskManager(initial_equity=balance)
         risk_check = self._risk_manager.check_trade(
@@ -150,9 +193,11 @@ class UnifiedExecutionRouter:
         self._lazy_production()
         if self._production is not None:
             try:
-                sig = _SignalStub(symbol, side, confidence, price, sl, tp)
+                sig = PipelineSignal(symbol=symbol, side=side, confidence=confidence, price=price, stop_loss=sl, take_profit=tp)
                 result = self._production.execute_signal(sig, price, balance)
                 if result is not None:
+                    if isinstance(result, dict):
+                        self._mark_executed(result)
                     return result
             except Exception as e:
                 log.debug("ProductionExecutionManager failed: %s", e)
@@ -181,6 +226,7 @@ class UnifiedExecutionRouter:
                         "ticket": ticket,
                         "strategy": "pipeline",
                         "mode": "mt5-live",
+                        "executed": True,
                     }
             except Exception as e:
                 log.debug("Direct MT5 execution failed: %s", e)
@@ -194,6 +240,7 @@ class UnifiedExecutionRouter:
                     if isinstance(result, dict):
                         result.setdefault("strategy", "pipeline")
                         result.setdefault("mode", "paper")
+                        self._mark_executed(result)
                     return result
             except Exception as e:
                 log.debug("Paper broker failed: %s", e)
@@ -202,8 +249,11 @@ class UnifiedExecutionRouter:
         self._lazy_engine()
         if self._engine is not None:
             try:
+                from uuid import uuid4
+
                 from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
                 order = Order(
+                    id=f"pipe-{uuid4().hex[:12]}",  # required field — without it this path always fell to no_backend
                     symbol=symbol,
                     side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
                     order_type=OrderType.MARKET,
@@ -220,6 +270,7 @@ class UnifiedExecutionRouter:
                     "fill_id": getattr(fill, "id", None),
                     "strategy": "pipeline",
                     "mode": "engine",
+                    "executed": True,
                 }
             except Exception as e:
                 log.debug("Engine execution failed: %s", e)
@@ -234,6 +285,7 @@ class UnifiedExecutionRouter:
             "mode": "no_backend",
             "error": "All execution backends unavailable",
             "strategy": "pipeline",
+            "executed": False,
         }
 
     def get_balance(self) -> float:
@@ -248,16 +300,3 @@ class UnifiedExecutionRouter:
             except Exception:
                 pass
         return 0.0
-
-
-class _SignalStub:
-    """Minimal signal duck-type for ProductionExecutionManager.execute_signal()."""
-
-    def __init__(self, symbol: str, side: str, confidence: float, price: float, sl: Optional[float], tp: Optional[float]):
-        self.symbol = symbol
-        self.side = side
-        self.confidence = confidence
-        self.price = price
-        self.stop_loss = sl
-        self.take_profit = tp
-        self.strategy = "pipeline"

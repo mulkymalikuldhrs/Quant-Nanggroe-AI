@@ -1,5 +1,20 @@
 # Quant Nanggroe AI — Changelog
 
+## [Unreleased] v6.2.x — Repository Hygiene: Orphan Archival
+
+### 🟡 Medium — Archived Orphaned Entry Points and Stale Root Docs
+- Archived orphaned entry points and stale root docs to `archive/orphaned_v6.2/` per `docs/QNA_AUDIT_INVENTORY_v6.2.md` §2 (moved, not deleted; git history preserved via `git mv` for tracked files):
+  - **`scripts/qna_daemon.py`** — superseded by `qna.py daemon` (PID file + docker-compose healthcheck reference `qna.py`'s own daemon, not this script).
+  - **`_diag_imports.py`**, **`_probe_strategy_count.py`** (root) — throwaway diagnostics, zero references.
+  - **`FILE_LISTING.md`** — stale snapshot, no references.
+  - **`WAR_PLAN.md`** — superseded by `TODO.md`.
+  - **`DESIGN.md`** — superseded by `docs/02_ARCHITECTURE.md`.
+  - **`Riset_QNA.md`** — research content already embedded in `engine/causal/master_engine.py` and related modules; kept as historical reference (docstring citations remain valid as historical pointers).
+  - **`AO_QNA_PROFILE_ACTIVITY_2026-07-25.md`** — one-off activity log.
+- Kept (verified NOT orphans): `quant_nanggroe/cli.py` (pyproject `qnai` entry point), `scripts/qna-cli.py` / `scripts/bh-cli.py` (cli.py bridge), `scripts/qna-paper-daemon.py` (launched by `qna-watchdog.py`).
+
+---
+
 ## [2026-07-27] v6.4.0 — Backtest System Hardening: CPCV Default, Annualization Fix, Broken Imports Repaired
 
 ### 🔴 Critical — Walk-Forward Default Changed to CPCV

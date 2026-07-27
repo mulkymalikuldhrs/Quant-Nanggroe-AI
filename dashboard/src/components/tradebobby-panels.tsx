@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -23,23 +23,36 @@ interface MacroData {
 export function MacroPulsePanel() {
   const [data, setData] = useState<MacroData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState("");
+
+  const fetchData = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/macro-pulse");
+      if (!resp.ok) throw new Error("Failed to fetch");
+      const json = await resp.json();
+      const m = json.macro || {};
+      const r = json.regime || {};
+      setData({
+        vix: m.VIX?.price ?? 14.2,
+        dxy: m.DXY?.price ?? 104.5,
+        gold: m.GOLD?.price ?? 2420,
+        oil: m.WTI?.price ?? 78.5,
+        us10y: m.US10Y?.price ?? 4.25,
+        spx: m.SPX?.price ?? 5520,
+        nasdaq: m.NAS?.price ?? 18200,
+        regime: r.regime ?? "MIXED",
+        riskIndex: r.risk_index ?? 50,
+      });
+      setLastUpdate(json.updated_at ? new Date(json.updated_at).toLocaleTimeString() : "");
+    } catch { /* keep previous data */ }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    setTimeout(() => {
-      setData({
-        vix: 14.2 + Math.random() * 5,
-        dxy: 104.5 + Math.random() * 2 - 1,
-        gold: 2420 + Math.random() * 50 - 25,
-        oil: 78.5 + Math.random() * 5 - 2.5,
-        us10y: 4.25 + Math.random() * 0.3 - 0.15,
-        spx: 5520 + Math.random() * 100 - 50,
-        nasdaq: 18200 + Math.random() * 300 - 150,
-        regime: Math.random() > 0.5 ? "RISK-ON" : Math.random() > 0.5 ? "MIXED" : "RISK-OFF",
-        riskIndex: Math.round(30 + Math.random() * 50),
-      });
-      setLoading(false);
-    }, 800);
-  }, []);
+    fetchData();
+    const interval = setInterval(fetchData, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   if (loading || !data) {
     return (
@@ -110,15 +123,34 @@ interface COTData {
   market: string; smartLong: number; retailLong: number; signal: string;
 }
 
-const COT_MOCK: COTData[] = [
-  { market: "Gold", smartLong: 68, retailLong: 45, signal: "Bullish" },
-  { market: "EUR/USD", smartLong: 55, retailLong: 62, signal: "Neutral" },
-  { market: "S&P 500", smartLong: 42, retailLong: 71, signal: "Bearish" },
-  { market: "Crude Oil", smartLong: 61, retailLong: 38, signal: "Bullish" },
-  { market: "10Y Note", smartLong: 35, retailLong: 55, signal: "Bearish" },
-];
-
 export function COTPanel() {
+  const [markets, setMarkets] = useState<COTData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState("");
+
+  const fetchData = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/cot-data");
+      if (!resp.ok) throw new Error("Failed");
+      const json = await resp.json();
+      const items = (json.markets || []).slice(0, 8).map((m: any) => ({
+        market: m.market,
+        smartLong: m.smart_long_pct,
+        retailLong: m.retail_long_pct,
+        signal: m.signal,
+      }));
+      setMarkets(items);
+      setLastUpdate(json.updated_at ? new Date(json.updated_at).toLocaleTimeString() : "");
+    } catch { /* keep previous data */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 300_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
   return (
     <Card className="p-4">
       <CardHeader>
@@ -131,7 +163,11 @@ export function COTPanel() {
       </CardHeader>
       <CardContent>
         <div className="space-y-1.5">
-          {COT_MOCK.map(d => (
+          {loading && markets.length === 0 ? (
+            <div className="animate-pulse space-y-2">
+              {[1, 2, 3].map(i => <div key={i} className="h-6 bg-white/5 rounded" />)}
+            </div>
+          ) : markets.map(d => (
             <div key={d.market} className="flex items-center justify-between p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-white/70 w-16">{d.market}</span>
@@ -161,18 +197,36 @@ interface CryptoData {
 export function CryptoPulsePanel() {
   const [data, setData] = useState<CryptoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fng, setFng] = useState<{ value: number; classification: string }>({ value: 50, classification: "Neutral" });
+  const [lastUpdate, setLastUpdate] = useState("");
+
+  const fetchData = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/crypto-pulse");
+      if (!resp.ok) throw new Error("Failed");
+      const json = await resp.json();
+      const prices = (json.prices || []).slice(0, 6).map((c: any) => {
+        const fr = json.funding_rates?.[c.symbol] || {};
+        return {
+          symbol: c.symbol,
+          price: c.price,
+          change24h: c.change_24h ?? 0,
+          fundingRate: fr.funding_rate ?? 0,
+          openInterest: c.market_cap ? +(c.market_cap / 1e9).toFixed(1) : 0,
+        };
+      });
+      setData(prices);
+      if (json.fear_greed) setFng(json.fear_greed);
+      setLastUpdate(json.updated_at ? new Date(json.updated_at).toLocaleTimeString() : "");
+    } catch { /* keep previous data */ }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    setTimeout(() => {
-      setData([
-        { symbol: "BTC", price: 67500 + Math.random() * 2000, change24h: (Math.random() - 0.4) * 5, fundingRate: 0.01 + Math.random() * 0.03, openInterest: 18.5 },
-        { symbol: "ETH", price: 3450 + Math.random() * 200, change24h: (Math.random() - 0.4) * 6, fundingRate: 0.008 + Math.random() * 0.02, openInterest: 9.2 },
-        { symbol: "SOL", price: 175 + Math.random() * 15, change24h: (Math.random() - 0.3) * 8, fundingRate: 0.015 + Math.random() * 0.04, openInterest: 3.1 },
-        { symbol: "BNB", price: 590 + Math.random() * 30, change24h: (Math.random() - 0.5) * 4, fundingRate: 0.005 + Math.random() * 0.01, openInterest: 1.8 },
-      ]);
-      setLoading(false);
-    }, 600);
-  }, []);
+    fetchData();
+    const interval = setInterval(fetchData, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -293,24 +347,47 @@ export function SetupTrackerPanel() {
 export function AgentBriefPanel() {
   const [brief, setBrief] = useState<string>("");
 
-  useEffect(() => {
-    setTimeout(() => {
-      setBrief(`Market Regime: RISK-ON (Confidence: 72%)
+  const fetchData = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/news-scan");
+      if (!resp.ok) throw new Error("Failed");
+      const json = await resp.json();
+      const sents = json.sentiments || {};
+      const totalCount = json.total_count || 0;
 
-Top Ideas:
-1. BTC-USD LONG — ICT structure bullish, CVD positive. Score 9/10.
-2. XAUUSD LONG — Gold above VWAP, COT extremes long. Score 8/10.
-3. EURUSD SHORT — DXY strength + retail crowded long. Score 7/10.
+      // Build brief from real news sentiment
+      const lines: string[] = [];
+      for (const [cat, info] of Object.entries(sents) as [string, any][]) {
+        const emoji = info.label === "bullish" ? "🟢" : info.label === "bearish" ? "🔴" : "🟡";
+        lines.push(`${emoji} ${cat.toUpperCase()}: ${info.label} (${info.avg_score}/100, ${info.count} articles)`);
+      }
 
-Divergences:
-- VIX low but news sentiment deteriorating
-- COT net short S&P while price at ATH
+      // Add top headlines
+      const news = json.news || {};
+      const topHeadlines: string[] = [];
+      for (const [cat, items] of Object.entries(news) as [string, any[]][]) {
+        const top = items.slice(0, 2);
+        for (const item of top) {
+          const sent = item.sentiment?.score > 60 ? "🟢" : item.sentiment?.score < 40 ? "🔴" : "🟡";
+          topHeadlines.push(`${sent} ${item.title}`);
+        }
+      }
 
-Next Catalysts:
-- NFP Friday 13:30 UTC
-- FOMC Minutes Wednesday 19:00 UTC`);
-    }, 1200);
+      const briefText = lines.length > 0
+        ? `Market News Scan (${totalCount} articles)\n\nSentiment by Category:\n${lines.join("\n")}\n\nTop Headlines:\n${topHeadlines.slice(0, 5).map(h => `• ${h}`).join("\n")}`
+        : "No news data available. Run the news_scanner daemon to populate.";
+
+      setBrief(briefText);
+    } catch {
+      setBrief("Failed to load news data. Ensure news_scanner daemon is running.");
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 300_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   return (
     <Card className="p-4">

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Bot, FlaskConical, Briefcase, ArrowLeftRight, Shield,
   BarChart3, Sigma, Radio, Settings, ChevronLeft, ChevronRight,
   MemoryStick as Memory, Network, Cog, Shrink, Building2, Activity, GitBranch,
-  Menu, X, ChevronRight as ArrowRight,
+  Menu, X, ChevronRight as ArrowRight, Brain,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,11 +30,13 @@ const navItems: NavItem[] = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, category: "analysis", badge: "15" },
   { href: "/agents", label: "Agents", icon: Bot, category: "analysis", badge: "11" },
   { href: "/backtest", label: "Backtest", icon: FlaskConical, category: "analysis" },
+  { href: "/walkforward", label: "Walk-Forward", icon: FlaskConical, category: "analysis", badge: "WF" },
   { href: "/strategies", label: "Strategies", icon: Sigma, category: "analysis" },
   { href: "/factors", label: "Factors", icon: Shrink, category: "analysis" },
   { href: "/memory", label: "Memory", icon: Memory, category: "analysis" },
   { href: "/colony", label: "Colony", icon: Network, category: "analysis" },
   { href: "/qna-status", label: "QNA Status", icon: Activity, category: "analysis" },
+  { href: "/autonomous", label: "Autonomous", icon: Brain, category: "analysis", badge: "AI" },
   { href: "/orderflow", label: "Order Flow", icon: BarChart3, category: "trading", badge: "🔥" },
   { href: "/security", label: "Security", icon: Shield, category: "system" },
   { href: "/tools", label: "Tools", icon: Cog, category: "system" },
@@ -248,7 +250,7 @@ export function Sidebar() {
 
               {/* Bottom info */}
               <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-white/20">
-                <span>18 modules • Autonomous HF</span>
+                <span>19 modules • Autonomous HF</span>
                 <span className="font-mono">Pipeline: 15/15 wired</span>
               </div>
             </div>

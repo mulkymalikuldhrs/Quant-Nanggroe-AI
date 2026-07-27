@@ -298,6 +298,7 @@ def create_app() -> FastAPI:
         AuthMiddleware,
         auth=jwt_auth,
         api_key_auth=api_key_auth,
+        exclude_paths={"/api/otto"},
     )
 
     # ── Rate Limit Middleware ────────────────────────────────────────
@@ -312,6 +313,7 @@ def create_app() -> FastAPI:
         backtest,
         channels,
         colony,
+        config,
         council,
         credentials,
         debate,
@@ -322,7 +324,9 @@ def create_app() -> FastAPI:
         memory,
         monitor,
         options,
+        otto_proxy,
         personas,
+        pipeline_status,
         portfolio,
         qna_status,
         rl,
@@ -338,7 +342,6 @@ def create_app() -> FastAPI:
         whatsapp,
         wiring_compat,
         ws,
-        otto_proxy,
     )
     from quant_nanggroe.api.routes.brokers import router as brokers_router
 
@@ -380,10 +383,15 @@ def create_app() -> FastAPI:
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
     app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
+    app.include_router(pipeline_status.router)  # router already has /api/pipeline prefix
+    app.include_router(config.router)  # router already has /config prefix
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
-    from quant_nanggroe.api.routes.causal_engine import router as causal_router
-    app.include_router(causal_router)  # router already has /api/causal prefix
+    try:
+        from quant_nanggroe.api.routes.causal_engine import router as causal_router
+        app.include_router(causal_router)  # router already has /api/causal prefix
+    except Exception as e:
+        logger.warning("causal_engine_load_failed: %s", e)
 
     # ── Health Check ────────────────────────────────────────────────
     @app.get("/health")

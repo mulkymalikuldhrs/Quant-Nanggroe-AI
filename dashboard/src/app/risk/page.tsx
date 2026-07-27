@@ -62,7 +62,7 @@ export default function RiskPage() {
       const data = await apiRequest<RiskData>("/api/portfolio/risk");
       setRiskData(data);
     } catch {
-      // Fallback to mock data if backend unavailable
+      setError("Risk data unavailable — backend /api/portfolio/risk unreachable");
     } finally {
       setLoading(false);
     }
@@ -97,38 +97,17 @@ export default function RiskPage() {
     );
   }
 
-  const data = riskData || {
-    riskScore: 35,
-    var95: -5200,
-    var99: -8500,
-    cvar95: -6800,
-    maxDrawdown: 8.5,
-    currentDrawdown: 2.1,
-    kellyFraction: 0.18,
-    sharpe: 1.72,
-    sortino: 2.1,
-    winRate: 62,
-    profitFactor: 1.85,
-    checks: [
-      { id: 1, name: "Position Size Limit", status: "pass", value: "8%", limit: "10%" },
-      { id: 2, name: "VaR Constraint", status: "pass", value: "$4,250", limit: "$10,000" },
-      { id: 3, name: "Drawdown Limit", status: "pass", value: "-2.1%", limit: "-5%" },
-      { id: 4, name: "Leverage Check", status: "pass", value: "1.0x", limit: "2.0x" },
-      { id: 5, name: "Concentration Limit", status: "warning", value: "28%", limit: "40%" },
-      { id: 6, name: "Sector Exposure", status: "pass", value: "18%", limit: "40%" },
-      { id: 7, name: "Kelly Fraction", status: "pass", value: "18%", limit: "25%" },
-      { id: 8, name: "Correlation Bound", status: "pass", value: "0.42", limit: "0.70" },
-      { id: 9, name: "Emotional Lockout", status: "pass", value: "Calm", limit: "Calm" },
-    ] as RiskCheck[],
-    correlationMatrix: [
-      [1, 0.65, 0.42, 0.38, 0.15],
-      [0.65, 1, 0.55, 0.45, 0.08],
-      [0.42, 0.55, 1, 0.72, -0.05],
-      [0.38, 0.45, 0.72, 1, -0.12],
-      [0.15, 0.08, -0.05, -0.12, 1],
-    ] as number[][],
-    correlationLabels: ["BTC", "ETH", "NVDA", "SPY", "EUR/USD"],
-  };
+  if (!riskData) {
+    return (
+      <div className="space-y-4 animate-slide-up">
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+          <p className="text-sm text-red-400">{error || "No risk data available"}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const data = riskData;
 
   const riskScore = data.riskScore;
   const var95 = Math.abs(data.var95);

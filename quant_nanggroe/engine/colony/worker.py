@@ -53,33 +53,100 @@ class Worker(ABC):
 
 
 class StrategyWorker(Worker):
-    """Runs trading strategies (backtest or live signal gen)."""
+    """Runs trading strategies via StrategyRegistry."""
 
     async def execute(self, task: Task) -> Any:
-        # ponytail: delegates to backtest/strategies engines; stub for wiring
-        await asyncio.sleep(0.01)
-        return {"strategy": task.name, "signal": "hold", "confidence": 0.5}
+        strategy_name = task.name
+        params = task.params
+        symbol = params.get("symbol", "UNKNOWN")
+        df = params.get("dataframe")
+        if df is None:
+            return {"strategy": strategy_name, "signal": "hold", "confidence": 0.0, "error": "no_dataframe"}
+        try:
+            from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+            strategy = StrategyRegistry.create(strategy_name)
+            if strategy is None:
+                return {"strategy": strategy_name, "signal": "hold", "confidence": 0.0, "error": "unknown_strategy"}
+            signal = strategy.generate_signal(df, symbol=symbol)
+            return {
+                "strategy": strategy_name,
+                "signal": signal.direction.value if hasattr(signal, "direction") else "hold",
+                "confidence": float(getattr(signal, "confidence", 0.0)),
+                "reasoning": getattr(signal, "reasoning", ""),
+            }
+        except Exception as e:
+            return {"strategy": strategy_name, "signal": "error", "confidence": 0.0, "error": str(e)}
 
 
 class RiskWorker(Worker):
-    """Runs risk checks (VaR, drawdown, position limits)."""
+    """Runs risk checks via ConstitutionalRiskGuard."""
 
     async def execute(self, task: Task) -> Any:
-        await asyncio.sleep(0.01)
-        return {"risk_check": task.name, "passed": True, "score": 0.0}
+        params = task.params
+        try:
+            from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard
+            guard = ConstitutionalRiskGuard()
+            symbol = params.get("symbol", "UNKNOWN")
+            side = params.get("side", "buy")
+            size = params.get("size", 0.01)
+            price = params.get("price", 0.0)
+            result = guard.can_trade(symbol=symbol, side=side, size=size, price=price)
+            return {
+                "risk_check": task.name,
+                "passed": bool(result),
+                "reason": str(getattr(result, "reason", "")) if not isinstance(result, bool) else "",
+            }
+        except Exception as e:
+            return {"risk_check": task.name, "passed": False, "error": str(e)}
 
 
 class DataWorker(Worker):
-    """Fetches and processes market data."""
+    """Fetches market data via ExchangeManager."""
 
     async def execute(self, task: Task) -> Any:
-        await asyncio.sleep(0.01)
-        return {"data": task.name, "rows": 0, "columns": []}
+        params = task.params
+        symbol = params.get("symbol", "UNKNOWN")
+        try:
+            from quant_nanggroe.services import get_exchange_manager
+            em = get_exchange_manager()
+            from quant_nanggroe.types.market import TimeFrame as TF
+            tf_str = params.get("timeframe", "1d")
+            tf_map = {"1m": TF.M1, "5m": TF.M5, "15m": TF.M15, "1h": TF.H1, "4h": TF.H4, "1d": TF.D1}
+            tf = tf_map.get(tf_str, TF.D1)
+            limit = int(params.get("limit", 100))
+            candles = await em.get_ohlcv(symbol=symbol, timeframe=tf, limit=limit)
+            if not candles:
+                return {"data": task.name, "rows": 0, "columns": [], "error": "no_data"}
+            import pandas as pd
+            df = pd.DataFrame([{"open": c.open, "high": c.high, "low": c.low, "close": c.close, "volume": c.volume} for c in candles])
+            return {"data": task.name, "rows": len(df), "columns": list(df.columns), "dataframe": df}
+        except Exception as e:
+            return {"data": task.name, "rows": 0, "columns": [], "error": str(e)}
 
 
 class ExecutionWorker(Worker):
-    """Handles order placement and fill tracking."""
+    """Handles order placement via ProductionExecutionManager."""
 
     async def execute(self, task: Task) -> Any:
-        await asyncio.sleep(0.01)
-        return {"execution": task.name, "filled": False, "order_id": None}
+        params = task.params
+        symbol = params.get("symbol", "UNKNOWN")
+        side = params.get("side", "buy")
+        try:
+            from quant_nanggroe.engine_production_bridge import ProductionExecutionManager
+            pem = ProductionExecutionManager()
+            result = await pem.execute_signal(
+                symbol=symbol,
+                side=side,
+                confidence=float(params.get("confidence", 0.5)),
+                price=float(params.get("price", 0.0)),
+                stop_loss=float(params.get("stop_loss", 0.0)),
+                take_profit=float(params.get("take_profit", 0.0)),
+            )
+            return {
+                "execution": task.name,
+                "filled": bool(result.get("filled", False)),
+                "order_id": result.get("order_id"),
+                "detail": result,
+            }
+        except Exception as e:
+            return {"execution": task.name, "filled": False, "order_id": None, "error": str(e)}

@@ -134,7 +134,8 @@ def run_once(target_symbol=None) -> dict:
 
     Keys:
         status       — one of "gate_failed", "positions_trailed",
-                       "vetoed", "executed", "no_trade"
+                       "vetoed", "executed", "order_failed",
+                       "paper_blocked", "no_trade"
         symbol       — the symbol processed
         signal       — aggregator output dict (present when vote occurred)
         causal_ctx   — CausalContext snapshot (present when engine OK)
@@ -318,10 +319,23 @@ def run_once(target_symbol=None) -> dict:
                     return result
 
                 log.info(f"Risk Guard APPROVED (score={risk_score:.2f})")
-                execute(signal, symbol)
-                result["status"] = "executed"
                 result["risk_score"] = risk_score
-                result["executed"] = True
+                try:
+                    order_id = execute(signal, symbol)
+                except RuntimeError as e:
+                    # paper-mode fail-closed block in execution/orders.py
+                    log.warning(f"Execution blocked (paper mode fail-closed): {e}")
+                    result["status"] = "paper_blocked"
+                    result["executed"] = False
+                else:
+                    if order_id:
+                        result["status"] = "executed"
+                        result["executed"] = True
+                        result["order_id"] = order_id
+                    else:
+                        log.warning("Order not placed — execute() returned no order id")
+                        result["status"] = "order_failed"
+                        result["executed"] = False
             else:
                 result["status"] = "no_trade"
 

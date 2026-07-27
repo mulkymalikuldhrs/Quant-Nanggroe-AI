@@ -237,6 +237,19 @@ export const backtestApi = {
     apiRequest<string[]>("/api/backtest/engines"),
   getFactors: () =>
     apiRequest<FactorZoo[]>("/api/backtest/factors"),
+  // Walk-Forward endpoints
+  runWalkForward: (config: WalkForwardRequest) =>
+    apiRequest<WalkForwardResult>("/api/backtest/walk-forward", { method: "POST", body: config }),
+  batchWalkForward: (config?: { symbol?: string; period?: string }) =>
+    apiRequest<BatchWalkForwardResult>("/api/backtest/walk-forward/batch", { method: "POST", body: config || {} }),
+  walkForwardStatus: () =>
+    apiRequest<WalkForwardStatus>("/api/backtest/walk-forward/status"),
+  // Auto-Tune endpoint
+  tune: (config: TuneRequest) =>
+    apiRequest<TuneResult>("/api/backtest/tune", { method: "POST", body: config }),
+  // Evolution endpoint
+  evolutionStatus: () =>
+    apiRequest<EvolutionStatus>("/api/backtest/evolution/status"),
 };
 
 export const tradingApi = {
@@ -498,6 +511,105 @@ export interface MT5AccountInfo { login: number; balance: number; equity: number
 export interface ExecuteToolResponse { success: boolean; result: string; }
 
 // ── Config API (dynamic settings) ──────────────────────────────────
+
+// ── Walk-Forward Types ─────────────────────────────────────────────
+export interface WalkForwardRequest {
+  strategy: string;
+  symbol?: string;
+  period?: string;
+  mode?: "rolling" | "anchored" | "cpcv";
+  train_window?: number;
+  test_window?: number;
+}
+export interface WalkForwardFold {
+  fold: number;
+  train_start: string;
+  train_end: string;
+  test_start: string;
+  test_end: string;
+  is_sharpe: number;
+  oos_sharpe: number;
+  is_return: number;
+  oos_return: number;
+  is_max_dd: number;
+  oos_max_dd: number;
+}
+export interface WalkForwardResult {
+  strategy: string;
+  mode: string;
+  n_folds: number;
+  folds: WalkForwardFold[];
+  aggregate: {
+    mean_is_sharpe: number;
+    mean_oos_sharpe: number;
+    std_oos_sharpe: number;
+    mean_oos_return: number;
+    degradation_ratio: number;
+  };
+  stability: {
+    sharpe_stability: number;
+    return_stability: number;
+    decay_score: number;
+    overall_stability: number;
+  };
+}
+export interface BatchWalkForwardResult {
+  total: number;
+  validated: number;
+  results: Array<{
+    strategy: string;
+    n_folds: number;
+    mean_oos_sharpe: number;
+    mean_oos_return: number;
+    decayed: boolean;
+  }>;
+}
+export interface WalkForwardStatus {
+  total_strategies: number;
+  validated_count: number;
+  decayed_count: number;
+  strategies: Array<{
+    name: string;
+    n_validations: number;
+    best_oos_sharpe: number;
+    avg_oos_sharpe: number;
+    decay_count: number;
+  }>;
+}
+export interface TuneRequest {
+  strategy: string;
+  symbol?: string;
+  period?: string;
+  param_grid?: Record<string, unknown>;
+  n_windows?: number;
+  top_n?: number;
+}
+export interface TuneResult {
+  strategy: string;
+  n_evaluated: number;
+  n_windows: number;
+  results: Array<{
+    params: Record<string, unknown>;
+    sharpe: number;
+    return_pct: number;
+    max_dd: number;
+    win_rate: number;
+  }>;
+}
+export interface EvolutionStatus {
+  enabled: boolean;
+  total_attempts: number;
+  accepted: number;
+  rejected: number;
+  acceptance_rate: number;
+  last_attempts: Array<{
+    strategy: string;
+    timestamp: string;
+    baseline_sharpe: number;
+    mutated_sharpe: number;
+    accepted: boolean;
+  }>;
+}
 
 export const configApi = {
   getConfig: () =>

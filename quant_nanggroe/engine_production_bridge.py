@@ -65,8 +65,8 @@ def _record_lesson(error: Exception, context: str):
         if len(lessons) > QNA_LESSONS_CAP:
             lessons = lessons[-QNA_LESSONS_CAP:]  # explicit, testable cap
         p.write_text(_json.dumps(lessons, indent=2))
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning(f"Failed to record lesson: {e}")
 
 
 def get_lessons() -> list:
@@ -83,6 +83,10 @@ def get_lessons() -> list:
 
 class ProductionStrategyRunner:
     """Loads ALL engine/ strategies via create_strategy() factory.
+
+    Walk-forward filtering: when a WalkForwardRegistry is available and
+    contains results, strategies with negative average OOS Sharpe or that
+    have decayed are excluded from signal generation.
     Falls back to empty set if engine imports fail.
     """
     
@@ -91,29 +95,76 @@ class ProductionStrategyRunner:
         self.risk_manager = risk_manager
         self.strategies: Dict[str, Any] = {}
         self.available: List[str] = []
+        self._lifecycle: Any = None
+        self._wf_registry: Any = None
         self._loaded = False
         self._load_strategies()
-    
+
+    def _lazy_lifecycle(self):
+        """Instantiate the lifecycle manager lazily and defensively.
+
+        Returns None when unavailable — in that case all registry
+        strategies are loaded (no lifecycle filtering).
+        """
+        if self._lifecycle is not None:
+            return self._lifecycle
+        try:
+            from quant_nanggroe.engine.strategy_lifecycle import StrategyLifecycleManager
+            lifecycle = StrategyLifecycleManager()
+            lifecycle._load()  # load persisted ACTIVE/HIBERNATING/KILLED states
+            self._lifecycle = lifecycle
+        except Exception as e:
+            log.debug(f"Lifecycle manager unavailable — loading all registry strategies: {e}")
+        return self._lifecycle
+
+    def _load_walk_forward_registry(self):
+        """Lazy-load WalkForwardRegistry for strategy filtering."""
+        if self._wf_registry is not None:
+            return self._wf_registry
+        try:
+            from quant_nanggroe.engine.strategy.registry import WalkForwardRegistry
+            self._wf_registry = WalkForwardRegistry()
+            log.debug("WalkForwardRegistry loaded for strategy filtering")
+        except Exception as e:
+            log.debug(f"WalkForwardRegistry unavailable: {e}")
+        return self._wf_registry
+
     def _load_strategies(self):
         try:
             from quant_nanggroe.engine.strategies import create_strategy, list_strategies
             self.available = list_strategies()
-            to_load = [
-                "mean_rev",
-                "trend_follow",
-                "regime_detection",
-                "crypto_specific",
-            ]
-            for name in to_load:
-                if name not in self.available:
-                    continue
+            lifecycle = self._lazy_lifecycle()
+            wf_reg = self._load_walk_forward_registry()
+            loaded = 0
+            skipped_wf = 0
+            for name in self.available:
                 try:
-                    self.strategies[name] = create_strategy(name)
-                    log.info(f"  Loaded strategy: {name}")
+                    # Walk-forward filter: skip strategies that failed validation
+                    if wf_reg is not None:
+                        meta = wf_reg.get(name)
+                        if meta is not None and meta.walk_forward_results:
+                            if wf_reg.decayed(name):
+                                skipped_wf += 1
+                                log.debug("Skip %s: walk-forward decayed", name)
+                                continue
+                            avg_oos = sum(meta.oos_sharpes) / len(meta.oos_sharpes) if meta.oos_sharpes else 0.0
+                            if avg_oos < 0.0:
+                                skipped_wf += 1
+                                log.debug("Skip %s: negative OOS sharpe (%.4f)", name, avg_oos)
+                                continue
+                    # create_strategy enforces ACTIVE-only when lifecycle given;
+                    # returns None for KILLED/HIBERNATING strategies.
+                    strategy = create_strategy(name, lifecycle=lifecycle)
+                    if strategy is not None:
+                        self.strategies[name] = strategy
+                        loaded += 1
                 except Exception as e:
                     log.debug(f"  Skip {name}: {e}")
             self._loaded = True
-            log.info(f"Strategy runner: {len(self.strategies)} active / {len(self.available)} available")
+            log.info(
+                f"Strategy runner: {loaded} active / {len(self.available)} available"
+                + (f" ({skipped_wf} skipped by walk-forward)" if skipped_wf else "")
+            )
         except Exception as e:
             log.warning(f"Strategy engine unavailable: {e}")
     
@@ -224,7 +275,7 @@ class RegimeAwareExecution:
         return self._fallback_detect(candles)
     
     def _fallback_detect(self, candles: Dict[str, List]) -> str:
-        """Simple trend detection fallback."""
+        """Fallback-only simple SMA trend detection. Production regime detection uses HMMRegimeDetector."""
         for sym in ("BTCUSDT", "ETHUSDT"):
             data = candles.get(sym, [])
             if len(data) > 20:
@@ -262,34 +313,38 @@ class RegimeAwareExecution:
 class SyncPaperBroker:
     """Synchronous wrapper around PaperExchangeBroker for live_engine compatibility."""
 
+    _loop = None  # class-level persistent event loop (created on demand)
+
     def __init__(self, initial_capital: float = 10000.0):
         self._broker = None
         self._capital = initial_capital
 
+    @classmethod
+    def _get_loop(cls):
+        """Return the persistent class-level loop; create only if missing/closed."""
+        import asyncio
+        if cls._loop is None or cls._loop.is_closed():
+            cls._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(cls._loop)
+        return cls._loop
+
     def _ensure(self):
         if self._broker is not None:
             return
-        import asyncio
-
         from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
         self._broker = PaperExchangeBroker(initial_capital=self._capital)
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            loop = self._get_loop()
             loop.run_until_complete(self._broker.connect())
-            loop.close()
         except Exception:
             pass
 
     def place_order(self, symbol: str, side: str, qty: float, price: float) -> Optional[Dict]:
         self._ensure()
-        import asyncio
-
         from quant_nanggroe.types.orders import OrderSide, OrderType
         os = OrderSide.BUY if side == "buy" else OrderSide.SELL
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            loop = self._get_loop()
             order = loop.run_until_complete(
                 self._broker.place_order(
                     symbol=symbol,
@@ -298,7 +353,6 @@ class SyncPaperBroker:
                     quantity=qty,
                 )
             )
-            loop.close()
             return {
                 "symbol": order.symbol,
                 "side": side,
@@ -315,24 +369,18 @@ class SyncPaperBroker:
 
     def get_balance(self) -> float:
         self._ensure()
-        import asyncio
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            loop = self._get_loop()
             bal = loop.run_until_complete(self._broker.get_balance())
-            loop.close()
             return bal.get("USDT", bal.get("total", 0))
         except Exception:
             return self._capital
 
     def get_positions(self) -> list:
         self._ensure()
-        import asyncio
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            loop = self._get_loop()
             pos = loop.run_until_complete(self._broker.get_positions())
-            loop.close()
             return pos
         except Exception:
             return []
@@ -762,14 +810,24 @@ class RiskEnforcer:
 # ---------------------------------------------------------------------------
 
 class AutomatedBacktestRunner:
-    """Automated walk-forward backtesting every N cycles."""
-    
+    """Automated walk-forward backtesting every N cycles.
+
+    After each walk-forward run, results are stored in WalkForwardRegistry
+    so ProductionStrategyRunner can filter out decayed / negative-OOS
+    strategies before generating live signals.
+    """
+
+    # Minimum out-of-sample Sharpe for a strategy to remain eligible.
+    WF_MIN_OOS_SHARPE = 0.0
+
     def __init__(self, db=None):
         self.db = db
         self._engine = None
+        self._wf_registry = None
         self.last_run = 0
+        self.last_results: Dict[str, Any] = {}
         self._lazy_init()
-    
+
     def _lazy_init(self):
         try:
             from quant_nanggroe.engine.backtest.engine import BacktestEngine
@@ -777,40 +835,154 @@ class AutomatedBacktestRunner:
             log.info("BacktestEngine loaded")
         except Exception as e:
             log.debug(f"No backtest engine: {e}")
-    
-    def run(self, candles: Dict[str, List], cycle: int, force: bool = False) -> bool:
-        """Run walk-forward optimization every 100 cycles."""
+        # Lazy-load WalkForwardRegistry
+        try:
+            from quant_nanggroe.engine.strategy.registry import WalkForwardRegistry
+            self._wf_registry = WalkForwardRegistry()
+            log.info("WalkForwardRegistry loaded in AutomatedBacktestRunner")
+        except Exception as e:
+            log.debug(f"WalkForwardRegistry unavailable: {e}")
+
+    @property
+    def wf_registry(self):
+        """Access the WalkForwardRegistry (may be None)."""
+        return self._wf_registry
+
+    def run(self, candles: Dict[str, List], cycle: int,
+            force: bool = False, strategies: Optional[Dict[str, Any]] = None) -> bool:
+        """Run walk-forward optimization every 100 cycles.
+
+        Args:
+            candles: Dict of symbol -> list of OHLCV dicts.
+            cycle: Current pipeline cycle number.
+            force: Skip the 100-cycle cooldown.
+            strategies: Optional dict of name -> strategy instance to
+                evaluate.  When provided, signals are generated from each
+                strategy and fed into walk-forward analysis.  Results are
+                recorded in WalkForwardRegistry.
+        """
         if not self._engine:
             return False
         if not force and (cycle - self.last_run) < 100:
             return False
-        
+
         if len(candles) < 2:
             return False
-        
+
         log.info("Running automated backtest optimization...")
         self.last_run = cycle
         try:
+            import pandas as pd
+
             # Run walk-forward on primary pairs
             for sym in ("BTCUSDT", "ETHUSDT"):
                 data = candles.get(sym, [])
                 if len(data) < 200:
                     continue
-                import pandas as pd
                 df = pd.DataFrame(data)
                 if df.empty:
                     continue
+
+                prices = df
+                # Build a simple close-price series as the signal baseline
+                close_col = "close" if "close" in df.columns else df.columns[0]
+                signals = df[[close_col]].rename(columns={close_col: sym})
+
                 result = self._engine.run_walk_forward(
-                    data=df,
-                    window=100,
-                    step=50,
+                    prices=prices,
+                    signals=signals,
+                    train_window=100,
+                    test_window=50,
                 )
                 if result:
                     log.info(f"Walk-forward {sym}: {result}")
+                    self.last_results[sym] = result
+
+                # ── Per-strategy walk-forward ──────────────────────────
+                if strategies and self._wf_registry is not None:
+                    self._evaluate_strategies(
+                        strategies, prices, sym, close_col,
+                    )
             return True
         except Exception as e:
             log.debug(f"Auto-backtest error: {e}")
             return False
+
+    # ── Walk-forward strategy evaluation ────────────────────────────────
+
+    def _evaluate_strategies(
+        self,
+        strategies: Dict[str, Any],
+        prices: Any,
+        symbol: str,
+        close_col: str,
+    ) -> None:
+        """Generate per-strategy signals and record walk-forward results."""
+        from quant_nanggroe.engine.strategy.registry import WalkForwardResult
+
+        for sname, strat in strategies.items():
+            try:
+                sig_result = strat.generate_signal(prices)
+                if sig_result is None:
+                    continue
+                # Build a simple signal DataFrame from strategy output
+                side = getattr(sig_result, "signal_type", None)
+                if side is None:
+                    continue
+                if hasattr(side, "value"):
+                    side = side.value
+                direction = 1.0 if str(side) == "buy" else (-1.0 if str(side) == "sell" else 0.0)
+                sig_df = prices[[close_col]].copy()
+                sig_df.iloc[:, 0] = direction
+
+                wf = self._engine.run_walk_forward(
+                    prices=prices,
+                    signals=sig_df,
+                    train_window=100,
+                    test_window=50,
+                )
+                if wf and isinstance(wf, dict):
+                    # Record in WalkForwardRegistry
+                    try:
+                        self._wf_registry.register(sname)  # no-op if exists
+                    except Exception:
+                        pass  # already registered
+                    wr = WalkForwardResult(
+                        window_index=wf.get("window_index", self.last_run),
+                        train_start=str(wf.get("train_start", "")),
+                        train_end=str(wf.get("train_end", "")),
+                        test_start=str(wf.get("test_start", "")),
+                        test_end=str(wf.get("test_end", "")),
+                        train_sharpe=float(wf.get("train_sharpe", 0.0)),
+                        test_sharpe=float(wf.get("test_sharpe", wf.get("oos_sharpe", 0.0))),
+                        train_return=float(wf.get("train_return", 0.0)),
+                        test_return=float(wf.get("test_return", wf.get("oos_return", 0.0))),
+                        train_max_dd=float(wf.get("train_max_dd", 0.0)),
+                        test_max_dd=float(wf.get("test_max_dd", wf.get("oos_max_dd", 0.0))),
+                        parameter_set=wf.get("parameters", {}),
+                    )
+                    self._wf_registry.record_walk_forward(sname, wr)
+                    log.debug("WF recorded for %s: OOS sharpe=%.4f", sname, wr.test_sharpe)
+            except Exception as e:
+                log.debug(f"WF eval error for {sname}: {e}")
+
+    def is_strategy_viable(self, name: str) -> bool:
+        """Check whether a strategy passes walk-forward validation.
+
+        A strategy is viable if:
+        - No walk-forward results exist yet (never evaluated → allow by default)
+        - Average OOS Sharpe >= WF_MIN_OOS_SHARPE
+        - Strategy has not decayed (train-test gap < 0.5)
+        """
+        if self._wf_registry is None:
+            return True  # no registry → allow all
+        meta = self._wf_registry.get(name)
+        if meta is None or not meta.walk_forward_results:
+            return True  # never evaluated → allow
+        if self._wf_registry.decayed(name):
+            return False
+        avg_oos = sum(meta.oos_sharpes) / len(meta.oos_sharpes) if meta.oos_sharpes else 0.0
+        return avg_oos >= self.WF_MIN_OOS_SHARPE
 
 # ---------------------------------------------------------------------------
 # Factory

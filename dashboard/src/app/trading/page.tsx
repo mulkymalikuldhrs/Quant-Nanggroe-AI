@@ -58,7 +58,7 @@ interface PositionUI {
   timestamp: string;
 }
 
-// ── Mock accounts (will be replaced with real API data) ────────────
+// ── UI model types defined above ─────────────────────────────────────
 
 
 
@@ -131,7 +131,9 @@ function TradingDashboardContent() {
           }
         });
         setPositions(allPositions);
-      } catch (e) { console.error("Failed to load trading data:", e); }
+      } catch {
+        // Trading data load failed - continue with empty state
+      }
       if (!cancelled) setLoading(false);
     }
     fetchData();

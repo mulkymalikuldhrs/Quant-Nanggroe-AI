@@ -524,7 +524,7 @@ def monitor_agents(
     # Fallback: derive from colony list
     if not agents:
         try:
-            from quant_nanggroe.api.routes.colony_stub import _colonies as colony_registry
+            from quant_nanggroe.api.routes.colony import _colonies as colony_registry
 
             for cid, colony in colony_registry.items():
                 orch = colony.get("orchestrator")

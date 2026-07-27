@@ -65,8 +65,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if path in self._exclude_paths or path.startswith(("/docs", "/redoc", "/openapi.json")):
             return await call_next(request)
 
-        # Bypass auth for static files (dashboard UI)
-        if not path.startswith("/api/"):
+        # Bypass auth for static files (dashboard UI) and Otto proxy
+        if not path.startswith("/api/") or path.startswith("/api/otto"):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")

@@ -42,6 +42,7 @@ class UnifiedSignalEngine:
         self._hf_providers: list[Any] = []
         self._strategy_runner: Any = None
         self._price_provider: Any = None
+        self._data_provider: Any = None
         self._macro = macro_context or MacroContextProvider()
         self._causal_ctx: CausalContext | None = None
 
@@ -72,6 +73,29 @@ class UnifiedSignalEngine:
         except Exception as e:
             log.debug("ProductionStrategyRunner unavailable: %s", e)
         return self._strategy_runner
+
+    def _lazy_registry(self):
+        """Direct StrategyRegistry fallback when ProductionStrategyRunner is unavailable."""
+        if hasattr(self, '_registry_strategies'):
+            return self._registry_strategies
+        self._registry_strategies = {}
+        try:
+            from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+            self._registry_strategies = StrategyRegistry.create_all()
+            log.info("StrategyRegistry direct load: %d strategies", len(self._registry_strategies))
+        except Exception as e:
+            log.debug("StrategyRegistry direct load unavailable: %s", e)
+        return self._registry_strategies
+
+    def _lazy_data_provider(self):
+        if self._data_provider is not None:
+            return self._data_provider
+        try:
+            from quant_nanggroe.pipeline.data import UnifiedDataProvider
+            self._data_provider = UnifiedDataProvider()
+        except Exception as e:
+            log.debug("UnifiedDataProvider unavailable: %s", e)
+        return self._data_provider
 
     def generate_signals(self, symbol: str, data: Optional[dict] = None, ctx: Optional[CausalContext] = None) -> list[Signal]:
         signals: list[Signal] = []
@@ -141,69 +165,106 @@ class UnifiedSignalEngine:
 
     @staticmethod
     def _ohlcv_data(data: Optional[dict]) -> Optional[dict]:
+        """Validate real OHLCV fields. Returns None when incomplete — never
+        synthesizes open/high/low from close (fail-closed, no fake candles)."""
         if data is None or not isinstance(data, dict):
             return None
-        price = data.get("close") or data.get("price")
-        if price is None:
-            return data
-        price = float(price)
-        if "close" not in data:
-            data = dict(data)
-            data["open"] = float(data.get("open", price))
-            data["high"] = float(data.get("high", price))
-            data["low"] = float(data.get("low", price))
-            data["close"] = price
-            data["volume"] = float(data.get("volume", 0))
+        if any(data.get(k) is None for k in ("open", "high", "low", "close")):
+            return None
         return data
+
+    def _candles_for(self, symbol: str, data: Optional[dict]) -> list[dict]:
+        """Resolve real OHLCV candles for strategy input.
+
+        Uses candles embedded in ``data`` if present, otherwise fetches
+        history via UnifiedDataProvider. Never synthesizes candles.
+        """
+        if isinstance(data, dict):
+            embedded = data.get("candles") or data.get("klines") or data.get("history")
+            if isinstance(embedded, list) and embedded:
+                valid = [c for c in embedded if self._ohlcv_data(c) is not None]
+                if valid:
+                    return valid
+        provider = self._lazy_data_provider()
+        if provider is not None and hasattr(provider, "get_klines"):
+            try:
+                candles = provider.get_klines(symbol, interval="1h", limit=100)
+                if candles:
+                    return [c for c in candles if self._ohlcv_data(c) is not None]
+            except Exception as e:
+                log.debug("Candle fetch failed for %s: %s", symbol, e)
+        return []
 
     def _try_strategies(self, symbol: str, data: Optional[dict] = None) -> list[Signal]:
         runner = self._lazy_strategy_runner()
-        if runner is None:
+        candles = self._candles_for(symbol, data)
+        if not candles or len(candles) < 30:
+            log.warning("OHLCV insufficient for strategies (fail-closed) for %s", symbol)
             return []
+        price = 0.0
+        if isinstance(data, dict):
+            raw_price = data.get("close") or data.get("price")
+            if raw_price is not None:
+                price = float(raw_price)
+        if price <= 0:
+            price = float(candles[-1].get("close", 0) or 0)
+        if price <= 0:
+            log.warning("No valid price for %s -- skipping strategies (fail-closed)", symbol)
+            return []
+
         signals: list[Signal] = []
-        try:
-            data = self._ohlcv_data(data)
-            price = float(data.get("close", 0)) if data and isinstance(data, dict) else 0.0
-            if hasattr(runner, "run_strategies"):
-                raw_signals = runner.run_strategies(symbol, price)
-                if isinstance(raw_signals, list):
-                    for rs in raw_signals:
-                        side = getattr(rs, "side", getattr(rs, "signal", "hold"))
-                        conf = float(getattr(rs, "confidence", 0.5))
-                        strategy = getattr(rs, "strategy", "engine")
-                        price_val = float(getattr(rs, "price", price))
+
+        # Primary: ProductionStrategyRunner (already uses StrategyRegistry internally)
+        if runner is not None:
+            try:
+                raw_signals = runner.generate_signals({symbol: candles}, {symbol: price})
+                for rs in raw_signals or []:
+                    side = getattr(rs, "side", "hold")
+                    conf = float(getattr(rs, "confidence", 0.0))
+                    if side in ("buy", "sell") and conf > 0:
+                        signals.append(Signal(
+                            symbol=getattr(rs, "symbol", symbol) or symbol,
+                            side=side,
+                            confidence=conf,
+                            strategy=getattr(rs, "strategy", "engine") or "engine",
+                            price=float(getattr(rs, "price", price) or price),
+                            reason=getattr(rs, "reason", ""),
+                        ))
+                if signals:
+                    return signals
+            except Exception as e:
+                log.debug("Strategy runner signal gen failed for %s: %s", symbol, e)
+
+        # Fallback: direct StrategyRegistry (when ProductionStrategyRunner unavailable)
+        registry_strats = self._lazy_registry()
+        if registry_strats:
+            try:
+                import pandas as pd
+                df = pd.DataFrame(candles)
+                for sname, strategy in registry_strats.items():
+                    try:
+                        result = strategy.generate_signal(df, symbol=symbol)
+                        if result is None:
+                            continue
+                        direction = getattr(result, "direction", None)
+                        if direction is not None:
+                            side = direction.value if hasattr(direction, "value") else str(direction)
+                        else:
+                            side = getattr(result, "side", "hold")
+                        conf = float(getattr(result, "confidence", 0.0))
                         if side in ("buy", "sell") and conf > 0:
                             signals.append(Signal(
                                 symbol=symbol,
                                 side=side,
                                 confidence=conf,
-                                strategy=strategy,
-                                price=price_val,
-                                reason=getattr(rs, "reason", ""),
+                                strategy=sname,
+                                price=price,
+                                reason=getattr(result, "reasoning", ""),
                             ))
-            if not signals:
-                if hasattr(runner, "strategies") and runner.strategies:
-                    for name, strat in runner.strategies.items():
-                        if hasattr(strat, "predict") or hasattr(strat, "generate_signal"):
-                            try:
-                                fn = strat.predict if hasattr(strat, "predict") else strat.generate_signal
-                                result = fn(symbol, data)
-                                if isinstance(result, dict):
-                                    side = result.get("side", result.get("signal", "hold"))
-                                    conf = float(result.get("confidence", 0.5))
-                                    if side in ("buy", "sell") and conf > 0:
-                                        signals.append(Signal(
-                                            symbol=symbol,
-                                            side=side,
-                                            confidence=conf,
-                                            strategy=name,
-                                            price=float(result.get("price", price)),
-                                            reason=result.get("reason", ""),
-                                        ))
-                            except Exception as e:
-                                log.debug("Strategy %s failed for %s: %s", name, symbol, e)
-        except Exception as e:
-            log.debug("Strategy runner signal gen failed for %s: %s", symbol, e)
+                    except Exception:
+                        continue
+            except Exception as e:
+                log.debug("Registry fallback signal gen failed for %s: %s", symbol, e)
         return signals
 
     def _try_agentic_signal(self, symbol: str, data: Optional[dict] = None) -> Optional[Signal]:

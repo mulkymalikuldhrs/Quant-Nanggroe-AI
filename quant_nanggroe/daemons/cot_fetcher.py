@@ -43,7 +43,11 @@ MARKETS = {
 
 
 class COTFetcherDaemon:
-    """Fetches CFTC Commitment of Traders data weekly."""
+    """Fetches CFTC Commitment of Traders data weekly.
+
+    Delegates to the real engine/cot/ COTFetcher (cot_reports-based)
+    instead of scraping CFTC HTML directly.
+    """
 
     def __init__(self, data_dir: str = "data/cot"):
         self.data_dir = Path(data_dir)
@@ -51,56 +55,27 @@ class COTFetcherDaemon:
         self.running = False
 
     def fetch_cot_data(self) -> list:
-        """Fetch COT data from CFTC."""
-        if httpx is None:
-            return self._mock_data()
+        """Fetch COT data via the real engine/cot/ COTFetcher."""
         try:
-            with httpx.Client(timeout=30) as client:
-                resp = client.get(CFTC_URL)
-                resp.raise_for_status()
-                # Parse CFTC HTML table (simplified)
-                return self._parse_cftc_response(resp.text)
+            from quant_nanggroe.engine.cot import COTFetcher as RealCOTFetcher
+            fetcher = RealCOTFetcher()
+            df = fetcher.fetch()
+            if df.empty:
+                logger.warning("COTFetcher returned empty data")
+                return []
+            # Convert DataFrame rows to list of dicts for JSON serialization
+            return df.tail(50).to_dict(orient="records")
+        except ImportError:
+            logger.error("engine.cot not available — install cot_reports")
+            raise
         except Exception as e:
-            logger.error(f"CFTC fetch failed: {e}")
-            return self._mock_data()
+            logger.error(f"COT fetch failed: {e}")
+            raise
 
     def _parse_cftc_response(self, html: str) -> list:
-        """Parse CFTC HTML response (simplified)."""
-        # In production, use BeautifulSoup or similar
-        # For now, return mock data
-        return self._mock_data()
-
-    def _mock_data(self) -> list:
-        """Mock COT data."""
-        import random
-        results = []
-        for market_name, info in MARKETS.items():
-            smart_long = random.randint(20, 80)
-            smart_short = 100 - smart_long
-            retail_long = random.randint(20, 80)
-            retail_short = 100 - retail_long
-
-            net_smart = smart_long - smart_short
-            if net_smart > 20:
-                signal = "Bullish"
-            elif net_smart < -20:
-                signal = "Bearish"
-            else:
-                signal = "Neutral"
-
-            results.append({
-                "market": market_name,
-                "code": info["code"],
-                "exchange": info["exchange"],
-                "smart_long_pct": smart_long,
-                "smart_short_pct": smart_short,
-                "retail_long_pct": retail_long,
-                "retail_short_pct": retail_short,
-                "net_position": "Long" if net_smart > 0 else "Short",
-                "signal": signal,
-                "net_smart": net_smart,
-            })
-        return results
+        """Deprecated — COT fetching now uses cot_reports via engine/cot/."""
+        logger.warning("_parse_cftc_response is deprecated; using engine/cot/ COTFetcher instead")
+        return self.fetch_cot_data()
 
     def run_once(self) -> dict:
         """Run one fetch cycle."""

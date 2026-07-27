@@ -3,7 +3,7 @@
 Re-exports all signal_* functions, provider lists, and the aggregate() function.
 """
 
-from quant_nanggroe.hedge_fund.signals.aggregator import _timeout_call, aggregate
+from quant_nanggroe.hedge_fund.signals.aggregator import aggregate
 from quant_nanggroe.hedge_fund.signals.core import (
     signal_aihf,
     signal_aimarketmaker,
@@ -265,5 +265,5 @@ __all__ = [
     "signal_tradingagents", "signal_aitrader", "signal_langalpha",
     "signal_aimarketmaker", "signal_kronos", "signal_pyportfolioopt",
     "CORE_PROVIDERS", "QNA_EVOLVED_PROVIDERS", "ALL_PROVIDERS",
-    "aggregate", "_timeout_call",
+    "aggregate",
 ]

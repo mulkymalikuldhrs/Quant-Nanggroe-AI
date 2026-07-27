@@ -180,18 +180,59 @@ async def detect_regime(request: MarketRegimeRequest) -> MarketRegimeResponse:
 
 
 @router.get("/pressure/{symbol}")
-async def get_pressure(symbol: str) -> dict[str, Any]:
-    """FIXME: Stub — not wired to real engine. Replace with real order flow / CVD analysis."""
-    return {
-        "symbol": symbol,
-        "buy_pressure": 0.55,
-        "sell_pressure": 0.45,
-        "verdict": "BUY",
-        "status": "not_implemented",
-        "_stub": True,
-        "message": "Market pressure analysis not wired to real engine",
-        "timestamp": datetime.now().isoformat(),
-    }
+async def get_pressure(symbol: str, http_request: Request) -> dict[str, Any]:
+    """Market pressure analysis via VolumeDelta / CVD strategy on real OHLCV data."""
+    try:
+        from quant_nanggroe.types.market import TimeFrame as TF
+        from quant_nanggroe.engine.strategies.volume_delta import VolumeDeltaStrategy
+
+        em = _get_exchange_manager(http_request)
+        candles = await em.get_ohlcv(symbol=symbol, timeframe=TF.D1, limit=60)
+
+        if not candles or len(candles) < 20:
+            return {
+                "symbol": symbol,
+                "buy_pressure": 0.5,
+                "sell_pressure": 0.5,
+                "verdict": "INSUFFICIENT_DATA",
+                "status": "no_data",
+                "timestamp": datetime.now().isoformat(),
+            }
+
+        import pandas as pd
+        df = pd.DataFrame([
+            {"open": c.open, "high": c.high, "low": c.low, "close": c.close, "volume": c.volume}
+            for c in candles
+        ])
+
+        strategy = VolumeDeltaStrategy()
+        signal = strategy.generate_signal(df, symbol=symbol)
+
+        # Extract pressure from the signal
+        buy_pressure = float(signal.confidence) if hasattr(signal, "confidence") else 0.5
+        sell_pressure = 1.0 - buy_pressure
+        action = signal.action.value if hasattr(signal, "action") else "hold"
+        verdict = "BUY" if "buy" in action.lower() else "SELL" if "sell" in action.lower() else "NEUTRAL"
+
+        return {
+            "symbol": symbol,
+            "buy_pressure": round(buy_pressure, 4),
+            "sell_pressure": round(sell_pressure, 4),
+            "verdict": verdict,
+            "confidence": round(float(getattr(signal, "confidence", 0.5)), 4),
+            "status": "live",
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception:
+        logger.exception("market_pressure_failed symbol=%s", symbol)
+        return {
+            "symbol": symbol,
+            "buy_pressure": 0.5,
+            "sell_pressure": 0.5,
+            "verdict": "ERROR",
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+        }
 
 
 @router.get("/signals")

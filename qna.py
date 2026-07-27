@@ -359,6 +359,17 @@ def run_daemon(args: argparse.Namespace) -> int:
     _write_pid()
     agents = load_agent_config()
 
+    # ── Start PipelineScheduler if enabled ─────────────────────────
+    _scheduler = None
+    if os.environ.get("QNA_SCHEDULER_ENABLED"):
+        try:
+            from quant_nanggroe.engine.scheduler import start_default_scheduler
+            interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
+            _scheduler = start_default_scheduler(interval_minutes=interval)
+            logger.info("PipelineScheduler started (interval=%d min)", interval)
+        except Exception as e:
+            logger.warning("Failed to start PipelineScheduler: %s", e)
+
     daemon = DaemonRunner(agents)
     try:
         daemon.start()
@@ -366,6 +377,13 @@ def run_daemon(args: argparse.Namespace) -> int:
         logger.info("Shutdown requested...")
     finally:
         daemon.stop_all()
+        if _scheduler is not None:
+            try:
+                from quant_nanggroe.engine.scheduler import stop_default_scheduler
+                stop_default_scheduler()
+                logger.info("PipelineScheduler stopped")
+            except Exception as e:
+                logger.warning("Error stopping scheduler: %s", e)
         if PID_FILE.exists():
             PID_FILE.unlink()
 
