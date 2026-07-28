@@ -159,8 +159,8 @@ def execute_mtf(signal, balance, symbol):
         # MT5 v5+ trade_mode enum (verified against live terminal 2026-07-28):
         #   0 = DISABLED | 1 = LONGONLY | 2 = SHORTONLY | 3 = CLOSEONLY | 4 = FULL
         tm = sym_info.trade_mode
-        if tm in (0, 3):
-            log.warning(f"⛔ {sym} {'DISABLED' if tm == 0 else 'CLOSE-ONLY'} (trade_mode={tm}) — skipping ALL orders")
+        if tm in (0, 4):
+            log.warning(f"⛔ {sym} DISABLED (trade_mode={tm}) — skipping ALL orders")
             return
         if tm == 1 and ot == mt5.ORDER_TYPE_SELL:
             log.warning(f"⛔ {sym} LONG-ONLY (trade_mode={tm}) — skipping SELL")

@@ -506,3 +506,101 @@ async def trading_cycle(request: CycleRequest, http_request: Request) -> CycleRe
         symbol=res.symbol, signal=res.signal, confidence=res.confidence,
         order=res.order, portfolio=res.portfolio, error=res.error,
     )
+
+
+# ── Purified Engine Routes (fail-closed, MT5-guarded) ──────────────
+_purified_engine = None
+
+
+def _get_purified():
+    global _purified_engine
+    if _purified_engine is None:
+        from quant_nanggroe.engine_production_bridge_purified import PurifiedEngine
+        _purified_engine = PurifiedEngine()
+    return _purified_engine
+
+
+@router.post("/purified/start")
+async def purified_start() -> dict:
+    eng = _get_purified()
+    try:
+        eng.start()
+        return {"status": "started", "balance": eng.risk.balance}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@router.get("/purified/status")
+async def purified_status() -> dict:
+    eng = _get_purified()
+    return eng.status()
+
+
+@router.post("/purified/cycle")
+async def purified_cycle(request: dict) -> dict:
+    from quant_nanggroe.engine_production_bridge_purified import Signal
+    eng = _get_purified()
+    signals = []
+    for s in request.get("signals", []):
+        signals.append(Signal(
+            symbol=s.get("symbol", "EURUSD"),
+            side=s.get("side", "buy"),
+            confidence=s.get("confidence", 0.5),
+            strategy=s.get("strategy", "manual"),
+            price=s.get("price", 0.0),
+            stop_loss=s.get("sl", 0.0),
+            take_profit=s.get("tp", 0.0),
+        ))
+    results = eng.cycle(signals)
+    return {"status": "ok", "executed": len(results), "results": results}
+
+
+@router.post("/purified/trade")
+async def purified_trade(request: dict) -> dict:
+    from quant_nanggroe.engine_production_bridge_purified import Signal
+    eng = _get_purified()
+    sig = Signal(
+        symbol=request.get("symbol", "EURUSD"),
+        side=request.get("side", "buy"),
+        confidence=1.0,
+        strategy=request.get("strategy", "manual"),
+        price=request.get("price", 0.0),
+        stop_loss=request.get("sl", 0.0),
+        take_profit=request.get("tp", 0.0),
+    )
+    try:
+        results = eng.cycle([sig])
+        return {"status": "ok", "results": results}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@router.get("/purified/positions")
+async def purified_positions() -> dict:
+    try:
+        import MetaTrader5 as mt5
+        positions = mt5.positions_get() or []
+        return {"positions": [{"symbol": p.symbol, "type": "BUY" if p.type == 0 else "SELL", "volume": p.volume, "price": p.price_open, "pnl": p.profit, "ticket": p.ticket} for p in positions]}
+    except Exception as e:
+        return {"positions": [], "error": str(e)}
+
+
+@router.post("/purified/close/{ticket}")
+async def purified_close(ticket: int) -> dict:
+    eng = _get_purified()
+    try:
+        result = eng.close_position(ticket)
+        return {"status": "closed", "result": result}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@router.get("/purified/trades")
+async def purified_trades() -> dict:
+    try:
+        import MetaTrader5 as mt5
+        from datetime import datetime, timedelta
+        deals = mt5.history_deals_get(datetime.now() - timedelta(days=30), datetime.now()) or []
+        return {"trades": [{"ticket": d.ticket, "symbol": d.symbol, "type": "BUY" if d.type == 0 else "SELL", "volume": d.volume, "price": d.price, "pnl": d.profit, "time": str(d.time)} for d in deals[-50:]]}
+    except Exception as e:
+        return {"trades": [], "error": str(e)}
