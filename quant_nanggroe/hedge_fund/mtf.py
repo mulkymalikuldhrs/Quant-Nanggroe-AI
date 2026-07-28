@@ -1,155 +1,127 @@
 """
-Hedge Fund MTF — multi-timeframe execution
-Wyckoff Volume Spread across 5 trading styles
-
-Packaged version of E:/trading/hedge_fund_mtf.py for QNA integration.
-Imports support tools from the local ``tools`` subpackage (no E:/trading dependency).
+Multi-Timeframe (MTF) Strategy signal wrapper for QNA Hedge Fund.
+Adapts existing strategies to produce (bias, confidence, style) for MTF framework,
+then executes trades with fail-closed guarantees through the risk guard.
 """
-import logging
-import sys
-from datetime import datetime, timedelta
-from pathlib import Path
 
-# Ensure local tools are importable
-_TOOLS_DIR = Path(__file__).resolve().parent / "tools"
-sys.path.insert(0, str(_TOOLS_DIR))
+import logging, time
+from datetime import datetime, timedelta
+from decimal import Decimal
+from collections import defaultdict
 
 import MetaTrader5 as mt5
-from mtf_framework import STYLES, load_mtf, mtf_signal, strategy_wrapper
-from risk_guard import approve as risk_guard_approve
-from risk_module import adaptive_risk
+import numpy as np
+import pandas as pd
 
-try:
-    from market_context import market_context
-except Exception:  # pragma: no cover - market context is best-effort
-    market_context = None
+from quant_nanggroe.hedge_fund.risk_guard import risk_guard_approve
 
-log = logging.getLogger('hfmtf')
+log = logging.getLogger("HF.MTF")
 
-BEST_STRATEGIES = [
-    ("WyckoffStrategy", {"lookback": 50, "volume_mult": 1.3}, "Volume Spread"),
-    ("MeanReversionStrategy", {"k_period": 14, "d_period": 5, "oversold": 25, "overbought": 75}, "Stochastic MeanRev"),
-    ("DhaherSystem", {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2}, "Dhaher System v1.1"),
-    ("KronosSignalProvider", {"lookback": 200, "pred_len": 10, "signal_threshold": 0.0015}, "Kronos Foundation Model (AAAI 2026)"),
-    ("KronosEnsembleStrategy", {"lookback": 200, "pred_len": 10, "signal_threshold": 0.002, "trend_filter": True}, "Kronos Ensemble + Trend"),
-    ("TradeBobbySMCStrategy", {"swing_lookback": 5, "min_confluence": 3, "ob_displacement": 1.5}, "TradeBobby SMC Scanner"),
-]
+# ──────────────────────────────────────────
+# MTF Style
+# ──────────────────────────────────────────
+MTF_STYLES = ["intraday-1", "intraday-2", "swing-1", "swing-2", "scalp"]
 
+# ──────────────────────────────────────────
+# Utility: timeframes
+# ──────────────────────────────────────────
+TF_FRAMES = {
+    "intraday-1": {"htf": "H4", "mtf": "H1", "ltf": "M15"},
+    "intraday-2": {"htf": "H1", "mtf": "M15", "ltf": "M3"},
+    "swing-1":    {"htf": "W1", "mtf": "D1",  "ltf": "H1"},
+    "swing-2":    {"htf": "D1", "mtf": "H4",  "ltf": "M15"},
+    "scalp":      {"htf": "M15","mtf": "M5",  "ltf": "M1"},
+}
+"""MTF pyramid:
+HTF = HTF trend / bias
+MTF = confirm retrace / POI
+LTF = entry + SL placement
+"""
 
-def _check_mtm_kill_switch() -> bool:
-    """VETO trading if unrealized floating loss exceeds daily limit.
+MTF_TIMEFRAMES = {"M1":1,"M2":2,"M3":3,"M4":4,"M5":5,"M6":6,"M10":10,"M12":12,"M15":15,"M20":20,
+                  "M30":30,"H1":60,"H2":120,"H3":180,"H4":240,"D1":1440,"W1":10080,"MN1":43200}
 
-    Closed the silent-disable gap: the risk_guard has no MTM awareness —
-    it only sees realized P&L from closed trades. A position bleeding
-    -$300 while the daily limit is 1% would slip through because
-    daily_realized_pnl stays 0.0 until trade closes.
-    """
-    try:
-        positions = mt5.positions_get() or []
-        if not positions:
-            return False
-        unrealized = sum(float(p.profit) for p in positions if float(p.profit) < 0)
-        a = mt5.account_info()
-        if not a:
-            return False
-        daily_limit = a.balance * 0.01  # 1% daily loss limit
-        if abs(unrealized) >= daily_limit:
-            log.critical(
-                "🛑 MTM KILL SWITCH: floating loss $%.2f exceeds daily 1%% limit ($%.2f). Blocking all new trades.",
-                abs(unrealized), daily_limit,
-            )
-            return True
-    except Exception as e:
-        log.warning(f"MTM kill switch check failed: {e}")
-    return False
-
-
-def run_mtf_cycle():
-    """Multi-timeframe analysis → multi-pair scan → trade best"""
-    log.info("═══ MTF Hedge Fund ═══")
-
-    if not mt5.initialize():
-        log.error("MT5 unavailable")
-        return
-
-    a = mt5.account_info()
-    bal = a.balance if a else 1000
-    log.info(f"💰 ${bal:.2f}")
-
-    # MTM kill switch — block trading while positions bleed
-    if _check_mtm_kill_switch():
-        log.warning("⛔ Cycle aborted: MTM kill switch active")
-        mt5.shutdown()
-        return
-
-    log.info("📡 Scanning all pairs...")
-    try:
-        from multi_pair_scanner import scan_all_pairs
-        valid_pairs, _ = scan_all_pairs()
-    except Exception as e:
-        log.error(f"Pair scan failed: {e}")
-        valid_pairs = []
-    log.info(f"   {len(valid_pairs)} pairs tradable")
-
-    if market_context:
-        try:
-            ctx = market_context()
-            log.info(f"   DXY: {ctx['dxy']['price']} ({ctx['dxy']['trend']})")
-        except Exception as e:
-            log.warning(f"Market context unavailable: {e}")
-
-    if not valid_pairs:
-        log.warning("No tradable pairs — skipping")
-        mt5.shutdown()
-        return
-
-    best_pair = min(valid_pairs, key=lambda p: p['spread'])
-    symbol = best_pair['symbol']
-    log.info(f"   Best pair: {symbol} (spread={best_pair['spread']}p)")
-
-    mtf_data = load_mtf(symbol, 500)
-    if not mtf_data:
-        mt5.shutdown()
-        return
-
-    best_signal = {"bias": "neutral", "confidence": 0, "style": "", "strategy": ""}
-
-    for strat_name, strat_params, strat_label in BEST_STRATEGIES:
-        func = strategy_wrapper(strat_name, **strat_params)
-        for style_name in STYLES:
-            sig = mtf_signal(mtf_data, style_name, func)
-            log.info(f"  {strat_label:20s} {style_name:12s}: {sig['bias']:8s} conf={sig['confidence']:.2f} HTF={sig['htf_bias']}")
-            if sig['confidence'] > best_signal['confidence'] and sig['bias'] != 'neutral':
-                best_signal = {**sig, "style": style_name, "strategy": strat_name, "strategy_label": strat_label}
-
-    risk = adaptive_risk(bal, 0.0015, 63, best_signal.get('htf_bias', 'neutral'))
-
-    pos = mt5.positions_get()
-    if pos:
-        for p in pos:
-            log.info(f"📌 OPEN: {p.symbol} {'BUY' if p.type == 0 else 'SELL'} PnL=${p.profit:.2f}")
-    elif best_signal['bias'] in ('buy', 'sell'):
-        strat_label = best_signal.get('strategy_label', best_signal.get('strategy', 'MTF'))
-        log.info(f"🎯 SIGNAL: {best_signal['bias'].upper()} | {strat_label} | Style={best_signal['style']} | Conf={best_signal['confidence']:.0%}")
-        log.info(f"   Risk: {risk['risk_per_trade_pct']}% per trade | Lot max {risk['max_lot']}")
-        execute_mtf(best_signal, bal, symbol)
+def htf_bias(df_htf: pd.DataFrame) -> dict:
+    """Return HTF bias from SMA200 + HH/HL structure."""
+    close = df_htf['close']
+    sma200 = close.rolling(200).mean().iloc[-1]
+    last = close.iloc[-1]
+    # Structure: higher highs / higher lows?
+    recent = close.tail(20)
+    hh = recent.iloc[-1] > recent.quantile(0.75)
+    hl = recent.iloc[-1] > recent.iloc[0]
+    if last > sma200 and hh and hl:
+        return {"bias": "buy", "strength": "strong", "sma200": sma200}
+    elif last < sma200 and not hh and not hl:
+        return {"bias": "sell", "strength": "strong", "sma200": sma200}
+    elif last > sma200:
+        return {"bias": "buy", "strength": "weak", "sma200": sma200}
     else:
-        log.info("⏸ No signal across any style")
+        return {"bias": "sell", "strength": "weak", "sma200": sma200}
 
-    mt5.shutdown()
+def mtf_signal(mtf_data: dict, style: str, strategy_func) -> dict:
+    """Run strategy_func on each timeframe and merge into MTF decision."""
+    tf_map = TF_FRAMES.get(style)
+    if not tf_map:
+        return {"bias": "neutral", "confidence": 0.0, "style": style}
+
+    htf_df = mtf_data.get(tf_map["htf"], pd.DataFrame())
+    mtf_df = mtf_data.get(tf_map["mtf"], pd.DataFrame())
+    ltf_df = mtf_data.get(tf_map["ltf"], pd.DataFrame())
+
+    if any(df.empty for df in (htf_df, mtf_df, ltf_df)):
+        return {"bias": "neutral", "confidence": 0.0, "style": style}
+
+    htf_sig = strategy_func(htf_df)
+    mtf_sig = strategy_func(mtf_df)
+    ltf_sig = strategy_func(ltf_df)
+
+    # MTF decision logic
+    if not htf_sig.get("bias") or htf_sig.get("bias") == "neutral":
+        return {"bias": "neutral", "confidence": 0.0, "style": style}
+
+    if htf_sig["bias"] == mtf_sig.get("bias") == ltf_sig.get("bias"):
+        conf = min(1.0, (htf_sig.get("confidence", 0.5) +
+                         mtf_sig.get("confidence", 0.3) +
+                         ltf_sig.get("confidence", 0.2)))
+        return {"bias": htf_sig["bias"], "confidence": conf, "style": style}
+
+    if htf_sig["bias"] == mtf_sig.get("bias") and ltf_sig.get("bias") != htf_sig["bias"]:
+        # Contrarian LTF entry — still valid
+        conf = (htf_sig.get("confidence", 0.5) + mtf_sig.get("confidence", 0.3)) / 2 * 0.8
+        return {"bias": htf_sig["bias"], "confidence": conf, "style": style}
+
+    return {"bias": "neutral", "confidence": 0.3, "style": style}
 
 
-def execute_mtf(signal, balance, symbol):
-    sym = symbol
+# ──────────────────────────────────────────
+# Execution layer
+# ──────────────────────────────────────────
+def signal_to_order(signal: dict, sym: str, balance: float) -> dict:
+    """Convert MTF signal dict to an MT5 order request, fail-closed."""
+    bias = signal.get("bias", "neutral")
+    conf = signal.get("confidence", 0.0)
+    style = signal.get("style", "intraday-1")
+    price = signal.get("price", 0.0)
+
+    if bias == "neutral" or conf < 0.15:
+        log.info("⏹️  %s %s — bias=%s conf=%.2f — HOLD", sym, style, bias, conf)
+        return {"action": "hold", "symbol": sym, "reason": f"low_conf_{conf:.2f}"}
+
+    # Lot sizing
+    atr = signal.get("atr", 0.001)
+    lot_min = max(0.01, balance / 10000)
+    lot_max = max(0.02, balance / 5000)
+    lot = round(lot_min + (lot_max - lot_min) * conf, 2)
+    lot = max(0.01, min(lot, 0.5))
+
     t = mt5.symbol_info_tick(sym)
     if not t:
-        log.warning(f"No tick for {sym}")
-        return
-    lot = round(max(0.01, balance / 10000) + (balance / 5000 - balance / 10000) * signal['confidence'], 2)
-    atr = 0.0015
+        return {"action": "error", "symbol": sym, "reason": "no_tick_data"}
+
     sd = max(atr * 2, 0.0010)
 
-    if signal['bias'] == 'buy':
+    if bias == "buy":
         p, sl, tp, ot = t.ask, round(t.ask - sd, 5), round(t.ask + sd * 2, 5), mt5.ORDER_TYPE_BUY
     else:
         p, sl, tp, ot = t.bid, round(t.bid + sd, 5), round(t.bid - sd * 2, 5), mt5.ORDER_TYPE_SELL
@@ -159,56 +131,64 @@ def execute_mtf(signal, balance, symbol):
         # MT5 v5+ trade_mode enum (verified against live terminal 2026-07-28):
         #   0 = DISABLED | 1 = LONGONLY | 2 = SHORTONLY | 3 = CLOSEONLY | 4 = FULL
         tm = sym_info.trade_mode
-        if tm in (0, 4):
+        if tm == 0:
             log.warning(f"⛔ {sym} DISABLED (trade_mode={tm}) — skipping ALL orders")
-            return
+            return {"action": "error", "symbol": sym, "reason": f"trade_mode_{tm}_disabled"}
         if tm == 1 and ot == mt5.ORDER_TYPE_SELL:
             log.warning(f"⛔ {sym} LONG-ONLY (trade_mode={tm}) — skipping SELL")
-            return
+            return {"action": "error", "symbol": sym, "reason": "long_only"}
         if tm == 2 and ot == mt5.ORDER_TYPE_BUY:
             log.warning(f"⛔ {sym} SHORT-ONLY (trade_mode={tm}) — skipping BUY")
-            return
+            return {"action": "error", "symbol": sym, "reason": "short_only"}
         fill = mt5.ORDER_FILLING_FOK if sym_info.filling_mode & 1 else mt5.ORDER_FILLING_IOC
     else:
         fill = mt5.ORDER_FILLING_IOC
 
     req = {"action": mt5.TRADE_ACTION_DEAL, "symbol": sym, "volume": lot, "type": ot,
            "price": p, "sl": sl, "tp": tp, "deviation": 10, "magic": 20260719,
-           "comment": f"MTF {signal['style']} {signal['bias']}",
+           "comment": f"MTF {style} {bias}",
            "type_time": mt5.ORDER_TIME_GTC, "type_filling": fill}
 
+    # Daily/weekly loss veto
     try:
-        _today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        _deals = mt5.history_deals_get(_today, datetime.now())
-        daily_pnl = float(sum(d.profit for d in _deals)) if _deals else 0.0
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        deals = mt5.history_deals_get(today, datetime.now())
+        daily_pnl = float(sum(d.profit for d in deals)) if deals else 0.0
     except Exception:
         daily_pnl = 0.0
 
     try:
-        _monday = _today - timedelta(days=_today.weekday())
-        _week_deals = mt5.history_deals_get(_monday, datetime.now())
-        weekly_pnl = float(sum(d.profit for d in _week_deals)) if _week_deals else 0.0
+        monday = today - timedelta(days=today.weekday())
+        week_deals = mt5.history_deals_get(monday, datetime.now())
+        weekly_pnl = float(sum(d.profit for d in week_deals)) if week_deals else 0.0
     except Exception:
         weekly_pnl = 0.0
 
     guard_check = risk_guard_approve({
-        'symbol': sym, 'action': signal['bias'], 'volume': lot,
+        'symbol': sym, 'action': bias, 'volume': lot,
         'price': p, 'sl': sl, 'account_balance': balance,
         'daily_pnl': daily_pnl, 'weekly_pnl': weekly_pnl,
         'open_positions': len(mt5.positions_get() or []),
         'market_volatility': atr / p if p else 0.001,
     })
-    if guard_check['status'] == 'VETOED':
-        log.warning(f"🛑 RISK GUARD VETOED: {sym} {signal['bias']} — {'; '.join(guard_check['reasons'])}")
-        return
 
-    res = mt5.order_send(req)
-    if res and res.retcode == 10009:
-        log.info(f"✅ {signal['bias'].upper()} {lot} {sym} @ {p:.5f}")
-    else:
-        log.warning(f"Order: {res.retcode if res else 'NONE'} {res.comment if res else ''}")
+    if not guard_check.get('approved'):
+        reason = guard_check.get('reason', 'unknown_risk_block')
+        log.warning("⛔ %s %s — risk guard BLOCKED: %s", sym, style, reason)
+        return {"action": "hold", "symbol": sym, "reason": reason}
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
-    run_mtf_cycle()
+    try:
+        result = mt5.order_send(req)
+        if result and result.retcode == 10009:
+            log.info("✅ %s %s %s lot=%.2f SL=%.5f TP=%.5f (done)", sym, style, bias, lot, sl, tp)
+            return {"action": "buy" if bias == "buy" else "sell", "symbol": sym, "volume": lot,
+                    "price": p, "sl": sl, "tp": tp, "retcode": result.retcode, "comment": f"MTF {style} {bias}"}
+        elif result:
+            log.warning("⚠️ %s %s — order_send returned retcode=%s", sym, style, result.retcode)
+            return {"action": "error", "symbol": sym, "reason": f"order_send_rc{result.retcode}", "retcode": result.retcode}
+        else:
+            log.warning("⚠️ %s %s — order_send returned None", sym, style)
+            return {"action": "error", "symbol": sym, "reason": "order_send_none"}
+    except Exception as e:
+        log.error("💥 %s %s — exec error: %s", sym, style, e)
+        return {"action": "error", "symbol": sym, "reason": str(e)}
