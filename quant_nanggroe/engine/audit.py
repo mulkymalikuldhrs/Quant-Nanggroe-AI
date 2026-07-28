@@ -106,6 +106,10 @@ class AuditLogger:
             "timestamp": datetime.now().isoformat()
         }
 
+    def flush(self) -> str:
+        """Flush audit trail to disk. Alias for save_to_file() for compatibility."""
+        return self.save_to_file()
+
     def save_to_file(self, filepath: str = None) -> str:
         """Save audit trail to JSON file."""
         if filepath is None:

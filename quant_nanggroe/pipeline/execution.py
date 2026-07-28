@@ -79,17 +79,22 @@ class UnifiedExecutionRouter:
             self._mt5 = None
 
     def _lazy_paper(self):
+        """Load paper broker ONLY when MT5 is not live."""
         if self._paper is not None:
+            return
+        # v6.5.0: When MT5 is live, skip paper entirely — no simulated trades
+        if self.allow_live and self._mt5 is not None:
+            log.info("MT5 live — paper broker disabled")
             return
         try:
             from quant_nanggroe.engine_production_bridge import SyncPaperBroker
             self._paper = SyncPaperBroker()
-            log.info("SyncPaperBroker loaded")
+            log.info("SyncPaperBroker loaded (MT5 not live)")
         except Exception:
             try:
                 from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
                 self._paper = PaperBroker()
-                log.info("PaperBroker loaded")
+                log.info("PaperBroker loaded (MT5 not live)")
             except Exception as e:
                 log.debug("Paper broker unavailable: %s", e)
                 self._paper = None
@@ -289,14 +294,15 @@ class UnifiedExecutionRouter:
         }
 
     def get_balance(self) -> float:
+        # v6.5.0: MT5 takes priority when live
+        if self._mt5 is not None:
+            try:
+                return float(self._mt5.get_balance())
+            except Exception:
+                pass
         if self._paper is not None:
             try:
                 return float(self._paper.get_balance())
-            except Exception:
-                pass
-        if self._mt5 is not None:
-            try:
-                return float(self._mt5.get_balance())  # P0 FIX: MT5Broker has get_balance(), not get_account()
             except Exception:
                 pass
         return 0.0

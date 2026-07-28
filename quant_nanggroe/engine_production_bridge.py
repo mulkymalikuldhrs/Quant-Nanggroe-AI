@@ -430,12 +430,15 @@ class ProductionExecutionManager:
                 log.info("ExecutionManager loaded (constitutional risk enforced)")
             except Exception as e:
                 log.debug(f"No execution engine: {e}")
-        if self._paper is None:
+        # v6.5.0: Skip paper broker when MT5 is live
+        if self._paper is None and os.environ.get("QNA_MT5_LIVE") != "1":
             try:
                 self._paper = SyncPaperBroker()
-                log.info("PaperExchangeBroker loaded via sync wrapper")
+                log.info("PaperExchangeBroker loaded via sync wrapper (MT5 not live)")
             except Exception as e:
                 log.debug(f"No paper broker: {e}")
+        elif os.environ.get("QNA_MT5_LIVE") == "1":
+            log.info("MT5 live — SyncPaperBroker DISABLED")
         # ponytail: live MT5 backend — opt-in via env, fail-closed (no terminal -> skipped, not silent)
         if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is None:
             try:
@@ -476,6 +479,7 @@ class ProductionExecutionManager:
         # ponytail: LIVE MT5 takes priority over paper when explicitly enabled
         # (QNA_MT5_LIVE=1) and connected. Paper is the FALLBACK, not the silent
         # default. Fail-open bug (#9) was: paper returned first, _mt5 never used.
+        # v6.5.0: When MT5 is live, paper is completely bypassed.
         if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is not None:
             try:
                 from quant_nanggroe.connectors.broker_base import Order
@@ -499,11 +503,23 @@ class ProductionExecutionManager:
                 log.info(f"MT5 LIVE order placed: {result}")
                 return result
             except Exception as e:
-                log.error(f"MT5 live exec failed (falling back to paper/engine): {e}")
+                log.error(f"MT5 live exec failed: {e}")
                 _record_lesson(e, f"mt5_live {signal.symbol}")
+                # v6.5.0: When MT5 is live, do NOT fall back to paper — fail closed
+                return {
+                    "symbol": signal.symbol,
+                    "side": signal.side,
+                    "qty": qty,
+                    "price": price,
+                    "status": "rejected",
+                    "mode": "mt5-failed",
+                    "error": str(e),
+                    "strategy": signal.strategy,
+                    "executed": False,
+                }
 
-        # Primary: exchange paper broker
-        if self._paper is not None:
+        # v6.5.0: Paper broker ONLY when MT5 is not live
+        if self._paper is not None and os.environ.get("QNA_MT5_LIVE") != "1":
             result = self._paper.place_order(signal.symbol, signal.side, qty, price)
             if result is not None:
                 result["strategy"] = signal.strategy

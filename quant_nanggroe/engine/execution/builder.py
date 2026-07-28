@@ -7,6 +7,9 @@ pieces" — no two paths agreed on the broker. Now they all call build_execution
 
 Fail-closed: allow_live defaults False -> paper only. Live MT5 requires
 QNA_LIVE_TRADING=1 AND a running MT5 terminal. Never silent-trading.
+
+v6.5.0: When MT5 is live and connected, PaperBroker is NOT added — all trading
+operations go exclusively through MT5. Paper is only used when MT5 is unavailable.
 """
 from __future__ import annotations
 
@@ -35,7 +38,6 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
     with _em_lock:
         if _em_singleton is not None:
             return _em_singleton
-        from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
         from quant_nanggroe.engine.execution.manager import ExecutionManager
         from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
         from quant_nanggroe.engine.risk.manager import RiskManager
@@ -46,13 +48,11 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
         configure_kill_switch_file()
         em.set_kill_switch(KillSwitch())
         em.set_risk_manager(RiskManager())
-        # paper always present as safe fallback (no market impact)
-        paper = PaperBroker()
-        em.add_broker(paper, primary=False)
 
         if allow_live is None:
             allow_live = os.environ.get("QNA_LIVE_TRADING", "0") == "1"
 
+        mt5_connected = False
         if allow_live:
             try:
                 import yaml
@@ -83,6 +83,7 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                         # Use the public set_broker_handle() method — NOT
                         # em._risk_manager (private attribute access).
                         em.set_broker_handle(mt5)
+                        mt5_connected = True
                         wired += 1
                         logger.info("LIVE MT5 wired: %s (primary=%s)", acc.get("name"), is_live)
                     else:
@@ -90,17 +91,25 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                 if wired == 0:
                     logger.warning("allow_live=True but no MT5 connected — paper only, no market trades")
             except Exception as exc:
-                logger.error("build_execution_manager live wiring failed: %s", exc)
-                raise
+                logger.error("build_execution_manager live wiring failed: %s (falling back to paper)", exc)
 
-        # Connect all brokers — PaperBroker connects synchronously, others async with tracking
+        # v6.5.0: Only add PaperBroker as fallback when MT5 is NOT connected.
+        # When MT5 is live, all trading goes exclusively through MT5 — no simulated trades.
+        if not mt5_connected:
+            from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
+            paper = PaperBroker()
+            em.add_broker(paper, primary=False)
+            logger.info("PaperBroker added as fallback (MT5 not connected)")
+        else:
+            logger.info("MT5 live — PaperBroker DISABLED (all trades via MT5)")
+
+        # Connect all brokers — async with tracking
         import asyncio
 
-        from quant_nanggroe.engine.execution.brokers.paper import PaperBroker as _PaperBroker
         for b in em.get_brokers().values():
             try:
-                # PaperBroker: connect synchronously (no network)
-                if isinstance(b, _PaperBroker):
+                if b.name == "paper":
+                    # PaperBroker: connect synchronously (no network)
                     b._connected = True
                     logger.info("PaperBroker: Connected (simulated)")
                 else:

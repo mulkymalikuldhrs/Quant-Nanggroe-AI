@@ -402,7 +402,11 @@ def create_app() -> FastAPI:
     @app.get("/config")
     async def config_redirect():
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/config.html")
+
+        return RedirectResponse(
+            url=os.environ.get("QNA_UI_URL", "http://localhost:3000") + "/config",
+            status_code=302,
+        )
 
     @app.get("/api/version")
     async def version() -> dict[str, str]:
@@ -442,10 +446,19 @@ def create_app() -> FastAPI:
         )
 
     # ── Signal Handlers ─────────────────────────────────────────────
-    # ── Static Files (Dashboard UI) ──────────────────────────────
-    static_dir = os.path.join(os.path.dirname(__file__), "static")
-    if os.path.isdir(static_dir):
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+    # ── Canonical UI consolidation (2026-07-28) ──────────────────
+    # The single canonical UI lives at http://localhost:3000 (Next.js
+    # dashboard/). FastAPI is now pure API only; the duplicate static
+    # dashboards (api/static/index.html, dashboard.html) were removed.
+    # Root "/" redirects to the canonical UI so there is no dead/duplicate
+    # surface. Override QNA_UI_URL to point elsewhere if needed.
+    from fastapi.responses import RedirectResponse
+
+    @app.get("/", include_in_schema=False)
+    async def _root_redirect() -> RedirectResponse:
+        return RedirectResponse(
+            url=os.environ.get("QNA_UI_URL", "http://localhost:3000"), status_code=302
+        )
 
     # ── Paper State (live state files at /paper_state/) ──────────
     paper_state_dir = os.path.abspath(

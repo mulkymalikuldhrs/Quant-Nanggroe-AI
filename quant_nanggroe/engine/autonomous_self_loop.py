@@ -244,17 +244,27 @@ class AutonomousSelfLoopOrchestrator:
     async def _evaluate_performance(self):
         """Evaluate recent trade performance"""
         try:
-            if not self._pnl_evaluator:
-                return
-            
             # Get recent trades
             trades = await self._get_recent_trades()
             if len(trades) < self.min_trades:
                 logger.debug(f"Only {len(trades)} trades, need {self.min_trades} for evaluation")
                 return
             
-            # Evaluate per strategy
-            strategy_pnl = self._pnl_evaluator.evaluate_trades(trades)
+            # Aggregate PnL per strategy from raw trade dicts
+            strategy_pnl: Dict[str, Dict] = {}
+            for trade in trades:
+                sname = trade.get("strategy", trade.get("Strategy", "unknown"))
+                if sname not in strategy_pnl:
+                    strategy_pnl[sname] = {"equity": 0.0, "trades": 0, "wins": 0}
+                pnl_raw = trade.get("pnl", trade.get("realized_pnl", 0))
+                try:
+                    pnl = float(pnl_raw) if pnl_raw else 0.0
+                except (ValueError, TypeError):
+                    pnl = 0.0
+                strategy_pnl[sname]["equity"] += pnl
+                strategy_pnl[sname]["trades"] += 1
+                if pnl > 0:
+                    strategy_pnl[sname]["wins"] += 1
             
             self.state.total_trades_evaluated += len(trades)
             self.state.current_equity = sum(s.get("equity", 0) for s in strategy_pnl.values())
