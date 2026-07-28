@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QNA Purified Engine</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#c9d1d9;--text-dim:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922;--radius:6px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+header h1{font-size:20px;font-weight:600;color:var(--accent);letter-spacing:-0.3px}
+header h1 small{font-weight:400;color:var(--text-dim);font-size:13px;margin-left:8px}
+.controls{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 18px;border-radius:var(--radius);border:1px solid var(--border);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;background:var(--surface);color:var(--text)}
+.btn:hover{filter:brightness(1.25)}
+.btn-start{border-color:var(--green);color:var(--green)}
+.btn-start.active{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-stop{border-color:var(--red);color:var(--red)}
+.btn-stop.active{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+main{padding:20px 24px;max-width:1400px;margin:0 auto}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card h3{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:6px;font-weight:500}
+.card .val{font-size:24px;font-weight:600;color:var(--text)}
+.card .val.green{color:var(--green)}
+.card .val.red{color:var(--red)}
+.card .val.orange{color:var(--orange)}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.section h2{font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
+th{color:var(--text-dim);font-weight:500;text-transform:uppercase;letter-spacing:.4px;font-size:11px}
+td{color:var(--text)}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-green{background:rgba(63,185,80,.15);color:var(--green)}
+.badge-red{background:rgba(248,81,73,.15);color:var(--red)}
+.badge-orange{background:rgba(210,153,34,.15);color:var(--orange)}
+.badge-blue{background:rgba(88,166,255,.15);color:var(--accent)}
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.form-group label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:4px;font-weight:500}
+.form-group input,.form-group select{padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:100%}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent)}
+.form-group select{cursor:pointer}
+.form-actions{display:flex;gap:8px;align-items:center;margin-top:4px}
+.status-msg{font-size:12px;color:var(--text-dim);margin-left:8px}
+.error{color:var(--red)}
+.success{color:var(--green)}
+.loading{text-align:center;padding:40px;color:var(--text-dim);font-size:14px}
+.loading::after{content:'';display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-left:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){header{flex-direction:column;align-items:flex-start}.form-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>QNA Purified Engine <small>— Autonomous Trading</small></h1>
+  <div class="controls">
+    <button id="btnStartStop" class="btn btn-start" onclick="toggleEngine()">Start Engine</button>
+    <button class="btn" onclick="refreshAll()">Refresh</button>
+  </div>
+</header>
+
+<main>
+  <div class="grid" id="statusCards">
+    <div class="card"><h3>Balance</h3><div class="val" id="balanceVal">—</div></div>
+    <div class="card"><h3>Risk Status</h3><div class="val" id="riskVal">—</div></div>
+    <div class="card"><h3>Trades Count</h3><div class="val" id="tradesVal">—</div></div>
+    <div class="card"><h3>Active</h3><div class="val" id="activeVal">—</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Manual Trade</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Symbol</label><select id="tradeSymbol"><option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>BTCUSD</option><option>XAUUSD</option></select></div>
+      <div class="form-group"><label>Side</label><select id="tradeSide"><option value="buy">Buy</option><option value="sell">Sell</option></select></div>
+      <div class="form-group"><label>Price</label><input type="number" step="any" id="tradePrice" placeholder="0.0"></div>
+      <div class="form-group"><label>Stop Loss</label><input type="number" step="any" id="tradeSL" placeholder="0.0"></div>
+      <div class="form-group"><label>Take Profit</label><input type="number" step="any" id="tradeTP" placeholder="0.0"></div>
+      <div class="form-group"><label>Strategy</label><input type="text" id="tradeStrategy" placeholder="momentum_v1" value="purified"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="submitTrade()">Submit Trade</button>
+      <span id="tradeMsg" class="status-msg"></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Live Positions</h2>
+    <div id="positionsContent"><div class="loading">Loading positions...</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Recent Trades</h2>
+    <div id="tradesContent"><div class="loading">Loading trades...</div></div>
+  </div>
+</main>
+
+<script>
+const API_BASE = 'http://localhost:8000';
+let autoTimer = null;
+
+async function api(url, opts) {
+  const res = await fetch(API_BASE + url, {headers:{'Content-Type':'application/json'},...opts});
+  if (!res.ok) { const b = await res.text(); throw new Error(b||res.statusText); }
+  return res.json();
+}
+
+function refreshStatus() {
+  api('/api/trading/purified/status').then(d=>{
+    const bal = document.getElementById('balanceVal');
+    const risk = document.getElementById('riskVal');
+    const trades = document.getElementById('tradesVal');
+    const active = document.getElementById('activeVal');
+    bal.textContent = d.balance != null ? Number(d.balance).toFixed(2) : '—';
+    bal.className = 'val';
+    const riskOk = d.risk_status === 'safe' || d.risk_status === 'green' || d.risk_status === 'low';
+    risk.textContent = d.risk_status || '—';
+    risk.className = 'val ' + (riskOk ? 'green' : 'red');
+    trades.textContent = d.trades_count != null ? d.trades_count : '—';
+    trades.className = 'val';
+    active.textContent = d.active ? 'Running' : 'Stopped';
+    active.className = 'val ' + (d.active ? 'green' : 'red');
+    const btn = document.getElementById('btnStartStop');
+    btn.textContent = d.active ? 'Stop Engine' : 'Start Engine';
+    btn.className = 'btn ' + (d.active ? 'btn-stop' : 'btn-start');
+  }).catch(e=>{
+    document.getElementById('balanceVal').textContent='ERR';
+    console.error('status err',e);
+  });
+}
+
+function refreshPositions() {
+  api('/api/trading/purified/positions').then(d=>{
+    const el = document.getElementById('positionsContent');
+    const list = d.positions || d.data || d || [];
+    if (!Array.isArray(list) || list.length===0) { el.innerHTML='<div style="color:var(--text-dim);padding:8px">No open positions</div>'; return; }
+    let h='<table><thead><tr><th>Symbol</th><th>Side</th><th>Volume</th><th>Open Price</th><th>Current Price</th><th>SL</th><th>TP</th><th>P&L</th></tr></thead><tbody>';
+    list.forEach(p=>{
+      const side = (p.side||'').toLowerCase();
+      const sideBadge = side==='buy'?'badge-green':side==='sell'?'badge-red':'badge-blue';
+      let pl = p.pl != null ? Number(p.pl).toFixed(2) : (p.profit != null ? Number(p.profit).toFixed(2) : '—');
+      let plClass='';
+      if(typeof pl==='string'&&pl!=='—'){const n=parseFloat(pl);plClass=n>=0?'green':'red';}
+      h+=`<tr><td>${esc(p.symbol||'—')}</td><td><span class="badge ${sideBadge}">${esc(p.side||'—')}</span></td><td>${p.volume||p.lots||p.size||'—'}</td><td>${p.open_price||p.price||'—'}</td><td>${p.current_price||p.price||'—'}</td><td>${p.sl||p.stop_loss||'—'}</td><td>${p.tp||p.take_profit||'—'}</td><td class="${plClass}">${pl}</td></tr>`;
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }).catch(()=>{document.getElementById('positionsContent').innerHTML='<div class="error" style="padding:8px">Failed to load positions</div>';});
+}
+
+function refreshTrades() {
+  api('/api/trading/purified/trades').then(d=>{
+    const el = document.getElementById('tradesContent');
+    const list = d.trades || d.data || d || [];
+    if (!Array.isArray(list) || list.length===0) { el.innerHTML='<div style="color:var(--text-dim);padding:8px">No trades yet</div>'; return; }
+    let h='<table><thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Price</th><th>Volume</th><th>P&L</th><th>Strategy</th></tr></thead><tbody>';
+    list.forEach(t=>{
+      const side = (t.side||'').toLowerCase();
+      const sideBadge = side==='buy'?'badge-green':side==='sell'?'badge-red':'badge-blue';
+      let pl = t.pl != null ? Number(t.pl).toFixed(2) : (t.profit != null ? Number(t.profit).toFixed(2) : '—');
+      let plClass='';
+      if(typeof pl==='string'&&pl!=='—'){const n=parseFloat(pl);plClass=n>=0?'green':'red';}
+      h+=`<tr><td>${t.time||t.timestamp||'—'}</td><td>${esc(t.symbol||'—')}</td><td><span class="badge ${sideBadge}">${esc(t.side||'—')}</span></td><td>${t.price||'—'}</td><td>${t.volume||t.lots||t.size||'—'}</td><td class="${plClass}">${pl}</td><td>${esc(t.strategy||'—')}</td></tr>`;
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }).catch(()=>{document.getElementById('tradesContent').innerHTML='<div class="error" style="padding:8px">Failed to load trades</div>';});
+}
+
+function refreshAll() { refreshStatus(); refreshPositions(); refreshTrades(); }
+
+function toggleEngine() {
+  const btn = document.getElementById('btnStartStop');
+  const wasActive = btn.textContent === 'Stop Engine';
+  btn.disabled = true;
+  api('/api/trading/purified/start', {method:'POST',body:'{}'}).then(()=>{
+    refreshAll();
+  }).catch(e=>{
+    const cards = document.getElementById('statusCards');
+    const msg = document.createElement('div');
+    msg.className='error'; msg.style.cssText='grid-column:1/-1;font-size:12px;padding:8px;background:rgba(248,81,73,.1);border-radius:var(--radius);border:1px solid var(--red)';
+    msg.textContent='Toggle failed: '+e.message;
+    cards.prepend(msg);
+    setTimeout(()=>msg.remove(),5000);
+  }).finally(()=>{btn.disabled=false;});
+}
+
+function submitTrade() {
+  const symbol = document.getElementById('tradeSymbol').value;
+  const side = document.getElementById('tradeSide').value;
+  const price = parseFloat(document.getElementById('tradePrice').value);
+  const sl = parseFloat(document.getElementById('tradeSL').value);
+  const tp = parseFloat(document.getElementById('tradeTP').value);
+  const strategy = document.getElementById('tradeStrategy').value || 'purified';
+  const msg = document.getElementById('tradeMsg');
+  if (!price || price <= 0) { msg.textContent='Enter valid price'; msg.className='status-msg error'; return; }
+  const body = JSON.stringify({symbol,side,price,sl,tp,strategy});
+  msg.textContent='Submitting...'; msg.className='status-msg';
+  api('/api/trading/purified/trade', {method:'POST',body}).then(r=>{
+    msg.textContent='Trade submitted ✓'; msg.className='status-msg success';
+    refreshPositions(); refreshTrades();
+  }).catch(e=>{
+    msg.textContent='Failed: '+e.message; msg.className='status-msg error';
+  });
+}
+
+function esc(s) {
+  const d=document.createElement('div'); d.textContent=s; return d.innerHTML;
+}
+
+// start auto-refresh
+refreshAll();
+autoTimer = setInterval(refreshAll, 5000);
+</script>
+</body>
+</html>
