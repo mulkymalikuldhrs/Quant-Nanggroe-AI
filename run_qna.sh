@@ -6,10 +6,14 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 # Strip contaminated PYTHONPATH
 unset PYTHONPATH
-if [ ! -x ".venv/bin/python" ] && [ ! -x ".venv/Scripts/python.exe" ]; then
-    echo "[QNA] ERROR: .venv not found. Run setup first."
-    exit 1
+if [ ! -x ".venv/bin/python" ]; then
+    if [ -x ".venv/Scripts/python.exe" ]; then
+        PY=".venv/Scripts/python.exe"
+    else
+        echo "[QNA] ERROR: .venv not found. Run setup first."
+        exit 1
+    fi
+else
+    PY=".venv/bin/python"
 fi
-PY=".venv/Scripts/python.exe"
-if [ ! -f "$PY" ]; then PY=".venv/bin/python"; fi
 exec "$PY" qna.py "$@"

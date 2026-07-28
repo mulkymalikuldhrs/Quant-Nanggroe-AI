@@ -15,7 +15,6 @@ from quant_nanggroe.hedge_fund.portfolio import (  # noqa: F401
     run_once,
 )
 from quant_nanggroe.hedge_fund.risk import (  # noqa: F401
-    check_gate,
     risk_guard_approve,
 )
 from quant_nanggroe.hedge_fund.signals import (  # noqa: F401
@@ -51,7 +50,7 @@ __all__ = [
     "signal_sma", "signal_wyckoff", "signal_aihf", "signal_hidden",
     "signal_tradingagents", "signal_aitrader", "signal_langalpha",
     "signal_aimarketmaker", "signal_kronos", "signal_pyportfolioopt",
-    "check_gate", "risk_guard_approve",
+    "risk_guard_approve",
     "trail_sl", "execute", "kelly_lot_size",
     "run_once",
 ]

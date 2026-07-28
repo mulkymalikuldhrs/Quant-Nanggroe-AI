@@ -36,21 +36,22 @@ except ImportError:
     _HAS_AUTO_REGISTRY = False
     import_warnings.append("AutoRegistry unavailable — auto-discovery disabled")
 
-try:
-    from quant_nanggroe.engine.strategies.self_finetune import SelfFineTuner
-    from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
-    _HAS_STRATEGY_EVOLVER = True
-except ImportError:
-    StrategyEvolver = None
-    SelfFineTuner = None
-    _HAS_STRATEGY_EVOLVER = False
-    import_warnings.append("StrategyEvolver/SelfFineTuner unavailable — strategy evolution disabled")
-
 import asyncio
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+try:
+    from quant_nanggroe.engine.strategies.self_finetune import SelfFineTuner
+    from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
+    _HAS_STRATEGY_EVOLVER = True
+except Exception as _evolve_err:
+    StrategyEvolver = None
+    SelfFineTuner = None
+    _HAS_STRATEGY_EVOLVER = False
+    logger.debug("StrategyEvolver import failed: %s", _evolve_err)
+    import_warnings.append("StrategyEvolver/SelfFineTuner unavailable — strategy evolution disabled")
 
 
 # ---------------------------------------------------------------------------
@@ -501,6 +502,7 @@ class AutonomousPipeline:
         self._run_lock = asyncio.Lock()
         # P0: Self-Aware capability (user's #1 dream — was ABSENT).
         self._self_aware = SelfAware()
+        self._position_tracker: dict[str, dict] = {}
         self._init_services()
 
     def _pipeline_self_state(self) -> "SelfState":
@@ -1002,9 +1004,11 @@ class AutonomousPipeline:
                         total_exposure=0.0, max_exposure=3.0,
                         available_balance=rm_state.current_equity if rm_state else 1000.0,
                     )
+                    _daily_loss_pct = (abs(min(0, rm_state.daily_pnl)) / rm_state.peak_equity) if rm_state and rm_state.peak_equity > 0 else 0.0
+                    _weekly_loss_pct = (abs(min(0, rm_state.weekly_pnl)) / rm_state.peak_equity) if rm_state and rm_state.peak_equity > 0 else 0.0
                     risk_state = RiskState(
                         kill_switch_active=getattr(getattr(self._em, '_kill_switch', None), 'status', lambda: {})().get('is_active', False) if self._em else False,
-                        daily_loss_pct=0.0, weekly_loss_pct=0.0,
+                        daily_loss_pct=_daily_loss_pct, weekly_loss_pct=_weekly_loss_pct,
                     )
                     atr_val = self._compute_atr(df)
                     final_decision = self._final_decider.decide(
@@ -1057,18 +1061,32 @@ class AutonomousPipeline:
                     try:
                         action = exec_decision.get("action", "hold")
                         if action in ("buy", "sell") and exec_decision.get("execution") == "filled":
-                            # Create a ClosedTrade for lifecycle processing
+                            fill_price = exec_decision.get("fill_price", current_price)
+                            tracked = self._position_tracker.get(symbol)
+                            pnl = exec_decision.get("pnl", 0.0)
+                            entry_price = fill_price
+                            exit_price = 0.0
+                            if tracked and tracked["side"] != action:
+                                entry_price = tracked["entry_price"]
+                                exit_price = fill_price
+                                if action == "sell":
+                                    pnl = (exit_price - entry_price) * tracked["qty"]
+                                else:
+                                    pnl = (entry_price - exit_price) * tracked["qty"]
+                                self._position_tracker.pop(symbol, None)
+                            else:
+                                self._position_tracker[symbol] = {"entry_price": fill_price, "qty": exec_decision.get("position_size_pct", 0.01), "side": action}
                             trade = ClosedTrade(
                                 trade_id=exec_decision.get("order_id", str(uuid.uuid4())[:12]),
                                 strategy_name=trigger_strategy,
                                 symbol=symbol,
-                                entry_price=exec_decision.get("fill_price", current_price),
-                                exit_price=exec_decision.get("exit_price", 0.0),
+                                entry_price=entry_price,
+                                exit_price=exit_price,
                                 volume=exec_decision.get("position_size_pct", 0.01),
                                 side=action,
                                 entry_time=exec_decision.get("timestamp", result.timestamp),
                                 exit_time=exec_decision.get("exit_time", ""),
-                                pnl=exec_decision.get("pnl", 0.0),
+                                pnl=pnl,
                                 regime_at_entry=regime,
                                 confidence_at_entry=confidence,
                             )

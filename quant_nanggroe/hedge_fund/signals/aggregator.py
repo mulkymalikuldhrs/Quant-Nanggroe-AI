@@ -102,17 +102,20 @@ def _bayesian_weight(tracker: Optional[SignalTracker], provider_name: str) -> fl
 
 
 def aggregate(symbol="EURUSD", ctx: Optional[CausalContext] = None,
-              tracker: Optional[SignalTracker] = None):
+              tracker: Optional[SignalTracker] = None,
+              providers: Optional[list] = None):
     """Multi-provider vote aggregation with Bayesian weights + correlation cap.
 
     Args:
         symbol: Trading symbol to vote on.
         ctx: Optional CausalContext for macro bias.
         tracker: Optional SignalTracker for performance-based weights.
+        providers: Optional provider list override. Defaults to ALL_PROVIDERS.
 
     Returns:
         dict with keys: bias, confidence, votes, total_conf, weights_used.
     """
+    provider_list = providers if providers is not None else ALL_PROVIDERS
     votes = []
     results = []
 
@@ -140,14 +143,14 @@ def aggregate(symbol="EURUSD", ctx: Optional[CausalContext] = None,
         log.debug("Market context unavailable: %s", e)
 
     # ── Parallel execution ──────────────────────────────────────────────
-    n_providers = len(ALL_PROVIDERS)
+    n_providers = len(provider_list)
     max_workers = min(40, n_providers)
     log.info("  Parallel voting: %d providers via %d workers", n_providers, max_workers)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         fut_to_provider = {
             executor.submit(provider, symbol, ctx=ctx): provider
-            for provider in ALL_PROVIDERS
+            for provider in provider_list
         }
         for future in as_completed(fut_to_provider, timeout=45):
             provider = fut_to_provider[future]

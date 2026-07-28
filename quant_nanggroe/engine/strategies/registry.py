@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from quant_nanggroe.engine.strategies.base import Strategy, StrategyParameters
 from quant_nanggroe.types.engine import StrategyStatus
@@ -14,6 +16,22 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _registry: Dict[str, Type[Strategy]] = {}
+
+# Evolved defaults path — persisted across restarts so accepted mutations
+# from StrategyEvolver propagate to future Strategy instances.
+_EVOLVED_DEFAULTS_PATH = Path("data/evolved_defaults.json")
+
+def _load_evolved_defaults() -> dict[str, dict[str, Any]]:
+    if _EVOLVED_DEFAULTS_PATH.exists():
+        try:
+            return json.loads(_EVOLVED_DEFAULTS_PATH.read_text())
+        except Exception:
+            pass
+    return {}
+
+def _save_evolved_defaults(data: dict[str, dict[str, Any]]) -> None:
+    _EVOLVED_DEFAULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _EVOLVED_DEFAULTS_PATH.write_text(json.dumps(data, indent=2, default=str))
 
 
 class StrategyRegistry:
@@ -48,6 +66,24 @@ class StrategyRegistry:
         return list(_registry.keys())
 
     @classmethod
+    def update_params(cls, name: str, params: dict[str, Any]) -> None:
+        """Persist evolved parameters for a strategy.
+
+        Called by StrategyEvolver when a mutation is accepted.
+        Future calls to ``create()`` merge these defaults on top of
+        the strategy's original init-time params.
+        """
+        data = _load_evolved_defaults()
+        data[name] = params
+        _save_evolved_defaults(data)
+        logger.info("Evolved defaults updated for '%s' (%d params)", name, len(params))
+
+    @classmethod
+    def get_evolved_params(cls, name: str) -> dict[str, Any]:
+        """Return persisted evolved defaults for a strategy, or empty dict."""
+        return _load_evolved_defaults().get(name, {})
+
+    @classmethod
     def create(cls, name: str, parameters: Optional[StrategyParameters] = None,
                lifecycle: Optional[StrategyLifecycleManager] = None) -> Optional[Strategy]:
         """Create a strategy instance by name.
@@ -70,6 +106,13 @@ class StrategyRegistry:
             if ls is not None and ls.state != StrategyStatus.ACTIVE:
                 logger.warning("Strategy '%s' is %s — skipping instantiation", name, ls.state.value)
                 return None
+        # Merge evolved defaults on top of caller-supplied parameters
+        evolved = cls.get_evolved_params(name)
+        if evolved:
+            merged = dict(evolved)
+            if parameters is not None:
+                merged.update(parameters.params)
+            parameters = StrategyParameters(params=merged)
         return strategy_class(parameters=parameters)
 
     @classmethod

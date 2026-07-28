@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -835,3 +836,51 @@ class WalkForwardAnalyzer:
         combined_index = all_indices[:len(combined_values)]
 
         return pd.Series(combined_values, index=combined_index[:len(combined_values)])
+
+
+_WALK_FORWARD_REGISTRY_PATH = Path("data/walk_forward_registry.json")
+
+
+def get_viable_strategies(symbol: str = "", min_oos_sharpe: float = 0.5) -> list[dict]:
+    """Return strategies with passing walk-forward results for symbol.
+
+    Loads the persisted WalkForwardRegistry and returns strategy metadata
+    dicts whose average out-of-sample Sharpe ratio meets the threshold.
+
+    Args:
+        symbol: Reserved for future per-symbol filtering.
+        min_oos_sharpe: Minimum average OOS Sharpe to consider viable.
+
+    Returns:
+        List of dicts with keys: name, avg_oos_sharpe, n_windows, status.
+    """
+    _reg_path = _WALK_FORWARD_REGISTRY_PATH
+    if not _reg_path.exists():
+        logger.info("No walk-forward registry found at %s", _reg_path)
+        return []
+
+    try:
+        from quant_nanggroe.engine.strategy.registry import WalkForwardRegistry
+        registry = WalkForwardRegistry.from_json(str(_reg_path))
+    except Exception as e:
+        logger.warning("Failed to load WalkForwardRegistry: %s", e)
+        return []
+
+    viable = []
+    for meta in registry.list():
+        if not meta.walk_forward_results:
+            continue
+        avg_oos = sum(r.test_sharpe for r in meta.walk_forward_results) / len(meta.walk_forward_results)
+        if avg_oos >= min_oos_sharpe:
+            viable.append({
+                "name": meta.name,
+                "avg_oos_sharpe": round(avg_oos, 4),
+                "n_windows": len(meta.walk_forward_results),
+                "status": meta.status,
+            })
+
+    logger.info(
+        "Viable strategies: %d/%d (OOS Sharpe >= %.1f)",
+        len(viable), len(registry.list()), min_oos_sharpe,
+    )
+    return viable

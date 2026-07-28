@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 QNA_HOME="$(cd "$SCRIPT_DIR/.." && pwd)"
-export PYTHONPATH="${QNA_HOME}"
+unset PYTHONPATH
 export QNAI_ALPACA_PAPER=true
 
 if [ -z "${QNAI_ALPACA_API_KEY:-}" ] || [ -z "${QNAI_ALPACA_API_SECRET:-}" ]; then

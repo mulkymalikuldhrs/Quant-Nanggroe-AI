@@ -1,8 +1,0 @@
-//@version=5
-// DhaHer Donchian Break — from TV MCP backtest_strategy(donchian)
-indicator("DhaHer Donchian Break", overlay=true)
-len = input.int(20)
-hi = ta.highest(high, len); lo = ta.lowest(low, len)
-plotshape(ta.crossover(close, hi[1]), "DON BUY", shape.triangleup, location.belowbar, color.green, size=size.small)
-plotshape(ta.crossunder(close, lo[1]), "DON SELL", shape.triangledown, location.abovebar, color.red, size=size.small)
-// ponytail: single length, no mid-line

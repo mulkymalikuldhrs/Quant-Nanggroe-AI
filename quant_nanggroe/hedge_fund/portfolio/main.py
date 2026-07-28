@@ -8,18 +8,28 @@ Fixed gaps:
   - FractionalKelly parameters sourced from real backtest data
 """
 
+import asyncio
+import asyncio
 import json
 import os
-import subprocess
-import sys
 import time
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
+from quant_nanggroe.engine.backtest.walk_forward import get_viable_strategies
 from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
 from quant_nanggroe.engine.causal.models import CausalContext
+from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
+from quant_nanggroe.engine.execution.builder import build_execution_manager
+from quant_nanggroe.engine.risk.kill_switch import (
+    KillSwitch,
+    KillSwitchLevel,
+    configure_kill_switch_file,
+)
+from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.strategy_lifecycle import StrategyLifecycleManager
-from quant_nanggroe.hedge_fund.execution.orders import execute, trail_sl
+from quant_nanggroe.hedge_fund.execution.orders import trail_sl
 from quant_nanggroe.hedge_fund.portfolio.sizing import calculate_position_size
 from quant_nanggroe.hedge_fund.risk.guard import risk_guard_approve
 from quant_nanggroe.hedge_fund.signals.aggregator import aggregate
@@ -27,7 +37,6 @@ from quant_nanggroe.hedge_fund.signals.registry import ALL_PROVIDERS
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
 from quant_nanggroe.hedge_fund.utils import config as _config
 from quant_nanggroe.hedge_fund.utils.config import (
-    _QNA_DIR,
     GATE_FILE,
     MT5_AVAILABLE,
     log,
@@ -39,6 +48,44 @@ from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 # ── Module-level singletons ───────────────────────────────────────────
 _signal_tracker = SignalTracker()
 _lifecycle_manager: Optional[StrategyLifecycleManager] = None
+_kelly_sizer = KellyCriterion()
+_execution_manager = build_execution_manager()
+
+
+def _execute_order_sync(signal: dict, symbol: str) -> Optional[str]:
+    """Bridge sync run_once() → async ExecutionManager.execute_order().
+
+    Converts a signal dict into an Order dataclass and routes it through
+    the full guard pipeline (cooldown, max-position, whitelist, governance
+    veto, kill switch, constitutional risk manager). Returns the order ID
+    on success, None on rejection.
+    """
+    side = OrderSide.BUY if signal.get("bias") == "buy" else OrderSide.SELL
+    order = Order(
+        id=str(uuid.uuid4()),
+        symbol=symbol,
+        side=side,
+        order_type=OrderType.MARKET,
+        quantity=signal.get("volume", 0.01),
+        price=signal.get("price", None),
+        stop_loss=signal.get("sl", None),
+        take_profit=signal.get("tp", None),
+        time_in_force="GTC",
+        status=OrderStatus.PENDING,
+        metadata={"source": "run_once", "confidence": signal.get("confidence", 0.5)},
+    )
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            future = asyncio.ensure_future(_execution_manager.execute_order(order))
+            fill = loop.run_until_complete(future)
+        else:
+            fill = loop.run_until_complete(_execution_manager.execute_order(order))
+    except RuntimeError:
+        fill = asyncio.run(_execution_manager.execute_order(order))
+    if fill is None:
+        return None
+    return fill.order_id
 
 
 def _get_lifecycle() -> StrategyLifecycleManager:
@@ -179,13 +226,16 @@ def run_once(target_symbol=None) -> dict:
                 pass
 
         if not gate_pass:
-            log.info("Running backtest + walk-forward...")
+            log.info("Checking WalkForwardRegistry for viable strategies...")
             try:
-                r = subprocess.run([sys.executable, str(_QNA_DIR / 'backtest_pipeline.py')],
-                                   capture_output=True, text=True, timeout=180)
-                gate_pass = '"pass": true' in (r.stdout + r.stderr)
+                viable = get_viable_strategies()
+                gate_pass = len(viable) > 0
+                if gate_pass:
+                    log.info("Gate passed: %d viable strategies in registry", len(viable))
+                else:
+                    log.warning("No viable strategies found in WalkForwardRegistry")
             except Exception as e:
-                log.warning(f"Backtest failed: {e}")
+                log.warning(f"WalkForwardRegistry check failed: {e}")
 
     if not gate_pass:
         log.warning("GATE TERTUTUP — Strategi gagal backtest/walk-forward")
@@ -270,10 +320,75 @@ def run_once(target_symbol=None) -> dict:
             causal_ctx = _build_causal_context(dxy_pct, zb_pct)
             result["causal_ctx"] = causal_ctx
 
+            # ── Pre-trade market screen (ScreenerOrchestrator) ───────
+            _screen_result = None
+            try:
+                from quant_nanggroe.engine.screener.orchestrator import ScreenerOrchestrator
+                _screener = ScreenerOrchestrator()
+                _screen_data = {
+                    "symbol": symbol,
+                    "causal_ctx": causal_ctx,
+                    "dxy_pct": dxy_pct,
+                    "zb_pct": zb_pct,
+                    "price": signal.get("price", 0),
+                }
+                _screen_result = _screener.screen(_screen_data)
+                result["screen"] = _screen_result
+                log.info("Screen: dir=%s score=%.2f", _screen_result.get("overall_direction", "?"),
+                         _screen_result.get("composite_score", 0))
+            except Exception as _scr_e:
+                log.debug("Screener skipped: %s", _scr_e)
+
+            # ── Filter providers by walk-forward viability ────────────
+            viable_strategies = get_viable_strategies()
+            provider_list = ALL_PROVIDERS
+            if viable_strategies:
+                viable_names = {s["name"] for s in viable_strategies}
+                filtered = []
+                for p in ALL_PROVIDERS:
+                    pname = getattr(p, "__name__", str(p))
+                    if not pname.startswith("signal_qna_"):
+                        filtered.append(p)
+                        continue
+                    sname = pname[len("signal_"):]
+                    if sname in viable_names:
+                        filtered.append(p)
+                if len(filtered) < len(ALL_PROVIDERS):
+                    log.info("Providers filtered: %d → %d (only viable)", len(ALL_PROVIDERS), len(filtered))
+                    provider_list = filtered
+
             # ── Aggregate with Bayesian weights + strategy lifecycle ──
-            signal = aggregate(symbol, ctx=causal_ctx, tracker=_signal_tracker)
+            signal = aggregate(symbol, ctx=causal_ctx, tracker=_signal_tracker, providers=provider_list)
             result["signal"] = signal
             log.info(f"DECISION: {signal['bias']} (conf={signal['confidence']:.2f})")
+
+            # ── Confluence signal fusion (ConfluenceScorer) ──────────
+            _confluence = None
+            try:
+                if _screen_result is not None:
+                    from quant_nanggroe.engine.portfolio.confluence_scorer import ConfluenceScorer
+                    _scorer = ConfluenceScorer()
+                    _all_signals = [
+                        {"source": "aggregator", "side": signal["bias"], "confidence": signal["confidence"]},
+                        {"source": "screener", "side": _screen_result.get("overall_direction", "neutral"),
+                         "confidence": _screen_result.get("composite_score", 0) / 100.0},
+                    ]
+                    _confluence = _scorer.evaluate(
+                        _all_signals,
+                        macro_bias=getattr(causal_ctx, "biases", None) if causal_ctx else None,
+                        macro_weather=getattr(causal_ctx, "macro_regime", None) if causal_ctx else None,
+                    )
+                    result["confluence"] = _confluence
+                    log.info("Confluence: signal=%s score=%.2f",
+                             _confluence.overall_signal if hasattr(_confluence, "overall_signal") else "?",
+                             _confluence.score if hasattr(_confluence, "score") else 0)
+                    if hasattr(_confluence, "overall_signal") and _confluence.overall_signal == "hold":
+                        log.warning("Confluence veto — all signals fused to HOLD")
+                        result["status"] = "confluence_veto"
+                        signal["bias"] = "hold"
+                        signal["confidence"] = 0.0
+            except Exception as _con_e:
+                log.debug("ConfluenceScorer skipped: %s", _con_e)
 
             if signal["bias"] in ("buy", "sell"):
                 acct = mt5.account_info() if (MT5_AVAILABLE and not _config.PAPER_TRADE) else None
@@ -291,6 +406,22 @@ def run_once(target_symbol=None) -> dict:
 
                 market_atr = calc_atr(symbol) or 0.001
                 sizing = calculate_position_size(signal, real_balance, atr=market_atr)
+
+                # ── Risk parity position scaling (RiskParityAllocator) ────
+                _rp_weight = 1.0
+                try:
+                    from quant_nanggroe.engine.portfolio.risk_parity_bridgewater import RiskParityAllocator
+                    _rp = RiskParityAllocator(target_vol=0.10, max_leverage=2.0)
+                    _volatilities = {symbol: market_atr}
+                    _rp_weights = _rp.compute_risk_parity_weights(_volatilities)
+                    if _rp_weights and symbol in _rp_weights:
+                        _rp_weight = _rp_weights[symbol]
+                        sizing["volume"] = sizing["volume"] * _rp_weight
+                        log.info("RiskParity weight=%s multiplier=%.2f", symbol, _rp_weight)
+                    result["risk_parity"] = _rp_weights
+                except Exception as _rp_e:
+                    log.debug("RiskParityAllocator skipped: %s", _rp_e)
+
                 proposal = {
                     "symbol": symbol,
                     "action": signal["bias"],
@@ -303,6 +434,24 @@ def run_once(target_symbol=None) -> dict:
                     "open_positions": real_open,
                     "market_volatility": market_atr / 1.0,
                 }
+                # ── KillSwitch auto-activation check (canonical engine/risk) ──
+                configure_kill_switch_file()
+                ks = KillSwitch()
+                ks.check_auto_activate(
+                    daily_pnl_pct=real_daily_pnl / real_balance if real_balance > 0 else 0,
+                    weekly_pnl_pct=_weekly_pnl() / real_balance if real_balance > 0 else 0,
+                )
+                if not ks.can_trade():
+                    log.warning("KILL SWITCH VETO — halted (level=%s)", ks.current_level.value)
+                    result["status"] = "kill_switched"
+                    result["kill_level"] = ks.current_level.value
+                    if not _config.PAPER_TRADE:
+                        try:
+                            mt5.shutdown()
+                        except Exception:
+                            pass
+                    return result
+
                 rg_result = risk_guard_approve(proposal)
                 risk_score = rg_result.get("risk_score", rg_result.get("score", 0))
 
@@ -321,10 +470,10 @@ def run_once(target_symbol=None) -> dict:
                 log.info(f"Risk Guard APPROVED (score={risk_score:.2f})")
                 result["risk_score"] = risk_score
                 try:
-                    order_id = execute(signal, symbol)
+                    order_id = _execute_order_sync(signal, symbol)
                 except RuntimeError as e:
-                    # paper-mode fail-closed block in execution/orders.py
-                    log.warning(f"Execution blocked (paper mode fail-closed): {e}")
+                    # ExecutionManager guard pipeline blocked the order
+                    log.warning(f"ExecutionManager blocked order: {e}")
                     result["status"] = "paper_blocked"
                     result["executed"] = False
                 else:
@@ -332,6 +481,44 @@ def run_once(target_symbol=None) -> dict:
                         result["status"] = "executed"
                         result["executed"] = True
                         result["order_id"] = order_id
+                        # Feed PnL return to adaptive Kelly for performance tracking
+                        if real_balance > 0:
+                            _kelly_sizer.feed_performance([real_daily_pnl / real_balance])
+
+                        # ── Post-trade stress VaR (StressVaRCalculator) ──
+                        try:
+                            from quant_nanggroe.engine.stress_testing.var_cvar import StressVaRCalculator
+                            _var = StressVaRCalculator()
+                            _returns = np.array([real_daily_pnl / real_balance]) if real_balance > 0 else np.array([0.0])
+                            if len(_returns) > 0:
+                                _var_result = _var.compute(_returns)
+                                log.info("StressVaR: param_95=%.4f cvar_95=%.4f",
+                                         getattr(_var_result, "parametric_var_95", 0),
+                                         getattr(_var_result, "cvar_95", 0))
+                                result["stress_var"] = {
+                                    "parametric_var_95": getattr(_var_result, "parametric_var_95", 0),
+                                    "cvar_95": getattr(_var_result, "cvar_95", 0),
+                                    "historical_var_95": getattr(_var_result, "historical_var_95", 0),
+                                }
+                        except Exception as _var_e:
+                            log.debug("StressVaR skipped: %s", _var_e)
+
+                        # ── Post-trade pattern recording (MatrixProfileDetector) ──
+                        try:
+                            from quant_nanggroe.engine.pattern_recorder.matrix_profile import MatrixProfileDetector
+                            _mpd = MatrixProfileDetector()
+                            _price_series = getattr(_market_df, "close", None) if hasattr(locals(), "_market_df") else None
+                            if _price_series is not None:
+                                _mp_result = _mpd.compute(_price_series, window_size=min(20, len(_price_series) // 4))
+                                if _mp_result:
+                                    _motif_count = len(_mp_result.get("motifs", [])) if isinstance(_mp_result, dict) else 0
+                                    log.info("PatternRecorder: %d motifs found", _motif_count)
+                                    result["patterns"] = {
+                                        "motif_count": _motif_count,
+                                        "discord_count": len(_mp_result.get("discords", [])) if isinstance(_mp_result, dict) else 0,
+                                    }
+                        except Exception as _mp_e:
+                            log.debug("PatternRecorder skipped: %s", _mp_e)
                     else:
                         log.warning("Order not placed — execute() returned no order id")
                         result["status"] = "order_failed"

@@ -51,7 +51,7 @@ class ConfluenceScorer:
     Reference: AQR 'Combining Forecasts', Jacobs & Levy (2023)
     """
 
-    def __init__(self, min_confluence: int = 3, threshold: float = 0.6):
+    def __init__(self, min_confluence: int = 2, threshold: float = 0.6):
         self.min_confluence = min_confluence
         self.threshold = threshold
         self._signal_history: list[dict[str, Any]] = []

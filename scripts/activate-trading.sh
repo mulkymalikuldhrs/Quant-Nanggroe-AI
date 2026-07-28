@@ -9,7 +9,7 @@ LOG_DIR="$QNA_DIR/logs"
 DATA_DIR="$QNA_DIR/data"
 
 mkdir -p "$LOG_DIR" "$DATA_DIR"
-export PYTHONPATH="$QNA_DIR:$PYTHONPATH"
+unset PYTHONPATH
 
 echo "═══ QUANT NANGGROE — ACTIVATION ═══"
 echo ""

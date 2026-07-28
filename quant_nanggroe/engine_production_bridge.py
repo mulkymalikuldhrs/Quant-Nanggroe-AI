@@ -476,6 +476,18 @@ class ProductionExecutionManager:
         size = balance * 0.01 if balance > 0 else 10.0
         qty = size / price if price > 0 else 0
 
+        # Fail-safe stops: 16 strategies emit signals with sl/tp=None (audit
+        # 2026-07-28). Naked positions = unbounded DD. Derive a conservative
+        # default stop from price when the strategy didn't supply one, so a live
+        # order is NEVER placed without a protective stop. R:R ~1:2.
+        sl = getattr(signal, "stop_loss", None)
+        tp = getattr(signal, "take_profit", None)
+        if sl is None or tp is None:
+            fall_sl = price * (0.995 if signal.side == "buy" else 1.005)
+            fall_tp = price * (1.01 if signal.side == "buy" else 0.99)
+            sl = sl or round(fall_sl, 5)
+            tp = tp or round(fall_tp, 5)
+
         # ponytail: LIVE MT5 takes priority over paper when explicitly enabled
         # (QNA_MT5_LIVE=1) and connected. Paper is the FALLBACK, not the silent
         # default. Fail-open bug (#9) was: paper returned first, _mt5 never used.
@@ -491,8 +503,8 @@ class ProductionExecutionManager:
                     side=OrderSide.BUY if signal.side == "buy" else OrderSide.SELL,
                     order_type=OrderType.MARKET,
                     quantity=qty,
-                    stop_loss=getattr(signal, "stop_loss", None),
-                    take_profit=getattr(signal, "take_profit", None),
+                    stop_loss=sl,
+                    take_profit=tp,
                 )
                 ticket = self._mt5.place_order(order)
                 result = {

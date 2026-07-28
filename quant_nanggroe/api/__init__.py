@@ -5,7 +5,6 @@
 __all__ = [
     'app',
     'middleware',
-    'schemas',
 ]
 
 # Lazy imports for submodules

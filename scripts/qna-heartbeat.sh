@@ -10,7 +10,7 @@ LOG="$QNA_DIR/logs/heartbeat.log"
 DATA_DIR="$QNA_DIR/data"
 
 mkdir -p "$QNA_DIR/logs" "$DATA_DIR"
-export PYTHONPATH="$QNA_DIR:$PYTHONPATH"
+unset PYTHONPATH
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] QNA heartbeat check..." >> "$LOG"
 

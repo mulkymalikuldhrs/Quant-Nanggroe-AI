@@ -1,16 +1,16 @@
-# Cursor IDE Instructions — Quant Nanggroe AI v6.2.0
+# CURSOR.md — Quant Nanggroe AI
 
-## Entry Point
-Single entry: `python qna.py [unified|api|daemon|hedge|status|stop]`
+See **AGENTS.md** for canonical instructions.
 
-## Rules
-- Always read README → AGENTS → ARCHITECTURE → TODO → CHANGELOG before making changes.
+**Entry:** `python qna.py [unified|api|daemon|hedge|status|stop]`
+
+**Rules:**
+- `PYTHONPATH=""` mandatory (Hermes venv leak)
 - `qna.py` is the ONLY root entry point. Never create another.
 - Use `uv` for package management (not pip, not poetry).
+- `archive/` = read-only orphan artifacts from v6.2.
 - Keep docs synchronized with code changes.
-- Check `quant_nanggroe/engine/causal/` for causal engine modules. 🆕
-- Check `quant_nanggroe/engine/risk/dcc_garch.py` for DCC-GARCH. 🆕
 
-## Indexing Preferences — Updated v6.2.0
-- Index: `quant_nanggroe/`, `dashboard/src/`, `docs/`, `qna.py`, `quant_nanggroe/engine/causal/`, `quant_nanggroe/engine/risk/`, `quant_nanggroe/engine/strategies/`
+**Index:**
+- Include: `quant_nanggroe/`, `dashboard/src/`, `docs/`, `qna.py`
 - Exclude: `data/`, `paper_state/`, `node_modules/`, `__pycache__/`, `archive/`

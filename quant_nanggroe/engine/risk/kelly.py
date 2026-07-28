@@ -154,6 +154,22 @@ class KellyCriterion:
         self.volatility_penalty = volatility_penalty
         self.confidence_weight = confidence_weight
         self._history: List[Dict] = []
+        # Persistent AdaptiveKelly — preserves performance_history across calls
+        self._adaptive_kelly: Optional[AdaptiveKelly] = None
+
+    def feed_performance(self, returns: list[float]) -> None:
+        """Feed closed-trade PnL returns into the adaptive Kelly estimator.
+
+        Call this after every closed trade with the realized return
+        (profit_or_loss / account_balance). The rolling performance history
+        adjusts the AdaptiveKelly multiplier up (good) or down (bad).
+        """
+        if self._adaptive_kelly is None:
+            self._adaptive_kelly = AdaptiveKelly(
+                base_fraction=self.max_position, window=60,
+            )
+        for r in returns:
+            self._adaptive_kelly.update(r)
 
     def calculate_kelly(
         self,
@@ -191,17 +207,24 @@ class KellyCriterion:
 
     def _get_implementation(self, method: NewKellyMethod) -> BaseKelly:
         if method == NewKellyMethod.FULL:
-            return FullKelly()  # ponytail: was falling to else→Fractional(0.5), broke f*
+            return FullKelly()
         elif method == NewKellyMethod.ADAPTIVE:
-            return AdaptiveKelly(
-                base_fraction=self.max_position,
-                window=60,
-            )
+            if self._adaptive_kelly is None:
+                self._adaptive_kelly = AdaptiveKelly(
+                    base_fraction=self.max_position,
+                    window=60,
+                )
+            return self._adaptive_kelly
         elif method in (NewKellyMethod.FRACTIONAL, NewKellyMethod.HALF, NewKellyMethod.QUARTER):
             frac = {NewKellyMethod.HALF: 0.5, NewKellyMethod.QUARTER: 0.25}.get(method, 0.5)
             return FractionalKelly(fraction=frac)
         else:
-            return AdaptiveKelly(max_position=self.max_position, min_position=self.min_position)
+            if self._adaptive_kelly is None:
+                self._adaptive_kelly = AdaptiveKelly(
+                    base_fraction=self.max_position,
+                    window=60,
+                )
+            return self._adaptive_kelly
 
     def calculate_continuous_kelly(
         self,

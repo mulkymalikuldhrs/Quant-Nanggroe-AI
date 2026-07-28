@@ -1,34 +1,18 @@
-# GitHub Copilot Instructions — Quant Nanggroe AI v6.2.0
+# COPILOT.md — Quant Nanggroe AI
 
-## Entry Point
-Single entry: `python qna.py [unified|api|daemon|hedge|status|stop]`
+See **AGENTS.md** (canonical). Below is a quick reference.
 
-## Suggested Ignore Patterns
-- `paper_state/*.json` — auto-generated trading state.
-- `data/*` — runtime data.
-- `node_modules/` — JavaScript dependencies.
-- `__pycache__/` — Python cache.
-- `archive/` — Legacy files (do not edit).
+**Entry:** `python qna.py [unified|api|daemon|hedge|status|stop]`
 
-## Commit Message Convention
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation
-- `refactor:` Code refactoring
-- `test:` Test changes
-- `chore:` Maintenance
-- `audit:` Codebase audit
-- `quant:` Quantitative engine addition
+**Key:**
+- `PYTHONPATH=""` mandatory (Hermes venv leak)
+- 77 strategies in `quant_nanggroe/engine/strategies/` via `@StrategyRegistry.register`
+- KillSwitch C5 in `quant_nanggroe/engine/risk/kill_switch.py`
+- 9-stage pipeline in `hedge_fund/portfolio/main.py:run_once()`
+- 10 exchange clients in `quant_nanggroe/exchange/clients/`
+- 16 agents (5 geopolitics) in `quant_nanggroe/agents/`
+- `archive/` = read-only orphan artifacts
 
-## Key Locations — Updated v6.2.0
-- Strategies: `quant_nanggroe/engine/strategies/` (79+ registered, @StrategyRegistry.register)
-- Strategy Registry: `quant_nanggroe/engine/strategies/registry.py` (StrategyRegistry — class registry, unchanged)
-- Walk-Forward Metadata: `quant_nanggroe/engine/strategy/registry.py` (WalkForwardRegistry — renamed v6.2.0, was StrategyRegistry)
-- Strategy Evolver: `quant_nanggroe/engine/strategies/strategy_evolver.py` (real WalkForwardAnalyzer)
-- Risk: `quant_nanggroe/engine/risk/` (+ DCC-GARCH, unified PnL fractions)
-- Causal: `quant_nanggroe/engine/causal/` (5 modules + CausalContext dataclass)
-- HF Signals: `quant_nanggroe/hedge_fund/signals/core.py` (+ causal bias)
-- Pipeline: `quant_nanggroe/pipeline/macro_context.py`
-- Tests: `quant_nanggroe/tests/test_dcc_garch.py` (47 tests)
-- Security: `QNAI_SSL_VERIFY` env guard, `.secrets-local/` deleted
-- Docs: `docs/` (58 documents)
+**Ignore:** `paper_state/*.json`, `data/*`, `node_modules/`, `__pycache__/`, `archive/`
+**Package:** `uv` (not pip, not poetry)
+**Test:** `.venv/Scripts/python -m pytest tests/ -v --tb=short`

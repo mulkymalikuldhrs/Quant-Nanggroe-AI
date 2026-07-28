@@ -90,11 +90,11 @@ class RiskWorker(Worker):
             side = params.get("side", "buy")
             size = params.get("size", 0.01)
             price = params.get("price", 0.0)
-            result = guard.can_trade(symbol=symbol, side=side, size=size, price=price)
+            result = guard.evaluate(symbol=symbol, direction=side, lot_size=size, entry=price)
             return {
                 "risk_check": task.name,
-                "passed": bool(result),
-                "reason": str(getattr(result, "reason", "")) if not isinstance(result, bool) else "",
+                "passed": result.get("approved", False),
+                "reason": "; ".join(result.get("reasons", []) or result.get("failed_checkpoints", [])),
             }
         except Exception as e:
             return {"risk_check": task.name, "passed": False, "error": str(e)}

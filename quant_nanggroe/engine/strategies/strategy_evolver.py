@@ -122,6 +122,13 @@ class StrategyEvolver:
         if accepted:
             reason = f"{metric}: {baseline_val:.4f} → {mutated_val:.4f} (+{improvement_pct:.1f}%)"
             self._rejects_in_a_row = 0
+            # Close the loop: persist accepted params so future instances inherit them
+            try:
+                from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+                StrategyRegistry.update_params(strategy_name, mutated_params)
+                logger.info("EVOLVE ACCEPTED — '%s' params updated in registry", strategy_name)
+            except Exception as exc:
+                logger.warning("Failed to persist evolved params for '%s': %s", strategy_name, exc)
         else:
             reason = f"{metric}: {baseline_val:.4f} → {mutated_val:.4f} ({improvement_pct:+.1f}%, need >{self.config.min_improvement_pct}%)"
             self._rejects_in_a_row += 1

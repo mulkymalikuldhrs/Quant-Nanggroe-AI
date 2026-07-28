@@ -1,8 +1,0 @@
-//@version=5
-// DhaHer Momentum — from TV MCP top_gainers/top_losers scan logic
-indicator("DhaHer Momentum", overlay=true)
-roc = ta.roc(close, input.int(10))
-plotshape(ta.crossover(roc, 0), "MOM UP", shape.arrowup, location.belowbar, color.lime, size=size.small)
-plotshape(ta.crossunder(roc, 0), "MOM DN", shape.arrowdown, location.abovebar, color.red, size=size.small)
-plot(roc, "ROC", color.gray, display=display.data_window)
-// ponytail: single ROC period

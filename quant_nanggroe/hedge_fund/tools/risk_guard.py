@@ -31,7 +31,7 @@ def _load_policy(policy_path: Optional[Path] = None) -> dict:
     default = {
         "risk_max_drawdown_stop": 0.20,
         "max_leverage": 3.0,
-        "max_daily_loss": 0.05,
+        "max_daily_loss": 0.01,  # 1% — canonical from engine/risk/constants.py
         "max_weekly_loss": 0.03,
         "max_position_size": 0.02,
         "risk_score_threshold": 0.8,
@@ -92,10 +92,10 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
         return min(1.0, max(0.0, risk)), reasons[:6]
     loss_ratio = abs(daily_pnl) / balance if daily_pnl < 0 else 0
     
-    if loss_ratio > max_loss * 1.2:
+    if loss_ratio >= max_loss * 1.2:
         risk = max(risk, 1.0)
         reasons.append(f"daily_loss_limit_hit loss={loss_ratio:.2%} > {max_loss:.2%}")
-    elif loss_ratio > max_loss:
+    elif loss_ratio >= max_loss:
         risk = max(risk, 0.85)
         reasons.append(f"daily_loss_high loss={loss_ratio:.2%} ~ {max_loss:.2%}")
     
@@ -114,10 +114,10 @@ def calculate_risk_score(proposal: Dict[str, Any], policy: dict) -> tuple[float,
         # the guard still vetoes via the no-evidence path below.
         weekly_pnl = 0.0  # treat as zero for loss calc
     week_loss_ratio = abs(weekly_pnl) / balance if weekly_pnl < 0 else 0
-    if week_loss_ratio > max_weekly_loss * 1.2:
+    if week_loss_ratio >= max_weekly_loss * 1.2:
         risk = max(risk, 1.0)
         reasons.append(f"weekly_loss_limit_hit loss={week_loss_ratio:.2%} > {max_weekly_loss:.2%}")
-    elif week_loss_ratio > max_weekly_loss:
+    elif week_loss_ratio >= max_weekly_loss:
         risk = max(risk, 0.85)
         reasons.append(f"weekly_loss_high loss={week_loss_ratio:.2%} ~ {max_weekly_loss:.2%}")
     

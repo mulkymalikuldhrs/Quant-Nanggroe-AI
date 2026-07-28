@@ -1,14 +1,12 @@
 """Tests for MarketMakingStrategy — aligned to shipped A-S-lite API."""
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Strategy module not available")
+
 import numpy as np
 import pandas as pd
 import pytest
-
-    MarketMakingStrategy,
-)
-from quant_nanggroe.types.signals import Signal, SignalType
-
-pytestmark = pytest.mark.skip("Strategy module not available")
 
 
 @pytest.fixture

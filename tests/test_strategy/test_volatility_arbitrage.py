@@ -1,14 +1,12 @@
 """Tests for VolatilityArbitrageStrategy."""
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Strategy module not available")
+
 import numpy as np
 import pandas as pd
 import unittest
-
-    VolatilityArbitrageStrategy,
-)
-from quant_nanggroe.types.signals import Signal, SignalType
-
-pytestmark = pytest.mark.skip("Strategy module not available")
 
 
 class TestVolatilityArbitrageStrategy(unittest.TestCase):

@@ -47,7 +47,7 @@ from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_sw
 from quant_nanggroe.engine_bridge import EnginePriceProvider, EngineRiskManager, StalePositionAnalyzer
 from quant_nanggroe.engine_production_bridge import create_production_engine
 from quant_nanggroe.notifier import format_error_message, format_heartbeat, send_telegram
-from quant_nanggroe.providers.data_manager import DataManager
+from quant_nanggroe.data.providers.data_manager import DataManager
 from quant_nanggroe.strategies.trend_follow import TrendFollow
 from quant_nanggroe.strategies.tsmom import TSMOM
 
@@ -1241,10 +1241,20 @@ class LiveEngine:
                     # Trigger StrategyEvolver if available
                     try:
                         from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
+                        from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+                        import random
                         ev = StrategyEvolver()
-                        # Simple mutation: nudge params, real-backtest gate decides
                         baseline = {"lookback": 20, "atr_mult": 1.2}
-                        mutated = {"lookback": 20, "atr_mult": 1.5}
+                        try:
+                            strategy_cls = StrategyRegistry.get(s)
+                            if strategy_cls:
+                                inst = strategy_cls()
+                                params = inst.get_parameters()
+                                if params:
+                                    baseline = params
+                        except Exception:
+                            pass
+                        mutated = {k: v * (1 + random.uniform(-0.15, 0.15)) for k, v in baseline.items()}
                         att = ev.evaluate(s, baseline, mutated)
                         log.info(f"Evolver {s}: {att.reason}")
                     except Exception as e:
@@ -1520,29 +1530,5 @@ class LiveEngine:
         }
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Quant Nanggroe Multi-Asset Hedge Fund Engine")
-    parser.add_argument("action", choices=["start", "stop", "restart", "status", "dashboard", "health"])
-    args = parser.parse_args()
-
-    engine = LiveEngine()
-
-    if args.action == "start":
-        engine.start()
-    elif args.action == "stop":
-        engine.stop()
-    elif args.action == "restart":
-        engine.stop()
-        time.sleep(2)
-        engine.start()
-    elif args.action == "status":
-        engine.status()
-    elif args.action == "health":
-        raise SystemExit(engine.health())
-    elif args.action == "dashboard":
-        print(json.dumps(engine.dashboard(), indent=2))
-
-
-if __name__ == "__main__":
-    main()
+# Entry point archived — use qna.py instead.
+# Previous standalone main() moved to .bak/live_engine_main.py.archive

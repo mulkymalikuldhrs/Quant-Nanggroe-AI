@@ -18,7 +18,7 @@ for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000"') do (
 timeout /t 2 /nobreak >nul
 
 REM Launch dashboard in background (Node.js must be in PATH)
-cd /d repositories\Quant-Nanggroe-AI-worktree\dashboard
+cd /d "%~dp0..\dashboard"
 start "QNA Dashboard" /min npm run dev
 
 echo Dashboard launched. Waiting for startup...

@@ -7,7 +7,7 @@ Imports support tools from the local ``tools`` subpackage (no E:/trading depende
 """
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Ensure local tools are importable
@@ -156,11 +156,17 @@ def execute_mtf(signal, balance, symbol):
 
     sym_info = mt5.symbol_info(sym)
     if sym_info:
-        if sym_info.trade_mode == 4 and ot == mt5.ORDER_TYPE_BUY:
-            log.warning(f"⛔ {sym} is SHORT ONLY — skipping BUY order")
+        # MT5 v5+ trade_mode enum (verified against live terminal 2026-07-28):
+        #   0 = DISABLED | 1 = LONGONLY | 2 = SHORTONLY | 3 = CLOSEONLY | 4 = FULL
+        tm = sym_info.trade_mode
+        if tm in (0, 3):
+            log.warning(f"⛔ {sym} {'DISABLED' if tm == 0 else 'CLOSE-ONLY'} (trade_mode={tm}) — skipping ALL orders")
             return
-        if sym_info.trade_mode == 3 and ot == mt5.ORDER_TYPE_SELL:
-            log.warning(f"⛔ {sym} is LONG ONLY — skipping SELL order")
+        if tm == 1 and ot == mt5.ORDER_TYPE_SELL:
+            log.warning(f"⛔ {sym} LONG-ONLY (trade_mode={tm}) — skipping SELL")
+            return
+        if tm == 2 and ot == mt5.ORDER_TYPE_BUY:
+            log.warning(f"⛔ {sym} SHORT-ONLY (trade_mode={tm}) — skipping BUY")
             return
         fill = mt5.ORDER_FILLING_FOK if sym_info.filling_mode & 1 else mt5.ORDER_FILLING_IOC
     else:
@@ -178,10 +184,18 @@ def execute_mtf(signal, balance, symbol):
     except Exception:
         daily_pnl = 0.0
 
+    try:
+        _monday = _today - timedelta(days=_today.weekday())
+        _week_deals = mt5.history_deals_get(_monday, datetime.now())
+        weekly_pnl = float(sum(d.profit for d in _week_deals)) if _week_deals else 0.0
+    except Exception:
+        weekly_pnl = 0.0
+
     guard_check = risk_guard_approve({
         'symbol': sym, 'action': signal['bias'], 'volume': lot,
         'price': p, 'sl': sl, 'account_balance': balance,
-        'daily_pnl': daily_pnl, 'open_positions': len(mt5.positions_get() or []),
+        'daily_pnl': daily_pnl, 'weekly_pnl': weekly_pnl,
+        'open_positions': len(mt5.positions_get() or []),
         'market_volatility': atr / p if p else 0.001,
     })
     if guard_check['status'] == 'VETOED':

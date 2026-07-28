@@ -414,6 +414,25 @@ def run_web(args: argparse.Namespace) -> int:
     return 0
 
 
+#  MODE: LiveEngine Trading Loop
+
+def run_live(args: argparse.Namespace) -> int:
+    """Run the LiveEngine trading loop (60s cycle, full pipeline)."""
+    print(BANNER)
+    print("🏃 LiveEngine — trading loop starting...")
+    print()
+    try:
+        from quant_nanggroe.live_engine import LiveEngine
+        engine = LiveEngine()
+        engine.start()
+    except KeyboardInterrupt:
+        print("\n🛑 LiveEngine stopped by user.")
+    except Exception as e:
+        logger.error("LiveEngine error: %s", e)
+        return 1
+    return 0
+
+
 #  MODE: Status / Health Check
 
 def run_status(args: argparse.Namespace) -> int:
@@ -822,6 +841,7 @@ def build_parser() -> argparse.ArgumentParser:
   python qna.py daemon                     Background daemon mode
   python qna.py hedge --paper EURUSD       Paper trade EURUSD
   python qna.py status                     System health check
+  python qna.py live                        LiveEngine trading loop (60s cycle)
   python qna.py cli             [DEPRECATED] Interactive CLI shell
   python qna.py web             [DEPRECATED] Legacy web UI on port 5000
         """,
@@ -830,7 +850,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["unified", "cli", "api", "daemon", "web", "status", "stop", "hedge"],
+        choices=["unified", "cli", "api", "daemon", "web", "status", "stop", "hedge", "live"],
         default="unified",
         help="Launch mode (default: unified)",
     )
@@ -916,6 +936,7 @@ def main() -> int:
         "web": run_web,
         "status": run_status,
         "hedge": run_hedge,
+        "live": run_live,
         "stop": lambda a: stop_daemon(),
     }
 

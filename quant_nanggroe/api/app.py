@@ -7,10 +7,12 @@ Prometheus metrics, rate limiting, and proper CORS configuration.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import signal
 import time
+from pathlib import Path
 
 # ponytail: load .env into os.environ BEFORE get_settings()/os.environ reads so
 # QNAI_JWT_SECRET + QNAI_API_KEY (admin key, not a Settings field) are present.
@@ -397,7 +399,28 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         ready = app.state._services.get("startup_complete", False)
-        return {"status": "healthy", "startup_complete": str(ready), "service": "quant-nanggroe-ai"}
+        # Honesty fix (2026-07-28): never report "healthy" while the kill
+        # switch silently vetoes trading (the AUTO_DAILY_LIMIT footgun).
+        # Read the cross-process kill-switch state file directly (cheap).
+        kill_active = False
+        kill_reason = ""
+        ks_file = os.environ.get("QNA_KILL_SWITCH_STATE_FILE")
+        if ks_file and os.path.exists(ks_file):
+            try:
+                ks = json.loads(Path(ks_file).read_text(encoding="utf-8"))
+                if ks.get("status") == "active" or ks.get("_fail_closed"):
+                    kill_active = True
+                    kill_reason = ks.get("activation_reason", "fail_closed")
+            except Exception:
+                pass
+        status = "degraded" if kill_active else "healthy"
+        return {
+            "status": status,
+            "startup_complete": str(ready),
+            "service": "quant-nanggroe-ai",
+            "kill_switch_active": kill_active,
+            "kill_switch_reason": kill_reason,
+        }
 
     @app.get("/config")
     async def config_redirect():

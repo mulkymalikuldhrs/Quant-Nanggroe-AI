@@ -1,9 +1,0 @@
-//@version=5
-// DhaHer Keltner Break — from TV MCP backtest_strategy(keltner_breakout)
-indicator("DhaHer Keltner Break", overlay=true)
-len = input.int(20); mult = input.float(1.5)
-mid = ta.ema(close, len); rng = ta.atr(len)
-up = mid + mult*rng; lo = mid - mult*rng
-plotshape(ta.crossover(close, up), "KEL BUY", shape.triangleup, location.belowbar, color.teal, size=size.small)
-plotshape(ta.crossunder(close, lo), "KEL SELL", shape.triangledown, location.abovebar, color.orange, size=size.small)
-// ponytail: standard keltner, one mult

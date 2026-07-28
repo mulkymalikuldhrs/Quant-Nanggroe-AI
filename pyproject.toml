@@ -103,8 +103,8 @@ dev = [
     "pre-commit>=3.5",
 ]
 
-[project.scripts]
-qnai = "quant_nanggroe.cli:main"
+# Single source of truth: qna.py (not pip-installable CLI)
+# Use `python qna.py [mode]` for all operations
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]

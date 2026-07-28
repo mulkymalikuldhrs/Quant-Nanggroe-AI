@@ -1,25 +1,19 @@
-"""Data providers: CoinGecko, Finnhub, macro, crypto, and LSE."""
+"""Legacy providers — DEPRECATED. Use quant_nanggroe.data.providers instead."""
 
-# Package init
+# Removed: coingecko_provider, crypto_provider, finnhub_provider, macro_provider
+# (replaced by async versions in data/providers/ with DataProvider ABC).
+# Remaining files kept for scripts/setup_warp.sh compatibility:
+#   lse_provider.py  — self-referential import, optional dependency
+#   proxy.py, warp   — consumed by scripts/setup_warp.sh
 
 __all__ = [
-    'coingecko_provider',
-    'crypto_provider',
-    'data_manager',
-    'finnhub_provider',
     'lse_provider',
-    'macro_provider',
     'proxy',
     'warp',
 ]
 
-from . import coingecko_provider, crypto_provider, data_manager, finnhub_provider
-
-# lse_provider is OPTIONAL: requires the `lse-data` client (`pip install lse-data` + LSE_API_KEY).
-# Importing it eagerly broke the whole package when lse is absent. Keep it importable on-demand
-# via `from quant_nanggroe.providers.lse_provider import LSEProvider` when the dep is present.
-try:  # ponytail: optional dep must not break package import
-    from . import lse_provider  # noqa: F401
+try:
+    from . import lse_provider
 except ImportError:
     pass
-from . import macro_provider, proxy, warp
+from . import proxy, warp

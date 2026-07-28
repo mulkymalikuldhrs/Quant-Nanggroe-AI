@@ -13,7 +13,8 @@ from typing import Any, Dict, Optional
 
 from quant_nanggroe.agents.tools.execution import ExecutionTool
 from quant_nanggroe.exchange.manager import ExchangeManager
-from quant_nanggroe.strategies.trend_follow import TrendFollow
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+from quant_nanggroe.engine.strategies.base import StrategyParameters
 
 logger = logging.getLogger(__name__)
 
@@ -54,16 +55,17 @@ async def run_cycle(
         result.error = f"data fetch failed: {exc}"
         return result
 
-    # 2. strategy
-    if strategy_name == "trend_follow":
-        strategy = TrendFollow()
-    else:
-        result.error = f"unknown strategy: {strategy_name}"
+    # 2. strategy — use StrategyRegistry for any registered strategy
+    strategy = StrategyRegistry.create(strategy_name)
+    if strategy is None:
+        result.error = f"unknown or inactive strategy: {strategy_name}"
         return result
 
-    decision = strategy.analyze(closes)
-    result.signal = decision.get("signal", "hold")
-    result.confidence = float(decision.get("confidence", 0.0))
+    import pandas as pd
+    df = pd.DataFrame({"close": closes})
+    signal = strategy.generate_signal(df)
+    result.signal = signal.direction.value.lower()
+    result.confidence = float(signal.confidence)
 
     if result.signal == "hold":
         # still report portfolio so UI stays live

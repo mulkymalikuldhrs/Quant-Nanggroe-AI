@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from quant_nanggroe.engine.strategies.pairs_trade_strategy import (
-    PairsTradingStrategy,
+    PairsTradeStrategy,
 )
 from quant_nanggroe.types.signals import Signal, SignalType
 

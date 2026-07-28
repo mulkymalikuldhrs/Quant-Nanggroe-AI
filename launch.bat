@@ -25,9 +25,9 @@ if "%1"=="status" goto :status
 goto :usage
 
 :api
-echo [QNA] Starting API server on port 8000...
+echo [QNA] Starting API server via qna.py (single entry point)...
 echo [QNA] PYTHONPATH cleared — no venv contamination.
-".venv\Scripts\python.exe" -m uvicorn quant_nanggroe.api.app:app --host 0.0.0.0 --port 8000 --reload
+".venv\Scripts\python.exe" qna.py api
 goto :eof
 
 :cli

@@ -1,12 +1,10 @@
-"""MCP protocol: client, server, tools, and protocol implementation."""
+"""MCP protocol: server and protocol implementation."""
 
-# Package init
+# Package init (client.py + tools.py archived — server uses different path)
 
 __all__ = [
-    'client',
     'protocol',
     'server',
-    'tools',
 ]
 
-from . import client, protocol, server, tools
+from . import protocol, server

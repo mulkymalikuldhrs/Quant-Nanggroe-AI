@@ -1,5 +1,6 @@
 """Comprehensive tests for VolatilityArbitrageStrategy - matches actual implementation."""
 
+import pytest
 import unittest
 import numpy as np
 import pandas as pd

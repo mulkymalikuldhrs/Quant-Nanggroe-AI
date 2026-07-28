@@ -115,3 +115,12 @@ api_stderr.log
 api_stdout.log
 nul
 dashboard/nul
+
+# ── Auto-generated Cache (graphify AST, 39% of repo) ────────────────
+graphify-out/cache/
+
+# ── Guardian Watchtower ─────────────────────────────────────────────
+guardian_issues/
+
+# ── Archival ─────────────────────────────────────────────────────────
+.bak/
