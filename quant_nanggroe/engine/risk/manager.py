@@ -381,9 +381,12 @@ class RiskManager:
         # smaller, so this veto trips BEFORE the absolute gate.
         _daily_abs_raw = self.state.daily_pnl
         _weekly_abs_raw = self.state.weekly_pnl
-        if daily_pnl_pct != 0.0:
+        # Only honour caller overrides in test/combined path without
+        # a live broker — with a live broker, _sync_realized_pnl()
+        # already loaded REALIZED P&L into state, not floating equity.
+        if daily_pnl_pct != 0.0 and self._mt5_handle is None:
             _daily_abs_raw = daily_pnl_pct * account_balance
-        if weekly_pnl_pct != 0.0:
+        if weekly_pnl_pct != 0.0 and self._mt5_handle is None:
             _weekly_abs_raw = weekly_pnl_pct * account_balance
         _regime_veto = self._enforce_vol_regime(_daily_abs_raw, _weekly_abs_raw, account_balance)
         if _regime_veto is not None:
@@ -395,17 +398,17 @@ class RiskManager:
                 "timestamp": datetime.now().isoformat(),
             }
 
-        # 9-checkpoint gate. Use broker-synced PnL when available (live mode),
-        # but also accept the daily_pnl_pct parameter when passed explicitly
-        # (test/combined path without a live broker).
+        # 9-checkpoint gate. Use broker-synced PnL when available (live mode).
+        # daily_pnl_pct/weekly_pnl_pct overrides only apply in test/combined
+        # path WITHOUT a live broker — with a live broker handle,
+        # _sync_realized_pnl() already populated state with REALIZED P&L.
+        # Allowing caller overrides to shadow the synced state re-introduces
+        # the phantom floating-equity veto (pitfall #58).
         _daily_abs = self.state.daily_pnl
         _weekly_abs = self.state.weekly_pnl
-        # If the execution layer passed a non-zero PnL fraction, use it as override
-        # (covers the combined path where no broker is syncing realized PnL).
-        # daily_pnl_pct is a fraction of account equity (range [0, 1]).
-        if daily_pnl_pct != 0.0:
+        if daily_pnl_pct != 0.0 and self._mt5_handle is None:
             _daily_abs = daily_pnl_pct * account_balance
-        if weekly_pnl_pct != 0.0:
+        if weekly_pnl_pct != 0.0 and self._mt5_handle is None:
             _weekly_abs = weekly_pnl_pct * account_balance
 
         # Suspicious zero PnL check: if there's been trading activity but PnL

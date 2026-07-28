@@ -96,17 +96,23 @@ class AutonomousSelfLoopOrchestrator:
         
         if self._walk_forward_analyzer is None:
             try:
+                from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
                 from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
-                self._walk_forward_analyzer = WalkForwardAnalyzer()
+                engine = BacktestEngine(BacktestConfig(
+                    initial_capital=10000.0,
+                    commission_rate=0.001,
+                    slippage_bps=5.0,
+                ))
+                self._walk_forward_analyzer = WalkForwardAnalyzer(
+                    engine=engine,
+                    train_window=120,
+                    test_window=60,
+                )
             except Exception as e:
                 logger.warning(f"WalkForwardAnalyzer unavailable: {e}")
         
-        if self._auto_tuner is None:
-            try:
-                from quant_nanggroe.engine.backtest.auto_tune import AutoTuner
-                self._auto_tuner = AutoTuner()
-            except Exception as e:
-                logger.warning(f"AutoTuner unavailable: {e}")
+        # AutoTuner is per-use (requires strategy_name, param_grid, data)
+        # Not a singleton — created on-demand in _evolve_strategies if needed
         
         if self._self_aware is None:
             try:

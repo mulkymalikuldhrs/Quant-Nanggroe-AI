@@ -19,7 +19,7 @@ sys.path.insert(0, str(REPO))
 RESULTS = REPO / "results"
 RESULTS.mkdir(parents=True, exist_ok=True)
 GATE = RESULTS / "gate_status.json"
-CACHE = RESULTS / "eurusd_m15_cache.csv"
+CACHE = RESULTS / "eurusd_m15_cache.parquet"
 
 SYM = "EURUSD=X"
 ANN = 35040  # M15 bars/year (365*24*4)
@@ -31,7 +31,7 @@ from quant_nanggroe.engine.strategies.base import Strategy
 def load_data(interval: str, period: str) -> pd.DataFrame:
     if CACHE.exists():
         try:
-            df = pd.read_csv(CACHE, index_col=0, parse_dates=True)
+            df = pd.read_parquet(CACHE)
             if len(df) > 1000:
                 print(f"  data cache hit: {len(df)} bars")
                 return df
@@ -42,16 +42,13 @@ def load_data(interval: str, period: str) -> pd.DataFrame:
     if isinstance(raw, tuple):  # yfinance >=1.x may return (data, errors)
         raw = raw[0]
     df = raw
-    # Flatten MultiIndex columns (e.g. ('Close','EURUSD=X')) to plain names like 'close'
-    if hasattr(df.columns, 'levels') and len(df.columns.levels) > 1:
-        df.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower() for c in df.columns]
     if not isinstance(df, pd.DataFrame) or df.empty:
         raise RuntimeError(f"yfinance returned no data: {type(raw)}")
     df = df.rename(columns={c: c.lower() for c in df.columns})
     df = df.loc[:, ["open", "high", "low", "close", "volume"]]
     df.index = pd.to_datetime(df.index).tz_localize(None)
     df = df.dropna(subset=["open", "high", "low", "close"])
-    df.to_csv(CACHE)
+    df.to_parquet(CACHE)
     print(f"  data downloaded: {len(df)} bars")
     return df
 
@@ -216,12 +213,7 @@ def main():
             existing = json.loads(GATE.read_text())
         except Exception:
             existing = {}
-    # Handle both old list format and new dict format
-    done_list = existing.get("results", [])
-    if isinstance(done_list, list):
-        done = {item.get("strategy", ""): item for item in done_list if isinstance(item, dict) and "strategy" in item}
-    else:
-        done = done_list
+    done = existing.get("results", {})
     print(f"Already evaluated: {len(done)}")
 
     strats = reg.list_strategies()

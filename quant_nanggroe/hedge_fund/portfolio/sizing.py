@@ -27,7 +27,7 @@ def calculate_position_size(signal, balance, atr=None, config=None):
     symbol = signal.get("symbol", "EURUSD") if isinstance(signal, dict) else "EURUSD"
 
     cfg = config or {}
-    kelly_frac = cfg.get("kelly_fraction", 0.25)
+    kelly_frac = cfg.get("kelly_fraction", 0.25)  # ponytail: 0.25 = quarter-Kelly, gate-passing default per quant-engineering-os skill
     max_risk = cfg.get("max_risk_per_trade", MAX_RISK_PER_TRADE)
 
     kelly = FractionalKelly(fraction=kelly_frac)

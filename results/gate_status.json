@@ -1,14 +1,12 @@
 {
-  "timestamp": "2026-07-27T04:46:11.638413",
-  "symbol": "EURUSD",
-  "timeframe": "M15",
-  "bars": 5666,
-  "source": "yfinance EURUSD=X (real, 60d)",
-  "registered": 77,
-  "archive_registered": 0,
-  "passed": 9,
-  "results": [
-    {
+  "symbol": "EURUSD=X",
+  "interval": "15m",
+  "period": "60d",
+  "n_registered": 77,
+  "n_evaluated": 77,
+  "n_pass": 9,
+  "results": {
+    "AdaptiveMovingAverageStrategy": {
       "strategy": "AdaptiveMovingAverageStrategy",
       "sharpe": -10.585,
       "return_pct": -0.04,
@@ -17,7 +15,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "ADXStrategy": {
       "strategy": "ADXStrategy",
       "sharpe": 0.034,
       "return_pct": 0.07,
@@ -26,7 +24,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "AlgebraStrategy": {
       "strategy": "AlgebraStrategy",
       "sharpe": 2.551,
       "return_pct": 0.41,
@@ -35,7 +33,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "AlternativeDataStrategy": {
       "strategy": "AlternativeDataStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -44,7 +42,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "AMDXStrategy": {
       "strategy": "AMDXStrategy",
       "sharpe": -1.52,
       "return_pct": -2.77,
@@ -53,7 +51,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "AroonStrategy": {
       "strategy": "AroonStrategy",
       "sharpe": -0.553,
       "return_pct": -1.08,
@@ -62,7 +60,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "ATRBreakoutStrategy": {
       "strategy": "ATRBreakoutStrategy",
       "sharpe": -0.393,
       "return_pct": -0.62,
@@ -71,7 +69,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "BayesianRidgeStrategy": {
       "strategy": "BayesianRidgeStrategy",
       "sharpe": 0.801,
       "return_pct": 1.3,
@@ -80,7 +78,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "BollingerSqueezeStrategy": {
       "strategy": "BollingerSqueezeStrategy",
       "sharpe": -1.182,
       "return_pct": -2.04,
@@ -89,7 +87,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "CamarillaPivotStrategy": {
       "strategy": "CamarillaPivotStrategy",
       "sharpe": 0.394,
       "return_pct": 0.92,
@@ -98,7 +96,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "CarryTradeStrategy": {
       "strategy": "CarryTradeStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -107,7 +105,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "CCIStrategy": {
       "strategy": "CCIStrategy",
       "sharpe": 0.535,
       "return_pct": 1.0,
@@ -116,7 +114,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "ChoppinessIndexStrategy": {
       "strategy": "ChoppinessIndexStrategy",
       "sharpe": -1.187,
       "return_pct": -1.95,
@@ -125,7 +123,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "CommodityTrendStrategy": {
       "strategy": "CommodityTrendStrategy",
       "sharpe": -2.491,
       "return_pct": -2.81,
@@ -134,7 +132,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "COTStrategy": {
       "strategy": "COTStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -143,7 +141,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "CryptoFundingStrategy": {
       "strategy": "CryptoFundingStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -152,7 +150,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "CryptoSpecificStrategy": {
       "strategy": "CryptoSpecificStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -161,7 +159,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "DarkCloudCoverStrategy": {
       "strategy": "DarkCloudCoverStrategy",
       "sharpe": 0.0,
       "return_pct": 2.87,
@@ -170,7 +168,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "DarkPoolFlowStrategy": {
       "strategy": "DarkPoolFlowStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -179,7 +177,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "DEMAStrategy": {
       "strategy": "DEMAStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -188,7 +186,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "DhaherSystem": {
       "strategy": "DhaherSystem",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -197,7 +195,7 @@
       "pass": false,
       "status": "no_signal"
     },
-    {
+    "DMIStrategy": {
       "strategy": "DMIStrategy",
       "sharpe": 0.038,
       "return_pct": 0.11,
@@ -206,7 +204,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "DojiPatternStrategy": {
       "strategy": "DojiPatternStrategy",
       "sharpe": -0.141,
       "return_pct": -0.31,
@@ -215,7 +213,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "DXYMomentumStrategy": {
       "strategy": "DXYMomentumStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -224,7 +222,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "ElderRayStrategy": {
       "strategy": "ElderRayStrategy",
       "sharpe": -0.08,
       "return_pct": -0.3,
@@ -233,7 +231,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "ElderTripleScreenStrategy": {
       "strategy": "ElderTripleScreenStrategy",
       "sharpe": -1.201,
       "return_pct": -1.04,
@@ -242,7 +240,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "EMCarryStrategy": {
       "strategy": "EMCarryStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -251,7 +249,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "EMAADXStrategy": {
       "strategy": "EMAADXStrategy",
       "sharpe": -0.162,
       "return_pct": -0.23,
@@ -260,7 +258,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "EngulfingPatternStrategy": {
       "strategy": "EngulfingPatternStrategy",
       "sharpe": -2.059,
       "return_pct": -1.14,
@@ -269,7 +267,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "EntropyStrategy": {
       "strategy": "EntropyStrategy",
       "sharpe": 4.084,
       "return_pct": 1.66,
@@ -278,7 +276,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "EveningStarStrategy": {
       "strategy": "EveningStarStrategy",
       "sharpe": 0.0,
       "return_pct": 2.9,
@@ -287,7 +285,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "EWMAVolStrategy": {
       "strategy": "EWMAVolStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -296,7 +294,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "FactorModelStrategy": {
       "strategy": "FactorModelStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -305,7 +303,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "FiboStrategy": {
       "strategy": "FiboStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -314,7 +312,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "FibonacciStrategy": {
       "strategy": "FibonacciStrategy",
       "sharpe": -1.33,
       "return_pct": -2.75,
@@ -323,7 +321,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "FibonacciArcStrategy": {
       "strategy": "FibonacciArcStrategy",
       "sharpe": -0.718,
       "return_pct": -0.85,
@@ -332,7 +330,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "FibonacciExtensionStrategy": {
       "strategy": "FibonacciExtensionStrategy",
       "sharpe": 0.0,
       "return_pct": -0.4,
@@ -341,7 +339,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "FibonacciFanStrategy": {
       "strategy": "FibonacciFanStrategy",
       "sharpe": 0.954,
       "return_pct": 1.39,
@@ -350,7 +348,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "FibonacciRetracementStrategy": {
       "strategy": "FibonacciRetracementStrategy",
       "sharpe": 1.63,
       "return_pct": 3.36,
@@ -359,7 +357,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "FibonacciTimeStrategy": {
       "strategy": "FibonacciTimeStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -368,7 +366,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "FundamentalStrategy": {
       "strategy": "FundamentalStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -377,7 +375,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "GARCHVolStrategy": {
       "strategy": "GARCHVolStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -386,7 +384,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "GoldInflationStrategy": {
       "strategy": "GoldInflationStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -395,7 +393,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "HalfLifeMeanReversionStrategy": {
       "strategy": "HalfLifeMeanReversionStrategy",
       "sharpe": 2.53,
       "return_pct": 3.73,
@@ -404,7 +402,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "HammerPatternStrategy": {
       "strategy": "HammerPatternStrategy",
       "sharpe": -38.566,
       "return_pct": -2.7,
@@ -413,7 +411,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "HaramiPatternStrategy": {
       "strategy": "HaramiPatternStrategy",
       "sharpe": -65.66,
       "return_pct": -3.08,
@@ -422,7 +420,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "HullMAStrategy": {
       "strategy": "HullMAStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -431,7 +429,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "HurstExponentStrategy": {
       "strategy": "HurstExponentStrategy",
       "sharpe": 0.0,
       "return_pct": 2.59,
@@ -440,7 +438,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "IchimokuCloudStrategy": {
       "strategy": "IchimokuCloudStrategy",
       "sharpe": -0.762,
       "return_pct": -1.05,
@@ -449,7 +447,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "ICTStrategy": {
       "strategy": "ICTStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -458,7 +456,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "InvertedHammerStrategy": {
       "strategy": "InvertedHammerStrategy",
       "sharpe": -54.975,
       "return_pct": -2.98,
@@ -467,7 +465,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "KalmanFilterStrategy": {
       "strategy": "KalmanFilterStrategy",
       "sharpe": -0.756,
       "return_pct": -3.16,
@@ -476,7 +474,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "KaufmanAMAStrategy": {
       "strategy": "KaufmanAMAStrategy",
       "sharpe": -0.368,
       "return_pct": -1.05,
@@ -485,7 +483,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "KellyOptimalStrategy": {
       "strategy": "KellyOptimalStrategy",
       "sharpe": 3.068,
       "return_pct": 3.46,
@@ -494,7 +492,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "KeltnerSqueezeStrategy": {
       "strategy": "KeltnerSqueezeStrategy",
       "sharpe": -0.35,
       "return_pct": -0.45,
@@ -503,7 +501,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "KMeansRegimeStrategy": {
       "strategy": "KMeansRegimeStrategy",
       "sharpe": -0.542,
       "return_pct": -2.73,
@@ -512,7 +510,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "KronosEnsembleStrategy": {
       "strategy": "KronosEnsembleStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -521,7 +519,7 @@
       "pass": false,
       "status": "no_signal"
     },
-    {
+    "KronosSignalProvider": {
       "strategy": "KronosSignalProvider",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -530,7 +528,7 @@
       "pass": false,
       "status": "no_signal"
     },
-    {
+    "LinearRegressionChannelStrategy": {
       "strategy": "LinearRegressionChannelStrategy",
       "sharpe": -0.891,
       "return_pct": -1.09,
@@ -539,7 +537,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "MacroFXStrategy": {
       "strategy": "MacroFXStrategy",
       "sharpe": -0.544,
       "return_pct": -1.17,
@@ -548,7 +546,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "MarketProfileStrategy": {
       "strategy": "MarketProfileStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -557,7 +555,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "MeanReversionStrategy": {
       "strategy": "MeanReversionStrategy",
       "sharpe": 0.843,
       "return_pct": 1.01,
@@ -566,7 +564,7 @@
       "pass": true,
       "status": "ok"
     },
-    {
+    "MicrostructureAlphaStrategy": {
       "strategy": "MicrostructureAlphaStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -575,7 +573,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "MSNRStrategy": {
       "strategy": "MSNRStrategy",
       "sharpe": -1.543,
       "return_pct": -1.7,
@@ -584,7 +582,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "MultiTimeframeStrategy": {
       "strategy": "MultiTimeframeStrategy",
       "sharpe": -0.887,
       "return_pct": -0.18,
@@ -593,7 +591,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "PairsTradeStrategy": {
       "strategy": "PairsTradeStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -602,7 +600,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "QuarterlyTheoryStrategy": {
       "strategy": "QuarterlyTheoryStrategy",
       "sharpe": -2.295,
       "return_pct": -2.57,
@@ -611,7 +609,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "SMCStrategy": {
       "strategy": "SMCStrategy",
       "sharpe": -0.166,
       "return_pct": -0.53,
@@ -620,7 +618,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "SMCStrategy_OLD": {
       "strategy": "SMCStrategy_OLD",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -629,7 +627,7 @@
       "pass": false,
       "status": "no_signal"
     },
-    {
+    "StatisticalArbitrageStrategy": {
       "strategy": "StatisticalArbitrageStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -638,7 +636,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "TradeBobbySMCStrategy": {
       "strategy": "TradeBobbySMCStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -647,7 +645,7 @@
       "pass": false,
       "status": "no_signal"
     },
-    {
+    "TrendFollowStrategy": {
       "strategy": "TrendFollowStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -656,7 +654,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "TSMOMStrategy": {
       "strategy": "TSMOMStrategy",
       "sharpe": -0.858,
       "return_pct": -1.45,
@@ -665,7 +663,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "UnifiedRetailStrategy": {
       "strategy": "UnifiedRetailStrategy",
       "sharpe": -1.224,
       "return_pct": -2.25,
@@ -674,7 +672,7 @@
       "pass": false,
       "status": "ok"
     },
-    {
+    "VolumeDeltaStrategy": {
       "strategy": "VolumeDeltaStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -683,7 +681,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "WyckoffStrategy": {
       "strategy": "WyckoffStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -692,7 +690,7 @@
       "pass": false,
       "status": "flat"
     },
-    {
+    "XGBoostAlphaStrategy": {
       "strategy": "XGBoostAlphaStrategy",
       "sharpe": 0.0,
       "return_pct": 0.0,
@@ -701,5 +699,5 @@
       "pass": false,
       "status": "flat"
     }
-  ]
+  }
 }
