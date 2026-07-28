@@ -118,13 +118,32 @@ class ProductionStrategyRunner:
         return self._lifecycle
 
     def _load_walk_forward_registry(self):
-        """Lazy-load WalkForwardRegistry for strategy filtering."""
+        """Lazy-load WalkForwardRegistry for strategy filtering.
+
+        FIX (2026-07-28): previously instantiated an EMPTY WalkForwardRegistry(),
+        so the walk-forward skip-filter was a silent no-op at runtime even after
+        the WF batch wrote data/walk_forward_registry.json. Now we load the
+        persisted registry from disk so negative-OOS strategies are actually skipped.
+        """
         if self._wf_registry is not None:
             return self._wf_registry
         try:
             from quant_nanggroe.engine.strategy.registry import WalkForwardRegistry
-            self._wf_registry = WalkForwardRegistry()
-            log.debug("WalkForwardRegistry loaded for strategy filtering")
+            from pathlib import Path as _Path
+            # FIX: resolve repo root by walking up until we find data/walk_forward_registry.json
+            _here = _Path(__file__).resolve()
+            _reg_path = None
+            for _p in [_here.parents[2], _here.parents[3], _here.parents[1]]:
+                _cand = _p / "data" / "walk_forward_registry.json"
+                if _cand.exists():
+                    _reg_path = _cand
+                    break
+            if _reg_path is not None:
+                self._wf_registry = WalkForwardRegistry.from_json(str(_reg_path))
+                log.debug("WalkForwardRegistry loaded from %s (%d strategies)", _reg_path, len(self._wf_registry._strategies))
+            else:
+                self._wf_registry = WalkForwardRegistry()
+                log.debug("WalkForwardRegistry: data/walk_forward_registry.json not found, using empty registry")
         except Exception as e:
             log.debug(f"WalkForwardRegistry unavailable: {e}")
         return self._wf_registry
