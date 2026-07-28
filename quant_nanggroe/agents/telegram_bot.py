@@ -152,25 +152,15 @@ async def analyze_and_signal(
     import sys
     sys.path.insert(0, os.getenv("PYTHONPATH", ""))
 
-    try:
-        from quant_nanggroe.engine.risk.atr_sl import calculate_atr_sl
-        from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, TradeAction, TradeRequest
-        from quant_nanggroe.engine.risk.sizing import calculate_position_size
-        from quant_nanggroe.engine.smc.engine import SMCEngine
+try:
+            from quant_nanggroe.engine.risk.atr_sl import calculate_atr_sl
+            from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, TradeAction, TradeRequest
+            from quant_nanggroe.engine.risk.sizing import calculate_position_size
 
-        engine = SMCEngine()
-        risk_gate = ConstitutionalRiskGuard()
+            risk_gate = ConstitutionalRiskGuard()
 
-        analysis = engine.analyze(
-            symbol=symbol,
-            high=[],
-            low=[],
-            close=[],
-            volume=[],
-        )
-
-        entry = analysis.get("entry_price", 0)
-        bias = analysis.get("bias", "neutral")
+            entry = 0.0
+            bias = "neutral"
         atr = calculate_atr_sl(
             high=analysis.get("high", []),
             low=analysis.get("low", []),
