@@ -29,11 +29,39 @@ log = logging.getLogger('hfmtf')
 BEST_STRATEGIES = [
     ("WyckoffStrategy", {"lookback": 50, "volume_mult": 1.3}, "Volume Spread"),
     ("MeanReversionStrategy", {"k_period": 14, "d_period": 5, "oversold": 25, "overbought": 75}, "Stochastic MeanRev"),
-    ("DhaherSystem", {"lookback": 14, "atr_mult": 1.5, "rr_min": 2.0, "min_confluence": 2}, "Dhaher System v1.1"),
+    ("DhaherSystem", {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2}, "Dhaher System v1.1"),
     ("KronosSignalProvider", {"lookback": 200, "pred_len": 10, "signal_threshold": 0.0015}, "Kronos Foundation Model (AAAI 2026)"),
     ("KronosEnsembleStrategy", {"lookback": 200, "pred_len": 10, "signal_threshold": 0.002, "trend_filter": True}, "Kronos Ensemble + Trend"),
     ("TradeBobbySMCStrategy", {"swing_lookback": 5, "min_confluence": 3, "ob_displacement": 1.5}, "TradeBobby SMC Scanner"),
 ]
+
+
+def _check_mtm_kill_switch() -> bool:
+    """VETO trading if unrealized floating loss exceeds daily limit.
+
+    Closed the silent-disable gap: the risk_guard has no MTM awareness —
+    it only sees realized P&L from closed trades. A position bleeding
+    -$300 while the daily limit is 1% would slip through because
+    daily_realized_pnl stays 0.0 until trade closes.
+    """
+    try:
+        positions = mt5.positions_get() or []
+        if not positions:
+            return False
+        unrealized = sum(float(p.profit) for p in positions if float(p.profit) < 0)
+        a = mt5.account_info()
+        if not a:
+            return False
+        daily_limit = a.balance * 0.01  # 1% daily loss limit
+        if abs(unrealized) >= daily_limit:
+            log.critical(
+                "🛑 MTM KILL SWITCH: floating loss $%.2f exceeds daily 1%% limit ($%.2f). Blocking all new trades.",
+                abs(unrealized), daily_limit,
+            )
+            return True
+    except Exception as e:
+        log.warning(f"MTM kill switch check failed: {e}")
+    return False
 
 
 def run_mtf_cycle():
@@ -47,6 +75,12 @@ def run_mtf_cycle():
     a = mt5.account_info()
     bal = a.balance if a else 1000
     log.info(f"💰 ${bal:.2f}")
+
+    # MTM kill switch — block trading while positions bleed
+    if _check_mtm_kill_switch():
+        log.warning("⛔ Cycle aborted: MTM kill switch active")
+        mt5.shutdown()
+        return
 
     log.info("📡 Scanning all pairs...")
     try:
