@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { href: "/walkforward", label: "Walk-Forward", icon: FlaskConical, category: "analysis", badge: "WF" },
   { href: "/strategies", label: "Strategies", icon: Sigma, category: "analysis" },
   { href: "/factors", label: "Factors", icon: Shrink, category: "analysis" },
+  { href: "/evolution", label: "Evolution", icon: GitBranch, category: "analysis" },
   { href: "/memory", label: "Memory", icon: Memory, category: "analysis" },
   { href: "/colony", label: "Colony", icon: Network, category: "analysis" },
   { href: "/qna-status", label: "QNA Status", icon: Activity, category: "analysis" },

@@ -407,8 +407,8 @@ def traced(span_name: Optional[str] = None, attributes: Optional[Dict[str, str]]
                 finally:
                     span.set_attribute("duration_ms", (time.monotonic() - start) * 1000)
 
-        import asyncio
-        if asyncio.iscoroutinefunction(func):
+        import inspect
+        if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return sync_wrapper  # type: ignore[return-value]
 

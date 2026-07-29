@@ -248,3 +248,48 @@ class EvolutionJournal:
             (run_id,),
         )
         return [dict(r) for r in cur.fetchall()]
+
+    # ── Dashboard helpers ─────────────────────────────────────────────
+
+    def get_summary_stats(self) -> dict[str, Any]:
+        """Return aggregate stats for the dashboard evolution status card."""
+        cur = self._conn.execute(
+            "SELECT COUNT(*) AS cnt, COALESCE(SUM(pnl), 0.0) AS total_pnl FROM closed_trades"
+        )
+        trade_row = cur.fetchone()
+        total_trades = trade_row["cnt"] if trade_row else 0
+        total_pnl = round(trade_row["total_pnl"], 2) if trade_row else 0.0
+
+        cur = self._conn.execute(
+            "SELECT COUNT(*) AS cnt FROM strategy_snapshots WHERE action='keep'"
+        )
+        active_row = cur.fetchone()
+        active = active_row["cnt"] if active_row else 0
+
+        cur = self._conn.execute(
+            "SELECT COUNT(*) AS cnt FROM strategy_snapshots WHERE action IN ('disable', 'evolve')"
+        )
+        disabled_row = cur.fetchone()
+        disabled = disabled_row["cnt"] if disabled_row else 0
+
+        last_run = self.get_last_run()
+        last_run_timestamp = last_run["timestamp"] if last_run else None
+
+        return {
+            "total_trades": total_trades,
+            "active_strategies": active,
+            "disabled_count": disabled,
+            "last_run": last_run_timestamp,
+            "total_pnl": total_pnl,
+        }
+
+    def get_latest_snapshots(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Return recent strategy_snapshots joined with evolution_runs timestamp."""
+        cur = self._conn.execute(
+            """SELECT s.*, r.timestamp AS run_timestamp, r.trigger AS run_trigger
+               FROM strategy_snapshots s
+               JOIN evolution_runs r ON r.id = s.run_id
+               ORDER BY s.id DESC LIMIT ?""",
+            (limit,),
+        )
+        return [dict(r) for r in cur.fetchall()]
