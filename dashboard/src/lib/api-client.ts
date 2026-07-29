@@ -697,9 +697,69 @@ export const strategiesApi = {
     apiRequest<StrategyComparison>(`/api/strategies/compare`, { method: "POST", body: { ids } }),
 };
 
+export const evolutionApi = {
+  status: () =>
+    apiRequest<EvolutionApiResponse<EvolutionStats>>("/api/evolution/status"),
+  strategies: (limit = 50) =>
+    apiRequest<EvolutionApiResponse<StrategySnapshot[]>>(`/api/evolution/strategies?limit=${limit}`),
+  trades: (limit = 20) =>
+    apiRequest<EvolutionApiResponse<ClosedTrade[]>>(`/api/evolution/trades?limit=${limit}`),
+  config: () =>
+    apiRequest<EvolutionApiResponse<Record<string, unknown>>>("/api/evolution/config"),
+  updateConfig: (key: string, value: string) =>
+    apiRequest<{ success: boolean }>(`/api/evolution/config?key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`, { method: "POST" }),
+};
+
 export const configApi = {
   getConfig: () =>
     apiRequest<Record<string, unknown>>("/api/credentials"),
   updateConfig: (data: Record<string, unknown>) =>
     apiRequest<{ success: boolean }>("/api/credentials", { method: "PUT", body: data }),
 };
+
+// ── Evolution Types ──────────────────────────────────────────────────
+
+export interface EvolutionApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+export interface EvolutionStats {
+  total_trades: number;
+  active_strategies: number;
+  disabled_count: number;
+  last_run: string | null;
+  total_pnl: number;
+}
+
+export interface StrategySnapshot {
+  id: number;
+  run_id: number;
+  strategy_name: string;
+  timeframe: string | null;
+  sharpe: number | null;
+  sortino: number | null;
+  win_rate: number | null;
+  profit_factor: number | null;
+  max_drawdown: number | null;
+  avg_return: number | null;
+  trade_count: number;
+  action: string | null;
+  action_reason: string | null;
+  run_timestamp: string | null;
+  run_trigger: string | null;
+}
+
+export interface ClosedTrade {
+  id: number;
+  timestamp: string;
+  symbol: string;
+  strategy: string;
+  timeframe: string | null;
+  direction: string;
+  entry_price: number | null;
+  exit_price: number | null;
+  pnl: number | null;
+  pnl_pct: number | null;
+  hold_hours: number | null;
+}

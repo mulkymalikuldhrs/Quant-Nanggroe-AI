@@ -321,6 +321,7 @@ def create_app() -> FastAPI:
         debate,
         ecosystem,
         ensemble,
+        evolution,
         fred,
         market,
         memory,
@@ -383,6 +384,8 @@ def create_app() -> FastAPI:
     app.include_router(security_tools.router, prefix="/api/security-tools", tags=["Security Tools"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
     app.include_router(otto_proxy.router, prefix="/api/otto", tags=["Otto"])
+
+    app.include_router(evolution.router)
 
     app.include_router(wiring_compat.router)
     app.include_router(ensemble.router)
