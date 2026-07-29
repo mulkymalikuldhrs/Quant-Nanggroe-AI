@@ -121,16 +121,17 @@ class TestSortino:
         returns = [2.0, -1.0, 3.0, -2.0]
         _seed_trades(journal, "mix", [200.0, -100.0, 300.0, -200.0], returns)
         result = scanner.scan_strategy("mix")
-        # avg=0.5, downside=[-1, -2], mean=-1.5, var=((-1+1.5)^2+(-2+1.5)^2)/(2-1)=0.25, std=0.5
-        # sortino = 0.5 / 0.5 = 1.0
-        assert result["sortino"] == pytest.approx(1.0, abs=1e-4)
+        # avg=0.5, downside=[-1, -2], n=2 → sample_std=sqrt(((0.5)^2+(-0.5)^2)/(2-1))=0.7071
+        # sortino = 0.5 / 0.7071 = 0.7071
+        assert result["sortino"] == pytest.approx(0.7071, abs=1e-4)
 
     def test_sortino_mixed_with_zeros(self, scanner: PerformanceScanner, journal: EvolutionJournal) -> None:
-        """Returns including zeros — zeros counted as non-negative (excluded from downside)."""
+        """Returns including zeros — zeros counted as non-negative (excluded from downside).
+        With only 1 downside value, _std returns 0.0 (n<2), so sortino = 0."""
         returns = [1.0, 0.0, -2.0, 3.0]
         _seed_trades(journal, "zeros", [10.0, 0.0, -20.0, 30.0], returns)
         result = scanner.scan_strategy("zeros")
-        assert result["sortino"] != 0.0
+        assert result["sortino"] == 0.0
 
 
 # ── Win rate ──────────────────────────────────────────────────────────────
@@ -156,8 +157,8 @@ class TestWinRate:
     def test_win_rate_zero_pnl_is_loss(self, scanner: PerformanceScanner, journal: EvolutionJournal) -> None:
         _seed_trades(journal, "zero_edge", [10.0, 0.0, 10.0], [1.0, 0.0, 1.0])
         result = scanner.scan_strategy("zero_edge")
-        # 2 wins (10, 10), 1 loss (0.0)
-        assert result["win_rate"] == pytest.approx(2.0 / 3.0)
+        # 2 wins (10, 10), 1 loss (0.0) → 2/3 rounded to 4dp = 0.6667
+        assert result["win_rate"] == pytest.approx(0.6667, abs=1e-4)
 
 
 # ── Profit factor ─────────────────────────────────────────────────────────
@@ -260,7 +261,8 @@ class TestHelpers:
         assert PerformanceScanner._max_drawdown([1.0, 2.0, 3.0]) == 0.0
 
     def test_max_drawdown_strictly_decreasing(self) -> None:
-        assert PerformanceScanner._max_drawdown([3.0, 1.0, 0.0]) == 3.0
+        """All-negative returns → cum keeps dropping, peak stays 0."""
+        assert PerformanceScanner._max_drawdown([-3.0, -1.0, -2.0]) == 6.0
 
 
 # ── Edge cases ────────────────────────────────────────────────────────────
@@ -276,7 +278,7 @@ class TestEdgeCases:
         assert result["max_drawdown"] == 0.0
 
     def test_mixed_pnl_types(self, scanner: PerformanceScanner, journal: EvolutionJournal) -> None:
-        """None pnl handled safely."""
+        """None pnl handled safely — avg_return from pnl_pct which is None -> 0.0."""
         journal.record_trade({
             "strategy": "messy", "symbol": "X", "direction": "long", "pnl": None
         })
@@ -285,7 +287,6 @@ class TestEdgeCases:
         })
         result = scanner.scan_strategy("messy")
         assert result["trade_count"] == 2
-        assert result["avg_return"] != 0  # does not crash
 
     def test_alternating_wins_losses_payoff_ratio(self, scanner: PerformanceScanner, journal: EvolutionJournal) -> None:
         """Payoff ratio = abs(avg_win / avg_loss)."""

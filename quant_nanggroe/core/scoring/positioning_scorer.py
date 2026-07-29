@@ -138,6 +138,13 @@ class PositioningScorer(BaseScorer):
                 return _try_hidden_regime_regime(symbol)
             except Exception:
                 pass
+        # Fallback ke HiddenRegimeProvider (3-tier)
+        try:
+            from quant_nanggroe.providers.hidden_regime_provider import HiddenRegimeProvider
+            _reg_provider = HiddenRegimeProvider()
+            return _reg_provider.get_regime(symbol)
+        except Exception:
+            pass
         return None
 
     def _normalize_cot(self, cot: dict[str, Any]) -> dict[str, Any]:

@@ -47,8 +47,23 @@ class SentimentScorer(BaseScorer):
         score = _clamp(normalized * -100, -100.0, 100.0)
         confidence = min(abs(normalized), 1.0)
 
+        meta: dict[str, Any] = {"fear_greed_value": fng_value, "source": "alternative.me"}
+
+        # Tambah news sentiment dari NewsProvider (3-tier) sebagai bonus
+        try:
+            from quant_nanggroe.providers.news_provider import fetch_news_sentiment
+            symbol = ctx.get("symbol", "FOREX")
+            news_sentiment = fetch_news_sentiment(symbol)
+            if news_sentiment and "sentiment_score" in news_sentiment:
+                ns = news_sentiment["sentiment_score"]  # -1 to +1
+                score = _clamp(score * 0.7 + ns * 30.0, -100.0, 100.0)
+                meta["news_sentiment"] = ns
+                meta["news_source"] = news_sentiment.get("source", "unknown")
+        except Exception:
+            pass
+
         return ScorerResult(
             score=score,
             confidence=confidence,
-            metadata={"fear_greed_value": fng_value, "source": "alternative.me"},
+            metadata=meta,
         )
