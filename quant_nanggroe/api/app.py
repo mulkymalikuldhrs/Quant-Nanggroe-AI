@@ -326,6 +326,7 @@ def create_app() -> FastAPI:
         memory,
         monitor,
         options,
+        orderbook,
         otto_proxy,
         personas,
         pipeline_status,
@@ -340,6 +341,7 @@ def create_app() -> FastAPI:
         strategies,
         strategy,
         tools,
+        trade_history,
         trading,
         whatsapp,
         wiring_compat,
@@ -349,6 +351,8 @@ def create_app() -> FastAPI:
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
+    app.include_router(trade_history.router, prefix="/api/trading", tags=["Trading"])
+    app.include_router(orderbook.router, prefix="/api/market", tags=["Market"])
     app.include_router(agents.router, prefix="/api/agents", tags=["Agents"])
     app.include_router(backtest.router, prefix="/api/backtest", tags=["Backtest"])
     app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])

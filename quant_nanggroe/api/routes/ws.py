@@ -1,13 +1,15 @@
 """WebSocket API routes — real-time market data streaming.
 
 Streams live data from ExchangeManager, RegimeDetector, and RiskManager
-to connected clients at configurable intervals.
+to connected clients at configurable intervals. Includes heartbeat
+ping/pong for connection health monitoring.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,18 +18,24 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+HEARTBEAT_INTERVAL = 10.0
+HEARTBEAT_TIMEOUT = 30.0
+PUSH_INTERVAL = 0.5
+
 
 class ConnectionManager:
     """Manages WebSocket connections for real-time data streaming.
 
     Each connection maintains its own set of subscribed channels and symbols,
     and receives periodic push updates via the background _push_loop.
+    Heartbeat task tracks pong responses and disconnects stale clients.
     """
 
     def __init__(self) -> None:
         self.active_connections: list[WebSocket] = []
-        self.subscriptions: dict[int, dict[str, Any]] = {}  # id -> {channels, symbols}
+        self.subscriptions: dict[int, dict[str, Any]] = {}  # id -> {channels, symbols, last_pong}
         self._push_task: asyncio.Task | None = None
+        self._heartbeat_task: asyncio.Task | None = None
         self._app: Any = None  # FastAPI app ref, set on first connect
 
     async def connect(self, websocket: WebSocket) -> int:
@@ -35,15 +43,21 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections.append(websocket)
         cid = id(websocket)
-        self.subscriptions[cid] = {"channels": set(), "symbols": set()}
+        self.subscriptions[cid] = {
+            "channels": set(),
+            "symbols": set(),
+            "last_pong": time.time(),
+        }
 
         # Store app ref for live data access
         if self._app is None:
             self._app = getattr(websocket, "app", None)
 
-        # Start the background push loop on first connection
+        # Start background tasks on first connection
         if self._push_task is None or self._push_task.done():
             self._push_task = asyncio.create_task(self._push_loop())
+        if self._heartbeat_task is None or self._heartbeat_task.done():
+            self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
         return cid
 
@@ -54,10 +68,13 @@ class ConnectionManager:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
-        # Stop push loop if no connections left
-        if not self.active_connections and self._push_task and not self._push_task.done():
-            self._push_task.cancel()
+        # Stop background tasks if no connections left
+        if not self.active_connections:
+            for task in (self._push_task, self._heartbeat_task):
+                if task and not task.done():
+                    task.cancel()
             self._push_task = None
+            self._heartbeat_task = None
 
     async def send(self, websocket: WebSocket, message: dict[str, Any]) -> None:
         """Send a JSON message to a single connection, handling disconnect."""
@@ -71,12 +88,42 @@ class ConnectionManager:
         for connection in self.active_connections[:]:
             await self.send(connection, message)
 
+    async def _heartbeat_loop(self) -> None:
+        """Background loop that sends pings every 10s and disconnects stale clients."""
+        while self.active_connections:
+            try:
+                now = time.time()
+                stale = []
+                for ws in self.active_connections[:]:
+                    cid = id(ws)
+                    sub = self.subscriptions.get(cid)
+                    if sub is None:
+                        stale.append(ws)
+                        continue
+                    last_pong = sub.get("last_pong", 0)
+                    if now - last_pong > HEARTBEAT_TIMEOUT:
+                        stale.append(ws)
+                    else:
+                        try:
+                            await ws.send_json({"type": "ping"})
+                        except Exception:
+                            stale.append(ws)
+                for ws in stale:
+                    logger.info("ws_heartbeat_timeout", extra={"cid": id(ws)})
+                    self.disconnect(ws)
+                await asyncio.sleep(HEARTBEAT_INTERVAL)
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                logger.warning("ws_heartbeat_error", extra={"error": str(exc)})
+                await asyncio.sleep(5.0)
+
     async def _push_loop(self) -> None:
-        """Background loop that pushes live market data to subscribed clients every 3s."""
+        """Background loop that pushes live market data to subscribed clients every 500ms."""
         while self.active_connections:
             try:
                 await self._push_updates()
-                await asyncio.sleep(3.0)
+                await asyncio.sleep(PUSH_INTERVAL)
             except asyncio.CancelledError:
                 break
             except Exception as exc:
@@ -385,8 +432,8 @@ async def websocket_stream(websocket: WebSocket) -> None:
 
             sub = manager.subscriptions.get(cid, {"channels": set(), "symbols": set()})
 
-            if action == "ping":
-                await websocket.send_json({"type": "pong"})
+            if action == "pong":
+                sub["last_pong"] = time.time()
 
             elif action == "subscribe":
                 sub["channels"].update(channels)

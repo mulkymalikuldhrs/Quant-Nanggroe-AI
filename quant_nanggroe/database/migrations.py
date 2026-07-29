@@ -230,8 +230,8 @@ def down(connection):
     for table in tables:
         try:
             connection.execute(text(f"DROP TABLE IF EXISTS {table}"))
-        except:
-            pass
+        except Exception:
+                logger.warning('Migration step failed')
 ''',
     
     "20240101_000002_add_agent_performance_tracking": '''"""
@@ -250,22 +250,22 @@ def up(connection):
         connection.execute(text("""
             ALTER TABLE agents ADD COLUMN total_tasks INTEGER DEFAULT 0
         """))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
         
     try:
         connection.execute(text("""
             ALTER TABLE agents ADD COLUMN successful_tasks INTEGER DEFAULT 0
         """))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
         
     try:
         connection.execute(text("""
             ALTER TABLE agents ADD COLUMN avg_response_time FLOAT DEFAULT 0.0
         """))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
 
 def down(connection):
     """Remove performance tracking"""
@@ -273,8 +273,8 @@ def down(connection):
         connection.execute(text("ALTER TABLE agents DROP COLUMN total_tasks"))
         connection.execute(text("ALTER TABLE agents DROP COLUMN successful_tasks"))
         connection.execute(text("ALTER TABLE agents DROP COLUMN avg_response_time"))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
 ''',
     
     "20240101_000003_add_workflow_templates": '''"""
@@ -293,23 +293,23 @@ def up(connection):
         connection.execute(text("""
             ALTER TABLE workflows ADD COLUMN is_template BOOLEAN DEFAULT FALSE
         """))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
         
     try:
         connection.execute(text("""
             ALTER TABLE workflows ADD COLUMN template_version VARCHAR(20) DEFAULT '1.0'
         """))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
 
 def down(connection):
     """Remove workflow template support"""
     try:
         connection.execute(text("ALTER TABLE workflows DROP COLUMN is_template"))
         connection.execute(text("ALTER TABLE workflows DROP COLUMN template_version"))
-    except:
-        pass
+    except Exception:
+                logger.warning('Migration step failed')
 '''
 }
 
@@ -347,3 +347,4 @@ def get_migration_status(database_url: str = None) -> dict:
 if __name__ == "__main__":
     # Run migrations when executed directly
     run_migrations()
+

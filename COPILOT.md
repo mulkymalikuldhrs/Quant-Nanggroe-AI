@@ -1,4 +1,4 @@
-# COPILOT.md — Quant Nanggroe AI
+# COPILOT.md — Quant Nanggroe AI (Quant Nation)
 
 See **AGENTS.md** (canonical). Below is a quick reference.
 
@@ -6,13 +6,14 @@ See **AGENTS.md** (canonical). Below is a quick reference.
 
 **Key:**
 - `PYTHONPATH=""` mandatory (Hermes venv leak)
-- 77 strategies in `quant_nanggroe/engine/strategies/` via `@StrategyRegistry.register`
+- 84 strategies in `quant_nanggroe/engine/strategies/` via `@StrategyRegistry.register`
+- ✅ **Scoring engine FULLY WIRED** — FusionEngine + 8 scorers + MTFEngine (4-frame overlay) + WeightEvolver (self-evolve loop) in `run_once()`
 - KillSwitch C5 in `quant_nanggroe/engine/risk/kill_switch.py`
-- 9-stage pipeline in `hedge_fund/portfolio/main.py:run_once()`
-- 10 exchange clients in `quant_nanggroe/exchange/clients/`
-- 16 agents (5 geopolitics) in `quant_nanggroe/agents/`
+- 4 git remotes, github2 diverged by 4141 files (full Next.js dashboard)
+- E:\ has: hidden-regime COT, mue-x 992 evolved providers, AI-Trader cache/TTL
+- 10 exchange clients, 16 agents, 9-stage pipeline
 - `archive/` = read-only orphan artifacts
 
 **Ignore:** `paper_state/*.json`, `data/*`, `node_modules/`, `__pycache__/`, `archive/`
 **Package:** `uv` (not pip, not poetry)
-**Test:** `.venv/Scripts/python -m pytest tests/ -v --tb=short`
+**Test env broken:** `pip uninstall langsmith` first

@@ -597,9 +597,9 @@ def run_hedge(args: argparse.Namespace) -> int:
             print(f"  {status} {sym}: verdict={res.get('verdict','?') if res else 'NONE'}")
         return 0
     except ImportError:
-        pass
+        logger.critical("Pipeline module NOT AVAILABLE — falling back to legacy hedge_fund")
     except Exception as e:
-        logger.warning("Pipeline run failed, falling back to legacy hedge_fund: %s", e)
+        logger.critical("Pipeline run FAILED (%s) — falling back to legacy hedge_fund", e)
 
     try:
         from quant_nanggroe.hedge_fund import run_once

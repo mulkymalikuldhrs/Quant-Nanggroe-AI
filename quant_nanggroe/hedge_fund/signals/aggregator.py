@@ -26,7 +26,6 @@ from quant_nanggroe.engine.risk.constants import CONFIDENCE_THRESHOLD
 from quant_nanggroe.hedge_fund.signals.registry import (
     ALL_PROVIDERS,
     CORE_PROVIDERS,
-    QNA_EVOLVED_PROVIDERS,
 )
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
 from quant_nanggroe.hedge_fund.utils.config import VOTE_LOG, log

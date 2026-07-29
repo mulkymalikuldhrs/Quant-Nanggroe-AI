@@ -13,6 +13,7 @@ from quant_nanggroe.engine.risk.checks import (
     TradeAction,
     TradeRequest,
 )
+from quant_nanggroe.engine.risk.constants import MAX_WEEKLY_LOSS as _MAX_WEEKLY_LOSS
 from quant_nanggroe.hedge_fund.utils.config import log
 
 _CONSTITUTIONAL_GUARD = ConstitutionalRiskGuard()
@@ -93,6 +94,24 @@ def risk_guard_approve(proposal: dict) -> dict:
         threshold: float = rg_result.get("threshold", 0.8)
 
         merged_reasons.extend(rg_reasons)
+
+        # ── Weekly loss hard veto (canonical gate, independent of risk threshold) ──
+        # Follows Path-A pattern (checks.py Check 4): hard veto, not soft risk-score bump.
+        if weekly_pnl < 0 and balance > 0:
+            weekly_loss_frac = abs(weekly_pnl) / balance
+            if weekly_loss_frac >= _MAX_WEEKLY_LOSS:
+                merged_reasons.append(
+                    f"weekly_loss_veto: {weekly_loss_frac:.2%} >= {_MAX_WEEKLY_LOSS:.2%}"
+                )
+                return {
+                    "status": "VETOED",
+                    "risk_score": 1.0,
+                    "reasons": merged_reasons,
+                    "warnings": merged_warnings,
+                    "constitutional": True,
+                    "threshold": threshold,
+                    "timestamp": str(rg_result.get("timestamp", "")),
+                }
 
         if rg_status == "VETOED":
             return {

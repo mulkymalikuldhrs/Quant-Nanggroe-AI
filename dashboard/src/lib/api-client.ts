@@ -268,6 +268,20 @@ export const tradingApi = {
     algo?: string; duration_minutes?: number; num_slices?: number;
   }) =>
     apiRequest<Record<string, unknown>>("/api/trading/slice-order", { method: "POST", body: req }),
+  getHistory: (params?: {
+    symbol?: string; date_from?: string; date_to?: string;
+    strategy?: string; limit?: number;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.symbol) q.set("symbol", params.symbol);
+    if (params?.date_from) q.set("date_from", params.date_from);
+    if (params?.date_to) q.set("date_to", params.date_to);
+    if (params?.strategy) q.set("strategy", params.strategy);
+    q.set("limit", String(params?.limit ?? 50));
+    return apiRequest<TradeHistoryResponse>(`/api/trading/history?${q.toString()}`);
+  },
+  getTradeDetail: (id: string) =>
+    apiRequest<TradeDetail>(`/api/trading/history/${id}`),
 };
 
 export const marketApi = {
@@ -279,6 +293,8 @@ export const marketApi = {
     apiRequest<CandleStick[]>(`/api/market/candles/${symbol}`),
   getSignals: () =>
     apiRequest<TradingSignal[]>("/api/market/signals"),
+  getOrderBook: (symbol: string, limit: number = 20) =>
+    apiRequest<OrderBookResponse>(`/api/market/orderbook/${symbol}?limit=${limit}`),
 };
 
 export const portfolioApi = {
@@ -421,7 +437,7 @@ export default apiRequest;
 // ── Types ────────────────────────────────────────────────────────────
 
 export type OrderSide = "buy" | "sell";
-export type OrderType = "market" | "limit" | "stop" | "stop_limit";
+export type OrderType = "market" | "limit" | "stop" | "stop_limit" | "oco" | "oto";
 export type OrderStatus = "pending" | "filled" | "active" | "canceled" | "rejected";
 export type AgentStatus = "active" | "idle" | "warning" | "error" | "paused";
 export type AgentEmotion =
@@ -508,6 +524,52 @@ export interface BrokerListResponse { accounts: BrokerAccount[]; count: number; 
 export interface BrokerPosition { symbol: string; side: string; quantity: number; entry_price: number; current_price: number; unrealized_pnl: number; }
 export interface BrokerPositionsResponse { account: string; positions: BrokerPosition[]; }
 export interface MT5AccountInfo { login: number; balance: number; equity: number; margin: number; margin_free: number; margin_level: number; server: string; currency: string; leverage: number; }
+export interface OrderBookLevel {
+  price: number;
+  quantity: number;
+  total: number | null;
+}
+
+export interface OrderBookResponse {
+  symbol: string;
+  exchange: string;
+  bids: OrderBookLevel[];
+  asks: OrderBookLevel[];
+  bid_depth: number;
+  ask_depth: number;
+  spread: number;
+  spread_pct: number;
+  mid_price: number;
+  timestamp: string;
+  source: string;
+}
+
+export interface TradeDetail {
+  id: string;
+  ticket: number | null;
+  symbol: string;
+  side: "buy" | "sell";
+  volume: number;
+  entry_price: number;
+  exit_price: number;
+  entry_time: string;
+  exit_time: string;
+  pnl: number;
+  pnl_pct: number | null;
+  commission: number;
+  swap: number;
+  strategy: string | null;
+  broker: string | null;
+  comment: string | null;
+}
+
+export interface TradeHistoryResponse {
+  trades: TradeDetail[];
+  total_count: number;
+  limit: number;
+  filters: Record<string, unknown>;
+}
+
 export interface ExecuteToolResponse { success: boolean; result: string; }
 
 // ── Config API (dynamic settings) ──────────────────────────────────
@@ -610,6 +672,30 @@ export interface EvolutionStatus {
     accepted: boolean;
   }>;
 }
+
+export interface StrategyPerformance {
+  winRate: number;
+  sharpe: number;
+  totalPnl: number;
+  trades: number;
+  period: string;
+}
+
+export interface StrategyComparison {
+  strategies: Strategy[];
+  metrics: Record<string, Record<string, number>>;
+}
+
+export const strategiesApi = {
+  toggle: (id: string) =>
+    apiRequest<{ success: boolean }>(`/api/strategies/${id}/toggle`, { method: "PUT" }),
+  updateParams: (id: string, params: Record<string, unknown>) =>
+    apiRequest<{ success: boolean }>(`/api/strategies/${id}/params`, { method: "PUT", body: params }),
+  performance: (id: string) =>
+    apiRequest<StrategyPerformance>(`/api/strategies/${id}/performance`),
+  compare: (ids: string[]) =>
+    apiRequest<StrategyComparison>(`/api/strategies/compare`, { method: "POST", body: { ids } }),
+};
 
 export const configApi = {
   getConfig: () =>

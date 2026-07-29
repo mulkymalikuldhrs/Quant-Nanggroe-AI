@@ -15,7 +15,9 @@ from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 _MT5_CREDS_CHECKED = False
 
 
-def trail_sl(pos, tf=mt5.TIMEFRAME_M1, step_pips=10):
+def trail_sl(pos, tf=None, step_pips=10):
+    if tf is None:
+        tf = getattr(mt5, "TIMEFRAME_M1", 1)  # ponytail: guard MT5-unavailable env
     if pos.sl is None:
         return None
     rates = mt5.copy_rates_from_pos(pos.symbol, tf, 0, 15)

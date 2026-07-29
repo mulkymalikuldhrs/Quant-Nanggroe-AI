@@ -96,6 +96,8 @@
   --animate-stagger-5: staggerFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
   --animate-scale-in: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-magnetic-press: magneticPress 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-pnl-flash-profit: pnlFlashGreen 1.2s ease-out;
+  --animate-pnl-flash-loss: pnlFlashRed 1.2s ease-out;
 }
 
 /* ── Keyframes ──────────────────────────────────────────────────── */
@@ -159,6 +161,18 @@
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(16px); }
   to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pnlFlashGreen {
+  0% { background-color: rgba(52, 211, 153, 0); }
+  30% { background-color: rgba(52, 211, 153, 0.15); }
+  100% { background-color: rgba(52, 211, 153, 0); }
+}
+
+@keyframes pnlFlashRed {
+  0% { background-color: rgba(248, 113, 113, 0); }
+  30% { background-color: rgba(248, 113, 113, 0.15); }
+  100% { background-color: rgba(248, 113, 113, 0); }
 }
 
 /* ── Base Styles ────────────────────────────────────────────────── */
@@ -534,6 +548,29 @@ body {
 .bg-profit { background: rgba(52, 211, 153, 0.08); }
 .bg-loss { background: rgba(248, 113, 113, 0.08); }
 .bg-flash { background: rgba(251, 191, 36, 0.08); }
+
+/* PnL flash animation on value change */
+.pnl-flash-profit { animation: pnlFlashGreen 1.2s ease-out; }
+.pnl-flash-loss { animation: pnlFlashRed 1.2s ease-out; }
+
+/* Theme transition — all themed elements */
+.transition-theme,
+.transition-theme * {
+  transition: background-color 300ms ease-in-out,
+              border-color 300ms ease-in-out,
+              color 300ms ease-in-out,
+              box-shadow 300ms ease-in-out;
+}
+
+/* Chart dark background override for lightweight-charts / iframes */
+.chart-dark {
+  filter: invert(0.88) hue-rotate(180deg);
+}
+
+.chart-dark iframe,
+.chart-dark canvas {
+  background: #050510 !important;
+}
 
 /* ── Staggered Entry Animations ──────────────────────────────────── */
 

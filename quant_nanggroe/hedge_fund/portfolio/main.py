@@ -14,6 +14,7 @@ import json
 import os
 import time
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -34,6 +35,8 @@ from quant_nanggroe.hedge_fund.portfolio.sizing import calculate_position_size
 from quant_nanggroe.hedge_fund.risk.guard import risk_guard_approve
 from quant_nanggroe.hedge_fund.signals.aggregator import aggregate
 from quant_nanggroe.hedge_fund.signals.registry import ALL_PROVIDERS
+from quant_nanggroe.core.advisory import AdvisoryResult, LLMAdvisor
+from quant_nanggroe.core.scoring.evolver import WeightEvolver
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
 from quant_nanggroe.hedge_fund.utils import config as _config
 from quant_nanggroe.hedge_fund.utils.config import (
@@ -50,6 +53,8 @@ _signal_tracker = SignalTracker()
 _lifecycle_manager: Optional[StrategyLifecycleManager] = None
 _kelly_sizer = KellyCriterion()
 _execution_manager = build_execution_manager()
+_weight_evolver: Optional[WeightEvolver] = None
+_advisor = LLMAdvisor()
 
 
 def _execute_order_sync(signal: dict, symbol: str) -> Optional[str]:
@@ -94,6 +99,62 @@ def _get_lifecycle() -> StrategyLifecycleManager:
         _lifecycle_manager = StrategyLifecycleManager()
         _lifecycle_manager._load()  # load from disk
     return _lifecycle_manager
+
+
+# ── Weight evolver helpers ──────────────────────────────────────────
+
+def _get_weight_evolver() -> WeightEvolver:
+    global _weight_evolver
+    if _weight_evolver is None:
+        _weight_evolver = WeightEvolver()
+    return _weight_evolver
+
+
+def _get_llm_advisor() -> LLMAdvisor:
+    return _advisor
+
+
+def _apply_evolver_weights(scorers: list) -> None:
+    try:
+        ev = _get_weight_evolver()
+        ev.apply_weights(scorers)
+    except Exception as e:
+        log.debug("WeightEvolver apply failed: %s", e)
+
+
+def _record_evolver_trade(trade_id: str, symbol: str, fusion_result,
+                          daily_pnl: float) -> None:
+    try:
+        if fusion_result is None:
+            return
+        scorer_scores = {}
+        for name, result in getattr(fusion_result, "details", []):
+            scorer_scores[name] = {
+                "score": getattr(result, "score", 0.0),
+                "confidence": getattr(result, "confidence", 0.0),
+            }
+        ev = _get_weight_evolver()
+        ev.record_trade(
+            trade_id=trade_id,
+            symbol=symbol,
+            scorer_scores=scorer_scores,
+            actual_pnl=daily_pnl,
+            predicted_bias=getattr(fusion_result, "bias", "neutral"),
+        )
+        log.info("WeightEvolver: recorded trade %s PnL=%.2f", trade_id, daily_pnl)
+    except Exception as e:
+        log.debug("WeightEvolver record failed: %s", e)
+
+
+def _run_evolver_evaluate() -> None:
+    try:
+        ev = _get_weight_evolver()
+        new_weights = ev.evaluate()
+        if new_weights is not None:
+            log.info("WeightEvolver: evaluation produced new weights (%d scorers)",
+                     len(new_weights))
+    except Exception as e:
+        log.debug("WeightEvolver evaluate failed: %s", e)
 
 
 # ── Helper: real-time market snapshot for causal macro weather ─────────
@@ -174,26 +235,10 @@ def _build_causal_context(dxy_pct: float = 0.0, zb_pct: float = 0.0) -> Optional
         return None
 
 
-# ── Main entry point ──────────────────────────────────────────────────
+# ── Pipeline Stage 1: MT5 Connection + Gate Check ────────────────────
 
-def run_once(target_symbol=None) -> dict:
-    """Run one hedge fund cycle. Returns a structured result dict.
-
-    Keys:
-        status       — one of "gate_failed", "positions_trailed",
-                       "vetoed", "executed", "order_failed",
-                       "paper_blocked", "no_trade"
-        symbol       — the symbol processed
-        signal       — aggregator output dict (present when vote occurred)
-        causal_ctx   — CausalContext snapshot (present when engine OK)
-        n_providers  — provider count (present when vote occurred)
-        risk_score   — risk guard score (present when trade proposed)
-        executed     — True/False (present when trade proposed)
-    """
-    log.info("Hedge Fund v4 — GATED + Bayesian-weighted + Lifecycle-aware")
-    result: dict = {"status": "gate_failed", "symbol": target_symbol or "EURUSD"}
-
-    # ── MT5 connection ────────────────────────────────────────────────
+def _pipeline_connect(result: dict) -> dict:
+    """Connect MT5 (or paper fallback), check walkforward gate."""
     if not _config.PAPER_TRADE:
         if not connect() and not ensure_terminal():
             log.warning("MT5 unavailable — falling back to paper trading")
@@ -201,7 +246,6 @@ def run_once(target_symbol=None) -> dict:
     else:
         log.info("PAPER TRADE MODE — No MT5 connection needed")
 
-    # ── Gate check ────────────────────────────────────────────────────
     gate_cache = GATE_FILE
     gate_pass = False
 
@@ -239,300 +283,541 @@ def run_once(target_symbol=None) -> dict:
 
     if not gate_pass:
         log.warning("GATE TERTUTUP — Strategi gagal backtest/walk-forward")
-        log.warning("   Tidak akan execute sampai strategi diperbaiki")
         result["status"] = "gate_failed"
         result["reason"] = "backtest_gate_blocked"
-        if not _config.PAPER_TRADE:
-            try:
-                mt5.shutdown()
-            except Exception:
-                pass
-        return result
+    return result
 
-    log.info("GATE LULUS — Strategi siap eksekusi")
-    result["status"] = "no_trade"  # default unless we find a trade
+
+# ── Pipeline Stage 2: Symbol Discovery + Positions ───────────────────
+
+def _pipeline_discover(result: dict) -> dict:
+    """Resolve target symbol, fetch account info and open positions."""
+    symbol: str | None = result.get("symbol") or None
+    if not symbol:
+        try:
+            from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import get_valid_pairs
+            pairs = get_valid_pairs()
+            if pairs:
+                symbol = pairs[0]
+                log.info(f"Best pair: {symbol}")
+        except Exception as e:
+            log.debug(f"Pair scanner unavailable: {e}")
+    if not symbol:
+        symbol = result.get("symbol") or "EURUSD"
+    result["symbol"] = symbol
+
+    if not _config.PAPER_TRADE:
+        a = mt5.account_info()
+        if a:
+            log.info(f"${a.balance:.2f} | Equity=${a.equity:.2f} | Margin=${a.margin:.2f}")
+
+    positions = []
+    if not _config.PAPER_TRADE:
+        try:
+            positions = mt5.positions_get() or []
+        except Exception:
+            positions = []
+    result["_positions"] = positions
+    return result
+
+
+# ── Pipeline Stage 3: Trail Existing Positions ───────────────────────
+
+def _pipeline_trail(result: dict) -> dict:
+    """Trail stop-losses on all open positions."""
+    positions = result.get("_positions", [])
+    result["status"] = "positions_trailed"
+    result["n_positions"] = len(positions)
+    for p in positions:
+        log.info(f"OPEN: {p.symbol} {'BUY' if p.type==0 else 'SELL'} PnL=${p.profit:.2f}")
+        ns = trail_sl(p)
+        if ns and (p.sl is None or abs(ns - p.sl) > 0.00001):
+            try:
+                if p.type == 0 and ns > (p.sl or 0):
+                    r = mt5.order_send({
+                        "action": mt5.TRADE_ACTION_SLTP,
+                        "position": p.ticket,
+                        "sl": ns,
+                        "tp": p.tp,
+                    })
+                    if r and r.retcode == 10009:
+                        log.info(f"  Trail->{ns:.5f}")
+                elif p.type == 1 and ns < (p.sl or 999):
+                    r = mt5.order_send({
+                        "action": mt5.TRADE_ACTION_SLTP,
+                        "position": p.ticket,
+                        "sl": ns,
+                        "tp": p.tp,
+                    })
+                    if r and r.retcode == 10009:
+                        log.info(f"  Trail->{ns:.5f}")
+            except Exception as e:
+                log.debug(f"Trail failed: {e}")
+    return result
+
+
+# ── Pipeline Stage 4: Full Vote (causal → screen → agg → fusion → mtf → confluence) ──
+
+def _pipeline_vote(result: dict) -> dict:
+    """Run the full voting pipeline when no positions are open."""
+    symbol = result["symbol"]
+
+    lifecycle = _get_lifecycle()
+    n_active = len(lifecycle.get_active_strategies())
+    log.info(f"Voting: {len(ALL_PROVIDERS)} providers across {n_active} active strategies")
+    result["n_providers"] = len(ALL_PROVIDERS)
+
+    dxy_pct, zb_pct = _market_snapshot()
+    causal_ctx = _build_causal_context(dxy_pct, zb_pct)
+    result["causal_ctx"] = causal_ctx
+
+    _screen_result = None
+    try:
+        from quant_nanggroe.engine.screener.orchestrator import ScreenerOrchestrator
+        _screener = ScreenerOrchestrator()
+        _screen_data = {
+            "symbol": symbol,
+            "causal_ctx": causal_ctx,
+            "dxy_pct": dxy_pct,
+            "zb_pct": zb_pct,
+            "price": 0,
+        }
+        _screen_result = _screener.screen(_screen_data)
+        result["screen"] = _screen_result
+        log.info("Screen: dir=%s score=%.2f", _screen_result.get("overall_direction", "?"),
+                 _screen_result.get("composite_score", 0))
+    except Exception as _scr_e:
+        log.debug("Screener skipped: %s", _scr_e)
+
+    viable_strategies = get_viable_strategies()
+    provider_list = ALL_PROVIDERS
+    if viable_strategies:
+        viable_names = {s["name"] for s in viable_strategies}
+        filtered = []
+        for p in ALL_PROVIDERS:
+            pname = getattr(p, "__name__", str(p))
+            if not pname.startswith("signal_qna_"):
+                filtered.append(p)
+                continue
+            sname = pname[len("signal_"):]
+            if sname in viable_names:
+                filtered.append(p)
+        if len(filtered) < len(ALL_PROVIDERS):
+            log.info("Providers filtered: %d → %d (only viable)", len(ALL_PROVIDERS), len(filtered))
+            provider_list = filtered
+
+    signal = aggregate(symbol, ctx=causal_ctx, tracker=_signal_tracker, providers=provider_list)
+    result["signal"] = signal
+    log.info(f"DECISION: {signal['bias']} (conf={signal['confidence']:.2f})")
+
+    _fusion_result = None
+    _fusion_ctx = None
+    _fusion_scorers = []
+    result["_fusion_scorers"] = _fusion_scorers
+    result["_fusion_ctx"] = _fusion_ctx
+    try:
+        from quant_nanggroe.core.cache import TTLCache
+        from quant_nanggroe.core.scoring import (
+            BondScorer,
+            CryptoScorer,
+            EconomicScorer,
+            FusionEngine,
+            GeopoliticalScorer,
+            MacroScorer,
+            PositioningScorer,
+            SentimentScorer,
+            TechnicalScorer,
+            VolatilityScorer,
+        )
+        from quant_nanggroe.core.regime import RegimeDetector
+        from quant_nanggroe.core.news import NewsScorer
+        _fusion_scorers = [
+            BondScorer(),
+            CryptoScorer(),
+            EconomicScorer(),
+            GeopoliticalScorer(),
+            MacroScorer(),
+            NewsScorer(),
+            PositioningScorer(),
+            SentimentScorer(),
+            TechnicalScorer(),
+            VolatilityScorer(),
+        ]
+        result["_fusion_scorers"] = _fusion_scorers
+        _fusion_engine = FusionEngine(scorers=_fusion_scorers)
+        _apply_evolver_weights(_fusion_scorers)
+        _fusion_ctx_cache = TTLCache(default_ttl=600)
+        _cot_data = _fusion_ctx_cache.get(f"cot:{symbol}")
+        if _cot_data is None:
+            try:
+                from quant_nanggroe.core.scoring.positioning_scorer import _fetch_cot_from_cftc
+                _cot_data = _fetch_cot_from_cftc(symbol)
+                if _cot_data:
+                    _fusion_ctx_cache.set(f"cot:{symbol}", _cot_data, ttl=3600)
+            except Exception:
+                _cot_data = None
+
+        _regime_detector = RegimeDetector()
+        _regime_result = _regime_detector.detect({
+            "volatility": getattr(causal_ctx, "volatility", signal.get("volatility", 0.0)),
+            "trend": signal.get("score", 0.0),
+            "dxy_change_pct": dxy_pct,
+            "vix": float(os.environ.get("VIX_LEVEL", "20")),
+            "bond_zb_change_pct": zb_pct,
+        })
+        _fusion_ctx = {
+            "symbol": symbol,
+            "macro_regime": _regime_result.label.value,
+            "regime_confidence": _regime_result.confidence,
+            "price_change_pct": signal.get("score", 0.0),
+            "dxy_change_pct": dxy_pct,
+            "bond_zb_change_pct": zb_pct,
+            "fred_api_key": os.environ.get("FRED_API_KEY", ""),
+            "geopolitical_risk_delta": float(os.environ.get("QNA_GEOPOLITICAL_RISK_DELTA", "0")),
+            "active_conflicts": [],
+            "cot_data": _cot_data,
+        }
+        result["_fusion_ctx"] = _fusion_ctx
+        _fusion_result = _fusion_engine.evaluate(_fusion_ctx)
+        result["_fusion_result"] = _fusion_result
+        result["fusion"] = {
+            "composite_score": _fusion_result.composite_score,
+            "confidence": _fusion_result.confidence,
+            "bias": _fusion_result.bias,
+            "override_aggregator": _fusion_result.override_aggregator,
+        }
+        log.info("FusionEngine: score=%.2f conf=%.2f bias=%s override=%s",
+                 _fusion_result.composite_score, _fusion_result.confidence,
+                 _fusion_result.bias, _fusion_result.override_aggregator)
+        if _fusion_result.override_aggregator and _fusion_result.bias != signal["bias"]:
+            log.warning("FusionEngine overrides aggregator: %s → %s (conf=%.2f)",
+                        signal.get("bias", "?"), _fusion_result.bias, _fusion_result.confidence)
+            signal["bias"] = _fusion_result.bias
+            signal["confidence"] = _fusion_result.confidence
+    except Exception as _fus_e:
+        log.debug("FusionEngine skipped: %s", _fus_e)
+        _fusion_result = None
+
+    _mtf_result = None
+    if _fusion_scorers and _fusion_ctx is not None:
+        try:
+            from quant_nanggroe.core.scoring.mtf_engine import MultiTimeframeEngine, TimeframeResolution
+            _mtf_engine = MultiTimeframeEngine(scorers=_fusion_scorers)
+            _mtf_result = _mtf_engine.evaluate(_fusion_ctx, symbol=symbol)
+            result["mtf"] = {
+                "resolution": _mtf_result.resolution.value,
+                "htf_bias": _mtf_result.htf_bias,
+                "ltf_bias": _mtf_result.ltf_bias,
+            }
+            log.info("MTFEngine: resolution=%s htf=%s ltf=%s",
+                     _mtf_result.resolution.value, _mtf_result.htf_bias, _mtf_result.ltf_bias)
+            if _mtf_result.resolution == TimeframeResolution.HOLD:
+                log.warning("MTF HOLD — HTF/LTF conflict, overriding signal")
+                signal["bias"] = "hold"
+                signal["confidence"] = 0.0
+                result["mtf_veto"] = True
+            elif _mtf_result.resolution == TimeframeResolution.REDUCE:
+                log.info("MTF REDUCE — position size will be halved")
+                result["mtf_reduce"] = True
+        except Exception as _mtf_e:
+            log.debug("MTFEngine skipped: %s", _mtf_e)
+    result["_mtf_result"] = _mtf_result
+
+    _confluence = None
+    try:
+        if _screen_result is not None:
+            from quant_nanggroe.engine.portfolio.confluence_scorer import ConfluenceScorer
+            _scorer = ConfluenceScorer()
+            _all_signals = [
+                {"source": "aggregator", "side": signal["bias"], "confidence": signal["confidence"]},
+                {"source": "screener", "side": _screen_result.get("overall_direction", "neutral"),
+                 "confidence": _screen_result.get("composite_score", 0) / 100.0},
+            ]
+            if _fusion_result is not None:
+                _all_signals.append({
+                    "source": "fusion_engine",
+                    "side": _fusion_result.bias,
+                    "confidence": _fusion_result.confidence,
+                })
+            _confluence = _scorer.evaluate(
+                _all_signals,
+                macro_bias=getattr(causal_ctx, "biases", None) if causal_ctx else None,
+                macro_weather=getattr(causal_ctx, "macro_regime", None) if causal_ctx else None,
+            )
+            result["confluence"] = _confluence
+            log.info("Confluence: signal=%s score=%.2f",
+                     _confluence.overall_signal if hasattr(_confluence, "overall_signal") else "?",
+                     _confluence.score if hasattr(_confluence, "score") else 0)
+            if hasattr(_confluence, "overall_signal") and _confluence.overall_signal == "hold":
+                log.warning("Confluence veto — all signals fused to HOLD")
+                result["status"] = "confluence_veto"
+                signal["bias"] = "hold"
+                signal["confidence"] = 0.0
+    except Exception as _con_e:
+        log.debug("ConfluenceScorer skipped: %s", _con_e)
 
     try:
-        symbol = target_symbol
-        if not symbol:
-            try:
-                from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import get_valid_pairs
-                pairs = get_valid_pairs()
-                if pairs:
-                    symbol = pairs[0]
-                    log.info(f"Best pair: {symbol}")
-            except Exception as e:
-                log.debug(f"Pair scanner unavailable: {e}")
-        if not symbol:
-            symbol = "EURUSD"
-        result["symbol"] = symbol
+        _vote_advisory = _get_llm_advisor()._rule_based_advisory(
+            fusion_result=_fusion_result,
+            mtf_result=_mtf_result,
+            signal=signal,
+            confluence=_confluence,
+            ctx={"macro_regime": getattr(causal_ctx, "macro_regime", "") if causal_ctx else "",
+                 "dxy_pct": dxy_pct},
+        )
+        result["_advisory_vote"] = asdict(_vote_advisory)
+    except Exception as _adv_e:
+        log.debug("Vote advisory skipped: %s", _adv_e)
 
-        if not _config.PAPER_TRADE:
-            a = mt5.account_info()
-            if a:
-                log.info(f"${a.balance:.2f} | Equity=${a.equity:.2f} | Margin=${a.margin:.2f}")
+    result["_signal"] = signal
+    result["_dxy_pct"] = dxy_pct
+    result["_zb_pct"] = zb_pct
+    return result
 
-        positions = []
-        if not _config.PAPER_TRADE:
-            try:
-                positions = mt5.positions_get() or []
-            except Exception:
-                positions = []
 
-        # ── Trail existing positions ──────────────────────────────────
-        if positions:
-            result["status"] = "positions_trailed"
-            result["n_positions"] = len(positions)
-            for p in positions:
-                log.info(f"OPEN: {p.symbol} {'BUY' if p.type==0 else 'SELL'} PnL=${p.profit:.2f}")
-                ns = trail_sl(p)
-                if ns and (p.sl is None or abs(ns - p.sl) > 0.00001):
-                    try:
-                        if p.type == 0 and ns > (p.sl or 0):
-                            r = mt5.order_send({
-                                "action": mt5.TRADE_ACTION_SLTP,
-                                "position": p.ticket,
-                                "sl": ns,
-                                "tp": p.tp,
-                            })
-                            if r and r.retcode == 10009:
-                                log.info(f"  Trail->{ns:.5f}")
-                        elif p.type == 1 and ns < (p.sl or 999):
-                            r = mt5.order_send({
-                                "action": mt5.TRADE_ACTION_SLTP,
-                                "position": p.ticket,
-                                "sl": ns,
-                                "tp": p.tp,
-                            })
-                            if r and r.retcode == 10009:
-                                log.info(f"  Trail->{ns:.5f}")
-                    except Exception as e:
-                        log.debug(f"Trail failed: {e}")
+# ── Pipeline Stage 5: Position Sizing + Risk Check ───────────────────
+
+def _pipeline_risk_check(result: dict) -> dict:
+    """Size position, build proposal, run KillSwitch + risk guard."""
+    signal = result["_signal"]
+    symbol = result["symbol"]
+
+    acct = mt5.account_info() if (MT5_AVAILABLE and not _config.PAPER_TRADE) else None
+    real_balance = acct.balance if acct else 1000.0
+    real_daily_pnl = 0.0
+    if acct and not _config.PAPER_TRADE:
+        try:
+            start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            deals = mt5.history_deals_get(start, datetime.now())
+            if deals:
+                real_daily_pnl = sum(float(d.profit) + float(d.commission or 0) for d in deals)
+        except Exception as _e:
+            log.debug(f"daily pnl read failed: {_e}")
+    real_open = len(mt5.positions_get() or []) if (MT5_AVAILABLE and not _config.PAPER_TRADE) else 0
+
+    market_atr = calc_atr(symbol) or 0.001
+    sizing = calculate_position_size(signal, real_balance, atr=market_atr)
+
+    _rp_weight = 1.0
+    try:
+        from quant_nanggroe.engine.portfolio.risk_parity_bridgewater import RiskParityAllocator
+        _rp = RiskParityAllocator(target_vol=0.10, max_leverage=2.0)
+        _volatilities = {symbol: market_atr}
+        _rp_weights = _rp.compute_risk_parity_weights(_volatilities)
+        if _rp_weights and symbol in _rp_weights:
+            _rp_weight = _rp_weights[symbol]
+            sizing["volume"] = sizing["volume"] * _rp_weight
+            log.info("RiskParity weight=%s multiplier=%.2f", symbol, _rp_weight)
+        result["risk_parity"] = _rp_weights
+    except Exception as _rp_e:
+        log.debug("RiskParityAllocator skipped: %s", _rp_e)
+
+    if result.get("mtf_reduce") and sizing["volume"] > 0:
+        sizing["volume"] = sizing["volume"] * 0.5
+        log.info("MTF REDUCE: position size halved to %.4f", sizing["volume"])
+
+    proposal = {
+        "symbol": symbol,
+        "action": signal["bias"],
+        "volume": sizing["volume"],
+        "price": signal.get("price", 1.0),
+        "sl": signal.get("sl", 0),
+        "account_balance": real_balance,
+        "daily_pnl": real_daily_pnl,
+        "weekly_pnl": _weekly_pnl(),
+        "open_positions": real_open,
+        "market_volatility": market_atr / 1.0,
+    }
+
+    configure_kill_switch_file()
+    ks = KillSwitch()
+    ks.check_auto_activate(
+        daily_pnl_pct=real_daily_pnl / real_balance if real_balance > 0 else 0,
+        weekly_pnl_pct=_weekly_pnl() / real_balance if real_balance > 0 else 0,
+    )
+    if not ks.can_trade():
+        log.warning("KILL SWITCH VETO — halted (level=%s)", ks.current_level.value)
+        result["status"] = "kill_switched"
+        result["kill_level"] = ks.current_level.value
+        result["_early_exit"] = True
+        return result
+
+    rg_result = risk_guard_approve(proposal)
+    risk_score = rg_result.get("risk_score", rg_result.get("score", 0))
+    if rg_result.get("status") == "VETOED":
+        log.warning(f"Risk Guard VETO: {rg_result.get('reasons', 'unknown')}")
+        result["status"] = "vetoed"
+        result["risk_score"] = risk_score
+        result["risk_reasons"] = rg_result.get("reasons", "unknown")
+        result["_early_exit"] = True
+        return result
+
+    log.info(f"Risk Guard APPROVED (score={risk_score:.2f})")
+    result["risk_score"] = risk_score
+    result["_real_balance"] = real_balance
+    result["_real_daily_pnl"] = real_daily_pnl
+    result["_proposal"] = proposal
+    return result
+
+
+# ── Pipeline Stage 6: Execute Order + Post-Trade ─────────────────────
+
+def _pipeline_execute(result: dict) -> dict:
+    """Execute order, then run post-trade tasks (evolver, stress VaR, pattern recording)."""
+    signal = result["_signal"]
+    symbol = result["symbol"]
+    _fusion_result = result.get("_fusion_result")
+    real_balance = result.get("_real_balance", 1000.0)
+    real_daily_pnl = result.get("_real_daily_pnl", 0.0)
+
+    try:
+        order_id = _execute_order_sync(signal, symbol)
+    except RuntimeError as e:
+        log.warning(f"ExecutionManager blocked order: {e}")
+        result["status"] = "paper_blocked"
+        result["executed"] = False
+        return result
+
+    if not order_id:
+        log.warning("Order not placed — execute() returned no order id")
+        result["status"] = "order_failed"
+        result["executed"] = False
+        return result
+
+    result["status"] = "executed"
+    result["executed"] = True
+    result["order_id"] = order_id
+
+    try:
+        _exec_advisory = _get_llm_advisor().advisory(
+            fusion_result=_fusion_result,
+            mtf_result=result.get("_mtf_result"),
+            signal=signal,
+            confluence=result.get("confluence"),
+            ctx={"macro_regime": result.get("_fusion_ctx", {}).get("macro_regime", ""),
+                 "dxy_pct": result.get("_dxy_pct", 0.0)},
+        )
+        result["advisory"] = asdict(_exec_advisory)
+    except Exception as _exec_adv_e:
+        log.debug("Exec advisory skipped: %s", _exec_adv_e)
+
+    if real_balance > 0:
+        _kelly_sizer.feed_performance([real_daily_pnl / real_balance])
+
+    _record_evolver_trade(trade_id=order_id, symbol=symbol,
+                          fusion_result=_fusion_result,
+                          daily_pnl=real_daily_pnl)
+    _run_evolver_evaluate()
+
+    try:
+        from quant_nanggroe.engine.stress_testing.var_cvar import StressVaRCalculator
+        _var = StressVaRCalculator()
+        _returns = np.array([real_daily_pnl / real_balance]) if real_balance > 0 else np.array([0.0])
+        if len(_returns) > 0:
+            _var_result = _var.compute(_returns)
+            log.info("StressVaR: param_95=%.4f cvar_95=%.4f",
+                     getattr(_var_result, "parametric_var_95", 0),
+                     getattr(_var_result, "cvar_95", 0))
+            result["stress_var"] = {
+                "parametric_var_95": getattr(_var_result, "parametric_var_95", 0),
+                "cvar_95": getattr(_var_result, "cvar_95", 0),
+                "historical_var_95": getattr(_var_result, "historical_var_95", 0),
+            }
+    except Exception as _var_e:
+        log.debug("StressVaR skipped: %s", _var_e)
+
+    try:
+        from quant_nanggroe.engine.pattern_recorder.matrix_profile import MatrixProfileDetector
+        _mpd = MatrixProfileDetector()
+        _price_series = result.get("_price_series")
+        if _price_series is not None:
+            _mp_result = _mpd.compute(_price_series, window_size=min(20, len(_price_series) // 4))
+            if _mp_result:
+                _motif_count = len(_mp_result.get("motifs", [])) if isinstance(_mp_result, dict) else 0
+                log.info("PatternRecorder: %d motifs found", _motif_count)
+                result["patterns"] = {
+                    "motif_count": _motif_count,
+                    "discord_count": len(_mp_result.get("discords", [])) if isinstance(_mp_result, dict) else 0,
+                }
+    except Exception as _mp_e:
+        log.debug("PatternRecorder skipped: %s", _mp_e)
+
+    return result
+
+
+# ── Pipeline Stage 7: MT5 Cleanup ────────────────────────────────────
+
+def _pipeline_cleanup() -> None:
+    """Gracefully shut down MT5 connection if live trading."""
+    if not _config.PAPER_TRADE:
+        try:
+            mt5.shutdown()
+        except Exception:
+            pass
+
+
+# ── Main entry point ──────────────────────────────────────────────────
+
+def run_once(target_symbol=None) -> dict:
+    """Run one hedge fund cycle via 6-stage pipeline.
+
+    Stages:
+      1. _pipeline_connect    — MT5 + walkforward gate
+      2. _pipeline_discover   — symbol, account, positions
+      3. _pipeline_trail      — trail open positions (skip vote if open)
+      4. _pipeline_vote       — causal → screen → agg → fusion → mtf → confluence
+      5. _pipeline_risk_check — sizing → kill switch → risk guard
+      6. _pipeline_execute    — order placement + post-trade (evolver, var, pattern)
+      7. _pipeline_cleanup    — MT5 shutdown
+    """
+    log.info("Hedge Fund v5 — Pipeline: Connect → Discover → Trail/Vote → Risk → Execute → Cleanup")
+    result: dict = {"status": "gate_failed", "symbol": target_symbol or "EURUSD"}
+
+    try:
+        _pipeline_connect(result)
+        if result["status"] == "gate_failed":
+            return result
+
+        result["status"] = "no_trade"
+        _pipeline_discover(result)
+
+        if result.get("_positions"):
+            _pipeline_trail(result)
+            return result
+
+        _pipeline_vote(result)
+        signal = result.get("_signal", {})
+        if signal.get("bias") in ("buy", "sell"):
+            _pipeline_risk_check(result)
+            if not result.get("_early_exit"):
+                _pipeline_execute(result)
         else:
-            # ── No positions — vote on new trade ──────────────────────
-            lifecycle = _get_lifecycle()
-            n_active = len(lifecycle.get_active_strategies())
-            log.info(f"Voting: {len(ALL_PROVIDERS)} providers across {n_active} active strategies")
-            result["n_providers"] = len(ALL_PROVIDERS)
+            result["status"] = "no_trade"
 
-            # ── Causal context with live market data ──────────────────
-            dxy_pct, zb_pct = _market_snapshot()
-            causal_ctx = _build_causal_context(dxy_pct, zb_pct)
-            result["causal_ctx"] = causal_ctx
-
-            # ── Pre-trade market screen (ScreenerOrchestrator) ───────
-            _screen_result = None
-            try:
-                from quant_nanggroe.engine.screener.orchestrator import ScreenerOrchestrator
-                _screener = ScreenerOrchestrator()
-                _screen_data = {
-                    "symbol": symbol,
-                    "causal_ctx": causal_ctx,
-                    "dxy_pct": dxy_pct,
-                    "zb_pct": zb_pct,
-                    "price": signal.get("price", 0),
-                }
-                _screen_result = _screener.screen(_screen_data)
-                result["screen"] = _screen_result
-                log.info("Screen: dir=%s score=%.2f", _screen_result.get("overall_direction", "?"),
-                         _screen_result.get("composite_score", 0))
-            except Exception as _scr_e:
-                log.debug("Screener skipped: %s", _scr_e)
-
-            # ── Filter providers by walk-forward viability ────────────
-            viable_strategies = get_viable_strategies()
-            provider_list = ALL_PROVIDERS
-            if viable_strategies:
-                viable_names = {s["name"] for s in viable_strategies}
-                filtered = []
-                for p in ALL_PROVIDERS:
-                    pname = getattr(p, "__name__", str(p))
-                    if not pname.startswith("signal_qna_"):
-                        filtered.append(p)
-                        continue
-                    sname = pname[len("signal_"):]
-                    if sname in viable_names:
-                        filtered.append(p)
-                if len(filtered) < len(ALL_PROVIDERS):
-                    log.info("Providers filtered: %d → %d (only viable)", len(ALL_PROVIDERS), len(filtered))
-                    provider_list = filtered
-
-            # ── Aggregate with Bayesian weights + strategy lifecycle ──
-            signal = aggregate(symbol, ctx=causal_ctx, tracker=_signal_tracker, providers=provider_list)
-            result["signal"] = signal
-            log.info(f"DECISION: {signal['bias']} (conf={signal['confidence']:.2f})")
-
-            # ── Confluence signal fusion (ConfluenceScorer) ──────────
-            _confluence = None
-            try:
-                if _screen_result is not None:
-                    from quant_nanggroe.engine.portfolio.confluence_scorer import ConfluenceScorer
-                    _scorer = ConfluenceScorer()
-                    _all_signals = [
-                        {"source": "aggregator", "side": signal["bias"], "confidence": signal["confidence"]},
-                        {"source": "screener", "side": _screen_result.get("overall_direction", "neutral"),
-                         "confidence": _screen_result.get("composite_score", 0) / 100.0},
-                    ]
-                    _confluence = _scorer.evaluate(
-                        _all_signals,
-                        macro_bias=getattr(causal_ctx, "biases", None) if causal_ctx else None,
-                        macro_weather=getattr(causal_ctx, "macro_regime", None) if causal_ctx else None,
-                    )
-                    result["confluence"] = _confluence
-                    log.info("Confluence: signal=%s score=%.2f",
-                             _confluence.overall_signal if hasattr(_confluence, "overall_signal") else "?",
-                             _confluence.score if hasattr(_confluence, "score") else 0)
-                    if hasattr(_confluence, "overall_signal") and _confluence.overall_signal == "hold":
-                        log.warning("Confluence veto — all signals fused to HOLD")
-                        result["status"] = "confluence_veto"
-                        signal["bias"] = "hold"
-                        signal["confidence"] = 0.0
-            except Exception as _con_e:
-                log.debug("ConfluenceScorer skipped: %s", _con_e)
-
-            if signal["bias"] in ("buy", "sell"):
-                acct = mt5.account_info() if (MT5_AVAILABLE and not _config.PAPER_TRADE) else None
-                real_balance = acct.balance if acct else 1000.0
-                real_daily_pnl = 0.0
-                if acct and not _config.PAPER_TRADE:
-                    try:
-                        start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-                        deals = mt5.history_deals_get(start, datetime.now())
-                        if deals:
-                            real_daily_pnl = sum(float(d.profit) + float(d.commission or 0) for d in deals)
-                    except Exception as _e:
-                        log.debug(f"daily pnl read failed: {_e}")
-                real_open = len(mt5.positions_get() or []) if (MT5_AVAILABLE and not _config.PAPER_TRADE) else 0
-
-                market_atr = calc_atr(symbol) or 0.001
-                sizing = calculate_position_size(signal, real_balance, atr=market_atr)
-
-                # ── Risk parity position scaling (RiskParityAllocator) ────
-                _rp_weight = 1.0
-                try:
-                    from quant_nanggroe.engine.portfolio.risk_parity_bridgewater import RiskParityAllocator
-                    _rp = RiskParityAllocator(target_vol=0.10, max_leverage=2.0)
-                    _volatilities = {symbol: market_atr}
-                    _rp_weights = _rp.compute_risk_parity_weights(_volatilities)
-                    if _rp_weights and symbol in _rp_weights:
-                        _rp_weight = _rp_weights[symbol]
-                        sizing["volume"] = sizing["volume"] * _rp_weight
-                        log.info("RiskParity weight=%s multiplier=%.2f", symbol, _rp_weight)
-                    result["risk_parity"] = _rp_weights
-                except Exception as _rp_e:
-                    log.debug("RiskParityAllocator skipped: %s", _rp_e)
-
-                proposal = {
-                    "symbol": symbol,
-                    "action": signal["bias"],
-                    "volume": sizing["volume"],
-                    "price": signal.get("price", 1.0),
-                    "sl": signal.get("sl", 0),
-                    "account_balance": real_balance,
-                    "daily_pnl": real_daily_pnl,
-                    "weekly_pnl": _weekly_pnl(),  # ← FIXED: was missing
-                    "open_positions": real_open,
-                    "market_volatility": market_atr / 1.0,
-                }
-                # ── KillSwitch auto-activation check (canonical engine/risk) ──
-                configure_kill_switch_file()
-                ks = KillSwitch()
-                ks.check_auto_activate(
-                    daily_pnl_pct=real_daily_pnl / real_balance if real_balance > 0 else 0,
-                    weekly_pnl_pct=_weekly_pnl() / real_balance if real_balance > 0 else 0,
-                )
-                if not ks.can_trade():
-                    log.warning("KILL SWITCH VETO — halted (level=%s)", ks.current_level.value)
-                    result["status"] = "kill_switched"
-                    result["kill_level"] = ks.current_level.value
-                    if not _config.PAPER_TRADE:
-                        try:
-                            mt5.shutdown()
-                        except Exception:
-                            pass
-                    return result
-
-                rg_result = risk_guard_approve(proposal)
-                risk_score = rg_result.get("risk_score", rg_result.get("score", 0))
-
-                if rg_result.get("status") == "VETOED":
-                    log.warning(f"Risk Guard VETO: {rg_result.get('reasons', 'unknown')}")
-                    result["status"] = "vetoed"
-                    result["risk_score"] = risk_score
-                    result["risk_reasons"] = rg_result.get("reasons", "unknown")
-                    if not _config.PAPER_TRADE:
-                        try:
-                            mt5.shutdown()
-                        except Exception:
-                            pass
-                    return result
-
-                log.info(f"Risk Guard APPROVED (score={risk_score:.2f})")
-                result["risk_score"] = risk_score
-                try:
-                    order_id = _execute_order_sync(signal, symbol)
-                except RuntimeError as e:
-                    # ExecutionManager guard pipeline blocked the order
-                    log.warning(f"ExecutionManager blocked order: {e}")
-                    result["status"] = "paper_blocked"
-                    result["executed"] = False
-                else:
-                    if order_id:
-                        result["status"] = "executed"
-                        result["executed"] = True
-                        result["order_id"] = order_id
-                        # Feed PnL return to adaptive Kelly for performance tracking
-                        if real_balance > 0:
-                            _kelly_sizer.feed_performance([real_daily_pnl / real_balance])
-
-                        # ── Post-trade stress VaR (StressVaRCalculator) ──
-                        try:
-                            from quant_nanggroe.engine.stress_testing.var_cvar import StressVaRCalculator
-                            _var = StressVaRCalculator()
-                            _returns = np.array([real_daily_pnl / real_balance]) if real_balance > 0 else np.array([0.0])
-                            if len(_returns) > 0:
-                                _var_result = _var.compute(_returns)
-                                log.info("StressVaR: param_95=%.4f cvar_95=%.4f",
-                                         getattr(_var_result, "parametric_var_95", 0),
-                                         getattr(_var_result, "cvar_95", 0))
-                                result["stress_var"] = {
-                                    "parametric_var_95": getattr(_var_result, "parametric_var_95", 0),
-                                    "cvar_95": getattr(_var_result, "cvar_95", 0),
-                                    "historical_var_95": getattr(_var_result, "historical_var_95", 0),
-                                }
-                        except Exception as _var_e:
-                            log.debug("StressVaR skipped: %s", _var_e)
-
-                        # ── Post-trade pattern recording (MatrixProfileDetector) ──
-                        try:
-                            from quant_nanggroe.engine.pattern_recorder.matrix_profile import MatrixProfileDetector
-                            _mpd = MatrixProfileDetector()
-                            _price_series = getattr(_market_df, "close", None) if hasattr(locals(), "_market_df") else None
-                            if _price_series is not None:
-                                _mp_result = _mpd.compute(_price_series, window_size=min(20, len(_price_series) // 4))
-                                if _mp_result:
-                                    _motif_count = len(_mp_result.get("motifs", [])) if isinstance(_mp_result, dict) else 0
-                                    log.info("PatternRecorder: %d motifs found", _motif_count)
-                                    result["patterns"] = {
-                                        "motif_count": _motif_count,
-                                        "discord_count": len(_mp_result.get("discords", [])) if isinstance(_mp_result, dict) else 0,
-                                    }
-                        except Exception as _mp_e:
-                            log.debug("PatternRecorder skipped: %s", _mp_e)
-                    else:
-                        log.warning("Order not placed — execute() returned no order id")
-                        result["status"] = "order_failed"
-                        result["executed"] = False
-            else:
-                result["status"] = "no_trade"
+        try:
+            _a = _get_llm_advisor()
+            _advisory_result = _a.advisory(
+                fusion_result=result.get("_fusion_result"),
+                mtf_result=result.get("_mtf_result"),
+                signal=result.get("_signal"),
+                confluence=result.get("confluence"),
+                ctx={
+                    "macro_regime": getattr(result.get("causal_ctx"), "macro_regime", ""),
+                    "dxy_pct": result.get("_dxy_pct", 0.0),
+                },
+            )
+            result["advisory"] = asdict(_advisory_result)
+        except Exception as _adv_e:
+            log.debug("LLMAdvisory final skipped: %s", _adv_e)
 
     finally:
-        if not _config.PAPER_TRADE:
-            try:
-                mt5.shutdown()
-            except Exception:
-                pass
+        _pipeline_cleanup()
 
+    for key in ("_signal", "_fusion_scorers", "_fusion_ctx", "_fusion_result",
+                "_mtf_result", "_advisory_vote",
+                "_positions", "_dxy_pct", "_zb_pct", "_real_balance",
+                "_real_daily_pnl", "_proposal", "_price_series", "_early_exit"):
+        result.pop(key, None)
     return result
 
 

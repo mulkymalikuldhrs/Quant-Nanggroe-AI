@@ -37,9 +37,18 @@ from quant_nanggroe.engine.causal.cot_tracker import (
 from quant_nanggroe.engine.causal.macro_surprise import (
     MacroSurpriseIndex,
 )
-from quant_nanggroe.engine.causal.smt_divergence import (
-    SMTDivergenceDetector,
-)
+
+# ponytail: SMTDivergenceDetector needs statsmodels which isn't always installed.
+# Imported lazily inside MasterQuantNanggroeEngine._init_sub_engines.
+_SMT_AVAILABLE = False
+try:
+    from quant_nanggroe.engine.causal.smt_divergence import (
+        SMTDivergenceDetector,
+    )
+    _SMT_AVAILABLE = True
+except ImportError:
+    SMTDivergenceDetector = None  # type: ignore
+
 from quant_nanggroe.engine.causal.thesis_drift_guard import (
     ThesisDriftGuard,
 )
@@ -132,8 +141,15 @@ class MasterQuantNanggroeEngine:
             except Exception as e:
                 logger.debug("COT init skipped: %s", e)
 
-        # SMT Divergence — always available (no external deps)
-        self._smt = SMTDivergenceDetector()
+        # SMT Divergence — requires statsmodels (optional dep)
+        if _SMT_AVAILABLE:
+            try:
+                self._smt = SMTDivergenceDetector()
+            except Exception as e:
+                logger.debug("SMTDivergenceDetector init skipped: %s", e)
+                self._smt = None
+        else:
+            self._smt = None
 
         # Thesis Drift Guard — always available (rule-based)
         self._thesis_guard = ThesisDriftGuard()

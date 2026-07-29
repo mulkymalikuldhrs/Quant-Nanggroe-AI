@@ -4,6 +4,8 @@
 
 Production-grade frontend for the Quant Nanggroe autonomous hedge fund trading system. Built with Next.js 16, React 19, Tailwind CSS v4, and Zustand v5.
 
+⚠️ **AUDIT NOTE (2026-07-30):** Scoring engine NOW WIRED (Session 7). Backend pipeline has 8 scorers active with FusionEngine. Dashboard still needs extraction from github2 branch per ADR-007.
+
 ---
 
 ## Design System

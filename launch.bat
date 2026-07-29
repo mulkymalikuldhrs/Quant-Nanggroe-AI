@@ -13,6 +13,8 @@ REM ═════════════════════════�
 
 setlocal
 set PYTHONPATH=
+set FRED_API_KEY=%FRED_API_KEY%
+set QNAI_FRED_API_KEY=%FRED_API_KEY%
 set QNA_ROOT=%~dp0
 cd /d "%QNA_ROOT%"
 
@@ -20,6 +22,7 @@ if "%1"=="" goto :usage
 if "%1"=="api" goto :api
 if "%1"=="cli" goto :cli
 if "%1"=="daemon" goto :daemon
+if "%1"=="dashboard" goto :dashboard
 if "%1"=="test" goto :test
 if "%1"=="status" goto :status
 goto :usage
@@ -27,7 +30,7 @@ goto :usage
 :api
 echo [QNA] Starting API server via qna.py (single entry point)...
 echo [QNA] PYTHONPATH cleared — no venv contamination.
-".venv\Scripts\python.exe" qna.py api
+start "QNA-API" /B ".venv\Scripts\python.exe" qna.py api
 goto :eof
 
 :cli
@@ -38,6 +41,15 @@ goto :eof
 :daemon
 echo [QNA] Starting background daemon...
 ".venv\Scripts\python.exe" qna.py daemon
+goto :eof
+
+:dashboard
+echo [QNA] Starting dashboard (Next.js on :3000)...
+echo [QNA] Make sure 'launch.bat api' is running on :8000
+cd /d "%QNA_ROOT%dashboard"
+start "QNA-DASHBOARD" /B cmd /c "npm run dev 2>&1"
+cd /d "%QNA_ROOT%"
+echo [QNA] Dashboard starting at http://localhost:3000
 goto :eof
 
 :test

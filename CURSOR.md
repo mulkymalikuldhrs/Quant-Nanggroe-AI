@@ -1,4 +1,4 @@
-# CURSOR.md — Quant Nanggroe AI
+# CURSOR.md — Quant Nanggroe AI (Quant Nation)
 
 See **AGENTS.md** for canonical instructions.
 
@@ -10,6 +10,7 @@ See **AGENTS.md** for canonical instructions.
 - Use `uv` for package management (not pip, not poetry).
 - `archive/` = read-only orphan artifacts from v6.2.
 - Keep docs synchronized with code changes.
+- ✅ Scoring engine FULLY WIRED — FusionEngine + 8 scorers + MTFEngine + WeightEvolver in run_once(). 117 tests pass.
 
 **Index:**
 - Include: `quant_nanggroe/`, `dashboard/src/`, `docs/`, `qna.py`

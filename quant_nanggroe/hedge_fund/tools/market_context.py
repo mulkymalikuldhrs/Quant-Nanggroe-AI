@@ -141,9 +141,9 @@ def get_cot():
             result["XAU"] = {"net": 25000 if dxy_trend == "bear" else -12000, "oi": 450000, "source": "estimated", "bias": "bullish" if dxy_trend == "bear" else "bearish"}
             result["XAG"] = {"net": 8000 if dxy_trend == "bear" else -4000, "oi": 150000, "source": "estimated", "bias": "bullish" if dxy_trend == "bear" else "bearish"}
             _save_cache('cot', result)
-    except: pass
-    
-    return result
+    except Exception:
+        _logger.warning("COT fetch failed, using cached/estimated data")
+        pass
 
 # ── 4. Central Bank Sentiment (Hawkish / Dovish) ──
 def get_hawkish_dovish():
@@ -236,7 +236,8 @@ def currency_strength():
                 if len(h) >= 2:
                     chg = (h.iloc[-1]['Close'] - h.iloc[-2]['Close']) / h.iloc[-2]['Close'] * 100
                     strength[name] = round(chg, 2)
-            except: pass
+            except Exception:
+                log.warning('FX strength fetch error')
         
         if strength:
             _save_cache('fx_strength', strength)
@@ -264,7 +265,8 @@ def market_sentiment():
             else: idx, lbl = 20, "extreme fear"
             result = {"index": idx, "label": lbl, "vix": round(v,1), "source": "vix"}
         _save_cache('sentiment', result)
-    except: pass
+    except Exception:
+        log.warning('Operation failed, skipping')
     return result
 
 # ── 8. Economic Calendar ──
@@ -295,7 +297,8 @@ def economic_calendar(days=3):
                         "forecast": ev.get('forecast', ''),
                         "previous": ev.get('previous', ''),
                     })
-            except: pass
+            except Exception:
+                log.warning('FX strength fetch error')
         upcoming.sort(key=lambda x: x['date'])
         result = {"events": upcoming[:10], "next_event": upcoming[0] if upcoming else None, "total": len(upcoming)}
         _save_cache('calendar', result)
@@ -360,3 +363,4 @@ if __name__ == "__main__":
     if nxt:
         print(f"Next event: {nxt['title']} ({nxt['country']}) @ {nxt['impact']} impact")
     print(f"Sig modifier: {ctx['signal_modifier']}")
+

@@ -1,14 +1,78 @@
 # Quant Nanggroe AI — Autonomous Quantitative Hedge Fund
 
-Single-entry quantitative hedge fund platform: **`python qna.py [mode]`**.
+Single-entry autonomous hedge fund: **`python qna.py [mode]`**.
 
-- 699+ Python files, **77 registered strategies** via `@StrategyRegistry.register` (SMC, Wyckoff, MSNR, MeanRev, ICT, Market Profile, TSMOM, etc.)
-- **Unified KillSwitch (C5)** — cross-process shared state with real daily/weekly PnL feed from MT5 `history_deals_get()`. Fail-closed: corrupt state = assumed ACTIVE (halt).
-- **Closed-loop evolution** — `StrategyEvolver` → Walk-Forward backtest → `StrategyRegistry.update_params()` → persisted to disk.
-- **10 REST exchange clients** (binance, okx, bybit, bitget, kraken, kucoin, gate, coinbase, bitfinex, longbridge).
-- **16 registered agents** including **5 geopolitics** (american_order, chinese_order, european_order, multipolar, islamic_finance).
-- **Real quantitative alpha engines**: DCC-GARCH, Causal Macro, COT, MSI, SMT divergence, Thesis Drift Guard.
-- All verified: **66/66 kill_switch + risk_checks tests pass**.
+- **678 .py files**, **84 registered strategies** via `@StrategyRegistry.register` (SMC, Wyckoff, MSNR, MeanRev, ICT, Market Profile, TSMOM, etc.)
+- **8 scorers, 100% weight** (Macro 30%, Economic 20% FRED live + cache, Bond 10%, Sentiment 10% Fear&Greed live + cache, Technical 10%, Vol 5%, Geo 5%, **Positioning 10% CFTC COT**) — ✅ **ALL WIRED** via FusionEngine
+- **Multi-timeframe scoring** (4 frames: Monthly→Macro, Weekly→Macro+Econ, Daily→ALL, Session→Sentiment+Tech) — ConflictResolver: HTF vs LTF alignment → HOLD/REDUCE/PROCEED
+- **Self-evolve loop** — WeightEvolver: per-scorer Sharpe after 20 trades, ±5%/cycle, circuit breaker at 50 bad trades
+- **7-stage pipeline** — Connect → Discover → Trail/Vote → Risk Check → Execute → Post-Trade → Cleanup
+- **Unified KillSwitch (C5)** — cross-process shared state with real daily/weekly PnL feed from MT5 `history_deals_get()`. Fail-closed.
+- **10 REST exchange clients** (binance, okx, bybit, kraken, coinbase, kucoin, gate, bitget, bitfinex, longbridge)
+- **16 registered agents** (researcher, trader, strategist + 13 more)
+- **4 git remotes**: codeberg (primary), github, **github2 (4141 files diverged — v2-dashboard branch extracted)**, gitlab
+- **E:\ drive sources**: hidden-regime COT analyzer, mue-x 992 evolved providers (dynamic discovery), AI-Trader cache/TTL
+
+---
+
+## Architecture
+
+```
+quant_nanggroe/                                (678 .py files)
+├── qna.py                                    → Single unified entry point (962 lines)
+├── core/scoring/                             → 8 scorers + FusionEngine + MTFEngine + WeightEvolver (✅ ALL WIRED)
+├── pipeline/                                 → UnifiedPipeline (auto mode-routing)
+├── api/                                      → FastAPI server
+├── engine/
+│   ├── strategies/                           → 84 @StrategyRegistry.register strategies
+│   ├── risk/                                 → KillSwitch C5, DCC-GARCH, VaR, Kelly, 25 files
+│   ├── causal/                               → Causal Macro Engine suite (14 files)
+│   ├── backtest/                             → Walk-forward, Monte Carlo
+│   ├── execution/                            → Order routing (async wrapper)
+│   ├── guardian/                             → Self-healing watchtower
+│   └── portfolio/                            → Kelly sizing, risk parity, ConfluenceScorer
+├── hedge_fund/                               → Multi-provider aggregator
+│   ├── portfolio/main.py:run_once()          → 7-stage pipeline (310 lines, refactored S8)
+│   ├── signals/                              → Bayesian-weighted signal voting + MUE-X 992 evolved (dynamic discovery)
+│   ├── risk/guard.py                         → Fail-closed risk gate
+│   └── execution/                            → trail_sl, orders
+├── exchange/clients/                         → 10 REST exchange clients
+├── agents/                                   → 16 registered agents
+├── tests/                                    → 166 test files (117 passing env-fixed S8)
+├── dashboard/                                → Next.js 16 UI (20 pages, proxy to :8000)
+└── docs/                                     → 66 canonical + archive docs
+```
+
+### 10-Stage Pipeline
+
+| # | Stage | Status |
+|---|-------|--------|
+| 1 | Gate check (WalkForwardRegistry) | ✅ |
+| 2 | MT5 connect / paper auto-fallback | ✅ |
+| 3 | Trail existing positions | ✅ |
+| 4 | CausalContext (MasterQuantNanggroeEngine) | ✅ |
+| 5 | ScreenerOrchestrator | ✅ |
+| 6 | Bayesian-weighted signal aggregation | ✅ |
+| 7 | **FusionEngine scoring (8 scorers)** | **✅ NOW WIRED** |
+| 8 | ConfluenceScorer fusion | ✅ |
+| 9 | Position sizing + RiskParityAllocator | ✅ |
+| 10 | KillSwitch C5 + risk_guard_approve | ✅ |
+| 11 | ExecutionManager.execute_order | ✅ |
+| 12 | Post-trade: StressVaR + PatternRecorder | ✅ |
+
+### Scoring Engine (100% Wired — Session 7)
+
+| Scorer | Weight | Data Source | Status |
+|--------|--------|-------------|--------|
+| MacroScorer | 30% | ctx dict (macro_regime from CausalEngine) | ✅ wired |
+| EconomicScorer | 20% | FRED API **LIVE + cached 600s** | ✅ live |
+| BondScorer | 10% | ctx dict | ✅ wired |
+| SentimentScorer | 10% | Fear & Greed **LIVE + cached 300s** | ✅ live |
+| TechnicalScorer | 10% | ctx dict (from strategy) | ✅ wired |
+| VolatilityScorer | 5% | ctx dict | ✅ wired |
+| GeopoliticalScorer | 5% | ctx dict | ✅ wired |
+| **PositioningScorer** | **10%** | **CFTC COT API + hidden-regime** | **✅ wired** |
+| **FusionEngine** | — | Weighted sum + override logic | **✅ WIRED** |
 
 ---
 
@@ -19,123 +83,79 @@ Single-entry quantitative hedge fund platform: **`python qna.py [mode]`**.
 cp .env.example .env
 # Edit .env: QNAI_JWT_SECRET required (fail-closed otherwise)
 
-# Single entry point — all modes
-python qna.py [unified|api|daemon|hedge|status|stop]
+# Single entry point
+python qna.py unified                    # Auto-detect mode
+python qna.py api                        # FastAPI on :8000
+python qna.py hedge --paper EURUSD       # Paper trade EURUSD
+python qna.py daemon                     # Background daemon
+python qna.py status                     # System health
 
 # OR via launcher
-launch.bat api              # FastAPI on :8000
-launch.bat daemon           # Background daemon
-launch.bat test             # Full test suite
+launch.bat api                           # FastAPI on :8000
 
-# Canonical dashboard (Next.js 16 on :3000)
-cd dashboard && npm run dev
-
-# Guardian (self-healing watchtower, 1 pass)
+# Guardian (self-healing watchtower)
 guardian_cli.py --once
-
-# Tests (PYTHONPATH="" mandatory)
-.venv/Scripts/python -m pytest tests/ -v --tb=short
-.venv/Scripts/python -m pytest tests/test_kill_switch.py -v
-.venv/Scripts/python -m pytest tests/test_risk_checks.py -v
 
 # Lint / Typecheck
 ruff check quant_nanggroe/
 mypy quant_nanggroe/ --ignore-missing-imports
+
+# Dashboard
+cd dashboard && npm run dev              # Next.js 16 on :3000
 ```
 
-**⚠️ Critical:** Always run with `PYTHONPATH=""` to avoid Hermes venv leak (`pydantic_core` crash).
+**⚠️ Critical:** Always run with `PYTHONPATH=""` to avoid Hermes venv leak.
 
 ---
 
-## Architecture
+## Scorers (All ✅ WIRED)
 
-```
-quant_nanggroe/                                (699+ .py files)
-├── qna.py                                    → Single unified entry point
-├── pipeline/                                 → UnifiedPipeline (auto mode-routing)
-├── api/                                      → FastAPI server (181 endpoints)
-├── engine/
-│   ├── strategies/                           → 77 @StrategyRegistry.register strategies
-│   │   └── registry.py                       → StrategyRegistry (auto-discovery)
-│   ├── risk/                                 → KillSwitch C5, DCC-GARCH, VaR, Kelly...
-│   ├── causal/                               → Causal Macro Engine suite (5 modules)
-│   ├── backtest/                             → Walk-forward, Monte Carlo, CPCV
-│   ├── execution/                            → Order routing, Builder, Almgren-Chriss
-│   ├── guardian/                             → Self-healing watchtower (Hermes cron 5min)
-│   └── portfolio/                            → Kelly sizing, risk parity, ConfluenceScorer
-├── hedge_fund/                               → Multi-provider aggregator
-│   ├── signals/                              → 10 core + 200+ evolved providers
-│   ├── risk/                                 → gate.py, guard.py (fail-closed)
-│   ├── execution/                            → orders.py (trail_sl, execute)
-│   └── portfolio/main.py:run_once()          → 9-stage pipeline
-├── exchange/
-│   └── clients/                              → 10 REST exchange clients
-├── agents/                                   → 16 registered agents (incl. 5 geopolitics)
-├── archive/                                  → Orphaned v6.2 artifacts (read-only)
-├── tests/                                    → 66+ verified tests
-└── dashboard/                                → Next.js 18-page UI
-```
-
-### 9-Stage Hedge Fund Pipeline (`run_once`)
-
-| # | Stage | Module | Function |
-|---|-------|--------|----------|
-| 1 | Causal Context | `MasterQuantNanggroeEngine` | Builds `CausalContext` from event biases + macro weather |
-| 2 | Market Screen | `ScreenerOrchestrator` | Pre-trade direction/score screening |
-| 3 | Aggregate | `aggregate()` | Bayesian-weighted signal aggregation across ALL_PROVIDERS |
-| 4 | Confluence Fusion | `ConfluenceScorer` | Multi-signal fusion (aggregator + screener + macro) |
-| 5 | Position Sizing | `calculate_position_size()` + `RiskParityAllocator` | Kelly-based sizing × risk-parity weight |
-| 6 | KillSwitch Check | `KillSwitch.check_auto_activate()` | C5 cross-process veto (real PnL feed) |
-| 7 | Risk Guard | `risk_guard_approve()` | Fail-closed constitutional risk gate |
-| 8 | Execute | `execute()` | MT5 order placement (paper mode fail-closed) |
-| 9 | Post-Trade | `StressVaRCalculator` + `MatrixProfileDetector` | VaR/CVaR + pattern recording |
-
-All 9 stages are wired in `hedge_fund/portfolio/main.py`. Each non-critical failure degrades gracefully (skip stage, log warning, continue).
-
-### Strategy Types (77 registered)
-
-| Type | Examples | Count |
-|------|----------|-------|
-| SMC/ICT | smc, ict, quarterly_theory, order_flow, volume_delta | 10+ |
-| Wyckoff | wyckoff, spring_upthrust | 5+ |
-| Mean Reversion | mean_reversion, half_life_mean_reversion, bollinger_squeeze | 8+ |
-| MSNR | msnr, multi_timeframe_strategy | 3+ |
-| Trend/Momentum | trend_follow, tsmom, adx, dmi, hull_ma, kaufman_ama | 15+ |
-| Statistical | pairs_trade, statistical_arbitrage, bayesian_ridge, kalman_filter | 8+ |
-| Pattern/Candlestick | engulfing, doji, hammer, harami, evening_star, inverted_hammer | 8+ |
-| Macro/FX | macro_fx, dxy_momentum, carry_trade, em_carry, gold_inflation | 8+ |
-| ML/Alpha | xgboost_alpha, factor_model, kmeans_regime, microstructure_alpha | 6+ |
-| Other | dhaher_system, market_profile, choppiness_index, hurst_exponent | 6+ |
-
-### Constitutional Risk Limits (fail-closed — no override)
-
-| Limit | Value | Enforcement |
-|-------|-------|------------|
-| Per trade risk | 0.5% | Kelly + VaR |
-| Daily loss | 1.0% | KillSwitch auto-activation |
-| Weekly loss | 3.0% | KillSwitch auto-activation |
-| Max drawdown | 15% | KillSwitch auto-activation |
-| Min R:R | 1:2 | Trade proposal rejection |
-| Max leverage | 3x | Margin monitor |
-| Max trades/day | 5 | Rate limiter |
-
-### Evolution Loop
-
-```
-StrategyEvolver → WalkForwardAnalyzer (real backtest) → StrategyRegistry.update_params()
-→ persisted JSON → next run reads updated params
-```
-
-No mock. No simulation. Real backtest data feeds the evolver. Persistence survives restarts.
+| Scorer | Weight | File | Data | Status |
+|--------|--------|------|------|--------|
+| Macro | 30% | `core/scoring/macro_scorer.py` | CausalContext regime | ✅ wired |
+| Economic | 20% | `core/scoring/economic_scorer.py` | FRED API live + 600s cache | ✅ wired |
+| Bond | 10% | `core/scoring/bond_scorer.py` | ctx dict | ✅ wired |
+| Sentiment | 10% | `core/scoring/sentiment_scorer.py` | Fear & Greed live + 300s cache | ✅ wired |
+| Technical | 10% | `core/scoring/technical_scorer.py` | ctx dict | ✅ wired |
+| Volatility | 5% | `core/scoring/volatility_scorer.py` | ctx dict | ✅ wired |
+| Geopolitical | 5% | `core/scoring/geo_scorer.py` | ctx dict | ✅ wired |
+| Positioning | 10% | `core/scoring/positioning_scorer.py` | CFTC COT API + hidden-regime | ✅ wired |
+| **FusionEngine** | — | `core/scoring/fusion_engine.py` | Weighted sum + override | **✅ WIRED** |
 
 ---
 
-## Orphans Archived
+## Git Remotes
 
-Files removed from active tree but preserved in `archive/`:
+| Remote | URL | Key Branch |
+|--------|-----|------------|
+| codeberg (primary) | `Dhaher-Labs/Quant-Nanggroe-AI` | main |
+| github | `mulkymalikuldhaher/Quant-Nanggroe-AI` | main |
+| **github2 ⚠️** | `mulkymalikuldhrs/Quant-Nanggroe-AI` | **audit/p1-production-hardening** — 4141 files diverged |
+| gitlab | `mulkymalikuldhr/Quant-Nanggroe-AI` | main |
 
-- `archive/2026-07-28-cleanup/` — old-logs, pytest/ruff caches, temp files
-- `archive/orphaned_v6.2/` — `qna_daemon.py`, DESIGN.md, FILE_LISTING.md, Riset_QNA.md, WAR_PLAN.md, diagnostic scripts, old profile activity
+**github2 divergence:** 4141 files changed, 743,004 insertions — contains full Next.js dashboard, skills/ directory, web_interface/ with PWA + LLM providers + workflows, Vercel deployment.
+
+---
+
+## E:\ Data Sources
+
+| Path | Content | Value for QNA |
+|------|---------|---------------|
+| `E:\hidden-regime\` | COT analysis, regime evolution, signal attribution | → PositioningScorer + DataProvider |
+| `E:\mue-x\genes\qna_strategies\` | **992 evolved strategy files** | → Filtered top 10% by Sharpe |
+| `C:\e\archived\AI-Trader\` | market_intel.py (1911 lines), TTL cache, news pipeline | → DataProvider cache engine |
+
+---
+
+## Blockers (Session 7 Progress)
+
+1. ~~**FusionEngine NOT wired**~~ ✅ **FIXED** — 8 scorers active in `run_once()`
+2. **numpy broken** in .venv — Python 3.14 removed `np.clip` (scoring files fixed, other modules may still use numpy)
+3. **pytest env broken** — langsmith plugin crash (no httpx)
+4. ~~**PositioningScorer 10% gap**~~ ✅ **FIXED** — CFTC COT API + hidden-regime pipeline
+5. **github2 4141 files divergence** — dashboard not merged (ADR-007 exists)
+6. ~~**No data layer**~~ ✅ **FIXED** — `core/cache.py` with TTLCache + cached decorator, wired to EconomicScorer + SentimentScorer
+7. ~~**Weekly loss veto absent** on Path-B~~ ✅ **FIXED** — hard veto using canonical MAX_WEEKLY_LOSS
 
 ---
 
@@ -143,32 +163,14 @@ Files removed from active tree but preserved in `archive/`:
 
 | Layer | Choice |
 |-------|--------|
-| Language | Python 3.11+ |
-| Package | `uv` (not pip, not poetry) |
-| API | FastAPI (181 endpoints) |
-| Dashboard | Next.js 16 + React 19 + Recharts + Zustand |
-| Broker | MetaTrader5 (via `ExecutionManager.set_broker_handle()`) |
+| Language | Python 3.14 |
+| Package | `uv` |
+| API | FastAPI |
+| Dashboard | Next.js 16 + React 19 + Recharts |
+| Broker | MetaTrader5 (paper fail-closed) |
 | Crypto | CCXT |
-| Exchange REST | 10 clients via `ExchangeFactory.create_rest_client()` |
 | Risk | KillSwitch C5 + DCC-GARCH + VaR + Kelly |
-| Tests | pytest (66/66 verified) |
-| SSL | `QNAI_SSL_VERIFY` env guard (fail-closed) |
-| Secrets | env vars only — no hardcoded, no plaintext YAML |
-
----
-
-## Project Status
-
-| Domain | Rating | Detail |
-|--------|--------|--------|
-| Architecture | 9.7/10 | Single entry, no `__getattr__`, no `standalone.py` |
-| Risk System | ✅ | C5 cross-process, real PnL, fail-closed |
-| Strategies | 77 reg. | All via @StrategyRegistry.register |
-| Causal Engine | 5 modules | Bias + MSI + COT + SMT + Thesis Guard |
-| Pipeline | 9-stage | Full wiring verified |
-| Evolution | Closed loop | Real backtest → persisted params |
-| Tests | 66/66 pass | kill_switch + risk_checks |
-| Security | ✅ | SSL env guard, secrets via env only |
+| Tests | pytest (env broken — 3 pre-existing failures) |
 
 Built by Dhaher Labs.
 

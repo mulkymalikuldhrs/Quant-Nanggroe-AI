@@ -1,0 +1,2669 @@
+{
+  "entries": [
+    {
+      "trade_id": "trade_0",
+      "timestamp": "2026-07-29T17:48:49.885509+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_1",
+      "timestamp": "2026-07-29T17:48:49.887203+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_2",
+      "timestamp": "2026-07-29T17:48:49.889063+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_3",
+      "timestamp": "2026-07-29T17:48:49.891806+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_4",
+      "timestamp": "2026-07-29T17:48:49.894021+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_5",
+      "timestamp": "2026-07-29T17:48:49.896241+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_6",
+      "timestamp": "2026-07-29T17:48:49.898192+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_7",
+      "timestamp": "2026-07-29T17:48:49.900001+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_8",
+      "timestamp": "2026-07-29T17:48:49.901917+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_9",
+      "timestamp": "2026-07-29T17:48:49.904818+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_10",
+      "timestamp": "2026-07-29T17:48:49.907231+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_11",
+      "timestamp": "2026-07-29T17:48:49.909740+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_12",
+      "timestamp": "2026-07-29T17:48:49.912431+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_13",
+      "timestamp": "2026-07-29T17:48:49.915327+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_14",
+      "timestamp": "2026-07-29T17:48:49.917927+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_15",
+      "timestamp": "2026-07-29T17:48:49.921563+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_16",
+      "timestamp": "2026-07-29T17:48:49.924520+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_17",
+      "timestamp": "2026-07-29T17:48:49.927942+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_18",
+      "timestamp": "2026-07-29T17:48:49.975688+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_19",
+      "timestamp": "2026-07-29T17:48:49.979474+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_20",
+      "timestamp": "2026-07-29T17:48:49.982595+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_21",
+      "timestamp": "2026-07-29T17:48:49.985758+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_22",
+      "timestamp": "2026-07-29T17:48:49.989505+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "trade_23",
+      "timestamp": "2026-07-29T17:48:49.993440+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "trade_24",
+      "timestamp": "2026-07-29T17:48:49.997469+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_0",
+      "timestamp": "2026-07-29T17:48:50.031236+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_1",
+      "timestamp": "2026-07-29T17:48:50.035449+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_2",
+      "timestamp": "2026-07-29T17:48:50.039863+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_3",
+      "timestamp": "2026-07-29T17:48:50.044769+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_4",
+      "timestamp": "2026-07-29T17:48:50.048878+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_5",
+      "timestamp": "2026-07-29T17:48:50.053106+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_6",
+      "timestamp": "2026-07-29T17:48:50.057661+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_7",
+      "timestamp": "2026-07-29T17:48:50.063742+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_8",
+      "timestamp": "2026-07-29T17:48:50.068378+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_9",
+      "timestamp": "2026-07-29T17:48:50.073114+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_10",
+      "timestamp": "2026-07-29T17:48:50.078628+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_11",
+      "timestamp": "2026-07-29T17:48:50.083724+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_12",
+      "timestamp": "2026-07-29T17:48:50.089243+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_13",
+      "timestamp": "2026-07-29T17:48:50.100994+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "bad_14",
+      "timestamp": "2026-07-29T17:48:50.106634+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": -10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-07-29T17:52:33.511594+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-07-29T17:52:33.517318+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-07-29T17:52:33.522892+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-07-29T17:52:33.784135+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-07-29T17:52:33.788601+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-07-29T17:52:33.792916+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t6",
+      "timestamp": "2026-07-29T17:52:33.797818+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t7",
+      "timestamp": "2026-07-29T17:52:33.802368+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t8",
+      "timestamp": "2026-07-29T17:52:33.808777+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t9",
+      "timestamp": "2026-07-29T17:52:33.813536+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t10",
+      "timestamp": "2026-07-29T17:52:33.818571+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t11",
+      "timestamp": "2026-07-29T17:52:33.830929+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t12",
+      "timestamp": "2026-07-29T17:52:33.836518+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t13",
+      "timestamp": "2026-07-29T17:52:33.842044+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t14",
+      "timestamp": "2026-07-29T17:52:33.848516+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t15",
+      "timestamp": "2026-07-29T17:52:33.854148+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t16",
+      "timestamp": "2026-07-29T17:52:33.860589+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t17",
+      "timestamp": "2026-07-29T17:52:33.870475+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t18",
+      "timestamp": "2026-07-29T17:52:33.880572+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t19",
+      "timestamp": "2026-07-29T17:52:33.887220+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t20",
+      "timestamp": "2026-07-29T17:52:33.894485+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t21",
+      "timestamp": "2026-07-29T17:52:33.900763+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t22",
+      "timestamp": "2026-07-29T17:52:33.907065+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t23",
+      "timestamp": "2026-07-29T17:52:33.913592+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "EconomicScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "GeopoliticalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "MacroScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "PositioningScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "SentimentScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "TechnicalScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        },
+        "VolatilityScorer": {
+          "score": -30.0,
+          "confidence": 0.6
+        }
+      },
+      "actual_pnl": -5.0,
+      "predicted_bias": "sell"
+    },
+    {
+      "trade_id": "t24",
+      "timestamp": "2026-07-29T17:52:33.920580+00:00",
+      "symbol": "EURUSD",
+      "scorer_scores": {
+        "BondScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "EconomicScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "GeopoliticalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "MacroScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "PositioningScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "SentimentScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        },
+        "VolatilityScorer": {
+          "score": 30.0,
+          "confidence": 0.7
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    }
+  ]
+}

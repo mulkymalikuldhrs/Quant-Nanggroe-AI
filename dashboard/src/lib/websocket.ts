@@ -74,6 +74,9 @@ export function useWebSocket(
     onDisconnectRef.current = options.onDisconnect;
   });
 
+  // Track subscriptions for state recovery on reconnect
+  const subscribedChannels = useRef<{ channels: WSChannel[]; symbols: string[] } | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -97,12 +100,28 @@ export function useWebSocket(
           setConnectionError(null);
           reconnectAttemptRef.current = 0;
           onConnectRef.current?.();
+
+          // State recovery: re-subscribe previous channels on reconnect
+          if (subscribedChannels.current) {
+            send({
+              action: "subscribe",
+              channels: subscribedChannels.current.channels,
+              symbols: subscribedChannels.current.symbols,
+            });
+          }
         };
 
         ws.onmessage = (event) => {
           if (cancelled) return;
           try {
             const data = JSON.parse(event.data) as WSMessage;
+
+            // Respond to server heartbeat pings
+            if (data.type === "ping") {
+              ws.send(JSON.stringify({ action: "pong" }));
+              return;
+            }
+
             setLastMessage(data);
             onMessageRef.current?.(data);
           } catch {
@@ -163,6 +182,7 @@ export function useWebSocket(
 
   const subscribe = useCallback(
     (channels: WSChannel[], symbols: string[] = ["BTC/USDT"]) => {
+      subscribedChannels.current = { channels, symbols };
       send({
         action: "subscribe",
         channels,
@@ -174,6 +194,12 @@ export function useWebSocket(
 
   const unsubscribe = useCallback(
     (channels: WSChannel[], symbols: string[] = []) => {
+      if (subscribedChannels.current) {
+        subscribedChannels.current = {
+          channels: subscribedChannels.current.channels.filter(c => !channels.includes(c)),
+          symbols: subscribedChannels.current.symbols.filter(s => !symbols.includes(s)),
+        };
+      }
       send({
         action: "unsubscribe",
         channels,

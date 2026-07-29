@@ -1,0 +1,121 @@
+# ═══════════════════════════════════════════════════
+# .neuralmemory/surface.nm
+# Neural Memory Knowledge Surface v1
+# Auto-generated from brain.db | Editable by human
+# ═══════════════════════════════════════════════════
+---
+brain: default
+updated: 2026-07-29T19:54:38
+neurons: 254
+synapses: 1365
+token_budget: 1200
+depth_available: [surface, detail, deep]
+---
+
+# ── GRAPH ──────────────────────────────────────────
+# Nodes = key concepts. Edges = causal/decisional links.
+# Agent: scan this section to understand the knowledge landscape.
+# Format: [id] content (type) {p:N} →edge→ [target_id_or_text]
+
+[c19] YAML (concept) {p:5}
+  →co_occurs→ [e4] "col_3: 504 in _full_skills (already have YAML frontmatter…"
+  →co_occurs→ "col_11: verification). Skills don't need manual linking…"
+  →co_occurs→ [c17] "MOCs"
+  →co_occurs→ [c18] "Only"
+  →co_occurs→ [c16] "Dataview"
+
+[c20] Key (concept) {p:5}
+  →co_occurs→ [c19] "YAML"
+  →co_occurs→ [e4] "col_3: 504 in _full_skills (already have YAML frontmatter…"
+  →co_occurs→ "col_11: verification). Skills don't need manual linking…"
+  →co_occurs→ [c17] "MOCs"
+  →co_occurs→ [c18] "Only"
+
+[c21] metadata.hermes.tags (concept) {p:5}
+  →co_occurs→ [c19] "YAML"
+  →co_occurs→ [e4] "col_3: 504 in _full_skills (already have YAML frontmatter…"
+  →co_occurs→ "col_11: verification). Skills don't need manual linking…"
+  →co_occurs→ [c20] "Key"
+  →co_occurs→ [c17] "MOCs"
+
+[c22] FVG (concept) {p:5}
+  →co_occurs→ "RR"
+  →co_occurs→ "ADX"
+  →co_occurs→ "ATR"
+  →co_occurs→ "Tested"
+  →co_occurs→ "TP"
+
+[c23] memory_stub.py (concept) {p:5}
+  →co_occurs→ "colony_stub"
+  →co_occurs→ "implement stub routes"
+  →co_occurs→ "security_tools_stub.py"
+  →co_occurs→ "Created"
+  →co_occurs→ "Follows"
+
+[c24] MultiSignalVotingSystem (concept) {p:5}
+  →co_occurs→ "enhanced_analytics.py"
+  →co_occurs→ "CVaR"
+  →co_occurs→ "multi_pair"
+  →co_occurs→ "Sortino"
+  →co_occurs→ "Calmar"
+
+[c25] Quant (concept) {p:5}
+  →co_occurs→ "Projects"
+  →co_occurs→ "Personal"
+  →co_occurs→ "Career"
+  →co_occurs→ "Master MOC"
+  →co_occurs→ "Home"
+
+[e4] col_3: 504 in _full_skills (already have YAML frontmatter with… (entity) {p:5}
+  →co_occurs→ "col_11: verification). Skills don't need manual linking…"
+  →co_occurs→ "col_10: Dataview queries"
+  →co_occurs→ "col_4: 664 in _full_repos"
+  →co_occurs→ "col_7: MOCs"
+  →co_occurs→ "col_5: 289 in _full_cron. Only 198 files (4.1%) have…"
+
+[c26] colony_stub.py (concept) {p:5}
+  →co_occurs→ "colony_stub"
+  →co_occurs→ "implement stub routes"
+  →co_occurs→ "security_tools_stub.py"
+  →co_occurs→ "Created"
+  →co_occurs→ "Follows"
+
+# ── CLUSTERS ───────────────────────────────────────
+# Auto-detected topic groups from brain.db entity co-occurrence.
+# Agent: use clusters to scope recall queries.
+
+@quant_nanggroe/engine/strategy/strategies/dhaher_system.py: [c22] "quant_nanggroe/engine/strategy/strategie, DhaherSystem, FVG"
+@colony_stub.py: [c23, c26] "colony_stub.py, memory_stub.py, launch_full.py"
+@qna: [c24] "QNA new modules created 2026-07-21: 1) v, MultiSignalVotingSystem"
+@skills: [c19] "Skills, Dataview, col_1: 873 md files"
+
+# ── SIGNALS ────────────────────────────────────────
+# Active alerts, unresolved items, pending decisions.
+# Agent: check this FIRST each session for urgent context.
+
+~ Rewrote CLAUDE.md for Quant Nanggroe AI repo â€” consolidated redundant scorer t
+~ DhaherSystem v1.1 strategy ported from E:\trading into QNA at quant_nanggroe/eng
+~ Next QNA steps: 1) Run full test suite (needs torch for Kronos), 2) Wire ensembl
+~ QNA development complete for tonight: ensemble voting system (weighted consensus
+~ QNA session summary 2026-07-21: Created 8 new files: voting.py, adapters.py, ens
+~ QNA ensemble API routes created at quant_nanggroe/api/routes/ensemble.py with en
+~ E:\trading hedge_fund.py has 6 signal providers (wyckoff, aihf, hidden-regime, t
+~ QNA pipeline architecture: data â†’ regime detection â†’ signal generation â†’ e
+~ QNA ensemble voting system complete: adapters.py (5 external signal adapters: wy
+~ QNA .env now has GROQ_API_KEY for free LLM (llama-3.3-70b), HUGGINGFACE_API_KEY,
+
+# ── DEPTH MAP ──────────────────────────────────────
+# When surface isn't enough, this tells agent WHERE to dig.
+# Format: [id] → depth_hint (context)
+
+[c19] → NEEDS_DEEP (18 synapses in brain.db, recall "YAML")
+[c20] → NEEDS_DEEP (19 synapses in brain.db, recall "Key")
+[c21] → NEEDS_DEEP (21 synapses in brain.db, recall "metadata.hermes.tags")
+
+# ── META ───────────────────────────────────────────
+# Stats for agent to gauge brain richness
+
+coverage: 0.12
+staleness: 0.1
+last_consolidation: 2026-07-29T19:54:38
+top_entities: [OB, quant_nanggroe/engine/strategy/strategies/dhaher_system.py, dhaher_system.py, DhaherSystem, launch_full.py]

@@ -1431,7 +1431,10 @@ class LiveEngine:
 
     def _get_routing_status(self) -> dict:
         try:
-            from quant_nanggroe.providers.warp import status as warp_status
+            try:
+                from quant_nanggroe.warp_provider import status as warp_status
+            except ImportError:
+                warp_status = lambda: {"connected": False, "registered": False, "account_type": "none"}
             ws = warp_status()
         except Exception:
             ws = {"connected": False, "registered": False, "account_type": "none"}

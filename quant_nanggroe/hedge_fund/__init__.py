@@ -6,14 +6,20 @@ Legacy mtf.py / multipair.py are excluded (they import E:/trading deps
 and numpy C-extensions that are not required by the core run_once path).
 """
 
-from quant_nanggroe.hedge_fund.execution import (  # noqa: F401
-    execute,
-    kelly_lot_size,
-    trail_sl,
-)
-from quant_nanggroe.hedge_fund.portfolio import (  # noqa: F401
-    run_once,
-)
+try:
+    from quant_nanggroe.hedge_fund.execution import (  # noqa: F401
+        execute,
+        kelly_lot_size,
+        trail_sl,
+    )
+except Exception:
+    pass
+try:
+    from quant_nanggroe.hedge_fund.portfolio import (  # noqa: F401
+        run_once,
+    )
+except Exception:
+    pass
 from quant_nanggroe.hedge_fund.risk import (  # noqa: F401
     risk_guard_approve,
 )
