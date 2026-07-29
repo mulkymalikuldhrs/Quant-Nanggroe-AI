@@ -49,7 +49,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY --chown=qna:qna quant_nanggroe/ ./quant_nanggroe/
-COPY --chown=qna:qna deploy/scripts/entrypoint.sh ./entrypoint.sh
+COPY --chown=qna:qna deploy/docker/scripts/entrypoint.sh ./entrypoint.sh
 
 # Environment
 ENV PYTHONPATH=/app \
