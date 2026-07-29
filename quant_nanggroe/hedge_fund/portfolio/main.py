@@ -810,6 +810,52 @@ def run_once(target_symbol=None) -> dict:
         except Exception as _adv_e:
             log.debug("LLMAdvisory final skipped: %s", _adv_e)
 
+    # ── Evolution loop: record closed trades ──────────────
+        try:
+            from quant_nanggroe.engine.evolution.closed_trade_handler import ClosedTradeHandler
+            from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
+            _journal = EvolutionJournal()
+            _handler = ClosedTradeHandler(_journal)
+            if MT5_AVAILABLE and not _config.PAPER_TRADE:
+                try:
+                    _now = datetime.now()
+                    _start_30d = _now.replace(day=1) if _now.day > 1 else _now
+                    _deals = mt5.history_deals_get(_start_30d, _now) or []
+                    for _d in _deals[-5:]:
+                        if _d.profit == 0 and _d.commission == 0:
+                            continue
+                        _handler.record_trade({
+                            "timestamp": _d.time, "symbol": _d.symbol,
+                            "strategy": result.get("_signal", {}).get("bias", "unknown"),
+                            "timeframe": "H1",
+                            "direction": "buy" if _d.profit > 0 else "sell",
+                            "entry_price": _d.price, "exit_price": _d.price,
+                            "pnl": round(_d.profit + (_d.commission or 0), 2),
+                            "pnl_pct": 0.0, "hold_hours": 0, "spread": 0.0,
+                            "entry_reason": "pipeline", "sl_type": "atr",
+                        })
+                    log.info("Evolution: recorded %d closed trades", min(len(_deals or []), 5))
+                except Exception as _evo_e:
+                    log.debug("Evolution: trade recording skipped: %s", _evo_e)
+            from quant_nanggroe.engine.evolution.evolution_scheduler import EvolutionScheduler
+            _evo_sched = EvolutionScheduler()
+            if _evo_sched.should_run(_journal):
+                from quant_nanggroe.engine.evolution.performance_scanner import PerformanceScanner
+                from quant_nanggroe.engine.evolution.strategy_disabler import StrategyDisabler
+                from quant_nanggroe.engine.evolution.weight_updater import WeightUpdater
+                _scanner = PerformanceScanner(_journal)
+                _results = _scanner.scan_strategy("all", "H1")
+                _disabler = StrategyDisabler()
+                _to_disable = _disabler.evaluate({"all": _results}) if _results else []
+                for _s in _to_disable:
+                    _disabler.disable(_s)
+                if _results:
+                    _updater = WeightUpdater()
+                    _updater.update_weights({"all": _results})
+                log.info("Evolution cycle: checked=%s disabled=%d", "all", len(_to_disable))
+        except Exception as _evo_e:
+            log.debug("Evolution loop skipped: %s", _evo_e)
+
     finally:
         _pipeline_cleanup()
 
