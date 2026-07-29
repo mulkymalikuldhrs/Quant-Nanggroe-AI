@@ -611,3 +611,6 @@ These modules have no active consumers but are structurally wired for future use
 - Guards enforced: cooldown, max-position, whitelist, governance veto, kill switch, constitutional risk
 - Audit logging via JSONL in `paper_state/execution_audit.jsonl`
 - All 80 core tests pass, 4,876 tests collected cleanly
+
+
+### Need full audit to find more shit, gaps, anomaly, wiring, wire anything from /archive to pipeline, wire ui, loads all skills, orchestrating 7 profiles.

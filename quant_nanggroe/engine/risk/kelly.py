@@ -136,18 +136,21 @@ class KellyCriterion:
     to the new ``engine/kelly/`` implementations.
 
     Config parameters:
-        max_position: Maximum position size (default: 0.20).
-        min_position: Minimum position size (default: 0.01).
+        max_position: Maximum position size (default: 0.10).
+                min_position: Minimum position size (default: 0.01).
+                default_method: Defaults to QUARTER_KELLY (0.25× full Kelly) —
+                    standard fractional Kelly. Use HALF_KELLY (0.5×) or FULL
+                    only if backtest evidence supports aggressive sizing.
     """
 
     def __init__(
-        self,
-        max_position: float = 0.20,
-        min_position: float = 0.01,
-        ruin_threshold: float = 0.05,
-        volatility_penalty: float = 0.5,
-        confidence_weight: float = 0.3,
-    ) -> None:
+            self,
+            max_position: float = 0.10,
+            min_position: float = 0.01,
+            ruin_threshold: float = 0.05,
+            volatility_penalty: float = 0.5,
+            confidence_weight: float = 0.3,
+        ) -> None:
         self.max_position = max_position
         self.min_position = min_position
         self.ruin_threshold = ruin_threshold
@@ -186,7 +189,7 @@ class KellyCriterion:
             Legacy KellyResult wrapping the new engine result.
         """
         if method is None:
-            method = KellyMethod.HALF_KELLY
+                    method = KellyMethod.QUARTER_KELLY  # 0.25× full Kelly — safer default
 
         new_params = params.to_new()
         new_method = method.to_new()

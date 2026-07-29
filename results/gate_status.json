@@ -2,7 +2,7 @@
   "symbol": "EURUSD=X",
   "interval": "15m",
   "period": "60d",
-  "n_registered": 77,
+  "n_registered": 76,
   "n_evaluated": 77,
   "n_pass": 9,
   "results": {
