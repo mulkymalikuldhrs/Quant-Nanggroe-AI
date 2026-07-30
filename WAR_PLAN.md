@@ -1,6 +1,6 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-**Version:** v5.1.0
+**Version:** v6.1.0 (actual; plan was written at v5.1.0)
 **Date:** 2026-07-30
 **Status:** ACTIVE — 7/7 profiles enabled, healthy, no drift.
 
