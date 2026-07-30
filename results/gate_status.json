@@ -2,8 +2,8 @@
   "symbol": "EURUSD=X",
   "interval": "15m",
   "period": "60d",
-  "n_registered": 76,
-  "n_evaluated": 77,
+  "n_registered": 79,
+  "n_evaluated": 80,
   "n_pass": 9,
   "results": {
     "AdaptiveMovingAverageStrategy": {
@@ -698,6 +698,34 @@
       "wf_sharpe": 0.0,
       "pass": false,
       "status": "flat"
+    },
+    "MSNRStrategyFixed": {
+      "strategy": "MSNRStrategyFixed",
+      "status": "ok",
+      "interface": "signal",
+      "sharpe": -1.93,
+      "return_pct": -2.06,
+      "max_drawdown": -2.42,
+      "trades": 218,
+      "pass": false
+    },
+    "QuarterlyTheoryStrategyFixed": {
+      "strategy": "QuarterlyTheoryStrategyFixed",
+      "status": "no_trades",
+      "interface": "signal",
+      "sharpe": 0.0,
+      "return_pct": 0.0,
+      "max_drawdown": 0.0,
+      "pass": false
+    },
+    "SMCStrategyFixed": {
+      "strategy": "SMCStrategyFixed",
+      "status": "no_trades",
+      "interface": "signal",
+      "sharpe": 0.0,
+      "return_pct": 0.0,
+      "max_drawdown": 0.0,
+      "pass": false
     }
   }
 }

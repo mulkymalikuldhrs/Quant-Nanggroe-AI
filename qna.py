@@ -576,25 +576,28 @@ def run_hedge(args: argparse.Namespace) -> int:
     try:
         from quant_nanggroe.pipeline.factory import create_pipeline
         pipeline = create_pipeline()
-        import asyncio
         print("  Using unified pipeline...")
         results = []
         for sym in symbols:
             print(f"  {'='*58}")
             print(f"  HF RUN: {sym}")
             print(f"  {'='*58}")
-            result = asyncio.run(pipeline.run(symbol=sym))
+            # pipeline.run() is sync — call directly, don't wrap in asyncio.run()
+            result = pipeline.run(symbol=sym)
             results.append((sym, result))
             if result:
-                verdict = "EXECUTED" if result.get("executed") else "SKIPPED"
-                print(f"  → {verdict}: {json.dumps(result, default=str, indent=4)}")
+                # PipelineResult is a dataclass — use attribute access, not .get()
+                verdict = "EXECUTED" if getattr(result, "executed", False) else "SKIPPED"
+                print(f"  → {verdict}: {result}")
             else:
                 print(f"  → FAILED: no result returned")
             print()
         print(f"  DONE — {len(results)} symbols processed")
         for sym, res in results:
-            status = "✅" if res and res.get("executed") else "⏭️"
-            print(f"  {status} {sym}: verdict={res.get('verdict','?') if res else 'NONE'}")
+            executed = getattr(res, "executed", False) if res else False
+            status = "✅" if executed else "⏭️"
+            verdict = getattr(res, "verdict", "?") if res else "NONE"
+            print(f"  {status} {sym}: verdict={verdict}")
         return 0
     except ImportError:
         logger.critical("Pipeline module NOT AVAILABLE — falling back to legacy hedge_fund")

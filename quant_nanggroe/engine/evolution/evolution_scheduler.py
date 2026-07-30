@@ -29,34 +29,32 @@ class EvolutionScheduler:
         self._reason: str = ""
 
     def should_run(self, journal: EvolutionJournal) -> bool:
-        """Return True if evolution should run."""
-        # ── Check time since last run ────────────────────────────────
-        last_run = journal.get_last_run()
-        now = datetime.now(timezone.utc)
+        """Return True if evolution should run.
 
+        Priority order:
+        1. Cooldown (blocks all runs)
+        2. Consecutive loss streak (emergency, highest priority)
+        3. Schedule time reached (time-based trigger)
+        4. Trade count >= threshold (normal trigger)
+        """
+        all_trades = journal.all_trades(limit=self.threshold_trades)
+        now = datetime.now(timezone.utc)
+        last_run = journal.get_last_run()
+        last_ts = None
         if last_run is not None:
             try:
                 last_ts = datetime.fromisoformat(last_run["timestamp"])
             except (ValueError, TypeError):
-                last_ts = datetime.min.replace(tzinfo=timezone.utc)
-
-            # Ensure timezone-aware comparison
-            if last_ts.tzinfo is None:
+                last_ts = None
+            if last_ts and last_ts.tzinfo is None:
                 last_ts = last_ts.replace(tzinfo=timezone.utc)
-            if (now - last_ts) < timedelta(hours=1):
-                # Minimum 1-hour cooldown
-                self._reason = "Cooldown active — last run < 1 hour ago"
-                return False
 
-        # ── Check trade count ────────────────────────────────────────
-        all_trades = journal.all_trades(limit=self.threshold_trades)
-        if len(all_trades) < self.threshold_trades:
-            self._reason = (
-                f"Trade count {len(all_trades)} < threshold {self.threshold_trades}"
-            )
+        # ── 1. Cooldown (always checked first) ──────────────────────
+        if last_ts and (now - last_ts) < timedelta(hours=1):
+            self._reason = "Cooldown active — last run < 1 hour ago"
             return False
 
-        # ── Check consecutive losses across all strategies ───────────
+        # ── 2. Consecutive losses (emergency — bypasses all other checks) ──
         recent = all_trades[: self.consecutive_loss * 2]
         if len(recent) >= self.consecutive_loss:
             streak = 0
@@ -69,24 +67,19 @@ class EvolutionScheduler:
                 else:
                     streak = 0
 
-        # ── Check schedule interval ──────────────────────────────────
-        if last_run is not None:
-            days_since = (now - last_ts).days
-            if days_since >= self.schedule_days:
-                self._reason = f"Scheduled — {days_since} days since last run"
+        # ── 3. Schedule time reached (fallback when insufficient trades) ──
+        if last_ts and (now - last_ts) >= timedelta(days=self.schedule_days):
+            if len(all_trades) >= 3:
+                self._reason = f"Schedule time reached ({self.schedule_days} days since last run)"
                 return True
 
-        # ── Check drawdown ───────────────────────────────────────────
-        # Only trigger if we have some history
-        if len(all_trades) >= self.threshold_trades * 2:
-            # ponytail: checks per-strategy max_drawdown from agg stats;
-            # upgrade to rolling equity-curve drawdown when equity-curve is wired.
-            self._reason = (
-                f"Not enough trades ({len(all_trades)}) for drawdown check — skipping"
-            )
-            return False
+        # ── 4. Trade count >= threshold (normal trigger) ────────────
+        if len(all_trades) >= self.threshold_trades:
+            self._reason = f"Trade count {len(all_trades)} >= threshold {self.threshold_trades}"
+            return True
 
-        self._reason = "No trigger conditions met"
+        # ── Insufficient trades ────────────────────────────────────
+        self._reason = f"Trade count {len(all_trades)} < threshold {self.threshold_trades}"
         return False
 
     def get_reason(self) -> str:

@@ -816,7 +816,7 @@ def run_once(target_symbol=None) -> dict:
             from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
             _journal = EvolutionJournal()
             _handler = ClosedTradeHandler(_journal)
-            if MT5_AVAILABLE and not _config.PAPER_TRADE:
+            if MT5_AVAILABLE:
                 try:
                     _now = datetime.now()
                     _start_30d = _now.replace(day=1) if _now.day > 1 else _now

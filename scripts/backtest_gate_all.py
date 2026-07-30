@@ -108,7 +108,7 @@ def fold_metrics(eq: np.ndarray, n_folds: int = 5):
             continue
         r = (s[-1] / s[0] - 1.0) * 100.0
         rets.append(r)
-        d = s.pct_change().dropna()
+        d = pd.Series(s).pct_change().dropna()
         shp = np.sqrt(ANN) * d.mean() / d.std() if d.std() > 0 else 0.0
         shps.append(shp)
         peak = np.maximum.accumulate(s)

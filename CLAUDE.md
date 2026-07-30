@@ -17,8 +17,11 @@ cd dashboard && npm run dev # Next.js 16 on :3000
 - `PYTHONPATH=""` mandatory — Hermes venv leaks `pydantic_core` → crash
 - `QNAI_JWT_SECRET` env var required for API boot (fail-closed)
 - **numpy 2.5.1** ✅ in .venv (reinstalled). System Python 3.14 has working numpy/pandas/scipy.
-- **pytest works** ✅ — 117 tests pass (scoring 31 + kill switch 66 + shared state 6 + risk checks 8 + guard 6)
+- **pytest works** ✅ — 173+ tests pass (scoring 31 + kill switch 66 + shared state 6 + risk checks 8 + guard 6 + evolution 68)
 - Hardware: i7-10th gen, 16GB RAM, no GPU
+- **MT5 live connected** — Valetax demo account, `history_deals_get()` works
+- **Evolution loop active** — `engine/evolution/` (8 files), integrated into `run_once()` post-execute
+- **1079 providers** — 77 engine strategies + 992 mue-x + 10 core providers feed the aggregator
 
 ## Architecture
 
@@ -26,8 +29,14 @@ cd dashboard && npm run dev # Next.js 16 on :3000
 quant_nanggroe/
   qna.py                          ← single entry point (962 lines)
   core/scoring/                   ← 8 scorers + FusionEngine + MTFEngine + WeightEvolver + TTLCache
-  hedge_fund/portfolio/main.py    ← 7-stage pipeline: run_once()
+  core/cache.py                   ← TTLCache thread-safe, wired to Economic(600s) + Sentiment(300s)
+  hedge_fund/portfolio/main.py    ← run_once() with evolution loop integrated post-execute
+  hedge_fund/signals/
+    aggregator.py                 ← Bayesian-weighted signal voting
+    registry.py                   ← ALL_PROVIDERS (77 engine + 992 mue-x + 10 core)
+    engine_strategies.py          ← auto-discovers engine strategies via StrategyRegistry
   engine/
+    evolution/                    ← NEW: 8 files — journal, handler, scheduler, scanner, disabler, weight_updater
     strategies/                   ← 84 @StrategyRegistry.register strategies
     risk/                         ← KillSwitch C5, DCC-GARCH, VaR, Kelly, constants (25 files)
     causal/                       ← Causal Macro Engine suite (14 files)
@@ -36,12 +45,18 @@ quant_nanggroe/
     backtest/                     ← Walk-forward, Monte Carlo
     guardian/                     ← Self-healing watchtower (Hermes cron 5min)
     screener/                     ← ScreenerOrchestrator
-  exchange/clients/               ← 10 REST clients (binance, okx, bybit, kraken, coinbase, etc.)
+    factors/                      ← WorldQuant 101 + GTJA 191 + Qlib 158 (NOT wired to pipeline)
+    rl/                           ← RL agents (scaffold, broken training — needs PyTorch)
+  providers/                      ← NEW: hidden_regime_provider.py + news_provider.py (3-tier each)
+  exchange/
+    clients/                      ← 10 REST clients (binance, okx, bybit, kraken, coinbase, etc.)
+    solana/                       ← SolanaBroker + Jupiter V6 swap (functional)
   agents/                         ← 16 agents
-  api/                            ← FastAPI server
+  api/                            ← FastAPI server + evolution API endpoints
   pipeline/                       ← UnifiedPipeline (auto mode-routing)
-  tests/                          ← 134 test files (env broken — 3 pre-existing paper_mode failures)
-  dashboard/                      ← Next.js 16 + React 19 + Recharts
+  database/                       ← SQLAlchemy + Alembic (homegrown migrations)
+  tests/                          ← 173+ test files (68 evolution + 105 core)
+  dashboard/                      ← Next.js 16 + React 19 + Recharts + evolution page
 ```
 
 ### Pipeline (run_once() — hedge_fund/portfolio/main.py)
