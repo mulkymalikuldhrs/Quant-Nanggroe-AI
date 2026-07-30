@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Signal(Enum):
+    # DEPRECATED — use quant_nanggroe.types.signals.SignalType instead.
     BUY = "buy"
     SELL = "sell"
     HOLD = "hold"

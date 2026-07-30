@@ -84,3 +84,19 @@ All Phase 1-3 tasks are independent and can be parallelized. Phase 4 is a read-o
 1. **README says v5.1.0, code says v4.6.0** — which is the intended truth? README was written after code, so 5.1.0 might be the actual version.
 2. **Is `node_modules/` currently tracked in git?** Needs `git ls-files dashboard/node_modules/ | head -5` to check.
 3. **Strategy consolidation** — should we finish the migration to the new path or revert the incomplete migration and delete the new path? Requires human decision after Phase 4 audit.
+
+---
+
+## 🧬 E:\ Integration — 12-Agent Council Plan (2026-07-31)
+
+**136 jam / 4-6 minggu** — Port TradeBobbyTerminal + OrderFlowMap ke QNA pipeline.
+
+| Phase | Hours | Deliverable |
+|-------|-------|-------------|
+| Phase 0 — Pre-work | 8h | Delete dead code, dedup signal/registry/COT |
+| Phase 1 — Week 1 | 24h | 5 Python providers + pipeline wiring |
+| Phase 2 — Week 2 | 32h | 9 dashboard panels + risk gates + evolution |
+| Phase 3 — Week 3 | 40h | 80% tests + alerts + data quality |
+| Phase 4 — Future | 32h | Node sidecars + multi-account + backtest |
+
+Lihat `docs/Rencana.md` untuk detail lengkap.

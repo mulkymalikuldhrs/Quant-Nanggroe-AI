@@ -24,6 +24,8 @@ MIN_CONFIDENCE_THRESHOLD: float = 0.3
 
 @dataclass
 class Signal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # All fields are in the canonical model.
     symbol: str
     side: str  # buy / sell / hold / close
     confidence: float

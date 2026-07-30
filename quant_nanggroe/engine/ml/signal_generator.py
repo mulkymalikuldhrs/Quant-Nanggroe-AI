@@ -18,6 +18,8 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+# DEPRECATED — use quant_nanggroe.types.signals instead.
+# SignalDirection -> SignalType, MLSignal fields direction/confidence/model_name/features_used all in canonical.
 class SignalDirection(str, Enum):
     """Trading signal direction."""
     BUY = "buy"

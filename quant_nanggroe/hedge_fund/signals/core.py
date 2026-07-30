@@ -9,7 +9,6 @@ reduced. If it aligns, confidence is boosted.
 """
 
 import os
-import subprocess
 import sys
 import warnings
 from datetime import datetime
@@ -203,30 +202,9 @@ def signal_aihf(symbol="EURUSD", ctx=None):
 
 
 def signal_hidden(symbol="EURUSD", ctx=None):
-    try:
-        sys.path.insert(0, 'E:/hidden-regime')
-        import yfinance as yf
-        from hidden_regime import create_financial_pipeline
-        p = create_financial_pipeline()
-        ticker = symbol.replace("EURUSD", "EURUSD=X")
-        df = yf.download(ticker, period="3mo", interval="1d", progress=False)
-        if df is not None and len(df) > 20:
-            p.data.load_data(data=df)
-            p.update()
-            model = p.model
-            if hasattr(model, 'decode_states'):
-                states = model.decode_states(p.observations) if hasattr(p, 'observations') else model.decode_states(model.emission_means_)
-                if states is not None and len(states) > 0:
-                    current_state = int(states[-1])
-                    state_labels = {0: "bearish", 1: "neutral", 2: "bullish"}
-                    if current_state in state_labels:
-                        m = {"bullish": "buy", "bearish": "sell"}
-                        reg = state_labels[current_state]
-                        if reg in m:
-                            return apply_causal_bias(
-                                {"bias": m[reg], "confidence": 0.45, "source": "hidden"}, symbol, ctx=ctx)
-    except Exception as e:
-        log.warning(f"Hidden err: {e}")
+    """REMOVED — double-counted by HiddenRegimeProvider → PositioningScorer (Path B).
+    Kept as empty stub for backward compatibility; always neutral.
+    """
     return {"bias": "neutral", "confidence": 0, "source": "hidden"}
 
 
@@ -258,16 +236,9 @@ def signal_tradingagents(symbol="EURUSD", ctx=None):
 
 
 def signal_aitrader(symbol="EURUSD", ctx=None):
-    try:
-        r = subprocess.run(["node", "src/index.js", f"--symbol={symbol}"],
-                           cwd="E:/AI-Trader", capture_output=True, text=True, timeout=15)
-        out = r.stdout.lower()
-        if "buy" in out:
-            return apply_causal_bias({"bias": "buy", "confidence": 0.5, "source": "aitrader"}, symbol, ctx=ctx)
-        if "sell" in out:
-            return apply_causal_bias({"bias": "sell", "confidence": 0.5, "source": "aitrader"}, symbol, ctx=ctx)
-    except Exception:
-        pass
+    """REMOVED — double-counted by NewsProvider → SentimentScorer (Path B).
+    Kept as empty stub for backward compatibility; always neutral.
+    """
     return {"bias": "neutral", "confidence": 0, "source": "aitrader"}
 
 

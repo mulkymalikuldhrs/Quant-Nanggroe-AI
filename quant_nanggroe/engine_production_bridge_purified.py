@@ -23,6 +23,8 @@ log = logging.getLogger("PurifiedBridge")
 # ──────────────────────────────────────────────────────────────
 @dataclass
 class Signal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # side -> signal_type, strategy -> source_strategy, all fields in canonical.
     symbol: str
     side: str                                     # "buy" or "sell"
     confidence: float = 0.5                       # 0.0 – 1.0

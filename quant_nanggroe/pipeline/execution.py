@@ -20,6 +20,8 @@ log = logging.getLogger("QNA-Pipeline-Exec")
 
 @dataclass
 class PipelineSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # All fields are in the canonical model.
     """Typed signal for pipeline execution — replaces duck-typed _SignalStub.
 
     Attributes:

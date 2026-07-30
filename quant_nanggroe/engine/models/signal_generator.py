@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TradingSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # direction (int), suggested_size, models_agree, strength all in canonical.
     """A trading signal with position recommendation.
 
     Attributes:

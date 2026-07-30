@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SentimentSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # buy/sell bools -> signal_type + indicators, short_ma/long_ma/difference/strength -> evidence/factors.
+    # This is a sentiment crossover signal — migration recommended.
     buy: bool
     sell: bool
     short_ma: float

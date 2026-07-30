@@ -1,8 +1,8 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-07-30 (Session 10 Final — Autonomous mode enabled, hybrid build+audit ready)
-**Current Phase:** Documentation COMPLETE. Next: autonomous hybrid execution (build + audit + test paralel).
+**Updated:** 2026-07-31 (E:\ Integration Phase — 12-Agent Council, 4-phase plan)
+**Current Phase:** E:\ Integration — Phase 0 Pre-work + Phase 1 Provider Ports
 
 ---
 
@@ -38,6 +38,49 @@
 1. **credentials.md.txt** — 100+ secrets in `.hermes/desktop-attachments/`
 2. **engine/factors/** — 450+ alpha factors NOT wired
 3. **engine/rl/** — needs PyTorch for real training
+
+---
+
+## NEXT ACTIONS — E:\ Integration Plan (12-Agent Council)
+
+### Phase 0 — Pre-work (8h)
+- 0.1 Delete ~15K lines dead code (exchange/clients/, engine/factors/, engine/rl/)
+- 0.2 Dedup Signal models → 1 canonical types/signals.py
+- 0.3 Dedup registries → StrategyRegistry canonical
+- 0.4 Dedup COT pipeline → 8-week percentile
+
+### Phase 1 — Week 1 (24h)
+- 1.1 Port 5 TradeBobby daemons → Python providers
+- 1.2 Extract OrderFlowMap liquidity walls
+- 1.3 Replace COT pipeline with 8-week percentile
+- 1.4 Clean pipeline wiring (remove signal_hidden/aitrader Path A)
+- 1.5 Weight governance (add missing scorers, sum=1.0)
+- 1.6 Test all new providers (mock APIs, 85% coverage)
+
+### Phase 2 — Week 2 (32h)
+- 2.1 Port 5 P2 daemons (onchain, earnings, reddit, currency, etf)
+- 2.2 Add 9 TradeBobby dashboard panels to /terminal route
+- 2.3 Evolution journal regime columns + scan_by_regime()
+- 2.4 Wire VIX gate + profile mapper + ORDER_FLOW_DIVERGENCE kill switch
+- 2.5 Wire RiskLimits.can_trade() into pipeline
+
+### Phase 3 — Week 3 (40h)
+- 3.1 Full risk integration tests
+- 3.2 Scorer unit tests (90% coverage)
+- 3.3 Evolution module tests (80% coverage)
+- 3.4 Dashboard color config + PnL attribution
+- 3.5 Paper mode MT5 PnL fix
+- 3.6 Telegram alert system
+- 3.7 Performance optimization (MT5 cache <20s)
+- 3.8 Data quality framework
+
+### Phase 4 — Future (32h)
+- 4.1 P3 daemon ports (orderflow-crypto, claude-narrator)
+- 4.2 Node.js sidecar IPC bridge
+- 4.3 Multi-account MT5
+- 4.4 Backtest validation QNA vs TradeBobby
+
+**Total: ~136 jam / 4-6 minggu**
 4. **docs/ contradiction** — 107 files, ~30 conflicting
 5. **Dashboard build** — may not compile with Next.js 16
 

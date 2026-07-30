@@ -13,6 +13,7 @@ from typing import Dict, List, Optional
 
 
 class Signal(str, Enum):
+    # DEPRECATED — use quant_nanggroe.types.signals.SignalType instead.
     """Trading signal direction."""
     BUY = "buy"
     SELL = "sell"

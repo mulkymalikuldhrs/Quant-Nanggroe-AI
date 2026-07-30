@@ -16,7 +16,7 @@ os.environ["PYTHONPATH"] = ROOT
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from quant_nanggroe.engine.registry import list_strategies
+from quant_nanggroe.engine.strategies.registry import list_strategies
 
 W = 300  # trailing window for singular generate_signal strategies (keeps per-bar O(n))
 

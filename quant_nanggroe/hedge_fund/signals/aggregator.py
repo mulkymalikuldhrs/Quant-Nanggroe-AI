@@ -47,7 +47,7 @@ CORRELATION_BUCKETS = {
     "qna_amdx": ["qna_AMDXStrategy"],
     "qna_algebra": ["qna_AlgebraStrategy"],
     "qna_quarterly": ["qna_QuarterlyTheoryStrategy"],
-    "external": ["aihf", "hidden", "tradingagents", "aitrader", "langalpha",
+    "external": ["aihf", "tradingagents", "langalpha",
                   "aimm", "kronos", "ppo"],
 }
 

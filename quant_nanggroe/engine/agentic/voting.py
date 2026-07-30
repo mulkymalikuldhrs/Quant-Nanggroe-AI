@@ -26,6 +26,8 @@ class Bias(str, Enum):
 
 @dataclass
 class Signal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # bias -> signal_type, source -> source_agent, confidence, metadata, timestamp all in canonical.
     bias: Bias
     confidence: float  # 0.0 - 1.0
     source: str

@@ -50,6 +50,8 @@ class DecisionAction(str, Enum):
 
 @dataclass
 class AgentSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # role, action -> signal_type, metrics -> evidence, all fields in canonical.
     """Signal output from a single agent."""
     role: AgentRole
     action: DecisionAction

@@ -32,7 +32,12 @@ CREATE TABLE IF NOT EXISTS closed_trades (
     spread          REAL,
     entry_reason    TEXT,
     sl_type         TEXT,
-    tags            TEXT
+    tags            TEXT,
+    vix             REAL,
+    fear_greed      INTEGER,
+    risk_index      REAL,
+    regime_label    TEXT,
+    r_multiple      REAL
 );
 
 CREATE TABLE IF NOT EXISTS evolution_runs (
@@ -97,6 +102,23 @@ class EvolutionJournal:
     def _init_db(self) -> None:
         self._conn.executescript(_DDL)
         self._conn.commit()
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Add market context columns if not present (backward-compatible)."""
+        migrations = [
+            "ALTER TABLE closed_trades ADD COLUMN vix REAL",
+            "ALTER TABLE closed_trades ADD COLUMN fear_greed INTEGER",
+            "ALTER TABLE closed_trades ADD COLUMN risk_index REAL",
+            "ALTER TABLE closed_trades ADD COLUMN regime_label TEXT",
+            "ALTER TABLE closed_trades ADD COLUMN r_multiple REAL",
+        ]
+        for sql in migrations:
+            try:
+                self._conn.execute(sql)
+            except sqlite3.OperationalError:
+                pass  # column already exists
+        self._conn.commit()
 
     def close(self) -> None:
         conn: sqlite3.Connection | None = getattr(self._local, "conn", None)
@@ -107,13 +129,19 @@ class EvolutionJournal:
     # ── closed_trades ─────────────────────────────────────────────────
 
     def record_trade(self, trade: dict[str, Any]) -> int:
-        """Insert a closed trade. Returns row id."""
+        """Insert a closed trade. Returns row id.
+
+        Market context fields (vix, fear_greed, risk_index, regime_label,
+        r_multiple) are optional — missing keys default to NULL.
+        """
         now = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         stmt = """INSERT INTO closed_trades
             (timestamp, symbol, strategy, timeframe, direction,
              entry_price, exit_price, pnl, pnl_pct, hold_hours,
-             spread, entry_reason, sl_type, tags)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+             spread, entry_reason, sl_type, tags,
+             vix, fear_greed, risk_index, regime_label, r_multiple)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?)"""
         cur = self._conn.execute(stmt, (
             trade.get("timestamp", now),
             trade.get("symbol", ""),
@@ -129,6 +157,11 @@ class EvolutionJournal:
             trade.get("entry_reason"),
             trade.get("sl_type"),
             trade.get("tags"),
+            trade.get("vix"),
+            trade.get("fear_greed"),
+            trade.get("risk_index"),
+            trade.get("regime_label"),
+            trade.get("r_multiple"),
         ))
         self._conn.commit()
         return cur.lastrowid  # type: ignore[return-value]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from datetime import datetime
 from typing import Any, Optional
 
 from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
@@ -140,3 +141,163 @@ class PerformanceScanner:
             if dd > max_dd:
                 max_dd = dd
         return max_dd
+
+    # ── Regime-stratified scanning ──────────────────────────────────
+
+    @staticmethod
+    def _vix_bucket(vix: float | None) -> str:
+        if vix is None:
+            return "unknown"
+        if vix < 15:
+            return "low"
+        if vix < 25:
+            return "normal"
+        if vix < 35:
+            return "elevated"
+        return "high"
+
+    @staticmethod
+    def _fear_greed_bucket(fg: int | None) -> str:
+        if fg is None:
+            return "unknown"
+        if fg < 20:
+            return "extreme_fear"
+        if fg < 40:
+            return "fear"
+        if fg < 60:
+            return "neutral"
+        if fg < 80:
+            return "greed"
+        return "extreme_greed"
+
+    @staticmethod
+    def _killzone_from_ts(timestamp: str | None) -> str:
+        if not timestamp:
+            return "unknown"
+        try:
+            hour = datetime.fromisoformat(timestamp).hour
+        except (ValueError, TypeError):
+            return "unknown"
+        if hour < 8:
+            return "asian"
+        if hour < 13:
+            return "london"
+        if hour < 17:
+            return "ny_overlap"
+        return "ny_afternoon"
+
+    def _metrics_from_rows(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        """Compute standard metrics from a list of trade rows."""
+        if not rows:
+            return {"trade_count": 0, "sharpe": 0.0, "win_rate": 0.0, "avg_r": 0.0}
+
+        returns = [r.get("pnl_pct", r.get("pnl", 0.0)) or 0.0 for r in rows]
+        pnls = [r.get("pnl", 0.0) or 0.0 for r in rows]
+        r_mults = [r.get("r_multiple") for r in rows if r.get("r_multiple") is not None]
+
+        n = len(rows)
+        wins = [v for v in returns if v > 0]
+        losses = [v for v in returns if v <= 0]
+        win_rate = len(wins) / n if n else 0.0
+
+        avg_return = sum(returns) / n if n else 0.0
+        std = self._std(returns)
+        sharpe = (avg_return / std) if std > 0 else 0.0
+
+        avg_r = sum(r_mults) / len(r_mults) if r_mults else 0.0
+        total_pnl = sum(pnls)
+
+        return {
+            "trade_count": n,
+            "sharpe": round(sharpe, 4),
+            "win_rate": round(win_rate, 4),
+            "avg_return": round(avg_return, 4),
+            "total_pnl": round(total_pnl, 4),
+            "avg_r": round(avg_r, 4),
+        }
+
+    def scan_by_regime(
+        self, strategy_name: str, dimension: str = "vix_bucket"
+    ) -> list[dict[str, Any]]:
+        """Return per-regime metrics for a strategy.
+
+        Supported dimensions:
+            vix_bucket      — low / normal / elevated / high
+            fear_greed_bucket — extreme_fear / fear / neutral / greed / extreme_greed
+            regime_label    — raw label from pipeline (e.g. 'bullish', 'bearish', 'ranging')
+            killzone        — asian / london / ny_overlap / ny_afternoon
+        """
+        trades = self._journal.get_recent_trades(strategy_name, limit=2000)
+        if not trades:
+            return []
+
+        buckets: dict[str, list[dict[str, Any]]] = {}
+        for t in trades:
+            if dimension == "vix_bucket":
+                key = self._vix_bucket(t.get("vix"))
+            elif dimension == "fear_greed_bucket":
+                key = self._fear_greed_bucket(t.get("fear_greed"))
+            elif dimension == "killzone":
+                key = self._killzone_from_ts(t.get("timestamp"))
+            elif dimension == "regime_label":
+                key = t.get("regime_label") or "unknown"
+            else:
+                key = str(t.get(dimension, "unknown"))
+            buckets.setdefault(key, []).append(t)
+
+        result = []
+        for label, group in sorted(buckets.items()):
+            metrics = self._metrics_from_rows(group)
+            metrics["dimension"] = dimension
+            metrics["bucket"] = label
+            metrics["strategy_name"] = strategy_name
+            result.append(metrics)
+        return result
+
+    def scan_by_combo(
+        self,
+        strategy_name: str,
+        dims: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return metrics grouped by dimension combination (multi-dim slice).
+
+        Default dims: ['regime_label', 'killzone']
+        """
+        if dims is None:
+            dims = ["regime_label", "killzone"]
+
+        trades = self._journal.get_recent_trades(strategy_name, limit=2000)
+        if not trades:
+            return []
+
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for t in trades:
+            parts: list[str] = []
+            for d in dims:
+                if d == "vix_bucket":
+                    parts.append(self._vix_bucket(t.get("vix")))
+                elif d == "fear_greed_bucket":
+                    parts.append(self._fear_greed_bucket(t.get("fear_greed")))
+                elif d == "killzone":
+                    parts.append(self._killzone_from_ts(t.get("timestamp")))
+                elif d == "regime_label":
+                    parts.append(t.get("regime_label") or "unknown")
+                else:
+                    parts.append(str(t.get(d, "unknown")))
+            key = "|".join(parts)
+            groups.setdefault(key, []).append(t)
+
+        result = []
+        for combo, group in sorted(groups.items()):
+            metrics = self._metrics_from_rows(group)
+            metrics["combo_dims"] = dims
+            metrics["combo"] = combo
+            metrics["strategy_name"] = strategy_name
+            result.append(metrics)
+        return result
+
+    def scan_all_by_regime(
+        self, strategy_names: list[str], dimension: str = "vix_bucket"
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Run scan_by_regime for multiple strategies. Returns {strategy: [metrics]}."""
+        return {name: self.scan_by_regime(name, dimension) for name in strategy_names}

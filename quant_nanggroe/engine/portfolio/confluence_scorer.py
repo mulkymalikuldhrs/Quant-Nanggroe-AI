@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ConfluenceSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # source -> source_agent, signal -> signal_type, weight all in canonical.
     source: str
     signal: str
     confidence: float

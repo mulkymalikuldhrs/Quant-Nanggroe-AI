@@ -104,6 +104,13 @@ def _try_hidden_regime_attribution(symbol: str) -> Optional[dict[str, Any]]:
 
 # ---------------------------------------------------------------------------
 # CFTC API fallback (direct HTTP, no hidden-regime dependency)
+#
+# NOTE: This is a DUPLICATE of the COT fetcher in positioning_scorer.py.
+# Both use the same Socrata API with different field names and thresholds.
+#
+# CONSOLIDATED SOURCE: quant_nanggroe/providers/cot_provider.py
+# Uses the newer 6dca-aqww.json endpoint, 8-week history, percentile scoring.
+# Long-term: replace this entire section with `cot_provider.fetch_cot()`.
 # ---------------------------------------------------------------------------
 
 _CFTC_API_URL = "https://publicreporting.cftc.gov/resource/yywx-7w5s.json"

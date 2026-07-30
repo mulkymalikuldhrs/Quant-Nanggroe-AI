@@ -15,6 +15,8 @@ TRADE_THRESHOLD = 20.0
 
 @dataclass
 class ScoredSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # composite_score, bias -> signal_type, details, override_aggregator all in canonical.
     composite_score: float
     confidence: float
     bias: str
@@ -47,6 +49,14 @@ class FusionEngine:
                 override_aggregator=False,
             )
 
+        if abs(total_weight - 1.0) > 0.001:
+            for s in self._scorers:
+                s.weight /= total_weight
+            total_weight = 1.0
+
+        assert abs(sum(s.weight for s in self._scorers) - 1.0) < 0.001, \
+            f"FusionEngine scorer weights must sum to 1.0, got {sum(s.weight for s in self._scorers)}"
+
         details: list[tuple[str, ScorerResult]] = []
         weighted_sum = 0.0
         weighted_conf_sum = 0.0
@@ -61,12 +71,8 @@ class FusionEngine:
                 logger.debug("%s failed: %s", scorer.__class__.__name__, exc)
                 details.append((scorer.__class__.__name__, ScorerResult(score=0.0, confidence=0.0)))
 
-        if total_weight > 0:
-            composite_score = weighted_sum / total_weight
-            avg_confidence = weighted_conf_sum / total_weight
-        else:
-            composite_score = 0.0
-            avg_confidence = 0.0
+        composite_score = weighted_sum
+        avg_confidence = weighted_conf_sum
 
         composite_score = _clamp(composite_score, -100.0, 100.0)
         confidence = float(math.tanh(abs(composite_score) / 40.0))

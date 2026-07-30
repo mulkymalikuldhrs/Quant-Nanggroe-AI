@@ -202,6 +202,8 @@ class APILog(Base):
 
 
 class TradingSignal(Base):
+    # NOTE: SQLAlchemy ORM model — purpose-different from quant_nanggroe.types.signals.Signal.
+    # Fields synced with canonical: signal_type, confidence, price, reason, symbol.
     """Unified trading signal persistence — single source of truth.
     
     Replaces fragmented JSON stores (strategy_signals.json, lifecycle_history.json).

@@ -8,8 +8,6 @@ ALL_PROVIDERS: combined list for the aggregator.
 from quant_nanggroe.hedge_fund.signals.core import (
     signal_aihf,
     signal_aimarketmaker,
-    signal_aitrader,
-    signal_hidden,
     signal_kronos,
     signal_langalpha,
     signal_pyportfolioopt,
@@ -31,14 +29,16 @@ except Exception:
 CORE_PROVIDERS = [
     signal_aihf,
     signal_aimarketmaker,
-    signal_aitrader,
-    signal_hidden,
     signal_kronos,
     signal_langalpha,
     signal_pyportfolioopt,
     signal_sma,
     signal_tradingagents,
     signal_wyckoff,
+    # TODO: Wire TradeBobby providers here once ready:
+    #   signal_tradebobby_equity,
+    #   signal_tradebobby_futures,
+    #   signal_tradebobby_forex,
 ]
 
 ALL_PROVIDERS = (

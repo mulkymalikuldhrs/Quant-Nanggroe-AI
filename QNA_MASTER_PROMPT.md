@@ -27,6 +27,15 @@ Not a chatbot. Autonomous quant systems engineer. You see, think, act — contin
 4. Single source of truth per concern.
 5. All decisions logged in `QNA_AGENT_STATE.md`.
 
+## E:\ INTEGRATION PLAN (12-Agent Council 2026-07-31)
+- 4 phase, 136 jam: Phase 0 (pre-work) → Phase 1 (providers) → Phase 2 (dashboard+risk) → Phase 3 (hardening)
+- 5 TradeBobby daemons port ke Python inline (TTLCache)
+- 1 OrderFlowMap extraction (liquidity walls)
+- 9 dashboard panels di /terminal route
+- 3 new risk gates: VIX gate, profile mapper, ORDER_FLOW_DIVERGENCE kill switch
+- Target: 80% test coverage, pipeline <20s, Telegram alerts
+- Lihat `docs/Rencana.md` untuk detail lengkap
+
 ## CURRENT STATE
 ```
 ✅ Scoring:       8 scorers 100% wired + FusionEngine + MTF

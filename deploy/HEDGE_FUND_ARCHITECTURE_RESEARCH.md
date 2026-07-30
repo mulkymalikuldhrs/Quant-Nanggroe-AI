@@ -232,3 +232,19 @@ UUID + idempotency key so fills can't be double-counted after failover.
   research & batch, Go for gateway services
 - **Monitoring:** Prometheus + Grafana for metrics, OpenTelemetry for
   distributed tracing across the order lifecycle
+
+---
+
+## 🧬 E:\ Integration — 12-Agent Council Plan (2026-07-31)
+
+**136 jam / 4-6 minggu** — Port TradeBobbyTerminal + OrderFlowMap ke QNA pipeline.
+
+| Phase | Hours | Deliverable |
+|-------|-------|-------------|
+| Phase 0 — Pre-work | 8h | Delete dead code, dedup signal/registry/COT |
+| Phase 1 — Week 1 | 24h | 5 Python providers + pipeline wiring |
+| Phase 2 — Week 2 | 32h | 9 dashboard panels + risk gates + evolution |
+| Phase 3 — Week 3 | 40h | 80% tests + alerts + data quality |
+| Phase 4 — Future | 32h | Node sidecars + multi-account + backtest |
+
+Lihat `docs/Rencana.md` untuk detail lengkap.

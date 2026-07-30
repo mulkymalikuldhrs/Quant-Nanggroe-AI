@@ -17,6 +17,8 @@ class AIHFAction(str, Enum):
 
 @dataclass
 class AIHFSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # action -> signal_type, agent_name -> source_agent, reasoning, confidence, timestamp all in canonical.
     action: AIHFAction; confidence: float; agent_name: str; reasoning: str = ""
     timestamp: str = ""
     def __post_init__(self):

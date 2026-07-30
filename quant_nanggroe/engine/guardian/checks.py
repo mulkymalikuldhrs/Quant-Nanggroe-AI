@@ -153,8 +153,8 @@ def check_strategy_registry() -> CheckResult:
     if count == 0:
         return CheckResult("strategy_registry", False, Severity.CRITICAL,
                            "Strategy registry EMPTY (0 strategies loaded)",
-                           "Run AutoRegistry scan; ensure all strategy modules are imported by "
-                           "engine/strategies/__init__.py and QNA_USE_ADAPTIVE_PIPELINE=1.")
+                           "Verify all strategy modules use @StrategyRegistry.register decorator and are "
+                           "imported by engine/strategies/__init__.py.")
     return CheckResult("strategy_registry", True, Severity.INFO,
                        f"Strategy registry live: {count} strategies", "")
 

@@ -186,14 +186,13 @@
 @keyframes pnlFlashRed {
   0% { background-color: rgba(248, 113, 113, 0); }
   30% { background-color: rgba(248, 113, 113, 0.15); }
-  100% { background-color: rgba(248, 113, 113, 0); }
-}
+  100% { background-color: rgba(248, 113, 
 
-/* ── Base Styles ────────────────────────────────────────────────── */
+113, 0); }\n}\n\n/* === LIGHT THEME === */\n.light .glass,\n.light .glass-strong,\n.light .glass-light {\n  background: var(--color-surface-glass);\n  border-color: var(--color-border-glass);\n}\n.light .fluid-island,\n.light .island-panel {\n  background: var(--color-surface-island);\n  border-color: var(--color-border-default);\n}\n.light .bbg-cell {\n  background: var(--color-bbg-cell);\n  border-color: var(--color-border-subtle);\n}\n.light .double-bezel {\n  background: var(--color-surface-card);\n  border-color: var(--color-border-subtle);\n}\n.light ::selection {\n  background: rgba(217,164,65,0.20);\n  color: #000000;\n}\n\n.light {\n  --color-primary: #FFFFFF;\n  --color-primary-light: #F8F9FC;\n  --color-primary-lighter: #F1F3F8;\n  --color-accent: #D9A441;\n  --color-accent-light: #E5BC6B;\n  --color-accent-dark: #B8892F;\n  --color-surface-base: #FFFFFF;\n  --color-surface-elevated: #F8F9FC;\n  --color-surface-glass: rgba(255,255,255,0.85);\n  --color-surface-card: rgba(0,0,0,0.02);\n  --color-surface-hover: rgba(0,0,0,0.04);\n  --color-surface-active: rgba(0,0,0,0.08);\n  --color-surface-island: rgba(255,255,255,0.95);\n  --color-border-subtle: rgba(0,0,0,0.05);\n  --color-border-default: rgba(0,0,0,0.10);\n  --color-border-strong: rgba(0,0,0,0.18);\n  --color-border-glass: rgba(0,0,0,0.08);\n  --color-border-hairline: rgba(0,0,0,0.04);\n  --color-text-primary: rgba(0,0,0,0.92);\n  --color-text-secondary: rgba(0,0,0,0.56);\n  --color-text-tertiary: rgba(0,0,0,0.32);\n  --color-text-quaternary: rgba(0,0,0,0.16);\n  --color-bbg-bg: #FFFFFF;\n  --color-bbg-cell: #F8F9FC;\n  --color-bbg-highlight: rgba(217,164,65,0.10);\n}\n\n.light .orb-1 { background: rgba(217,164,65,0.03); }\n.light .orb-2 { background: rgba(59,130,246,0.02); }\n.light .orb-3 { background: rgba(168,85,247,0.015); }\n\nBase Styles ────────────────────────────────────────────────── */
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;\n\n.light * {\n  scrollbar-color: rgba(0, 0, 0, 0.06) transparent;\n}
 }
 
 *::-webkit-scrollbar {
@@ -216,8 +215,8 @@
 }
 
 body {
-  background-color: #0F172A;
-  color: rgba(255, 255, 255, 0.92);
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

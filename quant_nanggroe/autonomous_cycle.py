@@ -38,7 +38,6 @@ from engine_production_bridge_purified import (
 
 # Try to import QNA strategy registry
 try:
-    from quant_nanggroe.engine.registry import AutoRegistry
     from quant_nanggroe.engine.strategies.registry import StrategyRegistry
     QNA_STRATEGIES_AVAILABLE = True
 except ImportError:
@@ -165,24 +164,16 @@ class StrategySignalGenerator:
             return
         
         try:
-            # Load from AutoRegistry
-            auto_reg = AutoRegistry()
-            for name, strategy_class in auto_reg._strategies.items():
-                try:
-                    self.strategies[name] = strategy_class()
-                    log.info(f"Loaded strategy: {name}")
-                except Exception as e:
-                    log.debug(f"Failed to load {name}: {e}")
-            
-            # Also load from StrategyRegistry
+            # Load from StrategyRegistry (canonical source)
+            from quant_nanggroe.engine.strategies import create_strategy
             for name in StrategyRegistry.list_strategies():
-                if name not in self.strategies:
-                    try:
-                        strat = StrategyRegistry.get_strategy(name)
+                try:
+                    strat = create_strategy(name)
+                    if strat is not None:
                         self.strategies[name] = strat
                         log.info(f"Loaded strategy: {name}")
-                    except Exception as e:
-                        log.debug(f"Failed to load {name}: {e}")
+                except Exception as e:
+                    log.debug(f"Failed to load {name}: {e}")
             
             log.info(f"Total strategies loaded: {len(self.strategies)}")
         except Exception as e:

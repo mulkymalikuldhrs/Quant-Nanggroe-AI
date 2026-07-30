@@ -99,6 +99,7 @@ class KillSwitchTrigger(str, Enum):
     COMPLIANCE_VIOLATION = "compliance_violation"
     DATA_STALE = "data_stale"
     CORRELATION_HERDING = "correlation_herding"
+    ORDER_FLOW_DIVERGENCE = "order_flow_divergence"
 
 
 class KillSwitchStatus(str, Enum):

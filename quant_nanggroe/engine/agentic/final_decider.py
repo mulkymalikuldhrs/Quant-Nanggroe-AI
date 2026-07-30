@@ -24,6 +24,8 @@ class RegimeState:
 
 @dataclass
 class StrategySignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # strategy_name -> source_strategy, action -> signal_type, regime_compatibility all in canonical.
     strategy_name: str = ""
     symbol: str = ""
     action: Action = Action.HOLD

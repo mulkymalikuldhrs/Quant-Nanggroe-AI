@@ -616,3 +616,26 @@ Estimasi 6 minggu tapi bisa molor karena:
 3. **Mental energy** — baca 83 strategy files, 24 risk files, 20 provider files buat mastiin gak ada yang kehapus
 
 **Realistis: 6-8 minggu** untuk 300/300.
+
+---
+
+## 🧬 E:\ Integration — 12-Agent Council Plan (2026-07-31)
+
+**136 jam / 4-6 minggu** — Port TradeBobbyTerminal + OrderFlowMap ke QNA pipeline.
+
+### Phase 0: Pre-work (8h)
+Delete dead code, dedup signal models/registries/COT pipeline.
+
+### Phase 1: Provider Ports (24h)
+5 Python providers dari TradeBobby daemons: MacroPulse, CryptoPulse, NewsScanner, COTFetcher, LiquidityWalls.
+
+### Phase 2: Dashboard + Risk (32h)
+9 Bloomberg-style panels di `/terminal`, VIX gate, ORDER_FLOW_DIVERGENCE kill switch, evolution enhancement.
+
+### Phase 3: Hardening (40h)
+80% test coverage, Telegram alerts, data quality, pipeline <20s.
+
+### Phase 4: Future (32h)
+Node.js sidecars, multi-account MT5, backtest validation.
+
+Lihat `docs/Rencana.md` untuk detail lengkap.

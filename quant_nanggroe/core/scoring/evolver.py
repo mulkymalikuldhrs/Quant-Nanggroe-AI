@@ -15,10 +15,10 @@ from __future__ import annotations
 import json
 import logging
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from quant_nanggroe.core.scoring.base import BaseScorer, _clamp
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
-DEFAULT_SCORER_WEIGHTS: dict[str, float] = {
+_RAW_SCORER_WEIGHTS: dict[str, float] = {
     "BondScorer": 0.10,
     "EconomicScorer": 0.20,
     "GeopoliticalScorer": 0.05,
@@ -35,8 +35,12 @@ DEFAULT_SCORER_WEIGHTS: dict[str, float] = {
     "SentimentScorer": 0.10,
     "TechnicalScorer": 0.10,
     "VolatilityScorer": 0.05,
-    "CryptoScorer": 0.00,
-    "NewsScorer": 0.00,
+    "CryptoScorer": 0.08,
+    "NewsScorer": 0.02,
+}
+_NORMALIZER = 1.0 / sum(_RAW_SCORER_WEIGHTS.values())
+DEFAULT_SCORER_WEIGHTS: dict[str, float] = {
+    k: v * _NORMALIZER for k, v in _RAW_SCORER_WEIGHTS.items()
 }
 
 assert abs(sum(DEFAULT_SCORER_WEIGHTS.values()) - 1.0) < 0.001, \

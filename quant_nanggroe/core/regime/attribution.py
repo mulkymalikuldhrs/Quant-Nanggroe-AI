@@ -13,6 +13,7 @@ class AttributionResult:
 
 
 class SignalAttribution:
+    # NOTE: Service class, not a signal model. Uses dict-based signals — consider migrating to quant_nanggroe.types.signals.Signal.
     def __init__(self, source_labels: list[str] | None = None):
         self.source_labels = source_labels or [
             "technical",

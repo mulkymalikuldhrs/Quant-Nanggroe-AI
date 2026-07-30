@@ -12,6 +12,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
 @dataclass
 class SignalRecord:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # bias -> signal_type, provider_name -> source_agent, all fields in canonical.
     provider_name: str
     symbol: str
     timestamp: str

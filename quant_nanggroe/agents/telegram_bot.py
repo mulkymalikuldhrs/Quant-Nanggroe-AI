@@ -42,6 +42,9 @@ SIGNAL_TEMPLATE = (
 
 @dataclass
 class SignalResult:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # side -> signal_type, entry_price, stop_loss, take_profit, rrr -> risk_reward_ratio,
+    # regime, all signal fields in canonical.
     symbol: str
     side: str
     entry_price: float

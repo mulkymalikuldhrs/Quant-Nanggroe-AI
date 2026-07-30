@@ -25,6 +25,15 @@ Coordinate all 7 Hermes profiles for QNA hedge fund autonomous operation. Zero c
 - gateway-health-watchdog: ✅ True
 - hedge-fund-runner: ❌ Paused (legacy, replaced by qna-hedge-fund-production)
 
+## E:\ INTEGRATION — 12-Agent Council Plan (2026-07-31)
+- **Total:** 136 jam / 4-6 minggu
+- **Phase 0:** Pre-work consolidation (dead code, signal/registry/COT dedup)
+- **Phase 1:** 5 TradeBobby daemons → Python providers + pipeline wiring
+- **Phase 2:** 9 dashboard panels + evolution enhancement + risk gates
+- **Phase 3:** Hardening (tests, alerts, perf, data quality)
+- **Phase 4:** Node sidecars + multi-account + backtest
+- **Key decision:** P0-P2 daemons = Python inline (TTLCache), only MCP scanners = Node.js sidecar
+
 ## Codebase Status (Session 9-10)
 - Pipeline: 7-stage, evolution loop integrated
 - Scoring: 8 scorers 100% wired + MTF engine + WeightEvolver

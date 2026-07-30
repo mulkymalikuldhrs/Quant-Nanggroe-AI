@@ -8,6 +8,8 @@ import numpy as np
 
 @dataclass
 class GoldSignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # direction -> signal_type, reasons -> factors, all fields in canonical.
     timestamp: datetime
     direction: str  # long/short/neutral
     confidence: float

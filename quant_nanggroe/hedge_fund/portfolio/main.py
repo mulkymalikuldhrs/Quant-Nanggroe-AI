@@ -208,7 +208,7 @@ def _weekly_pnl() -> float:
 def _build_causal_context(dxy_pct: float = 0.0, zb_pct: float = 0.0) -> Optional[CausalContext]:
     """Instantiate MasterQuantNanggroeEngine and produce a CausalContext.
 
-    Fetches event-based biases and macro weather regime.
+    Fetches event-based biases, macro weather regime, and HMM regime probabilities.
     Returns None on any failure (graceful degradation).
     """
     try:
@@ -225,9 +225,36 @@ def _build_causal_context(dxy_pct: float = 0.0, zb_pct: float = 0.0) -> Optional
         )
         weather = str(weather_raw).lower().replace("neutral_mixed", "neutral") if weather_raw else "neutral"
 
-        ctx = CausalContext(biases=biases, macro_regime=weather)
-        log.info("CausalContext: %d biases, regime=%s, dxy=%.2f%%, zb=%.2f%%",
-                 len(biases), weather, dxy_pct, zb_pct)
+        hmm_probs: Dict[str, float] = {}
+        hmm_dom: str = ""
+        try:
+            from quant_nanggroe.engine.regime.hmm_regime import (
+                REGIME_LABELS,
+                build_features,
+                fetch_observables,
+                HMMRegimeDetector,
+            )
+            obs = fetch_observables()
+            if not obs.empty:
+                feat = build_features(obs)
+                if not feat.empty:
+                    detector = HMMRegimeDetector(window=252, seed=42)
+                    hmm_result = detector.fit_predict(feat, current_row=feat.iloc[-1])
+                    hmm_probs = dict(hmm_result.probabilities)
+                    hmm_dom = str(hmm_result.label)
+        except Exception as hmm_e:
+            log.debug("HMM regime detection failed: %s", hmm_e)
+
+        ctx = CausalContext(
+            biases=biases,
+            macro_regime=weather,
+            hmm_regime_probs=hmm_probs,
+            hmm_dominant=hmm_dom,
+        )
+        log.info(
+            "CausalContext: %d biases, regime=%s, hmm=%s, dxy=%.2f%%, zb=%.2f%%",
+            len(biases), weather, hmm_dom or "n/a", dxy_pct, zb_pct,
+        )
         return ctx
     except Exception as e:
         log.warning("CausalContext init skipped — proceeding without macro bias: %s", e)
@@ -564,7 +591,7 @@ def _pipeline_vote(result: dict) -> dict:
 # ── Pipeline Stage 5: Position Sizing + Risk Check ───────────────────
 
 def _pipeline_risk_check(result: dict) -> dict:
-    """Size position, build proposal, run KillSwitch + risk guard."""
+    """Size position, build proposal, run KillSwitch + risk guard + VIX gate + profile + orderflow."""
     signal = result["_signal"]
     symbol = result["symbol"]
 
@@ -584,6 +611,51 @@ def _pipeline_risk_check(result: dict) -> dict:
     market_atr = calc_atr(symbol) or 0.001
     sizing = calculate_position_size(signal, real_balance, atr=market_atr)
 
+    # ── 1. VIX Gate ──────────────────────────────────────────────
+    _vix_reduce = False
+    try:
+        from quant_nanggroe.engine.risk.vix_gate import VixGate
+        _vix = VixGate()
+        _vix_result = _vix.evaluate()
+        result["_vix_gate"] = {
+            "vix_value": _vix_result.vix_value,
+            "block_trading": _vix_result.block_trading,
+            "reduce_size": _vix_result.reduce_size,
+            "reason": _vix_result.reason,
+        }
+        if _vix_result.block_trading:
+            log.warning("VIX GATE VETO — %s", _vix_result.reason)
+            result["status"] = "vix_blocked"
+            result["_early_exit"] = True
+            return result
+        if _vix_result.reduce_size:
+            _vix_reduce = True
+            log.info("VIX reduce: position size will be halved")
+    except Exception as _vix_e:
+        log.debug("VixGate skipped: %s", _vix_e)
+
+    # ── 2. Profile Mapper ─────────────────────────────────────────
+    _profile = None
+    try:
+        from quant_nanggroe.engine.risk.profile_mapper import ProfileMapper
+        _mapper = ProfileMapper()
+        _strategy_type = signal.get("strategy", signal.get("strategy_type", "smc"))
+        _tf = result.get("_mtf_result", None)
+        _tf_str = getattr(_tf, "timeframe", "H1") if _tf else "H1"
+        _profile = _mapper.get_profile(symbol, _strategy_type, str(_tf_str))
+        result["_profile"] = {
+            "max_risk_pct": _profile.max_risk_pct,
+            "min_rr": _profile.min_rr,
+            "max_correlation": _profile.max_correlation,
+            "preferred_killzones": list(_profile.preferred_killzones),
+        }
+        log.info("Profile %s/%s/%s: risk=%.2f%% rr=%.1f corr=%.2f",
+                 symbol, _strategy_type, _tf_str,
+                 _profile.max_risk_pct, _profile.min_rr, _profile.max_correlation)
+    except Exception as _prof_e:
+        log.debug("ProfileMapper skipped: %s", _prof_e)
+
+    # ── Risk parity sizing ───────────────────────────────────────
     _rp_weight = 1.0
     try:
         from quant_nanggroe.engine.portfolio.risk_parity_bridgewater import RiskParityAllocator
@@ -598,9 +670,23 @@ def _pipeline_risk_check(result: dict) -> dict:
     except Exception as _rp_e:
         log.warning("RiskParityAllocator skipped: %s", _rp_e)
 
+    if _vix_reduce and sizing["volume"] > 0:
+        sizing["volume"] = sizing["volume"] * 0.5
+        log.info("VIX REDUCE: position size halved to %.4f", sizing["volume"])
+
     if result.get("mtf_reduce") and sizing["volume"] > 0:
         sizing["volume"] = sizing["volume"] * 0.5
         log.info("MTF REDUCE: position size halved to %.4f", sizing["volume"])
+
+    # ── Apply profile max_risk_pct to sizing ─────────────────────
+    if _profile is not None and sizing.get("volume", 0) > 0:
+        _profile_max_risk_frac = _profile.max_risk_pct / 100.0
+        _current_risk_frac = (sizing["volume"] * signal.get("price", 1.0)) / real_balance if real_balance > 0 else 0
+        if _current_risk_frac > _profile_max_risk_frac:
+            _adjust = _profile_max_risk_frac / max(_current_risk_frac, 1e-9)
+            sizing["volume"] = sizing["volume"] * _adjust
+            log.info("Profile cap: volume reduced by %.2fx to match max_risk_pct=%.2f%%",
+                     _adjust, _profile.max_risk_pct)
 
     proposal = {
         "symbol": symbol,
@@ -627,6 +713,46 @@ def _pipeline_risk_check(result: dict) -> dict:
         result["kill_level"] = ks.current_level.value
         result["_early_exit"] = True
         return result
+
+    # ── 3. Order Flow Divergence Monitor ──────────────────────────
+    try:
+        from quant_nanggroe.engine.risk.orderflow_monitor import OrderFlowRiskMonitor
+        _ofm = OrderFlowRiskMonitor()
+        _positions = result.get("_positions") or []
+        _active_symbols = [p.symbol if hasattr(p, "symbol") else str(p) for p in _positions]
+        if MT5_AVAILABLE and _active_symbols:
+            for _sym in _active_symbols:
+                try:
+                    _tick = mt5.symbol_info_tick(_sym)
+                    if _tick is not None:
+                        _price = (_tick.bid + _tick.ask) / 2.0
+                        _price_delta = getattr(_tick, "change", 0.0) or 0.0
+                        _volume = getattr(_tick, "volume", 0) or 0
+                        _cvd_delta = (_volume / max(_price, 1e-9)) * (1 if _tick.last >= _price else -1) if hasattr(_tick, "last") else 0.0
+                        _ofm.feed(_sym, cvd_delta=_cvd_delta, price_delta=_price_delta)
+                except Exception:
+                    pass
+        _of_level = _ofm.evaluate(_active_symbols)
+        if _of_level is not None:
+            _ofm.apply_kill_switch(_active_symbols, ks)
+            result["_orderflow"] = {
+                "triggered": True,
+                "level": _of_level.value,
+                "regimes": {s: _ofm.get_regime(s).value for s in _active_symbols},
+            }
+            if not ks.can_trade():
+                log.warning("ORDER FLOW DIVERGENCE VETO — %s", _of_level.value)
+                result["status"] = "orderflow_veto"
+                result["kill_level"] = ks.current_level.value
+                result["_early_exit"] = True
+                return result
+        else:
+            result["_orderflow"] = {
+                "triggered": False,
+                "regimes": {s: _ofm.get_regime(s).value for s in _active_symbols} if _active_symbols else {},
+            }
+    except Exception as _of_e:
+        log.debug("OrderFlowMonitor skipped: %s", _of_e)
 
     rg_result = risk_guard_approve(proposal)
     risk_score = rg_result.get("risk_score", rg_result.get("score", 0))

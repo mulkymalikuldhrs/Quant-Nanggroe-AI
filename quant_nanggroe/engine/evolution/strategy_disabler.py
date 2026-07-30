@@ -2,20 +2,32 @@
 
 Delegates to StrategyRegistry for lifecycle-aware disabling. Underperformers
 are not instantiated for future trading cycles.
+
+Regime-aware: strategies with strong performance in a specific market regime
+are flagged as regime-dependent rather than disabled outright.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
+from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 logger = logging.getLogger(__name__)
 
+REGIME_MIN_WIN_RATE = 0.62
+REGIME_MIN_TRADES = 5
+REGIME_DIMENSIONS = ["vix_bucket", "fear_greed_bucket", "regime_label", "killzone"]
+
 
 class StrategyDisabler:
-    """Evaluate strategy performance and recommend disabling."""
+    """Evaluate strategy performance and recommend disabling.
+
+    Supports regime-aware gating: strategies with a specific regime edge
+    are preserved as regime-dependent rather than fully disabled.
+    """
 
     def __init__(
         self,
@@ -23,11 +35,13 @@ class StrategyDisabler:
         min_win_rate: float = 0.40,
         min_trades: int = 10,
         max_drawdown: float = 15.0,
+        journal: Optional[EvolutionJournal] = None,
     ) -> None:
         self.min_sharpe = min_sharpe
         self.min_win_rate = min_win_rate
         self.min_trades = min_trades
         self.max_drawdown = max_drawdown
+        self._journal = journal
 
     def evaluate(
         self, performance_results: list[dict[str, Any]]
@@ -68,6 +82,103 @@ class StrategyDisabler:
                 })
 
         return to_disable
+
+    def evaluate_with_regime(
+        self, performance_results: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Extend evaluate() with regime-aware gating.
+
+        Returns:
+            to_disable: list of strategies with no regime edge (safe to disable)
+            regime_dependent: list of strategies that underperform globally but
+                              have strong regime-specific edge (preserved)
+        """
+        candidates = self.evaluate(performance_results)
+        to_disable: list[dict[str, Any]] = []
+        regime_dependent: list[dict[str, Any]] = []
+
+        for candidate in candidates:
+            name = candidate["strategy_name"]
+
+            if self._journal is not None and self._has_regime_edge(name):
+                regime_dependent.append({
+                    "strategy_name": name,
+                    "reason": candidate["reason"],
+                    "regime_edge": self._find_best_regime(name),
+                    "metrics": candidate["metrics"],
+                })
+                logger.info(
+                    "Regime gate saved '%s' — global %.1f%% WR but regime edge detected",
+                    name,
+                    candidate["metrics"].get("win_rate", 0.0) * 100,
+                )
+            else:
+                to_disable.append(candidate)
+
+        return {
+            "to_disable": to_disable,
+            "regime_dependent": regime_dependent,
+        }
+
+    def _has_regime_edge(self, strategy_name: str) -> bool:
+        """Check if strategy has any regime bucket with win_rate >= threshold."""
+        best = self._find_best_regime(strategy_name)
+        if best is None:
+            return False
+        return best["win_rate"] >= REGIME_MIN_WIN_RATE
+
+    def _find_best_regime(self, strategy_name: str) -> dict[str, Any] | None:
+        """Return the best regime bucket for a strategy, or None."""
+        if self._journal is None:
+            return None
+
+        from quant_nanggroe.engine.evolution.performance_scanner import (
+            PerformanceScanner,
+        )
+
+        scanner = PerformanceScanner(self._journal)
+        best: dict[str, Any] | None = None
+
+        for dim in REGIME_DIMENSIONS:
+            buckets = scanner.scan_by_regime(strategy_name, dimension=dim)
+            for b in buckets:
+                if b["trade_count"] < REGIME_MIN_TRADES:
+                    continue
+                if best is None or b["win_rate"] > best["win_rate"]:
+                    best = {
+                        "dimension": dim,
+                        "bucket": b["bucket"],
+                        "win_rate": b["win_rate"],
+                        "sharpe": b["sharpe"],
+                        "trade_count": b["trade_count"],
+                        "avg_r": b["avg_r"],
+                    }
+
+        return best
+
+    def report_regime_specialists(
+        self, strategy_names: list[str]
+    ) -> list[dict[str, Any]]:
+        """List strategies with strong regime-specific performance.
+
+        Returns entries sorted by best regime win_rate descending.
+        """
+        specialists: list[dict[str, Any]] = []
+
+        for name in strategy_names:
+            best = self._find_best_regime(name)
+            if best is not None and best["win_rate"] >= REGIME_MIN_WIN_RATE:
+                specialists.append({
+                    "strategy_name": name,
+                    "best_regime": best["bucket"],
+                    "regime_dim": best["dimension"],
+                    "regime_win_rate": best["win_rate"],
+                    "regime_sharpe": best["sharpe"],
+                    "regime_trades": best["trade_count"],
+                    "regime_avg_r": best["avg_r"],
+                })
+
+        return sorted(specialists, key=lambda r: r["regime_win_rate"], reverse=True)
 
     def disable(self, strategy_name: str) -> bool:
         """Mark a strategy as disabled via StrategyRegistry.

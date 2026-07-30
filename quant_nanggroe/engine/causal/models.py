@@ -13,6 +13,8 @@ class CausalContext:
     biases: Dict[str, float] = field(default_factory=dict)
     macro_regime: str = "neutral"
     volatility_regime: str = "normal"
+    hmm_regime_probs: Dict[str, float] = field(default_factory=dict)
+    hmm_dominant: str = ""
 
     def bias_for(self, symbol: str) -> float:
         return self.biases.get(symbol.upper(), 0.0)

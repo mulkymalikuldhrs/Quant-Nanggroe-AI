@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class KellySignal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # conviction, regime, metadata all in canonical (kelly-specific sizing fields unique to this use case).
     """Output from Kelly calculator for a single period."""
     timestamp: datetime
     symbol: str

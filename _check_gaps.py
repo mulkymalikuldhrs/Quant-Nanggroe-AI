@@ -7,8 +7,9 @@ import importlib
 
 quant_root = Path(r'D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe/engine/strategies')
 
-# Get registered names from AutoRegistry
-from quant_nanggroe.engine.registry import list_strategies, list_categories
+# Get registered names from StrategyRegistry
+from quant_nanggroe.engine.strategies.registry import list_strategies
+from quant_nanggroe.engine.registry import list_categories
 registered = list_strategies()
 reg_mods = {cls.__module__ for cls in registered.values()}
 

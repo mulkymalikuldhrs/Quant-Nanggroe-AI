@@ -28,6 +28,8 @@ log = logging.getLogger("QNA-Prod")
 
 @dataclass
 class Signal:
+    # DEPRECATED — use quant_nanggroe.types.signals.Signal instead.
+    # side -> signal_type, strategy -> source_strategy, reason -> reasoning, all fields in canonical.
     symbol: str
     side: str  # "buy", "sell", "hold", "close"
     confidence: float = 0.5

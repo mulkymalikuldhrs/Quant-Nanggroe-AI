@@ -16,7 +16,7 @@ _NEWS_CACHE = TTLCache(default_ttl=300)
 
 
 class NewsScorer(BaseScorer):
-    weight: float = 0.05
+    weight: float = 0.02
 
     def __init__(self, api_key: Optional[str] = None):
         self._api_key = api_key
