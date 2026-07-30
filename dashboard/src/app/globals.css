@@ -583,7 +583,7 @@ body {
 
 .chart-dark iframe,
 .chart-dark canvas {
-  background: #050510 !important;
+  background: #0F172A !important;
 }
 
 /* ── Staggered Entry Animations ──────────────────────────────────── */
@@ -636,7 +636,7 @@ body {
   left: 0;
   width: 0;
   height: 1.5px;
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: linear-gradient(90deg, #D9A441, #E5BC6B);
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -655,9 +655,9 @@ body {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  background: rgba(16, 185, 129, 0.08);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: rgba(217, 164, 65, 0.08);
+  color: #D9A441;
+  border: 1px solid rgba(217, 164, 65, 0.15);
   margin-bottom: 12px;
 }
 
@@ -677,6 +677,28 @@ body {
   padding-top: 10rem;
   padding-bottom: 10rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COLOR PALETTE CONFIGURATION
+   ═══════════════════════════════════════════════════════════════════
+
+   Core Palette:
+   --color-primary:    #0F172A  (Deep navy — main background)
+   --color-accent:     #D9A441  (Gold — premium accent)
+
+   To change theme, update these 2 values in @theme block above.
+   All semantic colors derive from analog RGB of primary/accent.
+
+   Analog RGB Reference:
+   Primary #0F172A → RGB(15, 23, 42) → Hue 216°
+   Accent  #D9A441 → RGB(217, 164, 65) → Hue 40°
+
+   Derivatives:
+   --color-primary-light:   #1E293B  (elevated surface)
+   --color-primary-lighter: #334155  (card/island surface)
+   --color-accent-light:    #E5BC6B  (hover/active)
+   --color-accent-dark:     #B8892F  (pressed/deep)
+   ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Ghost Button (Pure text, no border/bg until hover) ─────────── */
 
@@ -802,7 +824,7 @@ body {
 /* ── Selection ───────────────────────────────────────────────────── */
 
 ::selection {
-  background: rgba(16, 185, 129, 0.3);
+  background: rgba(217, 164, 65, 0.3);
   color: white;
 }
 
@@ -830,3 +852,28 @@ body {
     padding-bottom: 4rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COLOR PALETTE — QUANT NANGGROE AI
+   ═══════════════════════════════════════════════════════════════════
+
+   PRIMARY: #0F172A (Deep Navy)
+   ACCENT:  #D9A441 (Gold)
+
+   To customize:
+   1. Change --color-primary and --color-accent in @theme
+   2. All derivatives auto-update via CSS variables
+   3. No hardcoded colors in component files
+
+   Full palette:
+   --color-primary:       #0F172A  (BG, body)
+   --color-primary-light: #1E293B  (elevated, cards)
+   --color-primary-lighter: #334155  (islands, panels)
+   --color-accent:        #D9A441  (brand, CTA, highlights)
+   --color-accent-light:  #E5BC6B  (hover states)
+   --color-accent-dark:   #B8892F  (pressed states)
+   --color-profit:        #34d399  (green — PnL positive)
+   --color-loss:          #f87171  (red — PnL negative)
+   --color-warning:       #fbbf24  (amber — alerts)
+   --color-info:          #60a5fa  (blue — info)
+   ═══════════════════════════════════════════════════════════════════ */

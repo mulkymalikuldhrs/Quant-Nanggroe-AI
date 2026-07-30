@@ -352,6 +352,12 @@ class RiskManager:
         # constitutional daily/weekly-loss veto sees real numbers (not 0.0).
         self._sync_realized_pnl()
 
+        # Auto-check kill switch on current P&L state BEFORE checking is_active.
+        # Without this, _auto_check_kill_switch only fires from update_pnl (trade close)
+        # or _sync_realized_pnl (MT5 handle required). In test/demo mode with no MT5
+        # handle, the kill switch would never activate on a persisted loss from a prior run.
+        self._auto_check_kill_switch()
+
         # First check kill switch
         if self.kill_switch.is_active:
             obs.metrics.risk_check_duration_seconds.record(

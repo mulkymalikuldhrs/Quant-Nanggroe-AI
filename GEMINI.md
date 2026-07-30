@@ -7,25 +7,27 @@ Canonical instructions in **AGENTS.md**. This is a quick reference.
 **Critical:**
 - `PYTHONPATH=""` always — Hermes venv leak breaks `pydantic_core`
 - Fail-closed: C5 KillSwitch cross-process shared state
-- ✅ **Scoring FULLY WIRED** — FusionEngine + 8 scorers + MTFEngine (4-frame) + WeightEvolver (self-evolve) active in 7-stage pipeline
+- ✅ **Scoring FULLY WIRED** — FusionEngine + 8 scorers + MTFEngine (4-frame) + WeightEvolver + Evolution loop active. 173+ tests pass.
 - **TTLCache** wired to EconomicScorer + SentimentScorer
-- **mue-x 992 providers** dynamically discovered (no more 760-line manual list)
-- **Weekly loss veto** hard-gated on Path-B
-- **np.clip → _clamp()** fixed across 8 scoring files (numpy 2.x compat)
+- **mue-x 992 providers** dynamically discovered
+- **Weekly loss veto** hard-gated on both paths
+- **1079 providers** wired (77 engine + 992 mue-x + 10 core)
+- **MT5 live** — Valetax demo connected, 29 closed trades
+- **HiddenRegimeProvider** + **NewsProvider** (3-tier) wired to scoring
 - 84 registered strategies, 10 exchange clients, 16 agents
-- numpy broken in .venv (Python 3.14 `np.clip` removed — scoring files fixed but other modules may still use numpy)
-- pytest env broken (langsmith plugin)
+- numpy 2.5.1 ✅ in .venv. Test environment fixed.
 
 **Commands:**
 ```bash
 launch.bat api              # FastAPI on :8000
-guardian_cli.py --once      # Guardian watchtower
 ruff check quant_nanggroe/
 uv sync
+.venv/Scripts/python -m pytest tests/ -v
 ```
 
 **Architecture:**
-- 9-stage pipeline in `hedge_fund/portfolio/main.py:run_once()` (555 lines)
-- Stage 8 (FusionEngine scoring) = **dead code** — not called
-- 4 git remotes, github2 has 4141 diverged files (Next.js dashboard)
-- E:\ drive: hidden-regime (COT), mue-x (992 evolved providers), AI-Trader (cache/TTL 1911 lines)
+- 7-stage pipeline in `hedge_fund/portfolio/main.py:run_once()` (310 lines, refactored)
+- FusionEngine + 8 scorers + MTFEngine + WeightEvolver — ALL WIRED
+- Evolution loop: journal → scheduler → scanner → disabler → weight_updater
+- 4 git remotes, github2 diverged (v2-dashboard branch extracted)
+- E: hidden-regime COT, mue-x 992 providers, AI-Trader cache/TTL
