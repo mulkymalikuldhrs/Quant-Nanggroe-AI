@@ -4,13 +4,12 @@ import pandas as pd
 
 from quant_nanggroe.hedge_fund.utils.config import (
     MT5_AVAILABLE,
-    PAPER_TRADE,
     mt5,
 )
 
 
 def get_historical_mt5(symbol="EURUSD", count=100, tf=15):
-    if MT5_AVAILABLE and not PAPER_TRADE:
+    if MT5_AVAILABLE:
         try:
             rates = mt5.copy_rates_from_pos(symbol, tf, 0, count)
             if rates is not None and len(rates) > 10:

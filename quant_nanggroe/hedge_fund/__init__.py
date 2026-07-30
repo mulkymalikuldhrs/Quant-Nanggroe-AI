@@ -41,7 +41,6 @@ from quant_nanggroe.hedge_fund.signals import (  # noqa: F401
 from quant_nanggroe.hedge_fund.utils import (  # noqa: F401
     CREDS,
     MT5_AVAILABLE,
-    PAPER_TRADE,
     calc_atr,
     connect,
     ensure_terminal,
@@ -51,7 +50,7 @@ from quant_nanggroe.hedge_fund.utils import (  # noqa: F401
 
 __all__ = [
     "connect", "ensure_terminal", "get_historical_mt5", "calc_atr",
-    "MT5_AVAILABLE", "PAPER_TRADE", "log", "CREDS",
+    "MT5_AVAILABLE", "log", "CREDS",
     "aggregate", "ALL_PROVIDERS", "CORE_PROVIDERS",
     "signal_sma", "signal_wyckoff", "signal_aihf", "signal_hidden",
     "signal_tradingagents", "signal_aitrader", "signal_langalpha",

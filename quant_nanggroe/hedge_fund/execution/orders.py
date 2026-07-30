@@ -6,7 +6,6 @@ from datetime import datetime
 from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
 from quant_nanggroe.hedge_fund.utils.config import (
     LOG_FILE,
-    PAPER_TRADE,
     log,
     mt5,
 )
@@ -66,7 +65,7 @@ def kelly_lot_size(balance, symbol, confidence=0.5):
             fraction=0.25,
             leverage_max=0.02,
         )
-        if not PAPER_TRADE and mt5 is not None:
+        if mt5 is not None:
             try:
                 from datetime import datetime as _dt
                 deals = mt5.history_deals_get(_dt(1970, 1, 1), _dt.now())
@@ -88,7 +87,7 @@ def kelly_lot_size(balance, symbol, confidence=0.5):
 
     contract_size = 100000.0
     pip_size = 0.0001
-    if not PAPER_TRADE:
+    if mt5 is not None:
         try:
             sinfo = mt5.symbol_info(symbol)
             if sinfo:
@@ -115,15 +114,13 @@ def kelly_lot_size(balance, symbol, confidence=0.5):
 
 def execute(sig, symbol="EURUSD"):
     sym = symbol
-    t = None
-    if not PAPER_TRADE:
-        t = mt5.symbol_info_tick(sym)
+    t = mt5.symbol_info_tick(sym)
 
-    a = mt5.account_info() if not PAPER_TRADE else None
-    if not PAPER_TRADE and a is None:
-        log.error("MT5 account_info() returned None in live mode - cannot trade")
+    a = mt5.account_info()
+    if a is None:
+        log.error("MT5 account_info() returned None - cannot trade")
         return None
-    bal = a.balance if a else (1000.0 if PAPER_TRADE else 0.0)
+    bal = a.balance if a else 0.0
     lot = kelly_lot_size(
         balance=bal,
         symbol=sym,
@@ -135,12 +132,6 @@ def execute(sig, symbol="EURUSD"):
 
     atr = calc_atr(sym) or 0.0010
     sd = max(atr*2, 0.0010)
-
-    if PAPER_TRADE:
-        raise RuntimeError(
-            f"Paper trade blocked for {sym} — no real price available. "
-            "Cannot generate simulated price. Failing closed."
-        )
 
     if sig["bias"] == "buy":
         p, sl, tp, ot = t.ask, round(t.ask-sd,5), round(t.ask+sd*2,5), mt5.ORDER_TYPE_BUY

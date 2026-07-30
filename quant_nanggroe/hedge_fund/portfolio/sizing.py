@@ -1,7 +1,7 @@
 """Kelly-based position sizing with signal confidence scaling."""
 
 from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
-from quant_nanggroe.hedge_fund.utils.config import PAPER_TRADE, log, mt5
+from quant_nanggroe.hedge_fund.utils.config import log, mt5
 from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 
 MAX_RISK_PER_TRADE = 0.02
@@ -39,7 +39,7 @@ def calculate_position_size(signal, balance, atr=None, config=None):
         leverage_max=max_risk,
     )
 
-    if not PAPER_TRADE and mt5 is not None:
+    if mt5 is not None:
         try:
             from datetime import datetime
             deals = mt5.history_deals_get(datetime(1970, 1, 1), datetime.now())
@@ -64,7 +64,7 @@ def calculate_position_size(signal, balance, atr=None, config=None):
 
     contract_size = 100000.0
     pip_size = 0.0001
-    if not PAPER_TRADE:
+    if mt5 is not None:
         try:
             sinfo = mt5.symbol_info(symbol)
             if sinfo:
