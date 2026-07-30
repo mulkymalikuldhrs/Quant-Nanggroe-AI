@@ -391,37 +391,19 @@ class AutonomousSelfLoopOrchestrator:
             logger.debug(f"Council debate failed: {e}")
     
     async def _get_recent_trades(self) -> List[Dict]:
-        """Get recent trades from paper_trades.csv and trades.csv"""
+        """Get recent trades from trades.csv"""
         trades: List[Dict] = []
         import csv
         from pathlib import Path
-        # Read paper trades
-        for csv_path in (REPO_ROOT / "data" / "paper_trades.csv", REPO_ROOT / "data" / "trades.csv"):
-            if csv_path.exists():
-                try:
-                    with open(csv_path, "r") as f:
-                        reader = csv.DictReader(f)
-                        for row in reader:
-                            trades.append(dict(row))
-                except Exception as e:
-                    logger.debug(f"Failed to read {csv_path}: {e}")
-        # Also check paper_state for recent fills
-        state_dir = Path("paper_state")
-        if state_dir.is_dir():
-            for jsonl in state_dir.glob("execution_audit.jsonl"):
-                try:
-                    with open(jsonl, "r") as f:
-                        for line in f:
-                            line = line.strip()
-                            if line:
-                                try:
-                                    entry = json.loads(line)
-                                    if entry.get("action") == "ORDER_SUBMITTED":
-                                        trades.append(entry)
-                                except json.JSONDecodeError:
-                                    pass
-                except Exception as e:
-                    logger.debug(f"Failed to read audit log: {e}")
+        csv_path = REPO_ROOT / "data" / "trades.csv"
+        if csv_path.exists():
+            try:
+                with open(csv_path, "r") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        trades.append(dict(row))
+            except Exception as e:
+                logger.debug(f"Failed to read {csv_path}: {e}")
         return trades
     
     async def _get_strategy_performance(self) -> Dict[str, Dict]:

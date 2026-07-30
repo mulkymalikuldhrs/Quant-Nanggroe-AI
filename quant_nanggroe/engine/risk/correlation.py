@@ -250,14 +250,13 @@ class StrategyCorrelationMonitor:
         window: int = 60,
         threshold: float = 0.85,
         state_dir: str = "paper_state",
-        paper_mode: bool = False,
     ) -> None:
         self.kill_switch = kill_switch
         self.window = window
         self.threshold = threshold
         self.state_dir = Path(state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
-        self.paper_mode: bool = paper_mode
+        self.paper_mode: bool = False
 
         # strategy_name -> deque of trailing returns (FIFO, maxlen=window)
         self._trailing_returns: Dict[str, deque[float]] = {}

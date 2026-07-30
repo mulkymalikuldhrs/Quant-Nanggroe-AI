@@ -84,10 +84,6 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.paper is not None:
-        import os
-        os.environ["PAPER_TRADE"] = "true" if args.paper else "false"
-
     outputs: list[dict] = []
 
     for sym in args.symbols:

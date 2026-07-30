@@ -14,6 +14,8 @@ from quant_nanggroe.core.scoring.macro_scorer import MacroScorer
 from quant_nanggroe.core.scoring.sentiment_scorer import SentimentScorer
 from quant_nanggroe.core.scoring.technical_scorer import TechnicalScorer
 from quant_nanggroe.core.scoring.volatility_scorer import VolatilityScorer
+from quant_nanggroe.core.scoring.crypto_scorer import CryptoScorer
+from quant_nanggroe.core.news import NewsScorer
 from quant_nanggroe.core.scoring.fusion_engine import FusionEngine, ScoredSignal
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,8 @@ class QuantPipeline:
             MacroScorer(),
             EconomicScorer(),
             BondScorer(),
+            CryptoScorer(),
+            NewsScorer(),
             SentimentScorer(),
             TechnicalScorer(),
             VolatilityScorer(),

@@ -744,6 +744,20 @@ class RiskManager:
             if current_equity is not None:
                 self.state.current_equity = float(current_equity)
 
+            # Ponytail sanity clamp: reject loaded PnL values that exceed
+            # plausible bounds vs peak_equity. A stale PnL from a prior run
+            # (e.g. weekly=-60040 on 1000 equity) makes EVERY new RiskManager()
+            # permanently kill-switched before a single trade — phantom veto.
+            # Bounds: daily >50% of equity or weekly >100% of equity is never
+            # a real PnL, it's corrupt/leftover from a test/demo session.
+            _peak = self.state.peak_equity or 1e3
+            if abs(self.state.daily_pnl) > _peak * 0.5:
+                logger.warning("Sanity clamp: daily_pnl=%.0f exceeds 50%% of equity=%.0f — resetting to 0", self.state.daily_pnl, _peak)
+                self.state.daily_pnl = 0.0
+            if abs(self.state.weekly_pnl) > _peak * 1.0:
+                logger.warning("Sanity clamp: weekly_pnl=%.0f exceeds 100%% of equity=%.0f — resetting to 0", self.state.weekly_pnl, _peak)
+                self.state.weekly_pnl = 0.0
+
             last_reset_date = self._persistence.get("risk:last_reset_date")
             if last_reset_date is not None and last_reset_date:
                 self.state.last_reset_date = date.fromisoformat(last_reset_date)

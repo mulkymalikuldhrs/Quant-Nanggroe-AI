@@ -15,7 +15,6 @@ Env:
     QNA_API_URL  (default http://localhost:8000)
     QNA_UI_URL   (default http://localhost:3000)
     QNA_API_KEY  (for kill-switch/registry/auth reads)
-    PAPER_TRADE  (affects MT5 severity)
 """
 import os
 import sys

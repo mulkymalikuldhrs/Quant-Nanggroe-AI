@@ -3,6 +3,11 @@
 Closed trade → journal (score snapshot + PnL) → evaluator → weight adjustment.
 Pattern from Rencana.md: after N trades, compute per-scorer Sharpe, adjust
 weights max ±5%/cycle, safety ceiling 20% from original, circuit breaker at 50.
+
+CANONICAL Weight Tuner. WeightUpdater in engine/evolution/ is SECONDARY —
+it updates SignalTracker (provider weights) not FusionEngine (scorer weights).
+Both systems coexist: WeightEvolver handles scorer weights, WeightUpdater
+handles provider weights. No conflict by design.
 """
 
 from __future__ import annotations
@@ -30,7 +35,12 @@ DEFAULT_SCORER_WEIGHTS: dict[str, float] = {
     "SentimentScorer": 0.10,
     "TechnicalScorer": 0.10,
     "VolatilityScorer": 0.05,
+    "CryptoScorer": 0.00,
+    "NewsScorer": 0.00,
 }
+
+assert abs(sum(DEFAULT_SCORER_WEIGHTS.values()) - 1.0) < 0.001, \
+    f"Scorer weights must sum to 1.0, got {sum(DEFAULT_SCORER_WEIGHTS.values())}"
 
 EVOLVE_EVERY_N_TRADES = 20
 MAX_ADJUSTMENT_PCT = 0.05

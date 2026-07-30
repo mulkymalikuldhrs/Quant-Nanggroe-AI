@@ -160,27 +160,18 @@ def check_strategy_registry() -> CheckResult:
 
 
 def check_mt5() -> CheckResult:
-    """MT5 connectivity. Paper mode -> INFO (no broker needed). Live -> CRITICAL if down."""
-    paper = os.environ.get("PAPER_TRADE", "true").lower() in ("1", "true", "yes")
+    """MT5 connectivity check. CRITICAL if unavailable."""
     try:
         import MetaTrader5 as mt5  # type: ignore
     except Exception:
-        if paper:
-            return CheckResult("mt5", True, Severity.INFO,
-                               "MT5 lib not installed but PAPER_TRADE=true (acceptable)", "")
         return CheckResult("mt5", False, Severity.CRITICAL,
-                           "MetaTrader5 not installed and PAPER_TRADE != true",
-                           "Install MetaTrader5 or set PAPER_TRADE=true for paper mode.")
+                           "MetaTrader5 not installed",
+                           "Install MetaTrader5.")
     try:
         if not mt5.initialize():
-            if paper:
-                return CheckResult("mt5", True, Severity.WARNING,
-                                   "MT5 terminal not connected (paper mode tolerant)",
-                                   "Relaunch the MT5 terminal if live trading is intended.")
             return CheckResult("mt5", False, Severity.CRITICAL,
                                "mt5.initialize() failed — terminal not running / not logged in",
-                               "Relaunch MetaTrader5 terminal, enable AutoTrading, then re-run the "
-                               "trading engine. The guardian cannot trade without a live terminal.")
+                               "Relaunch MetaTrader5 terminal, enable AutoTrading, then re-run.")
         ti = mt5.terminal_info()
         ai = mt5.account_info()
         trade_allowed = getattr(ti, "trade_allowed", False) if ti else False

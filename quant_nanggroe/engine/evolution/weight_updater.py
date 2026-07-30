@@ -1,7 +1,11 @@
-"""WeightUpdater — adjust signal provider and scorer weights from evolution results.
+"""WeightUpdater — adjust signal PROVIDER weights (not scorer weights).
 
-Interfaces with SignalTracker (provider weights) and FusionEngine (scorer weights)
-to tighten the loop between performance feedback and future allocation.
+DIFFERENTIATION from WeightEvolver (core/scoring/evolver.py):
+- WeightEvolver → canonical scorer weight tuner (FusionEngine weights)
+- WeightUpdater → provider weight tuner (SignalTracker weights)
+
+Both coexist. No conflict by design — they operate on different registries.
+WeightEvolver has circuit breaker + safety ceiling; WeightUpdater is Bayesian.
 """
 
 from __future__ import annotations

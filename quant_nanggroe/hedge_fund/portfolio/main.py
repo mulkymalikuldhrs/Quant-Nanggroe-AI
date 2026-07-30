@@ -9,7 +9,6 @@ Fixed gaps:
 """
 
 import asyncio
-import asyncio
 import json
 import os
 import time
@@ -190,7 +189,7 @@ def _market_snapshot() -> tuple:
 
 def _weekly_pnl() -> float:
     """Calculate realized PnL for the current week."""
-    if not MT5_AVAILABLE or _config.PAPER_TRADE:
+    if not MT5_AVAILABLE:
         return 0.0
     try:
         now = datetime.now()
@@ -238,48 +237,32 @@ def _build_causal_context(dxy_pct: float = 0.0, zb_pct: float = 0.0) -> Optional
 # ── Pipeline Stage 1: MT5 Connection + Gate Check ────────────────────
 
 def _pipeline_connect(result: dict) -> dict:
-    """Connect MT5 (or paper fallback), check walkforward gate."""
-    if not _config.PAPER_TRADE:
-        if not connect() and not ensure_terminal():
-            log.warning("MT5 unavailable — falling back to paper trading")
-            _config.PAPER_TRADE = True
-    else:
-        log.info("PAPER TRADE MODE — No MT5 connection needed")
+    """Connect MT5, check walkforward gate."""
+    if not connect() and not ensure_terminal():
+        log.warning("MT5 unavailable")
 
     gate_cache = GATE_FILE
     gate_pass = False
 
-    if _config.PAPER_TRADE:
-        if gate_cache.exists():
-            try:
-                age = time.time() - gate_cache.stat().st_mtime
-                if age < 86400:
-                    gate_pass = json.loads(gate_cache.read_text()).get("pass", False)
-            except Exception:
-                pass
-        if not gate_pass:
-            log.info("Paper mode: skipping gate (will run backtest in background)")
-            gate_pass = True
-    else:
-        if gate_cache.exists():
-            try:
-                age = time.time() - gate_cache.stat().st_mtime
-                if age < 86400:
-                    gate_pass = json.loads(gate_cache.read_text()).get("pass", False)
-            except Exception:
-                pass
+    if gate_cache.exists():
+        try:
+            age = time.time() - gate_cache.stat().st_mtime
+            if age < 86400:
+                gate_pass = json.loads(gate_cache.read_text()).get("pass", False)
+        except Exception:
+            pass
 
-        if not gate_pass:
-            log.info("Checking WalkForwardRegistry for viable strategies...")
-            try:
-                viable = get_viable_strategies()
-                gate_pass = len(viable) > 0
-                if gate_pass:
-                    log.info("Gate passed: %d viable strategies in registry", len(viable))
-                else:
-                    log.warning("No viable strategies found in WalkForwardRegistry")
-            except Exception as e:
-                log.warning(f"WalkForwardRegistry check failed: {e}")
+    if not gate_pass:
+        log.info("Checking WalkForwardRegistry for viable strategies...")
+        try:
+            viable = get_viable_strategies()
+            gate_pass = len(viable) > 0
+            if gate_pass:
+                log.info("Gate passed: %d viable strategies in registry", len(viable))
+            else:
+                log.warning("No viable strategies found in WalkForwardRegistry")
+        except Exception as e:
+            log.warning(f"WalkForwardRegistry check failed: {e}")
 
     if not gate_pass:
         log.warning("GATE TERTUTUP — Strategi gagal backtest/walk-forward")
@@ -295,28 +278,31 @@ def _pipeline_discover(result: dict) -> dict:
     symbol: str | None = result.get("symbol") or None
     if not symbol:
         try:
-            from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import get_valid_pairs
-            pairs = get_valid_pairs()
-            if pairs:
-                symbol = pairs[0]
-                log.info(f"Best pair: {symbol}")
+            from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import scan_all_pairs, live_scan
+            try:
+                pairs = scan_all_pairs(mt5_available=MT5_AVAILABLE)
+                if not pairs:
+                    pairs = live_scan()
+                if pairs and isinstance(pairs, list) and len(pairs) > 0:
+                    symbol = pairs[0]
+                    log.info(f"Best pair: {symbol}")
+            except Exception as _ps:
+                log.debug(f"Pair scan failed: {_ps}, using default")
         except Exception as e:
             log.debug(f"Pair scanner unavailable: {e}")
     if not symbol:
         symbol = result.get("symbol") or "EURUSD"
     result["symbol"] = symbol
 
-    if not _config.PAPER_TRADE:
-        a = mt5.account_info()
-        if a:
-            log.info(f"${a.balance:.2f} | Equity=${a.equity:.2f} | Margin=${a.margin:.2f}")
+    a = mt5.account_info()
+    if a:
+        log.info(f"${a.balance:.2f} | Equity=${a.equity:.2f} | Margin=${a.margin:.2f}")
 
     positions = []
-    if not _config.PAPER_TRADE:
-        try:
-            positions = mt5.positions_get() or []
-        except Exception:
-            positions = []
+    try:
+        positions = mt5.positions_get() or []
+    except Exception:
+        positions = []
     result["_positions"] = positions
     return result
 
@@ -387,7 +373,7 @@ def _pipeline_vote(result: dict) -> dict:
         log.info("Screen: dir=%s score=%.2f", _screen_result.get("overall_direction", "?"),
                  _screen_result.get("composite_score", 0))
     except Exception as _scr_e:
-        log.debug("Screener skipped: %s", _scr_e)
+        log.warning("Screener skipped: %s", _scr_e)
 
     viable_strategies = get_viable_strategies()
     provider_list = ALL_PROVIDERS
@@ -495,7 +481,7 @@ def _pipeline_vote(result: dict) -> dict:
             signal["bias"] = _fusion_result.bias
             signal["confidence"] = _fusion_result.confidence
     except Exception as _fus_e:
-        log.debug("FusionEngine skipped: %s", _fus_e)
+        log.warning("FusionEngine skipped: %s", _fus_e)
         _fusion_result = None
 
     _mtf_result = None
@@ -520,7 +506,7 @@ def _pipeline_vote(result: dict) -> dict:
                 log.info("MTF REDUCE — position size will be halved")
                 result["mtf_reduce"] = True
         except Exception as _mtf_e:
-            log.debug("MTFEngine skipped: %s", _mtf_e)
+            log.warning("MTFEngine skipped: %s", _mtf_e)
     result["_mtf_result"] = _mtf_result
 
     _confluence = None
@@ -554,7 +540,7 @@ def _pipeline_vote(result: dict) -> dict:
                 signal["bias"] = "hold"
                 signal["confidence"] = 0.0
     except Exception as _con_e:
-        log.debug("ConfluenceScorer skipped: %s", _con_e)
+        log.warning("ConfluenceScorer skipped: %s", _con_e)
 
     try:
         _vote_advisory = _get_llm_advisor()._rule_based_advisory(
@@ -582,10 +568,10 @@ def _pipeline_risk_check(result: dict) -> dict:
     signal = result["_signal"]
     symbol = result["symbol"]
 
-    acct = mt5.account_info() if (MT5_AVAILABLE and not _config.PAPER_TRADE) else None
+    acct = mt5.account_info() if MT5_AVAILABLE else None
     real_balance = acct.balance if acct else 1000.0
     real_daily_pnl = 0.0
-    if acct and not _config.PAPER_TRADE:
+    if acct:
         try:
             start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             deals = mt5.history_deals_get(start, datetime.now())
@@ -593,7 +579,7 @@ def _pipeline_risk_check(result: dict) -> dict:
                 real_daily_pnl = sum(float(d.profit) + float(d.commission or 0) for d in deals)
         except Exception as _e:
             log.debug(f"daily pnl read failed: {_e}")
-    real_open = len(mt5.positions_get() or []) if (MT5_AVAILABLE and not _config.PAPER_TRADE) else 0
+    real_open = len(mt5.positions_get() or []) if MT5_AVAILABLE else 0
 
     market_atr = calc_atr(symbol) or 0.001
     sizing = calculate_position_size(signal, real_balance, atr=market_atr)
@@ -610,7 +596,7 @@ def _pipeline_risk_check(result: dict) -> dict:
             log.info("RiskParity weight=%s multiplier=%.2f", symbol, _rp_weight)
         result["risk_parity"] = _rp_weights
     except Exception as _rp_e:
-        log.debug("RiskParityAllocator skipped: %s", _rp_e)
+        log.warning("RiskParityAllocator skipped: %s", _rp_e)
 
     if result.get("mtf_reduce") and sizing["volume"] > 0:
         sizing["volume"] = sizing["volume"] * 0.5
@@ -712,7 +698,8 @@ def _pipeline_execute(result: dict) -> dict:
     try:
         from quant_nanggroe.engine.stress_testing.var_cvar import StressVaRCalculator
         _var = StressVaRCalculator()
-        _returns = np.array([real_daily_pnl / real_balance]) if real_balance > 0 else np.array([0.0])
+        import numpy as _np
+        _returns = _np.array([real_daily_pnl / real_balance]) if real_balance > 0 else _np.array([0.0])
         if len(_returns) > 0:
             _var_result = _var.compute(_returns)
             log.info("StressVaR: param_95=%.4f cvar_95=%.4f",
@@ -724,7 +711,7 @@ def _pipeline_execute(result: dict) -> dict:
                 "historical_var_95": getattr(_var_result, "historical_var_95", 0),
             }
     except Exception as _var_e:
-        log.debug("StressVaR skipped: %s", _var_e)
+        log.warning("StressVaR skipped: %s", _var_e)
 
     try:
         from quant_nanggroe.engine.pattern_recorder.matrix_profile import MatrixProfileDetector
@@ -740,7 +727,7 @@ def _pipeline_execute(result: dict) -> dict:
                     "discord_count": len(_mp_result.get("discords", [])) if isinstance(_mp_result, dict) else 0,
                 }
     except Exception as _mp_e:
-        log.debug("PatternRecorder skipped: %s", _mp_e)
+        log.warning("PatternRecorder skipped: %s", _mp_e)
 
     return result
 
@@ -748,12 +735,11 @@ def _pipeline_execute(result: dict) -> dict:
 # ── Pipeline Stage 7: MT5 Cleanup ────────────────────────────────────
 
 def _pipeline_cleanup() -> None:
-    """Gracefully shut down MT5 connection if live trading."""
-    if not _config.PAPER_TRADE:
-        try:
-            mt5.shutdown()
-        except Exception:
-            pass
+    """Gracefully shut down MT5 connection."""
+    try:
+        mt5.shutdown()
+    except Exception:
+        pass
 
 
 # ── Main entry point ──────────────────────────────────────────────────
@@ -844,17 +830,17 @@ def run_once(target_symbol=None) -> dict:
                 from quant_nanggroe.engine.evolution.strategy_disabler import StrategyDisabler
                 from quant_nanggroe.engine.evolution.weight_updater import WeightUpdater
                 _scanner = PerformanceScanner(_journal)
-                _results = _scanner.scan_strategy("all", "H1")
+                _results = _scanner.scan_all()  # list[dict], not a single strategy
                 _disabler = StrategyDisabler()
-                _to_disable = _disabler.evaluate({"all": _results}) if _results else []
+                _to_disable = _disabler.evaluate(_results) if _results else []
                 for _s in _to_disable:
-                    _disabler.disable(_s)
+                    _disabler.disable(_s.get("strategy_name", ""))
                 if _results:
                     _updater = WeightUpdater()
-                    _updater.update_weights({"all": _results})
-                log.info("Evolution cycle: checked=%s disabled=%d", "all", len(_to_disable))
+                    _updater.update_weights(_results)
+                log.info("Evolution cycle: checked=%s disabled=%d", str(len(_results)), len(_to_disable))
         except Exception as _evo_e:
-            log.debug("Evolution loop skipped: %s", _evo_e)
+            log.warning("Evolution loop skipped: %s", _evo_e)
 
     finally:
         _pipeline_cleanup()

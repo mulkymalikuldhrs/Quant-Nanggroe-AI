@@ -112,7 +112,7 @@ class TestTimeBasedTrigger:
         _seed_run(journal, days_ago=10)
         _seed_trades(journal, 5)
         assert sched.should_run(journal) is True
-        assert "Scheduled" in sched.get_reason()
+        assert "Schedule" in sched.get_reason()
 
     def test_schedule_days_not_elapsed_still_checks_losses(self, journal: EvolutionJournal) -> None:
         """Within schedule window but loss streak triggers."""
@@ -209,7 +209,7 @@ class TestNoTrigger:
         _seed_trades(journal, 5)
         _seed_run(journal, days_ago=1)
         assert sched.should_run(journal) is False
-        assert "No trigger" in sched.get_reason()
+        assert "not met" in sched.get_reason() or "No trigger" in sched.get_reason()
 
 
 # ── Edge cases ────────────────────────────────────────────────────────────
