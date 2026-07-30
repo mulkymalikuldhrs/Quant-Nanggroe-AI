@@ -36,6 +36,12 @@ for mod_name in _modules:
     except ImportError as e:
         log.debug("Skipped %s: %s", mod_name, e)
 
+# Load archive subpackage — registers archive_ strategies
+try:
+    __import__('quant_nanggroe.engine.strategies.archive', globals(), locals(), [], 0)
+except ImportError as e:
+    log.debug("Skipped archive: %s", e)
+
 # ── Public convenience API ────────────────────────────────────
 from quant_nanggroe.engine.strategies.registry import (
     StrategyRegistry,
