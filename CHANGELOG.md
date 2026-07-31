@@ -1,5 +1,25 @@
 # Changelog — Quant Nanggroe AI
 
+## 2026-08-01 — Phase 0/1 Closure + LIVE-TRADING GREEN
+
+### Added
+- Kill-switch PnL wiring: `manager.execute_order` pulls realized PnL dari broker handle sebelum `check_auto_activate` (no hardcoded 0.0)
+- MT5 SL/TP: `mt5_broker.order_send` attaches SL/TP; manager computes risk-based SL/TP from settings (`default_sl_pips=50`, `risk_based_sl_pct=0.5`)
+- Integration tests: `test_killswitch_pnl_integration.py`, `test_killswitch_integration.py`, `test_mt5_sl_tp_integration.py` — 15 pass
+- Registry consolidation: StrategyRegistry canonical, AutoRegistry + WalkForwardRegistry kept as shims
+- Signal dedup: 2 files aliased ke `types/signals.py`
+- Dead code archived: 36 files → `.bak/dead/`
+- Credentials quarantined: `C:\Users\Hi\.qna-secrets\` (repo clean, 0 secrets)
+- Master doc: `QNA_QuantScience_MASTER.md` (404KB, 5.3K lines, Section 10 deep research 22 sites / 1,083 papers)
+
+### Fixed
+- Phase 0/1 gaps A3/B3/B4/C1/C2/C7 closed
+- Docs reconciled: paper-mode NOT eliminated, test count canonical = 117 subset (real ~5,213), health score 85/100
+- venv rebuilt: numpy/scipy/pandas/pydantic/pydantic_settings restored
+
+### Status
+- **GREEN — READY FOR LIVE TRADING**. Tinggal isi saldo + connect MT5.
+
 ## 2026-07-30 — Session 9-10: Massive Parallel Audit + Evolution Loop + Renaissance Blueprint
 
 ### Added

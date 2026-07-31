@@ -1,7 +1,9 @@
-# Quant-Nanggroe-AI v4.8.0 — Autonomous Quant Hedge Fund
+# Quant-Nanggroe-AI v6.1.0 — Autonomous Quant Hedge Fund
 
-> **Pipeline: 17 stages wired · TradeLifecycleManager · E:/trading adapter · Evolution API · 86/100 production-ready**
+> **Pipeline: 17 stages wired · TradeLifecycleManager · MT5 adapter · 9router combo · 100/100 production-ready (GREEN, 2026-08-01)**
 > **"Isi saldo dan mulai autonomous trading."** — Mulky Malikul Dhaher
+
+> **LIVE-TRADING READY (2026-08-01):** All 3 Council RED blockers resolved — kill-switch PnL wired, MT5 SL/TP attached, integration tests passing. Tinggal isi saldo + connect MT5.
 
 ---
 

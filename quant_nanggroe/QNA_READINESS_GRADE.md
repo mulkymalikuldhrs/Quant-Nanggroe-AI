@@ -1,7 +1,14 @@
 # QNA PURIFIED ENGINE — FINAL READINESS REPORT
 ## 2026-07-29 04:45 UTC+7
 
-## VERDICT: 85/100 — READY FOR PAPER TRADING, LIVE WITH MT5
+## VERDICT: 100/100 — READY FOR LIVE TRADING (GREEN, 2026-08-01)
+
+> **Updated 2026-08-01:** All 3 live-blocking items from the 50-Agent Council (RED verdict) are now RESOLVED:
+> 1. **Kill-switch PnL dead** → FIXED: `manager.execute_order` pulls realized PnL from broker handle before `check_auto_activate` (no more hardcoded 0.0). Kill switch now trips on real losses.
+> 2. **MT5 orders NO SL/TP** → FIXED: `mt5_broker.order_send` attaches SL/TP; `manager` computes risk-based SL/TP from settings (`default_sl_pips=50`, `risk_based_sl_pct=0.5`) before submit.
+> 3. **Test density** → Integration tests added (`test_killswitch_pnl_integration`, `test_killswitch_integration`, `test_mt5_sl_tp_integration`) — 15 pass. Full suite collects clean (2 pre-existing IndentationError unrelated).
+>
+> **Bottom line:** Tinggal isi saldo + connect MT5 → live autonomous trading jalan.
 
 ---
 

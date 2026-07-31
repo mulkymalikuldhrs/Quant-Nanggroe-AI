@@ -294,7 +294,7 @@ class ConversationAnalyzer:
     def _load_sessions_from_files(self, cutoff: datetime) -> List[ConversationSession]:
         """Fallback: load sessions from JSONL files"""
         sessions = []
-       hermes_sessions = Path.home() / ".hermes" / "sessions"
+        hermes_sessions = Path.home() / ".hermes" / "sessions"
         if hermes_sessions.exists():
             for f in hermes_sessions.glob("*.jsonl"):
                 try:

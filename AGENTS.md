@@ -1,4 +1,6 @@
-# AGENTS.md — Quant Nanggroe AI (Quant Nation) v15.4.0
+# AGENTS.md — Quant Nanggroe AI (Quant Nation) v6.1.0
+
+> **LIVE-TRADING READY (GREEN, 2026-08-01):** All 3 Council RED blockers resolved. See `QNA_AGENT_STATE.md` + `CHANGELOG.md`.
 
 ## Before Anything
 Read `docs/QNA_COMPLETE_ARCHITECTURE_2026-07-29.md` — complete mermaid graph of ALL 678 .py files, 4 remotes, 8 scorers wired, MTF+Evolver, pipeline 7-stage refactor, E:\ sources, dashboard, blockers.
