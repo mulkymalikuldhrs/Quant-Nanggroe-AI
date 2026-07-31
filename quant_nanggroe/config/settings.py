@@ -160,7 +160,7 @@ class Settings(BaseSettings):
         ge=0.0,
     )
     risk_based_sl_pct: float = Field(
-        default=0.5,
+        default=1.5,
         description="If > 0, size the stop-loss distance to risk at most this percent of equity "
                     "per trade (capped by risk_max_per_trade). 0 disables risk-based SL sizing.",
         ge=0.0,

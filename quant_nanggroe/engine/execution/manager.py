@@ -27,17 +27,80 @@ from quant_nanggroe.engine.execution.guards.whitelist import WhitelistGuard
 from quant_nanggroe.engine.execution.order import OrderManager
 from quant_nanggroe.engine.risk.constants import (
     HARD_STOP_ATR_MULTIPLIER,
-    MAX_DAILY_LOSS,
     MAX_RISK_PER_TRADE,
     MIN_RISK_REWARD,
+    STARTING_CAPITAL,
 )
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.veto_guard import GovernanceVetoGuard
+from quant_nanggroe.config.settings import Settings
 
 if TYPE_CHECKING:
     from quant_nanggroe.engine.risk.manager import RiskManager
 
 logger = logging.getLogger(__name__)
+
+
+def _risk_based_sl(order: "Order", account_balance: float, settings: "Settings") -> float:
+    """Compute risk-based stop-loss price when order.stop_loss is None.
+
+    Uses settings.risk_based_sl_pct (fraction of equity risked) capped by
+    risk_max_per_trade, or falls back to default_sl_pips. Returns 0.0 only
+    if both are disabled (so caller can decide to skip SL).
+    """
+    if settings is None:
+        return 0.0
+    try:
+        sl_pct = getattr(settings, "risk_based_sl_pct", 0.0) or 0.0
+        price = order.price or 0.0
+        if price <= 0:
+            return 0.0
+        is_buy = (order.side.value == "BUY") if hasattr(order.side, "value") else str(order.side) == "BUY"
+        if sl_pct > 0:
+            notional = price * (order.quantity or 0.0)
+            if notional <= 0:
+                return 0.0
+            sl_dist = (account_balance * sl_pct) / order.quantity
+            frac = sl_dist / price
+        else:
+            sl_pips = getattr(settings, "default_sl_pips", 0.0) or 0.0
+            if sl_pips <= 0:
+                return 0.0
+            frac = (sl_pips * 0.0001) / price
+        return float(price * (1 - frac) if is_buy else price * (1 + frac))
+    except Exception:
+        return 0.0
+
+
+def _risk_based_tp(order: "Order", account_balance: float, settings: "Settings") -> float:
+    """Compute risk-based take-profit (mirror of _risk_based_sl, opposite side)."""
+    if settings is None:
+        return 0.0
+    try:
+        tp_pips = getattr(settings, "default_tp_pips", 0.0) or 0.0
+        if tp_pips <= 0:
+            return 0.0
+        price = order.price or 0.0
+        if price <= 0:
+            return 0.0
+        is_buy = (order.side.value == "BUY") if hasattr(order.side, "value") else str(order.side) == "BUY"
+        frac = (tp_pips * 0.0001) / price
+        return float(price * (1 + frac) if is_buy else price * (1 - frac))
+    except Exception:
+        return 0.0
+
+
+
+    """Crude decimal precision for rounding SL/TP prices by magnitude.
+
+    Forex (< 1) needs 5 digits; most equities/crypto use 2-4. This is only
+    used for rounding risk-based SL/TP so they sit on sane price ticks.
+    """
+    if price < 1:
+        return 5
+    if price < 1000:
+        return 4
+    return 2
 
 
 @dataclass
@@ -297,6 +360,51 @@ class ExecutionManager:
                 )
 
         # 4. Constitutional RiskManager — ENFORCED (no override possible)
+        # BLOCKER 2 fix: populate order.stop_loss / order.take_profit BEFORE the
+        # risk check AND before broker.submit_order (line ~336). The MT5 broker
+        # reads order.stop_loss / order.take_profit directly, so leaving them as
+        # None silently drops SL/TP on every trade. We only synthesize a
+        # risk-based SL when the caller has not supplied one.
+        entry_price = order.price or 0.0
+        if entry_price <= 0 and order.stop_loss is None and order.take_profit is None:
+            try:
+                entry_price = float(await broker.get_price(order.symbol) or 0.0)
+            except Exception:
+                entry_price = 0.0
+
+        if order.side.value == "buy":
+            sl_dir, tp_dir = -1.0, 1.0
+        else:
+            sl_dir, tp_dir = 1.0, -1.0
+
+        if order.stop_loss is None and entry_price > 0:
+            # Risk-based SL: risk only MAX_RISK_PER_TRADE of equity per trade,
+            # sized into a price distance by the position size (quantity).
+            # Falls back to STARTING_CAPITAL if account balance is unavailable.
+            try:
+                acct = await broker.get_account()
+                acct_balance = float(getattr(acct, "balance", STARTING_CAPITAL) or 0.0)
+            except Exception:
+                acct_balance = 0.0
+            if acct_balance <= 0:
+                acct_balance = float(STARTING_CAPITAL)
+            # Risk per trade = MAX_RISK_PER_TRADE of equity, sized into a price
+            # distance by dividing by the position size (quantity).
+            risk_capital = acct_balance * MAX_RISK_PER_TRADE
+            sl_distance = (risk_capital / order.quantity) if order.quantity > 0 else 0.0
+            if sl_distance > 0:
+                sl_price = entry_price + sl_dir * sl_distance
+                if sl_price > 0:
+                    order.stop_loss = round(sl_price, _price_precision(entry_price))
+
+        if order.take_profit is None and order.stop_loss is not None and entry_price > 0:
+            # Derive TP to satisfy MIN_RISK_REWARD against the computed SL.
+            sl_distance = abs(entry_price - order.stop_loss)
+            if sl_distance > 0:
+                tp_price = entry_price + tp_dir * (sl_distance * MIN_RISK_REWARD)
+                if tp_price > 0:
+                    order.take_profit = round(tp_price, _price_precision(entry_price))
+
         if self._risk_manager is not None:
             account_balance = 0.0
             try:
@@ -309,7 +417,7 @@ class ExecutionManager:
                 direction=order.side.value,
                 lot_size=order.quantity,
                 entry=order.price or 0.0,
-                stop_loss=order.stop_price or 0.0,
+                stop_loss=order.stop_loss or 0.0,
                 account_balance=account_balance,
                 # daily_pnl_pct is already converted to fraction at line 181;
                 # check_trade now expects fraction (range [0, 1]).

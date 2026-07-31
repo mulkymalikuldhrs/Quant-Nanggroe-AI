@@ -65,43 +65,85 @@ logger = logging.getLogger(__name__)
 # frequent requotes/rejections.
 DEFAULT_DEVIATION = 20
 
+# Per-symbol slippage tolerance buckets (Blocker 2):
+#   FX majors      -> 5   (tight spreads, deep liquidity)
+#   indices/metals -> 20  (wider spreads / larger point increments)
+#   crypto CFDs    -> 50  (thin liquidity, gap-prone)
 _DEVIATION_BY_SYMBOL: Dict[str, int] = {
-    # FX majors — tight spreads
+    # FX majors & crosses — tight spreads
     "EURUSD": 5,
     "USDJPY": 5,
-    "GBPUSD": 8,
-    "USDCHF": 8,
-    "AUDUSD": 8,
-    "USDCAD": 8,
-    "NZDUSD": 8,
-    # FX minors / crosses
-    "EURJPY": 12,
-    "GBPJPY": 15,
-    "EURGBP": 10,
+    "GBPUSD": 5,
+    "USDCHF": 5,
+    "AUDUSD": 5,
+    "USDCAD": 5,
+    "NZDUSD": 5,
+    "EURJPY": 5,
+    "GBPJPY": 5,
+    "EURGBP": 5,
     # Metals
-    "XAUUSD": 50,
-    "XAGUSD": 40,
+    "XAUUSD": 20,
+    "XAGUSD": 20,
     # Indices
-    "US30": 60,
-    "US500": 40,
-    "USTEC": 50,
-    "NAS100": 50,
-    "SPX500": 40,
-    "GER40": 50,
-    "DE40": 50,
-    "UK100": 40,
+    "US30": 20,
+    "US500": 20,
+    "USTEC": 20,
+    "NAS100": 20,
+    "SPX500": 20,
+    "GER40": 20,
+    "DE40": 20,
+    "UK100": 20,
     # Crypto CFDs
-    "BTCUSD": 100,
-    "ETHUSD": 80,
+    "BTCUSD": 50,
+    "ETHUSD": 50,
 }
+
+# Instrument-category reference sets used to classify symbols that are not
+# present in :data:`_DEVIATION_BY_SYMBOL` (e.g. broker-suffixed or new symbols).
+_FX_CURRENCIES = {
+    "USD", "EUR", "GBP", "JPY", "CHF", "AUD", "CAD", "NZD",
+    "SGD", "HKD", "NOK", "SEK", "DKK", "ZAR", "TRY", "MXN", "PLN",
+}
+_CRYPTO_BASES = {
+    "BTC", "ETH", "XRP", "LTC", "BCH", "ADA", "DOT", "SOL", "DOGE", "LINK",
+    "TRX", "EOS", "BNB", "XLM", "AVAX", "MATIC", "UNI", "ATOM", "XMR", "ETC",
+}
+_INDEX_BASES = {
+    "US30", "US500", "USTEC", "NAS100", "SPX500", "GER40", "DE40", "UK100",
+    "JP225", "HK50", "AUS200", "FRA40", "ES35", "STOXX50", "DJI30",
+}
+_METAL_BASES = {"XAU", "XAG", "XPT", "XPD"}
+
+
+def _is_crypto(base: str) -> bool:
+    return base in _CRYPTO_BASES or base[:3] in _CRYPTO_BASES
+
+
+def _is_metal(base: str) -> bool:
+    return base[:3] in _METAL_BASES
+
+
+def _is_index(base: str) -> bool:
+    return base in _INDEX_BASES
+
+
+def _is_fx_pair(base: str) -> bool:
+    return (
+        len(base) == 6
+        and base[:3] in _FX_CURRENCIES
+        and base[3:] in _FX_CURRENCIES
+    )
 
 
 def _resolve_deviation(symbol: str) -> int:
-    """Return the slippage tolerance (points) for a symbol.
+    """Return the slippage tolerance (deviation, in points) for a symbol.
 
-    Matching is case-insensitive and ignores broker suffixes (e.g.
-    ``EURUSD.pro`` / ``XAUUSD-ecn`` -> matched against the base symbol).
-    Falls back to :data:`DEFAULT_DEVIATION` for unknown symbols.
+    Per-symbol map (Blocker 2): FX majors -> 5, indices/metals -> 20,
+    crypto -> 50. Matching is case-insensitive and ignores broker suffixes
+    (e.g. ``EURUSD.pro`` / ``XAUUSD-ecn`` -> matched against the base
+    symbol). Symbols absent from :data:`_DEVIATION_BY_SYMBOL` are classified
+    by instrument category; anything that is not FX / metal / index / crypto
+    falls back to :data:`DEFAULT_DEVIATION`.
     """
     if not symbol:
         return DEFAULT_DEVIATION
@@ -113,7 +155,16 @@ def _resolve_deviation(symbol: str) -> int:
     for sep in (".", "-", "_", "#"):
         if sep in base:
             base = base.split(sep, 1)[0]
-    return _DEVIATION_BY_SYMBOL.get(base, DEFAULT_DEVIATION)
+    if base in _DEVIATION_BY_SYMBOL:
+        return _DEVIATION_BY_SYMBOL[base]
+    # Classify unknown symbols by instrument category.
+    if _is_crypto(base):
+        return 50
+    if _is_metal(base) or _is_index(base):
+        return 20
+    if _is_fx_pair(base):
+        return 5
+    return DEFAULT_DEVIATION
 
 
 # ---------------------------------------------------------------------------
@@ -851,7 +902,7 @@ class MT5Exchange(ExchangeInterface):
                 "type": close_type,
                 "position": ticket,
                 "price": close_price,
-                "deviation": 10,
+                "deviation": _resolve_deviation(position.symbol),
                 "magic": position.magic,
                 "comment": "QNAI_Close",
                 "type_filling": self._mt5.ORDER_FILLING_IOC,
