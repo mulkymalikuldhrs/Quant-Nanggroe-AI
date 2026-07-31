@@ -2780,5 +2780,18 @@
     "occurred_at": "2026-07-31T22:26:44.010624+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "eb0388e5-142",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for BTC-USD",
+    "detail": "len(arrays) must match len(columns)",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-07-31T22:29:17.620493+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
