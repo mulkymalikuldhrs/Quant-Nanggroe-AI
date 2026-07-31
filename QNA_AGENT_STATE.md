@@ -54,7 +54,7 @@
 ### 🔴 LIVE-TRADING BLOCKERS (50-Agent Council verdict: RED — 2026-08-01)
 1. **Kill-switch PnL dead** — `em.execute_order(order)` callers (`api/routes/trading.py:204`, `agents/trader/tools.py:143`) gak pass PnL args → `check_auto_activate(daily_pnl_pct=0.0)` baca 0.0 → gak pernah trip on real loss (`manager.py:226-231`). FIX: pull realized PnL dari broker handle di dalam `execute_order` sebelum kill-switch check.
 2. **MT5 market orders NO SL/TP** — `exchange/mt5_broker.py:511-522` kirim order tanpa `sl`/`tp` → naked position kalau trailing-stop fail. FIX: attach SL/TP di `order_send`, jangan rely post-fill modify.
-3. **Test density fatal low** — financial code butuh >80% coverage; currently ~30% (45/152 test files pakai mock). FIX: risk + execution + kill-switch integration tests wajib sebelum live.
+3. **Test density fatal low** — financial code butuh >80% coverage; real suite ~5,213 tests (152 files) tapi 45 files (29.6%) pakai mock, 14 collection errors (circular imports di `exchange/`, `data/providers/`). "117 tests" di doc = curated subset, misleading sebagai headline. FIX: risk + execution + kill-switch integration tests wajib sebelum live.
 
 Non-Phase 0/1 (deferred):
 - **Dashboard build** — may not compile with Next.js 16 (Phase 3+ scope)
