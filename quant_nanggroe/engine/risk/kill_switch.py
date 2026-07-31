@@ -492,29 +492,58 @@ class KillSwitch:
 
     def check_auto_activate(
         self,
-        daily_pnl_pct: float = 0.0,
-        weekly_pnl_pct: float = 0.0,
-        max_drawdown_pct: float = 0.0,
-        volatility_pct: float = 0.0,
+        daily_pnl_pct: Optional[float] = None,
+        weekly_pnl_pct: Optional[float] = None,
+        max_drawdown_pct: Optional[float] = None,
+        volatility_pct: Optional[float] = None,
     ) -> Optional[KillSwitchEvent]:
         """Check if auto-activation conditions are met.
+
+        FAIL-CLOSED: all risk metrics are REQUIRED. Passing ``None`` (or
+        omitting an argument) raises ``ValueError`` rather than defaulting to
+        ``0.0``. A silent ``0.0`` default would read as "no loss / no
+        drawdown / no volatility", causing the kill switch to never trip when
+        a caller forgets to supply a metric — a fail-open safety hole. Callers
+        must fetch real metrics from the broker/risk snapshot and pass them
+        explicitly.
 
         Parameters
         ----------
         daily_pnl_pct:
-            Current daily P&L as percentage (negative for loss).
+            Current daily P&L as percentage (negative for loss). Required.
         weekly_pnl_pct:
-            Current weekly P&L as percentage (negative for loss).
+            Current weekly P&L as percentage (negative for loss). Required.
         max_drawdown_pct:
-            Current maximum drawdown percentage.
+            Current maximum drawdown percentage. Required.
         volatility_pct:
-            Current market volatility percentage.
+            Current market volatility percentage. Required.
 
         Returns
         -------
         KillSwitchEvent or None
             Activation event if triggered, else None.
+
+        Raises
+        ------
+        ValueError
+            If any risk metric is ``None`` (fail-closed).
         """
+        missing = [
+            name
+            for name, value in (
+                ("daily_pnl_pct", daily_pnl_pct),
+                ("weekly_pnl_pct", weekly_pnl_pct),
+                ("max_drawdown_pct", max_drawdown_pct),
+                ("volatility_pct", volatility_pct),
+            )
+            if value is None
+        ]
+        if missing:
+            raise ValueError(
+                "check_auto_activate requires all risk metrics (fail-closed); "
+                f"missing: {', '.join(missing)}. Fetch real values from the "
+                "broker/risk snapshot instead of relying on defaults."
+            )
         self._ensure_reconciled()  # C5: see freshest cross-proc activation before deciding
         if self._status == KillSwitchStatus.ACTIVE:
             return None

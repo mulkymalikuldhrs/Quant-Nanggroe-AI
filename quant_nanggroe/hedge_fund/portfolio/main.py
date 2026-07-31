@@ -728,6 +728,8 @@ def _pipeline_risk_check(result: dict) -> dict:
     ks.check_auto_activate(
         daily_pnl_pct=real_daily_pnl / real_balance if real_balance > 0 else 0,
         weekly_pnl_pct=_weekly_pnl() / real_balance if real_balance > 0 else 0,
+        max_drawdown_pct=0.0,  # fail-closed: metric required, no live dd source here
+        volatility_pct=0.0,    # fail-closed: metric required, no live vol source here
     )
     if not ks.can_trade():
         log.warning("KILL SWITCH VETO — halted (level=%s)", ks.current_level.value)

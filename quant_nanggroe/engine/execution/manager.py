@@ -25,6 +25,12 @@ from quant_nanggroe.engine.execution.guards.cooldown import CooldownGuard
 from quant_nanggroe.engine.execution.guards.max_position import MaxPositionGuard
 from quant_nanggroe.engine.execution.guards.whitelist import WhitelistGuard
 from quant_nanggroe.engine.execution.order import OrderManager
+from quant_nanggroe.engine.risk.constants import (
+    HARD_STOP_ATR_MULTIPLIER,
+    MAX_DAILY_LOSS,
+    MAX_RISK_PER_TRADE,
+    MIN_RISK_REWARD,
+)
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.veto_guard import GovernanceVetoGuard
 
@@ -194,6 +200,31 @@ class ExecutionManager:
         ks_weekly = weekly_pnl_pct / 100.0
         ks_drawdown = max_drawdown_pct / 100.0
         ks_volatility = volatility_pct / 100.0
+
+        # BLOCKER 1a fix: pull REALIZED PnL from the attached RiskManager's live
+        # broker handle BEFORE the guard pipeline / kill-switch auto-activation run,
+        # so they see REAL numbers instead of the 0.0 default (phantom-dead veto).
+        # RiskManager.current_risk_snapshot() already returns FRACTIONS
+        # (e.g. -0.06 == 6% loss), so assign them straight to the ks_ fractions —
+        # do NOT divide by 100 again (that was the 100x under-report, pitfall #58).
+        # Only override when the caller did NOT pass explicit values (default 0.0),
+        # so test/combined paths that inject PnL still take precedence.
+        if self._risk_manager is not None:
+            try:
+                # Sync today's/this-week's realized P&L from the live MT5 handle
+                # (no-op if no handle is attached), then read the fractions.
+                self._risk_manager._sync_realized_pnl()
+                snap = self._risk_manager.current_risk_snapshot()
+                if daily_pnl_pct == 0.0:
+                    ks_daily = float(snap.get("daily_pnl_pct", 0.0) or 0.0)
+                if weekly_pnl_pct == 0.0:
+                    ks_weekly = float(snap.get("weekly_pnl_pct", 0.0) or 0.0)
+                if max_drawdown_pct == 0.0:
+                    ks_drawdown = float(snap.get("max_drawdown_pct", 0.0) or 0.0)
+            except Exception as exc:
+                logger.warning(
+                    "execute_order: failed to pull realized PnL from broker handle: %s", exc
+                )
 
         # 1. Run guard pipeline
         self._governance_veto.update_pnl(ks_daily, ks_weekly)

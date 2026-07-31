@@ -726,6 +726,7 @@ class RiskEnforcer:
                     daily_pnl_pct=daily_pnl_pct,
                     weekly_pnl_pct=weekly_pnl_pct,
                     max_drawdown_pct=dd,
+                    volatility_pct=0.0,  # fail-closed: metric required, no live vol source here
                 )
                 return result is not None
             except Exception:

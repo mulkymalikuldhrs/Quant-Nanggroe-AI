@@ -49,6 +49,9 @@ class Settings(BaseSettings):
         risk_max_daily_loss: Maximum daily loss percentage (constitutional)
         risk_max_weekly_loss: Maximum weekly loss percentage (constitutional)
         risk_max_drawdown: Maximum drawdown percentage (constitutional)
+        default_sl_pips: Default stop-loss distance in pips when a trade has no explicit SL
+        default_tp_pips: Default take-profit distance in pips when a trade has no explicit TP
+        risk_based_sl_pct: Percent of equity risked per trade for risk-based SL sizing (0 disables)
     """
 
     model_config = SettingsConfigDict(
@@ -139,6 +142,29 @@ class Settings(BaseSettings):
     risk_tier: str = Field(
         default="live",
         description="Risk profile: 'demo' (lenient limits) or 'live' (strict constitutional limits).",
+    )
+
+    # Default Stop-Loss / Take-Profit configuration for new trades.
+    # - default_sl_pips / default_tp_pips: fixed pip-based defaults applied when
+    #   a strategy does not specify its own SL/TP levels.
+    # - risk_based_sl_pct: when > 0, override SL sizing so that the stop distance
+    #   risks at most this percentage of equity per the constitutional per-trade limit.
+    default_sl_pips: float = Field(
+        default=50.0,
+        description="Default stop-loss distance in pips for trades that do not define their own SL.",
+        ge=0.0,
+    )
+    default_tp_pips: float = Field(
+        default=100.0,
+        description="Default take-profit distance in pips for trades that do not define their own TP.",
+        ge=0.0,
+    )
+    risk_based_sl_pct: float = Field(
+        default=0.5,
+        description="If > 0, size the stop-loss distance to risk at most this percent of equity "
+                    "per trade (capped by risk_max_per_trade). 0 disables risk-based SL sizing.",
+        ge=0.0,
+        le=2.0,
     )
 
     # Backtesting

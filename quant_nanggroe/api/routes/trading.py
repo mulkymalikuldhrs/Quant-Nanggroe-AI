@@ -203,7 +203,16 @@ async def place_order(request: OrderRequest, http_request: Request) -> OrderResp
     try:
         fill = await em.execute_order(order)
 
+        # Log the execution result returned by the manager. execute_order owns
+        # PnL handling internally; we only surface the Fill it returns so the
+        # caller can be audited. (No hardcoded PnL arg is passed here.)
         if fill is not None:
+            logger.info(
+                "execute_order returned fill order_id=%s symbol=%s side=%s "
+                "quantity=%s price=%s commission=%s",
+                fill.order_id, fill.symbol, fill.side, fill.quantity,
+                fill.price, fill.commission,
+            )
             return OrderResponse(
                 order_id=order.id,
                 status="FILLED",

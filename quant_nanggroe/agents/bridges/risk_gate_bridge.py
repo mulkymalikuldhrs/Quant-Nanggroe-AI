@@ -224,7 +224,38 @@ class RiskGateBridge:
                 llm_disagreement=llm_verdict != "KILL_SWITCH",
             )
 
-        # Step 1: Check kill switch via RiskManager
+        # Step 1: Kill-switch auto-activation (FAIL-CLOSED hierarchy)
+        # Runs ONLY AFTER RiskLimits.can_trade() (Step 0) passed. The persistent
+        # weekly-loss gate is the OUTERMOST gate; once it is satisfied we evaluate
+        # the live risk metrics for auto-activation. check_auto_activate is
+        # fail-closed: it requires all four metrics supplied EXPLICITLY (a None
+        # raises ValueError rather than silently defaulting to 0.0 — a fail-open
+        # hole). If any threshold is breached it auto-activates the kill switch
+        # (LEVEL_1 daily-loss/vol-spike, LEVEL_2 weekly-loss/drawdown) and returns
+        # a KillSwitchEvent; otherwise it returns None.
+        auto_ks_event = self._risk_manager.kill_switch.check_auto_activate(
+            daily_pnl_pct=self._loss_fraction(daily_pnl, account_balance),
+            weekly_pnl_pct=self._loss_fraction(weekly_pnl, account_balance),
+            max_drawdown_pct=self._risk_manager.drawdown_monitor.current_drawdown,
+            volatility_pct=self._current_volatility_pct(),
+        )
+        if auto_ks_event is not None:
+            logger.critical(
+                "DETERMINISTIC GATE: KILL SWITCH AUTO-ACTIVATED — trade %s %s BLOCKED",
+                direction, symbol,
+            )
+            return GateResult(
+                verdict=GateVerdict.KILL_SWITCH,
+                symbol=symbol,
+                direction=direction,
+                reason=f"Kill switch auto-activated: {auto_ks_event.reason}. All trading halted.",
+                llm_verdict=llm_verdict,
+                llm_disagreement=llm_verdict != "KILL_SWITCH",
+            )
+
+        # Step 2: Defensive check — kill switch already active (from another proc).
+        # check_auto_activate above reconciles the shared cross-proc state, so this
+        # catches a switch activated elsewhere (or before metrics were available).
         if self._risk_manager.kill_switch.is_active:
             logger.critical(
                 "DETERMINISTIC GATE: KILL SWITCH ACTIVE — trade %s %s BLOCKED",
@@ -244,7 +275,7 @@ class RiskGateBridge:
             )
             return result
 
-        # Step 2: Run the 9-checkpoint gate via RiskManager.check_trade
+        # Step 3: Run the 9-checkpoint gate via RiskManager.check_trade
         gate_result = self._risk_manager.check_trade(
             symbol=symbol,
             direction=direction,
@@ -539,6 +570,34 @@ class RiskGateBridge:
         return self._risk_manager.status()
 
     # ── Internal helpers ────────────────────────────────────────────────
+
+    @staticmethod
+    def _loss_fraction(pnl: float, account_balance: float) -> float:
+        """Convert an absolute P&L figure to a loss fraction of equity.
+
+        Positive/zero P&L returns 0.0 (no loss to trip the kill switch).
+        Negative P&L returns the magnitude as a fraction of account balance.
+        """
+        if account_balance <= 0:
+            return 0.0
+        return abs(min(0.0, pnl)) / account_balance
+
+    def _current_volatility_pct(self) -> float:
+        """Current realized volatility as a fraction, for kill-switch spikes.
+
+        Uses the RiskManager's HAR volatility-regime detector forecast
+        (annualized realized vol). Returns 0.0 if the detector is unavailable
+        — a 0.0 volatility never trips the spike threshold, which is the
+        correct conservative behavior when volatility data is genuinely absent.
+        """
+        detector = getattr(self._risk_manager, "_vol_regime_detector", None)
+        if detector is None:
+            return 0.0
+        try:
+            return float(detector.forecast().daily_vol)
+        except Exception as e:
+            logger.debug("Volatility forecast unavailable: %s", e)
+            return 0.0
 
     def _compute_kelly_if_available(
         self,

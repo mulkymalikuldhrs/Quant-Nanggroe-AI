@@ -57,6 +57,66 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Per-symbol execution tuning (Blocker 2g / council #7)
+# ---------------------------------------------------------------------------
+# Slippage tolerance in points. FX majors are highly liquid with tight
+# spreads -> small deviation. Metals, indices and other CFDs move in larger
+# point increments and have wider spreads -> larger deviation to avoid
+# frequent requotes/rejections.
+DEFAULT_DEVIATION = 20
+
+_DEVIATION_BY_SYMBOL: Dict[str, int] = {
+    # FX majors — tight spreads
+    "EURUSD": 5,
+    "USDJPY": 5,
+    "GBPUSD": 8,
+    "USDCHF": 8,
+    "AUDUSD": 8,
+    "USDCAD": 8,
+    "NZDUSD": 8,
+    # FX minors / crosses
+    "EURJPY": 12,
+    "GBPJPY": 15,
+    "EURGBP": 10,
+    # Metals
+    "XAUUSD": 50,
+    "XAGUSD": 40,
+    # Indices
+    "US30": 60,
+    "US500": 40,
+    "USTEC": 50,
+    "NAS100": 50,
+    "SPX500": 40,
+    "GER40": 50,
+    "DE40": 50,
+    "UK100": 40,
+    # Crypto CFDs
+    "BTCUSD": 100,
+    "ETHUSD": 80,
+}
+
+
+def _resolve_deviation(symbol: str) -> int:
+    """Return the slippage tolerance (points) for a symbol.
+
+    Matching is case-insensitive and ignores broker suffixes (e.g.
+    ``EURUSD.pro`` / ``XAUUSD-ecn`` -> matched against the base symbol).
+    Falls back to :data:`DEFAULT_DEVIATION` for unknown symbols.
+    """
+    if not symbol:
+        return DEFAULT_DEVIATION
+    key = symbol.upper()
+    if key in _DEVIATION_BY_SYMBOL:
+        return _DEVIATION_BY_SYMBOL[key]
+    # Strip common broker suffix separators (".", "-", "_", "#").
+    base = key
+    for sep in (".", "-", "_", "#"):
+        if sep in base:
+            base = base.split(sep, 1)[0]
+    return _DEVIATION_BY_SYMBOL.get(base, DEFAULT_DEVIATION)
+
+
+# ---------------------------------------------------------------------------
 # MT5-specific models
 # ---------------------------------------------------------------------------
 
@@ -134,12 +194,20 @@ _TIMEFRAME_TO_MT5: Dict[TimeFrame, str] = {
 # MT5Broker
 # ---------------------------------------------------------------------------
 
-class MT5Broker(ExchangeInterface):
-    """MetaTrader 5 broker implementing ExchangeInterface.
+class MT5Exchange(ExchangeInterface):
+    """MetaTrader 5 exchange adapter implementing ExchangeInterface.
 
     Provides full trading capabilities via the MetaTrader5 Python API,
     including order placement, position management, market data, and
     account information.
+
+    NOTE: The canonical ``MT5Broker`` name now lives in
+    ``quant_nanggroe.connectors.mt5_broker`` (the synchronous, fail-closed
+    :class:`~quant_nanggroe.connectors.broker_base.BrokerConnector` used by
+    the engine execution layer). This ExchangeInterface facade was formerly
+    exported under the same ``MT5Broker`` name, which caused a duplicate-name
+    collision. It has been renamed to ``MT5Exchange``; ``MT5Broker`` is kept
+    ONLY as a backward-compatible alias and should not be used in new code.
 
     Parameters
     ----------
@@ -432,6 +500,8 @@ class MT5Broker(ExchangeInterface):
         quantity: float,
         price: Optional[float] = None,
         stop_price: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+        take_profit: Optional[float] = None,
         client_order_id: Optional[str] = None,
         strategy_name: Optional[str] = None,
         agent_name: Optional[str] = None,
@@ -514,12 +584,20 @@ class MT5Broker(ExchangeInterface):
                 "volume": quantity,
                 "type": type_enum,
                 "price": order_price,
-                "deviation": 10,
+                "deviation": _resolve_deviation(symbol),
                 "magic": 9001,
                 "comment": notes or "QNAI",
                 "type_filling": mt5.ORDER_FILLING_IOC,
                 "type_time": mt5.ORDER_TIME_GTC,
             }
+
+            # BLOCKER 2h: forward stop-loss / take-profit to order_send so the
+            # position is opened with protective levels attached (mirrors the
+            # active connector quant_nanggroe/connectors/mt5_broker.py).
+            if stop_loss is not None:
+                request["sl"] = float(stop_loss)
+            if take_profit is not None:
+                request["tp"] = float(take_profit)
 
             result = mt5.order_send(request)
 
@@ -550,6 +628,8 @@ class MT5Broker(ExchangeInterface):
                 strategy_name=strategy_name,
                 agent_name=agent_name,
                 notes=notes,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
             )
             self._local_orders[order.id] = order
             return order
@@ -709,11 +789,18 @@ class MT5Broker(ExchangeInterface):
                 return {"success": False, "error": f"Position {ticket} not found"}
 
             position = positions[0]
+            # In MT5 TRADE_ACTION_SLTP, sl/tp == 0.0 means "remove the level".
+            # A caller passing 0.0 (a common default / computation bug) must NOT
+            # silently strip the position's protection. Treat 0.0 like None and
+            # keep the existing level instead of forwarding 0.0 to the broker.
+            new_sl = stop_loss if (stop_loss is not None and stop_loss > 0.0) else position.sl
+            new_tp = take_profit if (take_profit is not None and take_profit > 0.0) else position.tp
+
             request = {
                 "action": self._mt5.TRADE_ACTION_SLTP,
                 "symbol": position.symbol,
-                "sl": stop_loss if stop_loss is not None else position.sl,
-                "tp": take_profit if take_profit is not None else position.tp,
+                "sl": new_sl,
+                "tp": new_tp,
                 "position": ticket,
             }
 
@@ -1134,10 +1221,18 @@ class MT5Broker(ExchangeInterface):
 
     def __repr__(self) -> str:
         state = self._state.value
-        return f"MT5Broker(state={state})"
+        return f"MT5Exchange(state={state})"
+
+
+# Backward-compatibility alias. The canonical ``MT5Broker`` is now the
+# synchronous BrokerConnector in ``quant_nanggroe.connectors.mt5_broker``.
+# This facade was renamed to ``MT5Exchange`` to remove the duplicate class
+# name; keep the old alias so existing importers do not break.
+MT5Broker = MT5Exchange
 
 
 __all__ = [
+    "MT5Exchange",
     "MT5Broker",
     "MT5AccountInfo",
     "MT5SymbolInfo",

@@ -69,6 +69,8 @@ class Order(BaseModel):
     strategy_name: Optional[str] = None
     agent_name: Optional[str] = None
     notes: Optional[str] = None
+    stop_loss: Optional[float] = Field(None, gt=0, description="Stop loss price")
+    take_profit: Optional[float] = Field(None, gt=0, description="Take profit price")
 
     model_config = {"from_attributes": True}
 
