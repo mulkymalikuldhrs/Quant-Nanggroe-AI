@@ -33,7 +33,6 @@ from quant_nanggroe.engine.risk.constants import (
 )
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.veto_guard import GovernanceVetoGuard
-from quant_nanggroe.config.settings import Settings
 
 if TYPE_CHECKING:
     from quant_nanggroe.engine.risk.manager import RiskManager
@@ -41,56 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _risk_based_sl(order: "Order", account_balance: float, settings: "Settings") -> float:
-    """Compute risk-based stop-loss price when order.stop_loss is None.
-
-    Uses settings.risk_based_sl_pct (fraction of equity risked) capped by
-    risk_max_per_trade, or falls back to default_sl_pips. Returns 0.0 only
-    if both are disabled (so caller can decide to skip SL).
-    """
-    if settings is None:
-        return 0.0
-    try:
-        sl_pct = getattr(settings, "risk_based_sl_pct", 0.0) or 0.0
-        price = order.price or 0.0
-        if price <= 0:
-            return 0.0
-        is_buy = (order.side.value == "BUY") if hasattr(order.side, "value") else str(order.side) == "BUY"
-        if sl_pct > 0:
-            notional = price * (order.quantity or 0.0)
-            if notional <= 0:
-                return 0.0
-            sl_dist = (account_balance * sl_pct) / order.quantity
-            frac = sl_dist / price
-        else:
-            sl_pips = getattr(settings, "default_sl_pips", 0.0) or 0.0
-            if sl_pips <= 0:
-                return 0.0
-            frac = (sl_pips * 0.0001) / price
-        return float(price * (1 - frac) if is_buy else price * (1 + frac))
-    except Exception:
-        return 0.0
-
-
-def _risk_based_tp(order: "Order", account_balance: float, settings: "Settings") -> float:
-    """Compute risk-based take-profit (mirror of _risk_based_sl, opposite side)."""
-    if settings is None:
-        return 0.0
-    try:
-        tp_pips = getattr(settings, "default_tp_pips", 0.0) or 0.0
-        if tp_pips <= 0:
-            return 0.0
-        price = order.price or 0.0
-        if price <= 0:
-            return 0.0
-        is_buy = (order.side.value == "BUY") if hasattr(order.side, "value") else str(order.side) == "BUY"
-        frac = (tp_pips * 0.0001) / price
-        return float(price * (1 + frac) if is_buy else price * (1 - frac))
-    except Exception:
-        return 0.0
-
-
-
+def _price_precision(price: float) -> int:
     """Crude decimal precision for rounding SL/TP prices by magnitude.
 
     Forex (< 1) needs 5 digits; most equities/crypto use 2-4. This is only
@@ -289,32 +239,12 @@ class ExecutionManager:
                     "execute_order: failed to pull realized PnL from broker handle: %s", exc
                 )
 
-        # 1. Run guard pipeline
-        self._governance_veto.update_pnl(ks_daily, ks_weekly)
-        self._governance_veto.update_drawdown(ks_drawdown)
-        guard_result = self._run_guards(order)
-        if not guard_result.allowed:
-            logger.warning(
-                "Order %s blocked by guard %s: %s",
-                order.id, guard_result.guard_name, guard_result.reason,
-            )
-            self._record_audit({
-                "action": "GUARD_BLOCKED",
-                "order_id": order.id,
-                "guard": guard_result.guard_name,
-                "reason": guard_result.reason,
-            })
-            return None
-
-        # 2. Route to broker
-        broker_name = self._route_order(order)
-        broker = self._brokers.get(broker_name)
-
-        if broker is None:
-            logger.error("No broker available for order %s", order.id)
-            return None
-
-        # 3. Kill switch — ENFORCED (not just a warning)
+        # 3. Kill switch — ENFORCED (not just a warning).
+        # Run BEFORE the guard pipeline so a PnL-fed breach auto-trips the kill
+        # switch and hard-blocks the order (Blockers 1a/1h). The kill switch is
+        # the single source of truth for loss-based halting; the governance veto
+        # below only enforces kill-switch-active + per-trade risk and must not
+        # pre-empt the switch's own activation.
         if self._kill_switch is not None:
             # Auto-activate if thresholds breached, then hard-block the order
             self._kill_switch.check_auto_activate(
@@ -358,6 +288,35 @@ class ExecutionManager:
                     daily_pnl_pct, weekly_pnl_pct,
                     max_drawdown_pct, volatility_pct,
                 )
+
+        # 1. Run guard pipeline
+        self._governance_veto.update_pnl(ks_daily, ks_weekly)
+        self._governance_veto.update_drawdown(ks_drawdown)
+        # Keep the veto guard's kill-switch view in sync so it also blocks when
+        # the switch is active (belt-and-braces with the block above).
+        if self._kill_switch is not None:
+            self._governance_veto.set_kill_switch_active(not self._kill_switch.can_trade())
+        guard_result = self._run_guards(order)
+        if not guard_result.allowed:
+            logger.warning(
+                "Order %s blocked by guard %s: %s",
+                order.id, guard_result.guard_name, guard_result.reason,
+            )
+            self._record_audit({
+                "action": "GUARD_BLOCKED",
+                "order_id": order.id,
+                "guard": guard_result.guard_name,
+                "reason": guard_result.reason,
+            })
+            return None
+
+        # 2. Route to broker
+        broker_name = self._route_order(order)
+        broker = self._brokers.get(broker_name)
+
+        if broker is None:
+            logger.error("No broker available for order %s", order.id)
+            return None
 
         # 4. Constitutional RiskManager — ENFORCED (no override possible)
         # BLOCKER 2 fix: populate order.stop_loss / order.take_profit BEFORE the

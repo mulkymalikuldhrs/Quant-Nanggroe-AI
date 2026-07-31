@@ -103,11 +103,11 @@ class GovernanceVetoGuard:
                 reason=f"Max drawdown breached: {self._current_drawdown_pct:.2%} >= {self._max_drawdown:.2%}",
             )
 
-        risk_per_trade = abs(order.quantity * (order.price or 0.0))
-        if risk_per_trade > 0 and risk_per_trade / self._max_risk_per_trade > 1.0:
-            return GovernanceVetoResult(
-                allowed=False,
-                reason=f"Per-trade risk exceeds limit",
-            )
+        # NOTE: per-trade risk is NOT enforced here. The check that lived at this
+        # spot compared raw notional (e.g. quantity*price = 50) against the
+        # FRACTION _max_risk_per_trade (~0.015), which blocked every normal order.
+        # Per-trade risk is already (correctly) enforced downstream by
+        # RiskManager.check_trade() via RiskCheckGate, sized from the stop-loss
+        # distance — so it is redundant and broken here and has been removed.
 
         return GovernanceVetoResult(allowed=True)
