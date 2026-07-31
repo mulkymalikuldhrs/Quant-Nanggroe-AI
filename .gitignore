@@ -54,6 +54,10 @@ config/credentials.json
 config/mt5_accounts.yaml
 config/credentials.json.bak
 config/freqtrade.json
+credentials.md.txt
+# exception: the quarantine placeholder in the repo IS meant to be tracked
+!quant_nanggroe/credentials.md.txt
+.qna-secrets/
 *_key.pem
 *.p12
 *.jks
@@ -124,3 +128,5 @@ guardian_issues/
 
 # ── Archival ─────────────────────────────────────────────────────────
 .bak/
+quant_nanggroe/.bak/dead/
+tmp-venvv2/

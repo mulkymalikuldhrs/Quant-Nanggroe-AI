@@ -20,16 +20,19 @@ class PerformanceScanner:
         self._journal = journal or EvolutionJournal()
 
     def scan_strategy(
-        self, strategy_name: str, timeframe: str = ""
+        self, strategy_name: str, timeframe: str = "", regime: str | None = None
     ) -> dict[str, Any]:
         """Return performance metrics for a strategy.
+
+        If regime is provided, only trades matching that regime_label
+        are considered.
 
         Returns dict with:
             strategy_name, timeframe, trade_count, sharpe, sortino,
             win_rate, profit_factor, max_drawdown, avg_return,
             total_pnl, avg_win, avg_loss, payoff_ratio
         """
-        trades = self._journal.get_recent_trades(strategy_name, limit=1000)
+        trades = self._journal.get_recent_trades(strategy_name, limit=1000, regime=regime)
         if not trades:
             return {
                 "strategy_name": strategy_name,
@@ -54,7 +57,6 @@ class PerformanceScanner:
         wins = [r for r in returns if r > 0]
         losses = [r for r in returns if r <= 0]
         win_count = len(wins)
-        loss_count = len(losses) or 1  # avoid division by zero
 
         win_rate = win_count / trade_count if trade_count else 0.0
 
@@ -197,7 +199,6 @@ class PerformanceScanner:
 
         n = len(rows)
         wins = [v for v in returns if v > 0]
-        losses = [v for v in returns if v <= 0]
         win_rate = len(wins) / n if n else 0.0
 
         avg_return = sum(returns) / n if n else 0.0
@@ -217,9 +218,13 @@ class PerformanceScanner:
         }
 
     def scan_by_regime(
-        self, strategy_name: str, dimension: str = "vix_bucket"
+        self, strategy_name: str, dimension: str = "vix_bucket",
+        regime: str | None = None,
     ) -> list[dict[str, Any]]:
         """Return per-regime metrics for a strategy.
+
+        If regime is provided, filter to trades matching that regime_label
+        before bucketing by dimension.
 
         Supported dimensions:
             vix_bucket      — low / normal / elevated / high
@@ -227,7 +232,7 @@ class PerformanceScanner:
             regime_label    — raw label from pipeline (e.g. 'bullish', 'bearish', 'ranging')
             killzone        — asian / london / ny_overlap / ny_afternoon
         """
-        trades = self._journal.get_recent_trades(strategy_name, limit=2000)
+        trades = self._journal.get_recent_trades(strategy_name, limit=2000, regime=regime)
         if not trades:
             return []
 

@@ -221,52 +221,41 @@ def _windowed_score(
 #  Public API
 # ══════════════════════════════════════════════════════════════════════
 
+def _labels(asset_a, asset_b):
+    a_label = getattr(asset_a, 'name', None) or str(asset_a if not isinstance(asset_a, np.ndarray) else 'asset_a')
+    b_label = getattr(asset_b, 'name', None) or str(asset_b if not isinstance(asset_b, np.ndarray) else 'asset_b')
+    return a_label, b_label
+
+
 def measure_lead_lag(
     asset_a: Union[str, pd.Series, np.ndarray],
     asset_b: Union[str, pd.Series, np.ndarray],
     max_lag: int = DEFAULT_MAX_LAG,
 ) -> Dict[str, object]:
-    """Measure lead-lag relationship between two assets.
-
-    Tries yfinance download for string identifiers. For Series/ndarray,
-    uses the supplied prices directly.
-
-    Args:
-        asset_a: First asset identifier or price array-like.
-        asset_b: Second asset identifier or price array-like.
-        max_lag: Maximum lag magnitude to test.
-
-    Returns:
-        Dict with keys:
-        - ``lead_asset``
-        - ``lag_asset``
-        - ``lag`` (candles, adjusted so lag >= 0)
-        - ``confidence`` (0.0 .. 1.0)
-    """
     sa = _as_series(asset_a)
     sb = _as_series(asset_b)
     if sa is None or sb is None or len(sa) < 10 or len(sb) < 10:
+        a_label, b_label = _labels(asset_a, asset_b)
         return {
-            "lead_asset": str(asset_a),
-            "lag_asset": str(asset_b),
+            "lead_asset": a_label,
+            "lag_asset": b_label,
             "lag": 0,
             "confidence": 0.0,
         }
 
-    # Align indices for clean comparison.
     common = sa.index.intersection(sb.index)
     if len(common) < 10:
+        a_label, b_label = _labels(asset_a, asset_b)
         return {
-            "lead_asset": str(asset_a),
-            "lag_asset": str(asset_b),
+            "lead_asset": a_label,
+            "lag_asset": b_label,
             "lag": 0,
             "confidence": 0.0,
         }
     pa = sa.loc[common].values
     pb = sb.loc[common].values
 
-    a_label = str(asset_a)
-    b_label = str(asset_b)
+    a_label, b_label = _labels(asset_a, asset_b)
     lag, corr = _pearson_lagged(pa, pb, max_lag)
     if lag > 0:
         lead, lag_name, direction_lag = b_label, a_label, lag
@@ -275,12 +264,11 @@ def measure_lead_lag(
     else:
         lead, lag_name, direction_lag = a_label, b_label, 0
 
-    confidence = min(corr, 1.0)
     return {
         "lead_asset": lead,
         "lag_asset": lag_name,
         "lag": direction_lag,
-        "confidence": math.copysign(confidence, lag) if lag != 0 else 0.0,
+        "confidence": min(corr, 1.0),
     }
 
 

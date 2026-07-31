@@ -51,6 +51,137 @@ SYMBOL_TO_FUTURES = {
 }
 
 
+# ──────────────────────────────────────────────────────────────────────
+#  Crypto funding/OI signal provider
+# ──────────────────────────────────────────────────────────────────────
+
+_CRYPTO_FUNDING_CACHE: dict[str, tuple[float, dict]] = {}
+_CRYPTO_CACHE_TTL = 60  # 60 seconds
+
+
+def _get_crypto_derivatives(symbol: str) -> dict:
+    """Fetch crypto derivatives data from Binance with caching."""
+    import time
+    now = time.monotonic()
+    if symbol in _CRYPTO_FUNDING_CACHE:
+        cached_time, data = _CRYPTO_FUNDING_CACHE[symbol]
+        if now - cached_time < _CRYPTO_CACHE_TTL:
+            return data
+
+    try:
+        from quant_nanggroe.data.providers.binance import BinanceProvider
+        provider = BinanceProvider()
+        import asyncio
+        data = asyncio.run(provider.get_derivatives_data([symbol]))
+        result = data.get(symbol, {})
+        _CRYPTO_FUNDING_CACHE[symbol] = (now, result)
+        return result
+    except Exception as e:
+        log.warning(f"Crypto derivatives fetch failed for {symbol}: {e}")
+        return {"error": str(e)}
+
+
+def signal_crypto_funding(symbol="BTCUSDT", ctx=None):
+    """Derive crypto trading signal from funding rate + open interest + taker ratio.
+
+    Logic:
+    - Funding > 10% annual (longs lean) + OI rising → shorts favored (funding arb)
+    - Funding < -10% annual (shorts lean) + OI rising → longs favored
+    - Taker ratio > 1 (aggressive buying) → bullish
+    - Taker ratio < 1 (aggressive selling) → bearish
+    - Combine: funding state + taker momentum
+    """
+    # Only trade crypto symbols
+    crypto_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+    if symbol not in crypto_symbols:
+        return {"bias": "neutral", "confidence": 0, "source": "crypto_funding"}
+
+    data = _get_crypto_derivatives(symbol)
+    if "error" in data:
+        return {"bias": "neutral", "confidence": 0, "source": "crypto_funding"}
+
+    funding_annual = data.get("funding_annual_pct")
+    funding_state = data.get("funding_state")
+    taker_ratio = data.get("taker_ratio")
+    global_ls = data.get("global_ls_ratio")
+    top_ls = data.get("top_ls_ratio")
+
+    if funding_annual is None or taker_ratio is None:
+        return {"bias": "neutral", "confidence": 0, "source": "crypto_funding"}
+
+    # Signal logic:
+    # 1. Funding crowding → mean reversion bias (funding arb)
+    # 2. Taker ratio → momentum bias
+    # 3. L/S ratio → positioning confirmation
+
+    bias_score = 0.0
+    confidence_factors = []
+
+    # Funding regime (mean reversion expectation)
+    if funding_state == "longs_crowded":  # >30% annual
+        bias_score -= 0.5  # Expect shorts to pay longs → price down
+        confidence_factors.append(0.7)
+    elif funding_state == "longs_lean":  # >10% annual
+        bias_score -= 0.3
+        confidence_factors.append(0.5)
+    elif funding_state == "shorts_crowded":  # <-30% annual
+        bias_score += 0.5  # Expect longs to pay shorts → price up
+        confidence_factors.append(0.7)
+    elif funding_state == "shorts_lean":  # <-10% annual
+        bias_score += 0.3
+        confidence_factors.append(0.5)
+
+    # Taker ratio (momentum)
+    if taker_ratio > 1.1:
+        bias_score += 0.4  # Aggressive buying
+        confidence_factors.append(0.6)
+    elif taker_ratio < 0.9:
+        bias_score -= 0.4  # Aggressive selling
+        confidence_factors.append(0.6)
+
+    # L/S ratios (positioning confirmation)
+    if global_ls and global_ls > 1.2:
+        bias_score -= 0.2  # Crowded longs → mean reversion down
+        confidence_factors.append(0.4)
+    elif global_ls and global_ls < 0.8:
+        bias_score += 0.2  # Crowded shorts → mean reversion up
+        confidence_factors.append(0.4)
+
+    # Top trader L/S (smarter money)
+    if top_ls and top_ls > 1.5:
+        bias_score -= 0.15
+        confidence_factors.append(0.3)
+    elif top_ls and top_ls < 0.67:
+        bias_score += 0.15
+        confidence_factors.append(0.3)
+
+    if bias_score > 0.3:
+        bias = "buy"
+        confidence = min(abs(bias_score) * 0.8, 0.85)
+    elif bias_score < -0.3:
+        bias = "sell"
+        confidence = min(abs(bias_score) * 0.8, 0.85)
+    else:
+        bias = "neutral"
+        confidence = 0.0
+
+    signal = {"bias": bias, "confidence": round(confidence, 2), "source": "crypto_funding"}
+    return apply_causal_bias(signal, symbol, ctx=ctx)
+
+
+def signal_sma(symbol="EURUSD", ctx=None):
+    df = get_historical_mt5(symbol, count=100, tf=15)
+    if df is None or len(df) < 50:
+        return {"bias": "neutral", "confidence": 0, "source": "sma"}
+    c = df['close'].values
+    s20, s50 = sum(c[-20:]) / 20, sum(c[-50:]) / 50
+    if s20 > s50:
+        return apply_causal_bias({"bias": "buy", "confidence": 0.6, "source": "sma"}, symbol, ctx=ctx)
+    if s20 < s50:
+        return apply_causal_bias({"bias": "sell", "confidence": 0.6, "source": "sma"}, symbol, ctx=ctx)
+    return {"bias": "neutral", "confidence": 0, "source": "sma"}
+
+
 def causal_bias_score(symbol: str) -> float:
     """Read the causal macro bias for a trading symbol from QNA_CAUSAL_BIAS_* env vars.
 

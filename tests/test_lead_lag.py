@@ -55,12 +55,12 @@ class TestMeasureLeadLag:
         assert 0.0 <= result["confidence"] <= 1.0
 
     def test_synthetic_beta_lead_detected(self):
-        alpha, beta, _ = _synthetic_lead_lag(lead_candles=5, noise=0.04)
-        # If we reverse order, measurement should reflect caller label.
+        alpha, beta, expected_lag = _synthetic_lead_lag(lead_candles=5, noise=0.04)
+        # alpha leads beta regardless of call order, lag is symmetric.
         result = measure_lead_lag(beta, alpha, max_lag=DEFAULT_MAX_LAG)
-        assert result["lead_asset"] == "BETA"
-        assert result["lag_asset"] == "ALPHA"
-        assert result["lag"] == 5
+        assert result["lead_asset"] == "ALPHA"
+        assert result["lag_asset"] == "BETA"
+        assert result["lag"] == expected_lag
 
     def test_insufficient_data(self):
         short = pd.Series([1.0, 2.0])

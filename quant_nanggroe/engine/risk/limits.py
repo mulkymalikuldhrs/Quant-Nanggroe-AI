@@ -32,11 +32,15 @@ class RiskLimits:
         state_file: str = _DEFAULT_STATE_FILE,
     ) -> None:
         self.max_weekly_loss_pct = max_weekly_loss_pct
-        self._state_dir = state_dir or _DEFAULT_STATE_DIR
+        # Accept str or Path for state_dir — normalize defensively
+        self._state_dir = Path(state_dir) if state_dir is not None else _DEFAULT_STATE_DIR
         self._state_file = self._state_dir / state_file
         self._weekly_pnl: float = 0.0
         self._week_start_iso: Optional[str] = None
         self._load()
+        # Ensure week start is set even if _load() found no file
+        if self._week_start_iso is None:
+            self._week_start_iso = self._current_week_start(datetime.now(timezone.utc))
 
     # ── Public API ─────────────────────────────────────────────────────
 

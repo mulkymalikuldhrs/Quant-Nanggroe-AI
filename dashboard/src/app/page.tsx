@@ -5,14 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAppStore } from "@/lib/store";
-import { apiRequest, agentsApi, portfolioApi, marketApi, brokersApi, schedulerApi } from "@/lib/api-client";
-import type { MarketSentiment, BrokerAccount, MT5AccountInfo, SchedulerStatus } from "@/lib/api-client";
+import { apiRequest, agentsApi, portfolioApi, marketApi, brokersApi, schedulerApi, tradingApi } from "@/lib/api-client";
+import type { MarketSentiment, BrokerAccount, MT5AccountInfo, SchedulerStatus, TradeDetail } from "@/lib/api-client";
 import { useRealtimeData } from "@/lib/websocket";
 import { ErrorBoundary, ErrorDisplay } from "@/components/shared/error-boundary";
 import {
   Activity, Wallet, TrendingUp, Bot, Radio, Shield, RefreshCw,
   Wifi, WifiOff, GitBranch, Building2, Play, Square, Clock,
   ArrowUp, ArrowDown, ArrowLeftRight, ArrowRight, BarChart3, Briefcase, Globe, Cpu, Zap,
+  History,
 } from "lucide-react";
 import { cn, formatCurrency, formatPercent } from "@/lib/utils";
 
@@ -454,11 +455,113 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* Trade History Panel */}
+      <TradeHistoryPanel />
+
       {/* Footer refresh indicator */}
       {loadingStates.agents.loading && (
         <p className="text-[10px] text-white/20 animate-pulse text-center">Refreshing data...</p>
       )}
     </div>
+  );
+}
+
+function TradeHistoryPanel() {
+  const [trades, setTrades] = useState<TradeDetail[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTrades = useCallback(async () => {
+    setLoading(true);
+    try {
+      const resp = await tradingApi.getHistory({ limit: 20 });
+      setTrades(resp.trades ?? []);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message || "Failed to load trade history");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTrades();
+    const id = setInterval(fetchTrades, 60000);
+    return () => clearInterval(id);
+  }, [fetchTrades]);
+
+  const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const winCount = trades.filter(t => (t.pnl || 0) > 0).length;
+
+  return (
+    <Card className="p-5">
+      <CardHeader>
+        <div>
+          <CardTitle>Trade History</CardTitle>
+          <CardDescription>Closed trades (last 20)</CardDescription>
+        </div>
+        <History className="w-4 h-4 text-white/30" />
+      </CardHeader>
+      <CardContent>
+        {loading && trades.length === 0 ? (
+          <div className="text-[11px] text-white/30 py-6 text-center">Loading trades...</div>
+        ) : error && trades.length === 0 ? (
+          <ErrorDisplay error={error} onRetry={fetchTrades} title="Trade history unavailable" />
+        ) : trades.length === 0 ? (
+          <div className="text-[11px] text-white/30 py-6 text-center">No closed trades</div>
+        ) : (
+          <div className="space-y-1.5">
+            {trades.map((t) => (
+              <div
+                key={t.id}
+                className="bbg-cell flex items-center justify-between px-2.5 py-1.5 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-[9px] font-mono text-white/40 w-14">
+                    {new Date(t.exit_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <span className="text-xs font-medium text-white/70 w-16">{t.symbol}</span>
+                  <Badge
+                    variant={t.side === "buy" ? "success" : "danger"}
+                    size="sm"
+                    className="text-[9px]"
+                  >
+                    {t.side === "buy" ? "LONG" : "SHORT"}
+                  </Badge>
+                  {t.strategy && (
+                    <span className="text-[9px] text-white/40">{t.strategy}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-right">
+                  <span className="text-[9px] text-white/30 font-mono">
+                    PnL: {(t.pnl || 0) > 0 ? "+" : ""}{t.pnl?.toFixed(2) ?? "—"}
+                  </span>
+                  <span className={cn(
+                    "text-xs font-mono font-medium",
+                    (t.pnl || 0) >= 0 ? "text-profit" : "text-loss",
+                  )}>
+                    {t.pnl_pct != null ? `${t.pnl_pct >= 0 ? "+" : ""}${t.pnl_pct.toFixed(1)}%` : "—"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {trades.length > 0 && (
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
+            <span className="text-[10px] text-white/30 font-mono">
+              {winCount}/{trades.length} winners
+            </span>
+            <span className={cn(
+              "text-xs font-mono font-medium",
+              totalPnl >= 0 ? "text-profit" : "text-loss",
+            )}>
+              Total: {totalPnl >= 0 ? "+" : ""}{totalPnl.toFixed(2)}
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

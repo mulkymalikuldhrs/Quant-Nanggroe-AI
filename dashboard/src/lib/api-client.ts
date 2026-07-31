@@ -284,6 +284,15 @@ export const tradingApi = {
     apiRequest<TradeDetail>(`/api/trading/history/${id}`),
 };
 
+// ponytail: backend mounts trade_history.router at /api/trading, not /api/trade-history
+export const tradeHistoryApi = {
+  list: (params?: {
+    symbol?: string; date_from?: string; date_to?: string;
+    strategy?: string; limit?: number;
+  }) => tradingApi.getHistory(params),
+  get: (id: string) => tradingApi.getTradeDetail(id),
+};
+
 export const marketApi = {
   getPrice: (symbol: string) =>
     apiRequest<PriceResponse>(`/api/market/price/${symbol}`),
@@ -717,6 +726,20 @@ export const configApi = {
     apiRequest<{ success: boolean }>("/api/credentials", { method: "PUT", body: data }),
 };
 
+export const derivativesApi = {
+  getDerivatives: (symbol: string = "BTCUSDT") =>
+    apiRequest<DerivativesResponse>(
+      `/api/terminal/derivatives?symbol=${encodeURIComponent(symbol)}`,
+    ),
+};
+
+export const econCalendarApi = {
+  getEconCalendar: (hours: number = 48) =>
+    apiRequest<EconCalendarResponse>(
+      `/api/terminal/econ-calendar?hours=${hours}`,
+    ),
+};
+
 // ── Evolution Types ──────────────────────────────────────────────────
 
 export interface EvolutionApiResponse<T> {
@@ -762,4 +785,36 @@ export interface ClosedTrade {
   pnl: number | null;
   pnl_pct: number | null;
   hold_hours: number | null;
+}
+
+// ── Terminal Types ──────────────────────────────────────────────────
+
+export interface DerivativesResponse {
+  timestamp: string;
+  symbol: string;
+  funding?: number | null;
+  funding_8h_rate?: number | null;
+  oi?: number | null;
+  oi_change_24h?: number | null;
+  long_short_ratio?: number | null;
+  taker_buy_ratio?: number | null;
+  hl_funding?: number | null;
+  funding_venue_gap_bps?: number | null;
+  error?: string;
+}
+
+export interface EconCalendarEvent {
+  name: string;
+  short: string;
+  severity: string;
+  time_utc: string;
+  t_minus_hours: number;
+  affects: string[];
+}
+
+export interface EconCalendarResponse {
+  timestamp: string;
+  hours: number;
+  events: EconCalendarEvent[];
+  error?: string;
 }

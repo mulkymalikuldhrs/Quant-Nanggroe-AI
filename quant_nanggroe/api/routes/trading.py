@@ -26,6 +26,13 @@ from quant_nanggroe.engine.execution.base import (
     Order as ExecOrder,
 )
 
+# MT5 auto-path: ensure native plugin loadable before any `import MetaTrader5`
+try:
+    from quant_nanggroe.utils.mt5_launcher import ensure_mt5_env
+    ensure_mt5_env()
+except Exception as _mt5_setup_err:
+    logger.warning("MT5 auto-path setup skipped in trading.py: %s", _mt5_setup_err)
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 

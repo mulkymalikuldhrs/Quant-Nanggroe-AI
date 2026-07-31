@@ -6,12 +6,12 @@ All tables use INTEGER PRIMARY KEY for auto-increment.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 _JDBC_DATETIME = "YYYY-MM-DDTHH:MM:SS.sss"  # ISO-8601 format
 
@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS closed_trades (
     fear_greed      INTEGER,
     risk_index      REAL,
     regime_label    TEXT,
-    r_multiple      REAL
+    r_multiple      REAL,
+    market_context  TEXT
 );
 
 CREATE TABLE IF NOT EXISTS evolution_runs (
@@ -112,6 +113,7 @@ class EvolutionJournal:
             "ALTER TABLE closed_trades ADD COLUMN risk_index REAL",
             "ALTER TABLE closed_trades ADD COLUMN regime_label TEXT",
             "ALTER TABLE closed_trades ADD COLUMN r_multiple REAL",
+            "ALTER TABLE closed_trades ADD COLUMN market_context TEXT",
         ]
         for sql in migrations:
             try:
@@ -133,15 +135,20 @@ class EvolutionJournal:
 
         Market context fields (vix, fear_greed, risk_index, regime_label,
         r_multiple) are optional — missing keys default to NULL.
+        market_context is a dict that gets serialized as JSON.
         """
         now = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+        market_context = trade.get("market_context")
+        if market_context is not None and not isinstance(market_context, str):
+            market_context = json.dumps(market_context)
         stmt = """INSERT INTO closed_trades
             (timestamp, symbol, strategy, timeframe, direction,
              entry_price, exit_price, pnl, pnl_pct, hold_hours,
              spread, entry_reason, sl_type, tags,
-             vix, fear_greed, risk_index, regime_label, r_multiple)
+             vix, fear_greed, risk_index, regime_label, r_multiple,
+             market_context)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?)"""
+                    ?, ?, ?, ?, ?, ?)"""
         cur = self._conn.execute(stmt, (
             trade.get("timestamp", now),
             trade.get("symbol", ""),
@@ -162,17 +169,39 @@ class EvolutionJournal:
             trade.get("risk_index"),
             trade.get("regime_label"),
             trade.get("r_multiple"),
+            market_context,
         ))
         self._conn.commit()
         return cur.lastrowid  # type: ignore[return-value]
 
     def get_recent_trades(
-        self, strategy_name: str, limit: int = 20
+        self, strategy_name: str, limit: int = 20, regime: str | None = None
     ) -> list[dict[str, Any]]:
-        """Return most recent closed trades for a strategy."""
+        """Return most recent closed trades for a strategy.
+
+        If regime is provided, filter to trades matching that regime_label.
+        """
+        if regime is not None:
+            cur = self._conn.execute(
+                "SELECT * FROM closed_trades WHERE strategy=? AND regime_label=? "
+                "ORDER BY id DESC LIMIT ?",
+                (strategy_name, regime, limit),
+            )
+        else:
+            cur = self._conn.execute(
+                "SELECT * FROM closed_trades WHERE strategy=? ORDER BY id DESC LIMIT ?",
+                (strategy_name, limit),
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_trades_by_regime(
+        self, strategy_name: str, regime: str, limit: int = 1000
+    ) -> list[dict[str, Any]]:
+        """Return closed trades for a strategy filtered by regime label."""
         cur = self._conn.execute(
-            "SELECT * FROM closed_trades WHERE strategy=? ORDER BY id DESC LIMIT ?",
-            (strategy_name, limit),
+            "SELECT * FROM closed_trades WHERE strategy=? AND regime_label=? "
+            "ORDER BY id DESC LIMIT ?",
+            (strategy_name, regime, limit),
         )
         return [dict(r) for r in cur.fetchall()]
 

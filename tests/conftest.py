@@ -16,6 +16,22 @@ os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///test_qna.db")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("QNAI_JWT_SECRET", "test-secret-key-for-pytest")
+# Use in-memory persistence in tests — prevents FileBackend from writing
+# real risk state to data/persistence/ and polluting kill-switch/risk tests
+# that run later in the same session (cross-test state leak).
+os.environ.setdefault("PERSISTENCE_BACKEND", "memory")
+# Point the cross-process kill-switch state file at a fresh temp path BEFORE
+# any module import. Importing engine/evolution.* transitively calls
+# configure_kill_switch_file(), which — when this env is unset — points
+# KillSwitch at the REAL data/kill_switch_state.json. A stale ACTIVE state
+# there makes every later KillSwitch() file-backed and is_active=True,
+# breaking tests that expect a fresh instance. Pre-setting the env makes
+# configure_kill_switch_file a no-op and keeps state isolated per run.
+import tempfile as _tempfile
+import uuid as _uuid
+os.environ["QNA_KILL_SWITCH_STATE_FILE"] = str(
+    _tempfile.gettempdir() + f"/qna_pytest_ks_{_uuid.uuid4().hex[:8]}.json"
+)
 
 
 @pytest.fixture

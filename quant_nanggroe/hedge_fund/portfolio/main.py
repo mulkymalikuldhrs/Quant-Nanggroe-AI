@@ -17,27 +17,26 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Optional
 
+from quant_nanggroe.core.advisory import LLMAdvisor
+from quant_nanggroe.core.scoring.evolver import WeightEvolver
 from quant_nanggroe.engine.backtest.walk_forward import get_viable_strategies
 from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
 from quant_nanggroe.engine.causal.models import CausalContext
 from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
 from quant_nanggroe.engine.execution.builder import build_execution_manager
+from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.risk.kill_switch import (
     KillSwitch,
-    KillSwitchLevel,
     configure_kill_switch_file,
 )
-from quant_nanggroe.engine.risk.kelly import KellyCriterion
+from quant_nanggroe.engine.risk.limits import RiskLimits
 from quant_nanggroe.engine.strategy_lifecycle import StrategyLifecycleManager
 from quant_nanggroe.hedge_fund.execution.orders import trail_sl
 from quant_nanggroe.hedge_fund.portfolio.sizing import calculate_position_size
 from quant_nanggroe.hedge_fund.risk.guard import risk_guard_approve
 from quant_nanggroe.hedge_fund.signals.aggregator import aggregate
 from quant_nanggroe.hedge_fund.signals.registry import ALL_PROVIDERS
-from quant_nanggroe.core.advisory import AdvisoryResult, LLMAdvisor
-from quant_nanggroe.core.scoring.evolver import WeightEvolver
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
-from quant_nanggroe.hedge_fund.utils import config as _config
 from quant_nanggroe.hedge_fund.utils.config import (
     GATE_FILE,
     MT5_AVAILABLE,
@@ -229,10 +228,9 @@ def _build_causal_context(dxy_pct: float = 0.0, zb_pct: float = 0.0) -> Optional
         hmm_dom: str = ""
         try:
             from quant_nanggroe.engine.regime.hmm_regime import (
-                REGIME_LABELS,
+                HMMRegimeDetector,
                 build_features,
                 fetch_observables,
-                HMMRegimeDetector,
             )
             obs = fetch_observables()
             if not obs.empty:
@@ -305,7 +303,7 @@ def _pipeline_discover(result: dict) -> dict:
     symbol: str | None = result.get("symbol") or None
     if not symbol:
         try:
-            from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import scan_all_pairs, live_scan
+            from quant_nanggroe.hedge_fund.tools.multi_pair_scanner import live_scan, scan_all_pairs
             try:
                 pairs = scan_all_pairs(mt5_available=MT5_AVAILABLE)
                 if not pairs:
@@ -430,6 +428,8 @@ def _pipeline_vote(result: dict) -> dict:
     result["_fusion_ctx"] = _fusion_ctx
     try:
         from quant_nanggroe.core.cache import TTLCache
+        from quant_nanggroe.core.news import NewsScorer
+        from quant_nanggroe.core.regime import RegimeDetector
         from quant_nanggroe.core.scoring import (
             BondScorer,
             CryptoScorer,
@@ -442,8 +442,6 @@ def _pipeline_vote(result: dict) -> dict:
             TechnicalScorer,
             VolatilityScorer,
         )
-        from quant_nanggroe.core.regime import RegimeDetector
-        from quant_nanggroe.core.news import NewsScorer
         _fusion_scorers = [
             BondScorer(),
             CryptoScorer(),
@@ -610,6 +608,30 @@ def _pipeline_risk_check(result: dict) -> dict:
 
     market_atr = calc_atr(symbol) or 0.001
     sizing = calculate_position_size(signal, real_balance, atr=market_atr)
+
+    # ── 0. Weekly Loss Gate (RiskLimits) — FIRST LINE OF DEFENSE ──────
+    _risk_limits = RiskLimits()
+    _weekly_loss_pct = _risk_limits.current_weekly_loss_pct()
+    if not _risk_limits.can_trade():
+        log.warning(
+            "RISK LIMITS VETO — weekly loss %.2f%% >= %.2f%% limit",
+            _weekly_loss_pct * 100,
+            _risk_limits.max_weekly_loss_pct * 100,
+        )
+        result["status"] = "risk_limits_veto"
+        result["risk_limits"] = {
+            "weekly_loss_pct": _weekly_loss_pct,
+            "max_weekly_loss_pct": _risk_limits.max_weekly_loss_pct,
+            "weekly_pnl": _risk_limits.weekly_pnl,
+        }
+        result["_early_exit"] = True
+        return result
+    else:
+        log.info(
+            "RiskLimits OK — weekly loss %.2f%% < %.2f%% limit",
+            _weekly_loss_pct * 100,
+            _risk_limits.max_weekly_loss_pct * 100,
+        )
 
     # ── 1. VIX Gate ──────────────────────────────────────────────
     _vix_reduce = False

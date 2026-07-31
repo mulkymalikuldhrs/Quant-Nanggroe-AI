@@ -148,7 +148,7 @@ End every response to owner with structured format: verified evidence → change
 - ✅ E:\ extraction (hidden-regime, news, loop-engineering, tradingagents)
 - ✅ qna.py pipeline bug fixed (asyncio.run → direct call, .get() → getattr)
 - ✅ Root cleaned, git committed, docs flagged
-- ⏳ credentials.md.txt — owner action required (backup + rm + rotate)
+- ✅ credentials.md.txt — QUARANTINED: 100+ secrets moved to `C:\Users\Hi\.qna-secrets\credentials.md.txt` (out of repo, not in git). Repo holds placeholder only. Rotate secrets at owner discretion.
 - ⏳ engine/factors/ 450+ alpha factors — not wired (enhancement, not blocker)
 - ⏳ engine/rl/ — needs PyTorch for real training (scaffold only)
 - ⏳ docs cleanup — 107 → ~20 files (STATUS.md has contradiction map)

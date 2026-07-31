@@ -46,6 +46,12 @@ class MT5Adapter:
         self._mt5_mod = None
         self._mt5_loaded = False
         try:
+            # Auto-detect MT5 terminal anywhere on disk + set DLL path
+            try:
+                from utils.mt5_launcher import ensure_mt5_env
+                ensure_mt5_env()
+            except Exception:
+                pass
             import MetaTrader5 as _mt5
             self._mt5_mod = _mt5
             self._mt5_loaded = True

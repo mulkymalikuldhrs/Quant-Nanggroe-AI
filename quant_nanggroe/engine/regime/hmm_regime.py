@@ -211,15 +211,15 @@ def fetch_observables(
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     """Build simple return + level features for HMM input.
 
-    Produces columns: ret_DXY, ret_ZB1, ret_VIX, ret_GC1, ret_ES1, ret_NQ1,
-    level_DXY, level_VIX (scaled by 10).
+    Produces columns: DXY/ZB1/VIX/GC1/ES1/NQ1 (raw), ret_DXY, ret_ZB1,
+    ret_VIX, ret_GC1, ret_ES1, ret_NQ1, level_DXY, level_VIX (scaled by 10).
     """
-    out = pd.DataFrame(index=df.index)
-    for col in df.columns:
+    out = df.copy()
+    for col in list(df.columns):
         out[f"ret_{col}"] = df[col].pct_change().clip(-1.0, 1.0)
         if col in ("DXY", "VIX"):
             out[f"level_{col}"] = (df[col] / 10.0).clip(-50, 50)
-    out = out.replace([np.inf, -np.inf], np.nan).dropna()
+    out = out.replace([np.inf, -np.inf], np.nan).ffill().bfill()
     return out
 
 

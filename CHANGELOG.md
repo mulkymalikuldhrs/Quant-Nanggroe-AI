@@ -41,7 +41,7 @@
 - Silent error swallowing: 4x `except: pass` + 20x `log.debug()` in main.py
 - CryptoScorer + NewsScorer: untested, unweighted, total weight 1.03
 - `get_valid_pairs()` missing in `main.py:298`
-- credentials.md.txt: 100+ secrets pending Mulky action
+- credentials.md.txt: 100+ secrets QUARANTINED — moved to `C:\Users\Hi\.qna-secrets\credentials.md.txt` (out of repo). Repo placeholder only.
 
 ## 2026-07-29 — Session 7-8: Core Pipeline + MTF + Evolution Foundation
 

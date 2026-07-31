@@ -164,7 +164,7 @@ SERVICES: List[ServiceDef] = [
                 "TELEGRAM_BOT_TOKEN_FANG", "TELEGRAM_BOT_TOKEN_HACKER",
                 "TELEGRAM_BOT_TOKEN_DEV", "TELEGRAM_BOT_TOKEN_TRADER",
                 "TELEGRAM_BOT_TOKEN_RESEARCH"],
-               "n/a — no codebase usage found (telegram IDs in credentials.md)", category="infra"),
+               "n/a — no codebase usage found (telegram IDs in C:\\Users\\Hi\\.qna-secrets\\credentials.md.txt)", category="infra"),
 ]
 
 

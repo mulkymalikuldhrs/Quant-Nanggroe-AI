@@ -36,6 +36,17 @@ from engine_production_bridge_purified import (
     PurifiedEngine, Signal, RiskGuard, MT5Adapter
 )
 
+# MT5 auto-path: ensure native plugin is loadable BEFORE importing MetaTrader5
+try:
+    from utils.mt5_launcher import ensure_mt5_env, detect_mt5
+    _mt5_ok = ensure_mt5_env()
+    if _mt5_ok:
+        log.info("MT5 auto-path: terminal found at %s", detect_mt5().get("terminal_path"))
+    else:
+        log.warning("MT5 auto-path: terminal NOT found — paper mode fallback")
+except Exception as _mt5_setup_err:
+    log.warning("MT5 auto-path setup skipped: %s", _mt5_setup_err)
+
 # Try to import QNA strategy registry
 try:
     from quant_nanggroe.engine.strategies.registry import StrategyRegistry

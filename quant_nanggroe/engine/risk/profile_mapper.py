@@ -13,9 +13,9 @@ from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE as _CONST_MA
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_KILLZONES: List[str] = field(default_factory=lambda: [
+DEFAULT_KILLZONES: List[str] = [
     "london_open", "ny_open", "london_close",
-])
+]
 
 
 @dataclass

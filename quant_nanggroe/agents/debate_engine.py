@@ -9,11 +9,9 @@ from typing import Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-class Signal(Enum):
-    # DEPRECATED — use quant_nanggroe.types.signals.SignalType instead.
-    BUY = "buy"
-    SELL = "sell"
-    HOLD = "hold"
+# Signal direction — aliased to the canonical SignalType (single source of truth).
+# Kept as name `Signal` for backward-compatible imports (BUY/SELL/HOLD unchanged).
+from quant_nanggroe.types.signals import SignalType as Signal  # noqa: E402
 
 
 @dataclass

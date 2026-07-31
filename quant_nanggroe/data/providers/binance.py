@@ -390,6 +390,171 @@ class BinanceProvider(DataProvider):
             logger.warning(f"Binance mark price error for {symbol}: {e}")
             return {}
 
+    async def get_taker_ratio(
+        self,
+        symbol: str,
+        period: str = "5m",
+        limit: int = 1,
+    ) -> Dict[str, Any]:
+        """Fetch taker buy/sell ratio for a futures symbol.
+
+        Uses the Binance Futures API directly. No API key required.
+
+        Args:
+            symbol: Futures symbol (e.g., 'BTCUSDT').
+            period: "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d".
+            limit: Maximum number of records.
+
+        Returns:
+            Dict with buySellRatio, buyVol, sellVol, timestamp.
+        """
+        try:
+            url = f"{BINANCE_FUTURES_API}/futures/data/takerlongshortRatio"
+            params: Dict[str, Any] = {
+                "symbol": symbol,
+                "period": period,
+                "limit": min(limit, 500),
+            }
+
+            data = await self._rate_limited_get(url, params=params)
+
+            if isinstance(data, list) and data:
+                item = data[0]
+                result = {
+                    "symbol": item.get("symbol", ""),
+                    "taker_ratio": float(item.get("buySellRatio", 0)),
+                    "buy_vol": float(item.get("buyVol", 0)),
+                    "sell_vol": float(item.get("sellVol", 0)),
+                    "timestamp": datetime.fromtimestamp(item.get("timestamp", 0) / 1000).isoformat() if item.get("timestamp") else None,
+                }
+            else:
+                result = {}
+
+            self.mark_success()
+            return result
+
+        except Exception as e:
+            self.mark_error(str(e))
+            logger.warning(f"Binance taker ratio error for {symbol}: {e}")
+            return {}
+
+    async def get_long_short_ratio(
+        self,
+        symbol: str,
+        period: str = "5m",
+        limit: int = 1,
+    ) -> Dict[str, Any]:
+        """Fetch global/top long/short account ratio for a futures symbol.
+
+        Args:
+            symbol: Futures symbol (e.g., 'BTCUSDT').
+            period: "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d".
+            limit: Maximum number of records.
+
+        Returns:
+            Dict with global_long_short_ratio, top_long_short_ratio.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                global_task = client.get(
+                    f"{BINANCE_FUTURES_API}/futures/data/globalLongShortAccountRatio",
+                    params={"symbol": symbol, "period": period, "limit": limit}
+                )
+                top_task = client.get(
+                    f"{BINANCE_FUTURES_API}/futures/data/topLongShortPositionRatio",
+                    params={"symbol": symbol, "period": period, "limit": limit}
+                )
+                global_res, top_res = await asyncio.gather(global_task, top_task)
+
+            result = {}
+            if global_res.status_code == 200 and isinstance(global_res.json(), list):
+                gls = global_res.json()[0]
+                result["global_ls_ratio"] = float(gls.get("longShortRatio", 0))
+            if top_res.status_code == 200 and isinstance(top_res.json(), list):
+                tls = top_res.json()[0]
+                result["top_ls_ratio"] = float(tls.get("longShortRatio", 0))
+
+            self.mark_success()
+            return result
+
+        except Exception as e:
+            self.mark_error(str(e))
+            logger.warning(f"Binance long/short ratio error for {symbol}: {e}")
+            return {}
+
+    async def get_derivatives_data(
+        self,
+        symbols: Optional[List[str]] = None,
+    ) -> Dict[str, Dict[str, Any]]:
+        """Fetch comprehensive derivatives data for crypto symbols.
+
+        Aggregates funding rate, open interest, mark price, taker ratio,
+        and long/short ratios for each symbol.
+
+        Args:
+            symbols: List of futures symbols. Defaults to BTCUSDT, ETHUSDT, SOLUSDT.
+
+        Returns:
+            Dict mapping symbol to derivatives data dict.
+        """
+        if symbols is None:
+            symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+        results = {}
+
+        for sym in symbols:
+            try:
+                funding, oi, mark, taker, ls = await asyncio.gather(
+                    self.get_funding_rate(sym, limit=1),
+                    self.get_open_interest(sym),
+                    self.get_mark_price(sym),
+                    self.get_taker_ratio(sym),
+                    self.get_long_short_ratio(sym),
+                )
+
+                # Extract latest funding rate
+                latest_funding = funding[0].get("funding_rate") if funding else None
+                next_funding = funding[0].get("funding_time") if funding else None
+                mark_price = mark.get("mark_price")
+                funding_annual = round(latest_funding * 3 * 365 * 100, 1) if latest_funding is not None else None
+
+                # Funding state classification
+                funding_state = "neutral"
+                if funding_annual is not None:
+                    if funding_annual > 30:
+                        funding_state = "longs_crowded"
+                    elif funding_annual > 10:
+                        funding_state = "longs_lean"
+                    elif funding_annual < -30:
+                        funding_state = "shorts_crowded"
+                    elif funding_annual < -10:
+                        funding_state = "shorts_lean"
+
+                # OI value calculation
+                oi_qty = oi.get("open_interest", 0)
+                oi_value = oi_qty * mark_price if oi_qty and mark_price else None
+
+                results[sym] = {
+                    "symbol": sym,
+                    "mark_price": mark_price,
+                    "funding_rate": latest_funding,
+                    "funding_annual_pct": funding_annual,
+                    "funding_state": funding_state,
+                    "next_funding_time": next_funding,
+                    "open_interest": oi_qty,
+                    "oi_value": oi_value,
+                    "taker_ratio": taker.get("taker_ratio"),
+                    "global_ls_ratio": ls.get("global_ls_ratio"),
+                    "top_ls_ratio": ls.get("top_ls_ratio"),
+                    "timestamp": datetime.now().isoformat(),
+                }
+
+            except Exception as e:
+                logger.warning(f"Binance derivatives data error for {sym}: {e}")
+                results[sym] = {"symbol": sym, "error": str(e)}
+
+        return results
+
     async def get_klines(
         self,
         symbol: str,

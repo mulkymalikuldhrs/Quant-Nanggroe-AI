@@ -12,12 +12,9 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 
-class Signal(str, Enum):
-    # DEPRECATED — use quant_nanggroe.types.signals.SignalType instead.
-    """Trading signal direction."""
-    BUY = "buy"
-    SELL = "sell"
-    HOLD = "hold"
+# Signal direction — aliased to the canonical SignalType (single source of truth).
+# Kept as name `Signal` for backward-compatible imports (BUY/SELL/HOLD unchanged).
+from quant_nanggroe.types.signals import SignalType as Signal  # noqa: E402
 
 
 @dataclass

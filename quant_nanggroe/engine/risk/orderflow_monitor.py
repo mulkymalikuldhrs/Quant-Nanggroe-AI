@@ -12,7 +12,7 @@ import math
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.engine.risk.kill_switch import (
     KillSwitch,
@@ -41,7 +41,6 @@ class OrderFlowRegime(str, Enum):
     NEUTRAL = NEUTRAL_REGIME
 
 
-@staticmethod
 def _zscore(values: List[float], x: float) -> float:
     n = len(values)
     if n < 2:

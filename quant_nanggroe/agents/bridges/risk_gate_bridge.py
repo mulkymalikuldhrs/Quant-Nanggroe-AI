@@ -43,6 +43,7 @@ from quant_nanggroe.engine.risk.constants import (
     MIN_RISK_REWARD,
 )
 from quant_nanggroe.engine.risk.manager import RiskManager
+from quant_nanggroe.engine.risk.limits import RiskLimits
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,7 @@ class RiskGateBridge:
         """
         self._risk_manager = RiskManager(initial_equity=initial_equity)
         self._check_gate = RiskCheckGate()
+        self._risk_limits = RiskLimits(max_weekly_loss_pct=MAX_WEEKLY_LOSS)
 
         logger.info(
             "RiskGateBridge initialized with equity=%.2f, "
@@ -205,6 +207,22 @@ class RiskGateBridge:
         )
 
         active_positions = active_positions or []
+
+        # Step 0: Persistent weekly loss gate (RiskLimits — JSON-backed, resets Monday)
+        if not self._risk_limits.can_trade():
+            weekly_loss = self._risk_limits.current_weekly_loss_pct() * 100
+            logger.critical(
+                "DETERMINISTIC GATE: WEEKLY LOSS LIMIT REACHED (%.2f%%) — %s %s BLOCKED",
+                weekly_loss, direction, symbol,
+            )
+            return GateResult(
+                verdict=GateVerdict.KILL_SWITCH,
+                symbol=symbol,
+                direction=direction,
+                reason=f"Weekly loss limit reached ({weekly_loss:.2f}%). Trading halted until Monday reset.",
+                llm_verdict=llm_verdict,
+                llm_disagreement=llm_verdict != "KILL_SWITCH",
+            )
 
         # Step 1: Check kill switch via RiskManager
         if self._risk_manager.kill_switch.is_active:
@@ -505,6 +523,8 @@ class RiskGateBridge:
             symbol: Symbol of the trade.
         """
         self._risk_manager.update_pnl(trade_pnl, symbol)
+        # Persist weekly loss tracker (RiskLimits — resets Monday)
+        self._risk_limits.record_trade(trade_pnl)
 
     def add_position(self, symbol: str) -> None:
         """Track a new open position in the deterministic risk manager."""

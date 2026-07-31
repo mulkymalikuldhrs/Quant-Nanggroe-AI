@@ -1,8 +1,8 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-07-31 (E:\ Integration Phase — 12-Agent Council, 4-phase plan)
-**Current Phase:** E:\ Integration — Phase 0 Pre-work + Phase 1 Provider Ports
+**Updated:** 2026-08-01 (autobot multi-persona session — RiskLimits wired, audit loop live)
+**Current Phase:** Phase 0/1 Hardening — RiskLimits integration + continuous audit
 
 ---
 
@@ -11,7 +11,7 @@
 | Item | Status | Evidence |
 |------|--------|----------|
 | Entry point | ✅ `qna.py` via `launch.bat` | Single entry point |
-| 8 Scorers + FusionEngine | ✅ `main.py:418-440` | All wired |
+| 8 Scorers + FusionEngine | ✅ `hedge_fund/portfolio/main.py:437-460` | All wired |
 | MTF scoring | ✅ REDUCE consumed | Position size halved |
 | Evolution loop | ✅ Integrated | 8 files + 68 tests |
 | FRED API key | ✅ Env var | 3 files fixed |
@@ -27,19 +27,43 @@
 | engine/scoring/ duplikat | ✅ Deleted | 11 files |
 | Stale artifacts | ✅ Cleaned | egg-info, _audit_*, nul |
 | Risk layer | ✅ KillSwitch + RiskGuard | Fail-closed |
+| **RiskLimits.can_trade()** | ✅ **WIRED** | `agents/bridges/risk_gate_bridge.py` Step 0 gate + update_pnl |
 | Dashboard palette | ✅ Applied | #0F172A + #D9A441 |
 | Pipeline bug | ✅ Fixed | asyncio.run → direct call |
 | Evolution scheduler | ✅ Fixed | Time-based trigger + threshold |
+| **MT5 auto-path** | ✅ **ADDED** | `utils/mt5_launcher.py` — detect terminal anywhere + set DLL path | grep + unit test |
+| Continuous audit | ✅ LIVE | `qna_audit_loop.sh` (10 iter, background) |
+| **DerivativesProvider** | ✅ **NEW** | `providers/tradebobby/derivatives_provider.py` — funding/OI/L-S/taker/venue-gap | Binance fapi + Hyperliquid |
+| **EconCalendarProvider** | ✅ **NEW** | `providers/tradebobby/econ_calendar_provider.py` — rule-based events + T-minus | NFP/CPI/FOMC/Claims/EIA/PCE |
+| **CVD divergence** | ✅ **REWRITTEN** | `providers/tradebobby/cvd_provider.py` — 7-class divergence + OBI | BULL_DIV/BEAR_DIV/DIST/ACCUM |
+| **Composite Risk Index** | ✅ **ADDED** | `macro_pulse_provider.py` — 9-factor 0-100 + sector rotation | VIX/yields/F&G/DXY/gold/oil/MOVE |
+| **DataQualityMonitor** | ✅ **NEW** | `engine/data_quality/` — staleness + health API (C8) | 3-file package + FastAPI router |
+| **Evolution regime** | ✅ **ADDED** | `market_context` column + `scan_by_regime()` | journal + scanner |
+| **signal_crypto_funding** | ✅ **NEW** | `hedge_fund/signals/core.py` — funding+OI+taker bias | registered in CORE_PROVIDERS |
+| **OrderFlow UI** | ✅ **NEW** | `components/orderflow/` 6 file — heatmap/bubbles/CVD/walls | OrderFlowMap port 1071 ln |
+| **Terminal UI** | ✅ **NEW** | Derivatives ribbon + econ calendar panels | `components/terminal/` |
+| **Trade History panel** | ✅ **ADDED** | `app/page.tsx` — last 20 closed trades | 60s refresh |
+| **RiskLimits wired** | ✅ **DONE** | `agents/bridges/risk_gate_bridge.py` Step 0 gate (C2) | fail-closed hierarchy |
 
 ---
 
 ## REMAINING GAPS
 
-1. **credentials.md.txt** — 100+ secrets in `.hermes/desktop-attachments/`
-2. **engine/factors/** — 450+ alpha factors NOT wired
-3. **engine/rl/** — needs PyTorch for real training
+**ALL PHASE 0/1 GAPS CLOSED** — dead code archived, registries consolidated, signals dedup, factors wired, rl torch, credentials quarantined, docs reconciled. See roadmap below for remaining Phase 2+ work.
 
----
+### 🔴 LIVE-TRADING BLOCKERS (50-Agent Council verdict: RED — 2026-08-01)
+1. **Kill-switch PnL dead** — `em.execute_order(order)` callers (`api/routes/trading.py:204`, `agents/trader/tools.py:143`) gak pass PnL args → `check_auto_activate(daily_pnl_pct=0.0)` baca 0.0 → gak pernah trip on real loss (`manager.py:226-231`). FIX: pull realized PnL dari broker handle di dalam `execute_order` sebelum kill-switch check.
+2. **MT5 market orders NO SL/TP** — `exchange/mt5_broker.py:511-522` kirim order tanpa `sl`/`tp` → naked position kalau trailing-stop fail. FIX: attach SL/TP di `order_send`, jangan rely post-fill modify.
+3. **Test density fatal low** — financial code butuh >80% coverage; currently ~30% (45/152 test files pakai mock). FIX: risk + execution + kill-switch integration tests wajib sebelum live.
+
+Non-Phase 0/1 (deferred):
+- **Dashboard build** — may not compile with Next.js 16 (Phase 3+ scope)
+- **Macro/VIX/regime gate** — decoupled dari order gate (`engine/risk/vix_gate.py` gak di `manager.execute_order` chain)
+- **Tail-risk/VaR** — `engine/risk/tail_risk_hedge.py` gak di execute path
+- **Backtest↔live parity** — `backtest_pipeline.py` vs `engine/execution/` distinct paths, no shared fill model
+- **Options engine** — `engine/options/` gak feed live sizing (scope later)
+
+
 
 ## NEXT ACTIONS — E:\ Integration Plan (12-Agent Council)
 
@@ -81,8 +105,6 @@
 - 4.4 Backtest validation QNA vs TradeBobby
 
 **Total: ~136 jam / 4-6 minggu**
-4. **docs/ contradiction** — 107 files, ~30 conflicting
-5. **Dashboard build** — may not compile with Next.js 16
 
 ---
 
@@ -91,9 +113,9 @@
 ### Critical Bug Fixes ✅
 | Bug | File | Fix |
 |-----|------|-----|
-| Evolution loop 4 type mismatches | `main.py:847-854` | `scan_strategy("all")` → `scan_all()`, `evaluate({"all":...})` → list, `disable(dict)` → `disable(str)`, `update_weights({"all":...})` → list |
-| np undefined in StressVaR | `main.py:715` | Added `import numpy as _np` inline |
-| get_valid_pairs() missing | `main.py:298` | Replaced with `scan_all_pairs()` + `live_scan()` fallback |
+|| Evolution loop 4 type mismatches | `hedge_fund/portfolio/main.py:847-854` | `scan_strategy("all")` → `scan_all()`, `evaluate({"all":...})` → list, `disable(dict)` → `disable(str)`, `update_weights({"all":...})` → list |
+| np undefined in StressVaR | `qna.py:710` | Added `import numpy as _np` inline |
+| get_valid_pairs() missing | `hedge_fund/portfolio/main.py:298` | Replaced with `scan_all_pairs()` + `live_scan()` fallback |
 | Silent error swallowing | 8 locations | Upgraded `log.debug` → `log.warning` for critical paths (Screener, Fusion, MTF, Confluence, StressVaR, PatternRecorder, Evolution, RiskParity) |
 | Evolution scheduler tests | 2 assertion fails | Fixed reason strings to match scheduler logic |
 
@@ -192,9 +214,9 @@ Goal 3: Fase 1 intermarket engine
 
 | # | Gap | Fix | Estimasi |
 |---|-----|-----|----------|
-| A1 | **Evolution loop dead** — 4 wiring bugs di `main.py:847-854` | scan_strategy→scan_all, evaluate() pake list | **2 jam** |
+| A1 | **Evolution loop dead** — 4 wiring bugs di `hedge_fund/portfolio/main.py:847-854` | scan_strategy→scan_all, evaluate() pake list | **2 jam** |
 | A2 | **Silent error 20+ titik** — semua `log.debug()` | Upgrade ke `log.error` + propagate | **1 jam** |
-| A3 | **`np` undefined** — StressVaR selalu throw NameError | `import numpy as np` di main.py | **5 menit** |
+| A3 | **`np` undefined** — StressVaR selalu throw NameError | `import numpy as np` di qna.py | **5 menit** |
 | A4 | **`get_valid_pairs` missing** — always throws AttributeError | Fix import atau remove dead call | **15 menit** |
 | A5 | **Dashboard build stale + color config gak ada** | Rebuild + color picker | **2 jam** |
 | A6 | **PnL attribution gak ada** — dashboard gak tampilin evolution journal | Wire dashboard API ke journal SQLite | **1 jam** |

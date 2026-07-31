@@ -149,7 +149,7 @@ curl http://localhost:8000/api/trading/purified/positions
 | **Autonomous Cycle** | B+ | 85 | Full loop: data→signals→risk→execute→manage→track |
 | **Position Management** | B | 80 | Trailing, partial TP, full TP, SL modification |
 | **Performance Tracking** | B | 80 | Per-strategy stats, Kelly auto-update |
-| **Environment** | C | 60 | Hermes venv works; full QNA import chain still broken |
+| **Environment** | C | 60 | Hermes venv works; full QNA import chain **FIXED 2026-08-01** (.venv rebuilt: numpy/scipy/pandas/pydantic restored) |
 | **Documentation** | A | 95 | This report + inline code docs |
 
 ### **TOTAL: 85/100**
@@ -158,7 +158,7 @@ curl http://localhost:8000/api/trading/purified/positions
 
 ## Remaining 15 Points (What's NOT Done Yet)
 
-1. **QNA Strategy Registry Integration** (-5) — Built-in strategies work but 77 QNA strategies not wired yet (import chain broken). To fix: resolve `quant_nanggroe.engine.registry` import in Hermes venv. This requires fixing the venv numpy/pydantic_core issue.
+1. **QNA Strategy Registry Integration** (-5) — Built-in strategies work but 77 QNA strategies not wired yet. Import chain **FIXED 2026-08-01** (`.venv` rebuilt, numpy/pydantic_core resolved); remaining work is wiring `quant_nanggroe.engine.registry` strategies into the cycle.
 
 2. **Walk-Forward Validation** (-4) — Strategies not walk-forward validated. To fix: run QNA backtest engine on built-in strategies with OOS data. This is a pre-deployment step, not a runtime concern.
 

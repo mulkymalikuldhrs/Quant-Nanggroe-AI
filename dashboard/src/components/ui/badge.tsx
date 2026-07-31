@@ -5,13 +5,15 @@ import { cn } from "@/lib/utils";
 interface BadgeProps {
   children: React.ReactNode;
   className?: string;
-  variant?: "default" | "success" | "danger" | "warning" | "info";
+  variant?: "default" | "secondary" | "outline" | "success" | "danger" | "warning" | "info";
   size?: "sm" | "md" | "lg";
   pulse?: boolean;
 }
 
 const variantStyles = {
   default: "bg-white/[0.06] text-white/50 border-white/[0.08]",
+  secondary: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+  outline: "bg-transparent text-white/30 border-white/[0.08]",
   success: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   danger: "bg-red-500/10 text-red-400 border-red-500/20",
   warning: "bg-amber-500/10 text-amber-400 border-amber-500/20",

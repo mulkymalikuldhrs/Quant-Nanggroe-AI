@@ -28,6 +28,18 @@ from quant_nanggroe.engine.risk.kill_switch import (
 )
 
 
+def setUpModule():
+    """Force in-memory KillSwitch for this whole file.
+
+    conftest sets QNA_KILL_SWITCH_STATE_FILE to isolate cross-test state,
+    but these tests assert a FRESH in-memory instance (e.g. default level is
+    NONE). File-backed mode would load whatever the shared file last held.
+    Unsetting the env here guarantees every KillSwitch() in this module is
+    a clean in-memory instance regardless of test ordering.
+    """
+    os.environ.pop("QNA_KILL_SWITCH_STATE_FILE", None)
+
+
 class TestKillSwitchInit(unittest.TestCase):
     """Tests for KillSwitch construction."""
 

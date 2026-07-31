@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 _CACHE = TTLCache(default_ttl=300)
 
 _YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=1d&interval=5m"
+_YAHOO_URL_5D = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=5d&interval=1d"
+_FNG_URL = "https://api.alternative.me/fng/?limit=1&format=json"
 
 _TICKERS: list[dict[str, Any]] = [
     # US Treasury yields
@@ -128,6 +130,42 @@ def _fetch_all_tickers() -> dict[str, dict[str, Any]]:
             data[t["k"]] = d
     _CACHE.set(cache_key, data)
     return data
+
+
+def _fetch_yahoo5d(ticker: str) -> Optional[list[float]]:
+    """Fetch 5-day daily closes for cumulative return calculation."""
+    url = _YAHOO_URL_5D.format(ticker=quote(ticker, safe=""))
+    try:
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(req, timeout=10) as resp:
+            payload = json.loads(resp.read().decode())
+        result = payload["chart"]["result"][0]
+        closes = result["indicators"]["quote"][0].get("close", [])
+        return [c for c in closes if c is not None]
+    except Exception:
+        return None
+
+
+def _fetch_fear_greed() -> Optional[dict[str, Any]]:
+    """Fetch Fear & Greed Index from alternative.me (crypto F&G as macro proxy)."""
+    cache_key = "macro_pulse:fng"
+    cached = _CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+    try:
+        req = Request(_FNG_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(req, timeout=10) as resp:
+            payload = json.loads(resp.read().decode())
+        entry = payload["data"][0]
+        result = {
+            "value": int(entry["value"]),
+            "label": entry["value_classification"],
+        }
+        _CACHE.set(cache_key, result)
+        return result
+    except Exception as exc:
+        logger.debug("Fear & Greed fetch failed: %s", exc)
+        return None
 
 
 class MacroPulseProvider:
@@ -308,6 +346,153 @@ class MacroPulseProvider:
             result["gold_silver_ratio"] = round(gold / silver, 2)
         if brent is not None and oil is not None:
             result["brent_wti_spread"] = round(brent - oil, 2)
+        self._cache.set(cache_key, result)
+        return result
+
+    def get_sector_rotation5d(self) -> dict[str, Any]:
+        """5-day cumulative sector rotation for robust risk-on vs risk-off signal."""
+        cache_key = "macro_pulse:sector_rotation_5d"
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            return cached
+        sectors_5d: list[dict[str, Any]] = []
+        for t in _TICKERS:
+            if t["group"] != "sector":
+                continue
+            closes = _fetch_yahoo5d(t["y"])
+            if closes and len(closes) >= 2:
+                ret = (closes[-1] - closes[0]) / closes[0] * 100.0 if closes[0] != 0 else 0.0
+                sectors_5d.append({"key": t["k"], "label": t["label"], "ret_5d": round(ret, 2)})
+        sectors_5d.sort(key=lambda s: s["ret_5d"], reverse=True)
+        risk_on = sum(s["ret_5d"] for s in sectors_5d if s["key"] in _RISK_ON_SECTORS)
+        risk_off = sum(s["ret_5d"] for s in sectors_5d if s["key"] in _RISK_OFF_SECTORS)
+        result: dict[str, Any] = {
+            "leaders": sectors_5d[:3],
+            "laggards": list(reversed(sectors_5d[-3:])) if len(sectors_5d) >= 3 else [],
+            "risk_on_5d": round(risk_on, 2),
+            "risk_off_5d": round(risk_off, 2),
+            "bias_5d": "risk_on" if risk_on > risk_off else "risk_off",
+        }
+        self._cache.set(cache_key, result)
+        return result
+
+    def get_composite_risk_index(self) -> dict[str, Any]:
+        """9-factor Composite Risk Index. 0 = risk-on, 100 = risk-off.
+
+        Factors (equal weight unless noted):
+          1. VIX level (high = risk)
+          2. Yield curve (inverted = risk)
+          3. Sector rotation (risk-off bias = risk)
+          4. Fear & Greed (low/extreme fear = opportunity)
+          5. DXY (strong USD = risk-off for EM)
+          6. Gold (safe-haven bid = risk)
+          7. Credit spread (HYG/IEF ratio stress)
+          8. MOVE index (bond vol)
+          9. Oil (high = stagflation risk)
+        """
+        cache_key = "macro_pulse:composite_risk_index"
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        data = _fetch_all_tickers()
+        factors: dict[str, dict[str, Any]] = {}
+        total_weight = 0.0
+        weighted_sum = 0.0
+
+        def _add(name: str, weight: float, value: Any, score: float, **extra: Any) -> None:
+            nonlocal total_weight, weighted_sum
+            s = max(0.0, min(score, 100.0))
+            factors[name] = {"value": value, "score": round(s, 1), "weight": weight, **extra}
+            weighted_sum += s * weight
+            total_weight += weight
+
+        # 1. VIX level (10-50 mapped to 0-100)
+        vix = data.get("vix", {}).get("price")
+        if vix is not None:
+            _add("vix", 0.15, vix, (vix - 10) / 40 * 100, change_pct=data["vix"]["change_pct"])
+
+        # 2. Yield curve (spread -1..+2 mapped to risk 100..0)
+        us10y = data.get("us10y", {}).get("price")
+        us3m = data.get("us3m", {}).get("price")
+        if us10y is not None and us3m is not None:
+            spread = round(us10y - us3m, 2)
+            _add("yield_curve", 0.10, spread, (1 - spread) / 3 * 100)
+
+        # 3. Sector rotation (use existing daily rotation score)
+        rot = self.get_sector_rotation()
+        ro = rot.get("risk_on_score", 0.0)
+        rf = rot.get("risk_off_score", 0.0)
+        rot_diff = rf - ro
+        _add("sector_rotation", 0.12, {"risk_on": ro, "risk_off": rf}, 50 + rot_diff * 10)
+
+        # 4. Fear & Greed (0=extreme fear, 100=extreme greed; high greed = risk)
+        fng = _fetch_fear_greed()
+        if fng is not None:
+            _add("fear_greed", 0.10, fng["value"], fng["value"], label=fng["label"])
+
+        # 5. DXY (90-115 mapped to 0-100)
+        dxy_price = data.get("dxy", {}).get("price")
+        if dxy_price is not None:
+            _add("dxy", 0.10, dxy_price, (dxy_price - 90) / 25 * 100)
+
+        # 6. Gold (surge = safe-haven bid = risk-off)
+        gold_chg = data.get("gold_f", {}).get("change_pct")
+        if gold_chg is not None:
+            _add("gold", 0.10, data.get("gold_f", {}).get("price"), 50 + gold_chg * 10, change_pct=gold_chg)
+
+        # 7. Credit spread (HYG/IEF ratio; low ratio = stress)
+        hyg_price = data.get("hyg", {}).get("price")
+        ief_price = data.get("ief", {}).get("price")
+        if hyg_price is not None and ief_price is not None and ief_price != 0:
+            ratio = round(hyg_price / ief_price, 3)
+            _add("credit_spread", 0.10, ratio, (1 - ratio) / 0.3 * 100)
+
+        # 8. MOVE index (50-200 mapped to 0-100)
+        move_price = data.get("move", {}).get("price")
+        if move_price is not None:
+            _add("move", 0.11, move_price, (move_price - 50) / 150 * 100)
+
+        # 9. Oil (40-120 mapped to 0-100; high oil = stagflation risk)
+        oil_price = data.get("oil_f", {}).get("price")
+        if oil_price is not None:
+            _add("oil", 0.12, oil_price, (oil_price - 40) / 80 * 100)
+
+        score = round(weighted_sum / total_weight, 1) if total_weight > 0 else 50.0
+
+        if score < 30:
+            regime = "RISK-ON"
+        elif score < 60:
+            regime = "MIXED"
+        else:
+            regime = "RISK-OFF"
+
+        result: dict[str, Any] = {
+            "score": score,
+            "regime": regime,
+            "factors": factors,
+            "weight_coverage": round(total_weight, 2),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        self._cache.set(cache_key, result)
+        return result
+
+    def get_macro_pulse(self) -> dict[str, Any]:
+        """Unified macro pulse: VIX term + yield curve + sector rotation + CRI + commodities + mag7."""
+        cache_key = "macro_pulse:pulse"
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            return cached
+        result: dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "vix_term": self.get_vix_term(),
+            "yield_curve": self.get_yield_curve(),
+            "sector_rotation": self.get_sector_rotation(),
+            "sector_rotation_5d": self.get_sector_rotation5d(),
+            "composite_risk_index": self.get_composite_risk_index(),
+            "commodities": self.get_commodities(),
+            "mag7": self.get_mag7(),
+        }
         self._cache.set(cache_key, result)
         return result
 

@@ -341,6 +341,7 @@ def create_app() -> FastAPI:
         signal_generator,
         strategies,
         strategy,
+        terminal,
         tools,
         trade_history,
         trading,
@@ -383,6 +384,7 @@ def create_app() -> FastAPI:
     app.include_router(security.router, prefix="/api", tags=["Security"])
     app.include_router(security_tools.router, prefix="/api/security-tools", tags=["Security Tools"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
+    app.include_router(terminal.router)
     app.include_router(otto_proxy.router, prefix="/api/otto", tags=["Otto"])
 
     app.include_router(evolution.router)
@@ -394,6 +396,14 @@ def create_app() -> FastAPI:
     app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
     app.include_router(pipeline_status.router)  # router already has /api/pipeline prefix
     app.include_router(config.router)  # router already has /config prefix
+
+    # ── Data Quality Monitoring ───────────────────────────────────────
+    # C8: staleness detection + health check framework
+    try:
+        from quant_nanggroe.engine.data_quality.api import router as dq_router
+        app.include_router(dq_router)
+    except Exception as e:
+        logger.warning("data_quality_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:

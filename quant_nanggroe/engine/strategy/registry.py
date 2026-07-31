@@ -48,7 +48,10 @@ class WalkForwardRegistry:
 
     @property
     def _strategies(self) -> Dict[str, StrategyMetadata]:
-        return _StrategyRegistry._wf_metadata  # type: ignore[attr-defined]
+        # _wf_metadata is a module-level dict in the canonical registry,
+        # not a class attribute — reference it via the module.
+        from quant_nanggroe.engine.strategies import registry as _canon
+        return _canon._wf_metadata
 
     def register(
         self,
