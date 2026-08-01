@@ -80,9 +80,10 @@ class MT5Adapter:
             raise RuntimeError(f"MT5 connect failed (REAL-ONLY, no paper): {e}")
 
     def _guard_trade_mode(self, sym: str, side: str):
-        """Block trade_mode 0,4 (disabled). Block LONGONLY→SELL, SHORTONLY→BUY."""
+        """Block trade_mode 0 (disabled). Block LONGONLY→SELL, SHORTONLY→BUY.
+        Mode 4 = FULL on Valetax (verified live) — allowed."""
         if not self._initialized or not self._mt5_loaded:
-            return  # Paper mode — skip
+            raise RuntimeError("MT5 not LIVE connected (REAL-ONLY, no paper)")
         mt5 = self._mt5_mod
         info = mt5.symbol_info(sym)
         if not info:

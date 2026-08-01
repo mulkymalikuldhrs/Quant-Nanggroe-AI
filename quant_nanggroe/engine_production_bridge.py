@@ -340,7 +340,6 @@ class ProductionExecutionManager:
         self.db = db
         self._exec_mgr = None
         self._order_mgr = None
-        self._paper = None
         self._mt5 = None
 
     def _lazy_init(self):
@@ -356,8 +355,6 @@ class ProductionExecutionManager:
                 log.info("ExecutionManager loaded (constitutional risk enforced)")
             except Exception as e:
                 log.error(f"Execution engine init failed (REAL-ONLY — no paper fallback): {e}", exc_info=True)
-        # REAL-ONLY: NEVER load paper broker. MT5 is the only execution path.
-        self._paper = None
         # REAL-ONLY: live MT5 backend — REQUIRED, fail-closed (no terminal -> crash, not silent skip)
         if self._mt5 is None:
             try:
