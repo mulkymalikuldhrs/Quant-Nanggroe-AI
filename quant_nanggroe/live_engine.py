@@ -696,7 +696,8 @@ class LiveEngine:
             log.debug("DCC auto-fit error: %s", e)
 
     def _sync_broker_positions(self):
-        """Phase A: reconcile open positions in ledger with broker (MT5 or paper)
+        """Phase A: reconcile open positions in ledger with broker (MT5 LIVE, REAL-ONLY).
+
         so the engine does not double-open when restarted live."""
         try:
             if not hasattr(self, "_exec") or self._exec is None:
@@ -728,7 +729,7 @@ class LiveEngine:
         now = datetime.now().isoformat()
         tp_target = TP_TARGETS.get(strategy, 0.05)
         tp_price = price * (1 + tp_target)
-        # Phase A: push real order through wired execution manager (MT5 or paper)
+        # Phase A: push real order through wired execution manager (MT5 LIVE, REAL-ONLY)
         # P0 FIX: only record position AFTER confirming fill — no phantom positions on failure
         try:
             result = self._exec.execute_signal(
@@ -770,7 +771,7 @@ class LiveEngine:
         pnl = (price - pos["entry_price"]) * remaining
         balance = self.risk.get_balance()
         new_balance = balance + pnl
-        # Phase A: send real close order through wired execution manager (MT5, paper, or engine)
+        # Phase A: send real close order through wired execution manager (MT5 LIVE, REAL-ONLY)
         try:
             close_signal = type("Sig", (), {
                 "symbol": pos["symbol"], "side": "sell", "strategy": pos.get("strategy", ""),
