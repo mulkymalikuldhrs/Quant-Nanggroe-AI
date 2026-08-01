@@ -80,8 +80,8 @@ log = logging.getLogger("QNA-Autonomous")
 # CONFIGURATION
 # ──────────────────────────────────────────────────────────────
 class Config:
-    # Trading symbols (MT5 format)
-    SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "XAUUSD"]
+    # Trading symbols (MT5 format — Valetax broker requires .vx suffix)
+    SYMBOLS = ["EURUSD.vx", "GBPUSD.vx", "USDJPY.vx", "BTCUSD.vx", "XAUUSD.vx"]
     
     # Cycle timing
     CYCLE_INTERVAL_SEC = 60          # 1 minute between cycles

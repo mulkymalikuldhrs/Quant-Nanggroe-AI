@@ -284,7 +284,7 @@ class PurifiedEngine:
 
             # Execute
             try:
-                result = self.mt5.send_order(
+                result = self.mt5.execute_order(
                     symbol=sig.symbol,
                     side=sig.side,
                     lot=round(lot, 2),
