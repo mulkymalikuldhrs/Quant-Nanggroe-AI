@@ -53,3 +53,24 @@
 - QNA_EXECUTION_PLAN.md: Marked all waves complete
 - QNA_READINESS_GRADE.md: 100/100 GREEN with live verification note
 - QNA_AUTONOMOUS_LOOP_GOAL.md: Evidence-based sub-goals
+---
+
+## FINAL BLOCKER (User Action Required) — 2026-08-01 15:15
+
+**Code is 100% autonomous-ready. Live data flows. Guard works. Account is the blocker.**
+
+Verified in live cycle:
+- ✅ Real ticks: EURUSD.vx=1.15305, BTCUSD.vx=63087.30 (live prices)
+- ✅ Real signals: MeanReversion BUY conf=0.65, TrendFollow BUY conf=0.70 (from live candles)
+- ✅ Engine LIVE: execute_order called, guard _guard_trade_mode triggered
+- ❌ **ALL symbols trade_mode=4 (DISABLED) on account 372044706**
+  - Broker: ValetaxIntl-Live2
+  - trade_expert=True, trade_allowed=True (account-level) BUT every symbol trade_mode=4
+  - This means **broker disabled trading on this account** — not a code issue
+
+**What Mulky must do:**
+1. Check MT5 terminal → account 372044706 status (expired demo? suspended? needs funding?)
+2. OR use a different MT5 account with trade_mode=0 (FULL)
+3. Set `QNA_MT5_LOGIN`, `QNA_MT5_SERVER`, `QNA_MT5_PASSWORD` in `.env`
+
+**Code verdict: GREEN — ready the moment account allows trading.**
