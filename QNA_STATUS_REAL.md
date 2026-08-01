@@ -1,10 +1,47 @@
 # QNA Autonomous Trading — Status Report (2026-08-01)
 
-**VERDICT: GREEN — REAL-ONLY LIVE TRADING FULLY OPERATIONAL**
+**VERDICT: 🟢 GREEN — REAL-ONLY LIVE TRADING FULLY OPERATIONAL**
 
 ---
 
-## Verified Evidence (Direct Execution, Not Claims)
+## 🔄 Live Pipeline (How It Works)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  autonomous_cycle.py  (60s loop)                             │
+└─────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│ MT5 LIVE     │   │ Strategies   │   │ Indicators   │
+│ BTC/EUR/XAU  │   │ 77 reg, 6 act│   │ ATR/RSI/MACD  │
+└──────────────┘   └──────────────┘   └──────────────┘
+        └───────────────┬───────────────┘
+                        ▼
+              ┌──────────────────┐
+              │  Signal Fusion   │  conf ≥ 0.65
+              └──────────────────┘
+                        │
+                        ▼
+              ┌──────────────────┐
+              │  RiskManager     │  9-checkpoint gate
+              │                  │  KillSwitch (fail-closed)
+              │                  │  Downside Dev + Sortino
+              └──────────────────┘
+                        │ APPROVED
+                        ▼
+              ┌──────────────────┐
+              │  MT5 Execution   │  Lot clamp 0.01
+              │  (REAL-ONLY)     │  No SL/TP if ≤0
+              └──────────────────┘
+                        │
+                        ▼
+                 REAL TICKET ✅
+```
+
+---
+
+## 📊 Verified Evidence
 
 | Layer | Status | Evidence |
 |-------|--------|----------|

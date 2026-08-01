@@ -1,8 +1,27 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-01 (autobot multi-persona session — RiskLimits wired, audit loop live)
-**Current Phase:** Phase 0/1 Hardening — RiskLimits integration + continuous audit
+**Updated:** 2026-08-01 (REAL-ONLY LIVE trading verified)
+**Current Phase:** 🟢 LIVE — REAL-ONLY enforcement active, 3 positions on Valetax 372044706
+
+---
+
+## 📊 STATE SNAPSHOT (2026-08-01)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  ACCOUNT: Valetax 372044706  |  BALANCE: $1,122.05   │
+│  STATUS: 🟢 LIVE REAL-ONLY                   │
+└─────────────────────────────────────────────────────┘
+   │
+   ├─ MT5 Connection: ✅ LIVE (ValetaxIntl-Live2)
+   ├─ Paper Broker:   ❌ REMOVED (fail-closed)
+   ├─ Live Positions: 3 (GBPUSD.vx, BTCUSD.vx ×2)
+   ├─ Strategies:     77 registered, 6 active
+   ├─ Risk Gate:      9-checkpoint + KillSwitch
+   ├─ Tickets:        20188224176, 20188224713
+   └─ Venv:          .venv312 (Py3.12.13, deps OK)
+```
 
 ---
 

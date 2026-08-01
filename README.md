@@ -10,6 +10,64 @@
 
 ---
 
+## 🏗️ How It Works (Architecture)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              QNA AUTONOMOUS CYCLE (60s loop)                  │
+└─────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌──────────────────┐     ┌──────────────────┐
+│  MARKET DATA     │     │  STRATEGIES      │
+│  MT5 LIVE        │     │  77 registered   │
+│  BTC/EUR/XAU.vx  │     │  6 active        │
+└──────────────────┘     └──────────────────┘
+        │                      │
+        └──────────┬───────────┘
+                   ▼
+        ┌──────────────────┐
+        │  SIGNAL FUSION   │  weighted vote, conf ≥ 0.65
+        └──────────────────┘
+                   │
+                   ▼
+        ┌──────────────────┐
+        │  RISK MANAGER    │  9-checkpoint gate
+        │                  │  KillSwitch (fail-closed)
+        │                  │  Downside Dev + Sortino
+        └──────────────────┘
+                   │ APPROVED
+                   ▼
+        ┌──────────────────┐
+        │  EXECUTION       │  MT5 LIVE ONLY
+        │                  │  Lot clamp to broker
+        │                  │  No SL/TP if ≤0
+        └──────────────────┘
+                   │
+                   ▼
+            REAL ORDER TICKET
+```
+
+**REAL-ONLY:** No paper/sim/mock. If MT5 disconnects → RuntimeError (fail-closed).
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Purified engine
+env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
+  .venv312/Scripts/python.exe -m quant_nanggroe.autonomous_cycle
+
+# LiveEngine
+env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
+  .venv312/Scripts/python.exe qna.py live
+```
+
+**Venv:** `.venv312` (Py3.12.13) | **Deps:** `requirements_qna.txt`
+
+---
+
 ## 📋 Master Todo — Current Sprint
 
 | # | Task | Status | Priority |

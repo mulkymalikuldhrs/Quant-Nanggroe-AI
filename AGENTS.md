@@ -1,33 +1,33 @@
 # AGENTS.md — Quant Nanggroe AI (Quant Nation) v6.1.0
 
-> **LIVE-TRADING OPERATIONAL (REAL-OK, 2026-08-01):** REAL-ONLY mode enforced. No paper/sim/mock.
-> **MT5 LIVE conn verified: ValetaxIntl-Live2, login=372044706, balance=$1122.05** (not demo).
+> **LIVE-TRADING OPERATIONAL (REAL-ONLY, 2026-08-01):** No paper/sim/mock. MT5 LIVE verified: ValetaxIntl-Live2, login=372044706, balance=$1122.05.
+> **Live tickets:** 20188224176 + 20188224713 (BTCUSD.vx). 3 positions confirmed.
+
+## 🏗️ How It Works
+
+```
+Market(MT5) + Strategies(77) → SignalFusion → RiskManager(9-gate)
+  → Execution(MT5 LIVE ONLY) → Real Ticket
+```
 
 ## Before Anything
-Read `docs/QNA_COMPLETE_ARCHITECTURE_2026-07-29.md` — complete mermaid graph of ALL 678 .py files, 4 remotes, 8 scorers wired, MTF+Evolver, pipeline 7-stage refactor, E:\ sources, dashboard, blockers.
-Read `QNA_AGENT_STATE.md` — resume from NEXT ACTIONS.
-Read `docs/Rencana.md` — execution plan + Session 9 progress + evolution loop blueprint.
-Read `docs/STATUS.md` — doc contradictions map (which docs are STALE vs CURRENT).
-Read `docs/research_quant_scoring.md` — quant best practices (confidence mapping, walk-forward, COT usage, alt data).
+Read in order:
+1. `Rencana.md` — roadmap + architecture visual + run commands
+2. `QNA_AGENT_STATE.md` — current state + NEXT ACTIONS
+3. `docs/STATUS.md` — doc contradictions (STALE vs CURRENT)
+4. `QNA_STATUS_REAL.md` — verified live evidence
+5. `C:\Users\Hi\Desktop\QuantScience_Archive\QNA_QuantScience_MASTER.md` — full quant science spec
 
 ## Critical Gotchas
-- **PYTHONPATH must be empty** — Hermes/uv venv leaks parent `PYTHONPATH` → shadows numpy+MT5.
-  Use: `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python -m quant_nanggroe.autonomous_cycle`
-- **REAL-ONLY:** no `QNA_LIVE_TRADING=0` toggle exists — MT5 connect raises RuntimeError if unavailable. PaperBroker REMOVED.
-- **QNAI_ENCRYPTION_KEY** required for API boot (fail-closed on plaintext).
-- **Secrets: env vars only** — never hardcode. No `.secrets-local/`, no plaintext YAML.
-- **Hardware:** i7-10th gen, 16GB RAM, no GPU. No cloud compute assumed.
-- **C5 KillSwitch** — cross-process shared state via `QNA_KILL_SWITCH_STATE_FILE`.
-- **numpy 2.5.1** ✅ in .venv (reinstalled). np.clip replaced with `_clamp()` in scoring files.
-- **pytest works** ✅ — 173+ tests pass (scoring + kill switch + risk + evolution 68 new)
-- **MT5 live connected** — Valetax demo account 372044706, `history_deals_get()` works
-- **Evolution loop** — 8 files in `engine/evolution/`, integrated into `run_once()` post-execute
-- **1079 providers** — 77 engine strategies + 992 mue-x + 10 core feed the aggregator
+- **PYTHONPATH must be empty** — `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe`
+- **REAL-ONLY:** PaperBroker REMOVED. MT5 connect raises RuntimeError if unavailable.
+- **trade_mode=4 = FULL** (not DISABLED) on Valetax. Guard only blocks mode 0.
+- **Lot clamp:** min 0.01, step 0.01 enforced. SL/TP omitted if ≤0.
+- **QNAI_ENCRYPTION_KEY** required for API boot.
+- **Secrets: env vars only** — never hardcode.
+- **Symbols:** `.vx` suffix (EURUSD.vx, BTCUSD.vx, XAUUSD.vx)
 
-## ⚠️ CRITICAL GAP — Scoring Engine WIRED (Session 7-8-9)
-8 scorers (100% weight) exist in `quant_nanggroe/core/scoring/` — ✅ **WIRED** in `run_once()`.
-FusionEngine.evaluate() called after aggregate(), before ConfluenceScorer.
-Includes PositioningScorer from CFTC COT API + hidden-regime fallback.
+
 Evolution loop: journal + scheduler + scanner + disabler + weight_updater — all integrated.
 
 ## Exact Commands

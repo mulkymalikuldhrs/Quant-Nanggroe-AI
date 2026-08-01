@@ -1,5 +1,17 @@
 # Changelog — Quant Nanggroe AI
 
+## 🏗️ System Flow (REAL-ONLY)
+
+```
+MT5 LIVE ─┐
+          ├─→ SignalFusion ─→ RiskManager(9-gate) ─→ Execution(MT5) ─→ Real Ticket
+Strategies┘        (conf≥0.65)   (KillSwitch)           (Lot clamp)
+```
+
+**No paper/sim/mock.** MT5 down → RuntimeError (fail-closed).
+
+---
+
 ## 2026-08-01 — REAL-ONLY Mode Enforcement + LIVE TRADING CONFIRMED
 
 ### Added

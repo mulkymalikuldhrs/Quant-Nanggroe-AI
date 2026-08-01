@@ -4,25 +4,43 @@
 
 ---
 
-## ◈ v6.1.0 · Quant Nation
+## ◈ v6.1.0 · Quant Nation — REAL-ONLY LIVE
 
-Autonomous quant hedge fund. Python 3.11+ · Windows · i7-10th · 16GB · no GPU.
+Autonomous quant hedge fund. Python 3.12.13 (.venv312) · Windows · i7-10th · 16GB · no GPU.
+**Live MT5:** ValetaxIntl-Live2, login=372044706, balance=$1122.05. **REAL trades, no paper.**
 
-> **Source of truth**: `pyproject.toml` + `qna.py:__version__`  
-> README says v4.8.0 · AGENTS.md says v15.4.0 — both stale.
+> **Source of truth**: `qna.py:__version__` + `Rencana.md`
+> README/AGENTS say v6.1.0 — consistent. Old docs (v4.8.0) are stale.
 
 ---
 
-## ▸ Commands
+## ▸ How It Works
+
+```
+MT5 LIVE (BTC/EUR/XAU.vx) ─┐
+                           ├─→ SignalFusion (weighted vote) ─→ RiskManager (9-gate, KillSwitch)
+Strategies (77, 6 active) ─┘                                    │ APPROVED
+                                                            ┌───┴───┐
+                                                            ▼       ▼
+                                                  Execution (MT5)   BLOCKED
+                                                  Real Ticket
+```
+
+**REAL-ONLY:** `SyncPaperBroker` deleted. MT5 down → RuntimeError (fail-closed).
+
+---
+
+## ▸ Commands (VERIFIED)
 
 | Action | Command |
 |--------|---------|
-| **Run** | `python qna.py [unified\|api\|daemon\|hedge\|status\|stop]` |
-| **API** | `launch.bat api` → FastAPI :8000 |
-| **Dashboard** | `cd dashboard && npm run dev` → Next.js :3000 |
-| **Guardian** | `guardian_cli.py --once` |
+| **Run (purified)** | `env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." .venv312/Scripts/python.exe -m quant_nanggroe.autonomous_cycle` |
+| **Run (LiveEngine)** | `env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." .venv312/Scripts/python.exe qna.py live` |
 | **Lint** | `ruff check quant_nanggroe/` (line-length=120) |
-| **Type** | `mypy --strict` |
+| **Test** | `.venv312/Scripts/python.exe tests/unit/test_risk_sortino.py` |
+| **Deps** | `uv pip install --python .venv312/Scripts/python.exe -r requirements_qna.txt` |
+
+
 | **Install** | `uv sync` _(not pip, not poetry)_ |
 
 ### ▹ Tests
