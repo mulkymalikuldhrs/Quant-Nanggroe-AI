@@ -38,7 +38,7 @@ class Signal:
 # 2. MT5 ADAPTER — fail-closed, trade-mode guarded
 # ──────────────────────────────────────────────────────────────
 class MT5Adapter:
-    """Thin MT5 wrapper. Paper mode if MT5 unavailable."""
+    """Thin MT5 wrapper. REAL-ONLY: raises if MT5 unavailable (no paper mode)."""
 
     def __init__(self):
         self._initialized = False
@@ -269,19 +269,20 @@ class PurifiedEngine:
     def __init__(self, initial_balance: float = 10000.0):
         self.mt5 = MT5Adapter()
         self.risk = RiskGuard(initial_balance)
-        self.symbols = ["EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "XAUUSD"]
+        # Broker requires .vx suffix (Valetax). Plain symbols are rejected.
+        self.symbols = ["EURUSD.vx", "GBPUSD.vx", "USDJPY.vx", "BTCUSD.vx", "XAUUSD.vx"]
         self.active = False
 
     def start(self):
-        """Connect MT5 (or paper mode)."""
+        """Connect MT5 (REAL-ONLY — raises if unavailable, no paper mode)."""
         self.mt5.connect()
         self.active = True
         log.info("Engine started — mode=%s",
-                 "MT5" if self.mt5._initialized else "PAPER")
+                 "MT5-LIVE" if self.mt5._initialized else "DOWN")
         return self
 
     def cycle(self, signals: List[Signal]) -> List[dict]:
-        """Execute signal batch through risk guard + MT5 adapter."""
+        """Execute signal batch through risk guard + MT5 adapter (REAL-ONLY)."""
         if not self.active:
             log.warning("Engine not started")
             return []
@@ -297,7 +298,7 @@ class PurifiedEngine:
                 log.warning("Risk veto %s %s: %s", sig.symbol, sig.side, reason)
                 continue
 
-            # Size position
+            # Size position (execute_order clamps to broker min 0.01)
             kelly = self.risk.kelly_cache.get(sig.strategy, 0.25)
             lot = self.risk.position_size(sig.price, kelly)
             if lot <= 0:
@@ -338,7 +339,7 @@ class PurifiedEngine:
             "risk_reason": reason,
             "trades": self.risk.total_trades,
             "wins": self.risk.wins,
-            "mt5": "live" if self.mt5._initialized else "paper",
+            "mt5": "live" if self.mt5._initialized else "down",
         }
 
     def shutdown(self):

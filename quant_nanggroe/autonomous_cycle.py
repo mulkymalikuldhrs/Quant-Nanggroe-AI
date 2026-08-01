@@ -6,7 +6,7 @@ Main loop that runs continuously:
 1. Fetch market data
 2. Generate signals from ALL registered strategies
 3. Filter through risk guard (fail-closed)
-4. Execute via purified engine (MT5 or paper)
+4. Execute via purified engine (REAL-ONLY MT5, no paper)
 5. Manage open positions (trailing, partial TP, stop loss)
 6. Record performance, update Kelly fractions
 7. Sleep until next cycle
@@ -568,7 +568,7 @@ class AutonomousCycle:
         # 1. Create purified engine
         self.engine = PurifiedEngine(initial_balance=10000.0)
         self.engine.start()
-        log.info(f"Engine started: MT5={'LIVE' if self.engine.mt5._initialized else 'PAPER'}")
+        log.info(f"Engine started: MT5={'LIVE' if self.engine.mt5._initialized else 'DOWN'}")
         
         # 2. Market data
         self.market_data = MarketData(self.engine.mt5)
