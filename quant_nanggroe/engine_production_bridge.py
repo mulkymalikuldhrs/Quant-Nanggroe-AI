@@ -330,82 +330,8 @@ class RegimeAwareExecution:
 # ---------------------------------------------------------------------------
 # ProductionExecutionManager
 # ---------------------------------------------------------------------------
-
-class SyncPaperBroker:
-    """Synchronous wrapper around PaperExchangeBroker for live_engine compatibility."""
-
-    _loop = None  # class-level persistent event loop (created on demand)
-
-    def __init__(self, initial_capital: float = 10000.0):
-        self._broker = None
-        self._capital = initial_capital
-
-    @classmethod
-    def _get_loop(cls):
-        """Return the persistent class-level loop; create only if missing/closed."""
-        import asyncio
-        if cls._loop is None or cls._loop.is_closed():
-            cls._loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(cls._loop)
-        return cls._loop
-
-    def _ensure(self):
-        if self._broker is not None:
-            return
-        from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-        self._broker = PaperExchangeBroker(initial_capital=self._capital)
-        try:
-            loop = self._get_loop()
-            loop.run_until_complete(self._broker.connect())
-        except Exception:
-            pass
-
-    def place_order(self, symbol: str, side: str, qty: float, price: float) -> Optional[Dict]:
-        self._ensure()
-        from quant_nanggroe.types.orders import OrderSide, OrderType
-        os = OrderSide.BUY if side == "buy" else OrderSide.SELL
-        try:
-            loop = self._get_loop()
-            order = loop.run_until_complete(
-                self._broker.place_order(
-                    symbol=symbol,
-                    side=os,
-                    order_type=OrderType.MARKET,
-                    quantity=qty,
-                )
-            )
-            return {
-                "symbol": order.symbol,
-                "side": side,
-                "qty": qty,
-                "price": price,
-                "fill_id": order.id,
-                "strategy": "exchange",
-                "mode": "paper_broker",
-                "status": order.status.value,
-            }
-        except Exception as e:
-            log.error(f"Paper broker order failed: {e}", exc_info=True)
-            return None
-
-    def get_balance(self) -> float:
-        self._ensure()
-        try:
-            loop = self._get_loop()
-            bal = loop.run_until_complete(self._broker.get_balance())
-            return bal.get("USDT", bal.get("total", 0))
-        except Exception:
-            return self._capital
-
-    def get_positions(self) -> list:
-        self._ensure()
-        try:
-            loop = self._get_loop()
-            pos = loop.run_until_complete(self._broker.get_positions())
-            return pos
-        except Exception:
-            return []
-
+# REMOVED: SyncPaperBroker (REAL-ONLY mode — no paper fallback, 2026-08-01)
+# ---------------------------------------------------------------------------
 
 class ProductionExecutionManager:
     """Wires exchange layer + engine/execution/ for order management."""
@@ -483,14 +409,21 @@ class ProductionExecutionManager:
             sl = sl or round(fall_sl, 5)
             tp = tp or round(fall_tp, 5)
 
-        # ponytail: LIVE MT5 takes priority over paper when explicitly enabled
-        # (QNA_MT5_LIVE=1) and connected. Paper is the FALLBACK, not the silent
-        # default. Fail-open bug (#9) was: paper returned first, _mt5 never used.
-        # v6.5.0: When MT5 is live, paper is completely bypassed.
-        if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is not None:
+        # REAL-ONLY: LIVE MT5 is the ONLY execution path. No env toggle, no paper.
+        if self._mt5 is not None:
             try:
                 from quant_nanggroe.connectors.broker_base import Order
-                from quant_nanggroe.engine.execution.base import OrderSide
+                from quant_nanggroe.engine.execution.base import OrderSide, OrderType
+                # Clamp lot to broker min/step/max (REAL-ONLY, fail-closed)
+                _info = self._mt5._mt5.symbol_info(signal.symbol) if hasattr(self._mt5, "_mt5") else None
+                _min = _info.volume_min if _info else 0.01
+                _step = _info.volume_step if _info else 0.01
+                _max = _info.volume_max if _info else 50.0
+                if qty < _min:
+                    qty = _min
+                if qty > _max:
+                    qty = _max
+                qty = round(round(qty / _step) * _step, 2)
                 # P0 fix: carry protective SL/TP into the live order so positions
                 # are never naked (previously dropped -> MT5 veto/phantom risk).
                 order = Order(
@@ -525,16 +458,10 @@ class ProductionExecutionManager:
                     "executed": False,
                 }
 
-        # v6.5.0: Paper broker ONLY when MT5 is not live
-        if self._paper is not None and os.environ.get("QNA_MT5_LIVE") != "1":
-            result = self._paper.place_order(signal.symbol, signal.side, qty, price)
-            if result is not None:
-                result["strategy"] = signal.strategy
-                return result
-            log.debug("Paper broker failed, falling back")
-
-        # Secondary: engine execution
-        if self._exec_mgr:
+        # REAL-ONLY: no paper fallback. If MT5 path failed above, the exception
+        # already propagated (fail-closed). Engine exec path below is secondary
+        # only when MT5 adapter is None (should not happen in REAL-ONLY).
+        if self._mt5 is None and self._exec_mgr:
             try:
                 from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
                 side = OrderSide.BUY if signal.side == "buy" else OrderSide.SELL
@@ -543,7 +470,6 @@ class ProductionExecutionManager:
                     side=side,
                     order_type=OrderType.MARKET,
                     quantity=qty,
-                    # P0 fix: carry protective SL/TP into engine order path too
                     stop_loss=getattr(signal, "stop_loss", None),
                     take_profit=getattr(signal, "take_profit", None),
                 )
@@ -558,7 +484,12 @@ class ProductionExecutionManager:
                     "mode": "engine",
                 }
             except Exception as e:
-                log.debug(f"Engine exec failed: {e}")
+                log.error(f"Engine exec also failed (REAL-ONLY, no paper): {e}")
+                raise
+
+        # REAL-ONLY: if we reach here with no MT5 and no exec_mgr, hard fail.
+        if self._mt5 is None and not self._exec_mgr:
+            raise RuntimeError(f"REAL-ONLY: no live MT5 and no exec manager for {signal.symbol} — refusing paper fallback")
 
         # Fallback: order dict for live_engine
         return {
@@ -572,8 +503,11 @@ class ProductionExecutionManager:
 
     def get_exchange_balance(self) -> float:
         self._lazy_init()
-        if self._paper is not None:
-            return self._paper.get_balance()
+        if self._mt5 is not None:
+            try:
+                return self._mt5.get_balance()
+            except Exception:
+                return 0.0
         return 0.0
 
 # ---------------------------------------------------------------------------

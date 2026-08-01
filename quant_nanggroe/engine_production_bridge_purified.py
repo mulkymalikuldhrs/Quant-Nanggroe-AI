@@ -117,6 +117,10 @@ class MT5Adapter:
         # Round to nearest step
         lot = round(lot / step) * step
         lot = round(lot, 2)
+        # REAL-ONLY: only attach SL/TP if valid (>0). Broker rejects sl/tp<=0
+        # or below trade_stops_level. If caller passed 0.0, omit stops entirely.
+        _sl = sl if (sl and sl > 0) else None
+        _tp = tp if (tp and tp > 0) else None
         order_type = mt5.ORDER_TYPE_BUY if side == "buy" else mt5.ORDER_TYPE_SELL
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
@@ -124,13 +128,16 @@ class MT5Adapter:
             "volume": lot,
             "type": order_type,
             "price": price,
-            "sl": sl,
-            "tp": tp,
             "deviation": 10,
             "magic": 20260729,
             "comment": comment[:32],
             "type_filling": mt5.ORDER_FILLING_FOK,
         }
+        if _sl is not None:
+            request["sl"] = _sl
+        if _tp is not None:
+            request["tp"] = _tp
+
         result = mt5.order_send(request)
         if result.retcode != mt5.TRADE_RETCODE_DONE:
             raise RuntimeError(f"Order rejected: {result.comment}")
