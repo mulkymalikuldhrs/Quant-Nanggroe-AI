@@ -93,13 +93,13 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
             except Exception as exc:
                 logger.error("build_execution_manager live wiring failed: %s (falling back to paper)", exc)
 
-        # v6.5.0: Only add PaperBroker as fallback when MT5 is NOT connected.
-        # When MT5 is live, all trading goes exclusively through MT5 — no simulated trades.
+        # REAL-ONLY: NO paper fallback. If MT5 is not connected, raise — do NOT
+        # add a simulated broker. Fail-closed: no market = no trades.
         if not mt5_connected:
-            from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
-            paper = PaperBroker()
-            em.add_broker(paper, primary=False)
-            logger.info("PaperBroker added as fallback (MT5 not connected)")
+            raise RuntimeError(
+                "REAL-ONLY mode: no MT5 account connected. "
+                "PaperBroker removed — cannot trade on simulation."
+            )
         else:
             logger.info("MT5 live — PaperBroker DISABLED (all trades via MT5)")
 

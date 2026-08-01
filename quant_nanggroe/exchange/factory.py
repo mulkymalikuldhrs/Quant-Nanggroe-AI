@@ -345,12 +345,10 @@ class ExchangeFactory:
         """
         name_lower = exchange_name.lower().strip()
 
-        # Handle paper trading
+        # REAL-ONLY: paper trading removed. Raise if requested.
         if name_lower == "paper":
-            return self._create_paper_broker(
-                initial_capital=initial_capital,
-                commission_rate=commission_rate,
-                slippage_bps=slippage_bps,
+            raise ExchangeFactoryError(
+                "REAL-ONLY mode: paper exchange disabled. Use 'mt5' for live trading."
             )
 
         # Handle MetaTrader 5 (no API key required — uses local MT5 terminal login)

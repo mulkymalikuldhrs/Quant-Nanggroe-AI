@@ -3,8 +3,8 @@ Trader Agent Tools for Quant Nanggroe AI Trading Framework.
 
 PRODUCTION: Wired to real execution components:
 - place_order: Uses ExecutionTool/ExecutionManager for real order routing
-- get_position: Uses PaperBroker for real position data
-- get_portfolio: Uses PaperBroker for real portfolio overview
+- get_position: Uses live MT5 broker for real position data
+- get_portfolio: Uses live MT5 broker for real portfolio overview
 """
 
 from __future__ import annotations

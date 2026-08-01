@@ -1,16 +1,14 @@
 """
 Execution Tool — Order Routing & Trade Execution for Agents
 ============================================================
-Routes orders to the appropriate execution backend based on symbol
-type and configuration. Paper trading is the default mode.
+Routes orders to the live MT5 execution backend (REAL-ONLY mode).
+Paper trading REMOVED — no simulated broker.
 
 Routing logic:
-  - Crypto symbols → PaperExchangeBroker
-  - Forex symbols  → PaperExchangeBroker
-  - Stock symbols  → PaperExchangeBroker (or AlpacaBroker if configured)
+  - All symbols → live MT5 broker (via ExecutionManager)
 
 All order methods return structured dicts with status, order_id,
-execution_price, slippage, and commission details.
+
 
 LangChain @tool functions are also exposed for direct agent consumption.
 """
@@ -181,34 +179,18 @@ class ExecutionTool:
         self._market_data = market_data_tool
         self._order_store = _OrderStore()
 
-        # Initialize paper brokers per asset class with appropriate defaults
-        self._stock_paper = PaperExchangeBroker(
-            initial_capital=1_000_000.0,
-            commission_rate=0.001,
-            slippage_bps=5.0,
-        )
-        self._crypto_paper = PaperExchangeBroker(
-            initial_capital=1_000_000.0,
-            commission_rate=0.001,
-            slippage_bps=5.0,
-        )
-        self._forex_paper = PaperExchangeBroker(
-            initial_capital=1_000_000.0,
-            commission_rate=0.0002,
-            slippage_bps=2.0,
-        )
+        # REAL-ONLY: paper brokers REMOVED. No simulated broker instances.
+        self._stock_paper = None
+        self._crypto_paper = None
+        self._forex_paper = None
 
         # Alpaca broker (lazy init)
         self._alpaca_broker: Any = None
 
     async def _ensure_connected(self) -> None:
-        """Ensure paper brokers are connected."""
-        if not self._stock_paper.is_connected:
-            await self._stock_paper.connect()
-        if not self._crypto_paper.is_connected:
-            await self._crypto_paper.connect()
-        if not self._forex_paper.is_connected:
-            await self._forex_paper.connect()
+        """REAL-ONLY: no paper brokers to connect. Live MT5 is the only path."""
+        # Paper brokers removed (REAL-ONLY). Nothing to connect here.
+        return
 
     # ── Public API ────────────────────────────────────────────────────
 
