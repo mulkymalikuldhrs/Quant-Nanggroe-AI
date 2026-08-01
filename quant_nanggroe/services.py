@@ -258,7 +258,7 @@ def get_execution_manager(app: FastAPI):
     if "execution_manager" not in app.state._services:
         logger.info("services_initializing", extra={"component": "ExecutionManager"})
         from quant_nanggroe.engine.execution.builder import build_execution_manager
-        app.state._services["execution_manager"] = build_execution_manager()
+        app.state._services["execution_manager"] = build_execution_manager(allow_live=True)
     return app.state._services["execution_manager"]
 
 

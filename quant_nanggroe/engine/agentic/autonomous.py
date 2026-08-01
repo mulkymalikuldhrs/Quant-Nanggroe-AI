@@ -585,7 +585,7 @@ class AutonomousPipeline:
             self._data_monitor = None
         try:
             from quant_nanggroe.engine.execution.builder import build_execution_manager
-            self._em = build_execution_manager()
+            self._em = build_execution_manager(allow_live=True)
         except ImportError:
             self._em = None
 

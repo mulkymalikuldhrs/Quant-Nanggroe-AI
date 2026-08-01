@@ -38,7 +38,7 @@ router = APIRouter()
 
 
 class ExchangeBrokerAdapter(Broker):
-    """Bridge the live ExchangeManager (paper/MT5/crypto) into ExecutionManager.
+    """Bridge the live ExchangeManager (REAL-ONLY MT5) into ExecutionManager.
 
     ExecutionManager expects an ``execution.base.Broker``; the live brokers in
     ExchangeManager implement a different ``exchange.base.ExchangeInterface``. This
@@ -119,8 +119,8 @@ def _get_execution_manager(http_request: Request):
     KillSwitch so every order is enforced (no override path). A trade that breaches
     the daily/weekly loss budget or a halt is vetoed before it reaches the broker.
 
-    The ExecutionManager is also bridged to the live ExchangeManager (paper / MT5 /
-    crypto), so executes_order actually reaches a real broker instead of a phantom
+    The ExecutionManager is also bridged to the live ExchangeManager (REAL-ONLY MT5),
+    so execute_order actually reaches a real broker instead of a phantom
     "paper" default. Without this bridge, execute_order routes to a broker that was
     never registered and silently returns None (no fill, no error).
     """
@@ -492,8 +492,8 @@ class CycleResponse(BaseModel):
 async def trading_cycle(request: CycleRequest, http_request: Request) -> CycleResponse:
     """Run one full hedge-fund cycle: data -> strategy -> execute -> portfolio.
 
-    Uses the live ExchangeManager (MT5 if configured, else paper broker) so the
-    same endpoint drives real or simulated trading.
+    Uses the live ExchangeManager (REAL-ONLY MT5) so the
+    same endpoint drives real trading. No paper/simulated mode.
     """
     # FIX S5: Require TRADER+ role for cycle execution
     from quant_nanggroe.security.auth import UserRole
