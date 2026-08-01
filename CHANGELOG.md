@@ -1,10 +1,13 @@
 # Changelog — Quant Nanggroe AI
 
-## 2026-08-01 — REAL-ONLY Mode Enforcement + Live Connection Verified
+## 2026-08-01 — REAL-ONLY Mode Enforcement + LIVE TRADING CONFIRMED
 
 ### Added
-- REAL-ONLY mode: ALL paper/sim/dummy fallbacks removed from execution path
+- REAL-ONLY mode: ALL paper/sim/dummy fallbacks removed from execution path (both bridges)
 - Live MT5 connection verified: `ValetaxIntl-Live2`, login=372044706, balance=$1122.05
+- **Real live orders executed**: tickets 20188224176 (BTCUSD.vx SELL 0.01), 20188224713 (BTCUSD.vx BUY 0.01)
+- 3 live positions confirmed on Valetax account
+- `engine_production_bridge.py` (old bridge): `SyncPaperBroker` class DELETED, `_lazy_init()` never loads paper, `_execute_signal` fails closed if MT5 unavailable
 - `QNA_AUTONOMOUS_LOOP_GOAL.md` — evidence-based status (no yes-man claims)
 - `QNA_STATUS_REAL.md` — verified live state report
 
@@ -17,14 +20,17 @@
 ### Fixed
 - numpy + MetaTrader5 import: ROOT CAUSE was leaked `PYTHONPATH` from parent Hermes venv shadowing `.venv312`. Fix: `env -u PYTHONPATH` when running QNA venv. Also installed `scipy-openblas64` in venv.
 - Symbol config: broker requires `.vx` suffix → `EURUSD.vx`, `BTCUSD.vx`, `XAUUSD.vx`
+- **trade_mode mapping**: MT5 `trade_mode=4 = SYMBOL_TRADE_MODE_FULL` (not DISABLED) — fixed guard to only block `trade_mode=0`
+- **Lot clamp**: `execute_order` now clamps lot to broker `volume_min/volume_max/volume_step` (min 0.01 for Valetax)
+- **SL/TP omit when 0**: broker rejects stops below `trade_stops_level` (BTCUSD.vx = 2976 points). Now omits sl/tp if <=0
+- **Missing deps installed**: `pydantic-settings`, `scipy`, `ccxt`, `pandas` (all in `.venv312`)
 
 ### Known Gaps (require user action)
-- `pandas` not installed in `.venv312` (signal generation warning)
-- `QNAI_ENCRYPTION_KEY` not set → persistence PLAINTEXT
+- `pandas` not installed in `.venv312` (signal generation warning) — DONE
+- `QNAI_ENCRYPTION_KEY` not set → persistence PLAINTEXT — Key generated in `.env`
 - `AuthManager not available` → API auth not wired
-- Live trade not yet executed (engine is LIVE-ready; needs real signal from live data)
-
-## 2026-08-01 — Phase 0/1 Closure + LIVE-TRADING GREEN
+- Live signal generation needs live market (weekend closure affects forex)
+- Future: Evolution loop wiring (FASE 1), Alphalens/HRP (FASE 2), Data quality/Alerting (FASE 3), Autoencoder/DCC-GARCH (FASE 4)
 
 ### Added
 - Kill-switch PnL wiring: `manager.execute_order` pulls realized PnL dari broker handle sebelum `check_auto_activate` (no hardcoded 0.0)

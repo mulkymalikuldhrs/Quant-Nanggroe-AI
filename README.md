@@ -1,10 +1,12 @@
-# Quant-Nanggroe-AI v6.1.0 — Autonomous Quant Hedge Fund
+# Quant-Nanggroe-AI v6.1.0 — Autonomous Quant Hedge Fund (REAL-ONLY LIVE)
 
-> **HARDENED — REAL-ONLY mode enforced (2026-08-01).** No paper/sim/mock/dummy fallbacks.
-> **Live MT5 connected: ValetaxIntl-Live2, login=372044706, balance=1122.05 (verified live).**
-> **Entry point `autonomous_cycle.py` runs end-to-end: engine.start() → run_cycle() boots in <1s.**
-> **⚠️ Symbol config uses broker suffix: EURUSD.vx, BTCUSD.vx, XAUUSD.vx (not plain).**
-> **LIVE-TRADING READY (2026-08-01):** All 3 Council RED blockers resolved — kill-switch PnL wired, MT5 SL/TP attached, integration tests passing. Tinggal isi saldo + connect MT5.
+> **REAL-ONLY (2026-08-01):** No paper/sim/mock/dummy. MT5-only execution.
+> **Live trading verified:** ValetaxIntl-Live2 login=372044706 balance=$1122.05
+> Real orders executed (tickets 20188224176, 20188224713). 3 live positions confirmed.
+> **Entry points:** `qna.py live` (LiveEngine) or `python -m quant_nanggroe.autonomous_cycle`
+> **Run:** `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe` (Py3.12.13, venv=.venv312)
+> **Deps:** requirements_qna.txt | **Symbols:** EURUSD.vx, BTCUSD.vx, XAUUSD.vx (broker suffix)
+> **Master doc:** `C:\Users\Hi\Desktop\QuantScience_Archive\QNA_QuantScience_MASTER.md`
 
 ---
 
@@ -17,11 +19,17 @@
 | 3 | ✅ **Fluid Island Dashboard** — premium redesign, bento grid, live ticker | **DONE** v4.8.0 | P1 |
 | 4 | ✅ **Docs consolidated** — README hub, CHANGELOG, session-QNA | **DONE** v4.8.0 | P1 |
 | 5 | ✅ **Closed trade → eval → evolve loop** — TradeLifecycleManager w/ PnLEvaluator → SelfCorrection | **DONE** v4.8.0 | P0 |
-| 6 | ⬜ **Run paper trading** — end-to-end pipeline test with SLA validation | **NEXT** | P0 |
-| 7 | ✅ **Wire E:/trading** — TradingAdapter for legacy trading repo | **DONE** v4.8.0 | P2 |
-| 8 | ⬜ **100+ quant strategies** — walk-forward + fine-tuning pipeline | **BACKLOG** | P1 |
-| 9 | ⬜ **Decisor/Veto system** — LLM-powered veto with 9router combo | **BACKLOG** | P1 |
-| 10 | ⬜ **Dashboard v2** — unified single-page command center | **BACKLOG** | P2 |
+| 6 | ✅ **REAL-ONLY enforcement** — all paper/sim fallbacks removed, MT5-only | **DONE** 2026-08-01 | P0 |
+| 7 | ✅ **Live order execution verified** — tickets on Valetax 372044706 | **DONE** 2026-08-01 | P0 |
+| 8 | ⬜ **Evolution loop wiring fix** — scan_strategy→scan_all, evaluate list | **FASE 1** | P0 |
+| 9 | ⬜ **Silent errors → log.error** — 20+ files | **FASE 1** | P1 |
+| 10 | ⬜ **Dashboard rebuild** — npm build + color config + PnL attribution | **FASE 1** | P1 |
+| 11 | ⬜ **Alphalens factor analysis** — IC/quantile/turnover per strategy | **FASE 2** | P1 |
+| 12 | ⬜ **HRP allocator + KMeans clustering** — portfolio optimization | **FASE 2** | P1 |
+| 13 | ⬜ **Data quality framework + Telegram alerts** — staleness/SLA/alerting | **FASE 3** | P1 |
+| 14 | ⬜ **Test coverage 80%+** — risk>scoring>evolution priority | **FASE 3** | P1 |
+| 15 | ⬜ **Autoencoder factors + DCC-GARCH + MACD factor** | **FASE 4** | P2 |
+| 16 | ⬜ **Multi-account MT5** — multi-process, account rotation | **FASE 4** | P2 |
 
 ---
 

@@ -504,6 +504,9 @@ class RiskManager:
         # Persist state after update (including kill switch changes)
         self._save_state()
 
+        # Downside deviation + Sortino tracking (per-trade returns history)
+        self._record_return(trade_pnl)
+
     def add_position(self, symbol: str) -> None:
         """Track a new open position."""
         if symbol not in self.state.active_positions:
@@ -513,6 +516,49 @@ class RiskManager:
         """Remove a closed position."""
         if symbol in self.state.active_positions:
             self.state.active_positions.remove(symbol)
+
+    # ── Downside Deviation + Sortino (FASE 1 item #4, QS newsletter) ──
+    # Track per-trade returns to compute downside deviation (target-relative
+    # semi-deviation) and Sortino ratio. Sharpe uses total volatility; Sortino
+    # only penalises downside — more honest for tail-risk-aware sizing.
+    def _record_return(self, trade_pnl: float, cost_basis: float = 0.0) -> None:
+        """Append a per-trade return to history for risk analytics."""
+        if cost_basis and cost_basis > 0:
+            ret = trade_pnl / cost_basis
+        elif self.state.current_equity > 0:
+            ret = trade_pnl / self.state.current_equity
+        else:
+            ret = 0.0
+        if not hasattr(self.state, "returns_history"):
+            self.state.returns_history = []
+        self.state.returns_history.append(ret)
+        if len(self.state.returns_history) > 1000:
+            self.state.returns_history = self.state.returns_history[-1000:]
+
+    def downside_deviation(self, target: float = 0.0) -> float:
+        """Target-relative downside semi-deviation of per-trade returns.
+
+        Returns sqrt(mean(min(0, r - target)^2)). 0.0 if <2 returns.
+        """
+        hist = getattr(self.state, "returns_history", [])
+        if len(hist) < 2:
+            return 0.0
+        downs = [(min(0.0, r - target)) ** 2 for r in hist]
+        return (sum(downs) / len(downs)) ** 0.5
+
+    def sortino_ratio(self, target: float = 0.0, annualization: float = 252.0) -> float:
+        """Sortino = (annualised mean return - target) / downside_deviation.
+
+        Returns 0.0 if downside_deviation == 0 (no downside captured yet).
+        """
+        hist = getattr(self.state, "returns_history", [])
+        if len(hist) < 2:
+            return 0.0
+        mean_ret = sum(hist) / len(hist)
+        dd = self.downside_deviation(target)
+        if dd <= 0.0:
+            return 0.0
+        return (mean_ret - target) * annualization / dd
 
     def calculate_position_size(
         self,
