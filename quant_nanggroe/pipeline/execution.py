@@ -207,7 +207,7 @@ class UnifiedExecutionRouter:
                         self._mark_executed(result)
                     return result
             except Exception as e:
-                log.debug("ProductionExecutionManager failed: %s", e)
+                log.error("ProductionExecutionManager order execution failed: %s", e, exc_info=True)
 
         # 2. Direct MT5 (production bridge failed or not loaded)
         self._lazy_mt5()
@@ -236,7 +236,7 @@ class UnifiedExecutionRouter:
                         "executed": True,
                     }
             except Exception as e:
-                log.debug("Direct MT5 execution failed: %s", e)
+                log.error("Direct MT5 order execution failed: %s", e, exc_info=True)
 
         # 3. Paper broker
         self._lazy_paper()
@@ -250,7 +250,7 @@ class UnifiedExecutionRouter:
                         self._mark_executed(result)
                     return result
             except Exception as e:
-                log.debug("Paper broker failed: %s", e)
+                log.error("Paper broker order execution failed: %s", e, exc_info=True)
 
         # 4. Engine execution manager
         self._lazy_engine()
@@ -280,7 +280,7 @@ class UnifiedExecutionRouter:
                     "executed": True,
                 }
             except Exception as e:
-                log.debug("Engine execution failed: %s", e)
+                log.error("Engine order execution failed: %s", e, exc_info=True)
 
         # 5. No backend available — reject instead of pretending fill succeeded (P0 FIX)
         return {

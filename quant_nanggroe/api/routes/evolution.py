@@ -33,6 +33,37 @@ def get_config():
     return {"success": True, "data": config.data}
 
 
+@router.get("/timeline")
+def get_evolution_timeline(limit: int = Query(500, ge=1, le=5000)):
+    """PnL attribution timeline.
+
+    Reads the append-only evolution journal (closed_trades table) and
+    returns the realized PnL per trade in chronological order so the
+    dashboard can render an evolution PnL attribution timeline.
+    """
+    journal = EvolutionJournal()
+    cur = journal._conn.execute(
+        "SELECT id, timestamp, symbol, strategy, direction, pnl, pnl_pct, hold_hours "
+        "FROM closed_trades ORDER BY id ASC LIMIT ?",
+        (limit,),
+    )
+    rows = cur.fetchall()
+    timeline = [
+        {
+            "id": r["id"],
+            "timestamp": r["timestamp"],
+            "symbol": r["symbol"],
+            "strategy": r["strategy"],
+            "direction": r["direction"],
+            "pnl": r["pnl"],
+            "pnl_pct": r["pnl_pct"],
+            "hold_hours": r["hold_hours"],
+        }
+        for r in rows
+    ]
+    return {"success": True, "data": timeline}
+
+
 @router.post("/config")
 def update_config(key: str, value: str):
     config = EvolutionConfig()

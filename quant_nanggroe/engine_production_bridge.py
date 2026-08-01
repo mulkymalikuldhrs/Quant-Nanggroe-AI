@@ -385,7 +385,7 @@ class SyncPaperBroker:
                 "status": order.status.value,
             }
         except Exception as e:
-            log.debug(f"Paper broker order failed: {e}")
+            log.error(f"Paper broker order failed: {e}", exc_info=True)
             return None
 
     def get_balance(self) -> float:

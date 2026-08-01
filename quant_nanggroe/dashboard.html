@@ -54,6 +54,19 @@ tr:last-child td{border-bottom:none}
 .loading::after{content:'';display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-left:8px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:600px){header{flex-direction:column;align-items:flex-start}.form-row{grid-template-columns:1fr 1fr}}
+.theme-btn{cursor:pointer}
+.theme-panel{position:fixed;top:0;right:0;height:100vh;width:300px;max-width:90vw;background:var(--surface);border-left:1px solid var(--border);padding:24px;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;z-index:1000;box-shadow:-8px 0 24px rgba(0,0,0,.4)}
+.theme-panel.open{transform:translateX(0)}
+.theme-panel h2{font-size:15px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;color:var(--text)}
+.theme-panel .close{cursor:pointer;color:var(--text-dim);font-size:20px;line-height:1;background:none;border:none;padding:0}
+.theme-panel .close:hover{color:var(--text)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.swatch{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:12px;background:var(--bg);color:var(--text);transition:.15s}
+.swatch:hover{filter:brightness(1.25)}
+.color-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.color-item{display:flex;flex-direction:column;gap:4px}
+.color-item label{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim)}
+.color-item input[type=color]{width:100%;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);cursor:pointer;padding:2px}
 </style>
 </head>
 <body>
@@ -62,8 +75,16 @@ tr:last-child td{border-bottom:none}
   <div class="controls">
     <button id="btnStartStop" class="btn btn-start" onclick="toggleEngine()">Start Engine</button>
     <button class="btn" onclick="refreshAll()">Refresh</button>
+    <button class="btn theme-btn" onclick="toggleThemePanel()">Theme</button>
   </div>
 </header>
+
+<div class="theme-panel" id="themePanel">
+  <h2>Theme Colors <button class="close" onclick="toggleThemePanel()" aria-label="Close theme panel">&times;</button></h2>
+  <div class="swatches" id="themePresets"></div>
+  <div class="color-grid" id="colorControls"></div>
+  <button class="btn" onclick="resetTheme()">Reset to Default</button>
+</div>
 
 <main>
   <div class="grid" id="statusCards">
@@ -212,6 +233,66 @@ function submitTrade() {
 function esc(s) {
   const d=document.createElement('div'); d.textContent=s; return d.innerHTML;
 }
+
+/* ---- Color config picker (CSS variable driven) ---- */
+const THEME_VARS = ['--bg','--surface','--border','--text','--text-dim','--accent','--green','--red','--orange'];
+const THEME_PRESETS = {
+  'Dark':     {'--bg':'#0d1117','--surface':'#161b22','--border':'#30363d','--text':'#c9d1d9','--text-dim':'#8b949e','--accent':'#58a6ff','--green':'#3fb950','--red':'#f85149','--orange':'#d29922'},
+  'Light':    {'--bg':'#ffffff','--surface':'#f6f8fa','--border':'#d0d7de','--text':'#1f2328','--text-dim':'#656d76','--accent':'#0969da','--green':'#1a7f37','--red':'#cf222e','--orange':'#9a6700'},
+  'Nord':     {'--bg':'#2e3440','--surface':'#3b4252','--border':'#434c5e','--text':'#eceff4','--text-dim':'#aeb6c2','--accent':'#88c0d0','--green':'#a3be8c','--red':'#bf616a','--orange':'#d08770'},
+  'Solarized':{'--bg':'#002b36','--surface':'#073642','--border':'#586e75','--text':'#839496','--text-dim':'#657b83','--accent':'#268bd2','--green':'#859900','--red':'#dc322f','--orange':'#cb4b16'}
+};
+const THEME_STORAGE = 'qna_dashboard_theme';
+
+function applyTheme(obj){
+  const root = document.documentElement;
+  THEME_VARS.forEach(v => { if (obj && obj[v] != null) root.style.setProperty(v, obj[v]); });
+}
+
+function buildColorControls(){
+  const grid = document.getElementById('colorControls');
+  grid.innerHTML = '';
+  const cur = getComputedStyle(document.documentElement);
+  THEME_VARS.forEach(v => {
+    const val = cur.getPropertyValue(v).trim() || '#000000';
+    const item = document.createElement('div'); item.className = 'color-item';
+    const lab = document.createElement('label'); lab.textContent = v.replace('--', '');
+    const inp = document.createElement('input'); inp.type = 'color';
+    inp.value = val.length === 7 ? val : '#000000';
+    inp.addEventListener('input', () => { document.documentElement.style.setProperty(v, inp.value); saveTheme(); });
+    item.appendChild(lab); item.appendChild(inp); grid.appendChild(item);
+  });
+}
+
+function buildPresets(){
+  const box = document.getElementById('themePresets');
+  box.innerHTML = '';
+  Object.keys(THEME_PRESETS).forEach(name => {
+    const b = document.createElement('button'); b.className = 'swatch'; b.textContent = name;
+    b.onclick = () => { applyTheme(THEME_PRESETS[name]); buildColorControls(); saveTheme(); };
+    box.appendChild(b);
+  });
+}
+
+function saveTheme(){
+  const cur = getComputedStyle(document.documentElement);
+  const obj = {}; THEME_VARS.forEach(v => obj[v] = cur.getPropertyValue(v).trim());
+  try { localStorage.setItem(THEME_STORAGE, JSON.stringify(obj)); } catch(e) {}
+}
+
+function loadTheme(){
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE);
+    if (raw) applyTheme(JSON.parse(raw));
+  } catch(e) {}
+}
+
+function resetTheme(){ applyTheme(THEME_PRESETS['Dark']); buildColorControls(); saveTheme(); }
+function toggleThemePanel(){ document.getElementById('themePanel').classList.toggle('open'); }
+
+loadTheme();
+buildColorControls();
+buildPresets();
 
 // start auto-refresh
 refreshAll();

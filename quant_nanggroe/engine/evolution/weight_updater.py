@@ -1,11 +1,15 @@
-"""WeightUpdater — adjust signal PROVIDER weights (not scorer weights).
+"""WeightUpdater — thin alias/subclass of the canonical WeightEvolver.
 
-DIFFERENTIATION from WeightEvolver (core/scoring/evolver.py):
-- WeightEvolver → canonical scorer weight tuner (FusionEngine weights)
-- WeightUpdater → provider weight tuner (SignalTracker weights)
+CANONICAL Source of Truth: quant_nanggroe.core.scoring.evolver.WeightEvolver
+  - owns the circuit breaker + safety ceiling (max ±5%/cycle, 20% ceiling,
+    breaker at 50 trades).
 
-Both coexist. No conflict by design — they operate on different registries.
-WeightEvolver has circuit breaker + safety ceiling; WeightUpdater is Bayesian.
+WeightUpdater now INHERITS from WeightEvolver so there is a single weight-tuning
+implementation. It retains its Bayesian provider-weight helper (update_weights)
+for SignalTracker/FusionEngine weights, which call sites still rely on.
+
+This resolves the B1 duplication: keep one canonical class (WeightEvolver) and
+make WeightUpdater a thin specialization alias instead of a parallel tuner.
 """
 
 from __future__ import annotations
@@ -14,18 +18,25 @@ import logging
 from typing import Any, Optional
 
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
+from quant_nanggroe.core.scoring.evolver import WeightEvolver
 
 logger = logging.getLogger(__name__)
 
 
-class WeightUpdater:
-    """Update weights in SignalTracker and FusionEngine from evolution results."""
+class WeightUpdater(WeightEvolver):
+    """Provider-weight updater — a WeightEvolver specialization.
+
+    Inherits all canonical scorer-weight evolution behavior (circuit breaker,
+    safety ceiling) and adds a Bayesian helper for SignalTracker provider weights.
+    """
 
     def __init__(
         self,
         tracker: Optional[SignalTracker] = None,
         fusion: Any = None,
+        **kwargs: Any,
     ) -> None:
+        super().__init__(**kwargs)
         self._tracker = tracker or SignalTracker()
         # FusionEngine reference — attached later if not provided at init
         self._fusion: Any = fusion
