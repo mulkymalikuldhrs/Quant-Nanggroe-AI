@@ -37,6 +37,7 @@ sys.path.insert(0, str(REPO_ROOT / "quant_nanggroe"))
 from engine_production_bridge_purified import (
     PurifiedEngine, Signal, RiskGuard, MT5Adapter
 )
+from trade_journal import TradeJournal, resolve_conflicts
 
 # Failure-alert bot (synchronous — safe to call from the main loop / handlers)
 from agents.telegram_bot import TelegramSignalBot
@@ -361,25 +362,68 @@ class TrendFollowSignalStrategy(BaseSignalStrategy):
 # POSITION MANAGER
 # ──────────────────────────────────────────────────────────────
 class PositionManager:
-    """Manages open positions: trailing stops, partial TP, full TP"""
-    
-    def __init__(self, engine: PurifiedEngine, market_data: MarketData):
+    """Manages open positions: trailing stops, partial TP, full TP.
+    Records closed trades to TradeJournal for self-eval."""
+
+    def __init__(self, engine: PurifiedEngine, market_data: MarketData, journal=None):
         self.engine = engine
         self.market_data = market_data
+        self.journal = journal
         self.positions: Dict[int, Dict] = {}  # ticket -> position info
+        self._seen_tickets: set = set()  # track which tickets we've seen open
     
     def update_positions(self):
-        """Check all open positions and manage them"""
+        """Check all open positions and manage them. Detect closes -> journal."""
         try:
             import MetaTrader5 as mt5
             positions = mt5.positions_get() or []
         except Exception:
             positions = []
-        
+
+        current_tickets = {p.ticket for p in positions}
+
+        # Detect closed positions: seen before but no longer open
+        for ticket in list(self._seen_tickets):
+            if ticket not in current_tickets:
+                self._on_position_closed(ticket)
+                self._seen_tickets.discard(ticket)
+
         for pos in positions:
-            ticket = pos.ticket
+            self._seen_tickets.add(pos.ticket)
             self._manage_position(pos)
     
+    def _on_position_closed(self, ticket: int):
+        """Position closed (by TP/SL/manual). Record to journal + self-eval."""
+        if not self.journal:
+            return
+        # Get realized PnL from MT5 deal history for this ticket
+        try:
+            import MetaTrader5 as mt5
+            from datetime import datetime, timedelta
+            deals = mt5.history_deals_get(
+                datetime.now() - timedelta(days=7), datetime.now()) or []
+            pnl = sum(d.profit for d in deals if d.position_id == ticket)
+        except Exception:
+            pnl = 0.0
+
+        # Read open record to get entry/strategy
+        open_rec = self.journal.get_open_trade(ticket)
+        if not open_rec:
+            return  # not our trade (e.g. manual)
+        exit_price = open_rec["entry"] + (pnl / open_rec["entry"] if open_rec["entry"] else 0)
+        self.journal.record_close(ticket, exit_price, pnl)
+
+        # SELF-EVAL: recompute per-strategy kelly from journal
+        verdict = self.journal.self_eval()
+        for strat, v in verdict.items():
+            if v.get("status") == "active" and "kelly" in v:
+                self.engine.risk.kelly_cache[strat] = v["kelly"]
+                log.info(f"SELF-EVAL {strat}: wr={v['win_rate']} "
+                         f"expectancy={v['expectancy']} pnl={v['total_pnl']} "
+                         f"kelly={v['kelly']}")
+        log.info(f"CLOSED journaled: ticket={ticket} strat={open_rec['strategy']} "
+                 f"pnl={pnl:.2f} outcome={'win' if pnl>0 else 'loss'}")
+
     def _manage_position(self, pos):
         """Apply trailing stop, partial TP, full TP logic"""
         ticket = pos.ticket
@@ -548,6 +592,7 @@ class AutonomousCycle:
         self.signal_generator = None
         self.position_manager = None
         self.performance = None
+        self.journal = None
         self.cycle_count = 0
         self.last_data_fetch = 0
         
@@ -577,11 +622,14 @@ class AutonomousCycle:
         self.signal_generator = StrategySignalGenerator(self.market_data)
         
         # 4. Position manager
-        self.position_manager = PositionManager(self.engine, self.market_data)
+        self.position_manager = PositionManager(self.engine, self.market_data, self.journal)
         
         # 5. Performance tracker
         self.performance = PerformanceTracker(self.engine.risk)
-        
+
+        # 6. Trade journal (strategy attribution + self-eval, SQLite-backed)
+        self.journal = TradeJournal()
+
         log.info("All components initialized")
         log.info(f"Symbols: {CONFIG.SYMBOLS}")
         log.info(f"Cycle interval: {CONFIG.CYCLE_INTERVAL_SEC}s")
@@ -638,13 +686,26 @@ class AutonomousCycle:
         # 4. Execute signals through purified engine (risk guard enforced inside)
         try:
             if all_signals:
+                # CONFLICT RESOLUTION: no random buy+sell for same symbol
+                all_signals = resolve_conflicts(all_signals)
                 results = self.engine.cycle(all_signals)
                 log.info(f"Executed {len(results)} orders")
 
-                # Record for performance tracking
+                # JOURNAL: record every filled order with strategy attribution
                 for r in results:
-                    if r.get("status") == "FILLED" or r.get("ticket"):
-                        pass  # Will be tracked when position closes
+                    ticket = r.get("ticket")
+                    if ticket and r.get("status") != "error":
+                        # Find the signal that produced this ticket (by symbol+side)
+                        sig = next((s for s in all_signals
+                                    if s.symbol == r.get("symbol") and s.side == r.get("side")), None)
+                        strat = sig.strategy if sig else "unknown"
+                        conf = sig.confidence if sig else 0.0
+                        self.journal.record_open(
+                            ticket=ticket, strategy=strat, symbol=r.get("symbol"),
+                            side=r.get("side"), entry=r.get("price", 0.0),
+                            sl=r.get("sl"), tp=r.get("tp"),
+                            confidence=conf, comment=f"{strat}:{r.get('symbol')}")
+                        log.info(f"JOURNALED open: ticket={ticket} strat={strat} {r.get('side')} {r.get('symbol')}")
         except Exception as e:
             log.error(f"Engine execution stage failed: {e}", exc_info=True)
             _alert_bot.alert_on_fail("engine_execution", f"{type(e).__name__}: {e}")
