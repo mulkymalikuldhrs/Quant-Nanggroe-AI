@@ -329,3 +329,209 @@ class StrategyEvolver:
         # Also record as a file for cron monitoring
         with Path("data/evolve_halt_warnings.txt").open("a") as f:
             f.write(msg + "\n")
+
+
+# ── Risk contribution visualization (HRP) ─────────────────────
+# FIX S3: ML portfolios — visualize how much risk each asset contributes
+# under a Hierarchical Risk Parity (López de Prado) allocation, plus the
+# clustering dendrogram that drives the HRP ordering.
+#
+# matplotlib/scipy are imported LAZILY inside the render fn so this module
+# stays importable (and py_compile-clean) even where those deps are absent.
+
+@dataclass
+class RiskContribution:
+    """Result of HRP risk-contribution analysis.
+
+    Attributes:
+        assets: Ordered asset identifiers.
+        hrp_weights: HRP portfolio weights, keyed by asset (sum ≈ 1.0).
+        risk_contribution: Fraction of total portfolio risk per asset (0..1,
+                           sums to 1.0). RC_i = w_i·(Σw)_i / (wᵀΣw).
+        linkage: scipy Ward linkage matrix used for the dendrogram (None if
+                 fewer than 2 assets).
+        dendrogram_path: Path to the saved HRP dendrogram PNG (set by render).
+        per_asset_risk_path: Path to the saved per-asset risk bar PNG.
+    """
+    assets: list[str]
+    hrp_weights: dict[str, float]
+    risk_contribution: dict[str, float]
+    linkage: Any = None
+    dendrogram_path: Optional[str] = None
+    per_asset_risk_path: Optional[str] = None
+
+
+def compute_hrp_risk_contribution(returns: "pd.DataFrame") -> "RiskContribution":
+    """Hierarchical Risk Parity weights + per-asset risk contribution.
+
+    Implements López de Prado's HRP pipeline:
+      1. correlation → distance  d = √(0.5·(1−ρ))
+      2. Ward hierarchical clustering of the distance matrix
+      3. quasi-diagonalization (leaf ordering from the linkage)
+      4. recursive variance-parity (inverse-variance) bisection.
+
+    Risk contribution of asset i is  RC_i = w_i·(Σw)_i / (wᵀΣw).
+
+    Args:
+        returns: T×N DataFrame of asset returns (rows = time, cols = assets).
+
+    Returns:
+        RiskContribution with weights and risk shares. Degenerate inputs
+        (n<2 or too few observations) fall back to equal weights / equal risk.
+    """
+    import numpy as np
+    import pandas as pd
+    from scipy.cluster.hierarchy import leaves_list, linkage
+    from scipy.spatial.distance import squareform
+
+    assets = list(returns.columns)
+    n = len(assets)
+    if n < 2:
+        w = {a: 1.0 / max(n, 1) for a in assets}
+        rc = {a: 1.0 for a in assets} if n == 1 else {}
+        return RiskContribution(assets=assets, hrp_weights=w, risk_contribution=rc, linkage=None)
+
+    simple_rets = returns.dropna()
+    if simple_rets.shape[0] < 2:
+        w = {a: 1.0 / n for a in assets}
+        rc = {a: 1.0 / n for a in assets}
+        return RiskContribution(assets=assets, hrp_weights=w, risk_contribution=rc, linkage=None)
+
+    cov = simple_rets.cov().values
+    corr = np.nan_to_num(simple_rets.corr().values, nan=0.0)
+
+    # 1. distance matrix from correlation
+    dist = np.sqrt(np.clip(0.5 * (1.0 - corr), 0.0, 1.0))
+    np.fill_diagonal(dist, 0.0)
+
+    # 2. Ward linkage on the condensed distance vector
+    condensed = squareform(dist, checks=False)
+    Z = linkage(condensed, method="ward")
+
+    # 3. quasi-diagonalization
+    order = leaves_list(Z)
+    ordered_cov = cov[np.ix_(order, order)]
+    inv_var = np.nan_to_num(
+        1.0 / np.diag(ordered_cov), nan=0.0, posinf=0.0, neginf=0.0
+    )
+
+    # 4. recursive variance-parity bisection
+    def _bisect(indices: list[int]) -> dict[int, float]:
+        if len(indices) == 1:
+            return {indices[0]: 1.0}
+        mid = len(indices) // 2
+        left, right = indices[:mid], indices[mid:]
+        wL, wR = inv_var[left].sum(), inv_var[right].sum()
+        total = wL + wR
+        fracL = 0.5 if total <= 0 else wL / total
+        out: dict[int, float] = {}
+        for k, v in _bisect(left).items():
+            out[k] = fracL * v
+        for k, v in _bisect(right).items():
+            out[k] = (1.0 - fracL) * v
+        return out
+
+    ordered_weights = _bisect(list(range(len(order))))
+    weights = {assets[order[i]]: w for i, w in ordered_weights.items()}
+
+    # per-asset risk contribution
+    w_vec = np.array([weights[a] for a in assets], dtype=float)
+    port_var = float(w_vec @ cov @ w_vec)
+    marginal = cov @ w_vec
+    rc_vec = (w_vec * marginal / port_var) if port_var > 0 else np.full(n, 1.0 / n)
+    rc_vec = np.nan_to_num(rc_vec, nan=0.0)
+    risk_contribution = {assets[i]: float(rc_vec[i]) for i in range(n)}
+
+    return RiskContribution(
+        assets=assets,
+        hrp_weights=weights,
+        risk_contribution=risk_contribution,
+        linkage=Z,
+    )
+
+
+def render_risk_contribution_plots(
+    returns: "pd.DataFrame",
+    output_dir: str = "data/risk_viz",
+    prefix: str = "hrp",
+) -> dict:
+    """Render HRP dendrogram + per-asset risk-contribution charts to PNG.
+
+    matplotlib is imported lazily with the Agg backend so headless servers
+    work. Returns a dict with keys:
+        'dendrogram'      -> path to the HRP dendrogram PNG (or None)
+        'per_asset_risk'  -> path to the per-asset risk bar PNG
+        'hrp_weights'     -> dict of HRP weights
+        'risk_contribution' -> dict of per-asset risk shares (0..1)
+
+    Args:
+        returns: T×N DataFrame of asset returns.
+        output_dir: Directory to write the PNGs into (created if missing).
+        prefix: Filename prefix for the output charts.
+    """
+    import os
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from scipy.cluster.hierarchy import dendrogram
+
+    result = compute_hrp_risk_contribution(returns)
+    os.makedirs(output_dir, exist_ok=True)
+    paths: dict[str, Any] = {}
+
+    # ── HRP dendrogram ──
+    if result.linkage is not None:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        dendrogram(
+            result.linkage, labels=result.assets,
+            ax=ax, leaf_rotation=90, color_threshold=0,
+        )
+        ax.set_title("HRP — Hierarchical Clustering Dendrogram (asset correlation)")
+        ax.set_ylabel("Distance = sqrt(0.5 * (1 - rho))")
+        ax.set_xlabel("Asset")
+        fig.tight_layout()
+        dend_path = os.path.join(output_dir, f"{prefix}_dendrogram.png")
+        fig.savefig(dend_path, dpi=120)
+        plt.close(fig)
+        paths["dendrogram"] = dend_path
+        result.dendrogram_path = dend_path
+
+    # ── per-asset risk contribution bar ──
+    items = sorted(result.risk_contribution.items(), key=lambda kv: kv[1], reverse=True)
+    labels = [k for k, _ in items]
+    vals = [v * 100.0 for _, v in items]  # percent
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.bar(labels, vals, color="#4C72B0")
+    ax.set_title("Per-Asset Risk Contribution (HRP portfolio)")
+    ax.set_ylabel("Risk contribution (%)")
+    ax.set_xlabel("Asset")
+    plt.setp(ax.get_xticklabels(), rotation=90)
+    for b, v in zip(bars, vals):
+        ax.text(b.get_x() + b.get_width() / 2, v, f"{v:.1f}%",
+                ha="center", va="bottom", fontsize=8)
+    fig.tight_layout()
+    per_path = os.path.join(output_dir, f"{prefix}_per_asset_risk.png")
+    fig.savefig(per_path, dpi=120)
+    plt.close(fig)
+    paths["per_asset_risk"] = per_path
+    result.per_asset_risk_path = per_path
+
+    paths["hrp_weights"] = result.hrp_weights
+    paths["risk_contribution"] = result.risk_contribution
+    paths["result"] = result
+    return paths
+
+
+def visualize_portfolio_risk(
+    returns: "pd.DataFrame",
+    output_dir: str = "data/risk_viz",
+    prefix: str = "hrp",
+) -> dict:
+    """Module-level helper: render HRP risk visuals for any asset-return frame.
+
+    Thin convenience over render_risk_contribution_plots. Kept as a module
+    function so callers don't need a StrategyEvolver instance.
+    """
+    return render_risk_contribution_plots(returns, output_dir=output_dir, prefix=prefix)

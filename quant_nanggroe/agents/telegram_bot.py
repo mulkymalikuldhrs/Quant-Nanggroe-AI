@@ -104,6 +104,73 @@ class TelegramSignalBot:
             logger.error(f"Telegram send failed: {e}")
             return False
 
+    def alert_on_fail(self, subsystem: str, error: str) -> bool:
+        """Send a failure alert to Mulky's Telegram chat.
+
+        Synchronous (stdlib urllib, no event loop required) so it can be
+        called directly from the main loop and top-level exception handlers.
+
+        Targets TELEGRAM_MULKY_CHAT_ID, falling back to TELEGRAM_CHAT_ID.
+        A per-subsystem cooldown prevents Telegram flood when the same
+        subsystem fails repeatedly inside the cycle loop.
+        """
+        import json as _json
+        import time as _time
+        import urllib.error
+        import urllib.request
+
+        chat_id = os.getenv("TELEGRAM_MULKY_CHAT_ID") or self.chat_id
+        if not self.token or not chat_id:
+            logger.warning("Telegram alert not configured — skipping alert for %s", subsystem)
+            return False
+
+        now = _time.monotonic()
+        cooldown_until = getattr(self, "_alert_cooldown", {}).get(subsystem, 0.0)
+        if now < cooldown_until:
+            logger.debug("Alert for %s suppressed (cooldown)", subsystem)
+            return False
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        text = (
+            "\ud83d\udea8 *QNA SUBSYSTEM FAILURE*\n"
+            f"Subsystem: `{subsystem}`\n"
+            f"Time: {timestamp}\n"
+            f"Error: {error}"
+        )
+
+        url = f"{self.api_base}/bot{self.token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "Markdown",
+        }
+        data = _json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                if result.get("ok"):
+                    logger.info("Telegram failure alert sent for %s", subsystem)
+                    self._alert_cooldown[subsystem] = now + 300  # 5 min cooldown
+                    return True
+                logger.error("Telegram alert API error: %s", result)
+                return False
+        except Exception as e:
+            logger.error("Telegram alert send failed: %s", e)
+            return False
+
+    @property
+    def _alert_cooldown(self) -> dict:
+        """Lazily-created per-subsystem alert cooldown map."""
+        if not hasattr(self, "_alert_cooldown_store"):
+            self._alert_cooldown_store = {}
+        return self._alert_cooldown_store
+
     def format_signal(self, signal: SignalResult) -> str:
         return SIGNAL_TEMPLATE.format(
             symbol=signal.symbol,

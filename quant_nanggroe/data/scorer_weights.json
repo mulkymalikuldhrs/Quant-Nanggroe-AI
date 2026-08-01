@@ -1,0 +1,16 @@
+{
+  "weights": {
+    "BondScorer": 0.09090909090909091,
+    "EconomicScorer": 0.18181818181818182,
+    "GeopoliticalScorer": 0.045454545454545456,
+    "MacroScorer": 0.2727272727272727,
+    "PositioningScorer": 0.09090909090909091,
+    "SentimentScorer": 0.09090909090909091,
+    "TechnicalScorer": 0.09090909090909091,
+    "VolatilityScorer": 0.045454545454545456,
+    "CryptoScorer": 0.07272727272727272,
+    "NewsScorer": 0.01818181818181818
+  },
+  "last_eval_idx": 76,
+  "updated": "2026-08-01T01:18:12.775852+00:00"
+}

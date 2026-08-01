@@ -656,7 +656,9 @@ class PaperExchangeBroker(ExchangeInterface):
         reflects real price movement rather than a hardcoded ``0.0``.
         """
         self._apply_fill_to_book(order, exec_price)
-        self._recompute_floating_pnl(order.symbol, exec_price)
+        # Mark against the live market price (not the fill price), so a fresh
+        # position immediately carries its slippage/spread cost as floating P&L.
+        self._recompute_floating_pnl(order.symbol)
 
     def _apply_fill_to_book(self, order: Order, exec_price: float) -> None:
         """Mutate the position book to reflect an order fill."""

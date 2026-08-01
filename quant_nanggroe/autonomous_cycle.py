@@ -36,6 +36,10 @@ from engine_production_bridge_purified import (
     PurifiedEngine, Signal, RiskGuard, MT5Adapter
 )
 
+# Failure-alert bot (synchronous — safe to call from the main loop / handlers)
+from agents.telegram_bot import TelegramSignalBot
+_alert_bot = TelegramSignalBot()
+
 # MT5 auto-path: ensure native plugin is loadable BEFORE importing MetaTrader5
 try:
     from utils.mt5_launcher import ensure_mt5_env, detect_mt5
@@ -600,51 +604,71 @@ class AutonomousCycle:
         """Execute one full trading cycle"""
         self.cycle_count += 1
         log.info(f"=== CYCLE #{self.cycle_count} ===")
-        
+
         # 1. Update market data cache
-        for symbol in CONFIG.SYMBOLS:
-            self.market_data.get_tick(symbol)
-        
+        try:
+            for symbol in CONFIG.SYMBOLS:
+                self.market_data.get_tick(symbol)
+        except Exception as e:
+            log.error(f"Market data stage failed: {e}", exc_info=True)
+            _alert_bot.alert_on_fail("market_data", f"{type(e).__name__}: {e}")
+
         # 2. Manage existing positions
-        self.position_manager.update_positions()
-        
+        try:
+            self.position_manager.update_positions()
+        except Exception as e:
+            log.error(f"Position manager stage failed: {e}", exc_info=True)
+            _alert_bot.alert_on_fail("position_manager", f"{type(e).__name__}: {e}")
+
         # 3. Generate signals for each symbol
         all_signals = []
-        for symbol in CONFIG.SYMBOLS:
-            tick = self.market_data.get_tick(symbol)
-            if not tick:
-                continue
-            
-            current_price = (tick["bid"] + tick["ask"]) / 2
-            signals = self.signal_generator.generate_signals(symbol, current_price)
-            
-            # Filter by confidence
-            signals = [s for s in signals if s.confidence >= CONFIG.MIN_CONFIDENCE]
-            
-            if signals:
-                log.info(f"{symbol}: {len(signals)} signals (price={current_price:.5f})")
-                for s in signals:
-                    log.info(f"  {s.strategy}: {s.side.upper()} conf={s.confidence:.2f}")
-                all_signals.extend(signals)
-        
+        try:
+            for symbol in CONFIG.SYMBOLS:
+                tick = self.market_data.get_tick(symbol)
+                if not tick:
+                    continue
+
+                current_price = (tick["bid"] + tick["ask"]) / 2
+                signals = self.signal_generator.generate_signals(symbol, current_price)
+
+                # Filter by confidence
+                signals = [s for s in signals if s.confidence >= CONFIG.MIN_CONFIDENCE]
+
+                if signals:
+                    log.info(f"{symbol}: {len(signals)} signals (price={current_price:.5f})")
+                    for s in signals:
+                        log.info(f"  {s.strategy}: {s.side.upper()} conf={s.confidence:.2f}")
+                    all_signals.extend(signals)
+        except Exception as e:
+            log.error(f"Signal generation stage failed: {e}", exc_info=True)
+            _alert_bot.alert_on_fail("signal_generation", f"{type(e).__name__}: {e}")
+
         # 4. Execute signals through purified engine (risk guard enforced inside)
-        if all_signals:
-            results = self.engine.cycle(all_signals)
-            log.info(f"Executed {len(results)} orders")
-            
-            # Record for performance tracking
-            for r in results:
-                if r.get("status") == "FILLED" or r.get("ticket"):
-                    pass  # Will be tracked when position closes
-        
+        try:
+            if all_signals:
+                results = self.engine.cycle(all_signals)
+                log.info(f"Executed {len(results)} orders")
+
+                # Record for performance tracking
+                for r in results:
+                    if r.get("status") == "FILLED" or r.get("ticket"):
+                        pass  # Will be tracked when position closes
+        except Exception as e:
+            log.error(f"Engine execution stage failed: {e}", exc_info=True)
+            _alert_bot.alert_on_fail("engine_execution", f"{type(e).__name__}: {e}")
+
         # 5. Risk status check
-        status = self.engine.status()
-        if not status["risk_ok"]:
-            log.warning(f"RISK VETO: {status['risk_reason']} — pausing new entries")
-        
-        # 6. Log status
-        log.info(f"Balance: ${status['balance']:.2f} | Trades: {status['trades']} | Wins: {status['wins']} | Risk: {'OK' if status['risk_ok'] else status['risk_reason']}")
-        
+        status = {}
+        try:
+            status = self.engine.status()
+            if not status["risk_ok"]:
+                log.warning(f"RISK VETO: {status['risk_reason']} — pausing new entries")
+        except Exception as e:
+            log.error(f"Engine status check failed: {e}", exc_info=True)
+            _alert_bot.alert_on_fail("engine_status", f"{type(e).__name__}: {e}")
+
+        log.info(f"Balance: ${status.get('balance', 0):.2f} | Trades: {status.get('trades', 0)} | Wins: {status.get('wins', 0)} | Risk: {'OK' if status.get('risk_ok') else status.get('risk_reason', 'n/a')}")
+
         return status
     
     def run(self):
@@ -668,6 +692,10 @@ class AutonomousCycle:
                 
             except Exception as e:
                 log.error(f"Cycle error: {e}", exc_info=True)
+                try:
+                    _alert_bot.alert_on_fail("autonomous_cycle", f"{type(e).__name__}: {e}")
+                except Exception as alert_err:
+                    log.error(f"Failed to send failure alert: {alert_err}")
                 time.sleep(5)
         
         # Cleanup
