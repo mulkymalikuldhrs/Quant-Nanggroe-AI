@@ -99,10 +99,10 @@ def to_alphalens_factor_data(
     for p in periods:
         fwd[p] = prices.pct_change(p, fill_method=None).shift(-p)
 
-    factor_long = factor.stack(dropna=False, future_stack=True).rename("factor")
+    factor_long = factor.stack(future_stack=True).rename("factor")
     cols = {"factor": factor_long}
     for p in periods:
-        cols[f"{p}D"] = fwd[p].stack(dropna=False, future_stack=True)
+        cols[f"{p}D"] = fwd[p].stack(future_stack=True)
     factor_data = pd.concat(cols, axis=1)
     factor_data.index = factor_data.index.rename(["date", "asset"])
 
@@ -161,7 +161,7 @@ def factor_information_coefficient(
         col = f"{p}D"
         if col not in fd.data.columns:
             continue
-        sub = fd.data[[ "factor", col]].dropna()
+        sub = fd.data[["factor", col]].dropna()
         grouped = sub.groupby(level="date", group_keys=False)
         ic = grouped.apply(
             lambda g: g["factor"].corr(g[col], method="pearson"), include_groups=False
@@ -170,19 +170,13 @@ def factor_information_coefficient(
             lambda g: g["factor"].corr(g[col], method="spearman"), include_groups=False
         )
         n = grouped.size()
-        # p-value for Spearman (the canonical IC test).
-        rank_p = rank_ic.apply(
-            lambda r: _spearman_pvalue(r, n.get(r.name, 0)) if pd.notna(r) else np.nan
-        )
+        # p-value for Spearman (the canonical IC test), vectorized.
+        rank_p = _spearman_pvalue_vec(rank_ic.values, n.reindex(rank_ic.index).values)
         out_frames.append(
             pd.DataFrame(
                 {
                     f"{p}D_IC": ic,
-                    f"{p}D_IC_p": rank_ic.apply(
-                        lambda r: _spearman_pvalue(r, n.get(r.name, 0))
-                        if pd.notna(r)
-                        else np.nan
-                    ),
+                    f"{p}D_IC_p": rank_p,
                     f"{p}D_RankIC": rank_ic,
                     f"{p}D_RankIC_p": rank_p,
                 }
@@ -410,6 +404,20 @@ def _spearman_pvalue(rho: float, n: int) -> float:
     t = rho * np.sqrt((n - 2) / max(1e-12, 1.0 - rho * rho))
     p = 2 * (1.0 - sp_stats.t.cdf(abs(t), df=n - 2))
     return float(p)
+
+
+def _spearman_pvalue_vec(rhos: np.ndarray, ns: np.ndarray) -> np.ndarray:
+    """Vectorized :func:`_spearman_pvalue` over arrays of (rho, n)."""
+    rhos = np.asarray(rhos, dtype=float)
+    ns = np.asarray(ns, dtype=float)
+    out = np.full_like(rhos, np.nan)
+    mask = (ns >= 3) & ~np.isnan(rhos)
+    r = rhos[mask]
+    n = ns[mask]
+    denom = np.maximum(1e-12, 1.0 - r * r)
+    t = r * np.sqrt((n - 2) / denom)
+    out[mask] = 2 * (1.0 - sp_stats.t.cdf(np.abs(t), df=n - 2))
+    return out
 
 
 def get_factor_panel(factor_names: Optional[Sequence[str]] = None) -> Dict[str, pd.DataFrame]:

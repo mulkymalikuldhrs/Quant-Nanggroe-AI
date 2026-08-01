@@ -649,7 +649,17 @@ class PaperExchangeBroker(ExchangeInterface):
     # ------------------------------------------------------------------ #
 
     def _update_position(self, order: Order, exec_price: float) -> None:
-        """Update the position book after an order fill."""
+        """Update the position book after an order fill.
+
+        After the position book is mutated, floating (unrealized) P&L is
+        recomputed from the latest market price so that ``unrealized_pnl``
+        reflects real price movement rather than a hardcoded ``0.0``.
+        """
+        self._apply_fill_to_book(order, exec_price)
+        self._recompute_floating_pnl(order.symbol, exec_price)
+
+    def _apply_fill_to_book(self, order: Order, exec_price: float) -> None:
+        """Mutate the position book to reflect an order fill."""
         symbol = order.symbol
 
         if symbol in self._positions:
@@ -782,6 +792,26 @@ class PaperExchangeBroker(ExchangeInterface):
             return price * (1 + slip)
         else:
             return price * (1 - slip)
+
+    def _recompute_floating_pnl(
+        self, symbol: str, current_price: Optional[float] = None
+    ) -> None:
+        """Recompute floating (unrealized) P&L for a symbol's open position.
+
+        Uses the position's :meth:`Position.update_price` to derive
+        ``unrealized_pnl`` / ``unrealized_pnl_pct`` / ``market_value`` from
+        real price movement (entry vs. mark) instead of leaving them at the
+        hardcoded ``0.0`` defaults produced when the position is created.
+        """
+        pos = self._positions.get(symbol)
+        if pos is None:
+            return
+        mark = current_price
+        if mark is None:
+            mark = self._prices.get(symbol, self._default_price)
+        if mark is None or mark <= 0:
+            mark = pos.entry_price
+        pos.update_price(mark)
 
     # ------------------------------------------------------------------ #
     # Additional helpers for testing
