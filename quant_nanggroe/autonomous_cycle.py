@@ -202,18 +202,34 @@ class StrategySignalGenerator:
         if len(candles) < 50:
             return signals
         
+        # ATR for volatility-aware SL/TP (replaces hardcoded ±0.5%/±1%)
+        from quant_nanggroe.risk_levels import compute_atr, strategy_sl_tp
+        atr = compute_atr(candles, period=14)
+        
         for name, strategy in self.strategies.items():
             try:
                 signal = strategy.analyze(candles, current_price)
                 if signal and signal != "hold":
+                    # Broker min stop distance (trade_stops_level)
+                    min_stop_points = 0.0
+                    try:
+                        import MetaTrader5 as mt5
+                        info = mt5.symbol_info(symbol.replace(".vx", "") if False else symbol)
+                        if info:
+                            min_stop_points = getattr(info, "trade_stops_level", 0) or 0
+                    except Exception:
+                        pass
+                    point_size = 0.00001 if "JPY" not in symbol else 0.001
+                    levels = strategy_sl_tp(symbol, signal, current_price, atr, candles,
+                                            min_stop_points, point_size)
                     sig = Signal(
                         symbol=symbol,
                         side=signal,
                         confidence=getattr(strategy, 'last_confidence', 0.5),
                         strategy=name,
                         price=current_price,
-                        stop_loss=current_price * (0.995 if signal == "buy" else 1.005),
-                        take_profit=current_price * (1.01 if signal == "buy" else 0.99),
+                        stop_loss=levels["sl"],
+                        take_profit=levels["tp"],
                     )
                     signals.append(sig)
             except Exception as e:
@@ -464,9 +480,15 @@ class PositionManager:
             log.info(f"FULL TP: {symbol} {ticket} closed at {r_multiple:.2f}R")
             return
         
-        # TRAILING STOP
-        if r_multiple > 1.0:  # Only trail after 1R profit
-            new_sl = self._calculate_trailing_sl(side, entry, current_price, current_sl)
+        # TRAILING STOP (ATR-based, activates after 1R)
+        if r_multiple > 1.0:
+            try:
+                candles = self.market_data.get_candles(symbol, "M15", 50)
+                from quant_nanggroe.risk_levels import compute_atr, trailing_sl_atr
+                atr = compute_atr(candles, period=14)
+                new_sl = trailing_sl_atr(side, entry, current_price, current_sl, atr, activation_r=1.0)
+            except Exception:
+                new_sl = self._calculate_trailing_sl(side, entry, current_price, current_sl)
             if new_sl != current_sl:
                 self._modify_sl(ticket, symbol, new_sl)
                 log.info(f"TRAIL SL: {symbol} {ticket} SL {current_sl:.5f} -> {new_sl:.5f}")
