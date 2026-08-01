@@ -23,6 +23,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+log = logging.getLogger(__name__)
+
 # ──────────────────────────────────────────────────────────────
 # PYTHONPATH — CRITICAL
 # ──────────────────────────────────────────────────────────────
@@ -602,6 +604,10 @@ class AutonomousCycle:
     
     def run_cycle(self):
         """Execute one full trading cycle"""
+        # Ensure components are initialized (idempotent: initialize() is safe to re-call)
+        if self.engine is None:
+            self.initialize()
+        
         self.cycle_count += 1
         log.info(f"=== CYCLE #{self.cycle_count} ===")
 
