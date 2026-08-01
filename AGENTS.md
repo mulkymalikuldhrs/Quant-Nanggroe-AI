@@ -1,6 +1,7 @@
 # AGENTS.md — Quant Nanggroe AI (Quant Nation) v6.1.0
 
-> **LIVE-TRADING READY (GREEN, 2026-08-01):** All 3 Council RED blockers resolved. See `QNA_AGENT_STATE.md` + `CHANGELOG.md`.
+> **LIVE-TRADING OPERATIONAL (REAL-OK, 2026-08-01):** REAL-ONLY mode enforced. No paper/sim/mock.
+> **MT5 LIVE conn verified: ValetaxIntl-Live2, login=372044706, balance=$1122.05** (not demo).
 
 ## Before Anything
 Read `docs/QNA_COMPLETE_ARCHITECTURE_2026-07-29.md` — complete mermaid graph of ALL 678 .py files, 4 remotes, 8 scorers wired, MTF+Evolver, pipeline 7-stage refactor, E:\ sources, dashboard, blockers.
@@ -10,9 +11,10 @@ Read `docs/STATUS.md` — doc contradictions map (which docs are STALE vs CURREN
 Read `docs/research_quant_scoring.md` — quant best practices (confidence mapping, walk-forward, COT usage, alt data).
 
 ## Critical Gotchas
-- **PYTHONPATH must be empty** — Hermes venv leaks `pydantic_core` crashes.
-  Use `launch.bat`, `qna.bat`, or `PYTHONPATH="" .venv/Scripts/python ...`
-- **QNAI_JWT_SECRET** required for API boot (fail-closed).
+- **PYTHONPATH must be empty** — Hermes/uv venv leaks parent `PYTHONPATH` → shadows numpy+MT5.
+  Use: `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python -m quant_nanggroe.autonomous_cycle`
+- **REAL-ONLY:** no `QNA_LIVE_TRADING=0` toggle exists — MT5 connect raises RuntimeError if unavailable. PaperBroker REMOVED.
+- **QNAI_ENCRYPTION_KEY** required for API boot (fail-closed on plaintext).
 - **Secrets: env vars only** — never hardcode. No `.secrets-local/`, no plaintext YAML.
 - **Hardware:** i7-10th gen, 16GB RAM, no GPU. No cloud compute assumed.
 - **C5 KillSwitch** — cross-process shared state via `QNA_KILL_SWITCH_STATE_FILE`.

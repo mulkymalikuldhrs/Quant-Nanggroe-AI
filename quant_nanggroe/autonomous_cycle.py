@@ -117,7 +117,7 @@ class MarketData:
         self._last_fetch = 0
     
     def get_tick(self, symbol: str) -> Optional[Dict]:
-        """Get current bid/ask for symbol"""
+        """Get current bid/ask for symbol from LIVE MT5 only (no synthetic fallback)."""
         if self.mt5 and self.mt5._initialized:
             try:
                 import MetaTrader5 as mt5_mod
@@ -125,15 +125,10 @@ class MarketData:
                 if tick:
                     return {"bid": tick.bid, "ask": tick.ask, "time": tick.time}
             except Exception as e:
-                log.debug(f"MT5 tick failed for {symbol}: {e}")
-        
-        # Fallback: synthetic price (for paper mode)
-        import random
-        base = self._cache.get(symbol, {}).get("mid", 1.1000)
-        spread = 0.00015
-        mid = base * (1 + random.uniform(-0.0005, 0.0005))
-        self._cache[symbol] = {"mid": mid}
-        return {"bid": mid - spread/2, "ask": mid + spread/2, "time": time.time()}
+                log.error(f"MT5 tick failed for {symbol}: {e}", exc_info=True)
+        # HARD GATE: no synthetic/paper price — real data only
+        log.error(f"MarketData: no LIVE tick for {symbol} (MT5 not connected) — REAL-ONLY mode")
+        return None
     
     def get_candles(self, symbol: str, timeframe: str = "M1", count: int = 100) -> List[Dict]:
         """Get recent candles for strategy calculation"""
@@ -146,20 +141,11 @@ class MarketData:
                 if rates is not None and len(rates) > 0:
                     return [{"time": r[0], "open": r[1], "high": r[2], "low": r[3], "close": r[4], "volume": r[5]} for r in rates]
             except Exception as e:
-                log.debug(f"MT5 candles failed for {symbol}: {e}")
+                log.error(f"MT5 candles failed for {symbol}: {e}", exc_info=True)
         
-        # Synthetic fallback
-        import random
-        base = self._cache.get(symbol, {}).get("mid", 1.1000)
-        candles = []
-        for i in range(count):
-            o = base * (1 + random.uniform(-0.001, 0.001))
-            h = o * (1 + random.uniform(0, 0.002))
-            l = o * (1 - random.uniform(0, 0.002))
-            c = base * (1 + random.uniform(-0.001, 0.001))
-            base = c
-            candles.append({"time": time.time() - i*60, "open": o, "high": h, "low": l, "close": c, "volume": random.randint(100, 1000)})
-        return candles
+        # HARD GATE: no synthetic candles — real data only
+        log.error(f"MarketData: no LIVE candles for {symbol} (MT5 not connected) — REAL-ONLY mode")
+        return []
 
 
 # ──────────────────────────────────────────────────────────────

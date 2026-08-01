@@ -53,13 +53,8 @@ def _get_execution_manager():
 
 
 def _get_paper_broker():
-    """Lazy-load PaperExchangeBroker for position/portfolio queries."""
-    try:
-        from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-        return PaperExchangeBroker()
-    except Exception as exc:
-        logger.warning("Failed to load PaperExchangeBroker: %s", exc)
-        return None
+    """REAL-ONLY mode: no paper broker. Raise — live MT5 broker required."""
+    raise RuntimeError("PaperExchangeBroker disabled (REAL-ONLY mode) — use live MT5 broker for position/portfolio")
 
 
 # ═══════════════════════════════════════════════════════════════════════

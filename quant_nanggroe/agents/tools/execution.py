@@ -494,21 +494,12 @@ class ExecutionTool:
         return has_keys and not self._settings.alpaca_paper
 
     def _get_paper_broker(self, symbol: str) -> PaperExchangeBroker:
-        """Get the appropriate paper broker for a symbol type."""
-        if _is_crypto(symbol):
-            return self._crypto_paper
-        if _is_forex(symbol):
-            return self._forex_paper
-        return self._stock_paper
+        """REAL-ONLY mode: no paper broker. Raise — live broker required."""
+        raise RuntimeError(f"PaperBroker disabled (REAL-ONLY mode) for {symbol} — use live MT5 broker")
 
     def _get_paper_broker_by_type(self, symbol_type: str) -> PaperExchangeBroker:
-        """Get paper broker by asset type string."""
-        mapping = {
-            "stock": self._stock_paper,
-            "crypto": self._crypto_paper,
-            "forex": self._forex_paper,
-        }
-        return mapping.get(symbol_type, self._stock_paper)
+        """REAL-ONLY mode: no paper broker. Raise — live broker required."""
+        raise RuntimeError(f"PaperBroker disabled (REAL-ONLY mode) for type {symbol_type} — use live MT5 broker")
 
     def _get_alpaca_broker(self) -> Any:
         """Lazily initialize the Alpaca broker."""

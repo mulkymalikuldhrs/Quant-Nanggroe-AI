@@ -61,30 +61,23 @@ class MT5Adapter:
         self.log = logging.getLogger("MT5Adapter")
 
     def connect(self):
-        """Try MT5; fall back to paper mode."""
+        """Connect to LIVE MT5 only. No paper fallback (REAL-ONLY mode)."""
         if not self._mt5_loaded:
-            self.log.warning("MetaTrader5 not available — paper mode")
-            self._initialized = False
-            return False
+            raise RuntimeError("MetaTrader5 not available — REAL-ONLY mode requires MT5 library")
         mt5 = self._mt5_mod
         try:
             if not mt5.initialize():
-                self.log.warning("MT5 initialize() failed — paper mode")
-                self._initialized = False
-                return False
+                raise RuntimeError("MT5 initialize() failed — REAL-ONLY mode (no paper fallback)")
             self._account = mt5.account_info()
             if self._account is None:
-                self.log.warning("MT5 no account — paper mode")
-                self._initialized = False
-                return False
+                raise RuntimeError("MT5 no account — REAL-ONLY mode requires logged-in account")
             self._initialized = True
-            self.log.info("MT5 connected — login=%s balance=%.2f",
+            self.log.info("MT5 connected LIVE — login=%s balance=%.2f",
                           self._account.login, self._account.balance)
             return True
         except Exception as e:
-            self.log.warning("MT5 connect error: %s — paper mode", e)
             self._initialized = False
-            return False
+            raise RuntimeError(f"MT5 connect failed (REAL-ONLY, no paper): {e}")
 
     def _guard_trade_mode(self, sym: str, side: str):
         """Block trade_mode 0,4 (disabled). Block LONGONLY→SELL, SHORTONLY→BUY."""
@@ -102,19 +95,12 @@ class MT5Adapter:
         if tm == 2 and side == "buy":
             raise PermissionError(f"Symbol {sym} SHORTONLY — BUY blocked")
 
-    def send_order(self, symbol: str, side: str, lot: float,
-                   price: float, sl: float, tp: float,
-                   comment: str = "") -> dict:
-        """Send order. Paper mode returns simulated ticket."""
+    def execute_order(self, symbol: str, side: str, lot: float, price: float = 0.0,
+                   sl: float = 0.0, tp: float = 0.0, comment: str = "") -> dict:
+        """Send LIVE order via MT5. No paper simulation (REAL-ONLY mode)."""
         self._guard_trade_mode(symbol, side)
-
         if not self._initialized or not self._mt5_loaded:
-            # Paper mode — simulate
-            ticket = int(time.time() * 1000) % 1000000
-            log.info("PAPER ORDER: %s %s %.2f lots @ %.5f SL=%.5f TP=%.5f",
-                     symbol, side.upper(), lot, price, sl, tp)
-            return {"ticket": ticket, "price": price, "lot": lot,
-                    "side": side, "symbol": symbol, "mode": "paper"}
+            raise RuntimeError(f"execute_order blocked — MT5 not LIVE connected (REAL-ONLY, no paper): {symbol} {side}")
 
         mt5 = self._mt5_mod
         order_type = mt5.ORDER_TYPE_BUY if side == "buy" else mt5.ORDER_TYPE_SELL
@@ -138,10 +124,9 @@ class MT5Adapter:
                 "side": side, "symbol": symbol, "mode": "mt5"}
 
     def close_position(self, ticket: int) -> dict:
-        """Close position by ticket."""
+        """Close LIVE position by ticket. No paper simulation (REAL-ONLY mode)."""
         if not self._initialized or not self._mt5_loaded:
-            log.info("PAPER CLOSE: ticket %d", ticket)
-            return {"ticket": ticket, "price": 0.0, "mode": "paper"}
+            raise RuntimeError(f"close_position blocked — MT5 not LIVE connected (REAL-ONLY, no paper): ticket {ticket}")
 
         mt5 = self._mt5_mod
         pos = mt5.positions_get(ticket=ticket)

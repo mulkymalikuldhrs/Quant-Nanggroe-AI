@@ -1,5 +1,29 @@
 # Changelog — Quant Nanggroe AI
 
+## 2026-08-01 — REAL-ONLY Mode Enforcement + Live Connection Verified
+
+### Added
+- REAL-ONLY mode: ALL paper/sim/dummy fallbacks removed from execution path
+- Live MT5 connection verified: `ValetaxIntl-Live2`, login=372044706, balance=$1122.05
+- `QNA_AUTONOMOUS_LOOP_GOAL.md` — evidence-based status (no yes-man claims)
+- `QNA_STATUS_REAL.md` — verified live state report
+
+### Hardened (removed)
+- `autonomous_cycle.py`: fixed NameError `log` (missing `log = logging.getLogger`) + added `initialize()` call in `run_cycle()` (was None → crash)
+- `engine_production_bridge_purified.py`: `MT5Adapter.connect()` raises RuntimeError if MT5 unavailable (no paper fallback); `execute_order`/`close_position` raise (no simulated tickets)
+- `MarketData.get_tick/get_candles`: no synthetic/random fallback — returns None/[] + log.error if MT5 not LIVE
+- `agents/tools/execution.py` + `agents/trader/tools.py`: `_get_paper_broker` raises RuntimeError (REAL-ONLY)
+
+### Fixed
+- numpy + MetaTrader5 import: ROOT CAUSE was leaked `PYTHONPATH` from parent Hermes venv shadowing `.venv312`. Fix: `env -u PYTHONPATH` when running QNA venv. Also installed `scipy-openblas64` in venv.
+- Symbol config: broker requires `.vx` suffix → `EURUSD.vx`, `BTCUSD.vx`, `XAUUSD.vx`
+
+### Known Gaps (require user action)
+- `pandas` not installed in `.venv312` (signal generation warning)
+- `QNAI_ENCRYPTION_KEY` not set → persistence PLAINTEXT
+- `AuthManager not available` → API auth not wired
+- Live trade not yet executed (engine is LIVE-ready; needs real signal from live data)
+
 ## 2026-08-01 — Phase 0/1 Closure + LIVE-TRADING GREEN
 
 ### Added

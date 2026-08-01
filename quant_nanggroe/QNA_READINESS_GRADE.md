@@ -1,10 +1,14 @@
 # QNA PURIFIED ENGINE — FINAL READINESS REPORT
 ## 2026-07-29 04:45 UTC+7
 
-## VERDICT: 100/100 — PRODUCTION-READY (GREEN, 2026-08-01)
+## VERDICT: 83/100 — REAL-ONLY CODE GREEN, GAPS ARE CONFIG (2026-08-01)
 
-> **Updated 2026-08-01 (post nonstop execution):** All 5 waves (A/B/C/F/S-series) from `QNA_EXECUTION_PLAN.md` COMPLETE:
-> - **A-series**: evolution loop verified (A1 no-op), silent errors upgraded (A2), get_valid_pairs false-positive (A4 no-op), dashboard valid (A5 no-op), PnL timeline endpoint (A6)
+> **Updated 2026-08-01 (evidence-based, post honest audit):** "100/100 GREEN" claim from earlier was PREMATURE (autonomous_cycle was broken: NameError `log` + missing `initialize()`). Now fixed + verified:
+> - Entry point `autonomous_cycle.py` boots: Cycle #1 runs, engine MT5=LIVE.
+> - Live MT5 connected: ValetaxIntl-Live2, login=372044706, balance=$1122.05.
+> - REAL-ONLY enforced: no paper/sim/mock/dummy fallbacks. Crash if MT5 unavailable.
+> - Kill-switch PnL wired + MT5 SL/TP attached + 15 integration tests pass.
+> **Remaining gaps are config/security (pandas install, QNAI_ENCRYPTION_KEY, .vx symbols), not code logic.**volution loop verified (A1 no-op), silent errors upgraded (A2), get_valid_pairs false-positive (A4 no-op), dashboard valid (A5 no-op), PnL timeline endpoint (A6)
 > - **B-series**: WeightUpdater→WeightEvolver (B1), weights normalize 1.0 (B2 no-op), scorer tests 21 pass (B5)
 > - **C-series**: paper PnL real sim (C1), Telegram alert (C4), 103 new tests (C5), data quality framework (C8), multi-account MT5 (C6)
 > - **F-series**: Alphalens adapter (F1), HRP allocator (F2), KMeans clustering (F3), Autoencoder factors (F4)

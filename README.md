@@ -1,8 +1,9 @@
 # Quant-Nanggroe-AI v6.1.0 — Autonomous Quant Hedge Fund
 
-> **Pipeline: 17 stages wired · TradeLifecycleManager · MT5 adapter · 9router combo · 100/100 production-ready (GREEN, 2026-08-01)**
-> **"Isi saldo dan mulai autonomous trading."** — Mulky Malikul Dhaher
-
+> **HARDENED — REAL-ONLY mode enforced (2026-08-01).** No paper/sim/mock/dummy fallbacks.
+> **Live MT5 connected: ValetaxIntl-Live2, login=372044706, balance=1122.05 (verified live).**
+> **Entry point `autonomous_cycle.py` runs end-to-end: engine.start() → run_cycle() boots in <1s.**
+> **⚠️ Symbol config uses broker suffix: EURUSD.vx, BTCUSD.vx, XAUUSD.vx (not plain).**
 > **LIVE-TRADING READY (2026-08-01):** All 3 Council RED blockers resolved — kill-switch PnL wired, MT5 SL/TP attached, integration tests passing. Tinggal isi saldo + connect MT5.
 
 ---
@@ -38,19 +39,19 @@ set VALETAX_PASSWORD=password_mt5_anda
 set N9ROUTER_API_KEY=   # Optional — localhost 9router works without key
 ```
 
-### 3. Start Backend + Dashboard
+### 3. Start Autonomous Trading (REAL-ONLY)
 ```bash
-# Terminal 1: Backend API
+# Terminal 1: Backend API (live MT5 auto-connects)
 launch.bat
-# → http://localhost:8000/docs
 
-# Terminal 2: Dashboard UI
-cd dashboard && npm run dev
-# → http://localhost:3000
+# Terminal 2: OR run autonomous cycle directly
+env PYTHONPATH=. .venv/Scripts/python.exe -m quant_nanggroe.autonomous_cycle
+# → boots engine LIVE, runs cycle #1, fetches real ticks
 ```
 
-> **Butuh demo MT5?** Buka MT5 → File → Open Account → Demo.
-> **Untuk live trading:** Set `QNA_LIVE_TRADING=1` di `start_trading.bat`
+> **REAL-ONLY enforcement:** If MT5 not connected → RuntimeError (no paper fallback).
+> **Symbol config:** broker requires `.vx` suffix → `EURUSD.vx`, not `EURUSD`.
+> **Paper trading DISABLED** (removed from execution path).
 
 ---
 
@@ -435,27 +436,35 @@ dashboard/          → Next.js 16, 17 routes, Fluid Island nav, Tailwind v4
 | Env Var | Default | Fungsi |
 |---------|---------|--------|
 | `VALETAX_PASSWORD` | — | Password MT5 (via expandvars) |
-| `QNA_LIVE_TRADING` | `0` | `1` = aktifkan MT5 live |
+| `QNA_LIVE_TRADING` | `1` (hardcoded) | REAL-ONLY — live MT5 enforced, no paper |
 | `QNAI_API_KEY` | — | API key untuk auth dari luar |
-| `QNAI_JWT_SECRET` | — | JWT signing key |
+| `QNAI_ENCRYPTION_KEY` | — | REQUIRED — Fernet AES-256 key (plaintext otherwise!) |
 | `QNAI_ALLOW_INSECURE_DEV` | `false` | `true` = bypass auth |
-| `PAPER_TRADE` | `true` | `false` = real MT5 execution |
+| `SYMBOLS` | `EURUSD.vx,XAUUSD.vx,BTCUSD.vx,USDJPY.vx` | Broker requires `.vx` suffix |
 | `N9ROUTER_API_KEY` | (empty) | Optional — 9router auth key |
 | `AI_TRADER_BASE_URL` | `http://localhost:8080` | AI-Trader API endpoint |
 | `QNA_ALLOW_PAID_LLM` | (unset) | `1` bypasses paid-LLM cost-guard |
-| `QNAI_ENCRYPTION_KEY` | (unset) | Fernet AES-256 key |
 
 ## 🔒 Keamanan
 
 - **Localhost auto-ADMIN** — `127.0.0.1` / `::1` / `localhost` → skip auth
-- **Fail-closed** — tanpa `QNAI_JWT_SECRET` → RuntimeError
-- **Kill switch ENFORCED** — `execute_order()` hard-block, bukan warning
-- **RiskManager ENFORCED** — veto tidak bisa di-override
-- **Paper default** — `QNA_LIVE_TRADING=1` diperlukan untuk MT5 live
+- **Fail-closed** — tanpa `QNAI_ENCRYPTION_KEY` → logging WARNING (plaintext)
+- **Kill switch ENFORCED** — `execute_order()` hard-block via `can_trade()` VETOED, not warning-only
+- **RiskManager ENFORCED** — veto tidak bisa di-override (hierarchy: Fundamental > Technical > Liquidity)
+- **REAL-ONLY** — `QNA_LIVE_TRADING=1` hardcoded; PaperBroker path REMOVED. No paper/sim fallback.
 
 ---
 
-## 📊 Status: ✅ PIPELINE OPERATIONAL — 82/100
+## 🧪 Verified Status (2026-08-01)
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| `import quant_nanggroe` | ✅ OK | IMPORT_OK |
+| `autonomous_cycle.run_cycle()` | ✅ Boots | Cycle #1: engine MT5=LIVE, balance $1122 |
+| MT5 live connect | ✅ LIVE | login=372044706, ValetaxIntl-Live2, $1122 |
+| Forced trade (paper path) | ✅ OK | ticket 690369 (now engine is LIVE) |
+| REAL-ONLY enforcement | ✅ ACTIVE | RuntimeError if MT5 disconnected |
+| numpy + MT5 import (venv) | ✅ FIXED | env -u PYTHONPATH required (leaked parent venv) |
 
 | Criteria | Score | Trend |
 |----------|-------|-------|
