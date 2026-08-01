@@ -88,8 +88,8 @@ class MT5Adapter:
         if not info:
             raise PermissionError(f"Symbol {sym} not found in MT5")
         tm = info.trade_mode  # 0=DISABLED 1=LONGONLY 2=SHORTONLY 3=CLOSEONLY 4=FULL
-        if tm in (0, 4):
-            raise PermissionError(f"Symbol {sym} disabled (trade_mode={tm})")
+        if tm == 0:
+            raise PermissionError(f"Symbol {sym} disabled (trade_mode=0)")
         if tm == 1 and side == "sell":
             raise PermissionError(f"Symbol {sym} LONGONLY — SELL blocked")
         if tm == 2 and side == "buy":
@@ -103,6 +103,20 @@ class MT5Adapter:
             raise RuntimeError(f"execute_order blocked — MT5 not LIVE connected (REAL-ONLY, no paper): {symbol} {side}")
 
         mt5 = self._mt5_mod
+        info = mt5.symbol_info(symbol)
+        if not info:
+            raise RuntimeError(f"Symbol {symbol} not found for lot validation")
+        # Clamp lot to broker limits (min/step/max) — REAL-ONLY, fail-closed
+        min_lot = info.volume_min or 0.01
+        max_lot = info.volume_max or 50.0
+        step = info.volume_step or 0.01
+        if lot < min_lot:
+            lot = min_lot
+        if lot > max_lot:
+            lot = max_lot
+        # Round to nearest step
+        lot = round(lot / step) * step
+        lot = round(lot, 2)
         order_type = mt5.ORDER_TYPE_BUY if side == "buy" else mt5.ORDER_TYPE_SELL
         request = {
             "action": mt5.TRADE_ACTION_DEAL,

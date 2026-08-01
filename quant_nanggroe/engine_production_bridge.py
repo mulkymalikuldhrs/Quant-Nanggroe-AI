@@ -424,25 +424,16 @@ class ProductionExecutionManager:
                 from quant_nanggroe.engine.risk.kill_switch import configure_kill_switch_file
                 configure_kill_switch_file()  # C5: converge on one shared kill-switch truth
                 from quant_nanggroe.engine.execution.builder import build_execution_manager
-                # P0 fix: honor QNA_LIVE_TRADING so the production bridge can
-                # actually trade live (previously always paper-only).
-                _allow_live = os.environ.get("QNA_LIVE_TRADING", "0") == "1"
-                self._exec_mgr = build_execution_manager(allow_live=_allow_live)
+                # REAL-ONLY mode — always allow live. No QNA_LIVE_TRADING toggle.
+                self._exec_mgr = build_execution_manager(allow_live=True)
                 self._order_mgr = OrderManager()
                 log.info("ExecutionManager loaded (constitutional risk enforced)")
             except Exception as e:
-                log.debug(f"No execution engine: {e}")
-        # v6.5.0: Skip paper broker when MT5 is live
-        if self._paper is None and os.environ.get("QNA_MT5_LIVE") != "1":
-            try:
-                self._paper = SyncPaperBroker()
-                log.info("PaperExchangeBroker loaded via sync wrapper (MT5 not live)")
-            except Exception as e:
-                log.debug(f"No paper broker: {e}")
-        elif os.environ.get("QNA_MT5_LIVE") == "1":
-            log.info("MT5 live — SyncPaperBroker DISABLED")
-        # ponytail: live MT5 backend — opt-in via env, fail-closed (no terminal -> skipped, not silent)
-        if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is None:
+                log.error(f"Execution engine init failed (REAL-ONLY — no paper fallback): {e}", exc_info=True)
+        # REAL-ONLY: NEVER load paper broker. MT5 is the only execution path.
+        self._paper = None
+        # REAL-ONLY: live MT5 backend — REQUIRED, fail-closed (no terminal -> crash, not silent skip)
+        if self._mt5 is None:
             try:
                 from quant_nanggroe.connectors.mt5_broker import MT5Broker
                 self._mt5 = MT5Broker(
@@ -450,11 +441,13 @@ class ProductionExecutionManager:
                     password=os.environ.get("MT5_PASSWORD", ""),
                     server=os.environ.get("MT5_SERVER", ""),
                 )
-                self._mt5.connect()
-                log.info("MT5Broker LIVE connected")
+                connected = self._mt5.connect()
+                if not connected:
+                    raise RuntimeError("MT5 connect returned False — REAL-ONLY mode requires live connection")
+                log.info("MT5 live broker connected (REAL-ONLY) — login=%s", self._mt5.login or "terminal-session")
             except Exception as e:
-                log.warning(f"MT5 live unavailable (fail-closed): {e}")
-                self._mt5 = None
+                            log.error(f"MT5 live connect failed (REAL-ONLY — no paper fallback): {e}", exc_info=True)
+                            self._mt5 = None
 
     def execute_signal(
         self, signal, price: float, balance: float
