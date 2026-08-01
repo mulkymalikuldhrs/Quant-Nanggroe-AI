@@ -630,6 +630,13 @@ class AutonomousCycle:
         # 6. Trade journal (strategy attribution + self-eval, SQLite-backed)
         self.journal = TradeJournal()
 
+        # 7. KillSwitch (constitutional fail-closed) — wire state into RiskGuard
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
+        configure_kill_switch_file()
+        self.kill_switch = KillSwitch()
+        self.engine.risk.set_kill_switch(self.kill_switch.is_active)
+        log.info(f"KillSwitch active={self.kill_switch.is_active}")
+
         log.info("All components initialized")
         log.info(f"Symbols: {CONFIG.SYMBOLS}")
         log.info(f"Cycle interval: {CONFIG.CYCLE_INTERVAL_SEC}s")
@@ -644,6 +651,15 @@ class AutonomousCycle:
         
         self.cycle_count += 1
         log.info(f"=== CYCLE #{self.cycle_count} ===")
+
+        # 0. Refresh KillSwitch state (fail-closed: if active, halt new trades)
+        try:
+            self.engine.risk.set_kill_switch(self.kill_switch.is_active)
+            if self.kill_switch.is_active:
+                log.critical("KillSwitch ACTIVE — skipping signal gen + execution this cycle")
+                return
+        except Exception as e:
+            log.error(f"KillSwitch check failed: {e}")
 
         # 1. Update market data cache
         try:

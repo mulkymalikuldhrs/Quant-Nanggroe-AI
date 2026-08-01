@@ -214,18 +214,28 @@ class MT5Adapter:
 # 3. RISK GUARD — fail-closed, MTM-aware
 # ──────────────────────────────────────────────────────────────
 class RiskGuard:
-    """Enforces: balance>0, 15% max DD, 3% daily loss, Kelly sizing."""
+    """Enforces: balance>0, 15% max DD, 3% daily loss, 3% weekly loss, Kelly sizing.
+    Fail-closed: KillSwitch active -> no trades."""
 
     def __init__(self, initial_balance: float = 10000.0):
         self.balance = initial_balance
         self.peak = initial_balance
         self.daily_pnl = 0.0
         self.daily_start_balance = initial_balance
+        self.weekly_pnl = 0.0
+        self.weekly_start_balance = initial_balance
         self.total_trades = 0
         self.wins = 0
         self.kelly_cache: Dict[str, float] = {}
+        self._kill_switch_active = False
+
+    def set_kill_switch(self, active: bool):
+        """Wire constitutional KillSwitch state (fail-closed: True blocks all trades)."""
+        self._kill_switch_active = active
 
     def can_trade(self) -> Tuple[bool, str]:
+        if self._kill_switch_active:
+            return (False, "KillSwitch ACTIVE — trading halted")
         if self.balance <= 0:
             return (False, "Zero balance")
         dd = (self.peak - self.balance) / self.peak if self.peak > 0 else 0
@@ -235,6 +245,10 @@ class RiskGuard:
             if self.daily_start_balance > 0 else 0
         if daily_loss > 0.03:
             return (False, f"Daily loss {daily_loss:.1%} > 3%")
+        weekly_loss = (self.weekly_start_balance - self.balance) / self.weekly_start_balance \
+            if self.weekly_start_balance > 0 else 0
+        if weekly_loss > 0.03:
+            return (False, f"Weekly loss {weekly_loss:.1%} > 3%")
         return (True, "ok")
 
     def position_size(self, price: float, kelly: float = 0.25) -> float:
@@ -250,6 +264,7 @@ class RiskGuard:
         if self.balance > self.peak:
             self.peak = self.balance
         self.daily_pnl += pnl
+        self.weekly_pnl += pnl
         self.total_trades += 1
         if won:
             self.wins += 1
@@ -258,6 +273,11 @@ class RiskGuard:
         """Reset daily tracking (call at start of new day)."""
         self.daily_start_balance = self.balance
         self.daily_pnl = 0.0
+
+    def reset_weekly(self):
+        """Reset weekly tracking (call at start of new week)."""
+        self.weekly_start_balance = self.balance
+        self.weekly_pnl = 0.0
 
 
 # ──────────────────────────────────────────────────────────────
