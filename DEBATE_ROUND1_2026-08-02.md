@@ -49,8 +49,10 @@ Fix belum live-verified (0 live fill sejak fix). G11 structure trailing baru & u
 3. **Verifikasi 11 langkah** (protokol di bawah) — PASS semua → lanjut; FAIL 1 CRITICAL → abort + kill-switch.
 4. **Risk terbatas per design:** caps 1/symbol + 5 total, SL mandatory, min-conf 0.6, daily-loss 3% auto-block, worst-case realistic ~$32.
 5. **G11 trailing** dipantau 1-2 minggu (unbacktested); kalau chop makan profit berulang → downgrade ke ATR-only (fallback sudah di kode).
-6. **$1.000 hard floor:** equity < $1.000 → trading halt + alert.
-7. **Self-eval gate:** setelah N≥20 closed trades per strategi, evaluasi expectancy; strategi negative → disable.
+6. **$1.000 hard floor:** equity < $1.000 → **HALT semua eksekusi** (enforced `cycle()` line 363 return [] fail-closed).
+7. **Self-eval gate:** N≥20 closed trades per strategi (threshold 5→20) → strategi **negative expectancy = DISABLED** (kelly=0, skip trade). Enforced `self_eval()` + `cycle()` (kelly≤0 → skip).
+
+**Post-debate code enforcement (2026-08-02 PM, commit terakhir):** Poin 6 & 7 AWALNYA TIDAK di-enforce (floor & disable hanya di md). Diperbaiki: `self_eval()` threshold 5→20 + status `disabled` untuk expectancy≤0; `engine_production_bridge_purified.cycle()` skip kelly≤0 + `EQUITY_FLOOR=1000` halt. Verified: BAD→disabled, GOOD→active, FEW→insufficient. SEKARANG 7/7 poin keputusan di-enforce di kode.
 
 ### Protokol verifikasi Senin (11 langkah, executable)
 1. Cek `git status` bersih / code = commit terakhir (804a716f, a49d6704)

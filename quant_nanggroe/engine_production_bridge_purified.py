@@ -360,6 +360,13 @@ class PurifiedEngine:
         except Exception as e:
             log.warning("Balance sync failed this cycle: %s", e)
 
+        # DEBATE_ROUND1 hard floor: equity < $1.000 → halt ALL execution (fail-closed)
+        EQUITY_FLOOR = 1000.0
+        if self.risk.balance < EQUITY_FLOOR:
+            log.critical("EQUITY FLOOR $%.2f breached (balance=%.2f) — HALTING all trades",
+                         EQUITY_FLOOR, self.risk.balance)
+            return []
+
         results = []
         # G7 FIX: enforce position caps (MAX_POSITIONS_PER_SYMBOL / MAX_TOTAL_POSITIONS).
         # Previously defined but never referenced → stacked/opposing orders possible.
@@ -401,6 +408,11 @@ class PurifiedEngine:
 
             # Size position from equity + SL distance (fail-closed: no SL -> no size)
             kelly = self.risk.kelly_cache.get(sig.strategy, 0.25)
+            if kelly <= 0:
+                # DEBATE_ROUND1 gate: strategy disabled by self-eval (negative expectancy) -> no trade
+                log.warning("Strategy %s DISABLED (self-eval kelly=0) — skipping %s %s",
+                            sig.strategy, sig.symbol, sig.side)
+                continue
             sl = sig.stop_loss if (sig.stop_loss and sig.stop_loss > 0) else 0.0
             contract_size = 100000.0  # FX default (units per lot)
             try:

@@ -127,13 +127,24 @@ class TradeJournal:
 
         verdict = {}
         for s, st in by_strat.items():
-            if st["trades"] < 5:
+            if st["trades"] < 20:
                 verdict[s] = {"status": "insufficient", "trades": st["trades"]}
                 continue
             win_rate = st["wins"] / st["trades"]
             avg_win = st["win_pnl"] / st["wins"] if st["wins"] else 0
             avg_loss = st["loss_pnl"] / st["losses"] if st["losses"] else 1
             expectancy = (win_rate * avg_win) - ((1 - win_rate) * avg_loss)
+            if expectancy <= 0:
+                # DEBATE_ROUND1 gate: negative expectancy -> DISABLE (kelly=0, no trade)
+                verdict[s] = {
+                    "status": "disabled",
+                    "trades": st["trades"],
+                    "win_rate": round(win_rate, 3),
+                    "expectancy": round(expectancy, 4),
+                    "total_pnl": round(st["total_pnl"], 2),
+                    "kelly": 0.0,
+                }
+                continue
             # Kelly fraction from real expectancy
             kelly = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_win if avg_win > 0 else 0.05
             kelly = max(0.02, min(0.25, kelly))
