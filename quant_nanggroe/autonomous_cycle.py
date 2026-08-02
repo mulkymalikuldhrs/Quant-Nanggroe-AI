@@ -595,13 +595,24 @@ class PositionManager:
                 log.info(f"FULL TP: {symbol} {ticket} at {r_multiple:.2f}R — close pending (retcode not DONE; will retry next cycle)")
             return
         
-        # TRAILING STOP (ATR-based, activates after 1R)
+        # BREAKEVEN + TRAILING STOP (G11: structure-based, activates after 1R)
+        # Priority: breakeven first (protect capital), then structure trail.
         if r_multiple > 1.0:
             try:
                 candles = self.market_data.get_candles(symbol, "M15", 50)
-                from quant_nanggroe.risk_levels import compute_atr, trailing_sl_atr
+                from quant_nanggroe.risk_levels import compute_atr, trailing_sl_atr, breakeven_sl, trailing_sl_structure
                 atr = compute_atr(candles, period=14)
-                new_sl = trailing_sl_atr(side, entry, current_price, current_sl, atr, activation_r=1.0)
+                # 1) Breakeven: after 1R, SL moves to entry so trade can't go red
+                new_sl = breakeven_sl(side, entry, current_price, current_sl, activation_r=1.0)
+                # 2) Structure trail: only when breakeven already active
+                if new_sl == current_sl and current_sl > 0:
+                    highs = [c.get("high", 0) for c in candles]
+                    lows = [c.get("low", 0) for c in candles]
+                    new_sl = trailing_sl_structure(side, entry, current_price, current_sl,
+                                                   highs, lows, lookback=20, activation_r=1.0)
+                # 3) Fallback: ATR trail if structure returns nothing
+                if new_sl == current_sl:
+                    new_sl = trailing_sl_atr(side, entry, current_price, current_sl, atr, activation_r=1.0)
             except Exception:
                 new_sl = self._calculate_trailing_sl(side, entry, current_price, current_sl)
             if new_sl != current_sl:

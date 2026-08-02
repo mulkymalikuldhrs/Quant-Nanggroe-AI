@@ -430,6 +430,9 @@ class ProductionExecutionManager:
                     quantity=qty,
                     stop_loss=sl,
                     take_profit=tp,
+                    # G12: carry strategy attribution into Order + broker comment
+                    strategy_name=signal.strategy,
+                    notes=f"{signal.strategy}:{signal.symbol}",
                 )
                 ticket = self._mt5.place_order(order)
                 result = {

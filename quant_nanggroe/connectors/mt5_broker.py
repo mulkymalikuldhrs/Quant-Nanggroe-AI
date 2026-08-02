@@ -87,6 +87,10 @@ class MT5Broker(BrokerConnector):
             "type_filling": self._mt5.ORDER_FILLING_FOK,
             "type_time": self._mt5.ORDER_TIME_GTC,
         }
+        # G12: broker comment carries strategy attribution (auditable in MT5 terminal)
+        _comment = order.notes or (order.strategy_name or "qna")
+        if _comment:
+            req["comment"] = str(_comment)[:32]
         if order.stop_loss is not None:
             req["sl"] = float(order.stop_loss)
         if order.take_profit is not None:

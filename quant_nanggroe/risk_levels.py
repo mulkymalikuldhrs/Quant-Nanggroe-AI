@@ -123,3 +123,72 @@ def trailing_sl_atr(side: str, entry: float, current: float, current_sl: float,
             return current_sl
         new_sl = current + trail_dist
         return min(new_sl, current_sl)  # only move down
+
+
+def breakeven_sl(side: str, entry: float, current: float, current_sl: float,
+                 activation_r: float = 1.0, buffer_atr: float = 0.0) -> float:
+    """G11: Move SL to breakeven after `activation_r` R of profit.
+
+    Once price is `activation_r` R beyond entry, SL snaps to entry (+ small
+    buffer in ATR units) so the trade can never return a loss. Only moves in
+    favor; returns current_sl unchanged if not activated.
+    """
+    if current_sl is None or current_sl <= 0:
+        return current_sl
+    risk = abs(entry - current_sl)
+    if risk <= 0:
+        return current_sl
+    if side == "buy":
+        r_mult = (current - entry) / risk
+        if r_mult < activation_r:
+            return current_sl
+        new_sl = entry + buffer_atr  # buffer ≥ 0 → slightly above entry
+        return max(new_sl, current_sl)  # never move SL down
+    else:
+        r_mult = (entry - current) / risk
+        if r_mult < activation_r:
+            return current_sl
+        new_sl = entry - buffer_atr
+        return min(new_sl, current_sl)  # never move SL up
+
+
+def trailing_sl_structure(side: str, entry: float, current: float, current_sl: float,
+                          highs: list, lows: list, lookback: int = 20,
+                          activation_r: float = 1.0) -> float:
+    """G11: Structure-based trailing stop using SMC swing points.
+
+    Tracks the MOST RECENT swing low (for buy) / swing high (for sell) within
+    the last `lookback` candles that is still on the profitable side of price.
+    SL trails just beyond that swing — the classic SMC 'invalidate on break of
+    structure' behavior: if price breaks the swing, the thesis is invalid.
+
+    Only moves in favor of the position. Returns current_sl unchanged when:
+      - not activated (below activation_r R)
+      - no valid swing found in lookback
+      - proposed level is worse than current_sl
+    """
+    if current_sl is None or current_sl <= 0:
+        return current_sl
+    risk = abs(entry - current_sl)
+    if risk <= 0:
+        return current_sl
+    if side == "buy":
+        r_mult = (current - entry) / risk
+        if r_mult < activation_r:
+            return current_sl
+        # most recent swing low still below current price (profit side)
+        for lvl in reversed(lows[-lookback:]):
+            if lvl and lvl > 0 and lvl < current:
+                new_sl = lvl
+                return max(new_sl, current_sl)  # only move up
+        return current_sl
+    else:
+        r_mult = (entry - current) / risk
+        if r_mult < activation_r:
+            return current_sl
+        # most recent swing high still above current price (profit side)
+        for lvl in reversed(highs[-lookback:]):
+            if lvl and lvl > 0 and lvl > current:
+                new_sl = lvl
+                return min(new_sl, current_sl)  # only move down
+        return current_sl
