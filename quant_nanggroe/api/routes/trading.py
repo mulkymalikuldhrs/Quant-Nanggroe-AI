@@ -554,17 +554,31 @@ async def purified_status() -> dict:
 
 @router.post("/purified/cycle")
 async def purified_cycle(request: dict) -> dict:
+    """Execute signal batch through purified engine (REAL-ONLY MT5).
+
+    GAP-1 hardening: validate every signal has stop_loss > 0 BEFORE
+    forwarding to engine.cycle(). Engine already fail-closed (line 140),
+    but validating at API boundary gives explicit error + no wasted engine init.
+    """
     from quant_nanggroe.engine_production_bridge_purified import Signal
     eng = _get_purified()
     signals = []
     for s in request.get("signals", []):
+        # GAP-1: fail-closed at API boundary — no naked entry allowed through REST
+        sl_in = s.get("sl", 0.0)
+        if not (sl_in and sl_in > 0):
+            return {
+                "status": "error",
+                "error": f"stop_loss required (fail-closed): {s.get('symbol','?')} sl={sl_in}",
+                "results": [],
+            }
         signals.append(Signal(
-            symbol=s.get("symbol", "EURUSD"),
+            symbol=s.get("symbol", "EURUSD.vx"),
             side=s.get("side", "buy"),
             confidence=s.get("confidence", 0.5),
             strategy=s.get("strategy", "manual"),
             price=s.get("price", 0.0),
-            stop_loss=s.get("sl", 0.0),
+            stop_loss=sl_in,
             take_profit=s.get("tp", 0.0),
         ))
     results = eng.cycle(signals)
@@ -573,15 +587,25 @@ async def purified_cycle(request: dict) -> dict:
 
 @router.post("/purified/trade")
 async def purified_trade(request: dict) -> dict:
+    """Execute a single signal via purified engine (REAL-ONLY MT5).
+
+    GAP-1 hardening: reject naked orders (sl ≤ 0) at the API boundary.
+    """
     from quant_nanggroe.engine_production_bridge_purified import Signal
     eng = _get_purified()
+    sl_in = request.get("sl", 0.0)
+    if not (sl_in and sl_in > 0):
+        return {
+            "status": "error",
+            "error": f"stop_loss required (fail-closed): {request.get('symbol','?')} sl={sl_in}",
+        }
     sig = Signal(
-        symbol=request.get("symbol", "EURUSD"),
+        symbol=request.get("symbol", "EURUSD.vx"),
         side=request.get("side", "buy"),
         confidence=1.0,
         strategy=request.get("strategy", "manual"),
         price=request.get("price", 0.0),
-        stop_loss=request.get("sl", 0.0),
+        stop_loss=sl_in,
         take_profit=request.get("tp", 0.0),
     )
     try:
