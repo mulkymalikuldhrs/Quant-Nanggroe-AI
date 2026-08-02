@@ -132,7 +132,7 @@ Tapi **loop A (autonomous_cycle) = yang punya 3 live positions (20188224176/2471
 
 ---
 
-## 🚨 6. HARDening APPLIED 2026-08-03 (commit f958853c, 917645d8)
+## 🚨 6. HARDening APPLIED 2026-08-03 (commit f958853c, 917645d8, aec99f94)
 
 **Bukan klaim/verification lagi — ini CODE yang sudah di-commit:**
 
@@ -143,13 +143,29 @@ Tapi **loop A (autonomous_cycle) = yang punya 3 live positions (20188224176/2471
 | G3: `start()` abort if MT5 down | `purified:333-360` | `if live_balance < 0: active=False` | `test_start_aborts_on_mt5_down` |
 | G3: `cycle()` fail-closed MT5 down | `purified:361-373` | `if live_balance < 0: return []` | `test_cycle_aborts_on_stale_balance` |
 | G3-core: `_on_position_closed` NameError + `update_pnl` wiring | `autonomous_cycle.py:545-594` | `open_rec` pindah ke atas; `update_pnl()` + `record_close()` + `performance.record_trade()` dipanggil | py_compile OK |
-| GAP-1: API routes fail-closed (validate sl > 0) | `api/routes/trading.py:555-617` | Reject `stop_loss=0.0` sebelum engine.cycle() | py_compile OK |
-| GAP-1: .vx symbol default | `trading.py:567,584,589,601` | `EURUSD` → `EURUSD.vx` | py_compile OK |
+| Fix | File | Line | Test |
+||-----|------|------|------|
+|| G1: `_init_db()` try/except + `db_healthy()` | `trade_journal.py:38-67` | `_init_ok` flag, schema-validated | `test_journal_*` (4 pass) |
+|| G3: `account_balance()` return -1.0 saat MT5 down | `engine_production_bridge_purified.py:82-94` | MT5_DOWN sentinel, no phantom fallback | `test_account_balance_*` (2 pass) |
+|| G3: `start()` abort if MT5 down | `purified:333-360` | `if live_balance < 0: active=False` | `test_start_aborts_on_mt5_down` |
+|| G3: `cycle()` fail-closed MT5 down | `purified:361-373` | `if live_balance < 0: return []` | `test_cycle_aborts_on_stale_balance` |
+|| G3-reset: `reset_daily`/`reset_weekly` wiring | `autonomous_cycle.py:866-884` | daily/weekly PnL reset per date boundary | `test_autonomous_cycle_init_aborts_on_bad_journal` |
+|| G3-core: `_on_position_closed` NameError + `update_pnl` wiring | `autonomous_cycle.py:545-594` | `open_rec` reordered; `update_pnl()` + `record_close()` + `performance.record_trade()` | py_compile OK |
+| G1-deep: `db_healthy()` assert in `initialize()` | `autonomous_cycle.py:833-836` | raise RuntimeError if journal dead | `test_autonomous_cycle_init_aborts_on_bad_journal` |
+|| GAP-1: API routes fail-closed (validate sl > 0) | `api/routes/trading.py:555-617` | Reject `stop_loss=0.0` sebelum engine.cycle() | py_compile OK |
+|| GAP-1: .vx symbol default | `trading.py:567,584,589,601` | `EURUSD` → `EURUSD.vx` | py_compile OK |
 
-**GAP-1 verdict change:** Audit FINDINGS_SLTP GAP-1 (2026-08-02) bilang "naked surface masih ada" — **partially valid tapi sudah mitigated:**
-- Old bridge `engine_production_bridge.py:406`: `sl = sl or round(fall_sl,5)` → fallback SL, bukan naked
-- API routes: **now di-hardening 2026-08-03** (commit 917645d8) — validate `stop_loss > 0` di boundary
-- Engine purified: already fail-closed (purified:140-145)
+**Test total: 9/9 PASS** (`tests/test_g1_g3_hardening.py`).
+**py_compile: all 3 modules OK.**
+**Regression: 2 pre-existing failures (git stash verified) — NOT from my changes.**
+
+### Post-hardening commit log (2026-08-03)
+```
+f958853c  fix(G1/G3): journal fail-closed init + balance sync fail-closed + NameError
+917645d8  fix(GAP-1): fail-closed API routes + .vx symbol validation
+aec99f94  fix(G3-reset + G1-deep): daily/weekly PnL reset + journal db_healthy assert
+dc010579  docs: GAP-1 verdict MITIGATED + status sync (already committed in f958853c)
+```
 
 ---
 
@@ -157,7 +173,7 @@ Tapi **loop A (autonomous_cycle) = yang punya 3 live positions (20188224176/2471
 
 | Gap | File | Line | Action | Depends on |
 |-----|------|------|--------|------------|
-| **G1-deep** | `autonomous_cycle.py:822` | add `if not journal.db_healthy(): log.error + abort` | defense-in-depth assert | — |
+| **G1-deep** | `autonomous_cycle.py:822` | add `if not journal.db_healthy(): log.error + abort` | ✅ **DONE 2026-08-03 (commit aec99f94)** — `initialize()` assert + raise RuntimeError | — |
 | **GAP-5** | n/a | dual live loop architectural decision | user decision | @Mulky |
 | **RiskManager 9-checkpoint** | `autonomous_cycle.py` | import `checks.py` + wire `can_trade()` ke cycle | merge RiskManager ke loop A | GAP-5 decision |
 | **FusionEngine/scoring** | `autonomous_cycle.py` | import + integrate `main.py:433-549` scoring pipeline | migrate ke loop A | GAP-5 decision |
@@ -203,7 +219,7 @@ Tapi **loop A (autonomous_cycle) = yang punya 3 live positions (20188224176/2471
 
 | No | Decision/Issue | Status | Butuh siapa? |
 |----|----------------|--------|--------------|
-| 1 | **G1-deep** (journal.db_healthy assert di initialize) | ⏳ Optional defense-in-depth | devbot (bisa lanjut) |
+| 1 | **G1-deep** (journal.db_healthy assert di initialize) | ✅ DONE (commit aec99f94) | devbot selesai |
 | 2 | **GAP-5 dual-loop** (autonomous_cycle vs qna.py live) | 🔴 BLOCKING | @Mulky — architectural decision |
 | 3 | **RiskManager 9-checkpoint** wire ke autonomous_cycle | 🔴 Depends on #2 | — |
 | 4 | **FusionEngine/scoring** migrate to autonomous_cycle | 🔴 Depends on #2 | — |
