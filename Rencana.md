@@ -151,20 +151,20 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 > **⚠️ KOREKSI 2026-08-02 PM (clawbot 3-agent audit):** klaim "live trading path 100% sound" = **overclaim**. Self-eval/attribution = **dead code** (G1+G2), RiskGuard = **phantom $10k** (G3), registry strategies **tidak pernah trade** di autonomous loop (G4). Lihat FASE 0 di bawah — ini WAJIB sebelum live path bisa dipercaya.
 
 ### 🚨 FASE 0: AUDIT FIX (2026-08-02 PM — dari 3 report findings)
-| ID | Fix | File |
-|----|-----|------|
-| G1 | Fix DB path `dirname(x3)` → repo root; startup assertion + alert kalau journal 0 rows | `trade_journal.py:29-32` |
-| G2 | Move `self.journal = TradeJournal()` SEBELUM `PositionManager(...)` | `autonomous_cycle.py:659/665` |
-| G3 | Sync `mt5.account_info().balance/equity` tiap cycle ke RiskGuard; panggil `update_pnl` dari deal history | `autonomous_cycle.py:648`; `engine_production_bridge_purified.py` |
-| G4 | Panggil `generate_signal()` (bukan `analyze()`) utk registry strategies; pakai StrategySignal sl/tp per strategi | `autonomous_cycle.py:262`; `engine/strategies/base.py:129` |
-| G5 | `point_size` dari `mt5.symbol_info().point` (fallback per symbol) | `autonomous_cycle.py:278` |
-| G6 | Fail-closed: sl/tp ≤0 → REJECT/turunkan dari ATR (never naked); TP=0 fail-closed juga | `engine_production_bridge_purified.py:123-124`; `connectors/mt5_broker.py:90-93` |
-| G7 | Enforce `MAX_POSITIONS_PER_SYMBOL=1` / `MAX_TOTAL_POSITIONS=5` di `PurifiedEngine.cycle` | `autonomous_cycle.py:94-95` (defined, unused) |
-| G8 | Single-instance lock utk autonomous_cycle (PID/socket) — 4+ proses pernah jalan bareng | `autonomous_cycle.py` |
-| G9 | Fix `_kelly_cache` typo → `kelly_cache`; panggil `record_trade`/`self_eval` setelah close | `autonomous_cycle.py:611` |
-| G10 | Log HOLD dengan reason; jangan log "CLOSED" kalau retcode != DONE | `autonomous_cycle.py` |
-| G11 | Breakeven + structure-based trailing (SMC swing, invalidate on BOS) | `risk_levels.py:101-125` |
-| G12 | Tambah `strategy`+`comment` di `Order`/`place_order` LiveEngine path | `engine_production_bridge.py:426-433`; `mt5_broker.py:80-93` |
+| ID | Fix | File | Status |
+|----|-----|------|--------|
+| G1 | Fix DB path `dirname(x3)` → repo root; startup assertion + alert kalau journal 0 rows | `trade_journal.py:29-32` | ✅ DONE (verified: DB_PATH di repo) |
+| G2 | Move `self.journal = TradeJournal()` SEBELUM `PositionManager(...)` | `autonomous_cycle.py:659/665` | ✅ DONE (verified: self-eval PASS) |
+| G3 | Sync `mt5.account_info().balance/equity` tiap cycle ke RiskGuard; panggil `update_pnl` dari deal history | `autonomous_cycle.py:648`; `engine_production_bridge_purified.py` | ✅ DONE (sudah ter-wiring oleh session pagi) |
+| G4 | Panggil `generate_signal()` (bukan `analyze()`) utk registry strategies; pakai StrategySignal sl/tp per strategi | `autonomous_cycle.py:262`; `engine/strategies/base.py:129` | ✅ DONE (dual-call: generate_signal + fallback analyze) |
+| G5 | `point_size` dari `mt5.symbol_info().point` (fallback per symbol) | `autonomous_cycle.py:278` | ✅ DONE (real point dari broker) |
+| G6 | Fail-closed: sl/tp ≤0 → REJECT/turunkan dari ATR (never naked); TP=0 fail-closed juga | `engine_production_bridge_purified.py:123-124`; `connectors/mt5_broker.py:90-93` | ✅ DONE (SL wajib — reject kalau ≤0) |
+| G7 | Enforce `MAX_POSITIONS_PER_SYMBOL=1` / `MAX_TOTAL_POSITIONS=5` di `PurifiedEngine.cycle` | `autonomous_cycle.py:94-95` (defined, unused) | ✅ DONE (positions_get + cap check) |
+| G8 | Single-instance lock utk autonomous_cycle (PID/socket) — 4+ proses pernah jalan bareng | `autonomous_cycle.py` | ✅ DONE (OS file lock, verified ada di code) |
+| G9 | Fix `_kelly_cache` typo → `kelly_cache`; panggil `record_trade`/`self_eval` setelah close | `autonomous_cycle.py:611` | ✅ DONE (typo fixed + verified) |
+| G10 | Log HOLD dengan reason; jangan log "CLOSED" kalau retcode != DONE | `autonomous_cycle.py` | ✅ DONE (HOLD per symbol + HOLD ALL) |
+| G11 | Breakeven + structure-based trailing (SMC swing, invalidate on BOS) | `risk_levels.py:101-125` | 🟡 PENDING (ATR-based sudah ada; structure-based = next) |
+| G12 | Tambah `strategy`+`comment` di `Order`/`place_order` LiveEngine path | `engine_production_bridge.py:426-433`; `mt5_broker.py:80-93` | 🟡 PENDING (PurifiedEngine path sudah; LiveEngine path belum) |
 
 ### ✅ TERIMPLEMENTASI (bukti commit/kode)
 | MASTER Gap | Status | Bukti |

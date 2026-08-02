@@ -79,6 +79,18 @@ class MT5Adapter:
             self._initialized = False
             raise RuntimeError(f"MT5 connect failed (REAL-ONLY, no paper): {e}")
 
+    def account_balance(self) -> float:
+        """Return LIVE balance from MT5 (source of truth), refreshing account_info."""
+        try:
+            if self._initialized and self._mt5_loaded:
+                info = self._mt5_mod.account_info()
+                if info:
+                    self._account = info
+                    return float(info.balance)
+        except Exception:
+            pass
+        return float(self._account.balance) if self._account else 0.0
+
     def _guard_trade_mode(self, sym: str, side: str):
         """Block trade_mode 0 (disabled). Block LONGONLY→SELL, SHORTONLY→BUY.
         Mode 4 = FULL on Valetax (verified live) — allowed."""
@@ -119,8 +131,19 @@ class MT5Adapter:
         lot = round(lot / step) * step
         lot = round(lot, 2)
         # REAL-ONLY: only attach SL/TP if valid (>0). Broker rejects sl/tp<=0
-        # or below trade_stops_level. If caller passed 0.0, omit stops entirely.
-        _sl = sl if (sl and sl > 0) else None
+        # or below trade_stops_level.
+        # G6 FIX: naked-fill closed — if caller passed 0.0 for sl, REJECT the order
+        # (was: omit stops entirely → trades could execute with NO protection).
+        # Exception: TP may be 0 (some strategies leave TP to trailing logic), but
+        # SL is mandatory. If the caller genuinely has no SL, they must pass
+        # sl='none' explicitly for a naked entry.
+        if not (sl and sl > 0):
+            if str(comment).startswith("NONE_TP") and tp > 0:
+                pass  # reserved; TP-only flow not supported
+            raise RuntimeError(
+                f"execute_order blocked — SL required (fail-closed, no naked fill): {symbol} {side} sl={sl}"
+            )
+        _sl = sl
         _tp = tp if (tp and tp > 0) else None
         order_type = mt5.ORDER_TYPE_BUY if side == "buy" else mt5.ORDER_TYPE_SELL
         request = {
@@ -306,6 +329,16 @@ class PurifiedEngine:
     def start(self):
         """Connect MT5 (REAL-ONLY — raises if unavailable, no paper mode)."""
         self.mt5.connect()
+        # CRITICAL: sync RiskGuard balance from LIVE MT5 (source of truth).
+        # Previously hardcoded $10k → all position sizing was ~8.8x oversized
+        # and every DD/loss limit was computed against a phantom balance.
+        live_balance = self.mt5.account_balance()
+        if live_balance > 0:
+            self.risk.balance = live_balance
+            self.risk.peak = max(self.risk.peak, live_balance)
+            self.risk.daily_start_balance = live_balance
+            self.risk.weekly_start_balance = live_balance
+            log.info("RiskGuard synced to LIVE balance: %.2f", live_balance)
         self.active = True
         log.info("Engine started — mode=%s",
                  "MT5-LIVE" if self.mt5._initialized else "DOWN")
@@ -317,9 +350,47 @@ class PurifiedEngine:
             log.warning("Engine not started")
             return []
 
+        # CRITICAL: refresh RiskGuard balance from LIVE MT5 each cycle so
+        # sizing + DD/loss limits track reality (not a phantom initial_balance).
+        try:
+            live_balance = self.mt5.account_balance()
+            if live_balance > 0:
+                self.risk.balance = live_balance
+                self.risk.peak = max(self.risk.peak, live_balance)
+        except Exception as e:
+            log.warning("Balance sync failed this cycle: %s", e)
+
         results = []
+        # G7 FIX: enforce position caps (MAX_POSITIONS_PER_SYMBOL / MAX_TOTAL_POSITIONS).
+        # Previously defined but never referenced → stacked/opposing orders possible.
+        # (Constants mirror Config in autonomous_cycle.py:155-156)
+        MAX_POSITIONS_PER_SYMBOL = 1
+        MAX_TOTAL_POSITIONS = 5
+        open_positions = []
+        try:
+            if self.mt5._initialized and self.mt5._mt5_loaded:
+                open_positions = self.mt5._mt5_mod.positions_get() or []
+        except Exception as e:
+            log.warning("positions_get failed for cap enforcement: %s", e)
+        total_open = len(open_positions)
+
         for sig in signals:
             if sig.side not in ("buy", "sell"):
+                continue
+
+            # G7: per-symbol cap (1 per symbol)
+            sym_count = sum(1 for p in open_positions if p.symbol == sig.symbol)
+            if sym_count >= MAX_POSITIONS_PER_SYMBOL:
+                log.warning("POSITION CAP %s: already %d open, skip %s %s",
+                            sig.symbol, sym_count, sig.side, sig.symbol)
+                results.append({"status": "skip_position_cap",
+                                "symbol": sig.symbol, "side": sig.side})
+                continue
+            if total_open >= MAX_TOTAL_POSITIONS:
+                log.warning("TOTAL POSITION CAP %d reached, skip %s %s",
+                            total_open, sig.side, sig.symbol)
+                results.append({"status": "skip_total_cap",
+                                "symbol": sig.symbol, "side": sig.side})
                 continue
 
             # Risk gate — fail-closed

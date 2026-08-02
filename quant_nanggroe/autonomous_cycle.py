@@ -269,24 +269,70 @@ class StrategySignalGenerator:
         
         for name, strategy in self.strategies.items():
             try:
-                signal = strategy.analyze(candles, current_price)
-                if signal and signal != "hold":
+                # G4 FIX: registry strategies implement generate_signal() (returns
+                # StrategySignal with .direction/.confidence/.stop_loss/.take_profit),
+                # built-in strategies implement analyze() (returns "buy"/"sell"/None).
+                # Previously only analyze() was called → registry strategies raised
+                # AttributeError (swallowed) → 81 strategies NEVER produced signals.
+                signal = None
+                conf = 0.5
+                sl_hint = None
+                tp_hint = None
+                try:
+                    raw = strategy.generate_signal(candles)
+                    if raw is not None:
+                        if hasattr(raw, "direction"):
+                            # StrategySignal / canonical object
+                            dir_str = getattr(raw, "direction", None)
+                            side = str(dir_str.value if hasattr(dir_str, "value") else dir_str).lower()
+                            if side in ("buy", "sell"):
+                                signal = side
+                                conf = float(getattr(raw, "confidence", 0.5) or 0.5)
+                                sl_hint = getattr(raw, "stop_loss", None)
+                                tp_hint = getattr(raw, "take_profit", None)
+                        elif isinstance(raw, str):
+                            side = raw.lower()
+                            if side in ("buy", "sell"):
+                                signal = side
+                                conf = float(getattr(strategy, "last_confidence", 0.5) or 0.5)
+                except (AttributeError, NotImplementedError, TypeError):
+                    signal = None
+                if signal is None:
+                    try:
+                        raw = strategy.analyze(candles, current_price)
+                        if raw is not None:
+                            side = str(raw).lower()
+                            if side in ("buy", "sell"):
+                                signal = side
+                                conf = float(getattr(strategy, "last_confidence", 0.5) or 0.5)
+                    except (AttributeError, NotImplementedError, TypeError):
+                        signal = None
+
+                if signal:
                     # Broker min stop distance (trade_stops_level)
                     min_stop_points = 0.0
+                    point_size = 0.00001 if "JPY" not in symbol else 0.001
                     try:
                         import MetaTrader5 as mt5
-                        info = mt5.symbol_info(symbol.replace(".vx", "") if False else symbol)
+                        info = mt5.symbol_info(symbol)
                         if info:
                             min_stop_points = getattr(info, "trade_stops_level", 0) or 0
+                            # G5 FIX: real point from broker (was hardcoded 0.00001 →
+                            # XAUUSD.vx (0.01) / BTCUSD.vx (1.0) clamps were 100–10000x wrong)
+                            point_size = float(getattr(info, "point", point_size) or point_size)
                     except Exception:
                         pass
-                    point_size = 0.00001 if "JPY" not in symbol else 0.001
                     levels = strategy_sl_tp(symbol, signal, current_price, atr, candles,
                                             min_stop_points, point_size)
+                    # Strategy-provided SL/TP win over ATR-derived (G4)
+                    if sl_hint and sl_hint > 0:
+                        levels["sl"] = sl_hint
+                    if tp_hint and tp_hint > 0:
+                        levels["tp"] = tp_hint
                     sig = Signal(
                         symbol=symbol,
                         side=signal,
-                        confidence=getattr(strategy, 'last_confidence', 0.5),
+                        confidence=conf,
                         strategy=name,
                         price=current_price,
                         stop_loss=levels["sl"],
@@ -542,8 +588,11 @@ class PositionManager:
         
         # FULL TP at 2.5R
         if r_multiple >= CONFIG.FULL_TP_R_MULT:
-            self._close_position(ticket, symbol, side, volume, current_price)
-            log.info(f"FULL TP: {symbol} {ticket} closed at {r_multiple:.2f}R")
+            closed = self._close_position(ticket, symbol, side, volume, current_price)
+            if closed:
+                log.info(f"FULL TP: {symbol} {ticket} closed at {r_multiple:.2f}R")
+            else:
+                log.info(f"FULL TP: {symbol} {ticket} at {r_multiple:.2f}R — close pending (retcode not DONE; will retry next cycle)")
             return
         
         # TRAILING STOP (ATR-based, activates after 1R)
@@ -589,7 +638,8 @@ class PositionManager:
         except Exception as e:
             log.error(f"Partial close failed: {e}")
     
-    def _close_position(self, ticket: int, symbol: str, side: str, volume: float, price: float):
+    def _close_position(self, ticket: int, symbol: str, side: str, volume: float, price: float) -> bool:
+        """Close a position. Returns True only when retcode == TRADE_RETCODE_DONE."""
         try:
             import MetaTrader5 as mt5
             close_type = mt5.ORDER_TYPE_SELL if side == "buy" else mt5.ORDER_TYPE_BUY
@@ -611,11 +661,14 @@ class PositionManager:
                 log.info(f"CLOSED position {ticket} {symbol} {side} {volume} lots @ {price}")
                 # Record to journal + trigger self-eval
                 self._on_position_closed(ticket)
+                return True
             else:
                 log.error(f"Close failed for {ticket}: retcode={getattr(result, 'retcode', '?')} "
                           f"comment={getattr(result, 'comment', '?')}")
+                return False
         except Exception as e:
             log.error(f"Full close failed: {e}")
+            return False
     
     def _modify_sl(self, ticket: int, symbol: str, new_sl: float):
         try:
@@ -669,7 +722,8 @@ class PerformanceTracker:
             if avg_loss > 0:
                 kelly = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_win
                 kelly = max(0.05, min(0.25, kelly))  # Cap 5%-25%
-                self.risk_guard._kelly_cache[strategy] = kelly
+                # G9 FIX: was _kelly_cache (typo) — RiskGuard attribute is kelly_cache
+                self.risk_guard.kelly_cache[strategy] = kelly
                 log.info(f"Kelly updated for {strategy}: {kelly:.3f} (wr={win_rate:.2f})")
     
     def get_report(self) -> Dict:
@@ -715,15 +769,17 @@ class AutonomousCycle:
         
         # 3. Signal generator
         self.signal_generator = StrategySignalGenerator(self.market_data)
-        
-        # 4. Position manager
-        self.position_manager = PositionManager(self.engine, self.market_data, self.journal)
-        
-        # 5. Performance tracker
-        self.performance = PerformanceTracker(self.engine.risk)
 
-        # 6. Trade journal (strategy attribution + self-eval, SQLite-backed)
+        # 4. Trade journal (strategy attribution + self-eval, SQLite-backed)
+        #    MUST be created BEFORE PositionManager — it is a required dependency,
+        #    and passing None silently kills close-journaling/self-eval (G2).
         self.journal = TradeJournal()
+
+        # 5. Position manager
+        self.position_manager = PositionManager(self.engine, self.market_data, self.journal)
+
+        # 6. Performance tracker
+        self.performance = PerformanceTracker(self.engine.risk)
 
         # 7. KillSwitch (constitutional fail-closed) — wire state into RiskGuard
         from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
@@ -790,9 +846,16 @@ class AutonomousCycle:
                     for s in signals:
                         log.info(f"  {s.strategy}: {s.side.upper()} conf={s.confidence:.2f}")
                     all_signals.extend(signals)
+                else:
+                    # G10 FIX: log HOLD with reason (was silent — impossible to tell
+                    # "no signal" from "market data missing" in the live log)
+                    log.info(f"{symbol}: HOLD (no signal above min_conf={CONFIG.MIN_CONFIDENCE})")
         except Exception as e:
             log.error(f"Signal generation stage failed: {e}", exc_info=True)
             _alert_bot.alert_on_fail("signal_generation", f"{type(e).__name__}: {e}")
+
+        if not all_signals:
+            log.info("HOLD ALL: no actionable signals this cycle — no trades attempted")
 
         # 4. Execute signals through purified engine (risk guard enforced inside)
         try:
