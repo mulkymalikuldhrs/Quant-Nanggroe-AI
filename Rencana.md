@@ -168,6 +168,14 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 
 **FASE 0 COMPLETE — 2026-08-02 (commit `804a716f` G1-G10, `a49d6704` G11-G12). Semua 12 gap live-path ditutup.**
 
+### 🏛️ KEPUTUSAN DEBAT ROUND 1 (2026-08-02, 3 kubu: PRO/CONTRA/OPERATOR) → HYBRID GO-LIVE MONDAY
+- **Prioritas #1:** CLOSE 3 legacy positions (20178543987, 20188224176, 20188224713) di tick pertama open — kode pre-fix, mungkin NAKED (SL=0), risiko Monday gap terbesar.
+- Boot SATU instance (lock G8 aktif). Protokol verifikasi 11 langkah + hard-abort ada di `DEBATE_ROUND1_2026-08-02.md`.
+- Risk bounded: caps 1/symbol+5 total, SL mandatory, min-conf 0.6, daily-loss 3% auto-block, worst ~$32.
+- G11 trailing observasi 1-2 minggu (unbacktested) → fallback ATR sudah di kode.
+- Floor $1.000: equity < itu → halt + alert. Self-eval gate: N≥20 closed trades → disable strategi negative.
+- Status: ajukan ke @dhaherautobot utk koordinasi final.
+
 ### ✅ TERIMPLEMENTASI (bukti commit/kode)
 | MASTER Gap | Status | Bukti |
 |-----------|--------|-------|
