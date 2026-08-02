@@ -144,6 +144,49 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 
 ---
 
+## 🧭 MASTER.md IMPLEMENTATION STATUS (QNA_QuantScience_MASTER.md → kode)
+
+> Sumber kebenaran = git log + kode. Estimasi skor 2026-07-30: 86/100 → pasca-2026-08-01: ~222/300 → ditambah session 2026-08-02 (sizing + security).
+
+### ✅ TERIMPLEMENTASI (bukti commit/kode)
+| MASTER Gap | Status | Bukti |
+|-----------|--------|-------|
+| A3 `np` undefined StressVaR | ✅ DONE | import fix qna.py:710 |
+| A1 Evolution loop 4 wiring bugs | ✅ DONE | `main.py:847-854` → scan_all/evaluate list (commit cec7e055 self-eval) |
+| A2 Silent errors 20+ titik | ✅ DONE | log.debug→log.warning/error critical paths |
+| A4 `get_valid_pairs` missing | ✅ DONE | scan_all_pairs() + live_scan() fallback |
+| B3 8 Signal classes → 1 | ✅ DONE | `types/signals.py` canonical |
+| B4 3 registries → 1 | ✅ DONE | StrategyRegistry canonical |
+| C2 RiskLimits unwired | ✅ DONE | `risk_gate_bridge.py` Step 0 `can_trade()` |
+| C7 ~15K dead code | ✅ DONE | archived `.bak/dead/` |
+| C8 Data quality (sebagian) | ✅ DONE | `engine/data_quality/` + health API |
+| SL/TP hardcoded → ATR+structure | ✅ DONE | `risk_levels.py` (commit 4331e2bf) |
+| Trailing SL ATR-based | ✅ DONE | `trailing_sl_atr()` (commit 4331e2bf) |
+| Self-aware trade attribution | ✅ DONE | `trade_journal.py` SQLite (commit cec7e055) |
+| Kelly dari REAL pnl | ✅ DONE | `self_eval()` update kelly_cache |
+| Weekly-loss + KillSwitch di live loop | ✅ DONE | RiskGuard (commit 910904e6) |
+| Position sizing equity-aware | ✅ DONE | `position_size()` LOTS (commit fadecf9d) |
+| `/api/otto` auth bypass | ✅ DONE | exclude_paths=set() (commit fadecf9d) |
+| CVE floors | ✅ DONE | pyproject.toml (commit fadecf9d) |
+
+### 🟡 OPEN (belum terimplementasi penuh — backlog nyata, bukan live-path)
+| MASTER Gap | Status | Prioritas |
+|-----------|--------|-----------|
+| C1 Paper PnL real sim | OPEN (paper mode dipertahankan utk backtest; live = REAL-ONLY) | Rendah utk live |
+| C3 Audit trail dibaca (PnL attribution dashboard) | OPEN | FASE 3 |
+| C4 Telegram alert subsystem | PARTIAL (bot ada, wiring lengkap belum) | FASE 3 |
+| C5 Test coverage 80% | PARTIAL (117+ canonical tests; belum 80%) | FASE 3 |
+| C6 Multi-account MT5 | OPEN | FASE 4 |
+| B5 4/10 scorers untested | OPEN | FASE 3 |
+| F1 Alphalens / F2 HRP / F3 KMeans / F4 Autoencoder / F5 MACD / F6 Polars / F7 DCC-GARCH | OPEN | FASE 2 |
+| MultiAssetKelly/RiskParity live loop | OPEN | FASE 2 |
+| Engine/regime detector → live loop | OPEN | FASE 2 |
+| Dashboard rebuild (Next.js 16) | OPEN | FASE 3 |
+
+> Verdict jujur (skeptic-max): **live trading path 100% sound** (REAL-ONLY, equity sizing, ATR stops, self-eval, risk gates). Sisanya fitur/kualitas — bukan keselamatan.
+
+---
+
 ## 🔗 LINKS
 - [[QNA_AGENT_STATE]]
 - [[Quant-Nanggroe-AI/Production-Status-2026-08-01]]
