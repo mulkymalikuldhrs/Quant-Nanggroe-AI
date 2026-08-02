@@ -201,7 +201,7 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 | Engine/regime detector → live loop | OPEN | FASE 2 |
 | Dashboard rebuild (Next.js 16) | OPEN | FASE 3 |
 
-> Verdict jujur (skeptic-max): **live trading path 100% sound** (REAL-ONLY, equity sizing, ATR stops, self-eval, risk gates). Sisanya fitur/kualitas — bukan keselamatan.
+> Verdict jujur (skeptic-max): **live trading path 100% sound** — ❌ **SALAH / OVERCLAIM, dikoreksi 2026-08-02 PM.** Eksekusi live nyata (Valetax, tickets asli) ✅, tapi **self-eval/attribution = dead code (G1+G2), risk gates = phantom $10k (G3), strategi registry tidak pernah trade (G4)**. Fix order: FASE 0 G1→G12 di atas. Sisanya (backtest/dashboard/agent) fitur/kualitas — bukan keselamatan.
 
 ---
 

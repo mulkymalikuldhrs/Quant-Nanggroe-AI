@@ -99,14 +99,15 @@ Detail lengkap: `Rencana.md` FASE 0 + 3 FINDINGS files.
 
 ## REMAINING GAPS
 
-**ALL PHASE 0/1 GAPS CLOSED** — dead code archived, registries consolidated, signals dedup, factors wired, rl torch, credentials quarantined, docs reconciled. See roadmap below for remaining Phase 2+ work.
+**⚠️ KOREKSI 2026-08-02 PM:** klaim lama "ALL PHASE 0/1 GAPS CLOSED" di bawah = HANYA untuk gap arsitektur lama (dead code/registries/factors). **Audit 3-agent hari ini menemukan 12 gap BARU di live path (G1-G12, Rencana.md FASE 0) — self-eval/attribution dead code, risk phantom, strategi tidak pernah fire. Ini BELUM closed.**
 
 ### 🟢 LIVE-TRADING BLOCKERS — RESOLVED (2026-08-01)
 1. **Kill-switch PnL dead** → FIXED: `execute_order` pulls realized PnL dari broker handle sebelum `check_auto_activate` (manager.py:204-227). Callers gak pass hardcoded 0.0.
 2. **MT5 market orders NO SL/TP** → FIXED: `order_send` attach SL/TP (mt5_broker.py:594-600) + manager compute risk-based SL/TP dari settings (default_sl_pips=50, risk_based_sl_pct=0.5) sebelum submit.
 3. **Test density** → Integration tests added: `test_killswitch_pnl_integration.py`, `test_killswitch_integration.py`, `test_mt5_sl_tp_integration.py` — 15 pass. Full suite collect clean (2 pre-existing IndentationError di skill_autogen.py/telegram_bot.py, unrelated).
 
-**Verdict: READY FOR PAPER/LIVE (GREEN) — pending saldo + MT5 connect.**
+**Verdict (2026-08-01): READY FOR PAPER/LIVE (GREEN) — pending saldo + MT5 connect.**
+**⚠️ KOREKSI (2026-08-02 PM):** eksekusi live NYATA sudah terjadi (Valetax 372044706, tickets 20188224176/20188224713). Tapi status live path sekarang **🟡 AMBER** — bukan GREEN — karena audit 3-agent menemukan G1-G6 CRITICAL (journal path salah, self-eval dead, risk phantom, strategi tidak pernah fire). Lihat header dokumen ini + `Rencana.md` FASE 0.
 
 Non-Phase 0/1 (deferred):
 - **Dashboard build** — may not compile with Next.js 16 (Phase 3+ scope)

@@ -36,17 +36,25 @@ Not a chatbot. Autonomous quant systems engineer. You see, think, act — contin
 - Target: 80% test coverage, pipeline <20s, Telegram alerts
 - Lihat `docs/Rencana.md` untuk detail lengkap
 
+## 🤖 ORCHESTRATION RULE (binding — user directive 2026-08-02)
+- **`@dhaherautobot` = SATU-SATUNYA orchestrator.** Hanya dia yang boleh `@mention` agent lain.
+- Agent lain HANYA boleh `@mention` `@dhaherautobot`. **DILARANG mention sesama agent.**
+- Semua tugas wajib koordinasi lewat `@dhaherautobot`.
+
 ## CURRENT STATE
 ```
 ✅ Scoring:       8 scorers 100% wired + FusionEngine + MTF
-✅ Pipeline:      7-stage run_once() + evolution loop (🔴 4 bugs)
-✅ MT5:           Valetax demo live ($1,099, 29 trades)
+✅ Pipeline:      7-stage run_once() + evolution loop
+✅ MT5:           ValetaxIntl-Live2 LIVE ($1,122.05, 3 positions, tickets 20188224176/20188224713)
 ✅ Providers:     1079 total + HiddenRegime + News (3-tier)
 ✅ Risk:          KillSwitch C5 + RiskGuard fail-closed
-✅ Testing:       173+ passing
-✅ Docs:          All *.md current
-🔴 Evolution:    4 wiring bugs in main.py:847-854 — never executed
-🗄️ Factors:      453+ alpha factors not wired
+✅ Sizing:        LOTS equity-aware (fadecf9d) — no-SL → fail-closed
+✅ SL/TP:         ATR+structure (risk_levels.py) di autonomous loop
+⚠️ AUDIT 2026-08-02 (clawbot 3-agent): 🟡 AMBER — lihat Rencana.md FASE 0
+❌ G1-G6 CRITICAL: journal path salah (0 rows), PositionManager journal=None (self-eval dead),
+                  RiskGuard phantom $10k, strategi registry tidak pernah fire (analyze vs generate_signal),
+                  point_size hardcoded 0.00001, naked-fill surface
+✅ Docs:          Semua *.md truth-sync 2026-08-02 (commit 87928599)
 ```
 
 ## FALLBACK PROTOCOL
