@@ -546,22 +546,30 @@ class PositionManager:
         """Position closed (by TP/SL/manual). Record to journal + self-eval."""
         if not self.journal:
             return
-        # Get realized PnL from MT5 deal history for this ticket
+        # Get realized PnL + actual exit price from MT5 deal history for this ticket
         try:
             import MetaTrader5 as mt5
             from datetime import datetime, timedelta
             deals = mt5.history_deals_get(
                 datetime.now() - timedelta(days=7), datetime.now()) or []
-            pnl = sum(d.profit for d in deals if d.position_id == ticket)
+            ticket_deals = [d for d in deals if d.position_id == ticket]
+            pnl = sum(d.profit for d in ticket_deals)
+            # actual exit price = volume-weighted avg of closing deals
+            close_deals = [d for d in ticket_deals
+                           if d.entry == mt5.DEAL_ENTRY_OUT] if hasattr(mt5, "DEAL_ENTRY_OUT") else ticket_deals
+            if close_deals:
+                vol = sum(abs(d.volume) for d in close_deals) or 1.0
+                exit_price = sum(d.price * abs(d.volume) for d in close_deals) / vol
+            else:
+                exit_price = open_rec["entry"] if open_rec else 0.0
         except Exception:
             pnl = 0.0
+            exit_price = open_rec["entry"] if open_rec else 0.0
 
         # Read open record to get entry/strategy
         open_rec = self.journal.get_open_trade(ticket)
         if not open_rec:
             return  # not our trade (e.g. manual)
-        exit_price = open_rec["entry"] + (pnl / open_rec["entry"] if open_rec["entry"] else 0)
-        self.journal.record_close(ticket, exit_price, pnl)
 
         # SELF-EVAL: recompute per-strategy kelly from journal
         verdict = self.journal.self_eval()

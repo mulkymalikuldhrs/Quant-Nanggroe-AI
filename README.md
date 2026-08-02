@@ -129,6 +129,7 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 | 14 | ⬜ **Test coverage 80%+** — risk>scoring>evolution priority | **FASE 3** | P1 |
 | 15 | ⬜ **Autoencoder factors + DCC-GARCH + MACD factor** | **FASE 4** | P2 |
 | 16 | ⬜ **Multi-account MT5** — multi-process, account rotation | **FASE 4** | P2 |
+| 17 | Pending integrasi Research Quant Src :  "C:\Users\Hi\Desktop\QuantScience_Archive\QNA_QuantScience_MASTER.md"
 
 ---
 
@@ -342,6 +343,7 @@ POST /api/autonomous/pipeline/run {"symbol":"BTC-USD"}
 | **TradingAdapter** | `E:/trading` | `fetch_signal()` placeholder — returns NEUTRAL | placeholder until fully wired |
 | **WyckoffAdapter** | Built-in QNA | `WyckoffStrategy.generate_signal()` | VSA-based BUY/SELL |
 | **MultiTimeframeAdapter** | Built-in QNA | `MultiTimeframeAnalyzer.analyze()` | MTF direction + confidence |
+| Pending Implementation : "E:\OrderFlowMap" & "E:\TradeBobbyTerminal"
 
 ### Signal Flow
 
@@ -371,6 +373,7 @@ fetch_all_signals(symbol)
 | **COPILOT.md** | — | GitHub Copilot config | KEEP |
 | **CURSOR.md** | — | Cursor IDE config | KEEP |
 | **GEMINI.md** | — | Gemini AI config | KEEP |
+| All Other Relevant *md : "D:\repositories\Quant-Nanggroe-AI-worktree\docs\Rencana.md" "D:\repositories\Quant-Nanggroe-AI-worktree\QNA_AGENT_STATE.md" "D:\repositories\Quant-Nanggroe-AI-worktree\docs\ "D:\repositories\Quant-Nanggroe-AI-worktree\
 
 ### `docs/` — 33 Active Documents
 
