@@ -12,6 +12,11 @@ Main loop that runs continuously:
 7. Sleep until next cycle
 
 Run: python autonomous_cycle.py
+
+Singleton guard: only ONE instance may run per machine (OS file lock).
+Prevents duplicate order execution when the cycle is accidentally started
+twice (e.g. via different venvs / nohup / env). Lock auto-releases on
+process death — no stale-lock issue.
 """
 
 import os
@@ -30,6 +35,62 @@ log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "quant_nanggroe"))
+
+# ──────────────────────────────────────────────────────────────
+# SINGLETON GUARD — one instance per machine (cross-process safety)
+# ──────────────────────────────────────────────────────────────
+_LOCK_FD: Optional[int] = None
+
+
+def _acquire_singleton_lock() -> None:
+    """Acquire an exclusive OS file lock; exit if another instance holds it.
+
+    On Windows uses msvcrt.locking; on POSIX uses fcntl.flock. The lock is
+    released automatically by the OS when the process dies (kill, crash,
+    normal exit), so a stale lock file never blocks a restart.
+    """
+    global _LOCK_FD
+    lock_path = REPO_ROOT / ".autonomous_cycle.lock"
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
+        # msvcrt.locking cannot lock beyond EOF — ensure ≥1 byte exists
+        if os.fstat(fd).st_size == 0:
+            os.write(fd, b"0")
+        if os.name == "nt":
+            import msvcrt
+            os.lseek(fd, 0, os.SEEK_SET)
+            try:
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            except OSError:
+                os.close(fd)
+                sys.exit(
+                    f"ERROR: Another autonomous_cycle instance is already running "
+                    f"(lock: {lock_path}). Kill it first, then retry."
+                )
+        else:
+            import fcntl
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                os.close(fd)
+                sys.exit(
+                    f"ERROR: Another autonomous_cycle instance is already running "
+                    f"(lock: {lock_path}). Kill it first, then retry."
+                )
+        _LOCK_FD = fd  # keep fd alive for process lifetime
+    except SystemExit:
+        raise
+    except Exception as e:  # fail-open only on lock infra errors (not duplicate)
+        log.warning("Singleton lock unavailable (%s) — continuing without lock", e)
+
+
+# ⚠️ EARLY SINGLETON LOCK — must run BEFORE heavy imports (engine, MT5) to
+# close the startup race window. Two processes started together would both
+# spend 30-90s importing before main() runs; locking here guarantees the
+# second process exits before it ever reaches the trading loop.
+if __name__ == "__main__":
+    _acquire_singleton_lock()
+
 
 # ──────────────────────────────────────────────────────────────
 # IMPORTS
@@ -817,7 +878,9 @@ def main():
 ║  Purified Engine + Strategy Signals + Risk Guard + Positions ║
 ╚══════════════════════════════════════════════════════════════╝
     """)
-    
+
+    _acquire_singleton_lock()
+
     cycle = AutonomousCycle()
     cycle.run()
 
