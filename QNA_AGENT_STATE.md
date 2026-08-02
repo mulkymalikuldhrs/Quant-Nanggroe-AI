@@ -1,8 +1,8 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-02 (PM — clawbot 3-agent audit: attribution / SL-TP / sizing)
-**Current Phase:** 🟡 LIVE — real execution confirmed, BUT self-eval/attribution dead code + phantom risk (see AUDIT 2026-08-02)
+**Updated:** 2026-08-02 (PM — FASE 0 COMPLETE: G1-G12 semua ditutup)
+**Current Phase:** 🟢 LIVE — real execution + journal/self-eval HIDUP + risk real-equity (FASE 0 done)
 
 > ⚠️ **KOREKSI:** status "LIVE — REAL-ONLY enforcement active" (2026-08-01) benar soal eksekusi, tapi **overclaim** soal self-eval/attribution/risk. Verdict baru: 🟡 AMBER. Lihat `FINDINGS_TRADE_ATTRIBUTION.md`, `FINDINGS_SLTP_TRAILING.md`, `FINDINGS_POSITION_SIZING.md`.
 
@@ -38,19 +38,21 @@
    └─ Venv:          .venv312 (Py3.12.13, deps OK)
 ```
 
-## 🚨 NEXT ACTIONS (dari audit — FASE 0)
-1. **G1** Fix journal DB path (`trade_journal.py:29` → `parents[1]`) + startup assertion
-2. **G2** Move `TradeJournal()` before `PositionManager(...)` (`autonomous_cycle.py:659/665`)
-3. **G3** Sync `mt5.account_info()` balance/equity tiap cycle → RiskGuard; call `update_pnl`
-4. **G4** Call `generate_signal()` for registry strategies; use per-strategy SL/TP
-5. **G5** `point_size` from `symbol_info().point` (XAUUSD/BTCUSD fix)
-6. **G6** Fail-closed stops: sl/tp ≤0 → reject/derive (never naked); TP=0 fail-closed
-7. **G7** Enforce position caps (MAX_POSITIONS_PER_SYMBOL/MAX_TOTAL_POSITIONS)
-8. **G8** Single-instance lock for autonomous_cycle (was 4+ concurrent)
-9. **G9** Fix `_kelly_cache` typo + wire record_trade/self_eval
-10. **G10** Log HOLD with reason; honest close logs
-11. **G11** Breakeven + structure-based trailing
-12. **G12** Strategy+comment in LiveEngine Order/place_order
+## 🚨 NEXT ACTIONS (FASE 0 — COMPLETE ✅ 2026-08-02)
+1. ~~G1~~ ✅ journal DB path fixed + verified
+2. ~~G2~~ ✅ journal init order fixed (self-eval PASS)
+3. ~~G3~~ ✅ MT5 equity sync (sudah ter-wiring)
+4. ~~G4~~ ✅ generate_signal dual-call (registry strategies LIVE)
+5. ~~G5~~ ✅ real point_size dari broker
+6. ~~G6~~ ✅ SL fail-closed (no naked fill)
+7. ~~G7~~ ✅ position caps enforced
+8. ~~G8~~ ✅ single-instance lock
+9. ~~G9~~ ✅ kelly_cache typo fixed
+10. ~~G10~~ ✅ HOLD logging
+11. ~~G11~~ ✅ breakeven + structure trailing (unit-tested)
+12. ~~G12~~ ✅ strategy attribution in LiveEngine Order/comment
+
+**Next setelah market buka (Senin):** boot ulang autonomous_cycle (satu instance), verifikasi journal rows tumbuh, live order punya comment strategi.
 
 Detail lengkap: `Rencana.md` FASE 0 + 3 FINDINGS files.
 
