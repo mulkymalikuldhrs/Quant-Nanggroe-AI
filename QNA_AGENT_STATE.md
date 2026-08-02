@@ -49,7 +49,7 @@
 | G3 | MT5 equity sync | ⚠️ PARTIAL → ✅ HARDENED 2026-08-03 | sync code `purified:358-361` ada. **FIX: `account_balance()` return -1.0 (MT5_DOWN), `start()`/`cycle()` abort on MT5 down. `_on_position_closed` NameError fixed + `update_pnl` wired to RiskGuard.** 8 test pass. |
 | G4 | generate_signal dual-call | ✅ DONE | `autonomous_cycle.py:282-309`, 81 strategi loaded di log 04:03 | ✅ |
 | G5 | real point_size | ✅ DONE | `autonomous_cycle.py:322: getattr(info, "point", ...)` | ✅ |
-| G6 | SL fail-closed | ✅ partial → 🟡 PENDING | `purified:140-145` fail-closed di `execute_order`. **TODO:** `api/routes/trading.py:567` + `engine_production_bridge.py:404` (old bridge) |
+| G6 | SL fail-closed | ✅ DONE → ✅ MITIGATED 2026-08-03 | `purified:140-145` fail-closed di `execute_order`. Old bridge `engine_production_bridge.py:404-406`: `sl = sl or round(fall_sl,5)` → **fallback SL, bukan naked**. API `trading.py:567`: **diharden 2026-08-03 commit 917645d8** — validate `stop_loss > 0` sebelum engine.cycle(). | ✅ All 3 paths mitigated |
 | G7 | position caps | ✅ DONE | `purified:349-377` enforced | ✅ |
 | G8 | single-instance lock | ✅ DONE | `autonomous_cycle.py:91-92` (_acquire_singleton_lock) | ✅ |
 | G9 | kelly_cache typo | ✅ DONE | `autonomous_cycle.py:771: self.risk_guard.kelly_cache` (also G8: `self.risk.position_size` uses `kelly_cache`) | ✅ |
@@ -58,9 +58,8 @@
 | G12 | strategy attribution | ✅ DONE | `purified:157: comment`, `autonomous_cycle.py:925-929: record_open` + G1 fix `record_close` | ✅ |
 
 **🔴 RESIDUAL LIVE PATH BUGS (perlu attention berikutnya):**
-1. **G6-completion:** Naked-fill surface masih ada di `api/routes/trading.py:567` + `engine_production_bridge.py:404` (old bridge — belum dihapus). `execute_order` purified sudah fail-closed (line 140). **TODO: patch old bridge + API route.** (But: old bridge `engine_production_bridge.py` is pre-purified version — cek dulu dipakai ngga.)
-2. **G1-hardening:** `TradeJournal._init_db()` sudah fail-closed (2026-08-03 commit). **TODO:** tambah `journal.db_healthy()` assert di `AutonomousCycle.initialize()` — sampaikan log error eksplisit jika DB corrupt.
-3. **GAP-5 (architectural):** Dual live loop — butuh keputusan dari @dhaherautobot (lihat handoff).
+1. **G1-deep:** `TradeJournal._init_db()` sudah fail-closed (2026-08-03 commit). **TODO (optional):** tambah `journal.db_healthy()` assert di `AutonomousCycle.initialize()` — defense-in-depth, not blocking.
+2. **GAP-5 (architectural):** Dual live loop — butuh keputusan dari @dhaherautobot (lihat handoff).
 
 ---
 

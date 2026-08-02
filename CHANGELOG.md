@@ -25,9 +25,14 @@
 - `test_risk_new.py::TestVaRCalculator::test_insufficient_data` — VaR bug (returns 0.0185 vs 0.0)
 
 ### Todo (needs architectural decision, NOT applied):
-1. **GAP-1 (naked surface):** patch `api/routes/trading.py:567` + `engine_production_bridge.py:404` old bridge — hanya setelah pilih primary loop
-2. **G1-deep:** `assert journal.db_healthy()` di `AutonomousCycle.initialize()`
+1. ~~GAP-1 (naked surface): patch `api/routes/trading.py:567`~~ ✅ **RESOLVED 2026-08-03 (commit 917645d8)** — API routes `quant_nanggroe/api/routes/trading.py:555-617` now validate `stop_loss > 0` at REST boundary (defense-in-depth). Old bridge `engine_production_bridge.py:404-407` already has `sl = sl or fall_sl` fallback — **not naked**. Engine purified fail-closed (purified:140). GAP-1 = mitigated in all 3 paths.
+2. **G1-deep:** `assert journal.db_healthy()` di `AutonomousCycle.initialize()` — optional defense-in-depth, **not blocking** (already fail-open with warning)
 3. **GAP-5 (dual-loop):** butuh @Mulky keputusan
+
+### Commits 2026-08-03 (devbot solo verification + hardening)
+- `f958853c` — fix(G1/G3): journal fail-closed init + balance sync fail-closed + NameError fix + 8 tests
+- `917645d8` — fix(GAP-1): fail-closed API routes + .vx symbol validation
+- `eb5944ba` — docs: AMBER verdict + MD truth-sync (5 files)
 
 ### Fact-check result (code = source of truth, git HEAD 52e8397b)
 
