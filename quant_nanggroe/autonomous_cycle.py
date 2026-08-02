@@ -543,10 +543,17 @@ class PositionManager:
             self._manage_position(pos)
     
     def _on_position_closed(self, ticket: int):
-        """Position closed (by TP/SL/manual). Record to journal + self-eval."""
+        """Position closed (by TP/SL/manual). Record to journal + self-eval.
+        G3-residual FIX: open_rec must be read BEFORE deal-history lookup
+        (was used-before-defined NameError on old lines 564/567)."""
         if not self.journal:
             return
-        # Get realized PnL + actual exit price from MT5 deal history for this ticket
+        open_rec = self.journal.get_open_trade(ticket)
+        if not open_rec:
+            return  # not our trade (e.g. manual close of orphan)
+        entry_price = open_rec["entry"]
+        pnl = 0.0
+        exit_price = entry_price
         try:
             import MetaTrader5 as mt5
             from datetime import datetime, timedelta
@@ -554,24 +561,21 @@ class PositionManager:
                 datetime.now() - timedelta(days=7), datetime.now()) or []
             ticket_deals = [d for d in deals if d.position_id == ticket]
             pnl = sum(d.profit for d in ticket_deals)
-            # actual exit price = volume-weighted avg of closing deals
             close_deals = [d for d in ticket_deals
                            if d.entry == mt5.DEAL_ENTRY_OUT] if hasattr(mt5, "DEAL_ENTRY_OUT") else ticket_deals
             if close_deals:
                 vol = sum(abs(d.volume) for d in close_deals) or 1.0
                 exit_price = sum(d.price * abs(d.volume) for d in close_deals) / vol
-            else:
-                exit_price = open_rec["entry"] if open_rec else 0.0
-        except Exception:
-            pnl = 0.0
-            exit_price = open_rec["entry"] if open_rec else 0.0
-
-        # Read open record to get entry/strategy
-        open_rec = self.journal.get_open_trade(ticket)
-        if not open_rec:
-            return  # not our trade (e.g. manual)
-
-        # SELF-EVAL: recompute per-strategy kelly from journal
+        except Exception as e:
+            log.error("MT5 deal-history lookup failed for ticket %d: %s", ticket, e)
+        # JOURNAL + RiskGuard PnL feed (G3-core): closes no longer silent.
+        self.journal.record_close(ticket, exit_price, pnl)
+        self.engine.risk.update_pnl(pnl, pnl > 0)
+        if self.performance:
+            self.performance.record_trade(
+                strategy=open_rec["strategy"], symbol=open_rec["symbol"],
+                side=open_rec["side"], entry=entry_price,
+                exit=exit_price, volume=0.0, pnl=pnl)
         verdict = self.journal.self_eval()
         for strat, v in verdict.items():
             if v.get("status") == "active" and "kelly" in v:
@@ -580,7 +584,8 @@ class PositionManager:
                          f"expectancy={v['expectancy']} pnl={v['total_pnl']} "
                          f"kelly={v['kelly']}")
         log.info(f"CLOSED journaled: ticket={ticket} strat={open_rec['strategy']} "
-                 f"pnl={pnl:.2f} outcome={'win' if pnl>0 else 'loss'}")
+                 f"pnl={pnl:.2f} outcome={'win' if pnl>0 else 'loss'} "
+                 f"risk.balance={self.engine.risk.balance:.2f}")
 
     def _manage_position(self, pos):
         """Apply trailing stop, partial TP, full TP logic"""

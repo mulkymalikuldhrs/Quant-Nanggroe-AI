@@ -80,16 +80,20 @@ class MT5Adapter:
             raise RuntimeError(f"MT5 connect failed (REAL-ONLY, no paper): {e}")
 
     def account_balance(self) -> float:
-        """Return LIVE balance from MT5 (source of truth), refreshing account_info."""
+        '''Return LIVE balance from MT5 (source of truth), refreshing account_info.
+        Returns -1.0 if MT5 is not connected/available — callers MUST treat -1.0
+        as MT5_DOWN, NOT as a valid balance. This breaks the previous fail-open
+        behavior that silently fell back to a seed $10k phantom balance.'''
         try:
             if self._initialized and self._mt5_loaded:
                 info = self._mt5_mod.account_info()
                 if info:
                     self._account = info
                     return float(info.balance)
-        except Exception:
-            pass
-        return float(self._account.balance) if self._account else 0.0
+        except Exception as e:
+            self.log.error("account_balance: MT5 account_info failed (network down?): %s", e)
+        # MT5 not initialized OR account_info failed — signal DOWN to caller
+        return -1.0
 
     def _guard_trade_mode(self, sym: str, side: str):
         """Block trade_mode 0 (disabled). Block LONGONLY→SELL, SHORTONLY→BUY.
@@ -333,6 +337,12 @@ class PurifiedEngine:
         # Previously hardcoded $10k → all position sizing was ~8.8x oversized
         # and every DD/loss limit was computed against a phantom balance.
         live_balance = self.mt5.account_balance()
+        if live_balance < 0:
+            # G3-hardening: MT5 down. Do NOT use seed $10k phantom balance.
+            log.critical("Engine.start: MT5 account_info DOWN (ret -1.0) — engine stays INACTIVE. "
+                         "Will not trade on phantom balance.")
+            self.active = False
+            return self
         if live_balance > 0:
             self.risk.balance = live_balance
             # Reset phantom peak (initial_balance=10000) to LIVE balance so DD
@@ -342,8 +352,8 @@ class PurifiedEngine:
             self.risk.weekly_start_balance = live_balance
             log.info("RiskGuard synced to LIVE balance: %.2f", live_balance)
         self.active = True
-        log.info("Engine started — mode=%s",
-                 "MT5-LIVE" if self.mt5._initialized else "DOWN")
+        log.info("Engine started — mode=%s balance=%.2f",
+                 "MT5-LIVE" if self.mt5._initialized else "DOWN", self.risk.balance)
         return self
 
     def cycle(self, signals: List[Signal]) -> List[dict]:
@@ -354,13 +364,19 @@ class PurifiedEngine:
 
         # CRITICAL: refresh RiskGuard balance from LIVE MT5 each cycle so
         # sizing + DD/loss limits track reality (not a phantom initial_balance).
-        try:
-            live_balance = self.mt5.account_balance()
-            if live_balance > 0:
-                self.risk.balance = live_balance
-                self.risk.peak = max(self.risk.peak, live_balance)
-        except Exception as e:
-            log.warning("Balance sync failed this cycle: %s", e)
+        # G3-hardening: if MT5 returns -1.0 (network down), DO NOT keep phantom
+        # balance — abort cycle with fail-closed (safer than phantom $10k).
+        live_balance = self.mt5.account_balance()
+        if live_balance < 0:
+            log.critical("CYCLE ABORT: MT5 account_info DOWN (ret -1.0) — balance stale=%.2f. "
+                         "No phantom trading. Cycle HALTED.", self.risk.balance)
+            return []
+        if live_balance > 0:
+            self.risk.balance = live_balance
+            self.risk.peak = max(self.risk.peak, live_balance)
+        elif live_balance == 0:
+            log.warning("CYCLE: MT5 balance=0.0 — possible account zeroed or sync bug. Aborting cycle (fail-closed).")
+            return []
 
         # DEBATE_ROUND1 hard floor: equity < $1.000 → halt ALL execution (fail-closed)
         EQUITY_FLOOR = 1000.0

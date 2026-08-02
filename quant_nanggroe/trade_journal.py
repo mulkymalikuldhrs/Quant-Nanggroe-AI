@@ -37,8 +37,34 @@ class TradeJournal:
 
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
+        self._init_ok = False
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        self._init_db()
+        try:
+            self._init_db()
+            self._init_ok = True
+        except Exception as e:
+            # FAIL-OPEN ONLY IF EXPLICITLY ALLOWED (e.g. first-boot where dir
+            # doesn't exist yet). Otherwise the live loop MUST know the journal
+            # is dead so it can either abort or fall back to no-self-eval mode.
+            import logging
+            logging.getLogger(__name__).error(
+                "TradeJournal._init_db FAILED on %s: %s — journal offline. "
+                "Cycle will continue but strategy attribution/self-eval DISABLED.",
+                db_path, e,
+            )
+            self._init_ok = False
+
+    def db_healthy(self) -> bool:
+        '''Return True iff schema is initialized and writable.'''
+        if not self._init_ok:
+            return False
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='trades'")
+                conn.execute("SELECT COUNT(*) FROM trades")
+            return True
+        except Exception:
+            return False
 
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
