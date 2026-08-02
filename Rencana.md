@@ -163,8 +163,10 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 | G8 | Single-instance lock utk autonomous_cycle (PID/socket) — 4+ proses pernah jalan bareng | `autonomous_cycle.py` | ✅ DONE (OS file lock, verified ada di code) |
 | G9 | Fix `_kelly_cache` typo → `kelly_cache`; panggil `record_trade`/`self_eval` setelah close | `autonomous_cycle.py:611` | ✅ DONE (typo fixed + verified) |
 | G10 | Log HOLD dengan reason; jangan log "CLOSED" kalau retcode != DONE | `autonomous_cycle.py` | ✅ DONE (HOLD per symbol + HOLD ALL) |
-| G11 | Breakeven + structure-based trailing (SMC swing, invalidate on BOS) | `risk_levels.py:101-125` | 🟡 PENDING (ATR-based sudah ada; structure-based = next) |
-| G12 | Tambah `strategy`+`comment` di `Order`/`place_order` LiveEngine path | `engine_production_bridge.py:426-433`; `mt5_broker.py:80-93` | 🟡 PENDING (PurifiedEngine path sudah; LiveEngine path belum) |
+| G11 | Breakeven + structure-based trailing (SMC swing, invalidate on BOS) | `risk_levels.py:101-125` | ✅ DONE (breakeven_sl + trailing_sl_structure, unit-tested PASS) |
+| G12 | Tambah `strategy`+`comment` di `Order`/`place_order` LiveEngine path | `engine_production_bridge.py:426-433`; `mt5_broker.py:80-93` | ✅ DONE (strategy_name+notes → broker comment) |
+
+**FASE 0 COMPLETE — 2026-08-02 (commit `804a716f` G1-G10, `a49d6704` G11-G12). Semua 12 gap live-path ditutup.**
 
 ### ✅ TERIMPLEMENTASI (bukti commit/kode)
 | MASTER Gap | Status | Bukti |
