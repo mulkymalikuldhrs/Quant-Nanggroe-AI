@@ -157,7 +157,7 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 |----|-----|------|--------|
 | G1 | Fix DB path `dirname(x3)` → repo root; startup assertion + alert kalau journal 0 rows | `trade_journal.py:29-32` | ✅ DONE (verified: DB_PATH di repo) |
 | G2 | Move `self.journal = TradeJournal()` SEBELUM `PositionManager(...)` | `autonomous_cycle.py:659/665` | ✅ DONE (verified: self-eval PASS) |
-| G3 | Sync `mt5.account_info().balance/equity` tiap cycle ke RiskGuard; panggil `update_pnl` dari deal history | `autonomous_cycle.py:648`; `engine_production_bridge_purified.py` | ✅ DONE (sudah ter-wiring oleh session pagi) |
+| G3 | Sync `mt5.account_info().balance/equity` tiap cycle ke RiskGuard; panggil `update_pnl` dari deal history | `autonomous_cycle.py:648`; `engine_production_bridge_purified.py` | ⚠️ PARTIAL — balance+peak sync DONE (commit 0c77f919, verified balance=1130.23/peak=1130.23/can_trade=True). `update_pnl` dari deal history BELUM wired ke cycle() → DD/daily/weekly veto masih frozen in practice. RESIDUAL. |
 | G4 | Panggil `generate_signal()` (bukan `analyze()`) utk registry strategies; pakai StrategySignal sl/tp per strategi | `autonomous_cycle.py:262`; `engine/strategies/base.py:129` | ✅ DONE (dual-call: generate_signal + fallback analyze) |
 | G5 | `point_size` dari `mt5.symbol_info().point` (fallback per symbol) | `autonomous_cycle.py:278` | ✅ DONE (real point dari broker) |
 | G6 | Fail-closed: sl/tp ≤0 → REJECT/turunkan dari ATR (never naked); TP=0 fail-closed juga | `engine_production_bridge_purified.py:123-124`; `connectors/mt5_broker.py:90-93` | ✅ DONE (SL wajib — reject kalau ≤0) |

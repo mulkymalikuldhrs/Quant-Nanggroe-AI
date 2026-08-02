@@ -13,7 +13,7 @@
 |----|----------|---------|----------------------|
 | G1 | CRITICAL | Trade journal at WRONG PATH — `dirname(x3)` → `D:\repositories\data\qna_trade_journal.db` (0 rows). Repo `data/qna_trade_journal.db` = 0-byte, no schema. **No trade ever attributed.** | trade_journal.py:29-32 |
 | G2 | CRITICAL | `PositionManager` built with `journal=None` (journal created AFTER) → close-journal + self_eval + Kelly never run | autonomous_cycle.py:659 vs 665; :413 |
-| G3 | CRITICAL | RiskGuard phantom $10,000 — MT5 balance/equity never synced; `update_pnl` never called; DD/daily/weekly vetoes frozen | autonomous_cycle.py:648; purified:261-270 |
+| G3 | CRITICAL | RiskGuard phantom $10,000 — MT5 balance/equity never synced; `update_pnl` never called; DD/daily/weekly vetoes frozen | autonomous_cycle.py:648; purified:261-270 | ⚠️ PARTIAL FIXED (commit 0c77f919): balance+peak now sync from LIVE MT5 (verified 1130.23, can_trade=True). RESIDUAL: `update_pnl` still not wired to cycle() → DD/daily/weekly veto frozen in practice |
 | G4 | CRITICAL | Registry strategies (SMC/Wyckoff/MeanRev/Dhaher/Kronos) never fire — loop calls `analyze()`, they implement `generate_signal()` → AttributeError swallowed | autonomous_cycle.py:262,286-288 |
 | G5 | CRITICAL | `point_size` hardcoded 0.00001 → XAUUSD/BTCUSD min-stop clamp 100-10000× too small | autonomous_cycle.py:278; risk_levels.py:80-95 |
 | G6 | MAJOR | Naked-fill surface: omit-if-≤0 in execute_order + connectors; TP=0 never fail-closed | purified:123-124; connectors/mt5_broker.py:90-93 |
