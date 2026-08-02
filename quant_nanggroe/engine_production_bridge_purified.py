@@ -335,7 +335,9 @@ class PurifiedEngine:
         live_balance = self.mt5.account_balance()
         if live_balance > 0:
             self.risk.balance = live_balance
-            self.risk.peak = max(self.risk.peak, live_balance)
+            # Reset phantom peak (initial_balance=10000) to LIVE balance so DD
+            # is measured from reality, not from a seed that never existed.
+            self.risk.peak = live_balance
             self.risk.daily_start_balance = live_balance
             self.risk.weekly_start_balance = live_balance
             log.info("RiskGuard synced to LIVE balance: %.2f", live_balance)
