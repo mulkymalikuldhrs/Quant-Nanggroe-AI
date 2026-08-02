@@ -58,6 +58,9 @@ uv run pytest -m "not integration"         # skip API-key tests
 
 - **`PYTHONPATH=""`** mandatory — Hermes venv leaks `pydantic_core` → crash
 - **`QNAI_JWT_SECRET`** required for API boot _(fail-closed)_
+- **Sizing (2026-08-02):** `RiskGuard.position_size()` = `equity×risk×kelly / (|entry−SL|×contract_size)` in **LOTS** (was units → always 0.01). No-SL → 0 → fail-closed.
+- **SL/TP:** ATR+structure based (`quant_nanggroe/risk_levels.py`), not hardcoded ±%. Clamped to broker `trade_stops_level`.
+- **Auth:** `/api/otto/*` no longer excluded from auth (2026-08-02). All `/api/*` behind JWT/API-key.
 - **MT5 live** connected · Valetax demo · `history_deals_get()` works
 - **Evolution loop** ✅ fixed · `engine/evolution/` 8 files · wired `main.py:922-966`
 

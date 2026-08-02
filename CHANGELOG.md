@@ -5,10 +5,32 @@
 ```
 MT5 LIVE ─┐
           ├─→ SignalFusion ─→ RiskManager(9-gate) ─→ Execution(MT5) ─→ Real Ticket
-Strategies┘        (conf≥0.65)   (KillSwitch)           (Lot clamp)
+Strategies┘        (conf≥0.65)   (KillSwitch)        (equity-aware lot)
 ```
 
-**No paper/sim/mock.** MT5 down → RuntimeError (fail-closed).
+**No paper/sim/mock.** MT5 down → RuntimeError (fail-closed). **Sizing:** `lot = equity×risk×kelly / (|entry−SL|×contract)`.
+
+---
+
+## 2026-08-02 — POSITION-SIZING FIX + SECURITY HARDENING (SKEPTIC-MAX)
+
+### Fixed (CRITICAL)
+- **Position sizing was units, not LOTS** — `RiskGuard.position_size()` returned `risk_amount/price` → every trade clamped to broker min 0.01 regardless of equity ($1000 or $10k → same 0.01). Now `equity × risk_pct × kelly / (|entry−SL| × contract_size)` → real MT5 lots. No-SL → lot=0 → fail-closed (no naked trades). Verified 6 cases.
+- **Min-lot forced-risk cap** — if broker min-lot forces risk > `max(2×budget, 2% equity)` → SKIP trade (fail-closed), not oversized.
+- **`/api/otto/*` auth bypass CLOSED** — open proxy was excluded from JWT + API-key auth (unauthenticated read/write to internal Otto MCP). Now behind auth like the rest of `/api/*`.
+
+### Hardened
+- CVE floors raised: `aiohttp>=3.9.4`, `cryptography>=42.0.4`, `torch>=2.2.0`, `redis>=5.0.1`, `python-multipart>=0.0.7`
+- `config/mt5_accounts.yaml` untracked from git (was tracked despite .gitignore — latent credential leak)
+
+### Added
+- `skeptic-max` audit skill (verify doc claims vs code, find silent failures)
+- `FINDING_HACKERBOT_SEC2.md` — security re-audit #2 (1 CRITICAL fixed, 2 MEDIUM hardened)
+- `FINDINGS_SKEPTIC_LIVE.md` — live-path skeptic audit (weekly-loss + KillSwitch wired into RiskGuard)
+
+### Verified
+- Sizing math: BTC $1k→0.0019 lots (forced $6.50 < cap $20 → trade), EUR→0.0042, GBP→0.0025, no-SL→0.0
+- Equity scaling: 10× equity → 10× lot
 
 ---
 

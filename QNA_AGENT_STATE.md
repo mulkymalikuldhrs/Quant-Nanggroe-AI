@@ -1,8 +1,22 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-01 (REAL-ONLY LIVE trading verified)
-**Current Phase:** 🟢 LIVE — REAL-ONLY enforcement active, 3 positions on Valetax 372044706
+**Updated:** 2026-08-02 (POSITION-SIZING + SECURITY + SKEPTIC-MAX session)
+**Current Phase:** 🟢 LIVE — REAL-ONLY enforcement active, equity-aware sizing, auth-bypass closed
+
+---
+
+## 🆕 SESSION 2026-08-02 — SIZING + SECURITY + SELF-AWARE HARDENING
+
+| Fix | Detail | Verified |
+|-----|--------|----------|
+| **Position sizing → LOTS (was units)** | `RiskGuard.position_size()` returned `risk_amount/price` (units) → every trade clamped to broker min 0.01 regardless of equity. Now: `equity × risk_pct × kelly / (|entry−SL| × contract_size)` → real MT5 lots | 6 test cases pass: BTC $1k→0.0019, EUR→0.0042, GBP→0.0025, no-SL→0.0 (fail-closed), 10x equity→10x lot |
+| **Min-lot forced-risk cap** | $1k + BTC min lot 0.01 can force >2x risk budget → now SKIP (fail-closed) if `min_lot × |price−SL| × contract_size > max(2×budget, 2% equity)` | BTC forced $6.50 < $20 cap → trade; would skip above cap |
+| **`/api/otto/*` auth bypass CLOSED** | Open proxy was excluded from JWT+API-key auth (CRITICAL — unauthenticated read/write to internal Otto MCP). Now behind same auth as rest of `/api/*` | `app.py:303` exclude_paths=`set()` + `middleware.py:69` no otto carve-out |
+| **CVE floors raised** | aiohttp≥3.9.4, cryptography≥42.0.4, torch≥2.2.0, redis≥5.0.1, python-multipart≥0.0.7 | pyproject.toml committed |
+| **Skeptic-max skill created** | Audit lens: verify doc claims vs code, find silent failures | `skills/quant/skeptic-max/` |
+
+**Commit:** `fadecf9d` (SEC+POSITION-SIZING), `4dab4136` (docs sync)
 
 ---
 

@@ -1,7 +1,24 @@
 # 📋 RENCANA — Quant-Nanggroe-AI (QNA) v6.1.0
 
-**Owner:** Mulky Malikul Dhaher (Dhaher Labs) | **Updated:** 2026-08-01
-**Status:** 🟢 LIVE REAL-ONLY TRADING — Valetax 372044706 ($1122.05)
+**Owner:** Mulky Malikul Dhaher (Dhaher Labs) | **Updated:** 2026-08-02
+**Status:** 🟢 LIVE REAL-ONLY TRADING — Valetax 372044706 ($1122.05) + equity-aware sizing + auth-bypass closed
+
+---
+
+## 🆕 2026-08-02 — SIZING FIX (user complaint: "$1000 → 0.01 lot, not equity-calculated")
+
+```python
+# OLD (bug) — returned UNITS, not LOTS → every trade clamped to broker min 0.01
+lot = (balance * 0.005 * kelly) / price            # BTC@65k → 0.000019 → 0.01
+
+# NEW (fixed) — returns MT5 LOTS from equity + SL distance
+lot = (equity * risk_pct * kelly) / (|entry − SL| * contract_size)
+# BTC:  $1000×0.5%×0.25 / (650pts × 1)  → 0.0019 lots (forced-risk $6.50 < cap $20 → OK)
+# no-SL → lot=0 → FAIL-CLOSED, no naked trade
+# min-lot forced risk > max(2×budget, 2% equity) → SKIP
+```
+
+**Security (same session):** `/api/otto/*` auth bypass CLOSED (was unauthenticated open proxy — CRITICAL), CVE floors raised (aiohttp≥3.9.4, cryptography≥42.0.4, torch≥2.2.0).
 
 ---
 

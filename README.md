@@ -3,6 +3,8 @@
 > **REAL-ONLY (2026-08-01):** No paper/sim/mock/dummy. MT5-only execution.
 > **Live trading verified:** ValetaxIntl-Live2 login=372044706 balance=$1122.05
 > Real orders executed (tickets 20188224176, 20188224713). 3 live positions confirmed.
+> **Sizing (2026-08-02):** `lot = equity×risk×kelly / (|entry−SL|×contract_size)` — equity-aware LOTS, fail-closed if no SL.
+> **Security (2026-08-02):** `/api/otto/*` auth bypass CLOSED. CVE floors raised.
 > **Entry points:** `qna.py live` (LiveEngine) or `python -m quant_nanggroe.autonomous_cycle`
 > **Run:** `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe` (Py3.12.13, venv=.venv312)
 > **Deps:** requirements_qna.txt | **Symbols:** EURUSD.vx, BTCUSD.vx, XAUUSD.vx (broker suffix)

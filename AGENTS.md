@@ -22,9 +22,10 @@ Read in order:
 - **PYTHONPATH must be empty** — `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe`
 - **REAL-ONLY:** PaperBroker REMOVED. MT5 connect raises RuntimeError if unavailable.
 - **trade_mode=4 = FULL** (not DISABLED) on Valetax. Guard only blocks mode 0.
-- **Lot clamp:** min 0.01, step 0.01 enforced. SL/TP omitted if ≤0.
+- **Sizing (2026-08-02):** `lot = equity×risk_pct×kelly / (|entry−SL|×contract_size)`. No-SL → lot=0 → fail-closed. Min-lot forced risk > 2% equity → SKIP.
+- **SL/TP omitted if ≤0.** Stops are ATR+structure based (`risk_levels.py`), clamped to broker `trade_stops_level`.
 - **QNAI_ENCRYPTION_KEY** required for API boot.
-- **Secrets: env vars only** — never hardcode.
+- **Secrets: env vars only** — never hardcode. `config/mt5_accounts.yaml` untracked.
 - **Symbols:** `.vx` suffix (EURUSD.vx, BTCUSD.vx, XAUUSD.vx)
 
 
