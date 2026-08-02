@@ -1,7 +1,25 @@
 # QNA Autonomous Loop Goal — Evidence-Based
 
 **Created:** 2026-08-01 | **Author:** DHAHER OS (autobot, non-yesman mode)
+**Updated:** 2026-08-02 PM — clawbot 3-agent audit (attribution / SL-TP / sizing) — **code = source of truth**
 **Principle:** NO CLAIM WITHOUT EVIDENCE. Verify every layer before declaring autonomous.
+
+---
+
+## 🚨 AUDIT 2026-08-02 PM — verdict koreksi
+
+Dokumen ini (2026-08-01) sudah jujur soal "paper vs live" — bagus. Tapi audit 3-agent hari ini menemukan: **live trading REAL sudah terjadi** (tickets 20188224176, 20188224713, Valetax 372044706), **namun self-eval/attribution = dead code** dan **risk gates = phantom $10k**.
+
+| SG | Status audit 2026-08-02 PM | Bukti |
+|----|---------------------------|-------|
+| SG-1 Live MT5 Connect | ✅ **DONE** (melampaui) | Live connected: ValetaxIntl-Live2, login 372044706, balance $1,122, 3 positions live |
+| SG-2 Encryption | ⚠️ Perlu re-verify | Belum di-audit sesi ini |
+| SG-3 Auth Manager | ⚠️ Perlu re-verify | Belum di-audit sesi ini |
+| SG-4 Real Signal Flow | ❌ **GAGAL** | 81 strategi loaded tapi ZERO signal di 214+ cycle — G4: `analyze()` vs `generate_signal()` mismatch |
+| SG-5 Kill-Switch + SL/TP | ⚠️ PARTIAL | SL/TP ATR-based wired di autonomous loop; tapi `point_size` salah (G5), LiveEngine masih hardcoded 3%/5%, naked-fill surface (G6) |
+| SG-6 Continuous Loop | ⚠️ PARTIAL | Loop jalan 214+ cycle tapi journaling 0 rows (G1), self-eval mati (G2), close gagal loop 10018/10031 |
+
+**New critical gaps (bukan di doc lama):** G1 journal path salah · G2 PositionManager journal=None · G3 RiskGuard phantom $10k · G4 strategi registry tidak pernah fire · G5 point_size hardcoded · G6 naked-fill surface · G7 caps tidak di-enforce · G8 multi-instance · G9 Kelly typo. Fix plan: `Rencana.md` FASE 0.
 
 ---
 

@@ -63,3 +63,26 @@
 - Wave 4 (C): committed
 - Wave 5 (S): committed
 - Final: QNA_READINESS_GRADE 100/100, OPEN items CLOSED
+
+---
+
+## ⚠️ KOREKSI 2026-08-02 PM (clawbot 3-agent audit — code = truth)
+
+**"100/100 PRODUCTION-READY" = OVERCLAIM.** Waves A-F/S menyentuh fitur, tapi audit 3-agent menemukan **dead code di jantung live path**. Open items BARU (FASE 0) — ini harus CLOSED sebelum klaim "production-ready" valid:
+
+| # | Item | File | Action |
+|---|------|------|--------|
+| G1 | Journal DB path salah | `trade_journal.py:29-32` | `dirname(x3)` → `parents[1]`; startup assertion + alert kalau 0 rows |
+| G2 | `PositionManager` journal=None | `autonomous_cycle.py:659 vs 665` | Init journal SEBELUM PositionManager |
+| G3 | RiskGuard phantom $10k | `autonomous_cycle.py:648` | Sync `mt5.account_info()` balance/equity tiap cycle; call `update_pnl` |
+| G4 | Registry strategies never fire | `autonomous_cycle.py:262` | Call `generate_signal()` (bukan `analyze()`); pakai per-strategy SL/TP |
+| G5 | point_size hardcoded 0.00001 | `autonomous_cycle.py:278` | Ambil dari `symbol_info().point` (fallback per symbol) |
+| G6 | Naked-fill surface | `purified:123-124`, `mt5_broker.py:90-93` | Fail-closed: sl/tp ≤0 → reject/derive; TP=0 fail-closed juga |
+| G7 | Position caps defined, unused | `autonomous_cycle.py:94-95` | Enforce MAX_POSITIONS_PER_SYMBOL / MAX_TOTAL_POSITIONS |
+| G8 | Multi-instance loop | `autonomous_cycle.py` | Single-instance lock (PID/socket) |
+| G9 | Kelly typo + never called | `autonomous_cycle.py:611` | `_kelly_cache` → `kelly_cache`; wire record_trade/self_eval |
+| G10 | Log HOLD + honest close | `autonomous_cycle.py` | Jangan log "CLOSED 24.66R" saat retcode=10018 |
+| G11 | Breakeven + structure trailing | `risk_levels.py` | SMC swing-based trailing, invalidate on BOS |
+| G12 | Order attribution LiveEngine | `engine_production_bridge.py:426-433` | strategy+comment di Order/place_order |
+
+**Detail:** `FINDINGS_TRADE_ATTRIBUTION.md` · `FINDINGS_SLTP_TRAILING.md` · `FINDINGS_POSITION_SIZING.md` · `Rencana.md` FASE 0.

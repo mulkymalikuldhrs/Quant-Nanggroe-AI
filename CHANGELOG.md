@@ -1,5 +1,34 @@
 # Changelog — Quant Nanggroe AI
 
+## 2026-08-02 (PM) — CLAWBOT 3-AGENT FULL AUDIT — dead-code self-eval exposed
+
+Full parallel audit (trade attribution / SL-TP-trailing / position sizing) against **working tree code only**. Reports: `FINDINGS_TRADE_ATTRIBUTION.md`, `FINDINGS_SLTP_TRAILING.md`, `FINDINGS_POSITION_SIZING.md`.
+
+### 🔴 CRITICAL FINDINGS (docs previously overclaimed "100% sound live path")
+- **G1** Trade journal written to **wrong path** (`D:\repositories\data\qna_trade_journal.db`, 0 rows; repo copy = 0-byte no schema) → **no trade ever attributed in any DB** (trade_journal.py:29-32)
+- **G2** `PositionManager` built with `journal=None` (journal created after) → close-journaling + self_eval + Kelly **never run** (autonomous_cycle.py:659 vs 665)
+- **G3** RiskGuard runs on **phantom $10,000** — MT5 balance/equity never synced, `update_pnl` never called → DD/daily/weekly vetoes frozen (autonomous_cycle.py:648)
+- **G4** Registry strategies (SMC/Wyckoff/MeanRev/Dhaher/Kronos) **never trade** — loop calls `analyze()`, they implement `generate_signal()` → AttributeError swallowed (autonomous_cycle.py:262)
+- **G5** `point_size` hardcoded 0.00001 → XAUUSD/BTCUSD min-stop clamp 100-10000× too small (autonomous_cycle.py:278)
+- **G6** Naked-fill surface: omit-if-≤0 (purified:123-124) + TP=0 never fail-closed
+
+### 🟠 MAJOR
+- No position-exists gate (`MAX_POSITIONS_PER_SYMBOL` defined, never used) → stacked/opposing orders
+- No breakeven; trailing = 2×ATR not SMC structure
+- LiveEngine fills silently discarded; `Order` has no strategy/comment
+- 4+ concurrent `autonomous_cycle` processes (single-instance lock added later)
+- Kelly feedback broken twice (`_kelly_cache` typo + `record_trade` never called)
+- HOLD never logged with reasons; misleading close logs ("closed at 24.66R" while retcode=10018)
+
+### ✅ Verified OK (this audit)
+- `position_size()` LOTS fix (fadecf9d) — SL-distance + contract-size, fail-closed no-SL
+- ATR+structure SL/TP central (`risk_levels.py`), KillSwitch fail-closed, `_modify_sl` SL-only
+- `PurifiedEngine.cycle` skip-on-SL≤0 (never naked)
+
+> **Truth:** self-eval/attribution = dead code; risk gates = phantom equity; registered strategies never fire in autonomous loop. Fix order G1→G6. Docs that say otherwise are overclaims.
+
+---
+
 ## 2026-08-02 — Docs truth-sync (code = source of truth)
 
 ### Verified against code

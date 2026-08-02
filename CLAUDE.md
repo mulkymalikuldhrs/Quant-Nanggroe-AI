@@ -58,6 +58,14 @@ uv run pytest -m "not integration"         # skip API-key tests
 
 - **`PYTHONPATH=""`** mandatory — Hermes venv leaks `pydantic_core` → crash
 - **`QNAI_JWT_SECRET`** required for API boot _(fail-closed)_
+- **⚠️ AUDIT 2026-08-02 — KNOWN DEAD/BROKEN (fix before trusting):**
+  - Trade journal DB path is WRONG — `dirname(x3)` in `trade_journal.py:29` resolves to `D:
+epositories\data\`; repo `data/qna_trade_journal.db` stays 0-byte. **0 trades ever attributed.**
+  - `PositionManager(self.engine, self.market_data, self.journal)` built BEFORE `self.journal = TradeJournal()` → `journal=None` → self-eval/Kelly dead (`autonomous_cycle.py:659 vs 665`).
+  - RiskGuard runs on hardcoded `initial_balance=10000.0` — MT5 balance/equity never synced; `update_pnl` never called on live path.
+  - Registry strategies implement `generate_signal()`, loop calls `analyze()` → AttributeError swallowed → **81 registered strategies never fire**.
+  - `point_size` hardcoded `0.00001` in `autonomous_cycle.py:278` — wrong for XAUUSD.vx/BTCUSD.vx (≈0.01) → broker min-stop clamp broken.
+  - Full findings: `FINDINGS_TRADE_ATTRIBUTION.md`, `FINDINGS_SLTP_TRAILING.md`, `FINDINGS_POSITION_SIZING.md`. Fix plan: `Rencana.md` FASE 0.
 - **Sizing (2026-08-02):** `RiskGuard.position_size()` = `equity×risk×kelly / (|entry−SL|×contract_size)` in **LOTS** (was units → always 0.01). No-SL → 0 → fail-closed.
 - **SL/TP:** ATR+structure based (`quant_nanggroe/risk_levels.py`), not hardcoded ±%. Clamped to broker `trade_stops_level`.
 - **Auth:** `/api/otto/*` no longer excluded from auth (2026-08-02). All `/api/*` behind JWT/API-key.

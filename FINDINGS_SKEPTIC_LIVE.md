@@ -39,12 +39,16 @@
 
 ---
 
-## VERDICT
-The live autonomous trading path (`autonomous_cycle.py`) is now:
+## VERDICT (KOREKSI 2026-08-02 PM — clawbot 3-agent audit)
+
+**Verdict lama "live path 100% sound" = OVERCLAIM. Yang benar:**
 - REAL-ONLY (no paper) ✅
 - Conflict-resolved (no random buy+sell) ✅
-- Strategy-attributed (journal) ✅
-- Self-evaluating (kelly from real pnl) ✅
-- Constitutionally risk-guarded (balance, daily, weekly, drawdown, KillSwitch) ✅
+- Position sizing LOTS equity-aware (fadecf9d) ✅
+- ATR+structure SL/TP + KillSwitch fail-closed ✅
+- **Strategy-attributed (journal): ❌ DEAD CODE** — journal di path salah (G1) + `PositionManager.journal=None` (G2) → 0 rows di DB manapun
+- **Self-evaluating (kelly from real pnl): ❌ DEAD CODE** — sama G1/G2 + `_kelly_cache` typo + `record_trade` never called
+- **Constitutionally risk-guarded: ⚠️ PHANTOM** — RiskGuard di phantom $10k, MT5 balance/equity tidak pernah disync, `update_pnl` never called (G3)
+- **Registered strategies trading: ❌ TIDAK PERNAH** — `analyze()` vs `generate_signal()` mismatch → 81 strategi = zero signal (G4)
 
-**Remaining "hundreds unwired" are predominantly backtest/agent/dashboard subsystems NOT in the live trade path.** They are real gaps but do not affect live trading correctness. Prioritized by impact: live path is sound; the rest is feature-completeness, not safety.
+**Detail lengkap:** `FINDINGS_TRADE_ATTRIBUTION.md` · `FINDINGS_SLTP_TRAILING.md` · `FINDINGS_POSITION_SIZING.md`. **Fix order:** G1→G2→G3→G4→G5→G6 (Rencana.md FASE 0). Live trading *did happen* (tickets nyata), tapi setiap klaim md soal self-eval/attribution/risk harus dianggap belum terbukti sampai FASE 0 selesai.

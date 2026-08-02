@@ -22,11 +22,19 @@ Read in order:
 - **PYTHONPATH must be empty** — `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe`
 - **REAL-ONLY:** PaperBroker REMOVED. MT5 connect raises RuntimeError if unavailable.
 - **trade_mode=4 = FULL** (not DISABLED) on Valetax. Guard only blocks mode 0.
-- **Sizing (2026-08-02):** `lot = equity×risk_pct×kelly / (|entry−SL|×contract_size)`. No-SL → lot=0 → fail-closed. Min-lot forced risk > 2% equity → SKIP.
-- **SL/TP omitted if ≤0.** Stops are ATR+structure based (`risk_levels.py`), clamped to broker `trade_stops_level`.
+- **Lot clamp:** min 0.01, step 0.01 enforced. SL/TP omitted if ≤0.
 - **QNAI_ENCRYPTION_KEY** required for API boot.
-- **Secrets: env vars only** — never hardcode. `config/mt5_accounts.yaml` untracked.
+- **Secrets: env vars only** — never hardcode.
 - **Symbols:** `.vx` suffix (EURUSD.vx, BTCUSD.vx, XAUUSD.vx)
+
+## ⚠️ AUDIT 2026-08-02 — known dead/broken (fix before trusting live state)
+1. **Trade journal DB path WRONG** — `trade_journal.py:29` `dirname(x3)` → `D:\repositories\data\qna_trade_journal.db` (0 rows); repo `data/qna_trade_journal.db` = 0-byte no schema. **No trade ever attributed.** Fix: `parents[1]`.
+2. **`PositionManager` journal=None** — created before `TradeJournal()` → close-journal/self_eval/Kelly dead (`autonomous_cycle.py:659 vs 665`).
+3. **RiskGuard phantom $10k** — `initial_balance=10000.0` hardcoded; MT5 balance/equity never synced; `update_pnl` never called.
+4. **Registry strategies never fire** — `analyze()` vs `generate_signal()` mismatch → 81 strategies = zero signals.
+5. **`point_size` hardcoded 0.00001** — wrong for XAUUSD/BTCUSD → min-stop clamp broken.
+6. **Naked-fill surface** — omit-if-≤0 + TP=0 not fail-closed.
+Full: `FINDINGS_TRADE_ATTRIBUTION.md` · `FINDINGS_SLTP_TRAILING.md` · `FINDINGS_POSITION_SIZING.md`. Plan: `Rencana.md` FASE 0.
 
 
 Evolution loop: journal + scheduler + scanner + disabler + weight_updater — all integrated.

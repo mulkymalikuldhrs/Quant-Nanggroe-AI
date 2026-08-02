@@ -3,12 +3,51 @@
 > **REAL-ONLY (2026-08-01):** No paper/sim/mock/dummy. MT5-only execution.
 > **Live trading verified:** ValetaxIntl-Live2 login=372044706 balance=$1122.05
 > Real orders executed (tickets 20188224176, 20188224713). 3 live positions confirmed.
-> **Sizing (2026-08-02):** `lot = equity×risk×kelly / (|entry−SL|×contract_size)` — equity-aware LOTS, fail-closed if no SL.
-> **Security (2026-08-02):** `/api/otto/*` auth bypass CLOSED. CVE floors raised.
 > **Entry points:** `qna.py live` (LiveEngine) or `python -m quant_nanggroe.autonomous_cycle`
 > **Run:** `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe` (Py3.12.13, venv=.venv312)
 > **Deps:** requirements_qna.txt | **Symbols:** EURUSD.vx, BTCUSD.vx, XAUUSD.vx (broker suffix)
 > **Master doc:** `C:\Users\Hi\Desktop\QuantScience_Archive\QNA_QuantScience_MASTER.md`
+
+---
+
+## ⚠️ AUDIT 2026-08-02 (clawbot skeptic-max — code = source of truth, md = NOT trusted)
+
+Full 3-agent parallel audit (trade attribution / SL-TP-trailing / position sizing) against the **working tree**, not docs. Reports:
+- `FINDINGS_TRADE_ATTRIBUTION.md`
+- `FINDINGS_SLTP_TRAILING.md`
+- `FINDINGS_POSITION_SIZING.md`
+
+### 🔴 CRITICAL — must fix before trusting live state
+| ID | Finding | Evidence |
+|----|---------|----------|
+| G1 | **Trade journal written to WRONG PATH** — `dirname(x3)` resolves to `D:
+epositories\data\qna_trade_journal.db` (0 rows); repo `data/qna_trade_journal.db` = 0-byte, no schema. **No trade has EVER been attributed in any DB.** | trade_journal.py:29-32; verified live cycle #214 |
+| G2 | **`PositionManager` built with `journal=None`** (journal created AFTER) → `_on_position_closed` early-returns → record_close/self_eval/Kelly **never run**. | autonomous_cycle.py:659 vs 665, :413 |
+| G3 | **RiskGuard runs on phantom $10,000** — `initial_balance=10000.0` hardcoded; MT5 balance/equity never synced; `update_pnl` never called → DD/daily/weekly vetoes compare against frozen baseline. Live log: `Balance: $10000.00 | Trades: 0` every cycle. | autonomous_cycle.py:648, engine_production_bridge_purified.py:261-270 |
+| G4 | **Registry strategies never trade via autonomous_cycle** — loop calls `strategy.analyze()` but registry strategies implement `generate_signal()` → AttributeError swallowed → SMC/Wyckoff/MeanRev/Dhaher/Kronos produce **zero signals** in live loop. | autonomous_cycle.py:262,286-288 vs engine/strategies/base.py:129 |
+| G5 | **Broken broker min-stop clamp for XAUUSD.vx/BTCUSD.vx** — `point_size` hardcoded `0.00001` (autonomous_cycle.py:278) but point ≈ 0.01 → clamp 100-10000× too small → SL/TP can still violate `trade_stops_level` (BTCUSD.vx=2976). | risk_levels.py:80-95 |
+| G6 | **Naked-fill surface:** omit-if-≤0 in `execute_order` (purified:123-124) + `connectors/mt5_broker.py:90-93` → any non-cycle caller with sl/tp=0 fills **naked**. TP=0 never fail-closed. | verified |
+
+### 🟠 MAJOR
+- **No position-exists gate** — `MAX_POSITIONS_PER_SYMBOL=1` / `MAX_TOTAL_POSITIONS=5` defined but never referenced → stacked/opposing orders from multiple strategies. Explains "trades look random".
+- **No breakeven logic** anywhere; trailing is 2×ATR (not SMC structure), initial SL uses structure.
+- **LiveEngine orders unattributable** — production-bridge fills (mode=`mt5-live`) silently discarded; `Order` has no strategy/comment field.
+- **4+ concurrent `autonomous_cycle` processes** seen running (no single-instance lock at audit time; `.autonomous_cycle.lock` added later — verify).
+- **Kelly feedback broken twice** — `_kelly_cache` typo (autonomous_cycle.py:611 vs `kelly_cache`), `record_trade` never called.
+- **HOLD never logged with reasons** — 967-line live log has zero signal/hold lines.
+- **Misleading close logs** — "FULL TP closed at 24.66R" logged while close actually failed (retcode 10018/10031) every cycle for 4+ hours.
+- **Divergent second live loop** — LiveEngine still uses hardcoded 3% SL / 5% TP / 3% trail (constants.py:150) vs ATR-based in autonomous loop.
+
+### ✅ VERIFIED CORRECT (from code, this session)
+- `PurifiedEngine.cycle()` fail-closed on SL≤0 → trade skipped, never naked (purified:263-264,343-346).
+- ATR+structure SL/TP now computed centrally (`risk_levels.py:52-98`, wired autonomous_cycle.py:259-285) — replaces hardcoded ±0.5%/±1%.
+- `position_size()` fixed at commit `fadecf9d` → **SL-distance + contract-size based LOTS** (was units→always 0.01). Min-lot forced-risk cap added.
+- KillSwitch wired fail-closed + refreshed each cycle (autonomous_cycle.py:667-672,691-694).
+- `_modify_sl` sends `TRADE_ACTION_SLTP` SL-only → MT5 preserves TP.
+- Conflict resolution (buy+sell same symbol) works (`resolve_conflicts`).
+- TradeJournal SQLite schema has strategy+confidence columns (just never populated — G1/G2).
+
+> **Honest verdict:** live trading *was* happening on Valetax, but the self-eval/attribution feature is **dead code** (G1+G2), risk gates run on **phantom equity** (G3), and the registered strategies **never actually fire** in the autonomous loop (G4). Docs claiming "100% sound live path" are overclaims. Fix order: G1→G2→G3→G4→G5→G6 (see Rencana.md FASE 0).
 
 ---
 

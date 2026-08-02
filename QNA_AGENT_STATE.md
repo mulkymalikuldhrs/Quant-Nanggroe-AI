@@ -1,8 +1,10 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-02 (POSITION-SIZING + SECURITY + SKEPTIC-MAX session)
-**Current Phase:** 🟢 LIVE — REAL-ONLY enforcement active, equity-aware sizing, auth-bypass closed
+**Updated:** 2026-08-02 (PM — clawbot 3-agent audit: attribution / SL-TP / sizing)
+**Current Phase:** 🟡 LIVE — real execution confirmed, BUT self-eval/attribution dead code + phantom risk (see AUDIT 2026-08-02)
+
+> ⚠️ **KOREKSI:** status "LIVE — REAL-ONLY enforcement active" (2026-08-01) benar soal eksekusi, tapi **overclaim** soal self-eval/attribution/risk. Verdict baru: 🟡 AMBER. Lihat `FINDINGS_TRADE_ATTRIBUTION.md`, `FINDINGS_SLTP_TRAILING.md`, `FINDINGS_POSITION_SIZING.md`.
 
 ---
 
@@ -12,30 +14,45 @@
 |-----|--------|----------|
 | **Position sizing → LOTS (was units)** | `RiskGuard.position_size()` returned `risk_amount/price` (units) → every trade clamped to broker min 0.01 regardless of equity. Now: `equity × risk_pct × kelly / (|entry−SL| × contract_size)` → real MT5 lots | 6 test cases pass: BTC $1k→0.0019, EUR→0.0042, GBP→0.0025, no-SL→0.0 (fail-closed), 10x equity→10x lot |
 | **Min-lot forced-risk cap** | $1k + BTC min lot 0.01 can force >2x risk budget → now SKIP (fail-closed) if `min_lot × |price−SL| × contract_size > max(2×budget, 2% equity)` | BTC forced $6.50 < $20 cap → trade; would skip above cap |
-| **`/api/otto/*` auth bypass CLOSED** | Open proxy was excluded from JWT+API-key auth (CRITICAL — unauthenticated read/write to internal Otto MCP). Now behind same auth as rest of `/api/*` | `app.py:303` exclude_paths=`set()` + `middleware.py:69` no otto carve-out |
-| **CVE floors raised** | aiohttp≥3.9.4, cryptography≥42.0.4, torch≥2.2.0, redis≥5.0.1, python-multipart≥0.0.7 | pyproject.toml committed |
-| **Skeptic-max skill created** | Audit lens: verify doc claims vs code, find silent failures | `skills/quant/skeptic-max/` |
-
-**Commit:** `fadecf9d` (SEC+POSITION-SIZING), `4dab4136` (docs sync)
 
 ---
 
-## 📊 STATE SNAPSHOT (2026-08-01)
+## 📊 STATE SNAPSHOT (2026-08-02 PM)
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  ACCOUNT: Valetax 372044706  |  BALANCE: $1,122.05   │
-│  STATUS: 🟢 LIVE REAL-ONLY                   │
+│  STATUS: 🟡 AMBER — audit gaps G1-G6 (FASE 0)        │
 └─────────────────────────────────────────────────────┘
    │
    ├─ MT5 Connection: ✅ LIVE (ValetaxIntl-Live2)
    ├─ Paper Broker:   ❌ REMOVED (fail-closed)
    ├─ Live Positions: 3 (GBPUSD.vx, BTCUSD.vx ×2)
-   ├─ Strategies:     84 registered, 6 active
+   ├─ Strategies:     84 registered, ~6 active in loop
+   │                  ⚠️ G4: registry strategies NEVER fire (analyze vs generate_signal)
    ├─ Risk Gate:      9-checkpoint + KillSwitch
-   ├─ Tickets:        20188224176, 20188224713
+   │                  ⚠️ G3: phantom $10k, MT5 equity never synced
+   ├─ Tickets:        20188224176, 20188224713 + 20178543987 (open)
+   ├─ Journal:        ❌ G1: wrong DB path, 0 rows ever
+   ├─ Self-Eval:      ❌ G2: PositionManager.journal=None → Kelly dead
    └─ Venv:          .venv312 (Py3.12.13, deps OK)
 ```
+
+## 🚨 NEXT ACTIONS (dari audit — FASE 0)
+1. **G1** Fix journal DB path (`trade_journal.py:29` → `parents[1]`) + startup assertion
+2. **G2** Move `TradeJournal()` before `PositionManager(...)` (`autonomous_cycle.py:659/665`)
+3. **G3** Sync `mt5.account_info()` balance/equity tiap cycle → RiskGuard; call `update_pnl`
+4. **G4** Call `generate_signal()` for registry strategies; use per-strategy SL/TP
+5. **G5** `point_size` from `symbol_info().point` (XAUUSD/BTCUSD fix)
+6. **G6** Fail-closed stops: sl/tp ≤0 → reject/derive (never naked); TP=0 fail-closed
+7. **G7** Enforce position caps (MAX_POSITIONS_PER_SYMBOL/MAX_TOTAL_POSITIONS)
+8. **G8** Single-instance lock for autonomous_cycle (was 4+ concurrent)
+9. **G9** Fix `_kelly_cache` typo + wire record_trade/self_eval
+10. **G10** Log HOLD with reason; honest close logs
+11. **G11** Breakeven + structure-based trailing
+12. **G12** Strategy+comment in LiveEngine Order/place_order
+
+Detail lengkap: `Rencana.md` FASE 0 + 3 FINDINGS files.
 
 ---
 
