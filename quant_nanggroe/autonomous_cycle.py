@@ -879,8 +879,7 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
     """)
 
-    _acquire_singleton_lock()
-
+    # Singleton lock acquired early (module level) before heavy imports.
     cycle = AutonomousCycle()
     cycle.run()
 
