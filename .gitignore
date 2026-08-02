@@ -130,3 +130,12 @@ guardian_issues/
 .bak/
 quant_nanggroe/.bak/dead/
 tmp-venvv2/
+
+# ── Junk / accidental artifacts (2026-08-02 cleanup) ────────────────
+%TEMP%/
+coint/
+coint_wheels/
+*.lnk
+command-message*
+-p/
+audit_trail.json
