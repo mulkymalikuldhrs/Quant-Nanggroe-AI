@@ -17,7 +17,7 @@
    ├─ MT5 Connection: ✅ LIVE (ValetaxIntl-Live2)
    ├─ Paper Broker:   ❌ REMOVED (fail-closed)
    ├─ Live Positions: 3 (GBPUSD.vx, BTCUSD.vx ×2)
-   ├─ Strategies:     77 registered, 6 active
+   ├─ Strategies:     84 registered, 6 active
    ├─ Risk Gate:      9-checkpoint + KillSwitch
    ├─ Tickets:        20188224176, 20188224713
    └─ Venv:          .venv312 (Py3.12.13, deps OK)

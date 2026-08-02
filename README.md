@@ -20,7 +20,7 @@
         ▼
 ┌──────────────────┐     ┌──────────────────┐
 │  MARKET DATA     │     │  STRATEGIES      │
-│  MT5 LIVE        │     │  77 registered   │
+│  MT5 LIVE        │     │  84 registered   │
 │  BTC/EUR/XAU.vx  │     │  6 active        │
 └──────────────────┘     └──────────────────┘
         │                      │
