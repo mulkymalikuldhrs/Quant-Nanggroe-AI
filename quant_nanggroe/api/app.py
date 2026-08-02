@@ -300,7 +300,7 @@ def create_app() -> FastAPI:
         AuthMiddleware,
         auth=jwt_auth,
         api_key_auth=api_key_auth,
-        exclude_paths={"/api/otto"},
+        exclude_paths=set(),
     )
 
     # ── Rate Limit Middleware ────────────────────────────────────────

@@ -457,12 +457,17 @@ class PositionManager:
         
         current_price = tick["bid"] if side == "buy" else tick["ask"]
         
-        # Calculate R multiple
+        # Calculate R multiple (use ATR-based risk if no SL set)
+        try:
+            candles = self.market_data.get_candles(symbol, "M15", 30)
+            from quant_nanggroe.risk_levels import compute_atr
+            atr = compute_atr(candles, period=14) or entry * 0.01
+        except Exception:
+            atr = entry * 0.01
+        risk_per_unit = abs(entry - current_sl) if current_sl > 0 else atr
         if side == "buy":
-            risk_per_unit = entry - current_sl if current_sl > 0 else entry * 0.005
             r_multiple = (current_price - entry) / risk_per_unit if risk_per_unit > 0 else 0
         else:
-            risk_per_unit = current_sl - entry if current_sl > 0 else entry * 0.005
             r_multiple = (entry - current_price) / risk_per_unit if risk_per_unit > 0 else 0
         
         # PARTIAL TP at 1R
@@ -540,7 +545,14 @@ class PositionManager:
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_FOK,
             }
-            mt5.order_send(req)
+            result = mt5.order_send(req)
+            if result and result.retcode == mt5.TRADE_RETCODE_DONE:
+                log.info(f"CLOSED position {ticket} {symbol} {side} {volume} lots @ {price}")
+                # Record to journal + trigger self-eval
+                self._on_position_closed(ticket)
+            else:
+                log.error(f"Close failed for {ticket}: retcode={getattr(result, 'retcode', '?')} "
+                          f"comment={getattr(result, 'comment', '?')}")
         except Exception as e:
             log.error(f"Full close failed: {e}")
     

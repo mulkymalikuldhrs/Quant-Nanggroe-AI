@@ -30,13 +30,14 @@ dependencies = [
     # Database & Caching
     "sqlalchemy>=2.0",
     "alembic>=1.12",
-    "redis>=5.0",
+    "redis>=5.0.1",
     # API Server
     "fastapi>=0.100",
+    "python-multipart>=0.0.7",  # CVE-2024-24762 ReDoS fix
     "uvicorn>=0.24",
     # HTTP & Async
     "httpx>=0.25",
-    "aiohttp>=3.9",
+    "aiohttp>=3.9.4",  # CVE-2024-23334 / CVE-2024-30251 fixed at 3.9.4
     # Logging & CLI
     "structlog>=23.0",
     "rich>=13.0",
@@ -50,7 +51,7 @@ dependencies = [
     # Prometheus
     "prometheus-client>=0.19",
     # Encryption at rest
-    "cryptography>=41.0",
+    "cryptography>=42.0.4",  # CVE-2023-50782 / CVE-2024-26130 fixed at 42.0.4
     # ML (optional core)
     "scikit-learn>=1.3",
     "hmmlearn>=0.3",
@@ -59,7 +60,7 @@ dependencies = [
 [project.optional-dependencies]
 ml = [
     "xgboost>=2.0",
-    "torch>=2.0",
+    "torch>=2.2.0",  # CVE-2024-31580/31583 fixed
 ]
 alpaca = [
     "alpaca-py>=0.20",
@@ -84,7 +85,7 @@ quant = [
     "optlib>=0.2",
 ]
 rl = [
-    "torch>=2.0",
+    "torch>=2.2.0",  # CVE-2024-31580/31583 fixed
     "gymnasium>=0.29",
 ]
 agentic = [

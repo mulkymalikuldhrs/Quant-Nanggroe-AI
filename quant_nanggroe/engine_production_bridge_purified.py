@@ -251,12 +251,22 @@ class RiskGuard:
             return (False, f"Weekly loss {weekly_loss:.1%} > 3%")
         return (True, "ok")
 
-    def position_size(self, price: float, kelly: float = 0.25) -> float:
-        """Calculate position size: 0.5% risk * kelly / price."""
-        if price <= 0:
+    def position_size(self, price: float, kelly: float = 0.25,
+                      sl: float = 0.0, contract_size: float = 100000.0,
+                      risk_pct: float = 0.005) -> float:
+        """Calculate position size in MT5 LOTS from equity + SL distance.
+
+        lot = (equity * risk_pct * kelly) / (|entry - SL| * contract_size)
+        contract_size = units per lot (100000 for FX, 1 for BTCUSD.vx).
+        Returns 0.0 when no valid SL distance (fail-closed: no SL = no size).
+        """
+        if price <= 0 or sl <= 0:
             return 0.0
-        risk_amount = self.balance * 0.005 * kelly
-        return risk_amount / price
+        sl_distance = abs(price - sl)
+        if sl_distance <= 0 or contract_size <= 0:
+            return 0.0
+        risk_amount = self.balance * risk_pct * kelly
+        return max(risk_amount / (sl_distance * contract_size), 0.0)
 
     def update_pnl(self, pnl: float, won: bool):
         """Update balance and stats after a trade."""
@@ -318,12 +328,50 @@ class PurifiedEngine:
                 log.warning("Risk veto %s %s: %s", sig.symbol, sig.side, reason)
                 continue
 
-            # Size position (execute_order clamps to broker min 0.01)
+            # Size position from equity + SL distance (fail-closed: no SL -> no size)
             kelly = self.risk.kelly_cache.get(sig.strategy, 0.25)
-            lot = self.risk.position_size(sig.price, kelly)
+            sl = sig.stop_loss if (sig.stop_loss and sig.stop_loss > 0) else 0.0
+            contract_size = 100000.0  # FX default (units per lot)
+            try:
+                if self.mt5._initialized and self.mt5._mt5_loaded:
+                    info = self.mt5._mt5_mod.symbol_info(sig.symbol)
+                    if info and getattr(info, "trade_contract_size", 0):
+                        contract_size = info.trade_contract_size
+            except Exception:
+                pass
+            lot = self.risk.position_size(sig.price, kelly, sl, contract_size)
             if lot <= 0:
-                log.warning("Position size 0 for %s", sig.symbol)
+                log.warning("Position size 0 for %s (SL=%s) — fail-closed, no trade",
+                            sig.symbol, sl)
                 continue
+            risk_usd = self.risk.balance * 0.005 * kelly
+            log.info("SIZE %s %s: equity=%.2f kelly=%.2f SL=%.5f contract=%s → lot=%.4f (risk≈$%.2f)",
+                     sig.symbol, sig.side, self.risk.balance, kelly, sl,
+                     contract_size, lot, risk_usd)
+
+            # Fail-closed risk cap: min-lot forced risk must not exceed hard cap.
+            # Budget = 0.5% equity * kelly; HARD CAP = max(2x budget, 2% equity).
+            # Small accounts ($1k) trading BTC min-lot: forced risk ~1-2% equity is
+            # acceptable; above hard cap -> skip (no oversized trades).
+            min_lot = 0.01
+            try:
+                if self.mt5._initialized and self.mt5._mt5_loaded:
+                    info = self.mt5._mt5_mod.symbol_info(sig.symbol)
+                    if info and getattr(info, "volume_min", 0):
+                        min_lot = info.volume_min
+            except Exception:
+                pass
+            hard_cap = max(2.0 * risk_usd, self.risk.balance * 0.02)
+            if sl > 0 and lot < min_lot:
+                forced_risk = min_lot * abs(sig.price - sl) * contract_size
+                if forced_risk > hard_cap:
+                    log.warning("MIN-LOT RISK EXCEEDS CAP %s: min=%s forced_risk≈$%.2f > cap $%.2f — SKIP (fail-closed)",
+                                sig.symbol, min_lot, forced_risk, hard_cap)
+                    results.append({"status": "skip_min_lot_risk",
+                                    "symbol": sig.symbol, "side": sig.side,
+                                    "lot": lot, "min_lot": min_lot,
+                                    "forced_risk": forced_risk, "cap": hard_cap})
+                    continue
 
             # Execute
             try:
