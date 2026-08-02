@@ -84,6 +84,12 @@ quant = [
     "pysabr>=0.1",
     "optlib>=0.2",
 ]
+quantscience = [
+    "polars>=1.0",
+    "pytimetk>=0.3",
+    "alphalens-reloaded>=0.4",
+    "riskfolio-lib>=7.0",
+]
 rl = [
     "torch>=2.2.0",  # CVE-2024-31580/31583 fixed
     "gymnasium>=0.29",
@@ -93,7 +99,7 @@ agentic = [
     "langgraph>=0.2",
 ]
 all = [
-    "quant-nanggroe-ai[ml,data,memory,quant,rl,agentic]",
+    "quant-nanggroe-ai[ml,data,memory,quant,quantscience,rl,agentic]",
 ]
 dev = [
     "pytest>=7.0",

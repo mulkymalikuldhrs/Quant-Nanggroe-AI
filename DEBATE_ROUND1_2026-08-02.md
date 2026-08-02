@@ -42,7 +42,9 @@ Fix belum live-verified (0 live fill sejak fix). G11 structure trailing baru & u
 
 ### HYBRID GO-LIVE MONDAY (dengan kondisi — bukan GO LIVE penuh, bukan OBSERVE penuh)
 
-1. **CLOSE 3 legacy positions di tick pertama open** (C2) — sebelum strategi baru apa pun fire. Ini menghilangkan risiko unbounded terbesar (naked loser + Monday gap).
+**Post-debate code enforcement (2026-08-02 PM):** Keputusan "close 3 legacy di tick pertama" AWALNYA KONTRADIKTIF dengan kode (loop meng-ADOPT posisi lama via `_manage_position`, tidak menutup). Diperbaiki dengan `reconcile_legacy_positions()` (autonomous_cycle.py:498+) yang **force-close posisi OPEN tanpa journal record** (orphan/pre-FASE0) di cycle #1, sambil mempertahankan posisi QNA-journaled. Verified (unit test): orphan→close, journaled→keep. Ini mengeksekusi C2 secara fail-closed, bukan manual.
+
+1. **CLOSE 3 legacy positions di tick pertama open** (C2) — sekarang otomatis via `reconcile_legacy_positions()`. Menghilangkan risiko unbounded terbesar (naked loser + Monday gap).
 2. **Boot SATU instance** `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe -m quant_nanggroe.autonomous_cycle` (G8 lock mencegah ganda).
 3. **Verifikasi 11 langkah** (protokol di bawah) — PASS semua → lanjut; FAIL 1 CRITICAL → abort + kill-switch.
 4. **Risk terbatas per design:** caps 1/symbol + 5 total, SL mandatory, min-conf 0.6, daily-loss 3% auto-block, worst-case realistic ~$32.

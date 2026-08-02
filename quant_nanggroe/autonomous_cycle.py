@@ -495,6 +495,33 @@ class PositionManager:
         self.positions: Dict[int, Dict] = {}  # ticket -> position info
         self._seen_tickets: set = set()  # track which tickets we've seen open
     
+    def reconcile_legacy_positions(self):
+        """Fail-closed boot step: any OPEN position with NO journal record
+        (orphan from pre-FASE0 / manual code) is force-closed at first cycle.
+        DEBATE_ROUND1 decision: 'close 3 legacy positions di tick pertama'.
+        Positions opened by QNA have a journal record -> kept & managed.
+        Returns count closed."""
+        try:
+            import MetaTrader5 as mt5
+            positions = mt5.positions_get() or []
+        except Exception:
+            return 0
+        closed = 0
+        for pos in positions:
+            if self.journal and self.journal.get_open_trade(pos.ticket):
+                continue  # QNA-managed position -> keep
+            # Orphan legacy position -> force close (fail-closed)
+            side = "buy" if pos.type == 0 else "sell"
+            tick = self.market_data.get_tick(pos.symbol)
+            price = tick["bid"] if side == "buy" else tick["ask"]
+            log.warning(f"LEGACY RECONCILE: closing orphan position "
+                        f"ticket={pos.ticket} {pos.symbol} {side} vol={pos.volume}")
+            if self._close_position(pos.ticket, pos.symbol, side, pos.volume, price):
+                closed += 1
+        if closed:
+            log.info(f"LEGACY RECONCILE done: {closed} orphan position(s) force-closed")
+        return closed
+
     def update_positions(self):
         """Check all open positions and manage them. Detect closes -> journal."""
         try:
@@ -833,6 +860,8 @@ class AutonomousCycle:
 
         # 2. Manage existing positions
         try:
+            # Fail-closed: force-close orphan/legacy positions first (DEBATE_ROUND1)
+            self.position_manager.reconcile_legacy_positions()
             self.position_manager.update_positions()
         except Exception as e:
             log.error(f"Position manager stage failed: {e}", exc_info=True)
