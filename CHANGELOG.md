@@ -1,5 +1,65 @@
 # Changelog — Quant Nanggroe AI
 
+## 2026-08-03 — devbot: G1/G3 HARDENING APPLIED (commit f958853c, 8 test pass)
+
+### Fact-check: 4 MD claims were overclaims (verified kode, bukan klaim)
+| Claim | Reality |
+|-------|---------|
+| G1 journal "fixed" | 🔴 DB 0-byte/0-table — multi-process lock, schema gagal |
+| G3 balance "synced" | 🔴 Log cycle#214: $10000 — `account_balance()` fail-open |
+| "RiskManager 9-checkpoint" | 🔴 DEAD di autonomous_cycle — 0 import checks.py |
+| "scoring/FusionEngine wired" | 🔴 DEAD di autonomous_cycle — hanya di qna.py live |
+| "1079 providers" | ⚠️ providers ≠ strategi (78 JSON/81 runtime/82 files) |
+
+### Fixes APPLIED (commit f958853c)
+- **G1 hardening** (`trade_journal.py`): `_init_db()` try/except + `_init_ok` flag + `db_healthy()` method — detect corrupt/locked schema, log error (fail-open only with warning)
+- **G3-core** (`autonomous_cycle.py`): `_on_position_closed` NameError `open_rec` (used-before-assignment) FIXED; `record_close` + `engine.risk.update_pnl()` + `performance.record_trade()` wired ke deal history — closes no longer silent
+- **G3-hardening** (`engine_production_bridge_purified.py`): `account_balance()` return **-1.0** (MT5_DOWN sentinel) bukan fallback seed $10k; `PurifiedEngine.start()` abort activation; `PurifiedEngine.cycle()` **fail-closed** — abort if MT5 down (-1.0 return) atau balance=0
+
+### Tests: `tests/test_g1_g3_hardening.py` — **8/8 PASS** ✅
+- journal schema init, db_healthy, round-trip record_open/close
+- account_balance fail-closed (-1.0), engine start/cycle abort on MT5 down
+
+### Pre-existing (NOT regression from my changes — verified via git stash)
+- `test_risk_new.py::TestRiskLimits::test_small_loss_still_trades` — flaky isolation (weekly state leak)
+- `test_risk_new.py::TestVaRCalculator::test_insufficient_data` — VaR bug (returns 0.0185 vs 0.0)
+
+### Todo (needs architectural decision, NOT applied):
+1. **GAP-1 (naked surface):** patch `api/routes/trading.py:567` + `engine_production_bridge.py:404` old bridge — hanya setelah pilih primary loop
+2. **G1-deep:** `assert journal.db_healthy()` di `AutonomousCycle.initialize()`
+3. **GAP-5 (dual-loop):** butuh @Mulky keputusan
+
+### Fact-check result (code = source of truth, git HEAD 52e8397b)
+
+**4 klaim MD "FASE 0 COMPLETE" actually RESIDUAL:**
+- **G1 residual — journal DB schema 0 tables, 0 bytes.** `trade_journal.py:29-32` path sudah benar (`parents[1]` → repo root `data/qna_trade_journal.db`) tapi `_init_db()` (`:43-61`) gagal create table di prod. Root cause: 4+ concurrent `autonomous_cycle` process lock DB file → `sqlite3.connect` write fails silently di constructor. `PositionManager.__init__(journal=None)` (autonomous_cycle.py:822) bisa jadi gagal juga kalau constructor throw. **Fix:** `TradeJournal.__init__` try/except + retry; `AutonomousCycle.initialize()` assertion: `assert journal.table_exists()`.
+- **G3-residual — balance sync fail-open.** `account_balance()` (engine_production_bridge_purified.py:82-92) swallow exception + return 0.0 saat MT5 network drop → `cycle()` balance fallback ke seed `initial_balance=10000.0` (purified:322). Log live cycle #214: `Balance: $10000.00` meskipun real MT5 ≈ $1122. `RiskGuard.can_trade()` tidak pernah trip karena `daily_pnl/weekly_pnl` stuck 0 → DD/daily/weekly veto DEAD. **Fix:** `account_balance()` log+flag MT5_DOWN; `cycle()` abort jika MT5 not initialized sejak boot; `update_pnl` dari MT5 deal history belum wired ke cycle.
+- **GAP-1 — naked surface tetap di non-purified path.** `api/routes/trading.py:567-568` + `engine_production_bridge.py:404-405` (old bridge) belum ditouch. `execute_order` purified fail-closed ✅ tapi old bridge & API routes belum.
+- **GAP-5 — dual live loop.** `autonomous_cycle.py` (loop A, live orders milik 3 posisi) ≠ `qna.py live`→`LiveEngine`→`main.py:run_once` (loop B, punya FusionEngine/portfolio/9-checkpoint risk) — 2 engine risk berbeda. Perlu architectural decision.
+
+### Fact-check: 2 audit CLAIMS that were ALREADY FIXED (stale)
+
+- **FINDINGS_SLTP GAP-2 (point_size hardcoded)** = STALE. `autonomous_cycle.py:322`: `point_size = float(getattr(info, "point", point_size) or point_size)` — sudah pakai broker point. GAP-2 audit = 2026-08-02 08:09 sebelum fix commit.
+- **FINDINGS_SLTP GAP-3 (registry never fire)** = STALE. `autonomous_cycle.py:282-309` sudah dual-call `generate_signal()` + `analyze()` fallback. 81 registry strategies loaded di log 04:03. 0 signal = MT5 market data kosong (weekend/network), bukan wiring bug.
+
+### Strategy count reconciliation (3 angka semua benar, beda konteks)
+- `walk_forward_registry.json`: **78** (metadata dict)
+- `StrategyRegistry.list_strategies()`: **81** (+3 archive: archive_msnr_fixed, archive_smc_fixed, archive_quarterly_fixed)
+- `.py` files + decorator: **82**; AGENTS.md "84" termasuk archive subpackage
+- QNA_STATUS_REAL "1079 providers": 77 engine + 992 mue-x + 10 core — **providers**, bukan strategies. Term conflation. Perbaui AGENTS.md untuk bedakan "strategies" vs "providers".
+
+### Verified (live, 2026-08-03)
+- `point_size` dari broker: ✅ `autonomous_cycle.py:322`
+- Dual-call generate_signal+analyze: ✅ `autonomous_cycle.py:282-309`
+- SL fail-closed di PurifiedEngine.cycle: ✅ `purified:140-145`
+- Position caps: ✅ `purified:375-395`
+- Singleton lock: ✅ `autonomous_cycle.py:91-92`
+- Breakeven+structure trail: ✅ `autonomous_cycle.py:635-655`
+- Strategy attribution: ✅ `purified:157`, `autonomous_cycle.py:925-929`
+- Sizing LOTS: ✅ `purified:291-292`
+
+Full report: `QNA_VERIFICATION_2026-08-03.md`
+
 ## 2026-08-02 (PM) — CLAWBOT 3-AGENT FULL AUDIT — dead-code self-eval exposed
 
 Full parallel audit (trade attribution / SL-TP-trailing / position sizing) against **working tree code only**. Reports: `FINDINGS_TRADE_ATTRIBUTION.md`, `FINDINGS_SLTP_TRAILING.md`, `FINDINGS_POSITION_SIZING.md`.

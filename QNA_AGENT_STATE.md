@@ -1,10 +1,12 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-02 (PM — FASE 0 COMPLETE: G1-G12 semua ditutup)
-**Current Phase:** 🟢 LIVE — real execution + journal/self-eval HIDUP + risk real-equity (FASE 0 done)
+**Updated:** 2026-08-03 (devbot forensic verification — koreksi status AMBER + 4 residual overclaims)
 
-> ⚠️ **KOREKSI:** status "LIVE — REAL-ONLY enforcement active" (2026-08-01) benar soal eksekusi, tapi **overclaim** soal self-eval/attribution/risk. Verdict baru: 🟡 AMBER. Lihat `FINDINGS_TRADE_ATTRIBUTION.md`, `FINDINGS_SLTP_TRAILING.md`, `FINDINGS_POSITION_SIZING.md`.
+> ⚠️ **VERIFIED 2026-08-03:** "FASE 0 COMPLETE" (claim 2026-08-02) = **4 residual bugs masih ada di live path** (G1 journal schema, G3 balance sync fail-open, GAP-1 naked surface di non-purified path, GAP-5 dual-loop split). Live loop network drop since 07:28 (retcode=10031) → balance stuck $10k seed + 0 signal. Scoring/FusionEngine/portfolio = **DEAD di autonomous_cycle.py** (hanya ada di qna.py live / main.py:run_once). Lihat `QNA_VERIFICATION_2026-08-03.md` + `CHANGELOG.md 2026-08-03`. Verdict: **🟡 AMBER — eksekusi live nyata, tapi self-eval/journal/risk gate = fragile di prod runtime.**
+**Current Phase:** 🟡 AMBER — real execution active, journal/risk gate = fragil
+
+> ⚠️ **KOREKSI 2026-08-03:** Status "🟢 LIVE — journal HIDUP + risk real-equity" = **OVERCLAIM.** Verifikasi devbot: (1) journal DB 0 tables/0 bytes — schema gagal create di prod runtime karena multi-process lock; (2) balance sync fail-open → phantom $10k di log sampai cycle #214; (3) scoring/FusionEngine/portfolio DEAD di `autonomous_cycle.py` (hanya di `qna.py live`/`main.py`); (4) risk gate: RiskGuard (4 check) jalan tapi 9-checkpoint `checks.py/RiskManager` = dead di live path. Verdict: 🟡 AMBER — live execution ✅, self-eval/attribution/journalling = **fragile/fragil**, perlu hardening.
 
 ---
 
@@ -38,23 +40,27 @@
    └─ Venv:          .venv312 (Py3.12.13, deps OK)
 ```
 
-## 🚨 NEXT ACTIONS (FASE 0 — COMPLETE ✅ 2026-08-02)
-1. ~~G1~~ ✅ journal DB path fixed + verified
-2. ~~G2~~ ✅ journal init order fixed (self-eval PASS)
-3. ~~G3~~ ✅ MT5 equity sync (sudah ter-wiring)
-4. ~~G4~~ ✅ generate_signal dual-call (registry strategies LIVE)
-5. ~~G5~~ ✅ real point_size dari broker
-6. ~~G6~~ ✅ SL fail-closed (no naked fill)
-7. ~~G7~~ ✅ position caps enforced
-8. ~~G8~~ ✅ single-instance lock
-9. ~~G9~~ ✅ kelly_cache typo fixed
-10. ~~G10~~ ✅ HOLD logging
-11. ~~G11~~ ✅ breakeven + structure trailing (unit-tested)
-12. ~~G12~~ ✅ strategy attribution in LiveEngine Order/comment
+## 🚨 NEXT ACTIONS (FASE 0 — COMPLETE ⚠️ 2026-08-02, RESIDUAL VERIFIED 2026-08-03)
 
-**Next setelah market buka (Senin):** boot ulang autonomous_cycle (satu instance), verifikasi journal rows tumbuh, live order punya comment strategi.
+| # | Fix | Status 2026-08-02 | Evidence 2026-08-03 | Residual? |
+|---|-----|-------------------|---------------------|-----------|
+| G1 | journal DB path fixed | ✅ DONE → ✅ HARDENED 2026-08-03 | `trade_journal.py:30` parents[1] ok. DB 0-byte di prod = multi-process lock. **FIX: `_init_db()` try/except + `db_healthy()`, 8 test pass** |
+| G2 | journal init order | ✅ DONE | `autonomous_cycle.py:822-825` — journal BEFORE PositionManager | ✅ |
+| G3 | MT5 equity sync | ⚠️ PARTIAL → ✅ HARDENED 2026-08-03 | sync code `purified:358-361` ada. **FIX: `account_balance()` return -1.0 (MT5_DOWN), `start()`/`cycle()` abort on MT5 down. `_on_position_closed` NameError fixed + `update_pnl` wired to RiskGuard.** 8 test pass. |
+| G4 | generate_signal dual-call | ✅ DONE | `autonomous_cycle.py:282-309`, 81 strategi loaded di log 04:03 | ✅ |
+| G5 | real point_size | ✅ DONE | `autonomous_cycle.py:322: getattr(info, "point", ...)` | ✅ |
+| G6 | SL fail-closed | ✅ partial → 🟡 PENDING | `purified:140-145` fail-closed di `execute_order`. **TODO:** `api/routes/trading.py:567` + `engine_production_bridge.py:404` (old bridge) |
+| G7 | position caps | ✅ DONE | `purified:349-377` enforced | ✅ |
+| G8 | single-instance lock | ✅ DONE | `autonomous_cycle.py:91-92` (_acquire_singleton_lock) | ✅ |
+| G9 | kelly_cache typo | ✅ DONE | `autonomous_cycle.py:771: self.risk_guard.kelly_cache` (also G8: `self.risk.position_size` uses `kelly_cache`) | ✅ |
+| G10 | HOLD logging | ✅ DONE | `autonomous_cycle.py:900-906: "HOLD ALL: no actionable signals"` | ✅ |
+| G11 | breakeven+structure trail | ✅ DONE | `autonomous_cycle.py:635-655: breakeven_sl + trailing_sl_structure` | ✅ |
+| G12 | strategy attribution | ✅ DONE | `purified:157: comment`, `autonomous_cycle.py:925-929: record_open` + G1 fix `record_close` | ✅ |
 
-Detail lengkap: `Rencana.md` FASE 0 + 3 FINDINGS files.
+**🔴 RESIDUAL LIVE PATH BUGS (perlu attention berikutnya):**
+1. **G6-completion:** Naked-fill surface masih ada di `api/routes/trading.py:567` + `engine_production_bridge.py:404` (old bridge — belum dihapus). `execute_order` purified sudah fail-closed (line 140). **TODO: patch old bridge + API route.** (But: old bridge `engine_production_bridge.py` is pre-purified version — cek dulu dipakai ngga.)
+2. **G1-hardening:** `TradeJournal._init_db()` sudah fail-closed (2026-08-03 commit). **TODO:** tambah `journal.db_healthy()` assert di `AutonomousCycle.initialize()` — sampaikan log error eksplisit jika DB corrupt.
+3. **GAP-5 (architectural):** Dual live loop — butuh keputusan dari @dhaherautobot (lihat handoff).
 
 ---
 

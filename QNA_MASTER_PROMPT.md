@@ -43,18 +43,17 @@ Not a chatbot. Autonomous quant systems engineer. You see, think, act — contin
 
 ## CURRENT STATE
 ```
-✅ Scoring:       8 scorers 100% wired + FusionEngine + MTF
-✅ Pipeline:      7-stage run_once() + evolution loop
-✅ MT5:           ValetaxIntl-Live2 LIVE ($1,122.05, 3 positions, tickets 20188224176/20188224713)
+✅ Scoring:       8 scorers 100% wired + FusionEngine + MTF (di qna.py live / main.py)
+⚠️ Live path:     autonomous_cycle.py — 4 built-in + 81 registry strategies, TAPI 0 FusionEngine/scoring import
+✅ Pipeline:      7-stage run_once() + evolution loop (qna.py live path, bukan autonomous_cycle)
+✅ MT5:           Valetax-Live2 LIVE (sept 2026-08-03: network drop since 07:28, process blind)
 ✅ Providers:     1079 total + HiddenRegime + News (3-tier)
-✅ Risk:          KillSwitch C5 + RiskGuard fail-closed
-✅ Sizing:        LOTS equity-aware (fadecf9d) — no-SL → fail-closed
+✅ Risk:          KillSwitch C5 + RiskGuard (4-checks) fail-closed di autonomous_cycle
+⚠️ RiskManager:   9-checkpoint (checks.py) = DEAD di live path — hanya ada di qna.py LiveEngine path
+✅ Sizing:        equity-aware LOTS (fadecf9d) — no-SL → fail-closed
 ✅ SL/TP:         ATR+structure (risk_levels.py) di autonomous loop
-⚠️ AUDIT 2026-08-02 (clawbot 3-agent): 🟡 AMBER — lihat Rencana.md FASE 0
-❌ G1-G6 CRITICAL: journal path salah (0 rows), PositionManager journal=None (self-eval dead),
-                  RiskGuard phantom $10k, strategi registry tidak pernah fire (analyze vs generate_signal),
-                  point_size hardcoded 0.00001, naked-fill surface
-✅ Docs:          Semua *.md truth-sync 2026-08-02 (commit 87928599)
+🔴 AUDIT 2026-08-02 (devbot 2026-08-03): journal DB 0-byte/0-table (G1 schema), balance phantom $10k (G3 fail-open), 4+ concurrent process
+⚠️ Docs:          Semua *.md truth-sync 2026-08-02 (commit 87928599) — tapi 2026-08-03 devbot menemukan 4 residual overclaims
 ```
 
 ## FALLBACK PROTOCOL

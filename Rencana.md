@@ -1,7 +1,7 @@
 # 📋 RENCANA — Quant-Nanggroe-AI (QNA) v6.1.0
 
 **Owner:** Mulky Malikul Dhaher (Dhaher Labs) | **Updated:** 2026-08-02
-**Status:** 🟢 LIVE REAL-ONLY TRADING — Valetax 372044706 ($1122.05) + equity-aware sizing + FASE 0 COMPLETE + DEBATE_ROUND1 ENFORCED (7/7 guard) + HYBRID GO-LIVE Senin (pre-flight SAFE TO BOOT).
+**Status:** 🟡 AMBER — LIVE REAL-ONLY TRADING (Valetax 372044706, equity-aware sizing) — **tapi 4 residual live-path bugs detected 2026-08-03 (devbot):** journal DB 0-schema (G1), balance sync fail-open $10k (G3), 9-checkpoint RiskManager dead di live path, dual live loop split. FASE 0 code ada, runtime gagal. Lihat `QNA_VERIFICATION_2026-08-03.md`.
 
 **2026-08-03 — MODEL SWITCH:** Semua 7 Hermes profile (autobot/clawbot/devbot/fangbot/hackerbot/researchbot/traderbot) → `hy3:free` / provider `nous` (free Nous). "laguna" DITOLAK (bukan model Nous nyata; free resmi = hermes-3-llama-3.1-405b:free). Backup config: `*.bak.20260803_003405`.
 

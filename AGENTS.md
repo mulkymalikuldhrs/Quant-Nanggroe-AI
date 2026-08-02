@@ -1,6 +1,7 @@
 # AGENTS.md — Quant Nanggroe AI (QNA) v6.1.0
 
 > **LIVE-TRADING OPERATIONAL (REAL-ONLY, 2026-08-01):** No paper/sim/mock. MT5 LIVE verified: ValetaxIntl-Live2, login=372044706, balance=$1122.05.
+> **VERDICT (2026-08-03 devbot):** 🟡 AMBER — eksekusi live ✅, **tapi self-eval/attribution/journalling = fragile di prod runtime.** Journal DB 0-byte/0-table (G1 schema init gagal), balance sync fail-open → phantom $10k di log, 9-checkpoint RiskManager = dead di live path (hanya RiskGuard 4-check jalan), dual live loop (autonomous_cycle vs qna.py live) masih berdampingan. Klaim "FASE 0 COMPLETE" overclaim — lihat `QNA_VERIFICATION_2026-08-03.md`.
 > **AUDIT 2026-08-02 (clawbot):** 🟡 AMBER — self-eval/attribution dead code + phantom risk. Fix: Rencana.md FASE 0 G1→G12.
 
 ## 🤖 ORCHESTRATION RULE (binding — user directive 2026-08-02)
@@ -38,13 +39,23 @@ Read in order:
 - **Symbols:** `.vx` suffix (EURUSD.vx, BTCUSD.vx, XAUUSD.vx)
 
 ## ⚠️ AUDIT 2026-08-02 — known dead/broken (fix before trusting live state)
-1. **Trade journal DB path WRONG** — `trade_journal.py:29` `dirname(x3)` → `D:\repositories\data\qna_trade_journal.db` (0 rows); repo `data/qna_trade_journal.db` = 0-byte no schema. **No trade ever attributed.** Fix: `parents[1]`.
-2. **`PositionManager` journal=None** — created before `TradeJournal()` → close-journal/self_eval/Kelly dead (`autonomous_cycle.py:659 vs 665`).
-3. **RiskGuard phantom $10k** — `initial_balance=10000.0` hardcoded; MT5 balance/equity never synced; `update_pnl` never called.
-4. **Registry strategies never fire** — `analyze()` vs `generate_signal()` mismatch → 81 strategies = zero signals.
-5. **`point_size` hardcoded 0.00001** — wrong for XAUUSD/BTCUSD → min-stop clamp broken.
-6. **Naked-fill surface** — omit-if-≤0 + TP=0 not fail-closed.
-Full: `FINDINGS_TRADE_ATTRIBUTION.md` · `FINDINGS_SLTP_TRAILING.md` · `FINDINGS_POSITION_SIZING.md`. Plan: `Rencana.md` FASE 0.
+
+> 📝 **2026-08-03 devbot correction:** Items 1-6 di bawah sudah di-code (G1-G12). Tapi **verified 2026-08-03: kode ada, tapi runtime gagal.** Lihat `QNA_VERIFICATION_2026-08-03.md` untuk detail. Jangan delete section ini — ini riwayat audit asli.
+
+| ID | Severity | Finding | Fix | Status 2026-08-02 | Verified 2026-08-03 |
+|-----|----------|---------|-----|-------------------|---------------------|
+| G1 | CRITICAL | Trade journal DB path wrong (dirname x3 → repo root) + schema never init → 0 rows. **No trade ever attributed.** | `trade_journal.py:30` → `parents[1]` (repo root `data/qna_trade_journal.db`) | ✅ DONE | 🔴 **Residual — DB 0 bytes, 0 tables.** `_init_db()` gagal di prod (multi-process lock). |
+| G2 | CRITICAL | `PositionManager(journal=None)` — init journal sebelum pos manager | `autonomous_cycle.py:822` journal → `:825` PositionManager | ✅ DONE | ✅ Verified |
+| G3 | CRITICAL | RiskGuard phantom $10k — balance/equity tidak sync ke MT5 | `purified:358-361` sync tiap cycle | ⚠️ PARTIAL | 🔴 **Residual — log cycle #214 masih $10000. `account_balance()` fail-open → seed fallback.** |
+| G4 | CRITICAL | Registry strategies never fire — `analyze()` vs `generate_signal()` | `autonomous_cycle.py:282-309` dual-call | ✅ DONE | ✅ Verified (81 strategi loaded 04:03) |
+| G5 | CRITICAL | `point_size` hardcoded 0.00001 | `autonomous_cycle.py:322: getattr(info, "point", ...)` | ✅ DONE | ✅ Verified |
+| G6 | MAJOR | Naked-fill surface: omit-if-≤0 | `purified:140-145` fail-closed di `execute_order` | ✅ DONE | 🟡 **Partial — `api/routes/trading.py:567` + `engine_production_bridge.py:404` old bridge belum** |
+| G7 | MAJOR | Position caps defined, unused | `purified:375-395` enforced | ✅ DONE | ✅ Verified |
+| G8 | MAJOR | Multi-instance loop | `autonomous_cycle.py:91-92` single lock | ✅ DONE | ✅ Verified (hanya di loop A) |
+| G9 | MAJOR | Kelly typo `_kelly_cache` | `autonomous_cycle.py:771` `kelly_cache` | ✅ DONE | ✅ Verified |
+| G10 | MAJOR | Misleading close logs | `autonomous_cycle.py:688` retcode check | ✅ DONE | ✅ Verified |
+| G11 | MINOR | No breakeven + structure trailing | `autonomous_cycle.py:635-655` | ✅ DONE | ✅ Verified |
+| G12 | MINOR | Order attribution LiveEngine | `purified:157` + `autonomous_cycle.py:925-929` | ✅ DONE | ✅ Verified (tapi journal schema gagal) |
 
 
 Evolution loop: journal + scheduler + scanner + disabler + weight_updater — all integrated.
