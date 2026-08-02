@@ -16,7 +16,7 @@
         ▼                                           ▼
 ┌──────────────────┐                       ┌──────────────────┐
 │  MARKET DATA     │                       │  STRATEGIES      │
-│  (MT5 LIVE)      │                       │  77 registered   │
+│  (MT5 LIVE)      │                       │  84 registered   │
 │  BTC/EUR/XAU.vx  │                       │  6 active:       │
 └──────────────────┘                       │  SMC, Wyckoff,   │
         │                                  │  MeanRev,        │
@@ -111,7 +111,7 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 - [ ] DCC-GARCH + Copula (tail dependence)
 - [ ] MACD as factor
 - [ ] Multi-Account MT5 (account rotation)
-
+- [ ] Implement from "C:\Users\Hi\Desktop\QuantScience_Archive\QNA_QuantScience_MASTER.md"
 ---
 
 ## 📊 CURRENT STATE SNAPSHOT
@@ -132,3 +132,4 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 - [[Quant-Nanggroe-AI/Production-Status-2026-08-01]]
 - [[Quant-Nanggroe-AI/Risk/Risk-Management-Framework]]
 - [[Quant-Nanggroe-AI/Master-Index]]
+
