@@ -123,3 +123,26 @@ def test_purified_engine_cycle_aborts_on_stale_balance(monkeypatch):
     assert result == []
     # Balance must NOT have changed (no phantom update)
     assert eng.risk.balance == 5000.0
+
+
+# ──────────────────────────────────────────────
+# G1-deep: initialize() fail-closed on dead journal
+# ──────────────────────────────────────────────
+def test_autonomous_cycle_init_aborts_on_dead_journal(tmp_path, monkeypatch):
+    """G1-deep: if TradeJournal.db_healthy() is False, initialize() must
+    raise RuntimeError (fail-closed), not proceed with journal=None.
+    """
+    from autonomous_cycle import AutonomousCycle
+    # Patch TradeJournal to simulate lock-contended 0-byte DB
+    class DeadJournal:
+        _init_ok = False
+        def db_healthy(self): return False
+    import autonomous_cycle as ac_mod
+    monkeypatch.setattr(ac_mod, "TradeJournal", lambda: DeadJournal())
+    cyc = AutonomousCycle()
+    import pytest
+    with pytest.raises(RuntimeError, match="journal"):
+        cyc.initialize()
+    # Fail-closed proof: dead journal detected, error explicitly raised
+    assert cyc.journal is not None
+    assert cyc.journal._init_ok is False

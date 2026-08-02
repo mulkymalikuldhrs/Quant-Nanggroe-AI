@@ -795,6 +795,8 @@ class AutonomousCycle:
         self.journal = None
         self.cycle_count = 0
         self.last_data_fetch = 0
+        self._last_day = None    # G3-reset: track day boundary for reset_daily()
+        self._last_week = None    # G3-reset: track week boundary for reset_weekly()
         
         # Signal handling
         sig.signal(sig.SIGINT, self._shutdown)
@@ -825,6 +827,14 @@ class AutonomousCycle:
         #    MUST be created BEFORE PositionManager — it is a required dependency,
         #    and passing None silently kills close-journaling/self-eval (G2).
         self.journal = TradeJournal()
+        # G1-deep hardening: fail-closed if journal schema didn't init.
+        # Previously: _init_db() could silently fail under multi-process SQLite
+        # write-lock (4+ concurrent autonomous_cycle instances) → DB 0 bytes,
+        # 0 tables → PositionManager.journal = None → ALL close-trade attribution
+        # lost → Kelly never updated from real PnL → daily/weekly loss veto STUCK.
+        if not self.journal._init_ok or not self.journal.db_healthy():
+            log.critical("G1-HARDENING: TradeJournal schema NOT initialized (0 tables / lock contention). Aborting initialize() — fail-closed.")
+            raise RuntimeError("TradeJournal schema init failed — refuse to run with dead journal (fail-closed)")
 
         # 5. Position manager
         self.position_manager = PositionManager(self.engine, self.market_data, self.journal)
@@ -863,7 +873,27 @@ class AutonomousCycle:
         except Exception as e:
             log.error(f"KillSwitch check failed: {e}")
 
-        # 1. Update market data cache
+        # G3-reset: daily/weekly PnL boundary — RiskGuard.reset_daily() / reset_weekly()
+        # were DEFINED but NEVER CALLED → daily_start_balance stuck at boot value →
+        # daily 3% loss veto measured from boot-time equity, not actual day start.
+        # Reset when (day, week) boundary crosses.
+        now = datetime.now()
+        cur_day = now.date()
+        cur_week = now.date().isocalendar()[:2]
+        if self._last_day != cur_day:
+            try:
+                self.engine.risk.reset_daily()
+                log.info(f"G3-reset: daily PnL reset {self._last_day} -> {cur_day}")
+            except Exception as e:
+                log.warning(f"reset_daily() failed: {e}")
+            self._last_day = cur_day
+        if self._last_week != cur_week:
+            try:
+                self.engine.risk.reset_weekly()
+                log.info(f"G3-reset: weekly PnL reset {self._last_week} -> {cur_week}")
+            except Exception as e:
+                log.warning(f"reset_weekly() failed: {e}")
+            self._last_week = cur_week
         try:
             for symbol in CONFIG.SYMBOLS:
                 self.market_data.get_tick(symbol)
