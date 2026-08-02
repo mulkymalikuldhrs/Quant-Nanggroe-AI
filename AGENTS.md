@@ -1,6 +1,16 @@
-# AGENTS.md — Quant Nanggroe AI (Quant Nation) v6.1.0
+# AGENTS.md — Quant Nanggroe AI (QNA) v6.1.0
 
 > **LIVE-TRADING OPERATIONAL (REAL-ONLY, 2026-08-01):** No paper/sim/mock. MT5 LIVE verified: ValetaxIntl-Live2, login=372044706, balance=$1122.05.
+> **AUDIT 2026-08-02 (clawbot):** 🟡 AMBER — self-eval/attribution dead code + phantom risk. Fix: Rencana.md FASE 0 G1→G12.
+
+## 🤖 ORCHESTRATION RULE (binding — user directive 2026-08-02)
+- **`@dhaherautobot` = SATU-SATUNYA orchestrator.** Hanya dia yang boleh `@mention` agent lain.
+- Agent lain HANYA boleh `@mention` `@dhaherautobot`.
+- **DILARANG KERAS `@mention` sesama agent** (clawbot→devbot, fangbot→hackerbot, dst).
+- Semua tugas WAJIB koordinasi lewat `@dhaherautobot`. Brief antar bot via file/forward oleh orchestrator.
+- Rule tersimpan juga di: Hermes memory (tiap profile), `D:\Obsidian\DhaherLabs\_docs\QNA_ORCHESTRATION_MANDATE.md`.
+
+## Quick Start
 > **Live tickets:** 20188224176 + 20188224713 (BTCUSD.vx). 3 positions confirmed.
 
 ## 🏗️ How It Works
