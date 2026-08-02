@@ -1,5 +1,21 @@
 # Changelog — Quant Nanggroe AI
 
+## 2026-08-02 — Docs truth-sync (code = source of truth)
+
+### Verified against code
+- Version: **v6.1.0** confirmed (`qna.py --version`)
+- Strategies: **78 registered** (`data/walk_forward_registry.json`, all active) — 84 .py files in canonical path; 79 `@StrategyRegistry.register` + 3 archive
+- 9-checkpoint risk gate: confirmed in `engine/risk/manager.py` + `engine/risk/checks.py` (checks 1–7 + kill switch + daily trade limit)
+- REAL-ONLY MT5 live status: confirmed (Valetax, tickets 20188224176/20188224713)
+
+### Docs updated (stale → code truth)
+- `docs/STRATEGY_CATALOG.md`: 9→78 registered, 45→84 .py files, removed phantom v6.2.1
+- `docs/50_AGENT_COUNCIL.md`: migration "20% complete / 110 of 139 pending" → complete; 77→78; v6.2.1 removed
+- `docs/12_TASKS.md`: live trading bridge [ ] → [x] DONE
+- `docs/01_PRD.md`, `docs/02_ARCHITECTURE.md`, `docs/03_SPEC.md`, `docs/19_RISK_REGISTER.md`, `docs/29_PLUGIN_SYSTEM.md`: v6.2.1 / 83 / 139 stale claims → 6.1.0-aligned
+
+---
+
 ## 🏗️ System Flow (REAL-ONLY)
 
 ```
