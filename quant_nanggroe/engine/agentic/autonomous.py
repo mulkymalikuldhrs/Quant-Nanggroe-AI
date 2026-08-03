@@ -588,6 +588,12 @@ class AutonomousPipeline:
             self._em = build_execution_manager(allow_live=True)
         except ImportError:
             self._em = None
+        except RuntimeError as _em_err:
+            # REAL-ONLY fail-closed: MT5 not connected -> no execution manager.
+            # Run in MONITOR-ONLY mode (analysis/self-awareness continue) instead
+            # of crashing the scheduler cycle. No trades without a live broker.
+            logger.warning("AutonomousPipeline: execution manager unavailable (%s) — running monitor-only (no trades).", _em_err)
+            self._em = None
 
         # ── QNA Core Components ──
         self._final_decider = None
