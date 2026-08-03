@@ -50,6 +50,13 @@ try:
 except ImportError:
     ToolNode = None
 
+# W-gap-1 (2026-08-04): wire alerting into critical risk events (kill switch / emergency).
+# Lazy import so a missing alerting package never breaks graph construction.
+try:
+    from quant_nanggroe.engine.alerting import default_manager as _alert_manager
+except Exception:  # pragma: no cover - alerting is core, but fail soft
+    _alert_manager = None
+
 from quant_nanggroe.agents.base import create_llm
 from quant_nanggroe.agents.bridges.kelly_bridge import KellyBridge
 from quant_nanggroe.agents.bridges.risk_gate_bridge import GateVerdict, RiskGateBridge
@@ -313,6 +320,11 @@ class TradingGraph:
         det_verdict = state.get("deterministic_risk_verdict", "REJECTED")
         if det_verdict == GateVerdict.KILL_SWITCH.value:
             logger.critical("Deterministic risk gate triggered kill switch - emergency exit")
+            if _alert_manager is not None:
+                _alert_manager.critical(
+                    "Deterministic risk gate triggered KILL SWITCH -> emergency exit",
+                    source="graph.deterministic_risk_gate",
+                )
             return "emergency_exit"
 
         if det_verdict == GateVerdict.REJECTED.value:
@@ -774,6 +786,11 @@ class TradingGraph:
             State updates with emergency exit actions
         """
         logger.critical("=== EMERGENCY EXIT ACTIVATED ===")
+        if _alert_manager is not None:
+            _alert_manager.critical(
+                "EMERGENCY EXIT activated - closing all positions",
+                source="graph.emergency_exit",
+            )
 
         symbols = state.get("symbols", [])
         decisions = []

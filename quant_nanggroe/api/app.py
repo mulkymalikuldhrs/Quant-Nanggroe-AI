@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         except Exception as exc:
             logger.warning(
                 "startup_services_unavailable",
-                extra={"error": str(exc), "msg": "Services not available — running without persistence"},
+                extra={"error": str(exc), "reason": "Services not available — running without persistence"},
             )
         finally:
             app.state._services["startup_complete"] = True
@@ -180,7 +180,7 @@ def _init_services_blocking(app: FastAPI) -> None:
     except Exception as exc:
         logger.warning(
             "startup_services_unavailable",
-            extra={"error": str(exc), "msg": "Services not available"},
+            extra={"error": str(exc), "reason": "Services not available"},
         )
 
 
@@ -347,6 +347,7 @@ def create_app() -> FastAPI:
         whatsapp,
         wiring_compat,
         ws,
+        features,
     )
     from quant_nanggroe.api.routes.brokers import router as brokers_router
 
@@ -376,6 +377,7 @@ def create_app() -> FastAPI:
     app.include_router(options.router)
     app.include_router(rl.router)
     app.include_router(analytics.router)
+    app.include_router(features.router, prefix="/api/features", tags=["Features"])
     app.include_router(agentic.router)
     app.include_router(autonomous.router)
     app.include_router(scheduler.router)

@@ -10,6 +10,8 @@ import time
 from collections import defaultdict
 from typing import Dict, List, Optional
 
+import pandas as pd
+
 from quant_nanggroe.engine.data.provider_interface import (
     DataCategory,
     DataRequest,
@@ -71,6 +73,31 @@ class DataFallbackChain:
                 self.circuit_breaker.record_success(provider.name)
                 self._stats[provider.name]["success"] += 1
                 resp.provider = provider.name
+                # W-gap-2 (2026-08-04): data-quality gate (roadmap C8).
+                # Fail-soft: a bad/stale frame is flagged + WARNed, not silently trusted.
+                try:
+                    from quant_nanggroe.engine.data.quality import assess as _assess_quality
+                    for row in resp.results:
+                        df = pd.DataFrame([row]) if not isinstance(row, pd.DataFrame) else row
+                        if set(["open", "high", "low", "close"]).issubset(df.columns):
+                            rep = _assess_quality(df, str(row.get("symbol", provider.name)))
+                            if not rep.ok:
+                                logger.warning(
+                                    "DataQuality WARN [%s]: %s",
+                                    provider.name,
+                                    "; ".join(rep.warnings),
+                                )
+                                try:
+                                    from quant_nanggroe.engine.alerting import default_manager
+                                    default_manager.warning(
+                                        f"Data quality issue from {provider.name}: "
+                                        + "; ".join(rep.warnings),
+                                        source="fallback_chain.quality",
+                                    )
+                                except Exception:
+                                    pass
+                except Exception as _qe:  # quality check must never break data fetch
+                    logger.debug("quality gate skipped: %s", _qe)
                 return resp
             except Exception:
                 self.circuit_breaker.record_failure(provider.name)
