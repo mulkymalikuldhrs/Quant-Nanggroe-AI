@@ -257,29 +257,42 @@ class TestKillSwitchCheckAutoTrigger(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_auto_activate_returns_event(self):
-        event = self.ks.check_auto_activate(daily_pnl_pct=-0.02)
+        event = self.ks.check_auto_activate(
+            daily_pnl_pct=-0.02, weekly_pnl_pct=0.0,
+            max_drawdown_pct=0.0, volatility_pct=0.0,
+        )
         self.assertIsNotNone(event)
         self.assertTrue(event.auto_activated)
         self.assertEqual(event.trigger, KillSwitchTrigger.DAILY_LOSS_EXCEEDED)
 
     def test_check_auto_activate_no_trigger(self):
-        event = self.ks.check_auto_activate(daily_pnl_pct=-0.001)
+        event = self.ks.check_auto_activate(
+            daily_pnl_pct=-0.001, weekly_pnl_pct=0.0,
+            max_drawdown_pct=0.0, volatility_pct=0.0,
+        )
         self.assertIsNone(event)
 
     def test_auto_activate_priority_order(self):
         # Weekly loss should trigger level_2 before daily loss
         event = self.ks.check_auto_activate(
             daily_pnl_pct=-0.02, weekly_pnl_pct=-0.05,
+            max_drawdown_pct=0.0, volatility_pct=0.0,
         )
         self.assertEqual(event.level, KillSwitchLevel.LEVEL_1)  # Daily checked first
 
     def test_auto_activate_volatility(self):
-        event = self.ks.check_auto_activate(volatility_pct=0.11)
+        event = self.ks.check_auto_activate(
+            daily_pnl_pct=0.0, weekly_pnl_pct=0.0,
+            max_drawdown_pct=0.0, volatility_pct=0.11,
+        )
         self.assertEqual(event.level, KillSwitchLevel.LEVEL_1)
         self.assertEqual(event.trigger, KillSwitchTrigger.VOLATILITY_SPIKE)
 
     def test_auto_activate_drawdown_exceeded(self):
-        event = self.ks.check_auto_activate(max_drawdown_pct=0.06)
+        event = self.ks.check_auto_activate(
+            daily_pnl_pct=0.0, weekly_pnl_pct=0.0,
+            max_drawdown_pct=0.06, volatility_pct=0.0,
+        )
         self.assertEqual(event.level, KillSwitchLevel.LEVEL_2)
         self.assertEqual(event.trigger, KillSwitchTrigger.DRAWDOWN_EXCEEDED)
 

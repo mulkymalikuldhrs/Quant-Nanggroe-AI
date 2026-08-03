@@ -1,96 +1,69 @@
-"""Alerting package (QuantScience roadmap C4: alert system).
+"""QNA alerting subsystem (Archive upgrade C4).
 
-Async-ready, dependency-free alert dispatcher. The Telegram transport is a thin
-wrapper that lazy-imports the optional `telegram` client (not a core dep) so the
-module imports cleanly in CI/offline. Critical/Warning/Info levels map to the
-risk gate severities used across QNA.
-
-Design (ponytail):
-- No side effects at import. Alert levels are plain enums.
-- Default transport logs to stderr (so headless servers still get signal);
-  set_transport() swaps in Telegram/Slack without touching call sites.
+Exposes ``default_manager`` consumed by ``quant_nanggroe.agents.graph``
+(lazy-imported, fail-soft). Sends critical/warning/info alerts to Telegram
+when ``QNA_TELEGRAM_TOKEN`` + ``QNA_TELEGRAM_CHAT_ID`` are set; otherwise
+the manager is a no-op (logs locally). Fail-safe: any send error is swallowed
+so alerting can never break the trading pipeline.
 """
-
 from __future__ import annotations
 
-import enum
 import logging
-from dataclasses import dataclass
-from typing import Callable, Optional
+import os
+import threading
 
 logger = logging.getLogger("qna.alerting")
 
 
-class AlertLevel(enum.Enum):
-    CRITICAL = "CRITICAL"
-    WARNING = "WARNING"
-    INFO = "INFO"
-
-
-@dataclass
-class Alert:
-    level: AlertLevel
-    message: str
-    source: str = "system"
-
-
-Transport = Callable[[Alert], None]
-
-
-def _log_transport(alert: Alert) -> None:
-    tag = f"[{alert.level.value}]"
-    if alert.level == AlertLevel.CRITICAL:
-        logger.error("%s %s: %s", tag, alert.source, alert.message)
-    elif alert.level == AlertLevel.WARNING:
-        logger.warning("%s %s: %s", tag, alert.source, alert.message)
-    else:
-        logger.info("%s %s: %s", tag, alert.source, alert.message)
-
-
 class AlertManager:
-    def __init__(self, transport: Optional[Transport] = None) -> None:
-        self._transport = transport or _log_transport
+    """Thread-safe alert dispatcher. No-op until Telegram creds are present."""
 
-    def set_transport(self, transport: Transport) -> None:
-        self._transport = transport
+    _lock = threading.Lock()
 
-    def send(self, level: AlertLevel, message: str, source: str = "system") -> None:
-        self._transport(Alert(level=level, message=message, source=source))
+    def __init__(self) -> None:
+        self._token = os.environ.get("QNA_TELEGRAM_TOKEN", "")
+        self._chat_id = os.environ.get("QNA_TELEGRAM_CHAT_ID", "")
+        self._enabled = bool(self._token and self._chat_id)
+        self._session = None
+        if self._enabled:
+            try:
+                import requests  # lazy dep; optional
+                self._session = requests.Session()
+            except Exception as exc:  # pragma: no cover
+                logger.warning("alerting: requests unavailable (%s) — no-op", exc)
+                self._enabled = False
+        else:
+            logger.info("alerting: disabled (set QNA_TELEGRAM_TOKEN + QNA_TELEGRAM_CHAT_ID to enable)")
 
-    # Convenience
-    def critical(self, message: str, source: str = "system") -> None:
-        self.send(AlertLevel.CRITICAL, message, source)
-
-    def warning(self, message: str, source: str = "system") -> None:
-        self.send(AlertLevel.WARNING, message, source)
-
-    def info(self, message: str, source: str = "system") -> None:
-        self.send(AlertLevel.INFO, message, source)
-
-
-def build_telegram_transport(token: str, chat_id: str) -> Transport:
-    """Lazy Telegram transport. Imports the optional client only when called.
-
-    Token/chat_id are passed in at runtime (NEVER hardcoded — see security audit).
-    """
-    def _transport(alert: Alert) -> None:
-        try:
-            import telegram  # type: ignore  (optional dep)
-        except Exception:
-            _log_transport(alert)
+    def _send(self, level: str, message: str) -> None:
+        if not self._enabled or self._session is None:
+            logger.log(
+                logging.CRITICAL if level == "critical" else logging.WARNING,
+                "ALERT[%s]: %s", level, message,
+            )
             return
         try:
-            bot = telegram.Bot(token=token)
-            bot.send_message(
-                chat_id=chat_id,
-                text=f"{alert.level.value} [{alert.source}] {alert.message}",
+            url = f"https://api.telegram.org/bot{self._token}/sendMessage"
+            self._session.post(
+                url,
+                json={"chat_id": self._chat_id, "text": f"[{level.upper()}] {message}"},
+                timeout=5,
             )
-        except Exception as exc:  # network/API errors must not crash the pipeline
-            logger.error("telegram alert failed: %s", exc)
-            _log_transport(alert)
+        except Exception as exc:  # fail-soft: never break caller
+            logger.warning("alerting send failed (%s): %s", exc, message)
 
-    return _transport
+    def critical(self, message: str) -> None:
+        with self._lock:
+            self._send("critical", message)
+
+    def warning(self, message: str) -> None:
+        with self._lock:
+            self._send("warning", message)
+
+    def info(self, message: str) -> None:
+        with self._lock:
+            self._send("info", message)
 
 
-# Module-level default manager (safe singleton; swap transport at runtime)
+# Module-level singleton consumed by graph.py
 default_manager = AlertManager()
