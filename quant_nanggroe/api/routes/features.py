@@ -9,32 +9,35 @@ import logging
 from typing import Any, Dict, List
 
 import numpy as np
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
 
 
-class FeatureRequest(BaseModel):
-    symbol: str = Field(..., description="Symbol label for the returned frame")
-    ohlcv: List[Dict[str, Any]] = Field(
-        ..., description="List of OHLCV rows with open/high/low/close[/volume/timestamp]"
-    )
-    use_polars: bool = Field(False, description="Reserved for future Polars backend")
+class FeatureResponse:
+    """Pydantic-free response wrapper (works with mount_router's add_route bypass)."""
+    def __init__(self, symbol: str, features: List[str], rows: int, sample: Dict[str, Any]):
+        self.symbol = symbol
+        self.features = features
+        self.rows = rows
+        self.sample = sample
+
+    def dict(self) -> Dict[str, Any]:
+        return {
+            "symbol": self.symbol,
+            "features": self.features,
+            "rows": self.rows,
+            "sample": self.sample,
+        }
 
 
-class FeatureResponse(BaseModel):
-    symbol: str
-    features: List[str]
-    rows: int
-    sample: Dict[str, Any] = Field(default_factory=dict)
+async def compute_features(req: Request):
+    """Compute the QNA base feature stack from OHLCV rows.
 
-
-@router.post("", tags=["Features"])
-def compute_features(req: FeatureRequest) -> FeatureResponse:
-    """Compute the QNA base feature stack from OHLCV rows."""
+    Accepts raw Request (works with mount_router's add_route bypass).
+    Lazy-imports feature_engine so route is safe even if pytimetk absent.
+    """
     try:
         from quant_nanggroe.engine.factors.feature_engine import (
             generate_features,
@@ -43,39 +46,61 @@ def compute_features(req: FeatureRequest) -> FeatureResponse:
     except Exception as e:  # pragma: no cover
         raise HTTPException(status_code=503, detail=f"feature_engine unavailable: {e}")
 
-    if not req.ohlcv:
-        raise HTTPException(status_code=400, detail="ohlc empty")
-    import pandas as pd
+    try:
+        body = await req.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid JSON body")
 
-    df = pd.DataFrame(req.ohlcv)
+    symbol = body.get("symbol", "UNKNOWN")
+    ohlcv = body.get("ohlcv", [])
+    use_polars = body.get("use_polars", False)
+
+    if not ohlcv:
+        raise HTTPException(status_code=400, detail="ohlc empty")
+
+    import pandas as pd
+    df = pd.DataFrame(ohlcv)
     required = {"open", "high", "low", "close"}
     if not required.issubset(df.columns):
         raise HTTPException(
             status_code=400, detail=f"OHLCV requires columns {sorted(required)}"
         )
     try:
-        out = generate_features(df, use_polars=req.use_polars)
+        out = generate_features(df, use_polars=use_polars)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"feature compute failed: {e}")
 
     names = feature_names()
     sample = {c: _jsonable(out[c].iloc[-1]) for c in names if c in out.columns}
-    return FeatureResponse(
-        symbol=req.symbol,
+    resp = FeatureResponse(
+        symbol=symbol,
         features=names,
         rows=len(out),
         sample=sample,
     )
+    return JSONResponse(content=resp.dict())
+
+
+# Router kept for backwards-compat / OpenAPI schema generation.
+# The actual mounting uses app.router.add_route directly — see app.py.
+# mount_router bypasses FastAPI's Pydantic body parsing, so compute_features
+# uses raw Request.json() for body parsing.
+from fastapi import APIRouter
+router = APIRouter()
+router.add_api_route("", compute_features, methods=["POST"], tags=["Features"])
 
 
 def _jsonable(v: Any) -> Any:
     try:
         if hasattr(v, "item"):  # numpy scalar
-            return v.item()
+            return _jsonable(v.item())
         if isinstance(v, (np.floating,)):  # type: ignore[name-defined]
-            return float(v)
+            f = float(v)
+            return f if f == f and f not in (float("-inf"), float("inf")) else None  # NaN/Inf -> null
         if isinstance(v, (np.integer,)):  # type: ignore[name-defined]
             return int(v)
+        if isinstance(v, float):
+            return v if v == v and v not in (float("-inf"), float("inf")) else None  # NaN/Inf -> null
         return float(v)
     except Exception:
         return str(v)

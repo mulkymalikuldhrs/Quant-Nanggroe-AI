@@ -393,7 +393,9 @@ def create_app() -> FastAPI:
     mount_router(options.router)
     mount_router(rl.router)
     mount_router(analytics.router)
-    mount_router(features.router, prefix="/api/features")
+    # W-gap-3: /api/features — uses raw Request body parsing (mount_router bypasses
+    # FastAPI's Pydantic body-parsing middleware; compute_features self-parses JSON).
+    app.router.add_route("/api/features", features.compute_features, methods=["POST"], name="features")
     mount_router(agentic.router)
     mount_router(autonomous.router)
     mount_router(scheduler.router)
@@ -447,12 +449,23 @@ def create_app() -> FastAPI:
             except Exception:
                 pass
         status = "degraded" if kill_active else "healthy"
+        # D-audit (2026-08-04): honestly report execution-backend availability.
+        # build_execution_manager() raises (REAL-ONLY) when MT5 is unconfigured,
+        # but that error is swallowed at boot -> system boots green yet cannot trade.
+        try:
+            from quant_nanggroe.engine.execution.builder import get_execution_backend_status
+            execution_backend = get_execution_backend_status()
+        except Exception:
+            execution_backend = "unknown"
+        if execution_backend == "unavailable":
+            status = "degraded"
         return {
             "status": status,
             "startup_complete": str(ready),
             "service": "quant-nanggroe-ai",
             "kill_switch_active": kill_active,
             "kill_switch_reason": kill_reason,
+            "execution_backend": execution_backend,
         }
 
     @app.get("/config")
