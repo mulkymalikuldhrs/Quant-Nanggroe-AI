@@ -91,6 +91,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             )
         finally:
             app.state._services["startup_complete"] = True
+            # D-audit (2026-08-04): surface degraded boot state loudly so a
+            # "healthy" 200 doesn't hide a blocked/kill-switched/un-tradable system.
+            try:
+                from quant_nanggroe.engine.execution.builder import get_execution_backend_status
+                if get_execution_backend_status() == "unavailable":
+                    logger.warning(
+                        "boot_execution_backend_unavailable",
+                        extra={"reason": "MT5 not configured (REAL-ONLY). Trading disabled until live account wired."},
+                    )
+            except Exception:
+                pass
+            try:
+                ks_file = os.environ.get("QNA_KILL_SWITCH_STATE_FILE") or str(
+                    Path(__file__).resolve().parents[2] / "data" / "kill_switch_state.json"
+                )
+                if os.path.exists(ks_file):
+                    import json as _json
+                    ks = _json.loads(Path(ks_file).read_text(encoding="utf-8"))
+                    if ks.get("status") == "active" or ks.get("_fail_closed"):
+                        logger.warning(
+                            "boot_kill_switch_active",
+                            extra={"reason": ks.get("activation_reason", "fail_closed"),
+                                   "level": ks.get("current_level", "unknown")},
+                        )
+            except Exception:
+                pass
 
     asyncio.create_task(_background_init())
 
@@ -308,19 +334,29 @@ def create_app() -> FastAPI:
 
     # ── Router mount helper (bypass broken include_router in this env) ──
     def mount_router(router, prefix=''):
-        """Register a router's routes via app.router.add_route.
+        """Register a router's routes via FastAPI APIRoute (proper DI).
 
-        include_router() is a NO-OP in the current FastAPI/Starlette install
-        (verified: app.include_router adds 0 routes; add_route works). This
-        helper guarantees all routes land regardless of that bug.
+        app.include_router() is a NO-OP in this FastAPI/Starlette install
+        (verified: adds 0 routes). app.router.add_route() works for routing
+        but skips FastAPI dependency injection, so routes declaring
+        `http_request: Request` / `background_tasks: BackgroundTasks` raised
+        TypeError -> 500 at runtime. Wrapping each route in fastapi.APIRoute
+        restores DI while still landing the route.
         """
+        from fastapi.routing import APIRoute
         for _rt in router.routes:
             _path = (prefix.rstrip('/') + getattr(_rt, 'path', '')) or getattr(_rt, 'path', '')
             _methods = list(getattr(_rt, 'methods', []) or []) or ['GET']
-            app.router.add_route(
-                _path, _rt.endpoint, methods=_methods,
-                name=getattr(_rt, 'name', None), include_in_schema=True,
+            new_route = APIRoute(
+                path=_path,
+                endpoint=_rt.endpoint,
+                methods=_methods,
+                response_model=getattr(_rt, 'response_model', None),
+                status_code=getattr(_rt, 'status_code', None),
+                name=getattr(_rt, 'name', None),
+                include_in_schema=True,
             )
+            app.router.routes.append(new_route)
 
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import (
