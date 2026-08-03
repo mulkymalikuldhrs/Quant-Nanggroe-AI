@@ -306,6 +306,22 @@ def create_app() -> FastAPI:
     # ── Rate Limit Middleware ────────────────────────────────────────
     app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
+    # ── Router mount helper (bypass broken include_router in this env) ──
+    def mount_router(router, prefix=''):
+        """Register a router's routes via app.router.add_route.
+
+        include_router() is a NO-OP in the current FastAPI/Starlette install
+        (verified: app.include_router adds 0 routes; add_route works). This
+        helper guarantees all routes land regardless of that bug.
+        """
+        for _rt in router.routes:
+            _path = (prefix.rstrip('/') + getattr(_rt, 'path', '')) or getattr(_rt, 'path', '')
+            _methods = list(getattr(_rt, 'methods', []) or []) or ['GET']
+            app.router.add_route(
+                _path, _rt.endpoint, methods=_methods,
+                name=getattr(_rt, 'name', None), include_in_schema=True,
+            )
+
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import (
         agentic,
@@ -351,64 +367,64 @@ def create_app() -> FastAPI:
     )
     from quant_nanggroe.api.routes.brokers import router as brokers_router
 
-    app.include_router(market.router, prefix="/api/market", tags=["Market"])
-    app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
-    app.include_router(trade_history.router, prefix="/api/trading", tags=["Trading"])
-    app.include_router(orderbook.router, prefix="/api/market", tags=["Market"])
-    app.include_router(agents.router, prefix="/api/agents", tags=["Agents"])
-    app.include_router(backtest.router, prefix="/api/backtest", tags=["Backtest"])
-    app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
-    app.include_router(ws.router, prefix="/api/ws", tags=["WebSocket"])
-    app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
-    app.include_router(ecosystem.router, prefix="/api", tags=["Ecosystem"])
-    app.include_router(colony.router, prefix="/api", tags=["Colony"])
-    app.include_router(channels.router, prefix="/api/channels", tags=["Channels"])
-    app.include_router(brokers_router, prefix="/api/brokers", tags=["Brokers"])
-    app.include_router(credentials.router)
-    app.include_router(council.router)
-    app.include_router(debate.router)
-    app.include_router(fred.router, prefix="/api/fred", tags=["FRED"])
-    app.include_router(personas.router)
-    app.include_router(sec_edgar.router)
-    app.include_router(signal_generator.router)
-    app.include_router(strategy.router, prefix="/api/strategy", tags=["Strategy"])
-    app.include_router(strategies.router, prefix="/api/strategies", tags=["Strategies"])
-    app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
-    app.include_router(options.router)
-    app.include_router(rl.router)
-    app.include_router(analytics.router)
-    app.include_router(features.router, prefix="/api/features", tags=["Features"])
-    app.include_router(agentic.router)
-    app.include_router(autonomous.router)
-    app.include_router(scheduler.router)
-    app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
-    app.include_router(security.router, prefix="/api", tags=["Security"])
-    app.include_router(security_tools.router, prefix="/api/security-tools", tags=["Security Tools"])
-    app.include_router(tools.router, prefix="/api", tags=["Tools"])
-    app.include_router(terminal.router)
+    mount_router(market.router, prefix="/api/market")
+    mount_router(trading.router, prefix="/api/trading")
+    mount_router(trade_history.router, prefix="/api/trading")
+    mount_router(orderbook.router, prefix="/api/market")
+    mount_router(agents.router, prefix="/api/agents")
+    mount_router(backtest.router, prefix="/api/backtest")
+    mount_router(portfolio.router, prefix="/api/portfolio")
+    mount_router(ws.router, prefix="/api/ws")
+    mount_router(memory.router, prefix="/api/memory")
+    mount_router(ecosystem.router, prefix="/api")
+    mount_router(colony.router, prefix="/api")
+    mount_router(channels.router, prefix="/api/channels")
+    mount_router(brokers_router, prefix="/api/brokers")
+    mount_router(credentials.router)
+    mount_router(council.router)
+    mount_router(debate.router)
+    mount_router(fred.router, prefix="/api/fred")
+    mount_router(personas.router)
+    mount_router(sec_edgar.router)
+    mount_router(signal_generator.router)
+    mount_router(strategy.router, prefix="/api/strategy")
+    mount_router(strategies.router, prefix="/api/strategies")
+    mount_router(monitor.router, prefix="/api/monitor")
+    mount_router(options.router)
+    mount_router(rl.router)
+    mount_router(analytics.router)
+    mount_router(features.router, prefix="/api/features")
+    mount_router(agentic.router)
+    mount_router(autonomous.router)
+    mount_router(scheduler.router)
+    mount_router(whatsapp.router, prefix="/api/whatsapp")
+    mount_router(security.router, prefix="/api")
+    mount_router(security_tools.router, prefix="/api/security-tools")
+    mount_router(tools.router, prefix="/api")
+    mount_router(terminal.router)
 
-    app.include_router(evolution.router)
+    mount_router(evolution.router)
 
-    app.include_router(wiring_compat.router)
-    app.include_router(ensemble.router)
+    mount_router(wiring_compat.router)
+    mount_router(ensemble.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
-    app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
-    app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
-    app.include_router(pipeline_status.router)  # router already has /api/pipeline prefix
-    app.include_router(config.router)  # router already has /config prefix
+    mount_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)
+    mount_router(qna_status.router, prefix="/api")
+    mount_router(pipeline_status.router)  # router already has /api/pipeline prefix
+    mount_router(config.router)  # router already has /config prefix
 
     # ── Data Quality Monitoring ───────────────────────────────────────
     # C8: staleness detection + health check framework
     try:
         from quant_nanggroe.engine.data_quality.api import router as dq_router
-        app.include_router(dq_router)
+        mount_router(dq_router)
     except Exception as e:
         logger.warning("data_quality_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:
         from quant_nanggroe.api.routes.causal_engine import router as causal_router
-        app.include_router(causal_router)  # router already has /api/causal prefix
+        mount_router(causal_router)  # router already has /api/causal prefix
     except Exception as e:
         logger.warning("causal_engine_load_failed: %s", e)
 
