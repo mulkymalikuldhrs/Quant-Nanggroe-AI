@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from typing import Any
 
@@ -20,27 +21,79 @@ from quant_nanggroe.api.schemas import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# D2: circuit-breaker for external sentiment API
+_SENTIMENT_CB_STATE = "closed"  # closed|open|half-open
+_SENTIMENT_CB_FAILS = 0
+_SENTIMENT_CB_LAST_FAIL = 0.0
+_SENTIMENT_CB_OPEN_SECONDS = 30.0
+_SENTIMENT_CB_FAIL_THRESHOLD = 3
+
+
+def _sentiment_cb_allow() -> bool:
+    global _SENTIMENT_CB_STATE, _SENTIMENT_CB_FAILS, _SENTIMENT_CB_LAST_FAIL
+    now = time.time()
+    if _SENTIMENT_CB_STATE == "open":
+        if now - _SENTIMENT_CB_LAST_FAIL >= _SENTIMENT_CB_OPEN_SECONDS:
+            _SENTIMENT_CB_STATE = "half-open"
+            return True
+        return False
+    return True
+
+
+def _sentiment_cb_record_success() -> None:
+    global _SENTIMENT_CB_STATE, _SENTIMENT_CB_FAILS, _SENTIMENT_CB_LAST_FAIL
+    _SENTIMENT_CB_STATE = "closed"
+    _SENTIMENT_CB_FAILS = 0
+    _SENTIMENT_CB_LAST_FAIL = 0.0
+
+
+def _sentiment_cb_record_failure() -> None:
+    global _SENTIMENT_CB_STATE, _SENTIMENT_CB_FAILS, _SENTIMENT_CB_LAST_FAIL
+    _SENTIMENT_CB_FAILS += 1
+    _SENTIMENT_CB_LAST_FAIL = time.time()
+    if _SENTIMENT_CB_FAILS >= _SENTIMENT_CB_FAIL_THRESHOLD:
+        _SENTIMENT_CB_STATE = "open"
+        logger.warning(
+            "Sentiment circuit breaker OPEN for %.1fs after %d failures",
+            _SENTIMENT_CB_OPEN_SECONDS,
+            _SENTIMENT_CB_FAILS,
+        )
+
 
 @router.get("/sentiment")
 async def get_market_sentiment() -> dict[str, Any]:
     """Get overall market sentiment from Fear & Greed + macro weather."""
+    fgi = None
+    weather_regime = "UNKNOWN"
+    status = "ok"
+
     try:
         import requests
-        fg_resp = requests.get("https://api.alternative.me/fng/?limit=1", timeout=5)
-        fg_data = fg_resp.json()
-        fgi = int(fg_data["data"][0]["value"])
-    except Exception:
-        fgi = None
 
-    from quant_nanggroe.engine.causal.weather_matrix import MacroWeatherEngine
-    weather = MacroWeatherEngine()
-    weather_regime = weather.to_dict().get("current_regime", "UNKNOWN")
+        if not _sentiment_cb_allow():
+            status = "circuit_open"
+        else:
+            fg_resp = requests.get("https://api.alternative.me/fng/?limit=1", timeout=5)
+            fg_data = fg_resp.json()
+            fgi = int(fg_data["data"][0]["value"])
+            _sentiment_cb_record_success()
+    except Exception:
+        _sentiment_cb_record_failure()
+        status = "external_api_unavailable"
+
+    try:
+        from quant_nanggroe.engine.causal.weather_matrix import MacroWeatherEngine
+
+        weather = MacroWeatherEngine()
+        weather_regime = weather.to_dict().get("current_regime", "UNKNOWN")
+    except Exception:
+        weather_regime = "UNAVAILABLE"
 
     return {
         "overall": "bullish" if fgi and fgi > 60 else "bearish" if fgi and fgi < 40 else "neutral",
         "fear_greed_index": fgi,
         "macro_weather": weather_regime,
-        "status": "ok",
+        "status": status,
         "timestamp": datetime.now().isoformat(),
     }
 

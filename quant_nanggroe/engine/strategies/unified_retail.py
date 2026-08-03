@@ -56,7 +56,16 @@ class UnifiedRetailStrategy(Strategy):
         from quant_nanggroe.engine.strategies.smc_strategy import SMCStrategy
         from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
 
-        weights = self._parameters.get("weights", {})
+        # R11b FIX (2026-08-04, user GO): weights param may be a list or dict in
+        # the wild — coerce defensively so `.get()` never raises. A list of names
+        # maps to default 0.2; a dict is used as-is; anything else -> empty dict.
+        _raw_weights = self._parameters.get("weights", {})
+        if isinstance(_raw_weights, dict):
+            weights = _raw_weights
+        elif isinstance(_raw_weights, (list, tuple)):
+            weights = {str(n): 0.2 for n in _raw_weights}
+        else:
+            weights = {}
         min_confidence = self._parameters.get("min_confidence", 0.5)
 
         # Generate signals from each sub-strategy

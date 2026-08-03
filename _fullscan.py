@@ -9,6 +9,7 @@ EXCLUDE_DIRS = {
     '.vscode','.zcode','.mimocode','.neuralmemory','.pytest_cache','.ruff_cache',
     '.bak','.tmp-ll-run','.tmp-ll-venv','_test312','tmp-venv','tmp-venvv2','.circleci',
     '.github','.qoder','archive','backups','references','graphify-out','quant_nanggroe_ai.egg-info',
+    '.verify_venv','.venv','.venv312','.venv-clean','.venv_coint',
 }
 SCAN_PY_DIRS = ['quant_nanggroe','tests','scripts','config','dashboard']
 SCAN_PY_ROOT = True  # root *.py (qna.py etc)

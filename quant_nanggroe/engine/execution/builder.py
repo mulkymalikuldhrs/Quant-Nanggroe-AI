@@ -66,9 +66,30 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
         mt5_connected = False
         if allow_live:
             try:
+                import re
                 import yaml
                 with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(os.path.expandvars(f.read())) or {}
+                    raw = f.read()
+                # Fail-closed honesty: os.path.expandvars() leaves ${VAR} untouched
+                # when the var is absent from the environment, which then crashes
+                # later at int('${QNA_MT5_LOGIN}') with a cryptic ValueError.
+                # Detect placeholders whose var is MISSING from os.environ BEFORE
+                # parsing and report clearly. Vars present-but-empty are left to
+                # the normal flow (empty login -> skipped account -> REAL-ONLY raise).
+                unresolved = sorted({
+                    v for v in re.findall(r"\$\{([A-Z0-9_]+)\}", raw)
+                    if v not in os.environ
+                })
+                if unresolved:
+                    _execution_backend_status = "unavailable"
+                    raise RuntimeError(
+                        "REAL-ONLY mode: MT5 env vars not set in environment: "
+                        f"{unresolved}. Set them in .env / shell (e.g. QNA_MT5_LOGIN, "
+                        "QNA_MT5_SERVER, QNA_MT5_PASSWORD) or configure "
+                        "config/mt5_accounts.yaml with real values. "
+                        "Cannot build live execution."
+                    )
+                data = yaml.safe_load(os.path.expandvars(raw)) or {}
                 accounts = data.get("accounts") or []
                 from quant_nanggroe.connectors.mt5_broker import MT5Broker
                 from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker

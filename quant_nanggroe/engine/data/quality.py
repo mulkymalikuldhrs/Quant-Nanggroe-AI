@@ -47,7 +47,7 @@ def check_staleness(
     if "timestamp" in df.columns:
         last = float(pd.to_numeric(df["timestamp"]).iloc[-1])
         rep.last_update = last
-        now = now_ts if now_ts is not None else float(pd.Timestamp.utcnow().timestamp())
+        now = now_ts if now_ts is not None else float(pd.Timestamp.now("UTC").timestamp())
         age = now - last
         rep.stale_seconds = age
         if age > max_age_seconds:
@@ -108,10 +108,18 @@ def assess(
 ) -> DataQualityReport:
     """Run all checks; combine into one report. ok=False if any check fails."""
     rep = DataQualityReport(symbol=symbol, ok=True)
-    for fn in (check_staleness, check_ohlc_sanity, check_gaps):
-        sub = fn(df, symbol, now_ts=now_ts, max_age_seconds=max_age_seconds)
-        rep.checks.extend(sub.checks)
-        if sub.warnings:
-            rep.warnings.extend(sub.warnings)
-            rep.ok = False
+    rep.checks.extend(check_staleness(df, symbol, now_ts=now_ts, max_age_seconds=max_age_seconds).checks)
+    rep.warnings.extend(check_staleness(df, symbol, now_ts=now_ts, max_age_seconds=max_age_seconds).warnings)
+    if not check_staleness(df, symbol, now_ts=now_ts, max_age_seconds=max_age_seconds).ok:
+        rep.ok = False
+    sub = check_ohlc_sanity(df, symbol)
+    rep.checks.extend(sub.checks)
+    if sub.warnings:
+        rep.warnings.extend(sub.warnings)
+        rep.ok = False
+    sub = check_gaps(df, symbol)
+    rep.checks.extend(sub.checks)
+    if sub.warnings:
+        rep.warnings.extend(sub.warnings)
+        rep.ok = False
     return rep

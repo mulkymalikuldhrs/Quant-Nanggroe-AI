@@ -50,9 +50,16 @@ from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 _signal_tracker = SignalTracker()
 _lifecycle_manager: Optional[StrategyLifecycleManager] = None
 _kelly_sizer = KellyCriterion()
-_execution_manager = build_execution_manager()
 _weight_evolver: Optional[WeightEvolver] = None
 _advisor = LLMAdvisor()
+_execution_manager = None  # lazy init in _execute_order_sync to avoid import-time REAL-ONLY gate in tests
+
+
+def _get_execution_manager():
+    global _execution_manager
+    if _execution_manager is None:
+        _execution_manager = build_execution_manager()
+    return _execution_manager
 
 
 def _execute_order_sync(signal: dict, symbol: str) -> Optional[str]:
@@ -63,6 +70,7 @@ def _execute_order_sync(signal: dict, symbol: str) -> Optional[str]:
     veto, kill switch, constitutional risk manager). Returns the order ID
     on success, None on rejection.
     """
+    em = _get_execution_manager()
     side = OrderSide.BUY if signal.get("bias") == "buy" else OrderSide.SELL
     order = Order(
         id=str(uuid.uuid4()),
@@ -80,12 +88,12 @@ def _execute_order_sync(signal: dict, symbol: str) -> Optional[str]:
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            future = asyncio.ensure_future(_execution_manager.execute_order(order))
+            future = asyncio.ensure_future(em.execute_order(order))
             fill = loop.run_until_complete(future)
         else:
-            fill = loop.run_until_complete(_execution_manager.execute_order(order))
+            fill = loop.run_until_complete(em.execute_order(order))
     except RuntimeError:
-        fill = asyncio.run(_execution_manager.execute_order(order))
+        fill = asyncio.run(em.execute_order(order))
     if fill is None:
         return None
     return fill.order_id
@@ -677,20 +685,34 @@ def _pipeline_risk_check(result: dict) -> dict:
     except Exception as _prof_e:
         log.debug("ProfileMapper skipped: %s", _prof_e)
 
-    # ── Risk parity sizing ───────────────────────────────────────
+    # ── Risk parity / HRP sizing (G7-WIRE: HRP dispatcher for >5 assets) ──
     _rp_weight = 1.0
     try:
-        from quant_nanggroe.engine.portfolio.risk_parity_bridgewater import RiskParityAllocator
-        _rp = RiskParityAllocator(target_vol=0.10, max_leverage=2.0)
+        # hrp_allocator.allocate() is a drop-in that uses HRP for multi-asset
+        # universes (>5) and falls back to RiskParityAllocator for small ones.
+        from quant_nanggroe.engine.portfolio.hrp_allocator import allocate as _hrp_allocate
         _volatilities = {symbol: market_atr}
-        _rp_weights = _rp.compute_risk_parity_weights(_volatilities)
+        _rp_weights = _hrp_allocate(_volatilities, target_vol=0.10, max_leverage=2.0)
         if _rp_weights and symbol in _rp_weights:
             _rp_weight = _rp_weights[symbol]
             sizing["volume"] = sizing["volume"] * _rp_weight
-            log.info("RiskParity weight=%s multiplier=%.2f", symbol, _rp_weight)
+            log.info("HRP/RiskParity weight=%s multiplier=%.2f", symbol, _rp_weight)
         result["risk_parity"] = _rp_weights
     except Exception as _rp_e:
-        log.warning("RiskParityAllocator skipped: %s", _rp_e)
+        log.warning("HRP allocator skipped: %s", _rp_e)
+        # Fallback to Bridgewater RiskParityAllocator (legacy path)
+        try:
+            from quant_nanggroe.engine.portfolio.risk_parity_bridgewater import RiskParityAllocator
+            _rp = RiskParityAllocator(target_vol=0.10, max_leverage=2.0)
+            _volatilities = {symbol: market_atr}
+            _rp_weights = _rp.compute_risk_parity_weights(_volatilities)
+            if _rp_weights and symbol in _rp_weights:
+                _rp_weight = _rp_weights[symbol]
+                sizing["volume"] = sizing["volume"] * _rp_weight
+                log.info("RiskParity(fallback) weight=%s multiplier=%.2f", symbol, _rp_weight)
+            result["risk_parity"] = _rp_weights
+        except Exception as _rp_e2:
+            log.warning("RiskParityAllocator skipped: %s", _rp_e2)
 
     if _vix_reduce and sizing["volume"] > 0:
         sizing["volume"] = sizing["volume"] * 0.5

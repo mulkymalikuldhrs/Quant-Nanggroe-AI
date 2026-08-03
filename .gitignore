@@ -16,6 +16,8 @@ build/
 
 # ── Virtual Environments ─────────────────────────────────────────────
 .venv/
+.verify_venv/
+.tmp-ll-venv/
 venv/
 env/
 

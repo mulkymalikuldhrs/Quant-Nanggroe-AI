@@ -1,39 +1,35 @@
-"""Data provider implementations: Alpaca, Binance, Yahoo, Polygon."""
+"""Data provider implementations package.
 
-# Package init
+NOTE: modules are imported lazily at the package level but only those that
+actually exist on disk are referenced here. Dangling references to deleted/
+moved provider files (alpha_vantage, coingecko, fred, openbb_mcp, polygon,
+twelvedata) were removed — they broke `import quant_nanggroe.data` entirely
+when the source files were purged. Optional-dependency providers (yahoo,
+binance) guard their third-party imports internally so the package imports
+cleanly without yfinance/ccxt installed.
+"""
 
+# Package init — only reference modules that exist on disk.
 __all__ = [
     'alpaca',
-    'alpha_vantage',
     'base',
     'binance',
-    'coingecko',
     'coingecko_provider',
     'crypto_provider',
     'finnhub_provider',
-    'fred',
     'macro_provider',
-    'openbb_mcp',
-    'polygon',
     'sec_edgar',
-    'twelvedata',
     'yahoo',
 ]
 
 from . import (
     alpaca,
-    alpha_vantage,
     base,
     binance,
-    coingecko,
     coingecko_provider,
     crypto_provider,
     finnhub_provider,
-    fred,
     macro_provider,
-    openbb_mcp,
-    polygon,
     sec_edgar,
-    twelvedata,
     yahoo,
 )

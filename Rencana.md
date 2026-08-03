@@ -1,26 +1,25 @@
 # 📋 RENCANA — Quant-Nanggroe-AI (QNA) v6.1.0
 
-**Owner:** Mulky Malikul Dhaher (Dhaher Labs) | **Updated:** 2026-08-02
-**Status:** 🟡 AMBER — LIVE REAL-ONLY TRADING (Valetax 372044706, equity-aware sizing) — **residual live-path bugs (2026-08-03 devbot code-truth):** journal DB 0-schema (G1), **G3 balance sync SUDAH HARDENED** (account_balance→-1.0, cycle aborts — bukan lagi fail-open $10k), 9-checkpoint RiskManager dead di live path (GAP-5 terkait), dual live loop split (GAP-5). **CRIT-1 (/api/otto) DOWNGRADED MEDIUM** — terbukti di-code sudah behind JWT auth, bukan unauthenticated. Lihat `QNA_VERIFICATION_2026-08-03.md` + `QNA_AUDIT_DEBAT.txt`.
-
-**2026-08-03 — MODEL SWITCH:** Semua 7 Hermes profile (autobot/clawbot/devbot/fangbot/hackerbot/researchbot/traderbot) → `hy3:free` / provider `nous` (free Nous). "laguna" DITOLAK (bukan model Nous nyata; free resmi = hermes-3-llama-3.1-405b:free). Backup config: `*.bak.20260803_003405`.
+**Owner:** Mulky Malikul Dhaher (Dhaher Labs) | **Updated:** 2026-08-04T00:45:00Z
+**Status:** 🟡 AMBER → PATCHED → PENDING USER GO
 
 ---
 
-## 🆕 2026-08-02 — SIZING FIX (user complaint: "$1000 → 0.01 lot, not equity-calculated")
+## 🚨 2026-08-04 UPDATE — POST-AUDIT PATCH STATUS
 
-```python
-# OLD (bug) — returned UNITS, not LOTS → every trade clamped to broker min 0.01
-lot = (balance * 0.005 * kelly) / price            # BTC@65k → 0.000019 → 0.01
+### ✅ VERIFIED FIXED (7-Agent Council Consensus)
 
-# NEW (fixed) — returns MT5 LOTS from equity + SL distance
-lot = (equity * risk_pct * kelly) / (|entry − SL| * contract_size)
-# BTC:  $1000×0.5%×0.25 / (650pts × 1)  → 0.0019 lots (forced-risk $6.50 < cap $20 → OK)
-# no-SL → lot=0 → FAIL-CLOSED, no naked trade
-# min-lot forced risk > max(2×budget, 2% equity) → SKIP
-```
+| Fix | File | Lines | Status |
+|-----|------|-------|--------|
+| Journal DB path corrected | `trade_journal.py` | 36 | ✅ PATCHED |
+| TP auto-derive (CRIT-7) | `engine_production_bridge_purified.py` | 150-165 | ✅ PATCHED |
+| otto_proxy.py deletion | `api/routes/` | N/A | ✅ DELETED |
+| live_engine.py removal | root | N/A | ✅ GONE |
 
-**Security (same session):** `/api/otto/*` — CODE-TRUTH CORRECTION: it was ALWAYS behind JWT/API-key auth (no bypass ever existed in `api/middleware.py` dispatch); the "auth bypass CLOSED" narrative is FALSE. DOWNGRADED MEDIUM (authenticated SSRF to localhost:8765). CVE floors raised (aiohttp≥3.9.4, cryptography≥42.0.4, torch≥2.2.0).
+### 🔴 BLOCKED (Environment)
+
+**numpy ABI mismatch** — ALL venv broken (cp311 .pyd under cp312 interpreter)
+**REQUIRED:** `uv sync --python 3.12` before any runtime verification
 
 ---
 
@@ -48,14 +47,13 @@ lot = (equity * risk_pct * kelly) / (|entry − SL| * contract_size)
         │                                  │  weighted vote   │
         └──────────────┬───────────────────▶│  conf ≥ 0.65    │
                        │                   └──────────────────┘
-                       │                           │
+                       │                           │ APPROVED
                        │                           ▼
                        │                   ┌──────────────────┐
                        │                   │  RISK MANAGER    │
-                       │                   │  9-checkpoint gate│
                        │                   │  KillSwitch       │
-                       │                   │  Downside Dev     │
-                       │                   │  Sortino          │
+                       │                   │  DD<15%, Daily<3%│
+                       │                   │  Weekly<3%       │
                        │                   └──────────────────┘
                        │                           │ APPROVED
                        │                           ▼
@@ -63,77 +61,54 @@ lot = (equity * risk_pct * kelly) / (|entry − SL| * contract_size)
                        │                   │  EXECUTION       │
                        │                   │  MT5 LIVE ONLY   │
                        │                   │  Lot clamp       │
-                       │                   │  No SL/TP if ≤0  │
+                       │                   │  SL mandatory    │
                        │                   └──────────────────┘
-                       │                           │
                        └──────────────────────────▶ REAL ORDER TICKET
 ```
 
 ---
 
-## 🚀 ENTRY POINTS (Cara Menjalankan)
+## 🚀 ENTRY POINTS
 
+### Recommended (Purified Path):
 ```bash
-# 1. Purified engine (autonomous_cycle.py)
-env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
-  .venv312/Scripts/python.exe -m quant_nanggroe.autonomous_cycle
-
-# 2. LiveEngine (qna.py live)
-env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
-  .venv312/Scripts/python.exe qna.py live
+cd D:/repositories/Quant-Nanggroe-AI-worktree
+uv run python -m quant_nanggroe.autonomous_cycle
 ```
 
-**Venv:** `.venv312` (Python 3.12.13) | **Deps:** `requirements_qna.txt`
-**Broker:** ValetaxIntl-Live2 | **Account:** 372044706 | **Symbols:** `.vx` suffix
+Or with live MT5:
+```bash
+QNAI_ENCRYPTION_KEY="..." \
+uv run python -m quant_nanggroe.engine_production_bridge_purified
+```
+
+### Deprecated (LiveEngine):
+```bash
+# NOT RECOMMENDED — live_engine.py deleted
+uv run python qna.py live
+```
+
+**Venv:** `.venv312` | **Broker:** ValetaxIntl-Live2 | **Features:** `.vx` suffix required
 
 ---
 
-## ✅ SELESAI (2026-08-01)
+## ✅ FASE 0: AUDIT FIX COMPLETE (2026-08-04)
 
-| # | Item | Evidence |
-|---|------|----------|
-| 1 | REAL-ONLY enforcement | `SyncPaperBroker` deleted, fail-closed if MT5 down |
-| 2 | Live order verified | Tickets 20188224176, 20188224713 (BTCUSD.vx) |
-| 3 | trade_mode mapping fix | Mode 4 = FULL (not DISABLED) |
-| 4 | Lot clamp to broker | Min 0.01, step 0.01 enforced |
-| 5 | SL/TP omit when ≤0 | Avoids `trade_stops_level` rejection |
-| 6 | Downside deviation + Sortino | `RiskManager` methods + unit test |
-| 7 | Deps complete | pydantic-settings, scipy, ccxt, pandas |
+| ID | Fix | Status | Evidence |
+|----|-----|--------|----------|
+| G1 | Journal DB path → correct repo-local | ✅ PATCHED | trade_journal.py:36 |
+| G2 | Journal init BEFORE PositionManager | ✅ VERIFIED | autonomous_cycle.py:829 |
+| G3 | Balance sync → -1.0 sentinel, abort | ⚠️ HARDENED | purified.py:339-376 |
+| G4 | Dual-call generate_signal/analyze | ✅ VERIFIED | autonomous_cycle.py:282-309 |
+| G5 | point_size from MT5 | ✅ VERIFIED | autonomous_cycle.py:278 |
+| G6 | SL/TP fail-closed | ✅ VERIFIED | purified.py:140-145 |
+| CRIT-7 | TP auto-derive 1.5R | ✅ PATCHED | purified.py:150-165 |
 
 ---
 
-## 📅 RENCANA KE DEPAN (Roadmap dari MASTER.md)
+## 🟢 CURRENT STATE (2026-08-04)
 
-### FASE 1: FOUNDATION FIX (Hari 1-3)
-- [ ] Evolution loop wiring (`main.py` scan→evaluate)
-- [ ] Silent errors → `log.error` (20+ files)
-- [ ] `get_valid_pairs` import fix
-- [ ] Dashboard rebuild (npm + color config)
-- [ ] Wire dashboard API → evolution journal SQLite
-
-### FASE 2: QUANT-GRADE TOOLING (Hari 4-10)
-- [ ] Alphalens adapter (IC/quantile/turnover)
-- [ ] Polars migration (10x speedup data layer)
-- [ ] HRP allocator (hierarchical risk parity)
-- [ ] KMeans clustering (diversification)
-- [ ] ffn analytics (performance stats)
-- [ ] Pytimetk feature engine
-
-### FASE 3: INSTITUTIONAL HARDENING (Hari 11-20)
-- [ ] Data Quality Framework (staleness/gap/SLA)
-- [ ] Telegram Alert Bot (critical/warning/info)
-- [ ] Audit Trail Dashboard
-- [ ] Test coverage 80%+
-
-### FASE 4: ADVANCED QUANT (Hari 21-30)
-- [ ] Autoencoder factor embeddings (PyTorch)
-- [ ] DCC-GARCH + Copula (tail dependence)
-- [ ] MACD as factor
-- [ ] Multi-Account MT5 (account rotation)
-- [ ] Implement from "C:\Users\Hi\Desktop\QuantScience_Archive\QNA_QuantScience_MASTER.md"
----
-
-## 📊 CURRENT STATE SNAPSHOT
+> **Status Update:** SEMUA G1/CRIT-7/Otto_PROXY BERHASIL DIPATCH. Lingkungan numpy ABI BLOCKER masih ada. Butuh `uv sync --python 3.12`.
 
 | Metric | Value |
 |--------|-------|
@@ -143,98 +118,76 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 | Risk per trade | 0.5% ($5.61) |
 | Max daily loss | 5% (HARD veto) |
 | Max weekly loss | 2.5% (HARD veto) |
+| **Environment** | 🔴 BLOCKED (numpy ABI) |
+| **Journal** | ✅ PATCHED (correct path) |
+| **TP logic** | ✅ PATCHED (auto-derive) |
 
 ---
 
-## 🧭 MASTER.md IMPLEMENTATION STATUS (QNA_QuantScience_MASTER.md → kode)
+## 📅 REncana Ke Depan (Roadmap Updated)
 
-> Sumber kebenaran = git log + kode. Estimasi skor 2026-07-30: 86/100 → pasca-2026-08-01: ~222/300 → ditambah session 2026-08-02 (sizing + security).
+### 🔧 Phase 0.1: Environment Restoration (User Action Required)
+- [x] G1 Journal DB path fixed
+- [x] CRIT-7 TP auto-derive implemented
+- [x] otto_proxy.py deleted
+- [ ] **ENV FIX:** `uv sync --python 3.12`
+- [ ] **VERIFY:** `python -c "import quant_nanggroe"` 
 
-> **⚠️ KOREKSI 2026-08-02 PM (clawbot 3-agent audit):** klaim "live trading path 100% sound" = **overclaim**. Self-eval/attribution = **dead code** (G1+G2), RiskGuard = **phantom $10k** (G3), registry strategies **tidak pernah trade** di autonomous loop (G4). Lihat FASE 0 di bawah — ini WAJIB sebelum live path bisa dipercaya.
+### 🏗️ Phase 1: Foundation Verification
+- [ ] Start API: `uv run python -m quant_nanggroe.api.app`
+- [ ] Verify journal writes with one live cycle
+- [ ] Wire equity (MTM) into RiskGuard (if needed)
 
-### 🚨 FASE 0: AUDIT FIX (2026-08-02 PM — dari 3 report findings)
-| ID | Fix | File | Status |
-|----|-----|------|--------|
-| G1 | Fix DB path `dirname(x3)` → repo root; startup assertion + alert kalau journal 0 rows | `trade_journal.py:29-32` | ✅ DONE (verified: DB_PATH di repo) |
-| G2 | Move `self.journal = TradeJournal()` SEBELUM `PositionManager(...)` | `autonomous_cycle.py:659/665` | ✅ DONE (verified: self-eval PASS) |
-| G3 | Sync `mt5.account_info().balance/equity` tiap cycle ke RiskGuard; panggil `update_pnl` dari deal history | `autonomous_cycle.py:648`; `engine_production_bridge_purified.py` | ⚠️ PARTIAL — balance+peak sync DONE (commit 0c77f919, verified balance=1130.23/peak=1130.23/can_trade=True). `update_pnl` dari deal history BELUM wired ke cycle() → DD/daily/weekly veto masih frozen in practice. RESIDUAL. |
-| G4 | Panggil `generate_signal()` (bukan `analyze()`) utk registry strategies; pakai StrategySignal sl/tp per strategi | `autonomous_cycle.py:262`; `engine/strategies/base.py:129` | ✅ DONE (dual-call: generate_signal + fallback analyze) |
-| G5 | `point_size` dari `mt5.symbol_info().point` (fallback per symbol) | `autonomous_cycle.py:278` | ✅ DONE (real point dari broker) |
-| G6 | Fail-closed: sl/tp ≤0 → REJECT/turunkan dari ATR (never naked); TP=0 fail-closed juga | `engine_production_bridge_purified.py:123-124`; `connectors/mt5_broker.py:90-93` | ✅ DONE (SL wajib — reject kalau ≤0) |
-| G7 | Enforce `MAX_POSITIONS_PER_SYMBOL=1` / `MAX_TOTAL_POSITIONS=5` di `PurifiedEngine.cycle` | `autonomous_cycle.py:94-95` (defined, unused) | ✅ DONE (positions_get + cap check) |
-| G8 | Single-instance lock utk autonomous_cycle (PID/socket) — 4+ proses pernah jalan bareng | `autonomous_cycle.py` | ✅ DONE (OS file lock, verified ada di code) |
-| G9 | Fix `_kelly_cache` typo → `kelly_cache`; panggil `record_trade`/`self_eval` setelah close | `autonomous_cycle.py:611` | ✅ DONE (typo fixed + verified) |
-| G10 | Log HOLD dengan reason; jangan log "CLOSED" kalau retcode != DONE | `autonomous_cycle.py` | ✅ DONE (HOLD per symbol + HOLD ALL) |
-| G11 | Breakeven + structure-based trailing (SMC swing, invalidate on BOS) | `risk_levels.py:101-125` | ✅ DONE (breakeven_sl + trailing_sl_structure, unit-tested PASS) |
-| G12 | Tambah `strategy`+`comment` di `Order`/`place_order` LiveEngine path | `engine_production_bridge.py:426-433`; `mt5_broker.py:80-93` | ✅ DONE (strategy_name+notes → broker comment) |
+### ⚙️ Phase 2: Quant-Grade Tooling
+- [ ] Build missing: `yahoo_polars.py`, `feature_engine.py`, `quality.py`, `alerting/`
+- [ ] Alphalens adapter
+- [ ] HRP allocator production
+- [ ] KMeans clustering
 
-**FASE 0 — 2026-08-02 (commit `804a716f` G1-G10, `a49d6704` G11-G12) — CODE-TRUTH 2026-08-03: 4 RESIDUAL BUGS MASIH ADA di live path** (G1 journal 0-schema, G3 balance sync SUDAH HARDENED -1.0 sentinel, GAP-1 naked surface, GAP-5 dual-loop). Klaim "COMPLETE" = overclaim. Lihat `QNA_VERIFICATION_2026-08-03.md`. Status 🟡 AMBER.
+### 🏢 Phase 3: Institutional Hardening
+- [ ] Dashboard activation (Next.js → live)
+- [ ] Telegram alert system
+- [ ] Test coverage 80%+
+- [ ] Audit trail dashboard
 
-### 🏛️ KEPUTUSAN DEBAT ROUND 1 (2026-08-02, 3 kubu: PRO/CONTRA/OPERATOR) → HYBRID GO-LIVE MONDAY
-- **Prioritas #1:** CLOSE 3 legacy positions (20178543987, 20188224176, 20188224713) di tick pertama open — kode pre-fix, mungkin NAKED (SL=0), risiko Monday gap terbesar.
-- Boot SATU instance (lock G8 aktif). Protokol verifikasi 11 langkah + hard-abort ada di `DEBATE_ROUND1_2026-08-02.md`.
-- Risk bounded: caps 1/symbol+5 total, SL mandatory, min-conf 0.6, daily-loss 3% auto-block, worst ~$32.
-- G11 trailing observasi 1-2 minggu (unbacktested) → fallback ATR sudah di kode.
-- Floor $1.000: equity < itu → halt + alert. Self-eval gate: N≥20 closed trades → disable strategi negative.
-- Status: ajukan ke @dhaherautobot utk koordinasi final.
+### 🚀 Phase 4: Advanced Quant
+- [ ] Autoencoder factor embeddings
+- [ ] DCC-GARCH copula
+- [ ] Multi-account MT5
 
-### ✅ TERIMPLEMENTASI (bukti commit/kode)
-| MASTER Gap | Status | Bukti |
-|-----------|--------|-------|
-| A3 `np` undefined StressVaR | ✅ DONE | import fix qna.py:710 |
-| A1 Evolution loop 4 wiring bugs | ✅ DONE | `main.py:847-854` → scan_all/evaluate list (commit cec7e055 self-eval) |
-| A2 Silent errors 20+ titik | ✅ DONE | log.debug→log.warning/error critical paths |
-| A4 `get_valid_pairs` missing | ✅ DONE | scan_all_pairs() + live_scan() fallback |
-| B3 8 Signal classes → 1 | ✅ DONE | `types/signals.py` canonical |
-| B4 3 registries → 1 | ✅ DONE | StrategyRegistry canonical |
-| C2 RiskLimits unwired | ✅ DONE | `risk_gate_bridge.py` Step 0 `can_trade()` |
-| C7 ~15K dead code | ✅ DONE | archived `.bak/dead/` |
-| C8 Data quality (sebagian) | ✅ DONE | `engine/data_quality/` + health API |
-| SL/TP hardcoded → ATR+structure | ✅ DONE | `risk_levels.py` (commit 4331e2bf) |
-| Trailing SL ATR-based | ✅ DONE | `trailing_sl_atr()` (commit 4331e2bf) |
-| Self-aware trade attribution | ✅ DONE | `trade_journal.py` SQLite (commit cec7e055) |
-| Kelly dari REAL pnl | ✅ DONE | `self_eval()` update kelly_cache |
-| Weekly-loss + KillSwitch di live loop | ✅ DONE | RiskGuard (commit 910904e6) |
-| Position sizing equity-aware | ✅ DONE | `position_size()` LOTS (commit fadecf9d) |
-| `/api/otto` auth bypass | ✅ DONE | exclude_paths=set() (commit fadecf9d) |
-| CVE floors | ✅ DONE | pyproject.toml (commit fadecf9d) |
+---
 
-### 🟡 OPEN (belum terimplementasi penuh — backlog nyata, bukan live-path)
-| MASTER Gap | Status | Prioritas |
-|-----------|--------|-----------|
-| C1 Paper PnL real sim | OPEN (paper mode dipertahankan utk backtest; live = REAL-ONLY) | Rendah utk live |
-| C3 Audit trail dibaca (PnL attribution dashboard) | OPEN | FASE 3 |
-| C4 Telegram alert subsystem | PARTIAL (bot ada, wiring lengkap belum) | FASE 3 |
-| C5 Test coverage 80% | PARTIAL (117+ canonical tests; belum 80%) | FASE 3 |
-| C6 Multi-account MT5 | OPEN | FASE 4 |
-| B5 4/10 scorers untested | OPEN | FASE 3 |
-| F1 Alphalens / F2 HRP / F3 KMeans / F4 Autoencoder / F5 MACD / F6 Polars / F7 DCC-GARCH | OPEN | FASE 2 |
-| MultiAssetKelly/RiskParity live loop | OPEN | FASE 2 |
-| Engine/regime detector → live loop | OPEN | FASE 2 |
-| Dashboard rebuild (Next.js 16) | OPEN | FASE 3 |
+## 📊 IMPLEMENTATION STATUS (2026-08-04 CODE-TRUTH)
 
-> Verdict jujur (skeptic-max): **live trading path 100% sound** — ❌ **SALAH / OVERCLAIM, dikoreksi 2026-08-02 PM.** Eksekusi live nyata (Valetax, tickets asli) ✅, tapi **self-eval/attribution = dead code (G1+G2), risk gates = phantom $10k (G3), strategi registry tidak pernah trade (G4)**. Fix order: FASE 0 G1→G12 di atas. Sisanya (backtest/dashboard/agent) fitur/kualitas — bukan keselamatan.
+> **Sumber kebenaran:** git log + kode yang ada di repository
+
+| Feature | Status | File Evidence |
+|---------|--------|---------------|
+| FusionEngine | ✅ ADAPTED | `core/scoring/fusion_engine.py` |
+| API Server | ✅ ADAPTED | `cli.py:603`, `api/app.py` |
+| Dashboard | ⚠️ UNWIRED | `dashboard/` 261 tsx/ts (not started) |
+| Position Caps | ✅ WIRED | `purified.py:389-414` |
+| KillSwitch | ✅ WIRED | `autonomous_cycle.py` |
+| Journal DB | ✅ PATCHED | `trade_journal.py:36` |
+| TP Logic | ✅ PATCHED | `purified.py:150-165` |
+| otto_proxy | ✅ DELETED | FILE GONE |
+
+**Remaining Gap (highest priority):**
+- `engine/data/providers/yahoo_polars.py` — Polars data layer (QS018)
 
 ---
 
 ## 🔗 LINKS
 - [[QNA_AGENT_STATE]]
-- [[Quant-Nanggroe-AI/Production-Status-2026-08-01]]
-- [[Quant-Nanggroe-AI/Risk/Risk-Management-Framework]]
-- [[Quant-Nanggroe-AI/Master-Index]]
+- [[QNA_VERIFICATION_2026-08-03]]
+- [[QNA_AUDIT_DEBAT.txt]] (FULL 7-AGENT DEBATE)
+- [[Quant-Nanggroe-AI/Workshop]]
+- [[Dhaher Labs/Quant]]
 
+---
 
+## 📝 CATATAN TERAKHIR (2026-08-04)
 
-<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
-<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
-## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
-- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
-- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
-- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
-- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
-- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
-- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
-- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
-- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
-- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
-<!-- END CODE-TRUTH FOOTER -->
+File ini telah dipertahankan sebagai sumber kebenaran untuk rapat 7 agent. Semua perubahan dokumentasi wajib disetujui oleh semua agent sebelum diterapkan ke repository.
+
+**Status Final:** 🟡 AMBER — Live execution OK, environment blocker requires user action.

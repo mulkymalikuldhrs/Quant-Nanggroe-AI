@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-QNA AUTONOMOUS TRADING CYCLE
-============================
+QNA AUTONOMOUS TRADING CYCLE (LEGACY / ORPHAN)
+===============================================
+DEPRECATED ENTRY POINT — NOT WIRED INTO THE RUNNING SYSTEM.
+The live autonomous loop is started by `start_default_scheduler()`
+(quant_nanggroe/engine/scheduler.py), which drives `autonomous_self_loop.py`
++ `engine/agentic/autonomous.py`. This module is retained ONLY because
+`tests/test_g1_g3_hardening.py` exercises its journal/PositionManager logic.
+Do NOT start new trading via this file. See docs/Rencana.md (G3).
+
 Main loop that runs continuously:
 1. Fetch market data
 2. Generate signals from ALL registered strategies
@@ -13,7 +20,7 @@ Main loop that runs continuously:
 
 Run: python autonomous_cycle.py
 
-Singleton guard: only ONE instance may run per machine (OS file lock).
+
 Prevents duplicate order execution when the cycle is accidentally started
 twice (e.g. via different venvs / nohup / env). Lock auto-releases on
 process death — no stale-lock issue.
@@ -27,6 +34,15 @@ import signal as sig
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+
+# Load .env (repo root) so QNA_MT5_LOGIN / QNA_LIVE_TRADING / QNAI_* are
+# available even when this module is run directly (not via app.py/launch.bat).
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(_env_path, override=False)
+except Exception:  # dotenv optional
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -287,7 +303,20 @@ class StrategySignalGenerator:
                 sl_hint = None
                 tp_hint = None
                 try:
-                    raw = strategy.generate_signal(candles)
+                    # R10 FIX (2026-08-04, user GO): feed real multi-timeframe candles
+                    # to MultiTimeframeStrategy so HTF/MTF/LTF windows span H1/M15/M5.
+                    if getattr(type(strategy), "__name__", "") == "MultiTimeframeStrategy":
+                        try:
+                            _h1 = self.market_data.get_candles(symbol, "H1", 200)
+                            _m5 = self.market_data.get_candles(symbol, "M5", 200)
+                        except Exception:
+                            _h1 = _m5 = None
+                        _mtf_kwargs = {}
+                        if _h1:
+                            _mtf_kwargs["timeframes"] = {"H1": _h1, "M15": candles, "M5": _m5 or candles}
+                        raw = strategy.generate_signal(candles, **_mtf_kwargs)
+                    else:
+                        raw = strategy.generate_signal(candles)
                     if raw is not None:
                         if hasattr(raw, "direction"):
                             # StrategySignal / canonical object
@@ -834,7 +863,14 @@ class AutonomousCycle:
         log.info("=" * 60)
         log.info("QNA AUTONOMOUS CYCLE INITIALIZING")
         log.info("=" * 60)
-        
+
+        # G1-deep hardening: check journal schema FIRST, before any network/broker calls.
+        # If journal is dead (lock contention, 0-byte DB), fail-closed immediately.
+        self.journal = TradeJournal()
+        if not self.journal._init_ok or not self.journal.db_healthy():
+            log.critical("G1-HARDENING: TradeJournal schema NOT initialized (0 tables / lock contention). Aborting initialize() — fail-closed.")
+            raise RuntimeError("TradeJournal schema init failed — refuse to run with dead journal (fail-closed)")
+
         # 1. Create purified engine
         self.engine = PurifiedEngine(initial_balance=10000.0)
         self.engine.start()
@@ -850,33 +886,20 @@ class AutonomousCycle:
             except Exception as e:
                 log.warning("F4-WIRE: equity_provider set skipped (MT5 equity unavailable): %s", e)
         log.info(f"Engine started: MT5={'LIVE' if self.engine.mt5._initialized else 'DOWN'}")
-        
+
         # 2. Market data
         self.market_data = MarketData(self.engine.mt5)
-        
+
         # 3. Signal generator
         self.signal_generator = StrategySignalGenerator(self.market_data)
 
-        # 4. Trade journal (strategy attribution + self-eval, SQLite-backed)
-        #    MUST be created BEFORE PositionManager — it is a required dependency,
-        #    and passing None silently kills close-journaling/self-eval (G2).
-        self.journal = TradeJournal()
-        # G1-deep hardening: fail-closed if journal schema didn't init.
-        # Previously: _init_db() could silently fail under multi-process SQLite
-        # write-lock (4+ concurrent autonomous_cycle instances) → DB 0 bytes,
-        # 0 tables → PositionManager.journal = None → ALL close-trade attribution
-        # lost → Kelly never updated from real PnL → daily/weekly loss veto STUCK.
-        if not self.journal._init_ok or not self.journal.db_healthy():
-            log.critical("G1-HARDENING: TradeJournal schema NOT initialized (0 tables / lock contention). Aborting initialize() — fail-closed.")
-            raise RuntimeError("TradeJournal schema init failed — refuse to run with dead journal (fail-closed)")
-
-        # 5. Position manager
+        # 4. Position manager
         self.position_manager = PositionManager(self.engine, self.market_data, self.journal)
 
-        # 6. Performance tracker
+        # 5. Performance tracker
         self.performance = PerformanceTracker(self.engine.risk)
 
-        # 7. KillSwitch (constitutional fail-closed) — wire state into RiskGuard
+        # 6. KillSwitch (constitutional fail-closed) — wire state into RiskGuard
         from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
         configure_kill_switch_file()
         self.kill_switch = KillSwitch()
@@ -943,6 +966,19 @@ class AutonomousCycle:
         except Exception as e:
             log.error(f"Position manager stage failed: {e}", exc_info=True)
             _alert_bot.alert_on_fail("position_manager", f"{type(e).__name__}: {e}")
+
+        # R18 FIX (2026-08-04, user GO): data-quality precheck — warn on stale/garbage
+        # feeds before generating signals (fail-safe: never blocks the loop).
+        try:
+            from quant_nanggroe.engine.data.quality import assess as _dq_assess
+            for _sym in CONFIG.SYMBOLS:
+                _df = self.market_data.get_candles(_sym, "M15", 50)
+                if _df:
+                    _rep = _dq_assess(_df, _sym)
+                    if not _rep.ok:
+                        log.warning(f"DATA QUALITY {_sym}: {_rep.reason}")
+        except Exception as e:
+            log.warning(f"data_quality precheck skipped: {e}")
 
         # 3. Generate signals for each symbol
         all_signals = []
@@ -1012,6 +1048,29 @@ class AutonomousCycle:
             _alert_bot.alert_on_fail("engine_status", f"{type(e).__name__}: {e}")
 
         log.info(f"Balance: ${status.get('balance', 0):.2f} | Trades: {status.get('trades', 0)} | Wins: {status.get('wins', 0)} | Risk: {'OK' if status.get('risk_ok') else status.get('risk_reason', 'n/a')}")
+
+        # R11 FIX (2026-08-04, user GO): periodic self-eval + self-evolve scheduler.
+        # Additive + fail-safe: must NEVER break the main cycle. Frequency via env.
+        try:
+            _eval_every = int(os.environ.get("QNA_SELF_EVAL_EVERY", "10"))
+            if self.cycle_count % _eval_every == 0 and self.journal:
+                self.journal.self_eval()
+                log.info(f"SELF-EVAL ran (periodic, cycle={self.cycle_count})")
+        except Exception as e:
+            log.warning(f"self_eval scheduler failed: {e}")
+        try:
+            _evolve_every = int(os.environ.get("QNA_EVOLVE_EVERY", "50"))
+            if self.cycle_count % _evolve_every == 0:
+                from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
+                _evo = StrategyEvolver()
+                for _name in StrategyRegistry.list_strategies():
+                    try:
+                        _evo.evolve(_name)
+                    except Exception as _ee:
+                        log.warning(f"self_evolve {_name} failed: {_ee}")
+                log.info(f"SELF-EVOLVE ran (periodic, cycle={self.cycle_count})")
+        except Exception as e:
+            log.warning(f"self_evolve scheduler failed: {e}")
 
         return status
     

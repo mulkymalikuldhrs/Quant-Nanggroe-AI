@@ -2831,6 +2831,1175 @@
       },
       "actual_pnl": 10.0,
       "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:18:56.546612+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:18:56.575114+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:18:56.591708+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:18:56.605721+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:18:56.622253+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:18:56.696746+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:18:56.714279+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:18:56.731927+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:18:56.749212+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:18:56.767736+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T17:18:56.786261+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:23:23.445014+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:23:23.463207+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:23:23.486938+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:23:23.507862+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:23:23.528030+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:23:23.662052+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:23:23.710464+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:23:23.733133+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:23:23.753866+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:23:23.775551+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T17:23:23.799148+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:27:49.963229+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:27:49.976255+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:27:49.989266+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:27:50.000891+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:27:50.012929+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:27:50.098158+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:27:50.113761+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:27:50.126892+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:27:50.138916+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:27:50.152658+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T17:27:50.165015+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:33:39.236712+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:33:39.253870+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:33:39.259638+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:33:39.275684+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:33:39.545337+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:33:39.600369+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:33:39.608395+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:33:39.624264+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:33:39.637616+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:33:39.642944+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T17:33:39.662160+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:56:47.143231+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:56:47.170569+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:56:47.196583+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:56:47.255785+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:56:47.278627+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T17:56:47.384760+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T17:56:47.402463+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T17:56:47.424493+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T17:56:47.443619+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T17:56:47.462729+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T17:56:47.483707+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T18:11:11.962038+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T18:11:11.986830+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T18:11:12.005191+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T18:11:12.021897+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T18:11:12.038395+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T18:11:12.112013+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T18:11:12.127977+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T18:11:12.143386+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T18:11:12.159614+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T18:11:12.180352+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T18:11:12.198465+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T18:24:09.173961+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T18:24:09.187514+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T18:24:09.200638+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T18:24:09.214925+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T18:24:09.233649+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "TechnicalScorer": {
+          "score": 30.0,
+          "confidence": 0.8
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t0",
+      "timestamp": "2026-08-03T18:24:09.307910+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t1",
+      "timestamp": "2026-08-03T18:24:09.323103+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t2",
+      "timestamp": "2026-08-03T18:24:09.341533+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t3",
+      "timestamp": "2026-08-03T18:24:09.361327+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t4",
+      "timestamp": "2026-08-03T18:24:09.383601+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
+    },
+    {
+      "trade_id": "t5",
+      "timestamp": "2026-08-03T18:24:09.401542+00:00",
+      "symbol": "X",
+      "scorer_scores": {
+        "Tech": {
+          "score": 30.0,
+          "confidence": 0.8
+        },
+        "Bad": {
+          "score": -5.0,
+          "confidence": 0.2
+        }
+      },
+      "actual_pnl": 10.0,
+      "predicted_bias": "buy"
     }
   ]
 }

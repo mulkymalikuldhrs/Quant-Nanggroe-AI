@@ -145,22 +145,32 @@ class MultiTimeframeStrategy(Strategy):
     # ------------------------------------------------------------------
 
     def generate_signal(self, data: Any, **kwargs) -> StrategySignal:
+        # R10 FIX (2026-08-04, user GO): real multi-timeframe. If caller passes
+        # `timeframes={tf: candles}`, use H1 for HTF, M15 for MTF, M5 for LTF windows
+        # instead of fake windows on a single M15 series.
+        tf = kwargs.get("timeframes") or {}
+        htf_src = tf.get("H1", data)
+        mtf_src = tf.get("M15", data)
+        ltf_src = tf.get("M5", data)
         try:
             closes = self._extract(data, "close")
-            if len(closes) < self._parameters.get("htf_bars", 50) + 5:
-                return self._hold(f"Insufficient data (need {self._parameters.get('htf_bars', 50) + 5}+ bars)")
+            htf_closes = self._extract(htf_src, "close")
+            mtf_closes = self._extract(mtf_src, "close")
+            ltf_closes = self._extract(ltf_src, "close")
+            if len(closes) < self._parameters.get("ltf_bars", 5) + 5:
+                return self._hold(f"Insufficient data (need {self._parameters.get('ltf_bars', 5) + 5}+ bars)")
 
             htf_bars = self._parameters.get("htf_bars", 50)
             mtf_bars = self._parameters.get("mtf_bars", 20)
             ltf_bars = self._parameters.get("ltf_bars", 5)
 
-            # Detect trends
-            htf_dir, htf_str = self._detect_trend(closes, htf_bars)
-            mtf_dir, mtf_str = self._detect_trend(closes, mtf_bars)
-            ltf_dir, ltf_str = self._detect_trend(closes, ltf_bars)
+            # Detect trends on each real timeframe
+            htf_dir, htf_str = self._detect_trend(htf_closes, htf_bars)
+            mtf_dir, mtf_str = self._detect_trend(mtf_closes, mtf_bars)
+            ltf_dir, ltf_str = self._detect_trend(ltf_closes, ltf_bars)
 
-            # Volatility
-            vol = self._detect_volatility(closes, htf_bars)
+            # Volatility from HTF
+            vol = self._detect_volatility(htf_closes, htf_bars)
 
             indicators = {
                 "htf_trend": htf_dir, "htf_strength": round(htf_str, 4),

@@ -122,12 +122,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Start autonomous trading scheduler if enabled ───────────────
     import os
-    if os.environ.get("QNA_SCHEDULER_ENABLED", "0") == "1":
+    # O1 FIX (2026-08-04, 7/7 council + user GO, clawbot conditional vote):
+    # auto-start DEFAULT ON, but fail-closed — refuse to start the loop if MT5 is
+    # not reachable (no no-op loop wasting resources). User may set
+    # QNA_SCHEDULER_ENABLED=0 to disable.
+    if os.environ.get("QNA_SCHEDULER_ENABLED", "1") != "0":
         try:
-            from quant_nanggroe.engine.scheduler import start_default_scheduler
-            interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
-            start_default_scheduler(interval_minutes=interval)
-            logger.info("aut_scheduler_started", extra={"interval_minutes": interval})
+            from quant_nanggroe.connectors.mt5_broker import MT5Broker
+            _pre = MT5Broker()
+            _pre.connect()
+            if not _pre.connected:
+                # R8 FIX (user GO): fail-closed — do NOT start the loop without a
+                # reachable broker. Loud warning instead of silent no-op loop.
+                logger.warning(
+                    "aut_scheduler_blocked_no_mt5: MT5 unreachable — set "
+                    "QNA_SCHEDULER_ENABLED=0 or supply valid MT5 creds. Loop NOT started."
+                )
+            else:
+                from quant_nanggroe.engine.scheduler import start_default_scheduler
+                interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
+                start_default_scheduler(interval_minutes=interval)
+                logger.info("aut_scheduler_started", extra={"interval_minutes": interval})
         except Exception as exc:
             logger.warning("aut_scheduler_start_failed", extra={"error": str(exc)})
 

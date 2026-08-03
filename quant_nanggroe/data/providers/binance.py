@@ -13,7 +13,12 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import ccxt.async_support as ccxt
+# ccxt is an OPTIONAL dependency. Import lazily so the module imports cleanly
+# without it; fail only when Binance data is actually used.
+try:
+    import ccxt.async_support as ccxt
+except Exception:  # pragma: no cover - optional dep absent
+    ccxt = None
 import httpx
 
 from quant_nanggroe.data.providers.base import DataProvider

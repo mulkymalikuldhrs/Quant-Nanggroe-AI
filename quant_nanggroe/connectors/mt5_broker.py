@@ -91,10 +91,18 @@ class MT5Broker(BrokerConnector):
         _comment = order.notes or (order.strategy_name or "qna")
         if _comment:
             req["comment"] = str(_comment)[:32]
-        if order.stop_loss is not None:
-            req["sl"] = float(order.stop_loss)
-        if order.take_profit is not None:
-            req["tp"] = float(order.take_profit)
+        # R7 FIX (2026-08-04, 7/7 council + user GO): fail-closed — never place a
+        # naked order without SL/TP. Reject outright if missing/invalid.
+        if order.stop_loss is None or float(order.stop_loss) <= 0:
+            raise RuntimeError(
+                f"MT5Broker.blocked — SL required (no naked fill): {order.symbol} {order.side}"
+            )
+        req["sl"] = float(order.stop_loss)
+        if order.take_profit is None or float(order.take_profit) <= 0:
+            raise RuntimeError(
+                f"MT5Broker.blocked — TP required (no naked fill): {order.symbol} {order.side}"
+            )
+        req["tp"] = float(order.take_profit)
 
         max_retries = 2
         last_error = None

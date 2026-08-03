@@ -159,28 +159,54 @@ class RiskGateBridge:
     def __init__(
         self,
         initial_equity: Optional[float] = None,
+        equity_provider: Optional[callable] = None,
     ) -> None:
         """Initialize the Risk Gate Bridge.
 
         Args:
             initial_equity: Starting account equity for the RiskManager.
                 Falls back to STARTING_CAPITAL when omitted/unset.
+            equity_provider: Optional zero-arg callable returning live equity
+                (e.g. ``broker.get_equity``). When provided, ``evaluate`` uses the
+                live value (fail-closed via ``_resolve_equity``). When absent, the
+                bridge falls back to ``initial_equity``/STARTING_CAPITAL. This wires
+                real MTM equity into the risk gate without hard-coupling to MT5.
         """
+        self._equity_provider = equity_provider
         self._risk_manager = RiskManager(initial_equity=_resolve_equity(initial_equity if initial_equity is not None else STARTING_CAPITAL))
         self._check_gate = RiskCheckGate()
         self._risk_limits = RiskLimits(max_weekly_loss_pct=MAX_WEEKLY_LOSS)
 
         logger.info(
             "RiskGateBridge initialized with equity=%.2f, "
+            "equity_provider=%s, "
             "constitutional limits: max_risk=%.2f%%, max_daily_loss=%.2f%%, "
             "max_weekly_loss=%.2f%%, max_drawdown=%.0f%%, min_rr=1:%.1f",
             initial_equity,
+            "wired" if equity_provider is not None else "fallback",
             MAX_RISK_PER_TRADE * 100,
             MAX_DAILY_LOSS * 100,
             MAX_WEEKLY_LOSS * 100,
             MAX_DRAWDOWN_PCT * 100,
             MIN_RISK_REWARD,
         )
+
+    def _live_equity(self, provided: Optional[float]) -> float:
+        """Resolve the equity to use for this evaluation, fail-closed.
+
+        Priority: explicit ``provided`` arg -> ``equity_provider()`` -> current
+        RiskManager equity -> _resolve_equity floor.
+        """
+        raw = provided
+        if raw is None and self._equity_provider is not None:
+            try:
+                raw = self._equity_provider()
+            except Exception as exc:  # provider (MT5) down -> fail closed, not open
+                logger.warning("equity_provider_failed_fallback_floor: %s", exc)
+                raw = None
+        if raw is None:
+            raw = getattr(self._risk_manager, "equity", None)
+        return _resolve_equity(raw)
 
     @property
     def risk_manager(self) -> RiskManager:
@@ -231,7 +257,8 @@ class RiskGateBridge:
         )
 
         # P1b fail-CLOSED: never let a missing/garbage equity silence risk vetoes.
-        account_balance = _resolve_equity(account_balance)
+        # Wires live MTM equity via equity_provider when available (CRIT-3 fix).
+        account_balance = self._live_equity(account_balance)
 
         active_positions = active_positions or []
 
@@ -452,7 +479,7 @@ class RiskGateBridge:
         # Get portfolio/account info from state
         portfolio_state = state.get("portfolio_state", {})
         metadata = state.get("metadata", {})
-        account_balance = _resolve_equity(portfolio_state.get("total_value", None))
+        account_balance = self._live_equity(portfolio_state.get("total_value", None))
         daily_pnl = metadata.get("daily_pnl", 0.0)
         weekly_pnl = metadata.get("weekly_pnl", 0.0)
         trade_count_today = metadata.get("trade_count_today", 0)
@@ -474,7 +501,19 @@ class RiskGateBridge:
             direction = decision.get("action", "HOLD")
             lot_size = decision.get("quantity", decision.get("lot_size", 0.01))
             entry = decision.get("entry_price", 0.0)
-            stop_loss = decision.get("stop_loss", 0.0)
+            # O2 FIX (2026-08-04, 7/7 council + user GO): missing/invalid SL must
+            # HARD-REJECT, never forward 0.0 (naked fill). Fail-closed.
+            _sl_raw = decision.get("stop_loss", None)
+            if not _sl_raw or float(_sl_raw) <= 0:
+                modified_decisions.append({
+                    **decision,
+                    "action": "HOLD",
+                    "original_action": direction,
+                    "deterministic_risk_rejected": True,
+                    "deterministic_risk_reason": "missing_or_invalid_stop_loss",
+                })
+                continue
+            stop_loss = float(_sl_raw)
             take_profit = decision.get("take_profit", None)
 
             # Skip HOLD/CLOSE actions

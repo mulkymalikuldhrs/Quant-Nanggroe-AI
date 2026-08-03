@@ -57,4 +57,37 @@ def enrich_candles(candles: list[dict]) -> list[dict]:
         return [dict(c) for c in candles]
 
 
-__all__ = ["enrich_candles", "feature_names"]
+def validate_factor_ic(candles: list[dict], feature: str = "rsi_14",
+                       forward: int = 5) -> float | None:
+    """G6-WIRE: run Alphalens IC on a historical candle window.
+
+    The alphalens_adapter (engine/factors/alphalens_adapter.py) was implemented
+    but never called. This wires it into the factor-validation path: given a
+    window of candles we have forward returns, so we can compute the
+    information coefficient of a feature vs forward return. Returns the mean IC
+    (or None if insufficient data / compute fails). Fail-safe.
+    """
+    if not candles or len(candles) < 30:
+        return None
+    try:
+        from quant_nanggroe.engine.factors.alphalens_adapter import (
+            FactorData,
+            factor_information_coefficient,
+        )
+        df = _candles_to_df(candles)
+        enriched = generate_features(df)
+        if feature not in enriched.columns:
+            return None
+        fwd_ret = df["close"].pct_change(forward).shift(-forward)
+        fd = FactorData(
+            factor=enriched[feature],
+            forward_returns=fwd_ret,
+            datetime=df.index if hasattr(df, "index") else None,
+        )
+        ic = factor_information_coefficient(fd)
+        return float(ic) if ic is not None else None
+    except Exception:
+        return None
+
+
+__all__ = ["enrich_candles", "feature_names", "validate_factor_ic"]

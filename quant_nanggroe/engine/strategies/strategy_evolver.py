@@ -154,6 +154,41 @@ class StrategyEvolver:
 
         return attempt
 
+    # R11b FIX (2026-08-04, user GO): real evolve() — previously MISSING, so every
+    # call to self._strategy_evolver.evolve(name) was dead code (AttributeError).
+    # Now: load current params, mutate, validate via evaluate() (real backtest),
+    # and persist if accepted. Makes the autonomous self-evolve loop functional.
+    def evolve(self, strategy_name: str) -> Optional["EvolveAttempt"]:
+        """Mutate + validate a strategy's parameters and persist if improved."""
+        from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+
+        baseline = dict(StrategyRegistry.get_evolved_params(strategy_name) or {})
+        if not baseline:
+            # No evolved defaults yet — seed from registered metadata params if any.
+            try:
+                meta = StrategyRegistry.get_metadata(strategy_name)
+                if meta is not None and getattr(meta, "parameters", None):
+                    baseline = dict(meta.parameters.params if hasattr(meta.parameters, "params") else meta.parameters)
+            except Exception:
+                baseline = {}
+        if not baseline:
+            logger.info("EVOLVE skip '%s': no baseline params to mutate", strategy_name)
+            return None
+
+        mutated = dict(baseline)
+        for k, v in baseline.items():
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                import random
+                delta = v * 0.1 if v != 0 else 0.1
+                mutated[k] = v + random.uniform(-delta, delta)
+        try:
+            attempt = self.evaluate(strategy_name, baseline, mutated)
+            logger.info("EVOLVE '%s': accepted=%s reason=%s", strategy_name, attempt.accepted, attempt.reason)
+            return attempt
+        except Exception as exc:
+            logger.warning("EVOLVE '%s' failed: %s", strategy_name, exc)
+            return None
+
     def get_history(self, strategy_name: Optional[str] = None) -> list[EvolveAttempt]:
         """Get evolution history, optionally filtered by strategy."""
         if strategy_name:

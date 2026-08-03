@@ -1,0 +1,3 @@
+PASSED tests/test_exchange/test_guards.py::TestResultTypes::test_pipeline_result_failed
+PASSED tests/test_exchange/test_rugcheck.py::TestScoreComputation::test_all_failed
+538 failed, 4090 passed, 193 skipped, 117 warnings, 77 errors, 15 subtests passed in 224.40s (0:03:44)

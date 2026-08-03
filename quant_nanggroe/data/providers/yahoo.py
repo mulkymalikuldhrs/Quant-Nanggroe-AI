@@ -12,7 +12,12 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-import yfinance as yf
+# yfinance is an OPTIONAL dependency (QS/yahoo_polars). Import lazily so the
+# module imports cleanly without it; fail only when Yahoo data is actually used.
+try:
+    import yfinance as yf
+except Exception:  # pragma: no cover - optional dep absent
+    yf = None
 
 from quant_nanggroe.data.providers.base import DataProvider
 from quant_nanggroe.types.market import OHLCV, OrderBook, Ticker, TimeFrame
