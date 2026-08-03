@@ -577,6 +577,9 @@ class BacktestEngine:
         if position_sizer:
             return position_sizer(target_weight, equity, price)
         # ponytail: scale notional by target vol so high-vol assets (SOL) don't get 1.0 leverage blowups
+        # sym_vol may be a pandas Series (rolling vol per bar); use the LAST value as scalar.
+        if hasattr(sym_vol, "iloc") and hasattr(sym_vol, "empty"):
+            sym_vol = float(sym_vol.iloc[-1]) if not sym_vol.empty else 0.0
         vol_mult = 1.0 if sym_vol <= 0 else min(1.0, self.config.vol_target_ann / sym_vol)
         size = (abs(target_weight) * equity * self.config.leverage * vol_mult) / price
         # Risk limit: 20:1 reward-to-risk threshold
