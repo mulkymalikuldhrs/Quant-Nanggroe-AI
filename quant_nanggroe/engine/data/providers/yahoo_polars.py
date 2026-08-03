@@ -8,15 +8,22 @@ degradation, per QNA ponytail rule).
 Design:
 - No import-time dependency on polars/yfinance.
 - Lazy imports inside fetch(); ImportError -> pandas fallback path.
-- Conforms to engine/data/provider_interface.QNAProviderBase shape (best-effort).
+- Implements QNAProviderBase interface (engine/data/provider_interface.py).
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+
+from quant_nanggroe.engine.data.provider_interface import (
+    DataCategory,
+    DataRequest,
+    DataResponse,
+    QNAProviderBase,
+)
 
 
 def _fetch_yahoo_pandas(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
@@ -70,7 +77,52 @@ def rolling_sharpe(close: object, window: int = 20) -> object:
             return out
         return close
     if isinstance(close, pl.DataFrame):
-        ret = close["close"].pct_change()
-        roll = (ret.rolling(window).mean() / (ret.rolling(window).std() + 1e-9)) * np.sqrt(252)
+        ret = pl.col("close").pct_change()
+        roll = (pl.col("close").pct_change().rolling_mean(window) /
+                (pl.col("close").pct_change().rolling_std(window) + 1e-9)) * np.sqrt(252)
         return close.with_columns(roll.alias("rolling_sharpe"))
     return close
+
+
+class YahooPolarsProvider(QNAProviderBase):
+    """QNAProviderBase implementation for Yahoo Polars data layer (QS018).
+
+    Falls back to pandas when Polars is not installed. No import-time
+    dependency on either library.
+    """
+
+    categories: List[DataCategory] = [
+        DataCategory.EQUITY_OHLCV,
+        DataCategory.CRYPTO_OHLCV,
+        DataCategory.FOREX_OHLCV,
+    ]
+
+    @property
+    def name(self) -> str:
+        return "yahoo_polars"
+
+    def fetch(self, request: DataRequest) -> DataResponse:
+        """Fetch OHLCV for the requested symbol.
+
+        Params honored: period (default '1y'), interval (default '1d'),
+        as_polars (default True).
+        """
+        symbol = request.symbol
+        params = request.params or {}
+        period = params.get("period", "1y")
+        interval = params.get("interval", "1d")
+        as_polars = params.get("as_polars", True)
+
+        try:
+            data = fetch_ohlcv(symbol, period=period, interval=interval, as_polars=as_polars)
+            if hasattr(data, "to_dict"):
+                results = data.to_dict(orient="records") if hasattr(data, "to_dict") else []
+                if isinstance(data, pd.DataFrame):
+                    results = data.to_dict("records")
+            elif hasattr(data, "rows"):
+                results = data.rows()
+            else:
+                results = []
+            return DataResponse(results=results, provider=self.name, error="")
+        except Exception as exc:
+            return DataResponse(results=[], provider=self.name, error=str(exc))
