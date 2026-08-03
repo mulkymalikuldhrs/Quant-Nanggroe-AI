@@ -1,16 +1,17 @@
 # QNA Agent State — Quant Nanggroe AI
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-04T05:00Z — Final audit (7-agent consensus, git HEAD 2ed9a9f2)
-**Source of Truth:** Code at git HEAD `2ed9a9f2cc0caf20b7e140fd79fa379b2a8e24bb`
-**Status:** 🟢 GREEN (FASE 0 COMPLETE) — 7/7 agent consensus + devbot parallel fixes
+Updated: 2026-08-04T06:00Z — Final audit + /api/features wiring (git HEAD 54423418)
+Source of Truth: Code at git HEAD `54423418`
+Status: 🟢 GREEN (FASE 0 COMPLETE) — 7/7 agent consensus + devbot parallel fixes
 
 ---
 
 ## 🟢 CURRENT STATUS: GREEN — FASE 0 COMPLETE
 
 All G1-G12 + CRIT-1-7 fixed and verified via code inspection. Devbot parallel session
-added F4/M1/M4/GAP-5-gate (commit e578c940). All py_compile OK.
+added F4/M1/M4/GAP-5-gate (commit e578c940). /api/features endpoint wired (commit 2f14c03b).
+All py_compile OK. 30/30 tests pass.
 
 ### ✅ VERIFIED FIXED (7-agent consensus + devbot parallel, all code-verified)
 
@@ -40,6 +41,7 @@ added F4/M1/M4/GAP-5-gate (commit e578c940). All py_compile OK.
 | M4 | yahoo_polars.py | engine/factors/yahoo_polars.py | devbot e578c940 — Polars data layer |
 | W3 | 4 QS modules built | ff7132e2 | quality.py, feature_engineer.py, ffn_adapter.py, downside_deviation.py (10 tests pass) |
 | GAP-5 | LiveEngine gated | live_engine.py | devbot e578c940 — `QNA_LIVE_ENGINE_EXECUTE=0` (default OFF) |
+| W-gap-3 | /api/features wired | features.py + app.py | 2f14c03b — mount_router bypasses body parsing, self-parse JSON |
 
 ### ⚠️ BLOCKED / PENDING USER GO
 | Item | Status | Action |
@@ -60,6 +62,7 @@ added F4/M1/M4/GAP-5-gate (commit e578c940). All py_compile OK.
 | W4 | Archive upgrade path | ✅ DONE | e578c940 (M1/M4) |
 | W5 | GAP-5 resolution | ✅ ADDRESSED | e578c940 (gate env var) |
 | W6 | Journal verification | 🔴 PENDING | Needs runtime |
+| W-gap-3 | /api/features endpoint | ✅ DONE | 2f14c03b (30/30 tests pass) |
 
 ---
 
@@ -69,6 +72,7 @@ added F4/M1/M4/GAP-5-gate (commit e578c940). All py_compile OK.
 **Status:** 🟢 GREEN (FASE 0 COMPLETE)
 **7-Agent Vote:** ✅ 7/7 consensus on all decisions
 **Devbot:** ✅ F4/M1/M4/GAP-5-gate applied
+**This session:** ✅ W-gap-3 (/api/features wired, NaN→null, 30/30 tests pass)
 **Next:** User GO on W1 (boot API for runtime verification) + W6 (live journal proof)
 
 ---
