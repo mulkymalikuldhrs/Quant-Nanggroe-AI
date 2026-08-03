@@ -40,7 +40,7 @@ def test_provider_categories():
 def test_provider_fetch_empty_symbol():
     """fetch() on invalid symbol returns DataResponse (never crashes)."""
     from quant_nanggroe.engine.data.providers.yahoo_polars import YahooPolarsProvider
-    from quant_nanggre.engine.data.provider_interface import DataRequest, DataCategory
+    from quant_nanggroe.engine.data.provider_interface import DataRequest, DataCategory
     provider = YahooPolarsProvider()
     request = DataRequest(category=DataCategory.EQUITY_OHLCV, symbol="INVALID_TEST_SYMBOL_12345")
     response = provider.fetch(request)
