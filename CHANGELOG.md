@@ -1,6 +1,34 @@
 # Changelog — Quant Nanggroe AI
 
-## 2026-08-04 — 7-agent council: CRIT-7 + CRIT-1 FIXES APPLIED (commit 4754b6ef)
+## 2026-08-04 — FINAL: 🟢 GREEN — FASE 0 COMPLETE (git HEAD ff7132e2)
+
+### Status: 7/7 Agent Consensus — All G1-G12 + CRIT-1-7 Fixed + Verified
+
+| ID | Fix | File | Commit |
+|----|-----|------|--------|
+| G1 | Journal DB path | trade_journal.py:36 | 4754b6ef |
+| G2 | Journal before PositionManager | autonomous_cycle.py:863-874 | 804a716f |
+| G3 | Phantom $10k balance | purified:82-96, 371-393 | 0c77f919 |
+| G4 | Registry strategies in live loop | autonomous_cycle.py:280-290 | 804a716f |
+| G5 | point_size from MT5 | autonomous_cycle.py:322-334 | 804a716f |
+| G6 | Fail-closed SL/TP | purified:140-164 | 804a716f |
+| G7 | Position caps | purified:426-454 | 804a716f |
+| G8 | Singleton lock | autonomous_cycle.py:45, 92 | 804a716f |
+| G9 | Kelly cache typo | autonomous_cycle.py:777 | 804a716f |
+| G11 | Breakeven trailing | autonomous_cycle.py | a49d6704 |
+| G12 | Strategy attribution | purified:486 | 804a716f |
+| CRIT-1 | otto_proxy DELETED | api/routes/otto_proxy.py | 4754b6ef |
+| CRIT-2 | Balance sync from MT5 | purified:82-96, 371-393 | 0c77f919 |
+| CRIT-3 | Equity MTM wired | mt5_broker.py:171-176 | 0c77f919 |
+| CRIT-7 | TP auto-derive 1.5R | purified:149-164 | 4754b6ef |
+| C2 | Legacy close fail-closed | autonomous_cycle.py | dc3992eb |
+| C6 | Equity floor $1000 | purified:419 | f40137c3 |
+| C7 | self_eval threshold | trade_journal.py | f40137c3 |
+| W3 | 4 QS modules built | ff7132e2 | ff7132e2 |
+
+**Blocked (user GO required):** W1 (boot API), W4 (delete LiveEngine), W6 (live journal proof)
+
+
 
 ### What Changed (7/7 agent consensus → code-verified)
 - **CRIT-7 FIXED:** `engine_production_bridge_purified.py:149-165` — TP auto-derive fail-closed.

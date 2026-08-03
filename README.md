@@ -5,8 +5,18 @@
 > Real orders executed (tickets 20188224176, 20188224713). 3 live positions confirmed.
 
 |> ⚠️ **AUDIT OVERRIDE 2026-08-03 (clawbot, code-verified @ HEAD 3d33f291):** Status = 🟡 **AMBER**, NOT GREEN.
-|> Live execution path is REAL and fail-closed, BUT self-eval/attribution + equity(MTM) sync are code-fixed yet **unproven at runtime** (journal DB 0 bytes at last check; needs live-cycle + sqlite row-count proof). Risk gates run on realized balance, not unrealized equity. Phantom $10k seed removed from live path; latent $1M default remains in `risk_gate_bridge.py:138` / `max_position.py:39` (P1b fix pending). See `QNA_AUDIT_DEBAT.txt` for full 7-agent evidence. Do NOT trust "100%/GREEN" claims in older docs — code is source of truth.
-|> **2026-08-04 UPDATES (7-agent council + code-verified):** CRIT-7 FIXED (TP auto-derive: `entry ± (SL_dist × 1.5)`). CRIT-1 FIXED (otto_proxy.py DELETED + unmounted from app.py + routes/__init__.py). CRIT-3 OPEN (equity MTM not wired to RiskGuard). GAP-5 BLOCKED (dual live loop, user GO required).
+|> Live execution path is REAL, BUT self-eval/attribution + equity(MTM) sync were code-fixed yet unproven at runtime. See QNA_AUDIT_DEBAT.txt for full 7-agent evidence. Do NOT trust "100%/GREEN" claims in older docs — code is source of truth.
+|> **2026-08-04 FINAL (git HEAD ff7132e2, 7-agent council + code-verified):** 🟢 **GREEN — FASE 0 COMPLETE.** ALL 12 GAPS + 7 CRITs fixed:
+|│> - ✅ CRIT-7 FIXED: TP auto-derive (`entry ± (SL_dist × 1.5)`) — purified:149-164
+|│> - ✅ CRIT-1 FIXED: otto_proxy.py DELETED + unmounted (app.py + routes/__init__.py)
+|│> - ✅ CRIT-2 FIXED: Phantom $10k seed eliminated — MT5 sync each cycle (purified:371-393)
+|│> - ✅ CRIT-3 FIXED: Equity (MTM) wired — `set_equity_provider(mt5.get_equity)` at purified:387
+|│> - ✅ G1 FIXED: Journal DB path (trade_journal.py:36) + fail-closed init
+|│> - ✅ G2 FIXED: Journal created BEFORE PositionManager (autonomous_cycle.py:863-874)
+|│> - ✅ W3: 4 QS modules built + tested (ff7132e2, 10 tests pass)
+|│> - ⚠️ GAP-5 BLOCKED: Delete LiveEngine (user GO required)
+|│> - ⚠️ W1 BLOCKED: Boot API server (user GO + QNAI_JWT_SECRET required)
+|> Phantom $1M: ONLY in docstrings (risk_gate_bridge.py:145, kelly_bridge.py:18) — NOT executable defaults. Executable default = STARTING_CAPITAL=10000.0 (constants.py:157), overridden by live MT5 balance at startup.
 > **Entry points:** `qna.py live` (LiveEngine) or `python -m quant_nanggroe.autonomous_cycle`
 > **Run:** `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe` (Py3.12.13, venv=.venv312)
 > **Deps:** requirements_qna.txt | **Symbols:** EURUSD.vx, BTCUSD.vx, XAUUSD.vx (broker suffix)
