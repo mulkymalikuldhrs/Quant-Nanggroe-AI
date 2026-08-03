@@ -730,6 +730,16 @@ class LiveEngine:
         tp_target = TP_TARGETS.get(strategy, 0.05)
         tp_price = price * (1 + tp_target)
         # Phase A: push real order through wired execution manager (MT5 LIVE, REAL-ONLY)
+        # GAP-5 CONVERGE: autonomous_cycle is the CANONICAL executor. LiveEngine runs
+        # scoring/audit ONLY unless explicitly enabled to execute. Prevents double-MT5
+        # orders on the same account. Env override: QNA_LIVE_ENGINE_EXECUTE=1 to allow.
+        import os as _os
+        if not _os.environ.get("QNA_LIVE_ENGINE_EXECUTE", "0") == "1":
+            log.warning(
+                "GAP-5: LiveEngine execute DISABLED (canonical executor = autonomous_cycle). "
+                "Scoring/audit only. Set QNA_LIVE_ENGINE_EXECUTE=1 to enable dual-exec."
+            )
+            return
         # P0 FIX: only record position AFTER confirming fill — no phantom positions on failure
         try:
             result = self._exec.execute_signal(

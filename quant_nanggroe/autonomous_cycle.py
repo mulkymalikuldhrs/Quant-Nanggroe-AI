@@ -266,7 +266,15 @@ class StrategySignalGenerator:
         # ATR for volatility-aware SL/TP (replaces hardcoded ±0.5%/±1%)
         from quant_nanggroe.risk_levels import compute_atr, strategy_sl_tp
         atr = compute_atr(candles, period=14)
-        
+
+        # GAP M1-WIRE: attach QuantScience features to each candle (non-destructive,
+        # fail-safe). Strategies can read candle["features"]; unaware strategies unaffected.
+        from quant_nanggroe.engine.factors.pipeline import enrich_candles
+        try:
+            candles = enrich_candles(candles)
+        except Exception as fe:
+            log.warning("M1-WIRE: feature enrichment skipped (fail-safe): %s", fe)
+
         for name, strategy in self.strategies.items():
             try:
                 # G4 FIX: registry strategies implement generate_signal() (returns
@@ -496,21 +504,36 @@ class PositionManager:
         self._seen_tickets: set = set()  # track which tickets we've seen open
     
     def reconcile_legacy_positions(self):
-        """Fail-closed boot step: any OPEN position with NO journal record
-        (orphan from pre-FASE0 / manual code) is force-closed at first cycle.
-        DEBATE_ROUND1 decision: 'close 3 legacy positions di tick pertama'.
-        Positions opened by QNA have a journal record -> kept & managed.
-        Returns count closed."""
+        """Boot-step: handle OPEN positions with NO journal record (orphans).
+
+        SAFETY (deep-audit 2026-08-04): force-closing orphans is DESTRUCTIVE on a
+        live REAL-ONLY account — it would close the user's MANUAL positions or positions
+        opened by another session/bot. Therefore it is OPT-IN: only runs when env
+        QNA_RECONCILE_LEGACY=1 is explicitly set. Default (unset) = LOG-ONLY, keep orphans.
+        QNA-managed positions (have a journal record) are always kept & managed.
+        Returns count closed.
+        """
         try:
             import MetaTrader5 as mt5
             positions = mt5.positions_get() or []
         except Exception:
             return 0
+        if not positions:
+            return 0
+        # Default: safe. Only force-close when operator explicitly opts in.
+        force_close_enabled = os.environ.get("QNA_RECONCILE_LEGACY", "0") == "1"
         closed = 0
         for pos in positions:
             if self.journal and self.journal.get_open_trade(pos.ticket):
                 continue  # QNA-managed position -> keep
-            # Orphan legacy position -> force close (fail-closed)
+            # Orphan position
+            if not force_close_enabled:
+                log.warning(
+                    "LEGACY RECONCILE (SKIPPED, safe-mode): orphan position "
+                    "ticket=%d %s %s vol=%s — NOT closed (set QNA_RECONCILE_LEGACY=1 to force-close)",
+                    pos.ticket, pos.symbol, "buy" if pos.type == 0 else "sell", pos.volume,
+                )
+                continue
             side = "buy" if pos.type == 0 else "sell"
             tick = self.market_data.get_tick(pos.symbol)
             price = tick["bid"] if side == "buy" else tick["ask"]
@@ -558,7 +581,7 @@ class PositionManager:
             import MetaTrader5 as mt5
             from datetime import datetime, timedelta
             deals = mt5.history_deals_get(
-                datetime.now() - timedelta(days=7), datetime.now()) or []
+                datetime.now() - timedelta(days=30), datetime.now()) or []
             ticket_deals = [d for d in deals if d.position_id == ticket]
             pnl = sum(d.profit for d in ticket_deals)
             close_deals = [d for d in ticket_deals
@@ -815,6 +838,17 @@ class AutonomousCycle:
         # 1. Create purified engine
         self.engine = PurifiedEngine(initial_balance=10000.0)
         self.engine.start()
+        # GAP F4-WIRE: feed MTM equity into RiskGuard so drawdown is measured from
+        # live equity, not balance. Fail-safe: if MT5 down / no equity, falls back
+        # to balance (RiskGuard._effective_equity default). No-op when MT5 absent.
+        if self.engine.mt5 and getattr(self.engine.mt5, "_initialized", False):
+            try:
+                self.engine.risk.set_equity_provider(
+                    lambda: float(self.engine.mt5.account_info().equity)
+                )
+                log.info("F4-WIRE: RiskGuard equity_provider set (MTM drawdown active)")
+            except Exception as e:
+                log.warning("F4-WIRE: equity_provider set skipped (MT5 equity unavailable): %s", e)
         log.info(f"Engine started: MT5={'LIVE' if self.engine.mt5._initialized else 'DOWN'}")
         
         # 2. Market data
