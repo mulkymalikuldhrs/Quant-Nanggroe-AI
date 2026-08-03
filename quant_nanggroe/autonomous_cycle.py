@@ -971,12 +971,14 @@ class AutonomousCycle:
         # feeds before generating signals (fail-safe: never blocks the loop).
         try:
             from quant_nanggroe.engine.data.quality import assess as _dq_assess
+            import pandas as _pd
             for _sym in CONFIG.SYMBOLS:
-                _df = self.market_data.get_candles(_sym, "M15", 50)
-                if _df:
+                _raw = self.market_data.get_candles(_sym, "M15", 50)
+                if _raw:
+                    _df = _pd.DataFrame(_raw) if not isinstance(_raw, _pd.DataFrame) else _raw
                     _rep = _dq_assess(_df, _sym)
                     if not _rep.ok:
-                        log.warning(f"DATA QUALITY {_sym}: {_rep.reason}")
+                        log.warning(f"DATA QUALITY {_sym}: {_rep.warnings}")
         except Exception as e:
             log.warning(f"data_quality precheck skipped: {e}")
 

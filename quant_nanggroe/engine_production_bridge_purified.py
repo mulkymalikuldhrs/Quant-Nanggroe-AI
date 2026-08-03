@@ -313,20 +313,6 @@ class RiskGuard:
             return (False, f"Weekly loss {weekly_loss:.1%} > 3%")
         return (True, "ok")
 
-    # R11b FIX (2026-08-04, user GO): status() was MISSING — run_cycle line 1036
-    # called self.engine.status() every cycle and it always raised AttributeError
-    # (caught, but broke the risk-status log + balance print). Provide the shape
-    # run_cycle expects: risk_ok, balance, trades, wins, risk_reason.
-    def status(self) -> dict:
-        ok, reason = self.can_trade()
-        return {
-            "risk_ok": ok,
-            "risk_reason": reason,
-            "balance": self._effective_equity(),
-            "trades": self.total_trades,
-            "wins": self.wins,
-        }
-
     def position_size(self, price: float, kelly: float = 0.25,
                       sl: float = 0.0, contract_size: float = 100000.0,
                       risk_pct: float = 0.005) -> float:
@@ -406,6 +392,20 @@ class PurifiedEngine:
         log.info("Engine started — mode=%s balance=%.2f",
                  "MT5-LIVE" if self.mt5._initialized else "DOWN", self.risk.balance)
         return self
+
+    # R11b FIX (2026-08-04, user GO): status() was MISSING — run_cycle line 1036
+    # called self.engine.status() every cycle and it always raised AttributeError
+    # (caught, but broke the risk-status log + balance print). Provide the shape
+    # run_cycle expects: risk_ok, balance, trades, wins, risk_reason.
+    def status(self) -> dict:
+        ok, reason = self.risk.can_trade()
+        return {
+            "risk_ok": ok,
+            "risk_reason": reason,
+            "balance": self.risk.balance,
+            "trades": self.risk.total_trades,
+            "wins": self.risk.wins,
+        }
 
     def cycle(self, signals: List[Signal]) -> List[dict]:
         """Execute signal batch through risk guard + MT5 adapter (REAL-ONLY)."""

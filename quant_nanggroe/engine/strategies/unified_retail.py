@@ -178,10 +178,17 @@ class UnifiedRetailStrategy(Strategy):
                 high = data["high"].values
                 low = data["low"].values
                 close = data["close"].values
-            else:
+            elif isinstance(data, dict):
                 high = data.get("high", [])
                 low = data.get("low", [])
                 close = data.get("close", [])
+            elif isinstance(data, (list, tuple)):
+                # data is a list of candle dicts/rows
+                high = [c.get("high") for c in data if isinstance(c, dict)]
+                low = [c.get("low") for c in data if isinstance(c, dict)]
+                close = [c.get("close") for c in data if isinstance(c, dict)]
+            else:
+                return {"direction": "neutral", "note": "unsupported data type"}
 
             if len(close) < 10:
                 return {"direction": "neutral", "note": "insufficient data"}
