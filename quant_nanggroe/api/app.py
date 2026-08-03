@@ -328,7 +328,6 @@ def create_app() -> FastAPI:
         monitor,
         options,
         orderbook,
-        otto_proxy,
         personas,
         pipeline_status,
         portfolio,
@@ -385,7 +384,6 @@ def create_app() -> FastAPI:
     app.include_router(security_tools.router, prefix="/api/security-tools", tags=["Security Tools"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
     app.include_router(terminal.router)
-    app.include_router(otto_proxy.router, prefix="/api/otto", tags=["Otto"])
 
     app.include_router(evolution.router)
 

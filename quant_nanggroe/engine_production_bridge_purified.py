@@ -148,7 +148,21 @@ class MT5Adapter:
                 f"execute_order blocked — SL required (fail-closed, no naked fill): {symbol} {side} sl={sl}"
             )
         _sl = sl
-        _tp = tp if (tp and tp > 0) else None
+        # CRIT-7 FIX (2026-08-04, 7/7 council APPROVE): TP must be fail-closed.
+        # If TP ≤ 0, auto-derive from SL distance: tp = entry ± (|entry-sl| × 1.5)
+        # NEVER open position without TP (prevents giving back all gains).
+        if _tp is None:
+            if _sl is not None and price is not None:
+                sl_distance = abs(price - _sl)
+                if side == "buy":
+                    _tp = price + sl_distance * 1.5
+                else:
+                    _tp = price - sl_distance * 1.5
+                log.info("TP auto-derived: sl=%.5f → tp=%.5f (1.5R), entry=%.5f", _sl, _tp, price)
+            else:
+                raise RuntimeError(
+                    f"execute_order blocked — SL+TP required (fail-closed, no naked fill): {symbol} {side} sl={sl} tp={tp}"
+                )
         order_type = mt5.ORDER_TYPE_BUY if side == "buy" else mt5.ORDER_TYPE_SELL
         request = {
             "action": mt5.TRADE_ACTION_DEAL,

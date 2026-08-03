@@ -38,7 +38,6 @@ __all__ = [
     'whatsapp',
     'wiring_compat',
     'ws',
-    'otto_proxy',
 ]
 
 from . import (
@@ -63,7 +62,6 @@ from . import (
     monitor,
     options,
     orderbook,
-    otto_proxy,
     personas,
     pipeline_status,
     portfolio,
