@@ -27,11 +27,15 @@ log = logging.getLogger(__name__)
 
 def _ssl_ctx():
     verify = os.environ.get("QNAI_SSL_VERIFY", "1") == "1"
+    env = os.environ.get("QNAI_ENV", "production")
+    if not verify and env != "dev":
+        log.warning("SSL verify disabled outside dev; forcing verification")
+        verify = True
     ctx = ssl.create_default_context()
     ctx.check_hostname = verify
     ctx.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
     if not verify:
-        log.warning("SSL verification DISABLED — set QNAI_SSL_VERIFY=1 in production")
+        log.warning("SSL verification DISABLED — dev only")
     return ctx
 
 

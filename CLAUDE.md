@@ -59,6 +59,7 @@ uv run pytest -m "not integration"         # skip API-key tests
 - **`PYTHONPATH=""`** mandatory — Hermes venv leaks `pydantic_core` → crash
 - **`QNAI_JWT_SECRET`** required for API boot _(fail-closed)_
 - **⚠️ AUDIT 2026-08-02 — KNOWN DEAD/BROKEN (fix before trusting):**
+- **⚠️ AUDIT 2026-08-03 RE-VERIFY (clawbot, code-truth):** Status 🟡 AMBER. Journal path/schema/order FIXED in code (trade_journal.py:29-32/72/91/106/135; autonomous_cycle.py:829→840). CRIT-2 phantom $10k MITIGATED (engine_production_bridge_purified.py:339/369). Still OPEN: journal 0 rows at runtime (unproven), equity(MTM) not in RiskGuard, $1M phantom default at risk_gate_bridge.py:138 + max_position.py:39 (P1b fail-CLOSED guard pending). **CRIT-1 /api/otto CORRECTED (code-truth): it was NEVER unauthenticated** — `api/middleware.py:69-72` requires `Authorization` (401 if missing) since `/api/otto` starts with `/api/`. No bypass ever existed. DOWNGRADED MEDIUM (authenticated SSRF to localhost:8765). DELETE still agreed (zero live referrers). Do NOT trust GREEN/100% claims; verify against code.
   - Trade journal DB path is WRONG — `dirname(x3)` in `trade_journal.py:29` resolves to `D:
 epositories\data\`; repo `data/qna_trade_journal.db` stays 0-byte. **0 trades ever attributed.**
   - `PositionManager(self.engine, self.market_data, self.journal)` built BEFORE `self.journal = TradeJournal()` → `journal=None` → self-eval/Kelly dead (`autonomous_cycle.py:659 vs 665`).
@@ -268,3 +269,18 @@ NO `initialize()` · NO `health_check()` · NO `stop()`
 ---
 
 _Built by Dhaher Labs._
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

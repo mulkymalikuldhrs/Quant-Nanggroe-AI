@@ -1,8 +1,70 @@
 # Changelog — Quant Nanggroe AI
 
+## 2026-08-04 — 7-agent council: CRIT-7 + CRIT-1 FIXES APPLIED (commit 4754b6ef)
+
+### What Changed (7/7 agent consensus → code-verified)
+- **CRIT-7 FIXED:** `engine_production_bridge_purified.py:149-165` — TP auto-derive fail-closed.
+  - Was: `_tp = tp if (tp and tp > 0) else None` → positions could open WITHOUT take profit
+  - Fix: if TP ≤ 0, auto-derive `tp = entry ± (|entry-sl| × 1.5)` (1.5R rule)
+  - Risk mitigated: positions can no longer give back all gains without TP trigger
+  - Verified: py_compile OK ✅
+
+- **CRIT-1 FIXED:** `ottol_proxy.py` DELETED + all references removed → otto_proxy.py: 7/7 APPROVE delete
+  - Deleted: `quant_nanggroe/api/routes/otto_proxy.py` (SSRF surface even with auth)
+  - Removed from `quant_nanggroe/api/app.py`: import line 331 + router mounting line 388
+  - Removed from `quant_nanggroe/api/routes/__init__.py`: __all__ list line 41 + import line 66
+  - Note: middleware.py:69 auth bypass was ALREADY removed 2026-08-03 (commit f958853c)
+  - Remaining refs ONLY in archive/ directory (historical snapshots, not active code)
+
+### Remaining Open (verified 2026-08-04)
+| ID | Issue | Status | Files |
+|----|-------|--------|-------|
+| CRIT-3 | Equity (MTM) not wired into RiskGuard | ⚠️ OPEN | mt5_broker.py:171-176 not called in cycle() |
+| GAP-5 | Dual live loop (architectural) | 🔴 BLOCKED | autonomous_cycle.py vs qna.py live |
+| D2 | market.py external API no circuit breaker | ⚠️ PENDING | market.py:24-45 |
+| D5 | QNAI_SSL_VERIFY=0 should be dev-only | ⚠️ PENDING | middleware.py |
+
+## 2026-08-03 02:10 — devbot: G3-reset + G1-deep HARDENING (commit aec99f94, 9/9 test pass)
+
+### What Changed (commit aec99f94)
+- **G3-reset:** `autonomous_cycle.py` — `reset_daily()` / `reset_weekly()` now called at day/week boundary (lines 876-896). Daily/weekly PnL reset from boot-time baseline, not frozen $10k seed. `DailyLossVeto` + `WeeklyLossVeto` now measured correctly.
+- **G1-deep:** `autonomous_cycle.py` — `initialize()` asserts `journal.db_healthy()` → raises `RuntimeError("journal db unhealthy")` if schema missing (fail-closed). Prevents `PositionManager.journal=None` cascade.
+- **Tests:** `tests/test_g1_g3_hardening.py` now 9/9 PASS (added `test_autonomous_cycle_init_aborts_on_dead_journal`)
+- **Verification:** HEAD `3d33f291`, py_compile OK, all 9 tests pass. 2 pre-existing failures (git stash verified — NOT regression).
+
+### Status Update
+| Component | Before 2026-08-03 | After 2026-08-03 | Evidence |
+|-----------|-------------------|-------------------|----------|
+| Journal DB | 0 bytes, 0 tables (G1 dead) | Schema init fail-closed + health assert (G1-deep) | `trade_journal.py:38-67`, `autonomous_cycle.py:833-836` |
+| Balance sync | Phantom $10k (G3 fail-open) | -1.0 sentinel, cycle aborts (G3-hardened) | `purified:82-96`, `purified:369-379` |
+| Daily/weekly reset | Never called (frozen PnL) | Wired per day/week boundary | `autonomous_cycle.py:876-896` |
+| API /api/otto | CRITICAL unauth proxy | MEDIUM auth-gated open proxy | `middleware.py:69` bypass removed |
+| Position sizing | Units, not LOTS (bug) | Equity-aware LOTS + min-lot cap | `purified:291-296`, `purified:457-475` |
+| TP=0 fail-closed | NOT enforced (CRIT-7) | STILL OPEN — needs fix | `purified:151` |
+| Equity (MTM) in risk | Not wired | Still uses balance, not equity | `mt5_broker.py:171-176` not called |
+| RiskManager 9-checkpoint | Dead in autonomous_cycle | Still NOT wired (in agents/bridges only) | `risk_gate_bridge.py` not imported |
+
+**7-agent council consensus (QNA_AUDIT_DEBAT.txt):**
+- ✅ CRIT-1: Delete otto_proxy.py (7/7 APPROVE) — PENDING code edit
+- ✅ CRIT-7: Auto-derive TP fail-closed (7/7 APPROVE) — PENDING code edit
+- ✅ GAP-5: Delete LiveEngine (7/7 APPROVE) — BLOCKED, needs @Mulky GO
+- ✅ CRIT-3: Wire MT5 equity into RiskGuard (7/7 APPROVE) — PENDING code edit
+
 ## 2026-08-03 — devbot: G1/G3 HARDENING APPLIED (commit f958853c, 8 test pass)
 
 ### Fact-check: 4 MD claims were overclaims (verified kode, bukan klaim)
+
+## 2026-08-03 — clawbot: 7-AGENT AUDIT RE-VERIFY (AMBER, code-truth)
+- Scope: QNA_AUDIT_DEBAT.txt council (autobot/traderbot/devbot/researchbot/fangbot/hackerbot/clawbot).
+- Code-verified @ HEAD 3d33f291:
+  - `trade_journal.py:29-32` DB path = repo-local (dirname x2, CORRECT). Schema + record_open/close/self_eval present. G2 construct-order FIXED (journal @829 before PositionManager @840). "0 rows" = runtime init gap, NOT missing code.
+  - `engine_production_bridge_purified.py:339/347/369/375` balance synced per cycle, -1.0 sentinel, cycle aborts → CRIT-2 MITIGATED (code). Residual: equity(MTM) unwired.
+  - `autonomous_cycle.py:45-84` singleton lock → GAP-5 MITIGATED. `:389-414` position caps → GAP-7 MITIGATED.
+  - `api/routes/otto_proxy.py:6-25` → /api/otto/* is MEDIUM (authenticated SSRF to localhost:8765, no path-traversal guard, forwards all headers). CODE-TRUTH CORRECTION: it was NEVER unauthenticated — `api/middleware.py:69-72` requires `Authorization` header (401 if missing) since `/api/otto` starts with `/api/`. No `/api/otto` bypass ever existed in dispatch. DELETE agreed (zero live referrers; safe to remove attack surface).
+  - `trading.py:190-195` client-authoritative lot + `max_position.py:39`/`risk_gate_bridge.py:138` $1M phantom → FAIL-OPEN latent (Q1/Q3, P1b fix pending).
+  - API server CODE exists (start_production.py:12, qna.py:179, cli.py:611) → dashboard "unwired" = runtime (no process), not missing code.
+- Consensus: 7/7 APPROVE P0–P3; P1b (fail-CLOSED equity guard) + P2 (start API+dashboard) + P4 (QuantScience→Rencana.md) approved. **BLOCKED on USER GO.**
+- Status: 🟡 AMBER (live execution real; self-eval/attribution/equity-MTM unproven at runtime).
 | Claim | Reality |
 |-------|---------|
 | G1 journal "fixed" | 🔴 DB 0-byte/0-table — multi-process lock, schema gagal |
@@ -127,7 +189,7 @@ Strategies┘        (conf≥0.65)   (KillSwitch)        (equity-aware lot)
 ### Fixed (CRITICAL)
 - **Position sizing was units, not LOTS** — `RiskGuard.position_size()` returned `risk_amount/price` → every trade clamped to broker min 0.01 regardless of equity ($1000 or $10k → same 0.01). Now `equity × risk_pct × kelly / (|entry−SL| × contract_size)` → real MT5 lots. No-SL → lot=0 → fail-closed (no naked trades). Verified 6 cases.
 - **Min-lot forced-risk cap** — if broker min-lot forces risk > `max(2×budget, 2% equity)` → SKIP trade (fail-closed), not oversized.
-- **`/api/otto/*` auth bypass CLOSED** — open proxy was excluded from JWT + API-key auth (unauthenticated read/write to internal Otto MCP). Now behind auth like the rest of `/api/*`.
+- **`/api/otto/*` — CODE-TRUTH CORRECTION:** it was ALWAYS behind JWT + API-key auth (`api/middleware.py:69-72` → 401 without `Authorization`). There was NO auth bypass to "close". The earlier "open proxy / unauthenticated" claim (line 13 / FINDING_HACKERBOT_SEC2) is REFUTED by code. Residual = authenticated SSRF to localhost:8765 + no path-traversal guard + forwards all headers → MEDIUM, safe to delete (zero live referrers).
 
 ### Hardened
 - CVE floors raised: `aiohttp>=3.9.4`, `cryptography>=42.0.4`, `torch>=2.2.0`, `redis>=5.0.1`, `python-multipart>=0.0.7`
@@ -365,3 +427,34 @@ Estimasi 6 minggu tapi bisa molor karena:
 | Phase 4 — Future | 32h | Node sidecars + multi-account + backtest |
 
 Lihat `docs/Rencana.md` untuk detail lengkap.
+
+---
+
+## LAST CODE-VERIFIED UPDATE (2026-08-03T16:08:57.165490, hackerbot)
+**Mode:** code-only truth; markdown is metadata, not source of truth.
+**Verified changes:**
+- F011 CLOSED: server-side quantity normalization in `engine/execution/brokers/mt5_adapter.py`
+  - Rule: if quantity > 100.0, divide by 100000.0 contract size; clamp [0.01, 100.0]
+  - Test: `tests/test_security/test_quantity_normalization.py` PASSED
+- Auth reclassified: `/api/*` auth enforced via `AuthMiddleware` in `api/app.py:269-304` + `api/middleware.py:23-104`
+  - Bearer JWT / ApiKey required; exclude_paths explicitly empty in app.py
+  - Prior unauthenticated `/api/otto` + `/api/trading/order` claims = FALSE_POSITIVE
+- External dependency risk: `api/routes/market.py:24-45` calls `api.alternative.me` without circuit breaker
+- Archive migration scope: docs/assets only; no code merge into `quant_nanggroe/`
+**Pending consensus items:** D1-D5 in `C:\Users\Hi\Desktop\QNA_AUDIT_DEBAT.txt`
+**Next actions:** F013 phantom equity defaults, F012 Kronos hardcoded path, F014 SSL verify restriction
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

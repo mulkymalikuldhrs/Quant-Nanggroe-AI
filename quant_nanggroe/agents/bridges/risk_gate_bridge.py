@@ -38,9 +38,11 @@ from quant_nanggroe.engine.risk.checks import RiskCheckGate
 from quant_nanggroe.engine.risk.constants import (
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,
+    MAX_POSITION_SIZE_PCT,
     MAX_RISK_PER_TRADE,
     MAX_WEEKLY_LOSS,
     MIN_RISK_REWARD,
+    STARTING_CAPITAL,
 )
 from quant_nanggroe.engine.risk.manager import RiskManager
 from quant_nanggroe.engine.risk.limits import RiskLimits
@@ -105,6 +107,27 @@ class GateResult:
         }
 
 
+# Fail-CLOSED equity resolver (P1b, 2026-08-03): phantom $1M default is a fail-OPEN
+# hole if account_balance is ever missing/zero/garbage. Floor + sanity cap keeps
+# risk vetoes active even when upstream equity is unknown.
+EQUITY_FLOOR = 1000.0          # minimum plausible live account
+EQUITY_SANITY_CAP = 1e9        # above this = clearly bad data, clamp to floor
+
+
+def _resolve_equity(raw: Optional[float]) -> float:
+    """Return a fail-CLOSED equity value.
+
+    - None / <=0 / > SANITY_CAP  -> EQUITY_FLOOR (vetoes stay active)
+    - otherwise                  -> raw value
+    """
+    try:
+        if raw is None or not isinstance(raw, (int, float)) or raw <= 0.0 or raw > EQUITY_SANITY_CAP:
+            return EQUITY_FLOOR
+        return float(raw)
+    except Exception:
+        return EQUITY_FLOOR
+
+
 class RiskGateBridge:
     """Bridge between the LLM agent pipeline and the deterministic RiskCheckGate.
 
@@ -135,14 +158,15 @@ class RiskGateBridge:
 
     def __init__(
         self,
-        initial_equity: float = 1_000_000.0,
+        initial_equity: Optional[float] = None,
     ) -> None:
         """Initialize the Risk Gate Bridge.
 
         Args:
             initial_equity: Starting account equity for the RiskManager.
+                Falls back to STARTING_CAPITAL when omitted/unset.
         """
-        self._risk_manager = RiskManager(initial_equity=initial_equity)
+        self._risk_manager = RiskManager(initial_equity=_resolve_equity(initial_equity if initial_equity is not None else STARTING_CAPITAL))
         self._check_gate = RiskCheckGate()
         self._risk_limits = RiskLimits(max_weekly_loss_pct=MAX_WEEKLY_LOSS)
 
@@ -170,7 +194,7 @@ class RiskGateBridge:
         lot_size: float,
         entry: float,
         stop_loss: float,
-        account_balance: float = 1_000_000.0,
+        account_balance: Optional[float] = None,
         take_profit: Optional[float] = None,
         llm_verdict: Optional[str] = None,
         daily_pnl: float = 0.0,
@@ -205,6 +229,9 @@ class RiskGateBridge:
             direction, symbol, lot_size, entry, stop_loss,
             llm_verdict or "N/A",
         )
+
+        # P1b fail-CLOSED: never let a missing/garbage equity silence risk vetoes.
+        account_balance = _resolve_equity(account_balance)
 
         active_positions = active_positions or []
 
@@ -425,7 +452,7 @@ class RiskGateBridge:
         # Get portfolio/account info from state
         portfolio_state = state.get("portfolio_state", {})
         metadata = state.get("metadata", {})
-        account_balance = portfolio_state.get("total_value", 1_000_000.0)
+        account_balance = _resolve_equity(portfolio_state.get("total_value", None))
         daily_pnl = metadata.get("daily_pnl", 0.0)
         weekly_pnl = metadata.get("weekly_pnl", 0.0)
         trade_count_today = metadata.get("trade_count_today", 0)

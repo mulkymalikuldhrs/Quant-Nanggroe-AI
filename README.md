@@ -3,6 +3,10 @@
 > **REAL-ONLY (2026-08-01):** No paper/sim/mock/dummy. MT5-only execution.
 > **Live trading verified:** ValetaxIntl-Live2 login=372044706 balance=$1122.05
 > Real orders executed (tickets 20188224176, 20188224713). 3 live positions confirmed.
+
+|> ⚠️ **AUDIT OVERRIDE 2026-08-03 (clawbot, code-verified @ HEAD 3d33f291):** Status = 🟡 **AMBER**, NOT GREEN.
+|> Live execution path is REAL and fail-closed, BUT self-eval/attribution + equity(MTM) sync are code-fixed yet **unproven at runtime** (journal DB 0 bytes at last check; needs live-cycle + sqlite row-count proof). Risk gates run on realized balance, not unrealized equity. Phantom $10k seed removed from live path; latent $1M default remains in `risk_gate_bridge.py:138` / `max_position.py:39` (P1b fix pending). See `QNA_AUDIT_DEBAT.txt` for full 7-agent evidence. Do NOT trust "100%/GREEN" claims in older docs — code is source of truth.
+|> **2026-08-04 UPDATES (7-agent council + code-verified):** CRIT-7 FIXED (TP auto-derive: `entry ± (SL_dist × 1.5)`). CRIT-1 FIXED (otto_proxy.py DELETED + unmounted from app.py + routes/__init__.py). CRIT-3 OPEN (equity MTM not wired to RiskGuard). GAP-5 BLOCKED (dual live loop, user GO required).
 > **Entry points:** `qna.py live` (LiveEngine) or `python -m quant_nanggroe.autonomous_cycle`
 > **Run:** `env -u PYTHONPATH PYTHONPATH=. .venv312/Scripts/python.exe` (Py3.12.13, venv=.venv312)
 > **Deps:** requirements_qna.txt | **Symbols:** EURUSD.vx, BTCUSD.vx, XAUUSD.vx (broker suffix)
@@ -760,3 +764,34 @@ Delete dead code, dedup signal models/registries/COT pipeline.
 Node.js sidecars, multi-account MT5, backtest validation.
 
 Lihat `docs/Rencana.md` untuk detail lengkap.
+
+---
+
+## LAST CODE-VERIFIED UPDATE (2026-08-03T16:08:57.165490, hackerbot)
+**Mode:** code-only truth; markdown is metadata, not source of truth.
+**Verified changes:**
+- F011 CLOSED: server-side quantity normalization in `engine/execution/brokers/mt5_adapter.py`
+  - Rule: if quantity > 100.0, divide by 100000.0 contract size; clamp [0.01, 100.0]
+  - Test: `tests/test_security/test_quantity_normalization.py` PASSED
+- Auth reclassified: `/api/*` auth enforced via `AuthMiddleware` in `api/app.py:269-304` + `api/middleware.py:23-104`
+  - Bearer JWT / ApiKey required; exclude_paths explicitly empty in app.py
+  - Prior unauthenticated `/api/otto` + `/api/trading/order` claims = FALSE_POSITIVE
+- External dependency risk: `api/routes/market.py:24-45` calls `api.alternative.me` without circuit breaker
+- Archive migration scope: docs/assets only; no code merge into `quant_nanggroe/`
+**Pending consensus items:** D1-D5 in `C:\Users\Hi\Desktop\QNA_AUDIT_DEBAT.txt`
+**Next actions:** F013 phantom equity defaults, F012 Kronos hardcoded path, F014 SSL verify restriction
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

@@ -26,24 +26,22 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 log = logging.getLogger('kronos')
 
 # ─── Attempt Kronos import ─────────────────────────────────────────────────────
-# ponytail: the real Kronos model package lives at E:\Kronos and is OPTIONAL.
-# The previous bare `from model import ...` raised NameError (safetensors
-# undefined inside the half-installed package) which the `except ImportError`
-# did NOT catch — so every signal call logged a crash and fell back. Widen the
-# guard to Exception and skip the path insertion unless the dir actually exists.
+# ponytail: the real Kronos model package is OPTIONAL.
+# Use QNA_KRONOS_PATH to point to the model package directory.
+# If unset or missing, fall back to momentum mode with an explicit log.
 KRONOS_AVAILABLE = False
-_KRONOS_DIR = r'E:\Kronos'
-if os.path.isdir(_KRONOS_DIR):
+_KRONOS_DIR = os.environ.get("QNA_KRONOS_PATH", "")
+if _KRONOS_DIR and os.path.isdir(_KRONOS_DIR):
     try:
         sys.path.insert(0, _KRONOS_DIR)
         from model import Kronos, KronosPredictor, KronosTokenizer
         KRONOS_AVAILABLE = True
-        log.info("Kronos model package loaded")
+        log.info("Kronos model package loaded from %s", _KRONOS_DIR)
     except Exception as e:
         KRONOS_AVAILABLE = False
-        log.warning(f"Kronos not available ({e}) — using fallback mode")
+        log.warning("Kronos not available from %s (%s) — using fallback mode", _KRONOS_DIR, e)
 else:
-    log.info("Kronos dir %s absent — using fallback momentum mode", _KRONOS_DIR)
+    log.info("QNA_KRONOS_PATH=%r absent or missing — using fallback momentum mode", _KRONOS_DIR)
 
 # ─── Fallback: momentum-based signal when Kronos model not loaded ──────────────
 class _FallbackKronosPredictor:

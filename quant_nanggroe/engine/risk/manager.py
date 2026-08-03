@@ -42,6 +42,7 @@ from quant_nanggroe.engine.risk.constants import (
     MAX_TOTAL_CONCENTRATION,
     MAX_WEEKLY_LOSS,
     MIN_RISK_REWARD,
+    STARTING_CAPITAL,
     TRADING_BUDGET_PCT,
 )
 from quant_nanggroe.engine.risk.constants import (
@@ -106,7 +107,7 @@ class RiskManager:
 
     def __init__(
         self,
-        initial_equity: float = 1_000_000.0,
+        initial_equity: float = STARTING_CAPITAL,
         persistence: Optional[PersistenceBackend] = None,
     ) -> None:
         self.state = RiskState(
@@ -317,7 +318,7 @@ class RiskManager:
         lot_size: float,
         entry: float,
         stop_loss: float,
-        account_balance: float = 1_000_000.0,
+        account_balance: Optional[float] = None,
         take_profit: Optional[float] = None,
         daily_pnl_pct: float = 0.0,
         weekly_pnl_pct: float = 0.0,
@@ -333,7 +334,8 @@ class RiskManager:
             lot_size: Proposed lot size.
             entry: Entry price.
             stop_loss: Stop loss price.
-            account_balance: Current account balance.
+            account_balance: Current account balance. Falls back to
+                ``self.state.current_equity`` when omitted.
             take_profit: Optional take profit price.
             daily_pnl_pct: Real-time daily P&L as a fraction of account equity
                 (range [0, 1], e.g. -0.06 for a 6% loss). Feeds the constitutional daily-loss veto.
@@ -358,7 +360,11 @@ class RiskManager:
         # handle, the kill switch would never activate on a persisted loss from a prior run.
         self._auto_check_kill_switch()
 
-        # First check kill switch
+        # Fail-closed balance resolution: never use phantom $1M.
+        if account_balance is None or account_balance <= 0:
+            account_balance = self.state.current_equity
+        if account_balance <= 0:
+            account_balance = STARTING_CAPITAL
         if self.kill_switch.is_active:
             obs.metrics.risk_check_duration_seconds.record(
                 _time.monotonic() - start,

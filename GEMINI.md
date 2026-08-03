@@ -13,8 +13,8 @@ Canonical instructions in **AGENTS.md**. This is a quick reference.
 ```
 ✅ Scoring — 8 scorers, 100% weight, FusionEngine + MTF + WeightEvolver
 ✅ Providers — 1079 total, HiddenRegime + News (3-tier) wired
-✅ Risk — KillSwitch C5 + 9-checkpoint RiskGuard
-✅ MT5 — Valetax demo live ($1,099, 29 closed trades)
+✅ Risk — KillSwitch C5 + RiskGuard 4-check (live path). ⚠️ 9-checkpoint RiskManager = DEAD in autonomous_cycle.py (loop A) — NOT active in live trading (code-truth 2026-08-03)
+✅ MT5 — Valetax LIVE ($1,122, 3 open positions). ⚠️ "29 closed trades / $1,099" = stale demo claim; current live = Valetax $1,122 (code-truth)
 🔴 Evolution — 4 bugs, never executed
 🗄️ Factors — 453+ alpha factors not wired
 ```
@@ -133,3 +133,18 @@ Estimasi 6 minggu tapi bisa molor karena:
 | Phase 4 — Future | 32h | Node sidecars + multi-account + backtest |
 
 Lihat `docs/Rencana.md` untuk detail lengkap.
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

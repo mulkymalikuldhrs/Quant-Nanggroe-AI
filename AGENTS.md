@@ -1,8 +1,9 @@
 # AGENTS.md — Quant Nanggroe AI (QNA) v6.1.0
 
 > **LIVE-TRADING OPERATIONAL (REAL-ONLY, 2026-08-01):** No paper/sim/mock. MT5 LIVE verified: ValetaxIntl-Live2, login=372044706, balance=$1122.05.
-> **VERDICT (2026-08-03 devbot):** 🟡 AMBER — eksekusi live ✅, **tapi self-eval/attribution/journalling = fragile di prod runtime.** Journal DB 0-byte/0-table (G1 schema init gagal), balance sync fail-open → phantom $10k di log, 9-checkpoint RiskManager = dead di live path (hanya RiskGuard 4-check jalan), dual live loop (autonomous_cycle vs qna.py live) masih berdampingan. Klaim "FASE 0 COMPLETE" overclaim — lihat `QNA_VERIFICATION_2026-08-03.md`.
+> **VERDICT (2026-08-03 devbot, CODE-TRUTH):** 🟡 AMBER — eksekusi live ✅, **tapi self-eval/attribution/journalling = fragile di prod runtime.** Journal DB 0-byte/0-table (G1 schema init gagal). **G3 balance sync SUDAH HARDENED** (`account_balance()` return -1.0 MT5_DOWN sentinel, cycle aborts) — BUKAN lagi phantom $10k. 9-checkpoint RiskManager = dead di live path (hanya RiskGuard 4-check jalan). Dual live loop (autonomous_cycle vs qna.py live) masih berdampingan. **CRIT-1 (/api/otto) DOWNGRADED MEDIUM** — behind JWT auth, bukan unauthenticated. **78 strategi runtime** (bukan 84). Klaim "FASE 0 COMPLETE" overclaim — lihatung `QNA_VERIFICATION_2026-08-03.md` + `QNA_AUDIT_DEBAT.txt`.
 > **AUDIT 2026-08-02 (clawbot):** 🟡 AMBER — self-eval/attribution dead code + phantom risk. Fix: Rencana.md FASE 0 G1→G12.
+> **RE-VERIFY 2026-08-03 (clawbot, code @ 3d33f291):** AMBER retained. G2 construct-order FIXED in code; G1 path FIXED (repo-local); CRIT-2 MITIGATED (live balance sync + -1.0 sentinel). Residuals: journal runtime 0 rows (unproven), equity(MTM) unwired, $1M phantom default at risk_gate_bridge.py:138 (P1b). CRIT-1 /api/otto/* DELETE agreed. Consensus 7/7 APPROVE, BLOCKED on USER GO.
 
 ## 🤖 ORCHESTRATION RULE (binding — user directive 2026-08-02)
 - **`@dhaherautobot` = SATU-SATUNYA orchestrator.** Hanya dia yang boleh `@mention` agent lain.
@@ -93,7 +94,7 @@ uv sync                              # not pip, not poetry
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| `quant_nanggroe/engine/strategies/` | 84 strategies via `@StrategyRegistry.register` | ✅ WIRED |
+| `quant_nanggroe/engine/strategies/` | 78 strategies runtime (`data/walk_forward_registry.json`) via `@StrategyRegistry.register` | ✅ WIRED |
 | `quant_nanggroe/engine/risk/` | KillSwitch C5, DCC-GARCH, VaR, Kelly (25 files) | ✅ WIRED |
 | `quant_nanggroe/engine/evolution/` | journal, scheduler, scanner, disabler, updater, config (8 files) | 🔴 4 BUGS |
 | `quant_nanggroe/core/scoring/` | 8 scorers + FusionEngine + MTFEngine + WeightEvolver | ✅ ALL WIRED |
@@ -269,3 +270,18 @@ Estimasi 6 minggu tapi bisa molor karena:
 3. **Mental energy** — baca 83 strategy files, 24 risk files, 20 provider files buat mastiin gak ada yang kehapus
 
 **Realistis: 6-8 minggu** untuk 300/300.
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

@@ -131,10 +131,20 @@ class MT5ExecutionBroker(Broker):
         last_err = None
         for attempt in range(max_attempts):
             try:
+                # Normalize client quantity to MT5 lot units.
+                # Client code previously sent raw units/contract counts; this
+                # adapter now closes that gap by converting to lots using a
+                # standard contract size unless the value is already within
+                # normal lot range.
+                quantity = float(order.quantity)
+                contract_size = 100000.0
+                if quantity > 100.0:
+                    quantity = max(0.01, round(quantity / contract_size, 2))
+                quantity = max(0.01, min(quantity, 100.0))
                 conn_order = ConnOrder(
                     symbol=order.symbol,
                     side=_SIDE_MAP.get(order.side.value, "buy"),
-                    quantity=order.quantity,
+                    quantity=quantity,
                     order_type=order.order_type.value.lower(),
                     price=order.price,
                     stop_loss=order.stop_loss,

@@ -1,7 +1,7 @@
 # 📋 RENCANA — Quant-Nanggroe-AI (QNA) v6.1.0
 
 **Owner:** Mulky Malikul Dhaher (Dhaher Labs) | **Updated:** 2026-08-02
-**Status:** 🟡 AMBER — LIVE REAL-ONLY TRADING (Valetax 372044706, equity-aware sizing) — **tapi 4 residual live-path bugs detected 2026-08-03 (devbot):** journal DB 0-schema (G1), balance sync fail-open $10k (G3), 9-checkpoint RiskManager dead di live path, dual live loop split. FASE 0 code ada, runtime gagal. Lihat `QNA_VERIFICATION_2026-08-03.md`.
+**Status:** 🟡 AMBER — LIVE REAL-ONLY TRADING (Valetax 372044706, equity-aware sizing) — **residual live-path bugs (2026-08-03 devbot code-truth):** journal DB 0-schema (G1), **G3 balance sync SUDAH HARDENED** (account_balance→-1.0, cycle aborts — bukan lagi fail-open $10k), 9-checkpoint RiskManager dead di live path (GAP-5 terkait), dual live loop split (GAP-5). **CRIT-1 (/api/otto) DOWNGRADED MEDIUM** — terbukti di-code sudah behind JWT auth, bukan unauthenticated. Lihat `QNA_VERIFICATION_2026-08-03.md` + `QNA_AUDIT_DEBAT.txt`.
 
 **2026-08-03 — MODEL SWITCH:** Semua 7 Hermes profile (autobot/clawbot/devbot/fangbot/hackerbot/researchbot/traderbot) → `hy3:free` / provider `nous` (free Nous). "laguna" DITOLAK (bukan model Nous nyata; free resmi = hermes-3-llama-3.1-405b:free). Backup config: `*.bak.20260803_003405`.
 
@@ -20,7 +20,7 @@ lot = (equity * risk_pct * kelly) / (|entry − SL| * contract_size)
 # min-lot forced risk > max(2×budget, 2% equity) → SKIP
 ```
 
-**Security (same session):** `/api/otto/*` auth bypass CLOSED (was unauthenticated open proxy — CRITICAL), CVE floors raised (aiohttp≥3.9.4, cryptography≥42.0.4, torch≥2.2.0).
+**Security (same session):** `/api/otto/*` — CODE-TRUTH CORRECTION: it was ALWAYS behind JWT/API-key auth (no bypass ever existed in `api/middleware.py` dispatch); the "auth bypass CLOSED" narrative is FALSE. DOWNGRADED MEDIUM (authenticated SSRF to localhost:8765). CVE floors raised (aiohttp≥3.9.4, cryptography≥42.0.4, torch≥2.2.0).
 
 ---
 
@@ -168,7 +168,7 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 | G11 | Breakeven + structure-based trailing (SMC swing, invalidate on BOS) | `risk_levels.py:101-125` | ✅ DONE (breakeven_sl + trailing_sl_structure, unit-tested PASS) |
 | G12 | Tambah `strategy`+`comment` di `Order`/`place_order` LiveEngine path | `engine_production_bridge.py:426-433`; `mt5_broker.py:80-93` | ✅ DONE (strategy_name+notes → broker comment) |
 
-**FASE 0 COMPLETE — 2026-08-02 (commit `804a716f` G1-G10, `a49d6704` G11-G12). Semua 12 gap live-path ditutup.**
+**FASE 0 — 2026-08-02 (commit `804a716f` G1-G10, `a49d6704` G11-G12) — CODE-TRUTH 2026-08-03: 4 RESIDUAL BUGS MASIH ADA di live path** (G1 journal 0-schema, G3 balance sync SUDAH HARDENED -1.0 sentinel, GAP-1 naked surface, GAP-5 dual-loop). Klaim "COMPLETE" = overclaim. Lihat `QNA_VERIFICATION_2026-08-03.md`. Status 🟡 AMBER.
 
 ### 🏛️ KEPUTUSAN DEBAT ROUND 1 (2026-08-02, 3 kubu: PRO/CONTRA/OPERATOR) → HYBRID GO-LIVE MONDAY
 - **Prioritas #1:** CLOSE 3 legacy positions (20178543987, 20188224176, 20188224713) di tick pertama open — kode pre-fix, mungkin NAKED (SL=0), risiko Monday gap terbesar.
@@ -223,3 +223,18 @@ env -u PYTHONPATH PYTHONPATH=. QNAI_ENCRYPTION_KEY="..." \
 - [[Quant-Nanggroe-AI/Risk/Risk-Management-Framework]]
 - [[Quant-Nanggroe-AI/Master-Index]]
 
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

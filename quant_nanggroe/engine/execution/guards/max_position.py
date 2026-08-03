@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Dict, Optional
 
 from quant_nanggroe.engine.execution.base import Order, OrderSide
+from quant_nanggroe.engine.risk.constants import STARTING_CAPITAL
 
 
 class MaxPositionGuard:
@@ -36,7 +37,7 @@ class MaxPositionGuard:
         self._max_pct = max_pct
         self._max_notional = max_notional
         self._current_positions: Dict[str, float] = {}  # symbol -> notional value
-        self._portfolio_value: float = 1_000_000.0
+        self._portfolio_value: float = STARTING_CAPITAL
 
     def check(self, order: Order) -> dict:
         """Check if order passes max position guard.

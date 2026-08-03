@@ -22,6 +22,7 @@ from typing import Dict, List
 import pandas as pd
 
 from quant_nanggroe.engine.risk.constants import MAX_DRAWDOWN_PCT as MAX_DRAWDOWN
+from quant_nanggroe.engine.risk.constants import STARTING_CAPITAL
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class DrawdownMonitor:
     def __init__(
         self,
         max_drawdown: float = MAX_DRAWDOWN,
-        initial_equity: float = 1_000_000.0,
+        initial_equity: float = STARTING_CAPITAL,
     ) -> None:
         """Initialize drawdown monitor.
 

@@ -17,28 +17,34 @@ Fix:
      updates RiskGuard.kelly_cache. Logs verdict per strategy.
 
 REAL-ONLY: journal is local SQLite, no external calls.
+
+FIXED 2026-08-04: DB_PATH corrected to use correct file location.
 """
 from __future__ import annotations
 
+import logging
 import os
 import sqlite3
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 
-DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "qna_trade_journal.db",
-)
+# FIXED: Use correct path relative to THIS file (quant_nanggroe/data/)
+# Previous: dirname(dirname(__file__)) → D:/repositories/data/ (wrong)
+# Now: Path(__file__).parent / "data" → quant_nanggroe/data/ (correct)
+DB_PATH = Path(__file__).parent / "data" / "qna_trade_journal.db"
+
+log = logging.getLogger(__name__)
 
 
 class TradeJournal:
     """SQLite-backed trade journal with strategy attribution + self-eval."""
 
-    def __init__(self, db_path: str = DB_PATH):
-        self.db_path = db_path
+    def __init__(self, db_path: str = None):
+        self.db_path = str(db_path) if db_path else str(DB_PATH)
         self._init_ok = False
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         try:
             self._init_db()
             self._init_ok = True
@@ -46,11 +52,10 @@ class TradeJournal:
             # FAIL-OPEN ONLY IF EXPLICITLY ALLOWED (e.g. first-boot where dir
             # doesn't exist yet). Otherwise the live loop MUST know the journal
             # is dead so it can either abort or fall back to no-self-eval mode.
-            import logging
             logging.getLogger(__name__).error(
                 "TradeJournal._init_db FAILED on %s: %s — journal offline. "
                 "Cycle will continue but strategy attribution/self-eval DISABLED.",
-                db_path, e,
+                self.db_path, e,
             )
             self._init_ok = False
 
@@ -219,7 +224,6 @@ def resolve_conflicts(signals: List) -> List:
 
 def log_conflict(sym: str, chosen: str, win_strat: str, win_conf: float,
                  lose_strat: str, lose_conf: float):
-    import logging
     logging.getLogger(__name__).info(
         f"CONFLICT {sym}: {chosen.upper()} by {win_strat}(conf={win_conf:.2f}) "
         f"over {lose_strat}(conf={lose_conf:.2f}) — resolved, no opposing trade"

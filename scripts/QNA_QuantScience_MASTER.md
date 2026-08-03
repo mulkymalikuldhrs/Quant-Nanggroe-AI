@@ -12,7 +12,7 @@
 ### 1\. EXECUTIVE SUMMARY
 
 
-QNA saat ini berada di **score 86/100** (dari audit 2026-07-30). Sistem memiliki fondasi arsitektur yang kuat - 17-stage pipeline, 84 strategies, 8-scorer FusionEngine, C5 KillSwitch - namun masih terhambat oleh **technical debt**, **silent failures**, dan **missing quant-grade tooling**.
+QNA saat ini berada di **score 86/100** (dari audit 2026-07-30). Sistem memiliki fondasi arsitektur yang kuat - 17-stage pipeline, **78 strategies runtime** (bukan 84), 8-scorer FusionEngine, C5 KillSwitch - namun masih terhambat oleh **technical debt**, **silent failures**, dan **missing quant-grade tooling**. Status 2026-08-03: 🟡 AMBER (G3 hardened, CRIT-1 MEDIUM, journal 0-schema residual).
 
 Riset QuantScience (18 newsletter, 15+ GitHub repos, 14 SSRN papers) menyediakan **blueprint konkret** untuk menutup gap tersebut. Dokumen ini memetakan setiap riset ke komponen QNA, memberikan prioritas berbasis impact/effort, dan menyusun roadmap dari 86/100 menuju **300/300 (AxBxC)**.
 
@@ -173,7 +173,7 @@ Setiap artikel/tooling dari riset QuantScience dipetakan ke komponen QNA yang re
 |**MACD for Algo Trading** (QS013)|`engine/strategies/macd\_strategy.py`|Ada sebagai indicator|High - Gunakan MACD Histogram sebagai **factor** (bukan hanya signal), rolling correlation vs forward returns|
 |**RSI in Python** (QS010)|`engine/strategies/rsi\_strategy.py`|Ada|Medium - Enhance dengan adaptive RSI, multi-timeframe confirmation|
 |**ATR in Python** (QS009)|`engine/risk/atr\_sl.py`|Ada|Medium - Enhance dengan volatility-based position sizing, ATR trailing stops|
-|**Factor Analysis dengan Alphalens** (QS015)|`engine/factors/`, `engine/analytics/`|FactorRegistry ada, analysis tidak|**CRITICAL** - Validasi alpha dari 84 strategies. IC analysis, quantile returns, turnover|
+|**Factor Analysis dengan Alphalens** (QS015)|`engine/factors/`, `engine/analytics/`|FactorRegistry ada, analysis tidak|**CRITICAL** - Validasi alpha dari 78 strategies (runtime). IC analysis, quantile returns, turnover|
 |**KMeans for Portfolio Construction** (QS Newsletter)|`engine/portfolio/`, `engine/strategies/`|Tidak ada|High - Clustering untuk diversification \& pairs trading candidates|
 |**HRP (Hierarchical Risk Parity)** (QS014)|`engine/portfolio/risk\_parity\_bridgewater.py`|RiskParityAllocator ada|High - HRP menggantikan naive risk parity, tidak butuh inversi kovarians|
 
@@ -259,7 +259,7 @@ Setiap artikel/tooling dari riset QuantScience dipetakan ke komponen QNA yang re
 
 |#|Task|Source Riset|QNA Module|Effort|Impact|
 |-|-|-|-|-|-|
-|9|**Integrate Alphalens untuk factor analysis**|QS015|`engine/factors/alphalens\_adapter.py`|3 hari|Validasi 84 strategies|
+|9|**Integrate Alphalens untuk factor analysis**|QS015|`engine/factors/alphalens\_adapter.py`|3 hari|Validasi 78 strategies (runtime)|
 |10|**Migrasi data layer ke Polars** (pilot: 1 provider)|QS018|`engine/data/providers/`|3 hari|10x speedup|
 |11|**Implement HRP (Hierarchical Risk Parity)**|QS014|`engine/portfolio/hrp\_allocator.py`|2 hari|Robust allocation|
 |12|**Tambah KMeans clustering untuk diversification**|QS Newsletter|`engine/portfolio/clustering.py`|1 hari|Pairs trading + diversification|
@@ -4099,7 +4099,7 @@ pytest engine/factors -q   # 469 wired, 99 tests pass
 
 1. **Jangan tambahkan fitur baru sebelum A-fix selesai.** Sistem yang "bohong" (silent error) akan membuat semua fitur baru tidak terpercaya.
 2. **Polars adalah force multiplier.** Bukan hanya speed, tapi memory efficiency. Dengan 16GB RAM, Polars bisa handle 100K+ symbols; Pandas akan OOM.
-3. **Alphalens adalah kacamata.** Tanpa factor analysis, 84 strategies kamu buta - tidak tahu mana yang actually menghasilkan alpha vs yang curve-fitted.
+3. **Alphalens adalah kacamata.** Tanpa factor analysis, 78 strategies kamu (runtime) buta - tidak tahu mana yang actually menghasilkan alpha vs yang curve-fitted.
 4. **HRP > Mean-Variance.** Di dunia nyata, estimation error pada expected returns membuat mean-variance dangerous. HRP lebih robust.
 5. **Autoencoder adalah future-proofing.** Semakin banyak data unstructured (news, sentiment, on-chain), semakin penting dimensionality reduction yang learned.
 
@@ -5398,3 +5398,18 @@ Subjects: Computers and Society (cs.CY); General Economics (econ.GN); Applicatio
 ### [Embracing fundamental and quant investing in emerging markets](https://www.robeco.com/en-int/insights/2024/01/embracing-fundamental-and-quant-investing-in-emerging-markets) — Vera Roersma, Harald Lohre, Matthias Hanauer (2021-2025)
 ### [Factor Investing in the Corporate Bond Market](https://www.robeco.com/en/key-strengths/quant-investing/our-groundbreaking-papers.html) — Robeco Quant FI (SSRN) (2021-2025)
 
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->

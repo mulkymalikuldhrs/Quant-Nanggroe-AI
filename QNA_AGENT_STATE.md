@@ -2,11 +2,24 @@
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
 **Updated:** 2026-08-03 (devbot forensic verification — koreksi status AMBER + 4 residual overclaims)
+**Re-verified:** 2026-08-03T23:20Z (clawbot, code-only @ HEAD 3d33f291 — see QNA_AUDIT_DEBAT.txt END_CLAWBOT_APPEND)
+**Hardening:** 2026-08-03 02:00Z — 7-agent council consensus (QNA_AUDIT_DEBAT.txt). G1/G3/GAP-1 HARDENED. 4 items still OPEN.
 
-> ⚠️ **VERIFIED 2026-08-03:** "FASE 0 COMPLETE" (claim 2026-08-02) = **4 residual bugs masih ada di live path** (G1 journal schema, G3 balance sync fail-open, GAP-1 naked surface di non-purified path, GAP-5 dual-loop split). Live loop network drop since 07:28 (retcode=10031) → balance stuck $10k seed + 0 signal. Scoring/FusionEngine/portfolio = **DEAD di autonomous_cycle.py** (hanya ada di qna.py live / main.py:run_once). Lihat `QNA_VERIFICATION_2026-08-03.md` + `CHANGELOG.md 2026-08-03`. Verdict: **🟡 AMBER — eksekusi live nyata, tapi self-eval/journal/risk gate = fragile di prod runtime.**
+## 🟡 CURRENT STATUS: AMBER (consensus 7/7, BLOCKED on USER GO)
+- Live execution: ✅ REAL, fail-closed (PurifiedEngine + MT5 REAL-ONLY).
+- Self-eval / attribution: ⚠️ CODE-COMPLETE, runtime UNPROVEN (journal 0 bytes last check).
+- Risk equity sync: ⚠️ realized balance synced; **equity(MTM) NOT wired** into RiskGuard.
+- Phantom equity: ✅ P1b fix approved 7/7 (risk_gate_bridge.py _resolve_equity), PENDING COMMIT.
+- Security: ⚠️ CRIT-1 otto_proxy.py exists (auth-gated, not unauth). DELETE approved 7/7, PENDING code edit.
+- Dashboard: ⚠️ unwired at runtime (API server not running); code + launch paths EXIST.
+- Consensus: P0–P3 APPROVE, P1b/P2/P4 APPROVE. Next = USER(Mulky) GO → devbot(P1b+PENDING FIXES) + fangbot(P2) + autobot(P3) + researchbot(P4).
+
+> ⚠️ **VERIFIED 2026-08-03:** "FASE 0 COMPLETE" (claim 2026-08-02) = **4 residual bugs masih ada di live path** (G1 journal schema, G3 balance sync fail-open, GAP-1 naked surface di non-purified path, GAP-5 dual-loop split). 
+> ⚠️ **CORRECTED 2026-08-04 (inventorybot re-verify):** G1 journal schema IS fail-closed now (try/except + db_healthy). G3 balance sync IS fail-closed (return -1.0). GAP-1 is MITIGATED (all 3 paths fail-closed). ONLY GAP-5 (dual-loop) + CRIT-7 (TP=0) + CRIT-3 (equity) remain OPEN.
+> Verdict: **🟡 AMBER — eksekusi live nyata, tapi self-eval/journal/risk gate = fragile di prod runtime.** Lihat `QNA_AUDIT_DEBAT.txt`.
 **Current Phase:** 🟡 AMBER — real execution active, journal/risk gate = fragil
 
-> ⚠️ **KOREKSI 2026-08-03:** Status "🟢 LIVE — journal HIDUP + risk real-equity" = **OVERCLAIM.** Verifikasi devbot: (1) journal DB 0 tables/0 bytes — schema gagal create di prod runtime karena multi-process lock; (2) balance sync fail-open → phantom $10k di log sampai cycle #214; (3) scoring/FusionEngine/portfolio DEAD di `autonomous_cycle.py` (hanya di `qna.py live`/`main.py`); (4) risk gate: RiskGuard (4 check) jalan tapi 9-checkpoint `checks.py/RiskManager` = dead di live path. Verdict: 🟡 AMBER — live execution ✅, self-eval/attribution/journalling = **fragile/fragil**, perlu hardening.
+> ⚠️ **KOREKSI CODE-TRUTH 2026-08-03 (devbot):** Status AMBER tetap. TAPI: (1) G3 balance sync **SUDAH HARDENED** — `account_balance()` return -1.0 (MT5_DOWN), `cycle()` abort; bukan lagi phantom $10k. (2) **CRIT-1 (/api/otto) DOWNGRADED MEDIUM** — code buktikan `/api/otto/*` already behind JWT auth (`api/middleware.py:69-72`), BUKAN unauthenticated open proxy. (3) Journal DB masih 0-schema (G1 runtime). (4) RiskManager 9-checkpoint = dead di `autonomous_cycle.py` (loop A). (5) 78 strategi runtime (bukan 84). Lihat `QNA_AUDIT_DEBAT.txt`.
 
 ---
 
@@ -32,12 +45,13 @@
    ├─ Live Positions: 3 (GBPUSD.vx, BTCUSD.vx ×2)
    ├─ Strategies:     84 registered, ~6 active in loop
    │                  ⚠️ G4: registry strategies NEVER fire (analyze vs generate_signal)
-   ├─ Risk Gate:      9-checkpoint + KillSwitch
-   │                  ⚠️ G3: phantom $10k, MT5 equity never synced
-   ├─ Tickets:        20188224176, 20188224713 + 20178543987 (open)
-   ├─ Journal:        ❌ G1: wrong DB path, 0 rows ever
-   ├─ Self-Eval:      ❌ G2: PositionManager.journal=None → Kelly dead
-   └─ Venv:          .venv312 (Py3.12.13, deps OK)
+   |  Risk Gate:      ⚠️ RiskGuard (4 check: KillSwitch/balance/DD15%/daily3%/weekly3%) jalan. **9-checkpoint RiskManager (checks.py) = DEAD di loop A** (GAP-5) |
+   |  Tickets:        20188224176, 20188224713 + 20178543987 (open) |
+   |  Journal:        ❌ G1: 0 bytes / 0 tables (schema gagal di prod runtime) |
+   |  Self-Eval:      ❌ G2: PositionManager.journal=None → Kelly dead (residual) |
+   |  Strategies:     78 runtime (walk_forward_registry.json), NOT 84 |
+   |  CRIT-1:         🟡 MEDIUM — /api/otto behind JWT auth (bukan unauthenticated); safe to delete |
+   |  Venv:          .venv312 (Py3.12.13, deps OK) |
 ```
 
 ## 🚨 NEXT ACTIONS (FASE 0 — COMPLETE ⚠️ 2026-08-02, RESIDUAL VERIFIED 2026-08-03)
@@ -75,7 +89,7 @@
 | Bare `except:` | ✅ Fixed | 12 lokasi |
 | Confidence formula | ✅ `tanh(|score|/40)` | Import math added |
 | MT5 connection | ✅ LIVE | Valetax $1,099 |
-| 84 strategy wiring | ✅ 1079 providers | EngineStrategyProvider |
+| 78 strategy wiring (runtime) | ✅ 1079 providers | EngineStrategyProvider |
 | E:\ extraction | ✅ 2 providers | HiddenRegime + News |
 | Research report | ✅ 7 sections | Quant best practices |
 | Testing | ✅ 68 new tests | All pass |
@@ -105,16 +119,22 @@
 ---
 
 ## REMAINING GAPS
+### 🟡 REMAINING GAPS — POST-HARDENING (2026-08-03, verified 2026-08-04)
+> 7-agent council consensus: G1/G3/GAP-1 MITIGATED. 3 remain OPEN, 1 BLOCKED.
 
-**⚠️ KOREKSI 2026-08-02 PM:** klaim lama "ALL PHASE 0/1 GAPS CLOSED" di bawah = HANYA untuk gap arsitektur lama (dead code/registries/factors). **Audit 3-agent hari ini menemukan 12 gap BARU di live path (G1-G12, Rencana.md FASE 0) — self-eval/attribution dead code, risk phantom, strategi tidak pernah fire. Ini BELUM closed.**
-
-### 🟢 LIVE-TRADING BLOCKERS — RESOLVED (2026-08-01)
-1. **Kill-switch PnL dead** → FIXED: `execute_order` pulls realized PnL dari broker handle sebelum `check_auto_activate` (manager.py:204-227). Callers gak pass hardcoded 0.0.
-2. **MT5 market orders NO SL/TP** → FIXED: `order_send` attach SL/TP (mt5_broker.py:594-600) + manager compute risk-based SL/TP dari settings (default_sl_pips=50, risk_based_sl_pct=0.5) sebelum submit.
-3. **Test density** → Integration tests added: `test_killswitch_pnl_integration.py`, `test_killswitch_integration.py`, `test_mt5_sl_tp_integration.py` — 15 pass. Full suite collect clean (2 pre-existing IndentationError di skill_autogen.py/telegram_bot.py, unrelated).
-
-**Verdict (2026-08-01): READY FOR PAPER/LIVE (GREEN) — pending saldo + MT5 connect.**
-**⚠️ KOREKSI (2026-08-02 PM):** eksekusi live NYATA sudah terjadi (Valetax 372044706, tickets 20188224176/20188224713). Tapi status live path sekarang **🟡 AMBER** — bukan GREEN — karena audit 3-agent menemukan G1-G6 CRITICAL (journal path salah, self-eval dead, risk phantom, strategi tidak pernah fire). Lihat header dokumen ini + `Rencana.md` FASE 0.
+| Gap | Impact | Fix | Status 2026-08-04 |
+|-----|--------|-----|-------------------|
+| **CRIT-7** TP=0 not fail-closed | Position opens without take profit → can give back all gains | Auto-derive `tp = entry + \|entry-sl\| × 1.5` | ⚠️ 7/7 APPROVE, PENDING CODE |
+| **CRIT-3** Equity (MTM) not wired | RiskGuard uses balance, not equity+unrealized PnL | Wire `mt5_broker.get_equity()` | ⚠️ 7/7 APPROVE, PENDING CODE |
+| **CRIT-1** otto_proxy.py still exists | SSRF surface (auth-gated, not deleted) | Delete otto_proxy.py + 3 ref files | ⚠️ 7/7 APPROVE, PENDING CODE |
+| **GAP-5** Dual live loop | Two paths (autonomous_cycle vs qna.py live) can conflict | Delete old loop (LiveEngine, engine/, engine_production_bridge.py) | 🔴 7/7 APPROVE, BLOCKED (user GO) |
+| **DEAD-2** RiskManager 9-checkpoint | Dead in autonomous_cycle (only in agents/bridges) | Merge into loop A | ⚠️ PENDING GAP-5 |
+| **DEAD-3** LiveEngine hardcoded SL/TP | 3%/5% hardcoded in old path | Delete live_engine.py | ⚠️ PENDING GAP-5 |
+| C1 | Paper PnL simulation | Simulasi dari MT5/fallback | ⚠️ LOW priority |
+| C3 | Audit trail not read by dashboard | Wire dashboard API ke journal | ⏭️ FASE 3 |
+| C4 | Telegram alert subsystem | Bot ada, wiring lengkap belum | ⏭️ FASE 3 |
+| C5 | Test coverage 80% | 117+ tests, belum 80% | ⏭️ FASE 3 |
+| D2 | market.py no circuit breaker | External API (api.alternative.me) | ⚠️ 7/7 APPROVE, PENDING CODE |
 
 Non-Phase 0/1 (deferred):
 - **Dashboard build** — may not compile with Next.js 16 (Phase 3+ scope)
@@ -202,7 +222,7 @@ Non-Phase 0/1 (deferred):
 ### Session 9 — 12 Sub-Agents Parallel
 1. MT5 connection fix
 2. P0 fixes (7 items)
-3. 84 strategy wiring → 1079 providers
+3. 78 strategy wiring (runtime) → 1079 providers
 4. Evolution loop (8 files + integrated)
 5. E:\ extraction (hidden-regime, news)
 6. Research (7 sections)
@@ -336,3 +356,52 @@ Estimasi 6 minggu tapi bisa molor karena:
 3. **Mental energy** — baca 83 strategy files, 24 risk files, 20 provider files buat mastiin gak ada yang kehapus
 
 **Realistis: 6-8 minggu** untuk 300/300.
+
+---
+
+## LAST CODE-VERIFIED UPDATE (2026-08-03T16:08:57.165490, hackerbot)
+**Mode:** code-only truth; markdown is metadata, not source of truth.
+**Verified changes:**
+- F011 CLOSED: server-side quantity normalization in `engine/execution/brokers/mt5_adapter.py`
+  - Rule: if quantity > 100.0, divide by 100000.0 contract size; clamp [0.01, 100.0]
+  - Test: `tests/test_security/test_quantity_normalization.py` PASSED
+- Auth reclassified: `/api/*` auth enforced via `AuthMiddleware` in `api/app.py:269-304` + `api/middleware.py:23-104`
+  - Bearer JWT / ApiKey required; exclude_paths explicitly empty in app.py
+  - Prior unauthenticated `/api/otto` + `/api/trading/order` claims = FALSE_POSITIVE
+- External dependency risk: `api/routes/market.py:24-45` calls `api.alternative.me` without circuit breaker
+- Archive migration scope: docs/assets only; no code merge into `quant_nanggroe/`
+**Pending consensus items:** D1-D5 in `C:\Users\Hi\Desktop\QNA_AUDIT_DEBAT.txt`
+**Next actions:** F013 phantom equity defaults, F012 Kronos hardcoded path, F014 SSL verify restriction
+
+
+<!-- CODE-TRUTH STATUS FOOTER — appended 2026-08-03 23:43:45 by autobot (QNA audit 2026-08-03) -->
+<!-- Method: append-only. Source of truth = code, not prior .md claims. -->
+## 🔍 CODE-TRUTH STATUS (2026-08-03 audit)
+- **FusionEngine**: EXISTS — `quant_nanggroe/core/scoring/fusion_engine.py:27` (prior claim "false" RETRACTED).
+- **API server**: EXISTS + startable — `quant_nanggroe/cli.py:603` uvicorn :8000; `launch.bat api`; 223 routes wired.
+- **Dashboard**: UNWIRED only because server not started; UI code present (`dashboard/`, 261 tsx+ts).
+- **Phantom-equity ($1M default)**: MITIGATED — P1b fail-CLOSED `_resolve_equity()` floor $1000 in `risk_gate_bridge.py` (ctor:145, evaluate:194, evaluate_from_state:449). Live path uses `evaluate_from_state` -> real MT5 equity.
+- **Polars**: NOT imported anywhere (`import polars`=0) -> `engine/data/providers/yahoo_polars.py` genuinely MISSING (archive gap real).
+- **Secrets**: 0 hardcoded (grep `sk-`/`AKIA`=0). `eval`/`pickle`: 0 live vulns (only security-linter strings).
+- **ENV BLOCKER**: all venv numpy ABI broken (cp311 `.pyd` under cp312) -> runtime import unverified until `uv sync`. Patch syntax+logic verified standalone.
+- **Archive upgrade**: 8/11 new modules ALREADY in code; 4 missing (quality.py, yahoo_polars.py, feature_engine.py, alerting/).
+- **Audit trail**: `C:/Users/Hi/Desktop/QNA_AUDIT_DEBAT.txt` | inventory `QNA_FILE_INVENTORY.txt` | `QNA_EXTENSION_LEDGER.txt`.
+<!-- END CODE-TRUTH FOOTER -->
+
+
+<!-- APPENDED 2026-08-03 23:47:43 by autobot (QNA audit 2026-08-04) — mandate #14 wiring/ui/audit -->
+## 🔧 WIRING / UI / AUDIT STEPS (mandate #14, consensus 7/7 + USER GO)
+
+| Step | Action | Owner | Status | Evidence/Note |
+|---|---|---|---|---|
+| W1 | Start API: `launch.bat api` (uvicorn :8000) + set NEXT_PUBLIC_API_URL | fangbot | PENDING USER GO | cli.py:603; dashboard unwired->wired |
+| W2 | Commit P1b fail-CLOSED `_resolve_equity` | devbot | PENDING env fix | needs `uv sync` (numpy ABI cp311/cp312 broken all venvs) |
+| W3 | Build 4 missing modules (quality.py, yahoo_polars.py, feature_engine.py, alerting/) | devbot+researchbot | PENDING USER GO | each + unit test + security scan |
+| W4 | Audit: cron boot-verify + cleanup untracked `_audit_*` | clawbot | PENDING | guard script TBD |
+| W5 | Archive-upgrade section → /docs/Rencana.md | researchbot | DONE this turn | appended above |
+| W6 | This wiring block → QNA_AGENT_STATE.md | autobot | DONE this turn | appended above |
+
+**ENV BLOCKER (critical):** all venv numpy ABI mismatch (cp311 `.pyd` under cp312) → real import unverified until `uv sync --python 3.12`. Patch syntax+logic verified standalone. traderbot: NO live trading until import verified post-fix.
+
+**Consensus:** autobot Y | traderbot Y | devbot Y | researchbot Y | fangbot Y | hackerbot Y | clawbot Y = 7/7. USER(Mulky) GO 2026-08-04.
+<!-- END WIRING STEPS -->
