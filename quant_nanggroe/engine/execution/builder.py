@@ -30,9 +30,20 @@ _em_singleton = None
 _em_lock = threading.Lock()
 _connection_tasks: list = []  # Track async broker connection tasks for monitoring
 
+# D-audit (2026-08-04): record the LAST build outcome so /health can honestly
+# report execution-backend availability instead of lying "healthy" when MT5 is
+# unconfigured (the RuntimeError is caught at boot -> system boots green but
+# cannot trade). Read via get_execution_backend_status().
+_execution_backend_status: str = "unknown"  # unknown|mt5|unavailable
+
+
+def get_execution_backend_status() -> str:
+    """Honest execution-backend status for health endpoints."""
+    return _execution_backend_status
+
 
 def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
-    global _em_singleton
+    global _em_singleton, _execution_backend_status
     if _em_singleton is not None:
         return _em_singleton
     with _em_lock:
@@ -96,11 +107,13 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
         # REAL-ONLY: NO paper fallback. If MT5 is not connected, raise — do NOT
         # add a simulated broker. Fail-closed: no market = no trades.
         if not mt5_connected:
+            _execution_backend_status = "unavailable"
             raise RuntimeError(
                 "REAL-ONLY mode: no MT5 account connected. "
                 "PaperBroker removed — cannot trade on simulation."
             )
         else:
+            _execution_backend_status = "mt5"
             logger.info("MT5 live — PaperBroker DISABLED (all trades via MT5)")
 
         # Connect all brokers — async with tracking
