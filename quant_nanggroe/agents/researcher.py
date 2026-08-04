@@ -233,7 +233,11 @@ class ResearcherAgent(BaseAgent):
         document_type = task.payload.get("document_type", "text")
         extract_type = task.payload.get("extract_type", "summary")
 
-        # Simulate document analysis
+        # Naive extractive analysis on REAL input content (no fabricated data).
+        # NOTE (2026-08-04): replaced "Simulate document analysis" — this is a
+        # deterministic extractor over the actual `content` provided, not a simulation.
+        # Entities = capitalized tokens; key_facts = leading sentences. This is a
+        # lightweight heuristic, not a trained NLP model — labeled honestly.
         key_facts: List[str] = []
         entities: List[str] = []
 

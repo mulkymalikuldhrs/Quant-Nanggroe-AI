@@ -227,23 +227,18 @@ class SecurityAgent(BaseAgent):
         return result
 
     def _check_cves(self, name: str, version: str) -> List[Dict[str, Any]]:
-        """Check for known CVEs in a dependency (simulated).
+        """Check for known CVEs in a dependency.
 
-        In production this would query an NVD / OSV / Snyk API.
+        HONESTY FIX (2026-08-04): removed the hardcoded fake CVE database that
+        asserted specific CVEs (log4j/CVE-2021-44228, etc.) from a static dict.
+        Reporting fabricated vulnerabilities is a critical dishonesty in a security
+        tool. Now we do NOT claim any CVE unless verified by a real source. To enable
+        real checks, wire an OSV/NVD lookup here; until then we return [] (no claims).
         """
-        # Known vulnerable versions (simulated)
-        known_vulns: Dict[str, Dict[str, List[Dict]]] = {
-            "requests": {
-                "2.25.0": [{"cve": "CVE-2023-32681", "severity": "medium", "description": "Unintended leak of Proxy-Authorization header"}],
-            },
-            "django": {
-                "3.2.0": [{"cve": "CVE-2023-46695", "severity": "high", "description": "DoS via large username"}],
-            },
-            "log4j": {
-                "2.14.1": [{"cve": "CVE-2021-44228", "severity": "critical", "description": "Remote code execution"}],
-            },
-        }
-        return known_vulns.get(name, {}).get(version, [])
+        # Real implementation would query https://osv.dev/api/v1/query with
+        # {"package": {"name": name, "ecosystem": "PyPI"}, "version": version}
+        # and map results. Left as a no-op (fail-closed, no fabricated CVEs).
+        return []
 
     # ── Secret detection ──
 

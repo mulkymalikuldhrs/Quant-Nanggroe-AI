@@ -109,6 +109,7 @@ def compute_var(
     confidence_level: float = 0.95,
     holding_period_days: int = 1,
     daily_volatility: float = 0.02,
+    returns: Optional[List[float]] = None,
 ) -> str:
     """
     Compute Value at Risk (VaR) using parametric method.
@@ -126,15 +127,17 @@ def compute_var(
     Returns:
         JSON string with VaR calculation
     """
-    # PRODUCTION: Wired to real engine — try VaRCalculator
+    # PRODUCTION: Wired to real engine — try VaRCalculator with REAL returns only.
+    # HONESTY FIX (2026-08-04): removed np.random.normal(seed=42) synthetic
+    # returns that fabricated data for the VaR calculator. We only use the
+    # VaRCalculator when REAL portfolio returns are supplied via `returns`;
+    # otherwise we compute parametric VaR honestly from daily_volatility below.
+    # No simulated data, ever.
     var_calc = _get_var_calculator()
-    if var_calc is not None:
+    if var_calc is not None and returns is not None:
         try:
             import numpy as np
-            # Generate synthetic returns for the VaR calculator
-            # In production, real portfolio returns would be used
-            np.random.seed(42)
-            returns = np.random.normal(0, daily_volatility, 252)
+            _returns = np.asarray(returns, dtype=float)
             var_result = var_calc.calculate(
                 returns=returns,
                 confidence_level=confidence_level,
@@ -184,6 +187,7 @@ def compute_cvar(
     portfolio_value: float,
     confidence_level: float = 0.95,
     daily_volatility: float = 0.02,
+    returns: Optional[List[float]] = None,
 ) -> str:
     """
     Compute Conditional Value at Risk (CVaR / Expected Shortfall).
@@ -199,15 +203,15 @@ def compute_cvar(
     Returns:
         JSON string with CVaR calculation
     """
-    # PRODUCTION: Wired to real engine — try VaRCalculator
+    # PRODUCTION: Wired to real engine — try VaRCalculator with REAL returns only.
+    # HONESTY FIX (2026-08-04): removed np.random.normal(seed=42) synthetic returns.
     var_calc = _get_var_calculator()
-    if var_calc is not None:
+    if var_calc is not None and returns is not None:
         try:
             import numpy as np
-            np.random.seed(42)
-            returns = np.random.normal(0, daily_volatility, 252)
+            _returns = np.asarray(returns, dtype=float)
             var_result = var_calc.calculate(
-                returns=returns,
+                returns=_returns,
                 confidence_level=confidence_level,
                 method="parametric",
                 portfolio_value=portfolio_value,

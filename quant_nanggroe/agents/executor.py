@@ -283,17 +283,29 @@ class ExecutorAgent(BaseAgent):
     async def _run_with_timeout(self, command: str, timeout_ms: int) -> Dict[str, Any]:
         """Run a command with timeout enforcement.
 
-        In production this would shell out to Docker / WASM.  Here we
-        simulate with a short asyncio sleep.
+        HONESTY FIX (2026-08-04): removed asyncio.sleep simulation that returned a
+        fake "Executed" string. Now performs a REAL subprocess execution with a hard
+        timeout. If the sandbox cannot execute, it raises (fail-closed), never fakes.
         """
+        import subprocess
         try:
-            await asyncio.wait_for(
-                asyncio.sleep(0.01),  # simulate execution
+            proc = await asyncio.wait_for(
+                asyncio.to_thread(
+                    subprocess.run,
+                    command, shell=True, capture_output=True, text=True,
+                    timeout=timeout_ms / 1000.0,
+                ),
                 timeout=timeout_ms / 1000.0,
             )
+            return {
+                "output": proc.stdout,
+                "error": proc.stderr,
+                "returncode": proc.returncode,
+            }
         except asyncio.TimeoutError:
             raise
-        return {"output": f"Executed: {command}", "error": ""}
+        except Exception as exc:
+            raise RuntimeError(f"command execution failed: {exc}")
 
     async def _run_in_sandbox(self, task: Task) -> Dict[str, Any]:
         """Run task in sandbox environment (legacy entry point)."""

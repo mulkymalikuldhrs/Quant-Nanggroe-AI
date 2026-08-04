@@ -379,28 +379,45 @@ class BacktestTool:
 
             closes = [c["close"] for c in candles]
 
-            # ── Generate signals ──────────────────────────────────────
-            signal_func = _BUILTIN_STRATEGIES.get(strategy)
-            if signal_func is None:
+            # ── REAL backtest via quant_nanggroe.engine.backtest.BacktestEngine ──
+            # HONESTY FIX (2026-08-04): removed the internal _BUILTIN_STRATEGIES
+            # + _simulate_trades toy path that produced FAKE P&L. Now delegates to
+            # the real engine + real strategy registry. No simulated trades.
+            import pandas as pd
+            from quant_nanggroe.engine.strategies import create_strategy as _real_create
+            from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+
+            strat = _real_create(strategy)
+            if strat is None:
                 raise EngineError(
                     f"Unknown strategy: '{strategy}'. "
-                    f"Available: {list(_BUILTIN_STRATEGIES.keys())}"
+                    f"Available real strategies: use /api/backtest/strategies."
                 )
 
-            params = strategy_params or {}
-            signals = signal_func(closes, **params)
+            df = pd.DataFrame(candles)
+            df = df.rename(columns={c: c.lower() for c in df.columns})
+            if "close" not in df.columns and "Close" in df.columns:
+                df = df.rename(columns={"Close": "close"})
+            df = df.set_index(pd.to_datetime(df.get("time", df.get("timestamp", df.index)))) if (
+                "time" in df.columns or "timestamp" in df.columns
+            ) else df
+            # ensure numeric OHLCV
+            for col in ["open", "high", "low", "close", "volume"]:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
 
-            # ── Simulate trades from signals ──────────────────────────
-            trades, equity_curve = self._simulate_trades(
-                signals, closes, initial_capital, commission, slippage_bps / 10_000,
-            )
+            eng = BacktestEngine(BacktestConfig(
+                initial_capital=float(initial_capital),
+                commission_rate=float(commission),
+                slippage_bps=float(slippage_bps),
+                bars_per_year=252,
+            ))
+            real_result = eng.run(strategy=strat, data=df)
+            trades = real_result.get("trades", [])
+            equity_curve = real_result.get("equity_curve", [float(initial_capital)])
+            metrics = real_result.get("metrics", {})
+            signals = []
 
-            # ── Calculate metrics ─────────────────────────────────────
-            metrics = self._calculate_metrics(
-                equity_curve, trades, initial_capital
-            )
-
-            # ── Build result ──────────────────────────────────────────
             result = {
                 "backtest_id": backtest_id,
                 "strategy": strategy,
@@ -414,12 +431,13 @@ class BacktestTool:
                     "strategy_params": params,
                 },
                 "signals_count": len(signals),
-                "signals": signals[-20:],  # Last 20 signals for brevity
+                "signals": signals[-20:],
                 "trades": trades,
                 "trades_count": len(trades),
                 "equity_curve": equity_curve,
                 "metrics": metrics,
                 "status": "COMPLETED",
+                "engine": "quant_nanggroe.engine.backtest.BacktestEngine (REAL)",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 

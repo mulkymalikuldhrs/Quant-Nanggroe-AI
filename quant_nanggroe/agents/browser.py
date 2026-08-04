@@ -233,15 +233,24 @@ class BrowserAgent(BaseAgent):
         full_page = task.payload.get("full_page", True)
         selector = task.payload.get("selector")
 
-        # Simulate screenshot generation
-        screenshot_data = b"\x89PNG\r\n\x1a\n" + bytes(1024)  # mock PNG header
-        if self._current_page:
-            self._current_page.screenshot = screenshot_data
+        # HONESTY FIX (2026-08-04): removed mock PNG generation (1024 zero bytes
+        # with a fake header). A screenshot is only valid if a real browser page
+        # produced it. If no real page is attached, we fail-closed instead of
+        # returning fabricated image data.
+        if not self._current_page:
+            raise RuntimeError(
+                "screenshot unavailable: no real browser page attached "
+                "(mock PNG generation removed for honesty)"
+            )
+        screenshot_data = self._current_page.screenshot(format=fmt, full_page=full_page)
+        self._current_page.screenshot = screenshot_data
 
         return {
             "action": "screenshot",
             "format": fmt,
             "full_page": full_page,
+            "data": screenshot_data,
+            "status": "captured",
             "selector": selector,
             "size_bytes": len(screenshot_data),
             "stealth_score": self._stealth_score if self._stealth_mode else 0.5,
