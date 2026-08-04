@@ -252,3 +252,38 @@ autobot Y | clawbot Y | traderbot Y | devbot Y | fangbot Y | hackerbot Y | resea
 USER: aprove all / tune semua strategy.
 
 END_TUNE_WF ?
+
+================================================================================
+($TS, autobot) [CONSOLIDATED: TUNE+WF / UI DASHBOARD / WIRE-EVERYTHING — STATUS]
+
+## 3 MANDATES STATUS (user queue: tune semua + WF, upgrade ui dashboard, full deep audit wire everything)
+
+### A. TUNING + WALK-FORWARD (all 81 strategies) — RUNNING
+- Code fixed (commit 48b01b6a): base.py required_columns/warmup_period, walk_forward
+  signal->float, registry.create_strategy StrategyParameters wrap.
+- Env fixed: PYTHONPATH hermes pollution + .venv repair.
+- Batch runner: scripts/batch_tune_walkforward.py, per-strategy 120s timeout
+  (commit b88e4bbb) so dhaher_system hang can't block others.
+- PROGRESS: 10/81 processed, still running (notify on done). Results ->
+  D:/qna_audit_artifacts/tune_wf_results.json (incremental).
+- VERIFIED: WF yields 6 folds; /api/backtest/tune status=completed.
+
+### B. UI DASHBOARD UPGRADE — DONE
+- node_modules/next was CORRUPTED (missing dist/bin) -> reinstalled next@16.2.9.
+- Dashboard LIVE: pid 19244, Next 16.2.9, /trading HTTP 200.
+- Wired to live MT5: /api/brokers/ returns mt5_0 (commit a8c00f41 bridge
+  ExchangeManager<->MT5). Trading terminal (922-line) now shows live account.
+
+### C. FULL DEEP AUDIT / WIRE EVERYTHING — DONE
+- MT5 account now reachable by dashboard (brokers endpoint fixed).
+- API + Dashboard + MT5 all UP. 27/27 tests pass.
+- Gaps G1-G11 wired in prior sessions (commits d45662af..2a0da361).
+
+## SYSTEM STATE
+- API :8000 UP (pid 25556, boot19)
+- Dashboard :3000 UP (pid 19244, boot4)
+- MT5: connected (execution_backend=mt5), trade_allowed=True
+- Batch tune+WF: running (proc_0bdddd5f1983), 10/81 done
+
+## CONSENSUS 7/7 | USER: aprove all / tune semua / upgrade ui
+END_CONSOLIDATED ?
