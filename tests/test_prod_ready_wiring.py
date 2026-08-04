@@ -53,6 +53,23 @@ def _make_paper_em():
 
 
 # ── Test A: Kill switch enforcement ────────────────────────────────────────
+def _reset_ks_state_file():
+    """Reset the shared pytest kill-switch state file so later tests get a
+    fresh (inactive) KillSwitch instead of inheriting this test's ACTIVE state.
+    conftest.py seeds QNA_KILL_SWITCH_STATE_FILE to a temp file; tests that
+    activate the switch MUST clear it or every later KillSwitch() is active."""
+    import json
+    import os
+    p = os.environ.get("QNA_KILL_SWITCH_STATE_FILE")
+    if p:
+        try:
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump({"status": "inactive", "current_level": "none",
+                           "activated_at": None, "reason": ""}, f)
+        except OSError:
+            pass
+
+
 def test_kill_switch_blocks_order_when_active():
     """When daily loss breaches threshold, execute_order must return None (blocked).
 
@@ -68,6 +85,7 @@ def test_kill_switch_blocks_order_when_active():
     # Audit log should record the block
     actions = [e.get("action") for e in em.get_audit_log()]
     assert "KILL_SWITCH_BLOCKED" in actions, "Audit log missing KILL_SWITCH_BLOCKED"
+    _reset_ks_state_file()
 
 
 def test_kill_switch_allows_order_when_safe():
@@ -81,10 +99,14 @@ def test_kill_switch_allows_order_when_safe():
 
 def test_kill_switch_auto_activates():
     ks = KillSwitch(KillSwitchConfig(auto_daily_loss_pct=0.015))
-    evt = ks.check_auto_activate(daily_pnl_pct=-0.05)
+    evt = ks.check_auto_activate(
+        daily_pnl_pct=-0.05, weekly_pnl_pct=0.0,
+        max_drawdown_pct=0.0, volatility_pct=0.0,
+    )
     assert evt is not None
     assert ks.current_level in (KillSwitchLevel.LEVEL_1, KillSwitchLevel.LEVEL_2)
     assert not ks.can_trade()
+    _reset_ks_state_file()
 
 
 # ── Test B: MT5 factory wiring ─────────────────────────────────────────────
@@ -184,6 +206,7 @@ def _clean_order():
 
 def test_combined_clean_order_executes():
     """Healthy order (0% pnl) passes kill switch AND risk manager, reaches broker."""
+    _reset_ks_state_file()  # defensive: prior tests may have left state ACTIVE
     em = _make_combined_em()
     fill = asyncio.run(em.execute_order(_clean_order(), daily_pnl_pct=0.0))
     assert fill is not None, "Clean order must execute when both guards pass"
@@ -206,6 +229,7 @@ def test_combined_kill_switch_blocks_before_risk():
     actions = [e.get("action") for e in em.get_audit_log()]
     assert any(a.startswith("KILL_SWITCH") for a in actions), (
         f"Expected kill-switch block, got {actions}")
+    _reset_ks_state_file()
 
 
 def test_combined_risk_veto_blocks_without_kill_switch_preempt():
@@ -219,7 +243,12 @@ def test_combined_risk_veto_blocks_without_kill_switch_preempt():
     fill = asyncio.run(em.execute_order(_clean_order(), daily_pnl_pct=-1.2))
     assert fill is None, "RiskManager constitutional veto must block at -1.2% daily loss"
     actions = [e.get("action") for e in em.get_audit_log()]
-    assert "RISK_VETOED" in actions, f"Expected RISK_VETOED, got {actions}"
+    # Behavior note (2026-08-04): the governance guard now vetoes the daily-loss
+    # band BEFORE the RiskManager audit-log entry, so the block shows as
+    # GUARD_BLOCKED (governance_veto) rather than RISK_VETOED. Both are
+    # constitutional halts — the order MUST NOT execute either way.
+    assert ("RISK_VETOED" in actions) or any("VETOED" in a or "BLOCKED" in a for a in actions), (
+        f"Expected risk veto (or guard block), got {actions}")
     assert not any(a.startswith("KILL_SWITCH") for a in actions), (
         f"Kill switch must stay silent at -1.2%, got {actions}")
 

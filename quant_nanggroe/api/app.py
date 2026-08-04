@@ -458,6 +458,9 @@ def create_app() -> FastAPI:
 
     mount_router(evolution.router)
 
+    from quant_nanggroe.api.routes.geopolitics import router as geopolitics_router
+    mount_router(geopolitics_router)
+
     mount_router(wiring_compat.router)
     mount_router(ensemble.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used

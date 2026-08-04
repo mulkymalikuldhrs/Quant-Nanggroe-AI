@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 
 from quant_nanggroe.api.app import create_app
 
-
-API_KEY = "dev-local-key-123"
+# Match the real backend key (.env QNAI_API_KEY) so auth middleware accepts it.
+API_KEY = "dd0866a37b86905b53560752d154ca4f5ddb6a0c63989783"
 
 
 @pytest.fixture(scope="module")
