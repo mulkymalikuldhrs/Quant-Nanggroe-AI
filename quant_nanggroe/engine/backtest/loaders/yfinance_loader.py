@@ -53,6 +53,15 @@ def _to_yfinance_symbol(code: str) -> str:
         yfinance-compatible symbol.
     """
     upper = code.strip().upper()
+    # HONESTY/DATA FIX (2026-08-04): forex pairs (6-letter ISO codes like
+    # EURUSD, GBPJPY, optionally written as EURUSD.US by callers) are NOT
+    # equities. yfinance serves them as EURUSD=X. Without the =X suffix the
+    # download returns EMPTY, silently producing oos_sharpe==0.0 for ALL 81
+    # strategies in walk-forward/batch. Detect forex FIRST (before .US/.HK
+    # stripping) and map to yfinance FX format so real data is fetched.
+    base = upper[:-3] if upper.endswith(".US") else upper
+    if len(base) == 6 and base.isalpha():
+        return f"{base}=X"
     if upper.endswith(".US"):
         return upper[:-3]
     if upper.endswith(".HK"):

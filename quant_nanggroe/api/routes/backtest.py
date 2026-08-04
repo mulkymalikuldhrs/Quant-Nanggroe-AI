@@ -110,12 +110,17 @@ def _run_backtest(backtest_id: str, request: BacktestRequest) -> None:
             _persist_backtest(backtest_id)
             return
 
-        # Build prices DataFrame (single column = close prices)
-        prices = price_df_raw[["close"]].copy()
-        prices.columns = [symbol]
+        # W-gap fix (2026-08-04): pass FULL OHLCV to the analyzer, not close-only.
+        # Strategies need open/high/low/close/volume to compute indicators (EMA/ADX).
+        # Close-only previously produced 0 signals -> 0 trades -> oos_sharpe==0.0
+        # for all 81 strategies. The WalkForwardAnalyzer extracts the close column
+        # internally for the BacktestEngine (which prices one column per symbol).
+        keep = [c for c in ["open", "high", "low", "close", "volume"] if c in price_df_raw.columns]
+        prices = price_df_raw[keep].copy()
+        prices.columns = [c.lower() for c in prices.columns]
 
         # Generate signals using the selected strategy from the registry
-        close = prices[symbol]
+        close = prices["close"]
         strategy_name = request.strategy
 
         try:

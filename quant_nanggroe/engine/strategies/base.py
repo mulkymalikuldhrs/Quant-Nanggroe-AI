@@ -168,21 +168,25 @@ class Strategy(ABC):
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(name={self.name})>"
 
-    def required_columns(self) -> list[str]:
+    @classmethod
+    def required_columns(cls) -> list[str]:
         """Return list of required DataFrame columns.
 
         Default: standard OHLCV. Subclasses may override for indicator-specific
         needs. W-gap fix (2026-08-04): was @abstractmethod which broke every
         strategy that didn't override it, causing WalkForwardAnalyzer folds to
         fail with AttributeError -> all 81 strategies returned no_folds.
+        @classmethod because WalkForwardAnalyzer calls it on the class.
         """
         return ["open", "high", "low", "close", "volume"]
 
-    def warmup_period(self) -> int:
+    @classmethod
+    def warmup_period(cls) -> int:
         """Minimum number of rows required before strategy is considered warmed up.
 
         W-gap fix (2026-08-04): default 30 (enough for most indicator lookbacks).
         Was @abstractmethod -> broke strategies lacking the override.
+        @classmethod for the same reason as required_columns.
         """
         return 30
 

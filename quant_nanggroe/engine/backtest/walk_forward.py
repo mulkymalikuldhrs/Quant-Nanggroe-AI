@@ -40,6 +40,7 @@ import pandas as pd
 
 from quant_nanggroe.engine.backtest.cpcv import CombinatorialPurgedCV
 from quant_nanggroe.types.signals import SignalType
+from quant_nanggroe.engine.strategies.base import SignalDirection, SignalStrength
 
 logger = logging.getLogger(__name__)
 
@@ -412,8 +413,8 @@ class WalkForwardAnalyzer:
 
             try:
                 strategy = strategy_class(**params)
-                train_signals = self._generate_strategy_signals(strategy, train_prices)
-                test_signals = self._generate_strategy_signals(strategy, test_prices)
+                train_signals = self._generate_strategy_signals(strategy, train_prices, strategy_params)
+                test_signals = self._generate_strategy_signals(strategy, test_prices, strategy_params)
             except Exception as e:
                 logger.warning("Fold %d strategy execution failed: %s", fold, e)
                 start += self.test_window + embargo
@@ -424,14 +425,24 @@ class WalkForwardAnalyzer:
                 start += self.test_window + embargo
                 continue
 
-            is_result = self.engine.run(train_prices, train_signals, **kwargs)
+            # W-gap fix (2026-08-04): the engine prices ONE COLUMN PER SYMBOL
+            # (close prices), but the strategy needs full OHLCV to compute
+            # indicators. Build a close-only price df named after the signal
+            # column so engine.run() trades the right symbol instead of
+            # treating every OHLCV column as a separate instrument (which
+            # produced 0 trades -> oos_sharpe==0.0 for all 81 strategies).
+            sym = train_signals.columns[0]
+            eng_train = train_prices[["close"]].rename(columns={"close": sym}) if "close" in train_prices.columns else train_prices[[train_prices.columns[0]]].rename(columns={train_prices.columns[0]: sym})
+            eng_test = test_prices[["close"]].rename(columns={"close": sym}) if "close" in test_prices.columns else test_prices[[test_prices.columns[0]]].rename(columns={test_prices.columns[0]: sym})
+
+            is_result = self.engine.run(eng_train, train_signals, **kwargs)
             is_metrics = is_result.get("metrics", {})
             is_trades = is_metrics.get("total_trades", 0)
 
             if test_signals is not None and not test_signals.empty:
-                oos_result = self.engine.run(test_prices, test_signals, **kwargs)
+                oos_result = self.engine.run(eng_test, test_signals, **kwargs)
                 oos_metrics = oos_result.get("metrics", {})
-                oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
+                oos_eq = oos_result.get("equitycurve", oos_result.get("equity_curve", pd.Series(dtype=float)))
                 oos_trades = oos_metrics.get("total_trades", 0)
                 if len(oos_eq) > 0:
                     oos_equity_parts.append(oos_eq)
@@ -484,24 +495,44 @@ class WalkForwardAnalyzer:
     def _generate_strategy_signals(
         strategy: Any,
         prices: pd.DataFrame,
+        strategy_params: Optional[Dict[str, Any]] = None,
     ) -> pd.DataFrame:
-        """Generate signals from a strategy instance for a price slice.
+        """Generate signals from a strategy for a price slice.
 
         Calls ``generate_signal`` bar-by-bar to avoid lookahead bias,
         then assembles the results into a single-column signal DataFrame.
 
+        W-gap fix (2026-08-04): ``strategy`` may be a CLASS (as passed by
+        ``analyze_strategy``) — we instantiate it here, since calling an
+        instance method on the class raises TypeError and was silently
+        swallowed by the except -> all-zero signals -> 0 trades ->
+        oos_sharpe==0.0 for every strategy.
+
         Args:
-            strategy: BaseStrategy instance.
+            strategy: Strategy class or instance.
             prices: Price DataFrame for the fold.
+            strategy_params: Optional params for the strategy constructor.
 
         Returns:
             Signal DataFrame with same index as prices, or None on failure.
         """
+        # Instantiate if a class was passed (analyze_strategy passes the class).
+        if isinstance(strategy, type):
+            try:
+                strat = strategy(**(strategy_params or {}))
+            except Exception:
+                strat = strategy()
+        else:
+            strat = strategy
         signals = []
-        required_cols = strategy.required_columns()
-        warmup = strategy.warmup_period()
+        required_cols = strat.required_columns()
+        warmup = strat.warmup_period()
         # ponytail: strategies expect lowercase OHLCV (validate_data raises on Capitalized).
         # Normalize once here — single shared point, not 75 strategy files.
+        # BUT keep the original column name for the signal Series so it matches
+        # the price column the engine trades on (W-gap fix 2026-08-04: renaming
+        # to lowercase silently broke the price/signal column match -> 0 trades).
+        signal_col = prices.columns[0]
         prices = prices.rename(columns={c: c.lower() for c in prices.columns})
 
         for i in range(len(prices)):
@@ -510,7 +541,7 @@ class WalkForwardAnalyzer:
                 signals.append(0.0)
                 continue
             try:
-                signal = strategy.generate_signal(data_slice)
+                signal = strat.generate_signal(data_slice)
                 # ponytail: StrategySignal has .direction (BUY/SELL/HOLD) and
                 # .strength (enum) / .confidence (float 0-1). Convert to a numeric
                 # weight: sign from direction, magnitude from confidence (fallback
@@ -530,7 +561,7 @@ class WalkForwardAnalyzer:
             except Exception:
                 signals.append(0.0)
 
-        return pd.DataFrame({prices.columns[0]: signals}, index=prices.index)
+        return pd.DataFrame({signal_col: signals}, index=prices.index)
 
     def _analyze_cpcv(
         self,
@@ -605,8 +636,8 @@ class WalkForwardAnalyzer:
             if strategy_class is not None:
                 try:
                     strategy = strategy_class(**(strategy_params or {}))
-                    train_signals = self._generate_strategy_signals(strategy, train_prices)
-                    test_signals = self._generate_strategy_signals(strategy, test_prices)
+                    train_signals = self._generate_strategy_signals(strategy, train_prices, strategy_params)
+                    test_signals = self._generate_strategy_signals(strategy, test_prices, strategy_params)
                 except Exception as e:
                     logger.warning("CPCV fold strategy generation failed: %s", e)
                     continue
