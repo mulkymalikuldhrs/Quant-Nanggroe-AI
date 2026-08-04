@@ -32,7 +32,8 @@ class DummyStrategy(BaseStrategy):
     Single 'close' column keeps the WF signal/price shape aligned (we are
     testing WF leakage machinery, not strategy validation)."""
     def __init__(self, name="Dummy", params=None):
-        super().__init__(name, params)
+        # BaseStrategy.__init__ accepts a single StrategyParameters object.
+        super().__init__(parameters=params if params is not None else None)
     def required_columns(self):
         return ["close"]
     def warmup_period(self):
