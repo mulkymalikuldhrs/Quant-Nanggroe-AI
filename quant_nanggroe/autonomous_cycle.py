@@ -171,7 +171,7 @@ class Config:
     MAX_POSITIONS_PER_SYMBOL = 1
     MAX_TOTAL_POSITIONS = 5
     DEFAULT_KELLY = 0.25
-    MIN_CONFIDENCE = 0.6             # Minimum signal confidence to trade
+    MIN_CONFIDENCE = 0.5             # Min signal confidence to trade (2026-08-04: 0.6→0.5 per user GO — most strategies hardcode 0.5-0.55)
     
     # Position management
     TRAILING_STOP_PCT = 0.005        # 0.5% trailing
@@ -297,6 +297,15 @@ class StrategySignalGenerator:
         except Exception as fe:
             log.warning("M1-WIRE: feature enrichment skipped (fail-safe): %s", fe)
 
+        # M1-WIRE FIX (2026-08-04, fangbot): build OHLCV DataFrame once for
+        # registry strategies (they expect pandas, not list[dict]).
+        _candles_df = None
+        try:
+            import pandas as _pd
+            _candles_df = _pd.DataFrame(candles)
+        except Exception:
+            _candles_df = None
+
         for name, strategy in self.strategies.items():
             try:
                 # G4 FIX: registry strategies implement generate_signal() (returns
@@ -304,6 +313,21 @@ class StrategySignalGenerator:
                 # built-in strategies implement analyze() (returns "buy"/"sell"/None).
                 # Previously only analyze() was called → registry strategies raised
                 # AttributeError (swallowed) → 81 strategies NEVER produced signals.
+                #
+                # M1-WIRE FIX (2026-08-04, fangbot): registry strategies (RSI,
+                # trend_follow, dhaher_system, …) expect a pandas OHLCV DataFrame,
+                # but the live path passed a list[dict] → every strategy answered
+                # "Insufficient data" / "Unsupported data format" → ZERO signals
+                # ever. Convert once; builtin strategies keep list[dict].
+                is_builtin = isinstance(strategy, BaseSignalStrategy)
+                strategy_input = candles
+                if not is_builtin:
+                    try:
+                        if _candles_df is None:
+                            raise RuntimeError("no df")
+                        strategy_input = _candles_df
+                    except Exception:
+                        strategy_input = candles
                 signal = None
                 conf = 0.5
                 sl_hint = None
@@ -319,10 +343,12 @@ class StrategySignalGenerator:
                             _h1 = _m5 = None
                         _mtf_kwargs = {}
                         if _h1:
-                            _mtf_kwargs["timeframes"] = {"H1": _h1, "M15": candles, "M5": _m5 or candles}
-                        raw = strategy.generate_signal(candles, **_mtf_kwargs)
+                            _mtf_kwargs["timeframes"] = {
+                                "H1": _h1, "M15": strategy_input, "M5": _m5 or strategy_input,
+                            }
+                        raw = strategy.generate_signal(strategy_input, **_mtf_kwargs)
                     else:
-                        raw = strategy.generate_signal(candles)
+                        raw = strategy.generate_signal(strategy_input)
                     if raw is not None:
                         if hasattr(raw, "direction"):
                             # StrategySignal / canonical object
