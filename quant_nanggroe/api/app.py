@@ -358,7 +358,6 @@ def create_app() -> FastAPI:
         TypeError -> 500 at runtime. Wrapping each route in fastapi.APIRoute
         restores DI while still landing the route.
         """
-        router.prefix = prefix  # keep attribute consistent for introspection/tests
         from fastapi.routing import APIRoute
         for _rt in router.routes:
             _path = (prefix.rstrip('/') + getattr(_rt, 'path', '')) or getattr(_rt, 'path', '')
