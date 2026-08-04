@@ -674,21 +674,12 @@ class AutonomousPipeline:
         if _HAS_AUTO_REGISTRY:
             try:
                 self._auto_registry = AutoRegistry()
-                # Auto-generate __init__.py for dirs missing one
-                base = Path(__file__).resolve().parent.parent.parent
-                inits = self._auto_registry.ensure_init_files(base)
-                if inits:
-                    logger.info("Auto-generated %d __init__.py files", inits)
-                # Scan ALL directories WITHOUT base_class filter
-                discovered = self._auto_registry.discover_all()
-                total = self._auto_registry.count()
-                logger.info("AutoRegistry discovered %d components across %d dirs", total, len(discovered))
-                # Health check
-                health = self._auto_registry.health_check()
-                if health["stale_count"]:
-                    logger.warning("AutoRegistry: %d stale entries cleaned", health["stale_count"])
-                if health["missing_init_count"]:
-                    logger.warning("AutoRegistry: %d dirs still missing __init__.py", health["missing_init_count"])
+                # scan_all() discovers strategies on disk; scan_active() refreshes
+                # the runtime set. (ensure_init_files/discover_all/count/health_check
+                # are NOT part of AutoRegistry's API — removed the phantom calls.)
+                scanned = self._auto_registry.scan_all()
+                active = self._auto_registry.scan_active()
+                logger.info("AutoRegistry scanned %d strategy modules (%d active)", scanned, active)
             except Exception as exc:
                 self._auto_registry = None
                 logger.warning("AutoRegistry init failed: %s", exc)
