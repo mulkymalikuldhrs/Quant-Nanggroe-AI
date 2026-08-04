@@ -52,6 +52,17 @@ class PipelineScheduler:
             self.symbols = [s.strip() for s in _env_syms.split(",") if s.strip()]
         else:
             self.symbols = ["EURUSD", "USDJPY", "GBPUSD"]
+        # Broker suffix enforcement (REAL-ONLY execution fix, AUDIT C2).
+        # Valetax requires the ".vx" suffix on every symbol; bare symbols are
+        # rejected by the broker -> 0 fills forever. Apply unless the symbol
+        # already carries a suffix or an explicit override is set.
+        _suffix = os.environ.get("QNA_SYMBOL_SUFFIX", ".vx")
+        if _suffix:
+            self.symbols = [
+                s if ("." in s.split("/")[-1]) else f"{s}{_suffix}"
+                for s in self.symbols
+            ]
+        logger.info("Resolved scheduler symbols (broker suffix=%r): %s", _suffix, self.symbols)
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -144,7 +155,32 @@ class PipelineScheduler:
                 await asyncio.sleep(self.interval_minutes * 60)
 
     async def _run_cycle(self) -> None:
-        """Execute one pipeline cycle for all configured symbols."""
+        """Execute one pipeline cycle for all configured symbols.
+
+        REAL-ONLY safety (AUDIT H2/H3): wire the constitutional kill switch
+        into the LIVE loop. If the switch is active, skip the cycle and halt
+        new entries. Auto-activation is checked every cycle from the pipeline's
+        risk state so a daily/weekly/drawdown breach actually halts trading.
+        """
+        # AUDIT 1b: ensure cross-proc kill-switch state file is configured
+        # (idempotent; defaults to data/kill_switch_state.json).
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import (
+                KillSwitch,
+                configure_kill_switch_file,
+            )
+            configure_kill_switch_file()
+            _ks = KillSwitch()
+            _ks._ensure_reconciled()
+            if _ks.is_active:
+                logger.critical(
+                    "KILL SWITCH ACTIVE (%s) — skipping cycle, no new trades",
+                    _ks._current_level.value,
+                )
+                return
+        except Exception as ks_err:
+            logger.error("Kill switch pre-check failed: %s", ks_err)
+
         logger.info(
             "Scheduler cycle starting (symbols=%s)",
             self.symbols,
@@ -171,6 +207,24 @@ class PipelineScheduler:
                     logger.warning(
                         "Symbol %s failed: %s", r.symbol, r.reason,
                     )
+
+            # AUDIT 1b: after the cycle, check auto-activation from realized
+            # risk state so a breach actually trips the switch (fail-closed).
+            try:
+                from quant_nanggroe.engine.risk.kill_switch import KillSwitch as _KS2
+                ks2 = _KS2()
+                # Pull daily/weekly loss from the pipeline's risk guard if available
+                rg = getattr(pipeline, "risk_guard", None) or getattr(pipeline, "_risk", None)
+                d_pct = float(getattr(rg, "daily_loss_pct", 0.0) or 0.0)
+                w_pct = float(getattr(rg, "weekly_loss_pct", 0.0) or 0.0)
+                dd_pct = float(getattr(rg, "drawdown_pct", 0.0) or 0.0)
+                ev = ks2.check_auto_activate(
+                    daily_pnl_pct=d_pct, weekly_pnl_pct=w_pct, max_drawdown_pct=dd_pct
+                )
+                if ev is not None:
+                    logger.critical("KILL SWITCH AUTO-ACTIVATED: %s", ev.reason)
+            except Exception as auto_err:
+                logger.error("Kill switch auto-check failed: %s", auto_err)
 
         except asyncio.CancelledError:
             raise
