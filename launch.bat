@@ -30,17 +30,17 @@ goto :usage
 :api
 echo [QNA] Starting API server via qna.py (single entry point)...
 echo [QNA] PYTHONPATH cleared — no venv contamination.
-start "QNA-API" /B ".venv\Scripts\python.exe" qna.py api
+start "QNA-API" /B ".venv312\Scripts\python.exe" qna.py api
 goto :eof
 
 :cli
 echo [QNA] Starting CLI shell...
-".venv\Scripts\python.exe" qna.py cli
+".venv312\Scripts\python.exe" qna.py cli
 goto :eof
 
 :daemon
 echo [QNA] Starting background daemon...
-".venv\Scripts\python.exe" qna.py daemon
+".venv312\Scripts\python.exe" qna.py daemon
 goto :eof
 
 :dashboard
@@ -56,19 +56,19 @@ goto :eof
 shift
 echo [QNA] Running tests...
 if "%1"=="" (
-    ".venv\Scripts\python.exe" -m pytest tests/ -v
+    ".venv312\Scripts\python.exe" -m pytest tests/ -v
 ) else (
-    ".venv\Scripts\python.exe" -m pytest %* -v
+    ".venv312\Scripts\python.exe" -m pytest %* -v
 )
 goto :eof
 
 :status
 echo [QNA] System check...
 echo.
-echo  Python:     ".venv\Scripts\python.exe"
+echo  Python:     ".venv312\Scripts\python.exe"
 echo  PYTHONPATH: [CLEARED]
 echo.
-".venv\Scripts\python.exe" -c "import sys; print(f'  sys.path[0]: {sys.path[0]}'); print(f'  Python: {sys.version}')"
+".venv312\Scripts\python.exe" -c "import sys; print(f'  sys.path[0]: {sys.path[0]}'); print(f'  Python: {sys.version}')"
 echo.
 echo  To start API:  launch.bat api
 echo  To run CLI:    launch.bat cli

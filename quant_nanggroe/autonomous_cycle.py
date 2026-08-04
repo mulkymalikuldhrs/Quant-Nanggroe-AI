@@ -51,6 +51,7 @@ log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "quant_nanggroe"))
+sys.path.insert(0, str(REPO_ROOT))  # for `import quant_nanggroe.*` (package root)
 
 # ──────────────────────────────────────────────────────────────
 # SINGLETON GUARD — one instance per machine (cross-process safety)
