@@ -37,6 +37,14 @@ DB_PATH = Path(__file__).parent / "data" / "qna_trade_journal.db"
 
 log = logging.getLogger(__name__)
 
+# G1-WIRE: rich metacognition schema (APA/KENAPA/MENGAPA/KE MANA) made live.
+# Previously this module's TradeAwareness was orphaned (never called); the loop
+# emitted a simplified inline awareness. Now the journal builds the full schema
+# so trade_export.py / dashboard carry the real per-trade self-awareness.
+from quant_nanggroe.engine.analytics.trade_awareness import (
+    build_entry_awareness, build_exit_awareness,
+)
+
 
 class TradeJournal:
     """SQLite-backed trade journal with strategy attribution + self-eval."""
@@ -88,36 +96,132 @@ class TradeJournal:
                     exit_price REAL,
                     pnl REAL,
                     outcome TEXT,  -- 'win' | 'loss' | 'open'
-                    comment TEXT
+                    comment TEXT,
+                    -- TRADE-AWARENESS LAYER (apa/kenapa/bagaimana/mengapa)
+                    hypothesis TEXT,   -- WHY entry taken
+                    setup_ctx TEXT,    -- market context at open
+                    close_reason TEXT, -- WHY closed
+                    hit_type TEXT,     -- tp|sl|manual|killswitch|expiry|exit
+                    market_ctx TEXT    -- market context at close
                 )
             """)
             conn.commit()
 
+    def _emit_paper_state(self, rec: Dict):
+        """Mirror a trade record into paper_state/trades.json (the format consumed
+        by engine/analytics/trade_export.py + dashboard for apa/kenapa/bagaimana/
+        mengapa awareness). Appends or updates by ticket."""
+        import json
+        # FIX G2: align with trade_export.py reader path. trade_journal.py lives
+        # at quant_nanggroe/, so two parents up = repo root (not three).
+        out_dir = Path(__file__).resolve().parent.parent / "paper_state"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / "trades.json"
+        data: List[Dict] = []
+        if path.exists():
+            try:
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    data = data.get("trades", [])
+            except Exception:
+                data = []
+        existing = next((t for t in data if t.get("ticket") == rec.get("ticket")), None)
+        if existing:
+            existing.update(rec)
+        else:
+            data.append(rec)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, default=str)
+
+
     def record_open(self, ticket: int, strategy: str, symbol: str, side: str,
                     entry: float, sl: float = None, tp: float = None,
-                    confidence: float = 0.0, comment: str = ""):
-        """Log an executed order with full strategy attribution."""
+                    confidence: float = 0.0, comment: str = "",
+                    hypothesis: str = "", setup_ctx: str = ""):
+        """Log an executed order with full strategy attribution + HYPOTHESIS.
+
+        hypothesis : WHY this trade was taken (the 'apa/kenapa' — what the
+                     strategy expected to happen).
+        setup_ctx  : market context at open (regime, multi-tf confluence,
+                     volume, news) — the 'bagaimana/mengapa' of entry.
+        """
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """INSERT OR REPLACE INTO trades
                    (ticket, strategy, symbol, side, entry, sl, tp, confidence,
-                    open_time, outcome, comment)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                    open_time, outcome, comment, hypothesis, setup_ctx)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (ticket, strategy, symbol, side, entry, sl, tp, confidence,
-                 time.time(), "open", comment),
+                 time.time(), "open", comment, hypothesis, setup_ctx),
             )
             conn.commit()
+        # Mirror to paper_state for dashboard + export (G1: rich awareness schema).
+        aw = build_entry_awareness(
+            strategy_name=strategy, side=side, entry_price=entry, sl=sl or 0.0,
+            tp=tp or 0.0, signal_direction=side, confidence=confidence,
+            entry_trigger=hypothesis or f"signal:{side}", regime=setup_ctx or "unknown",
+            regime_reason=setup_ctx or "", strategy_thesis=hypothesis,
+            target_thesis="", expected_rr=0.0, holding_intent="",
+            execution_venue="mt5",
+        )
+        self._emit_paper_state({
+            "trade_id": str(ticket), "ticket": ticket, "symbol": symbol,
+            "strategy_name": strategy, "side": side, "entry_price": entry,
+            "sl": sl, "tp": tp, "pnl": 0.0, "entry_time": time.time(),
+            "awareness": aw.to_dict(),
+        })
 
-    def record_close(self, ticket: int, exit_price: float, pnl: float):
-        """Update a trade with close outcome. Recomputes outcome."""
+    def record_close(self, ticket: int, exit_price: float, pnl: float,
+                     reason: str = "", hit: str = "exit",
+                     market_ctx: str = ""):
+        """Update a trade with close outcome + REASONING (apa/kenapa/bagaimana/mengapa).
+
+        reason  : human-readable narrative — WHY this trade closed.
+        hit     : 'tp' | 'sl' | 'manual' | 'killswitch' | 'expiry' | 'exit'
+        market_ctx : snapshot of context at close.
+        """
         outcome = "win" if pnl > 0 else "loss"
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                """UPDATE trades SET close_time=?, exit_price=?, pnl=?, outcome=?
+                """UPDATE trades SET close_time=?, exit_price=?, pnl=?, outcome=?,
+                       close_reason=?, hit_type=?, market_ctx=?
                    WHERE ticket=?""",
-                (time.time(), exit_price, pnl, outcome, ticket),
+                (time.time(), exit_price, pnl, outcome, reason, hit,
+                 market_ctx, ticket),
             )
             conn.commit()
+        # Mirror close + full awareness to paper_state (G1: rich schema).
+        open_rec = self.get_open_trade(ticket) or {}
+        entry_aw = None
+        try:
+            from quant_nanggroe.engine.analytics.trade_awareness import TradeAwareness
+            aw_raw = open_rec.get("awareness") if isinstance(open_rec, dict) else None
+            entry_aw = TradeAwareness.from_dict(aw_raw) if aw_raw else None
+        except Exception:
+            entry_aw = None
+        aw = build_exit_awareness(
+            entry=entry_aw,
+            exit_price=exit_price,
+            exit_trigger=hit,
+            exit_reason=reason,
+            fill_note=market_ctx,
+        ) if entry_aw else build_exit_awareness(
+            entry=build_entry_awareness(
+                strategy_name=open_rec.get("strategy", "unknown"),
+                side=open_rec.get("side", ""), entry_price=open_rec.get("entry", 0.0),
+                sl=open_rec.get("sl") or 0.0, tp=open_rec.get("tp") or 0.0,
+                signal_direction=open_rec.get("side", ""), confidence=0.0,
+                entry_trigger=open_rec.get("comment") or f"journal:{open_rec.get('side', '')}",
+                execution_venue="mt5"),
+            exit_price=exit_price, exit_trigger=hit, exit_reason=reason,
+            fill_note=market_ctx,
+        )
+        self._emit_paper_state({
+            "trade_id": str(ticket), "ticket": ticket,
+            "exit_price": exit_price, "pnl": pnl, "exit_time": time.time(),
+            "awareness": aw.to_dict(),
+        })
 
     def get_open_trade(self, ticket: int) -> Optional[Dict]:
         with sqlite3.connect(self.db_path) as conn:
@@ -156,6 +260,11 @@ class TradeJournal:
                 st["losses"] += 1
                 st["loss_pnl"] += abs(t["pnl"])
 
+        # Compute sharpe-like metric per strategy from the pnl series.
+        by_strat_series: Dict[str, List[float]] = {}
+        for t in closed:
+            by_strat_series.setdefault(t["strategy"], []).append(t["pnl"])
+
         verdict = {}
         for s, st in by_strat.items():
             if st["trades"] < 20:
@@ -164,7 +273,18 @@ class TradeJournal:
             win_rate = st["wins"] / st["trades"]
             avg_win = st["win_pnl"] / st["wins"] if st["wins"] else 0
             avg_loss = st["loss_pnl"] / st["losses"] if st["losses"] else 1
+            # RR = average win / average loss (risk-reward ratio)
+            avg_rr = (avg_win / avg_loss) if avg_loss > 0 else 0.0
             expectancy = (win_rate * avg_win) - ((1 - win_rate) * avg_loss)
+            # Per-strategy Sharpe (annualized proxy): mean/std of pnl, risk-free=0.
+            series = by_strat_series.get(s, [])
+            sharpe = 0.0
+            if len(series) >= 2:
+                import math
+                mean = sum(series) / len(series)
+                var = sum((x - mean) ** 2 for x in series) / (len(series) - 1)
+                std = math.sqrt(var) if var > 0 else 0.0
+                sharpe = (mean / std) if std > 0 else 0.0
             if expectancy <= 0:
                 # DEBATE_ROUND1 gate: negative expectancy -> DISABLE (kelly=0, no trade)
                 verdict[s] = {
@@ -172,6 +292,8 @@ class TradeJournal:
                     "trades": st["trades"],
                     "win_rate": round(win_rate, 3),
                     "expectancy": round(expectancy, 4),
+                    "avg_rr": round(avg_rr, 3),
+                    "sharpe": round(sharpe, 3),
                     "total_pnl": round(st["total_pnl"], 2),
                     "kelly": 0.0,
                 }
@@ -184,6 +306,8 @@ class TradeJournal:
                 "trades": st["trades"],
                 "win_rate": round(win_rate, 3),
                 "expectancy": round(expectancy, 4),
+                "avg_rr": round(avg_rr, 3),
+                "sharpe": round(sharpe, 3),
                 "total_pnl": round(st["total_pnl"], 2),
                 "kelly": round(kelly, 3),
             }
