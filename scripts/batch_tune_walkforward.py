@@ -64,10 +64,16 @@ def worker(name: str, q: Queue):
             ana = WalkForwardAnalyzer(engine=eng, train_window=tw, test_window=twt, mode="rolling", purge_gap=5, embargo=3)
             wfr = ana.analyze_strategy(prices=df, strategy_class=type(strat), strategy_params={})
             wins = wfr.get("windows", [])
+            oos_sharpes = [round(w.out_of_sample_sharpe, 4) for w in wins] if wins else []
+            is_sharpes = [round(w.in_sample_sharpe, 4) for w in wins] if wins else []
             rec["walk_forward"] = {
                 "symbol": used, "n_folds": len(wins),
-                "oos_sharpe_mean": round(sum(w.out_of_sample_sharpe for w in wins)/len(wins), 4) if wins else None,
-                "is_sharpe_mean": round(sum(w.in_sample_sharpe for w in wins)/len(wins), 4) if wins else None,
+                "oos_sharpes": oos_sharpes,
+                "is_sharpes": is_sharpes,
+                "oos_sharpe_mean": round(sum(oos_sharpes)/len(oos_sharpes), 4) if oos_sharpes else None,
+                "is_sharpe_mean": round(sum(is_sharpes)/len(is_sharpes), 4) if is_sharpes else None,
+                # honest "has edge" metric: at least one OOS fold positive
+                "has_positive_oos_fold": any(s > 0 for s in oos_sharpes),
             }
         except Exception as e:
             rec["walk_forward"] = {"error": str(e)[:200]}
@@ -107,8 +113,8 @@ def main():
                  "ok" if results[name].get("tune") and not isinstance(results[name].get("tune"), dict) else "err")
         OUT.write_text(json.dumps(results, indent=2, default=str))
     n_wf = sum(1 for r in results.values() if isinstance(r.get("walk_forward"), dict) and r["walk_forward"].get("n_folds"))
-    n_oos = sum(1 for r in results.values() if isinstance(r.get("walk_forward"), dict) and r["walk_forward"].get("oos_sharpe_mean") not in (None, 0.0))
-    log.info("ALL DONE. %d strategies. wf_with_folds=%d, wf_with_positive_oos=%d", len(results), n_wf, n_oos)
+    n_oos = sum(1 for r in results.values() if isinstance(r.get("walk_forward"), dict) and r["walk_forward"].get("has_positive_oos_fold"))
+    log.info("ALL DONE. %d strategies. wf_with_folds=%d, wf_with_positive_oos_fold=%d", len(results), n_wf, n_oos)
 
 if __name__ == "__main__":
     main()

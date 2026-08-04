@@ -128,6 +128,43 @@ def _apply_evolver_weights(scorers: list) -> None:
         log.debug("WeightEvolver apply failed: %s", e)
 
 
+def _persist_awareness_journal(trade_id: str, symbol: str, awareness: dict) -> None:
+    """Append a trade awareness record to the shared journal.
+
+    Mirror of the agentic-path persistence so hedge-fund live trades also show
+    up in the dashboard (trading/history) and Excel/PDF exports. Fail-closed:
+    any write error is swallowed (the awareness is best-effort metadata, not a
+    critical trade record).
+    """
+    try:
+        journal_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "paper_state")
+        )
+        os.makedirs(journal_dir, exist_ok=True)
+        journal_path = os.path.join(journal_dir, "trades.json")
+        data = []
+        if os.path.isfile(journal_path):
+            try:
+                with open(journal_path, encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                data = []
+        if isinstance(data, dict):
+            data = data.get("trades", [])
+        data.append({
+            "id": trade_id,
+            "trade_id": trade_id,
+            "symbol": symbol,
+            "strategy": "hedge_fund_fusion",
+            "awareness": awareness,
+            "entry_time": awareness.get("entry_time", datetime.now().isoformat()),
+        })
+        with open(journal_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, default=str, indent=2)
+    except Exception as e:
+        log.debug("awareness journal persist skipped: %s", e)
+
+
 def _record_evolver_trade(trade_id: str, symbol: str, fusion_result,
                           daily_pnl: float) -> None:
     try:
@@ -148,6 +185,45 @@ def _record_evolver_trade(trade_id: str, symbol: str, fusion_result,
             predicted_bias=getattr(fusion_result, "bias", "neutral"),
         )
         log.info("WeightEvolver: recorded trade %s PnL=%.2f", trade_id, daily_pnl)
+        # ── Metacognition (autonomous mandate) ────────────────────────────
+        # Build a TradeAwareness record from the fusion result + available
+        # context and persist it to the journal so it shows in the dashboard
+        # and exports (Excel/PDF) like the agentic-path trades. SL/TP are not
+        # known at this call site -> left as 0/"unknown" (fail-closed, never
+        # fabricated). This is the hedge-fund live path's contribution to the
+        # per-trade awareness pipeline.
+        try:
+            from quant_nanggroe.engine.analytics.trade_awareness import (
+                build_entry_awareness, TradeAwareness,
+            )
+            _bias = str(getattr(fusion_result, "bias", "neutral")).upper()
+            _side = "BUY" if "UP" in _bias or "LONG" in _bias else ("SELL" if "DOWN" in _bias or "SHORT" in _bias else "FLAT")
+            _score_names = list(scorer_scores.keys())
+            _conf = max((s.get("confidence", 0.0) for s in scorer_scores.values()), default=0.0)
+            _aw = build_entry_awareness(
+                strategy_name="hedge_fund_fusion",
+                side=_side,
+                entry_price=0.0,  # live path: not captured here
+                sl=0.0, tp=0.0,    # not available at this call site
+                signal_direction=_bias,
+                confidence=_conf,
+                entry_trigger=f"fusion:{_bias} via {', '.join(_score_names) or 'n/a'}",
+                confluence=_score_names,
+                regime=getattr(fusion_result, "regime", "unknown") or "unknown",
+                regime_reason="macro fusion regime at execution",
+                target_thesis=f"hedge-fund fusion bias={_bias}",
+                holding_intent="portfolio",
+                execution_venue="mt5",
+            )
+            # mark as live/executed; reflect realized pnl in outcome if known
+            if daily_pnl > 0:
+                _aw.outcome = "WIN"
+            elif daily_pnl < 0:
+                _aw.outcome = "LOSS"
+            _aw.exit_reason = f"daily PnL realized: {daily_pnl:.2f}"
+            _persist_awareness_journal(trade_id, symbol, _aw.to_dict())
+        except Exception as _aw_e:
+            log.debug("hedge-fund awareness build skipped: %s", _aw_e)
     except Exception as e:
         log.debug("WeightEvolver record failed: %s", e)
 
