@@ -8,6 +8,7 @@ import { Wifi, AlertCircle } from "lucide-react";
 import { useTerminalData, Card, clsPct, fmtPct, fmtNum, flowColor, badgeColor } from "@/components/terminal/terminal-shared";
 import { DerivativesRibbon } from "@/components/terminal/derivatives-ribbon";
 import { EconCalendar } from "@/components/terminal/econ-calendar";
+import { PositionsPanel, AIReasoningPanel, SignalBar, StatusBar } from "@/components/terminal/command-center";
 
 /* ════════════════════════════════════════════════════════════════════
    1 — MACRO PULSE
@@ -427,6 +428,10 @@ function TerminalContent() {
       )}
 
       <div className="grid grid-cols-12 gap-2 auto-rows-min">
+        <StatusBar />
+        <PositionsPanel />
+        <AIReasoningPanel />
+        <SignalBar />
         <DerivativesRibbon />
         <MacroPulse />
         <CryptoPulse />
