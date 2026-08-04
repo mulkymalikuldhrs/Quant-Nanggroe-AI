@@ -235,7 +235,7 @@ def test_legacy_signal_tradingagents_rating_parse(monkeypatch):
     monkeypatch.setitem(sys.modules, "tradingagents.default_config", fake_mod)
     # Prevent the real E:/tradingagents path from being inserted/imported.
     monkeypatch.setattr(
-        "quant_nanggroe.hedge_fund.hedge_fund.sys.path",
+        "sys.path",
         [p for p in sys.path if p != "E:/tradingagents"],
     )
 

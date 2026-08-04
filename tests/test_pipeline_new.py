@@ -47,7 +47,7 @@ class TestDetectMode:
         assert _detect_mode("NVDA") == "agentic"
 
     def test_explicit_hint(self):
-        assert _detect_mode("EURUSD", mode="crypto") == "crypto"
+        assert _detect_mode("EURUSD", mode_hint="crypto") == "crypto"
 
     def test_pipeline_result_empty(self):
         r = PipelineResult.empty("BTCUSDT")

@@ -104,7 +104,7 @@ class TestClosedTradeHandler:
 # ─────────────────────────────────────────────────────────────────────────────
 class TestStrategyDisabler:
     def _disabler(self, **kw):
-        return StrategyDisabler(journal=None, **kw)
+        return StrategyDisabler(**kw)
 
     def test_insufficient_trades_skipped(self):
         d = self._disabler(min_trades=10)

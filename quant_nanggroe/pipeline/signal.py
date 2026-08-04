@@ -126,7 +126,13 @@ class UnifiedSignalEngine:
                     continue
                 sig.confidence = conf
                 sig.reason = f"{sig.reason} | {reason}"
-                sig.metadata["macro_weather"] = self._macro.weather.to_dict()
+                # Weather snapshot for telemetry — MacroContextProvider exposes
+                # it via get_signal_context(), not a .weather attribute.
+                try:
+                    _mctx = self._macro.get_signal_context(symbol, causal_ctx=self._causal_ctx)
+                    sig.metadata["macro_weather"] = _mctx.get("macro_weather", "UNKNOWN")
+                except Exception:
+                    sig.metadata["macro_weather"] = "UNKNOWN"
 
             if sig.side in ("buy", "sell") and sig.confidence < MIN_CONFIDENCE_THRESHOLD:
                 log.warning(

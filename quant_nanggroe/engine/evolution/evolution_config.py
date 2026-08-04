@@ -39,11 +39,16 @@ class EvolutionConfig:
         if self._path.exists():
             try:
                 raw = json.loads(self._path.read_text(encoding="utf-8"))
-                self._data = {**_DEFAULTS, **raw}
+                # Normalize: legacy files stored defaults at root; modern layout
+                # keeps them under "global" (see get_global/get_account_config).
+                merged = {**_DEFAULTS, **raw}
+                if "global" not in merged:
+                    merged["global"] = {k: v for k, v in _DEFAULTS.items()}
+                self._data = merged
             except (json.JSONDecodeError, OSError):
-                self._data = dict(_DEFAULTS)
+                self._data = {**_DEFAULTS, "global": dict(_DEFAULTS)}
         else:
-            self._data = dict(_DEFAULTS)
+            self._data = {**_DEFAULTS, "global": dict(_DEFAULTS)}
             self.save()
 
     def save(self) -> None:
