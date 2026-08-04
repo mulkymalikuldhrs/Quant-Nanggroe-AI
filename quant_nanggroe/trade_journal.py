@@ -105,6 +105,20 @@ class TradeJournal:
                     market_ctx TEXT    -- market context at close
                 )
             """)
+            # MIGRATION: legacy DBs predate the trade-awareness columns. Add any
+            # missing columns idempotently so record_open/record_close never crash
+            # on a stale schema (fail-closed would otherwise disable ALL history).
+            _expected = {
+                "hypothesis": "TEXT", "setup_ctx": "TEXT", "close_reason": "TEXT",
+                "hit_type": "TEXT", "market_ctx": "TEXT",
+            }
+            try:
+                _cur_cols = {r[1] for r in conn.execute("PRAGMA table_info(trades)").fetchall()}
+                for _col, _type in _expected.items():
+                    if _col not in _cur_cols:
+                        conn.execute(f"ALTER TABLE trades ADD COLUMN {_col} {_type}")
+            except Exception as _mig_err:
+                logging.getLogger(__name__).warning("TradeJournal migration skipped: %s", _mig_err)
             conn.commit()
 
     def _emit_paper_state(self, rec: Dict):

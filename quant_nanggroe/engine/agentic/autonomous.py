@@ -503,6 +503,7 @@ class AutonomousPipeline:
         # P0: Self-Aware capability (user's #1 dream — was ABSENT).
         self._self_aware = SelfAware()
         self._position_tracker: dict[str, dict] = {}
+        self.journal = None  # TradeJournal — wired in _init_services (fail-closed)
         self._init_services()
 
     def _pipeline_self_state(self) -> "SelfState":
@@ -534,6 +535,75 @@ class AutonomousPipeline:
         except Exception as e:  # self-awareness must never crash the pipeline
             from quant_nanggroe.engine.self_aware import Reflection
             return Reflection(verdict="UNKNOWN", statements=[f"self-reflection unavailable: {e}"], metrics={}, anomalies=[])
+
+    # ── R-TRADE-HISTORY: closed-trade detection + self-evolve trigger ──────
+    async def _sync_closed_trades(self, symbol: str | None = None) -> None:
+        """Detect positions that closed (SL/TP/manual) since last cycle and record
+        them to TradeJournal, then feed PnL into WeightEvolver (self-evolve).
+
+        Fail-closed: any error is logged and swallowed — never breaks the cycle.
+        """
+        if self.journal is None or self._em is None:
+            return
+        try:
+            open_trades = self.journal.get_open_trades()
+        except Exception as _e:
+            logger.warning("journal.get_open_trades failed: %s", _e)
+            return
+        if not open_trades:
+            return
+
+        # Collect live tickets from every MT5 broker handle.
+        live_tickets: set[int] = set()
+        for _name, _broker in (self._em.get_brokers() or {}).items():
+            _mt5 = getattr(_broker, "_mt5", None) or getattr(_broker, "mt5", None)
+            if _mt5 is None:
+                continue
+            try:
+                for _p in (_mt5.positions_get() or []):
+                    live_tickets.add(int(_p.ticket))
+            except Exception:
+                continue
+
+        for _t in open_trades:
+            _tk = int(_t.get("ticket", 0))
+            if _tk in live_tickets:
+                continue  # still open
+            # Closed -> resolve pnl from MT5 deal history if available
+            _exit, _pnl, _hit = 0.0, 0.0, "unknown"
+            try:
+                from datetime import datetime as _dt
+                for _name, _broker in (self._em.get_brokers() or {}).items():
+                    _mt5 = getattr(_broker, "_mt5", None) or getattr(_broker, "mt5", None)
+                    if _mt5 is None:
+                        continue
+                    _deals = _mt5.history_deals_get(_dt(2020, 1, 1), _dt.now())
+                    for _d in (_deals or []):
+                        if int(getattr(_d, "position_id", 0)) == _tk or int(getattr(_d, "ticket", 0)) == _tk:
+                            _pnl += float(getattr(_d, "profit", 0.0) or 0.0)
+                            _exit = float(getattr(_d, "price", 0.0) or _exit)
+                            _hit = "tp" if _pnl > 0 else "sl"
+            except Exception:
+                pass
+            try:
+                self.journal.record_close(
+                    ticket=_tk, exit_price=_exit, pnl=_pnl,
+                    hit=_hit, reason=f"position gone from MT5 (auto-detected)",
+                )
+            except Exception as _ce:
+                logger.warning("journal.record_close(%s) failed: %s", _tk, _ce)
+            # Feed self-evolve
+            try:
+                from quant_nanggroe.core.scoring.evolver import WeightEvolver
+                _we = WeightEvolver()
+                _we.record_trade(
+                    strategy=_t.get("strategy", "unknown"),
+                    pnl=_pnl,
+                    win=_pnl > 0,
+                    extra={"ticket": _tk, "symbol": _t.get("symbol"), "hit": _hit},
+                )
+            except Exception as _we_err:
+                logger.debug("WeightEvolver.record_trade failed: %s", _we_err)
 
     def _ensure_data_manager(self) -> Any:
         if self._data_manager is not None:
@@ -585,6 +655,22 @@ class AutonomousPipeline:
             # of crashing the scheduler cycle. No trades without a live broker.
             logger.warning("AutonomousPipeline: execution manager unavailable (%s) — running monitor-only (no trades).", _em_err)
             self._em = None
+
+        # R-TRADE-HISTORY (2026-08-04): wire TradeJournal so EVERY executed
+        # trade (open/close, SL/TP hit) is recorded for self-eval + self-evolve.
+        # Fail-closed: if journal init fails, stay None and skip logging (never
+        # crash the trade path).
+        try:
+            from quant_nanggroe.trade_journal import TradeJournal
+            self.journal = TradeJournal()
+            if not getattr(self.journal, "_init_ok", False):
+                logger.warning("TradeJournal init incomplete — trade history disabled (fail-closed)")
+                self.journal = None
+            else:
+                logger.info("TradeJournal wired: trade history + self-eval active")
+        except Exception as _j_err:
+            logger.warning("TradeJournal unavailable (%s) — trade history disabled", _j_err)
+            self.journal = None
 
         # ── QNA Core Components ──
         self._final_decider = None
@@ -1417,56 +1503,74 @@ class AutonomousPipeline:
         except Exception as exc:
             return {"action": signal, "reason": f"LLM unavailable: {exc}", "confidence": confidence, "model": "none"}
 
+    def _clean_symbol(self, symbol: str) -> str:
+        """Normalize a QNA symbol for data-fetch providers.
+
+        Forex on Valetax uses a '.vx' suffix (e.g. EURUSD.vx). yfinance rejects
+        both the suffix and bare forex pairs -> must map to 'EURUSD=X'. Strip
+        the suffix and let the FX map handle it. Non-forex symbols pass through.
+        """
+        s = symbol.strip()
+        if "." in s:
+            base, ext = s.split(".", 1)
+            if ext.lower() == "vx":
+                s = base.upper()
+        return s
+
     async def _fetch_data(self, symbol: str, data: Any = None) -> Any:
+        # R13 FIX (2026-08-05, user GO): LIVE trade-decision data MUST come from the
+        # SAME broker (MT5) that fills the trades — never yfinance/Yahoo. A price/spread
+        # divergence between the decision feed and the fill feed silently blows SL/TP and
+        # corrupts every PnL/awareness metric. yfinance is BACKTEST/analysis-only.
+        # On MT5 failure for trade-relevant symbols -> fail-closed (monitor-only, no trade),
+        # NOT a silent yfinance fallback.
         if data is not None:
             return data
         import asyncio
 
         import pandas as pd
-        dm = self._ensure_data_manager()
-        if dm is not None:
-            try:
-                from quant_nanggroe.types.market import TimeFrame
-                ohlcv_list = await dm.get_ohlcv(symbol, timeframe=TimeFrame.D1, limit=500)
-                if ohlcv_list and len(ohlcv_list) >= 50:
-                    rows = [{"open": float(c.open), "high": float(c.high), "low": float(c.low), "close": float(c.close), "volume": float(c.volume)} for c in ohlcv_list]
-                    df = pd.DataFrame(rows, index=pd.DatetimeIndex([c.timestamp for c in ohlcv_list]))
-                    if self._data_monitor is not None:
-                        try:
-                            from quant_nanggroe.types.market import TimeFrame as _TF
-                            self._data_monitor.record_fetch(symbol, _TF.D1)
-                        except Exception:
-                            pass
-                    return self._validate_ohlcv(df, symbol)
-            except Exception as exc:
-                logger.warning("DataProviderManager failed (%s) — falling back to yfinance", exc)
-        import yfinance as yf
-        sym_map = {"BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD", "SOL-USD": "SOL-USD", "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X"}
-        yf_sym = sym_map.get(symbol, symbol)
-        for attempt in range(3):
-            try:
-                ticker = yf.Ticker(yf_sym)
-                df = ticker.history(period="6mo")
-                if len(df) >= 50:
-                    break
-                await asyncio.sleep(5 * (attempt + 1))
-            except Exception:
-                if attempt < 2:
-                    await asyncio.sleep(5 * (attempt + 1))
-                else:
-                    raise
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        df.columns = [c.lower() for c in df.columns]
-        if len(df) < 50:
+        clean_sym = self._clean_symbol(symbol)
+        # 1) Primary source for LIVE decisions: the connected MT5 broker (same venue as fills).
+        em = getattr(self, "_em", None)
+        if em is not None:
+            brokers = getattr(em, "get_brokers", lambda: {})() or {}
+            for _bname, _broker in brokers.items():
+                _getter = getattr(_broker, "get_rates", None)
+                if not callable(_getter):
+                    continue
+                try:
+                    raw = _getter(clean_sym, None, 500)
+                    if raw is None or len(raw) == 0:
+                        continue
+                    rows = []
+                    for _bar in raw:
+                        _o = float(getattr(_bar, "open", getattr(_bar, "Open", 0)) or 0)
+                        _h = float(getattr(_bar, "high", getattr(_bar, "High", 0)) or 0)
+                        _l = float(getattr(_bar, "low", getattr(_bar, "Low", 0)) or 0)
+                        _c = float(getattr(_bar, "close", getattr(_bar, "Close", 0)) or 0)
+                        _v = float(getattr(_bar, "volume", getattr(_bar, "Volume", 0)) or 0)
+                        if _c <= 0:
+                            continue
+                        rows.append({"open": _o, "high": _h, "low": _l, "close": _c, "volume": _v})
+                    if len(rows) >= 50:
+                        df = pd.DataFrame(rows)
+                        if self._data_monitor is not None:
+                            try:
+                                from quant_nanggroe.types.market import TimeFrame as _TF
+                                self._data_monitor.record_fetch(symbol, _TF.D1)
+                            except Exception:
+                                pass
+                        return self._validate_ohlcv(df, symbol)
+                except Exception as exc:
+                    logger.warning("MT5 broker get_rates failed for %s (%s) — fail-closed, no yfinance", clean_sym, exc)
+            # No MT5 data available for a trade-relevant symbol => monitor-only.
+            logger.warning("No MT5 broker OHLCV for %s — refusing yfinance fallback (divergence risk)", clean_sym)
             return None
-        if self._data_monitor is not None:
-            try:
-                from quant_nanggroe.types.market import TimeFrame as _TF
-                self._data_monitor.record_fetch(symbol, _TF.D1)
-            except Exception:
-                pass
-        return self._validate_ohlcv(df, symbol)
+        # 2) No execution manager (monitor-only mode / tests): allow DataProviderManager
+        # but it MUST NOT serve Yahoo for forex/crypto in live trading. As a safety net we
+        # still refuse yfinance here; callers in pure-backtest paths use their own loaders.
+        logger.warning("No execution manager for %s — cannot source live OHLCV; refusing yfinance fallback", clean_sym)
+        return None
 
     def _validate_ohlcv(self, df: Any, symbol: str) -> Any:
         if df is None or df.empty:
@@ -1575,6 +1679,22 @@ class AutonomousPipeline:
                     reason = "rejected: no broker connected or guard blocked"
             else:
                 executed = True
+                # R-TRADE-HISTORY: record every filled trade to journal (strategy,
+                # symbol, side, SL/TP, entry). trade_id = order.id (uuid). Fail-closed.
+                if self.journal is not None:
+                    try:
+                        self.journal.record_open(
+                            ticket=abs(hash(order.id)) % (10**9),  # stable int from uuid
+                            strategy=getattr(self._last_result, "strategy", "unknown") or "unknown",
+                            symbol=symbol, side=side,
+                            entry=fill.price if fill and fill.price else current_price,
+                            sl=order_sl, tp=order_tp,
+                            confidence=float(getattr(self._last_result, "confidence", 0.0) or 0.0),
+                            hypothesis=f"signal={signal} regime={getattr(self._last_result, 'regime', 'unknown')}",
+                            setup_ctx=f"sl={order_sl} tp={order_tp} qty={qty}",
+                        )
+                    except Exception as _rec_err:
+                        logger.warning("journal.record_open failed: %s", _rec_err)
             # Wire trailing stop for filled positions
             if executed and fill and self._trailing_stop is not None:
                 try:
@@ -1592,6 +1712,13 @@ class AutonomousPipeline:
 
             # PnL is 0 at entry time - real PnL computed at position close via TradeLifecycleManager
             # Use fill price for entry tracking; exit_price/pnl populated on close
+
+            # R-TRADE-HISTORY: sync closed trades (SL/TP/manual) -> journal + self-evolve.
+            try:
+                await self._sync_closed_trades(symbol=symbol)
+            except Exception as _sync_err:
+                logger.warning("_sync_closed_trades failed: %s", _sync_err)
+
             return {
                 "symbol": symbol, "action": signal, "confidence": round(confidence, 4),
                 "position_size_pct": round(confidence * 0.05, 4),
@@ -1938,15 +2065,45 @@ class AutonomousPipeline:
                 logger.debug("Auto-tune: no candidates (need positive PnL + Sharpe 0-1)")
                 return 0
 
-            # Fetch data once for all candidates
+            # R13 FIX (2026-08-05): tuning data MUST come from the SAME MT5 broker as fills,
+            # never yfinance. A backtest tuned on yfinance OHLCV then executed on MT5 ticks
+            # is an invalid (divergent) walk-forward — garbage in, garbage evolution.
             try:
-                df = yf.Ticker("BTC-USD").history(period="6mo")
-                if isinstance(df.columns, pd.MultiIndex):
-                    df.columns = df.columns.get_level_values(0)
-                df.columns = [c.lower() for c in df.columns]
-                if len(df) < 200:
+                df = None
+                em_t = getattr(self, "_em", None)
+                if em_t is not None:
+                    for _bn, _br in (getattr(em_t, "get_brokers", lambda: {})() or {}).items():
+                        _g = getattr(_br, "get_rates", None)
+                        if not callable(_g):
+                            continue
+                        for _sym in ("BTCUSD", "BTC-USD"):
+                            try:
+                                _raw = _g(_sym, None, 500)
+                            except Exception:
+                                _raw = None
+                            if _raw and len(_raw) >= 200:
+                                _rows = []
+                                for _b in _raw:
+                                    _c = float(getattr(_b, "close", getattr(_b, "Close", 0)) or 0)
+                                    if _c <= 0:
+                                        continue
+                                    _rows.append({
+                                        "open": float(getattr(_b, "open", getattr(_b, "Open", 0)) or 0),
+                                        "high": float(getattr(_b, "high", getattr(_b, "High", 0)) or 0),
+                                        "low": float(getattr(_b, "low", getattr(_b, "Low", 0)) or 0),
+                                        "close": _c,
+                                        "volume": float(getattr(_b, "volume", getattr(_b, "Volume", 0)) or 0),
+                                    })
+                                if len(_rows) >= 200:
+                                    df = pd.DataFrame(_rows)
+                                    break
+                        if df is not None:
+                            break
+                if df is None or len(df) < 200:
+                    logger.warning("Auto-tune: no MT5 OHLCV available (>=200 bars) — refusing yfinance, skip tuning")
                     return 0
-            except Exception:
+            except Exception as exc:
+                logger.warning("Auto-tune MT5 data fetch failed (%s) — refusing yfinance fallback", exc)
                 return 0
 
             tuned_count = 0
