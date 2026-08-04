@@ -88,7 +88,8 @@ class MT5Broker(BrokerConnector):
             "type_time": self._mt5.ORDER_TIME_GTC,
         }
         # G12: broker comment carries strategy attribution (auditable in MT5 terminal)
-        _comment = order.notes or (order.strategy_name or "qna")
+        # `notes` may not exist on every Order construction -> getattr fail-soft.
+        _comment = getattr(order, "notes", None) or getattr(order, "strategy_name", None) or order.broker or "qna"
         if _comment:
             req["comment"] = str(_comment)[:32]
         # R7 FIX (2026-08-04, 7/7 council + user GO): fail-closed — never place a

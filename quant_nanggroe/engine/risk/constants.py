@@ -92,6 +92,7 @@ SECTOR_DEFAULT: str = "other"
 # This map ensures correct price lookups, SL/TP placement, and PnL calculation.
 # Keys are internal symbols, values are MT5 terminal symbol names.
 MT5_SYMBOL_MAP: dict[str, str] = {
+    # MT5-native (no suffix) — used by scheduler/autonomous loops
     "BTCUSDT": "BTCUSD",
     "ETHUSDT": "ETHUSD",
     "SOLUSDT": "SOLUSD",
@@ -100,6 +101,10 @@ MT5_SYMBOL_MAP: dict[str, str] = {
     "LINKUSDT": "LINKUSD",
     "XRPUSDT": "XRPUSD",
     "ADAUSDT": "ADAUSD",
+    # Yahoo-style hyphenated (scheduler default symbols) -> MT5 native
+    "BTC-USD": "BTCUSD",
+    "ETH-USD": "ETHUSD",
+    "SOL-USD": "SOLUSD",
     "EURUSD": "EURUSD",
     "GBPUSD": "GBPUSD",
     "USDJPY": "USDJPY",

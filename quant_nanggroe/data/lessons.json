@@ -2910,5 +2910,200 @@
     "occurred_at": "2026-08-03T23:37:22.108657+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "4669b340-7e2",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed BTC-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-03T23:51:23.663347+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "0189bf43-1ad",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed ETH-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-03T23:51:28.033348+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "deef4e57-139",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed SOL-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-03T23:51:32.439358+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "82f6faa0-fc2",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed EURUSD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-03T23:51:44.292031+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "513a168e-83d",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed USDJPY",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-03T23:51:50.091224+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "4d611924-efe",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed BTC-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:06:54.790666+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "f703753b-435",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed ETH-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:06:59.131590+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "8ec44bb7-376",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed SOL-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:07:03.489235+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "8deabb5c-2ed",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed EURUSD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:07:08.143554+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "fd7bfabe-7ee",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed USDJPY",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:07:13.077392+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "d2ce4b0c-31f",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed BTC-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:22:17.889434+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "c06f5e7b-5b4",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed ETH-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:22:22.279473+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "df0c263c-7c1",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed SOL-USD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:22:26.884974+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "9b44f539-3c2",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed EURUSD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:22:31.486508+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "d04f757d-c17",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed USDJPY",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T00:22:36.528464+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
