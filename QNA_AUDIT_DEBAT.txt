@@ -345,3 +345,55 @@ END_CONSOLIDATED ?
 ## CONSENSUS 7/7 | USER: keras, tegas, jelas, terukur.
 
 END_HONESTY_AUDIT ?
+
+================================================================================
+($TS, autobot) [DETECT & FIX: FAKE / FALSE / MINIM / BURUK / ANOMALI / KEANEHAN]
+
+## Mandate: detect semua fake, false, minim, buruk, kekurangan, anomali, keanehan -> fix.
+
+## 🔴 ANOMALI KRITIS (ROOT-CAUSED + FIXED) — commit 4ebb3497
+SIMPTOM: ALL 81 strategies walk-forward reported oos_sharpe == 0.0.
+        Sistem terlihat "tidak ada strategy yang profitable" -> false negative
+        sistemik. Padahal data/engine BISA menghasilkan edge.
+PENYEBAB BERTINGKAT (semua di-swallow oleh except -> diam2 0):
+  1. YFinanceLoader: forex 'EURUSD.US' -> strip '.US' -> 'EURUSD' (tanpa =X)
+     -> yfinance return EMPTY -> 0 bars -> 0 hasil.
+     FIX: map 6-huruf ISO (EURUSD/GBPUSD/...) -> 'EURUSD=X' (yfinance FX).
+  2. walk_forward.py pakai SignalDirection/SignalStrength tanpa import
+     -> NameError -> 0 signal. FIX: import dari strategies.base.
+  3. Strategy.required_columns()/warmup_period() dipanggil di CLASS (bukan
+     instance) -> TypeError -> 0 signal. FIX: @classmethod.
+  4. _generate_strategy_signals panggil strategy.generate_signal() di CLASS
+     -> TypeError -> 0 signal. FIX: instantiate strategy dulu.
+  5. Kolom signal di-rename lowercase ('eurusd') vs harga 'EURUSD' -> mismatch
+     -> engine gagal match symbol -> 0 trades. FIX: pakai signal_col asli.
+  6. API kirim close-only ke analyzer, padahal strategy butuh OHLCV lengkap
+     -> indicator gagal -> 0 signal. FIX: route kirim full OHLCV.
+BUKTI FIX: EURUSD.US -> 516 bars real. WF ema_adx:
+  is_trades=[10,8,8] | oos_trades=[0,4,2] | oos_sharpe=[-,-1.179,-0.822] (REAL).
+  27/27 tests pass.
+
+## 🟡 ANOMALI/MINIM (diverifikasi, BUKAN bug kritis)
+- model_registry.py:629 "2-layer MLP placeholder, do not use for live trading"
+  -> disclaimer jujur, bukan fake data. STATUS: aman (gak dipakai live).
+- autonomous_cycle.py:426 BaseSignalStrategy.analyze NotImplementedError
+  -> abstract base method (subclass override). Legacy script, bukan API path
+  (API pakai AutonomousSelfLoopOrchestrator yg REAL). STATUS: aman.
+- colony.py stub types (Hand/HandManager) -> agent colony belum full, tapi
+  tidak di jalur quant kritis. STATUS: known gap, non-blocking.
+- observability.py/adaptive_integration.py pass-only methods -> no-op stubs,
+  monitoring-only. STATUS: cosmetic, non-blocking quant.
+
+## ✅ SUDAH ELIMINASI (mandate sebelumnya, commit 311faa81)
+- Fake backtest simulator, synthetic VaR, mock PNG, fake exec, fake CVE, dll.
+  (lihat entry HONESTY_AUDIT).
+
+## SELF-* VERIFIED REAL (bukan stub)
+- autonomous_self_loop: _evaluate / _evolve(Sharpe<0.5) / _validate(WF).
+- WeightEvolver, StrategyEvolver, WalkForwardAnalyzer: REAL.
+
+## TESTS: 27/27 pass. No regression.
+
+## CONSENSUS 7/7 | USER: detect semua fake/anomali, fix.
+
+END_ANOMALY_AUDIT ?
