@@ -67,58 +67,105 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
             try:
                 import re
                 import yaml
+                from quant_nanggroe.connectors.mt5_broker import MT5Broker
+                from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
+                from quant_nanggroe.engine.execution.account_discovery import discover_accounts
+
+                # ── ACCOUNT AUTO-DETECT FIRST (user mandate 2026-08-04) ──────
+                # The terminal may be logged into a DIFFERENT account than the
+                # config (root cause of "0 trades = wrong account"). Discover
+                # every currently-authenticated MT5 account up front, so we can
+                # trade the REAL account even when config/yaml env vars are
+                # absent. This is the primary source of truth for "which account
+                # is live".
+                discovered = discover_accounts()
+                if discovered:
+                    logger.info("ACCOUNT AUTO-DETECT: %d terminal(s) logged in: %s",
+                                len(discovered),
+                                [(a.login, a.server) for a in discovered])
+                else:
+                    logger.warning("ACCOUNT AUTO-DETECT: no logged-in MT5 terminal found")
+
+                # Config accounts (yaml) are secondary — they only contribute
+                # if their env vars resolve. A missing/unresolved yaml does NOT
+                # block live trading when a real terminal account was detected.
+                accounts: list = []
                 with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
                     raw = f.read()
-                # Fail-closed honesty: os.path.expandvars() leaves ${VAR} untouched
-                # when the var is absent from the environment, which then crashes
-                # later at int('${QNA_MT5_LOGIN}') with a cryptic ValueError.
-                # Detect placeholders whose var is MISSING from os.environ BEFORE
-                # parsing and report clearly. Vars present-but-empty are left to
-                # the normal flow (empty login -> skipped account -> REAL-ONLY raise).
                 unresolved = sorted({
                     v for v in re.findall(r"\$\{([A-Z0-9_]+)\}", raw)
                     if v not in os.environ
                 })
                 if unresolved:
-                    _execution_backend_status = "unavailable"
-                    raise RuntimeError(
-                        "REAL-ONLY mode: MT5 env vars not set in environment: "
-                        f"{unresolved}. Set them in .env / shell (e.g. QNA_MT5_LOGIN, "
-                        "QNA_MT5_SERVER, QNA_MT5_PASSWORD) or configure "
-                        "config/mt5_accounts.yaml with real values. "
-                        "Cannot build live execution."
+                    logger.warning(
+                        "MT5 yaml env vars not set (%s) — using auto-detected "
+                        "terminal account(s) only.", unresolved,
                     )
-                data = yaml.safe_load(os.path.expandvars(raw)) or {}
-                accounts = data.get("accounts") or []
-                from quant_nanggroe.connectors.mt5_broker import MT5Broker
-                from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
+                else:
+                    data = yaml.safe_load(os.path.expandvars(raw)) or {}
+                    accounts = data.get("accounts") or []
+
+                # Build a unified list: config accounts first, then discovered
+                # accounts not already covered by config (dedup by login).
                 wired = 0
+                _wired_logins = set()
+
+                def _wire_account(login: int, password: str, server: str,
+                                  name: str, paper: bool, terminal_path: str = "") -> None:
+                    nonlocal wired, mt5_connected
+                    if not login or login in _wired_logins:
+                        return
+                    mt5 = MT5Broker(
+                        login=int(login),
+                        password=str(password or ""),
+                        server=str(server or ""),
+                    )
+                    if mt5.connect():
+                        is_live = not paper
+                        em.add_broker(MT5ExecutionBroker(mt5), primary=is_live)
+                        em.set_broker_handle(mt5)
+                        mt5_connected = True
+                        _wired_logins.add(login)
+                        wired += 1
+                        try:
+                            det = MT5Broker.detect_active_account()
+                            if det:
+                                logger.info("LIVE MT5 wired: %s (primary=%s) | ACTIVE ACCOUNT login=%s server=%s equity=%.2f balance=%.2f",
+                                            name, is_live, det.get("login"),
+                                            det.get("server"), det.get("equity", 0.0), det.get("balance", 0.0))
+                                if int(login) != int(det.get("login") or 0):
+                                    logger.warning("ACCOUNT MISMATCH: configured login=%s but terminal active=%s — trading the ACTIVE account",
+                                                   login, det.get("login"))
+                            else:
+                                logger.info("LIVE MT5 wired: %s (primary=%s) (account_info unavailable)", name, is_live)
+                        except Exception as _de:
+                            logger.info("LIVE MT5 wired: %s (primary=%s) (detect failed: %s)", name, is_live, _de)
+                    else:
+                        logger.warning("MT5 connect failed for %s (login=%s) — skipped", name, login)
+
+                # 1) config accounts
                 for acc in accounts:
                     login = acc.get("login")
                     if not login:
                         continue
-                    mt5 = MT5Broker(
+                    _wire_account(
                         login=int(login),
                         password=str(acc.get("password", "")),
                         server=str(acc.get("server", "")),
+                        name=str(acc.get("name", f"acc-{login}")),
+                        paper=bool(acc.get("paper", False)),
                     )
-                    if mt5.connect():
-                        # P0 fix: a live (non-paper) account becomes the PRIMARY
-                        # broker so orders actually hit the market with SL/TP.
-                        # Previously primary was gated on a non-existent
-                        # `role:"primary"` key, so it defaulted to paper -> no trades.
-                        is_live = not acc.get("paper", False)
-                        em.add_broker(MT5ExecutionBroker(mt5), primary=is_live)
-                        # P0 fix: give RiskManager the live MT5 handle so the
-                        # daily/weekly-loss veto reads REALIZED PnL, not 0.0.
-                        # Use the public set_broker_handle() method — NOT
-                        # em._risk_manager (private attribute access).
-                        em.set_broker_handle(mt5)
-                        mt5_connected = True
-                        wired += 1
-                        logger.info("LIVE MT5 wired: %s (primary=%s)", acc.get("name"), is_live)
-                    else:
-                        logger.warning("MT5 connect failed for %s — skipped (paper remains)", acc.get("name"))
+                # 2) discovered accounts (real terminals) — preferred, fills gaps
+                for d in discovered:
+                    _wire_account(
+                        login=d.login,
+                        password="",  # terminal already holds credentials
+                        server=d.server,
+                        name=f"discovered-{d.login}",
+                        paper=False,
+                        terminal_path=d.terminal_path,
+                    )
+
                 if wired == 0:
                     logger.warning("allow_live=True but no MT5 connected — paper only, no market trades")
             except Exception as exc:
