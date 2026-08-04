@@ -7,16 +7,43 @@ journal fallback.  Supports symbol, date range, strategy, and limit filters.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+@router.get("/export")
+async def export_trades(
+    format: str = Query("excel", description="excel | pdf"),
+    limit: int = Query(500, ge=1, le=5000),
+) -> FileResponse:
+    """Export the trade journal (with metacognition) to Excel or PDF.
+
+    The export serialises exactly what was recorded per trade: APA/KENAPA/
+    BAGAIMANA/MENGAPA/KE MANA awareness, exit cause, and self-evolve lesson.
+    No recomputation, no fabrication.
+    """
+    from quant_nanggroe.engine.analytics.trade_export import export as _export
+
+    fmt = (format or "excel").lower()
+    if fmt not in ("excel", "pdf"):
+        raise HTTPException(400, "format must be 'excel' or 'pdf'")
+    try:
+        path = _export(format=fmt, limit=limit)
+    except Exception as e:
+        logger.error("trade export failed: %s", e)
+        raise HTTPException(500, f"export failed: {e}")
+    media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if fmt == "excel" else "application/pdf"
+    return FileResponse(path, media_type=media, filename=os.path.basename(path))
 
 
 # ── Schemas ──────────────────────────────────────────────────────────
@@ -44,6 +71,10 @@ class TradeDetail(BaseModel):
     strategy: str | None = None
     broker: str | None = None
     comment: str | None = None
+    # Metacognition (autonomous mandate): APA/KENAPA/BAGAIMANA/MENGAPA/KE MANA
+    # + exit cause + self-evolve lesson. Present in the journal; surfaced to
+    # the dashboard so every trade shows its awareness.
+    awareness: dict = Field(default_factory=dict)
 
 
 class TradeHistoryResponse(BaseModel):
@@ -193,8 +224,9 @@ def _try_journal(
             commission=float(entry.get("commission", 0)),
             swap=float(entry.get("swap", 0)),
             strategy=strat or None,
-            broker=entry.get("broker", "journal"),
+            broker="journal",
             comment=entry.get("comment"),
+            awareness=entry.get("awareness", {}) or {},
         ))
 
     result.sort(key=lambda t: t.exit_time, reverse=True)

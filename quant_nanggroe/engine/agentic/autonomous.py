@@ -1078,6 +1078,71 @@ class AutonomousPipeline:
                                 regime_at_entry=regime,
                                 confidence_at_entry=confidence,
                             )
+                            # ── Metacognition (autonomous mandate) ───────────────
+                            # Build APA/KENAPA/BAGAIMANA/MENGAPA/KE MANA awareness
+                            # from REAL trade context. No fabrication: every field
+                            # is derived from the actual signal, regime, SL/TP,
+                            # and close cause. Wired into the eval + self-evolve
+                            # pipeline via the awareness dict on ClosedTrade.
+                            try:
+                                from quant_nanggroe.engine.analytics.trade_awareness import (
+                                    build_entry_awareness,
+                                    build_exit_awareness,
+                                    TradeAwareness,
+                                )
+                                _sl = float(exec_decision.get("sl", 0.0) or 0.0)
+                                _tp = float(exec_decision.get("tp", 0.0) or 0.0)
+                                _is_exit = tracked and tracked["side"] != action and exit_price > 0
+                                if _is_exit:
+                                    # derive real exit trigger from price vs sl/tp
+                                    if action == "sell":  # we were long, now selling to close
+                                        if _sl and exit_price <= _sl:
+                                            _trig = "SL"
+                                        elif _tp and exit_price >= _tp:
+                                            _trig = "TP"
+                                        else:
+                                            _trig = "SIGNAL_FLIP"
+                                    else:  # we were short, now buying to close
+                                        if _sl and exit_price >= _sl:
+                                            _trig = "SL"
+                                        elif _tp and exit_price <= _tp:
+                                            _trig = "TP"
+                                        else:
+                                            _trig = "SIGNAL_FLIP"
+                                    _entry_aw = self._position_tracker.get(symbol, {}).get("_awareness")
+                                    if _entry_aw:
+                                        _aw = build_exit_awareness(
+                                            TradeAwareness.from_dict(_entry_aw),
+                                            exit_price=exit_price,
+                                            exit_trigger=_trig,
+                                            fill_note=f"fill={fill_price:.5f}",
+                                        )
+                                    else:
+                                        _aw = build_entry_awareness(
+                                            strategy_name=trigger_strategy, side=action,
+                                            entry_price=entry_price, sl=_sl, tp=_tp,
+                                            signal_direction=action, confidence=confidence,
+                                            entry_trigger=f"signal:{signal_type}", regime=regime,
+                                            execution_venue="mt5",
+                                        )
+                                        _aw = build_exit_awareness(_aw, exit_price, _trig)
+                                else:
+                                    _trig = "ENTER"
+                                    _aw = build_entry_awareness(
+                                        strategy_name=trigger_strategy, side=action,
+                                        entry_price=entry_price, sl=_sl, tp=_tp,
+                                        signal_direction=action, confidence=confidence,
+                                        entry_trigger=f"signal:{signal_type}", regime=regime,
+                                        regime_reason=f"regime label at entry: {regime}",
+                                        target_thesis=f"intent: {action} {symbol} per {trigger_strategy}",
+                                        expected_rr=(abs(_tp - entry_price) / abs(_sl - entry_price)) if _sl and _sl != entry_price else 0.0,
+                                        execution_venue="mt5",
+                                    )
+                                    # stash entry awareness so the exit can carry it forward
+                                    self._position_tracker.setdefault(symbol, {})["_awareness"] = _aw.to_dict()
+                                trade.awareness = _aw.to_dict()
+                            except Exception as _aw_err:
+                                log.debug("trade awareness build skipped: %s", _aw_err)
                             lifecycle_context = {
                                 "symbol": symbol,
                                 "confidence": confidence,

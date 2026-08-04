@@ -30,6 +30,8 @@ interface TradeDetail {
   strategy: string | null;
   broker: string | null;
   comment: string | null;
+  // Metacognition (autonomous mandate): APA/KENAPA/BAGAIMANA/MENGAPA/KE MANA
+  awareness?: Record<string, any>;
 }
 
 interface TradeHistoryResponse {
@@ -49,6 +51,7 @@ function TradeHistoryContent() {
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterStrategy, setFilterStrategy] = useState("");
   const [filterLimit, setFilterLimit] = useState(50);
+  const [selectedTrade, setSelectedTrade] = useState<TradeDetail | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -170,6 +173,32 @@ function TradeHistoryContent() {
       render: (r: TradeDetail) => (
         <span className="text-xs text-white/40">{r.strategy || "—"}</span>
       ),
+    },
+    {
+      key: "awareness",
+      label: "Awareness",
+      width: "140px",
+      render: (r: TradeDetail) => {
+        const aw = r.awareness || {};
+        const outcome = (aw.outcome as string) || "";
+        const trig = (aw.exit_trigger as string) || aw.action || "";
+        if (!outcome && !trig) return <span className="text-xs text-white/20">—</span>;
+        const color = outcome === "WIN" ? "text-profit" : outcome === "LOSS" ? "text-loss" : "text-white/50";
+        return (
+          <button
+            className="text-left hover:opacity-80 transition-opacity"
+            onClick={() => setSelectedTrade(r)}
+            title="Click to expand awareness"
+          >
+            <div className="text-[10px] leading-tight">
+              <span className={cn("font-semibold", color)}>{outcome || trig}</span>
+              {aw.KE_MANA_thesis ? (
+                <div className="text-white/40 truncate max-w-[130px]">→ {String(aw.KE_MANA_thesis)}</div>
+              ) : null}
+            </div>
+          </button>
+        );
+      },
     },
   ];
 
@@ -310,6 +339,38 @@ function TradeHistoryContent() {
           />
         </CardContent>
       </Card>
+
+      {/* Awareness detail (autonomous metacognition) */}
+      {selectedTrade ? (
+        <Card className="p-4 border-emerald-500/30">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <span className="text-emerald-400">◎</span> Trade Awareness — {selectedTrade.symbol} · {selectedTrade.strategy || "—"}
+              <button className="ml-auto text-xs text-white/30 hover:text-white/60" onClick={() => setSelectedTrade(null)}>close</button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 space-y-2 text-xs">
+            {(() => {
+              const aw = selectedTrade.awareness || {};
+              const rows: [string, string][] = [
+                ["APA (what)", `${aw.action || "?"} · entry ${aw.entry_price} → exit ${aw.exit_price} · SL ${aw.sl} / TP ${aw.tp}`],
+                ["KENAPA (why in)", `${aw.entry_trigger || "?"} · conf ${aw.confidence} ${(aw.confluence || []).join(", ")}`],
+                ["MENGAPA (regime)", `${aw.regime || "?"} — ${aw.regime_reason || ""} · ${aw.strategy_thesis || ""}`],
+                ["KE MANA (intent)", `${aw.target_thesis || "?"} · RR~${aw.expected_rr} · ${aw.holding_intent || ""}`],
+                ["BAGAIMANA (how)", `venue ${aw.execution_venue || "?"} · ${aw.fill_note || ""}`],
+                ["EXIT", `${aw.exit_trigger || "?"} — ${aw.exit_reason || ""}`],
+                ["LESSON (self-evolve)", `${aw.lesson || "—"}`],
+              ];
+              return rows.map(([k, v]) => (
+                <div key={k} className="grid grid-cols-[120px_1fr] gap-2 border-b border-white/5 pb-1.5">
+                  <span className="text-white/40 font-medium">{k}</span>
+                  <span className="text-white/70">{String(v)}</span>
+                </div>
+              ));
+            })()}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

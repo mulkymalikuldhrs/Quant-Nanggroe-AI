@@ -41,6 +41,10 @@ class ClosedTrade:
     tp: float = 0.0
     duration_hours: float = 0.0
     tags: list[str] = field(default_factory=list)
+    # Metacognition (autonomous mandate): APA/KENAPA/BAGAIMANA/MENGAPA/KE MANA.
+    # Stored as a plain dict (TradeAwareness.to_dict) so it serialises cleanly
+    # to JSON / Excel / PDF without pulling the dataclass into every caller.
+    awareness: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.trade_id:
@@ -249,6 +253,37 @@ class PnLEvaluator:
             for name in self._trade_history
             if len([t for t in self._trade_history[name] if t.is_closed()]) > 0
         }
+
+    def collect_lessons(self, strategy_name: str, limit: int = 20) -> list[dict[str, Any]]:
+        """Extract metacognition lessons from recent trades for the self-evolve loop.
+
+        Returns a list of {outcome, lesson, feedback_tags, regime} drawn from
+        each trade's ``awareness`` dict. This is the bridge between per-trade
+        awareness (APA/KENAPA/BAGAIMANA/MENGAPA/KE MANA) and the autonomous
+        self-improvement pipeline: the evolver consumes these concrete,
+        derivable lessons instead of opaque aggregate metrics. No fabrication —
+        only what was actually recorded at entry/exit.
+        """
+        trades = self._trade_history.get(strategy_name, [])
+        closed = [t for t in trades if t.is_closed()]
+        recent = closed[-limit:]
+        lessons: list[dict[str, Any]] = []
+        for t in recent:
+            aw = getattr(t, "awareness", None) or {}
+            lesson = aw.get("lesson")
+            if not lesson:
+                continue
+            lessons.append({
+                "trade_id": t.trade_id,
+                "outcome": aw.get("outcome", ""),
+                "exit_trigger": aw.get("exit_trigger", ""),
+                "lesson": lesson,
+                "feedback_tags": aw.get("feedback_tags", []),
+                "regime": aw.get("regime", "unknown"),
+                "strategy_name": t.strategy_name,
+            })
+        return lessons
+
 
     def _compute_sharpe_contribution(self, strategy_name: str) -> float:
         """Compute the Sharpe contribution of the latest trade batch."""
