@@ -397,3 +397,25 @@ BUKTI FIX: EURUSD.US -> 516 bars real. WF ema_adx:
 ## CONSENSUS 7/7 | USER: detect semua fake/anomali, fix.
 
 END_ANOMALY_AUDIT ?
+
+================================================================================
+($TS, autobot) [BATCH RE-RUN: tunu/wf dengan kode sudah di-fix anomali]
+
+Notif stale: proc_edff3e0162ad (batch lama, sampah), boot17/18/19 (API lama),
+dash_boot2 (dash lama) -> semua EXIT karena shell quirk 'no job control',
+bukan crash. Yang valid: proc_0bdddd5f1983 (batch SEBELUM fix, hasil sampah
+oos_sharpe==0.0) sdh completed; proc_fe58bf0c375b = BATCH BARU (fixed code) jalan.
+
+AKSI: re-run batch_tune_walkforward.py DENGAN kode sudah di-fix (4ebb3497).
+- Stale results (tune_wf_results.json) di-clear.
+- Launch proc_fe58bf0c375b, PYTHONPATH benar, log -> batch_tune_wf2.log.
+- Early confirm: strategy #1 (dhaher_system) generate 6 REAL folds, tuning 9 combos.
+  (sebelumnya 0 folds / 0 trades -> sekarang nyata).
+
+API :8000 UP (pid 16256). Dashboard :3000 UP (pid 19244).
+
+EST: ~15-20 menit untuk 81 strategy. Notify otomatis saat selesai.
+
+STATUS: batch jujur jalan. Hasil per-strategy (oos_sharpe nyata) akan di-report
+saat selesai.
+END_BATCH_RERUN ?
