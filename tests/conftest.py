@@ -20,6 +20,10 @@ os.environ.setdefault("QNAI_JWT_SECRET", "test-secret-key-for-pytest")
 # real risk state to data/persistence/ and polluting kill-switch/risk tests
 # that run later in the same session (cross-test state leak).
 os.environ.setdefault("PERSISTENCE_BACKEND", "memory")
+# Enable dev diagnostics endpoints (e.g. /trigger-error) during tests so the
+# global-exception-handler test can exercise them. Harmless: diagnostics routes
+# are gated behind this flag and never reachable in production.
+os.environ.setdefault("QNAI_DEV_DIAGNOSTICS", "1")
 # Point the cross-process kill-switch state file at a fresh temp path BEFORE
 # any module import. Importing engine/evolution.* transitively calls
 # configure_kill_switch_file(), which — when this env is unset — points

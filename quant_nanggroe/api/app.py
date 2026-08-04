@@ -358,6 +358,7 @@ def create_app() -> FastAPI:
         TypeError -> 500 at runtime. Wrapping each route in fastapi.APIRoute
         restores DI while still landing the route.
         """
+        router.prefix = prefix  # keep attribute consistent for introspection/tests
         from fastapi.routing import APIRoute
         for _rt in router.routes:
             _path = (prefix.rstrip('/') + getattr(_rt, 'path', '')) or getattr(_rt, 'path', '')
@@ -450,7 +451,7 @@ def create_app() -> FastAPI:
     mount_router(agentic.router)
     mount_router(autonomous.router)
     mount_router(scheduler.router)
-    mount_router(whatsapp.router, prefix="/api/whatsapp")
+    mount_router(whatsapp.router, prefix="/api")
     mount_router(security.router, prefix="/api")
     mount_router(security_tools.router, prefix="/api/security-tools")
     mount_router(tools.router, prefix="/api")

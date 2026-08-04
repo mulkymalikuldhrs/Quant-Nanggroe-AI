@@ -200,18 +200,51 @@ def get_exchange_manager(app: FastAPI):
     factory = ExchangeFactory()
 
     # MT5 multi-account
+    # W-gap (2026-08-04): build_execution_manager reads config/mt5_accounts.yaml,
+    # but this ExchangeManager only read QNAI_MT5_ACCOUNTS env (unset) -> dashboard
+    # /api/brokers/ returned 0 accounts while MT5 was live. Bridge: fall back to the
+    # SAME yaml source so both managers register the identical live account.
+    # pathlib parents[1] == repo root (services.py is quant_nanggroe/services.py ->
+    # parent=quant_nanggroe, parent.parent=repo root). The old os.path.dirname()*4
+    # math resolved to D:\config (one level too high) -> file never found.
+    from pathlib import Path as _Path
+    _cfg_path = _Path(__file__).resolve().parents[1] / "config" / "mt5_accounts.yaml"
     raw = os.environ.get("QNAI_MT5_ACCOUNTS") or (settings.mt5_accounts or "")
+    _mt5_accounts = []
     if raw:
         try:
-            for i, acc in enumerate(json.loads(raw)):
+            _mt5_accounts = json.loads(raw)
+        except Exception as exc:
+            logger.warning("exchange_manager: MT5 env parse failed: %s", exc)
+    if not _mt5_accounts and _cfg_path.exists():
+        # Fallback to config/mt5_accounts.yaml (same source as build_execution_manager)
+        try:
+            import re as _re
+            import yaml as _yaml
+            _raw_yaml = _cfg_path.read_text(encoding="utf-8")
+            _unresolved = sorted({
+                v for v in _re.findall(r"\$\{([A-Z0-9_]+)\}", _raw_yaml)
+                if v not in os.environ
+            })
+            if not _unresolved:
+                _data = _yaml.safe_load(os.path.expandvars(_raw_yaml)) or {}
+                _mt5_accounts = _data.get("accounts") or []
+        except Exception as exc:
+            logger.warning("exchange_manager: MT5 yaml fallback failed: %s", exc)
+    if _mt5_accounts:
+        try:
+            for i, acc in enumerate(_mt5_accounts):
+                _login = acc.get("login")
+                if not _login:
+                    continue
                 broker = factory.create(
                     "mt5",
-                    api_key=str(acc["login"]),
-                    api_secret=acc["password"],
+                    api_key=str(_login),
+                    api_secret=acc.get("password", ""),
                     passphrase=acc.get("server", ""),
                 )
                 em.register(f"mt5_{i}", broker, role="primary" if i == 0 else "failover")
-            logger.info("exchange_manager: registered %d MT5 account(s)", len(json.loads(raw)))
+            logger.info("exchange_manager: registered %d MT5 account(s)", len(_mt5_accounts))
         except Exception as exc:
             logger.warning("exchange_manager: MT5 config parse failed: %s", exc)
 

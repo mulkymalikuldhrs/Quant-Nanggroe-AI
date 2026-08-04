@@ -521,3 +521,97 @@ class DataProviderManager:
             except Exception as e:
                 logger.warning(f"Error closing provider {name}: {e}")
         await self.clear_cache()
+
+
+# ---------------------------------------------------------------------------
+# Factory: build a manager with all key-gated optional providers registered.
+# Fail-closed: a provider whose API key is absent is simply skipped (logged),
+# never crashes import or startup. No silent mock data.
+# ---------------------------------------------------------------------------
+
+def build_provider_manager(default_cache_ttl: float = 300.0) -> "DataProviderManager":
+    """Construct a DataProviderManager and register every available provider.
+
+    Each optional provider is key-gated on its environment variable:
+      - Alpha Vantage  -> QNAI_ALPHA_VANTAGE_API_KEY
+      - Polygon        -> QNAI_POLYGON_API_KEY
+      - Twelve Data    -> QNAI_TWELVEDATA_API_KEY
+      - FRED           -> FRED_API_KEY
+      - OpenBB         -> OPENBB_TOKEN (requires `openbb` SDK; skipped if absent)
+      - LSE            -> LSE_API_KEY (not a DataProvider subclass; skipped in manager)
+
+    Returns a manager with only the providers that could be constructed.
+    """
+    import os
+    import logging as _log
+    _l = _log.getLogger(__name__)
+
+    manager = DataProviderManager(default_cache_ttl=default_cache_ttl)
+
+    # Direct key-gated providers (subclass DataProvider, take api_key=)
+    _direct = [
+        ("alpha_vantage", "AlphaVantageProvider", "QNAI_ALPHA_VANTAGE_API_KEY", ["stocks", "forex", "crypto", "macro"]),
+        ("polygon", "PolygonProvider", "QNAI_POLYGON_API_KEY", ["stocks", "forex", "crypto"]),
+        ("twelvedata", "TwelveDataProvider", "QNAI_TWELVEDATA_API_KEY", ["stocks", "forex", "crypto"]),
+    ]
+    for mod, cls, env_key, markets in _direct:
+        key = os.environ.get(env_key)
+        if not key:
+            _l.info("Provider %s skipped (no %s)", mod, env_key)
+            continue
+        try:
+            import importlib
+            m = importlib.import_module(f"quant_nanggroe.data.providers.{mod}")
+            provider = getattr(m, cls)(api_key=key)
+            manager.register(provider, markets=markets)
+            _l.info("Provider %s registered (key present)", mod)
+        except Exception as e:  # noqa: BLE001 - fail-closed
+            _l.warning("Provider %s failed to construct: %s", mod, e)
+
+    # Adapter providers (inner provider wrapped by a DataProvider adapter)
+    # FRED: FREDProvider(api_key) -> FREDProviderAdapter
+    fred_key = os.environ.get("FRED_API_KEY")
+    if fred_key:
+        try:
+            import importlib
+            m = importlib.import_module("quant_nanggroe.data.providers.fred")
+            inner = m.FREDProvider(api_key=fred_key)
+            adapter = m.FREDProviderAdapter(inner)
+            manager.register(adapter, markets=["macro"])
+            _l.info("Provider fred registered")
+        except Exception as e:  # noqa: BLE001
+            _l.warning("Provider fred failed: %s", e)
+    else:
+        _l.info("Provider fred skipped (no FRED_API_KEY)")
+
+    # Twelve Data adapter: TwelveDataProvider(api_key) -> TwelveDataProviderAdapter
+    td_key = os.environ.get("QNAI_TWELVEDATA_API_KEY")
+    if td_key:
+        try:
+            import importlib
+            m = importlib.import_module("quant_nanggroe.data.providers.twelvedata")
+            inner = m.TwelveDataProvider(api_key=td_key)
+            adapter = m.TwelveDataProviderAdapter(inner)
+            manager.register(adapter, markets=["stocks", "forex", "crypto"])
+            _l.info("Provider twelvedata adapter registered")
+        except Exception as e:  # noqa: BLE001
+            _l.warning("Provider twelvedata adapter failed: %s", e)
+    else:
+        _l.info("Provider twelvedata skipped (no QNAI_TWELVEDATA_API_KEY)")
+
+    # OpenBB: requires `openbb` SDK; skipped silently if not installed
+    openbb_token = os.environ.get("OPENBB_TOKEN")
+    if openbb_token:
+        try:
+            import importlib
+            m = importlib.import_module("quant_nanggroe.data.providers.openbb_mcp")
+            inner = m.OpenBBMCPProvider(api_key=openbb_token)
+            adapter = m.OpenBBMCPProviderAdapter(inner)
+            manager.register(adapter, markets=["stocks", "forex", "crypto", "macro"])
+            _l.info("Provider openbb registered")
+        except Exception as e:  # noqa: BLE001
+            _l.warning("Provider openbb failed (SDK missing?): %s", e)
+    else:
+        _l.info("Provider openbb skipped (no OPENBB_TOKEN or SDK absent)")
+
+    return manager

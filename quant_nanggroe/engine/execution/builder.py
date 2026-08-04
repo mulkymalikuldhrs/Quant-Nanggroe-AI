@@ -20,9 +20,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-_CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-    "config", "mt5_accounts.yaml",
+_CONFIG_PATH = str(
+    __import__("pathlib").Path(__file__).resolve().parents[1] / "config" / "mt5_accounts.yaml"
 )
 
 

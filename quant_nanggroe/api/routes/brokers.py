@@ -31,13 +31,13 @@ router = APIRouter()
 
 
 def _get_em(request: Request):
-    from quant_nanggroe.exchange.manager import ExchangeManager
-
-    if not hasattr(request.app.state, "_services"):
-        request.app.state._services = {}
-    if "exchange_manager" not in request.app.state._services:
-        request.app.state._services["exchange_manager"] = ExchangeManager()
-    return request.app.state._services["exchange_manager"]
+    # W-gap fix (2026-08-04): delegate to services.get_exchange_manager so the
+    # SAME singleton (populated with MT5 accounts from config/mt5_accounts.yaml)
+    # is used — not a fresh empty ExchangeManager that shadows it. Previously
+    # this created its own manager and cached it in app.state._services, hiding
+    # the MT5 accounts registered by get_exchange_manager -> /api/brokers/ returned 0.
+    from quant_nanggroe.services import get_exchange_manager
+    return get_exchange_manager(request.app)
 
 
 def _to_dict(obj) -> Dict[str, Any]:

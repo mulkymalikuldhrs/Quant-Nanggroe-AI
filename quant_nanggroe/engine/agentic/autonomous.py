@@ -539,27 +539,18 @@ class AutonomousPipeline:
         if self._data_manager is not None:
             return self._data_manager
         try:
-            from quant_nanggroe.data.manager import DataProviderManager
-            from quant_nanggroe.data.providers.yahoo import YahooFinanceProvider
-            dm = DataProviderManager(default_cache_ttl=300.0)
-            dm.register(YahooFinanceProvider(), markets=["stocks", "forex", "crypto"])
-            for _module_name, _market in (
-                ("binance", "crypto"), ("finnhub_provider", "stocks"), ("fred", "macro"),
-                ("alpaca", "stocks"), ("polygon", "stocks"), ("alpha_vantage", "stocks"), ("twelvedata", "stocks"),
-            ):
-                try:
-                    mod = __import__(f"quant_nanggroe.data.providers.{_module_name}", fromlist=["__all__"])
-                    from quant_nanggroe.data.providers.base import DataProvider
-                    for _attr in dir(mod):
-                        obj = getattr(mod, _attr)
-                        if isinstance(obj, type) and issubclass(obj, DataProvider) and obj is not DataProvider and not _attr.startswith("_"):
-                            try:
-                                dm.register(obj(), markets=[_market])
-                            except Exception:
-                                continue
-                            break
-                except Exception:
-                    continue
+            # R12 FIX (2026-08-04, user GO "wire everything"): use the key-gated
+            # factory so alpha_vantage/polygon/twelvedata/fred/openbb auto-register
+            # when their API keys are present (env), and fail-closed when absent.
+            # Replaces the hardcoded module-list registration below.
+            from quant_nanggroe.data.manager import build_provider_manager
+            dm = build_provider_manager(default_cache_ttl=300.0)
+            # Always ensure Yahoo fallback is present (stdlib-free, no key needed)
+            try:
+                from quant_nanggroe.data.providers.yahoo import YahooFinanceProvider
+                dm.register(YahooFinanceProvider(), markets=["stocks", "forex", "crypto"])
+            except Exception:
+                pass
             self._data_manager = dm
         except Exception as exc:
             logger.warning("DataProviderManager init failed (%s) — falling back to yfinance", exc)

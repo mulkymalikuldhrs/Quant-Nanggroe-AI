@@ -36,7 +36,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["whatsapp"])  # ponytail: prefix added at include_router (app.py:267) to avoid /api/whatsapp/whatsapp//
+router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])  # ponytail: prefix here; app.py mounts under /api -> /api/whatsapp
 
 
 # ---------------------------------------------------------------------------

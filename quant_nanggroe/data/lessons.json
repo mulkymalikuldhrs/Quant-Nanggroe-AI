@@ -3105,5 +3105,44 @@
     "occurred_at": "2026-08-04T00:22:36.528464+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "d12034d4-ae5",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed EURUSD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T12:11:37.729862+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "8b9dc7e2-316",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed USDJPY",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T12:11:41.984702+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "ce1f0494-537",
+    "category": "execution",
+    "severity": "error",
+    "summary": "Order failed GBPUSD",
+    "detail": "'NoneType' object has no attribute '_brokers'",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-04T12:11:46.220477+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

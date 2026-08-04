@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import threading
 from typing import Optional
 
@@ -41,9 +42,16 @@ class PipelineScheduler:
             raise ValueError("interval_minutes must be >= 1")
 
         self.interval_minutes = interval_minutes
-        self.symbols = symbols or [
-            "BTC-USD", "ETH-USD", "SOL-USD", "EURUSD", "USDJPY",
-        ]
+        # Default to MT5-available forex symbols. Override via QNA_SCHEDULER_SYMBOLS
+        # (comma-separated). Crypto (BTC/ETH/SOL) is NOT available on this Valetax
+        # forex account -> would trip the circuit breaker; excluded by default.
+        _env_syms = os.environ.get("QNA_SCHEDULER_SYMBOLS")
+        if symbols:
+            self.symbols = symbols
+        elif _env_syms:
+            self.symbols = [s.strip() for s in _env_syms.split(",") if s.strip()]
+        else:
+            self.symbols = ["EURUSD", "USDJPY", "GBPUSD"]
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
