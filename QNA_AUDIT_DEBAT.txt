@@ -123,3 +123,45 @@ external broker account upgrade.
 Goal achieved per steps 1-15. Audit repository now self-contained, version-controlled, 
 and durable via git. Remaining work: broker account activation (outside this system).
 
+
+================================================================================
+($TS, autobot) [UI DASHBOARD UPGRADE — WIRE TO LIVE MT5 DATA]
+
+## Mandate step 15 (Archive->QNA + UI upgrade) EXECUTED
+User: "upgrade ui dashboard qna" + "full deep audit to wire everything".
+
+## ROOT CAUSE (dashboard showed 0 accounts / empty trading terminal)
+Two separate broker-manager singletons, NOT bridged:
+1. ExecutionManager (build_execution_manager) -> got MT5 from config/mt5_accounts.yaml
+2. ExchangeManager (services.get_exchange_manager, read by /api/brokers/)
+   -> only read QNAI_MT5_ACCOUNTS env (UNSET) -> 0 accounts.
+PLUS a PATH BUG: both used os.path.dirname(__file__)*4 which resolves to
+D:\config\mt5_accounts.yaml (one dir too high) -> file never found.
+
+## FIXES (commit a8c00f41)
+1. services.get_exchange_manager: read config/mt5_accounts.yaml via
+   Path(__file__).resolve().parents[1]/config/mt5_accounts.yaml (correct
+   repo-relative path) + register live MT5 accounts.
+2. api/routes/brokers._get_em: delegate to services.get_exchange_manager
+   (was creating its OWN empty EM and caching it, shadowing the populated one).
+3. engine/execution/builder._CONFIG_PATH: same pathlib fix (consistency).
+
+## VERIFIED
+- GET /api/brokers/ -> {"accounts":[{"name":"mt5_0","role":"primary",...}],"count":1}
+- GET /api/brokers/mt5_0/account -> 200 (offline until connect, but registered)
+- 27/27 tests pass.
+- Dashboard trading page (922-line terminal: order entry, positions, watchlist,
+  keyboard shortcuts, OCO, trailing stop) now has a real account to bind to.
+
+## NOTE
+mt5_0 shows "offline/disconnected" in ExchangeManager because that instance
+defers connect(); the ExecutionManager's MT5 IS connected (health=mt5). Both
+reference the same account creds. Dashboard will display balance/positions
+once the ExchangeManager MT5 instance connects (happens on first trade/connect
+call, per ponytail lazy-connect design).
+
+## CONSENSUS
+autobot Y | clawbot Y | traderbot Y | devbot Y | fangbot Y | hackerbot Y | researchbot Y = 7/7
+USER: aprove all / upgrade ui dashboard.
+
+END_UI_WIRE ?
