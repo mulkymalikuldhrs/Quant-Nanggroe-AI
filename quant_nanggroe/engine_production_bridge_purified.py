@@ -379,8 +379,17 @@ class PurifiedEngine:
             self.active = False
             return self
         if live_balance > 0:
+            # G3/C2 fix (2026-08-04, fangbot): initial_balance=10000.0 is a PHANTOM
+            # seed — using max(peak, live_balance) keeps peak at 10k when the real
+            # account is smaller, producing a fake ~87% drawdown and a permanent
+            # RISK VETO. On first sync the peak MUST be the real live balance.
+            if not getattr(self, "_peak_synced", False):
+                self.risk.peak = live_balance
+                self._peak_synced = True
+                log.info("RiskGuard peak initialized to LIVE balance: %.2f", live_balance)
+            else:
+                self.risk.peak = max(self.risk.peak, live_balance)
             self.risk.balance = live_balance
-            self.risk.peak = max(self.risk.peak, live_balance)
             self.risk.daily_start_balance = live_balance
             self.risk.weekly_start_balance = live_balance
             try:
@@ -424,7 +433,12 @@ class PurifiedEngine:
             return []
         if live_balance > 0:
             self.risk.balance = live_balance
-            self.risk.peak = max(self.risk.peak, live_balance)
+            # Same phantom-peak fix as start(): first sync sets peak to real balance.
+            if not getattr(self, "_peak_synced", False):
+                self.risk.peak = live_balance
+                self._peak_synced = True
+            else:
+                self.risk.peak = max(self.risk.peak, live_balance)
         elif live_balance == 0:
             log.warning("CYCLE: MT5 balance=0.0 — possible account zeroed or sync bug. Aborting cycle (fail-closed).")
             return []
