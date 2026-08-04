@@ -511,14 +511,22 @@ class WalkForwardAnalyzer:
                 continue
             try:
                 signal = strategy.generate_signal(data_slice)
-                # ponytail: Signal has no `.signal`; use strength, fall back to ±1 by type
-                if signal is None:
+                # ponytail: StrategySignal has .direction (BUY/SELL/HOLD) and
+                # .strength (enum) / .confidence (float 0-1). Convert to a numeric
+                # weight: sign from direction, magnitude from confidence (fallback
+                # to strength rank). W-gap fix (2026-08-04): previous code used
+                # signal.strength (an enum string) directly -> ValueError in engine.
+                if signal is None or signal.direction == SignalDirection.HOLD:
                     signals.append(0.0)
-                else:
-                    weight = signal.strength if signal.strength not in (None, 0.0) else (
-                        1.0 if signal.signal_type == SignalType.BUY else -1.0
-                    )
-                    signals.append(weight)
+                    continue
+                sign = 1.0 if signal.direction == SignalDirection.BUY else -1.0
+                mag = signal.confidence if signal.confidence else {
+                    SignalStrength.WEAK: 0.25,
+                    SignalStrength.MODERATE: 0.5,
+                    SignalStrength.STRONG: 0.75,
+                    SignalStrength.VERY_STRONG: 1.0,
+                }.get(signal.strength, 0.5)
+                signals.append(sign * float(mag))
             except Exception:
                 signals.append(0.0)
 

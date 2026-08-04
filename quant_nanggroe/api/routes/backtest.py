@@ -551,8 +551,9 @@ async def tune_strategy(body: dict[str, Any]) -> dict[str, Any]:
             "status": "completed",
         }
     except Exception as exc:
-        logger.error("tune_failed: %s", exc)
-        return {"error": str(exc), "status": "failed"}
+        import traceback as _tb
+        logger.error("tune_failed: %s\n%s", exc, _tb.format_exc())
+        return {"error": str(exc), "status": "failed", "traceback": _tb.format_exc()[-1500:]}
 
 
 # ── Batch Walk-Forward for All Strategies ─────────────────────────────────

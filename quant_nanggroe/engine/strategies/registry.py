@@ -378,7 +378,13 @@ _registry_instance = StrategyRegistry()
 def create_strategy(name: str, lifecycle=None, **kwargs):
     """Create a strategy instance by name."""
     if kwargs:
-        return _registry_instance.create(name, parameters=kwargs, lifecycle=lifecycle)
+        # W-gap fix (2026-08-04): must wrap kwargs in StrategyParameters so the
+        # strategy __init__ (which calls params.set(...)) receives the expected
+        # container, not a raw dict. Passing a plain dict -> "'dict' object has no
+        # attribute 'set'" in AutoTuner/backtest tune path.
+        return _registry_instance.create(
+            name, parameters=StrategyParameters(params=kwargs), lifecycle=lifecycle
+        )
     return _registry_instance.create(name, lifecycle=lifecycle)
 
 

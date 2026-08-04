@@ -168,6 +168,24 @@ class Strategy(ABC):
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(name={self.name})>"
 
+    def required_columns(self) -> list[str]:
+        """Return list of required DataFrame columns.
+
+        Default: standard OHLCV. Subclasses may override for indicator-specific
+        needs. W-gap fix (2026-08-04): was @abstractmethod which broke every
+        strategy that didn't override it, causing WalkForwardAnalyzer folds to
+        fail with AttributeError -> all 81 strategies returned no_folds.
+        """
+        return ["open", "high", "low", "close", "volume"]
+
+    def warmup_period(self) -> int:
+        """Minimum number of rows required before strategy is considered warmed up.
+
+        W-gap fix (2026-08-04): default 30 (enough for most indicator lookbacks).
+        Was @abstractmethod -> broke strategies lacking the override.
+        """
+        return 30
+
 
 # Legacy BaseStrategy compatible with older tests
 class BaseStrategy(ABC):
@@ -187,15 +205,23 @@ class BaseStrategy(ABC):
         """Generate a trading signal given market data."""
         ...
 
-    @abstractmethod
     def required_columns(self) -> list[str]:
-        """Return list of required DataFrame columns."""
-        ...
+        """Return list of required DataFrame columns.
 
-    @abstractmethod
+        Default: standard OHLCV. Subclasses may override for indicator-specific
+        needs. W-gap fix (2026-08-04): was @abstractmethod which broke every
+        strategy that didn't override it, causing WalkForwardAnalyzer folds to
+        fail with AttributeError -> all 81 strategies returned no_folds.
+        """
+        return ["open", "high", "low", "close", "volume"]
+
     def warmup_period(self) -> int:
-        """Minimum number of rows required before strategy is considered warmed up."""
-        ...
+        """Minimum number of rows required before strategy is considered warmed up.
+
+        W-gap fix (2026-08-04): default 30 (enough for most indicator lookbacks).
+        Was @abstractmethod -> broke strategies lacking the override.
+        """
+        return 30
 
     def validate_data(self, data: Optional[pd.DataFrame]) -> bool:
         """Validate incoming DataFrame.
