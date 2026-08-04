@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from datetime import datetime
 
@@ -644,3 +645,69 @@ async def purified_trades() -> dict:
         return {"trades": [{"ticket": d.ticket, "symbol": d.symbol, "type": "BUY" if d.type == 0 else "SELL", "volume": d.volume, "price": d.price, "pnl": d.profit, "time": str(d.time)} for d in deals[-50:]]}
     except Exception as e:
         return {"trades": [], "error": str(e)}
+
+
+# ── Account auto-detection + system status (user mandate 2026-08-04) ──────────
+
+@router.get("/accounts")
+async def list_accounts() -> dict:
+    """Return every MT5 account QNA can see (auto-detected terminals + config).
+
+    Each entry carries login/server/equity/balance so the dashboard can monitor
+    ALL accounts, not just the one QNA happened to trade on. Fail-closed: empty
+    list if MT5 is unavailable — never a fabricated default account.
+    """
+    from quant_nanggroe.engine.execution.account_discovery import discover_accounts
+    try:
+        accounts = discover_accounts()
+    except Exception as e:
+        raise HTTPException(500, f"account discovery failed: {e}")
+    out = [a.to_dict() for a in accounts]
+    return {"accounts": out, "count": len(out)}
+
+
+@router.get("/system/status")
+async def system_status(http_request: Request) -> dict:
+    """High-level QNA system status for the status tray / dashboard header.
+
+    Reports Online/Offline/Error honestly from real component state:
+      - api: always up if this responds
+      - execution_backend: mt5 | unavailable (from builder status)
+      - mt5_accounts: discovered live accounts
+      - dashboard: url + reachable
+    """
+    from quant_nanggroe.engine.execution.builder import get_execution_backend_status
+
+    backend = get_execution_backend_status()
+    try:
+        from quant_nanggroe.engine.execution.account_discovery import discover_accounts
+        accounts = discover_accounts()
+    except Exception:
+        accounts = []
+
+    dash_url = os.environ.get("QNA_DASHBOARD_URL", "http://localhost:3000")
+    dash_up = False
+    try:
+        import urllib.request
+        with urllib.request.urlopen(dash_url, timeout=2) as r:
+            dash_up = r.status == 200
+    except Exception:
+        dash_up = False
+
+    if backend == "mt5" and accounts:
+        status = "online"
+    elif backend == "mt5":
+        status = "online"
+    elif backend == "unavailable":
+        status = "offline"
+    else:
+        status = "unknown"
+
+    return {
+        "status": status,
+        "api": "up",
+        "execution_backend": backend,
+        "mt5_accounts": [a.to_dict() for a in accounts],
+        "dashboard": {"url": dash_url, "reachable": dash_up},
+        "timestamp": datetime.now().isoformat(),
+    }
