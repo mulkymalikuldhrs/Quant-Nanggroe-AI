@@ -217,7 +217,13 @@ class MarketData:
                           "M15": mt5_mod.TIMEFRAME_M15, "H1": mt5_mod.TIMEFRAME_H1}
                 rates = mt5_mod.copy_rates_from_pos(symbol, tf_map.get(timeframe, mt5_mod.TIMEFRAME_M1), 0, count)
                 if rates is not None and len(rates) > 0:
-                    return [{"time": r[0], "open": r[1], "high": r[2], "low": r[3], "close": r[4], "volume": r[5]} for r in rates]
+                    # Canonical key = "timestamp" (engine/data/quality.py checks it
+                    # for staleness/gap detection); keep "time" for legacy callers.
+                    return [{
+                        "timestamp": r[0], "time": r[0],
+                        "open": r[1], "high": r[2], "low": r[3],
+                        "close": r[4], "volume": r[5],
+                    } for r in rates]
             except Exception as e:
                 log.error(f"MT5 candles failed for {symbol}: {e}", exc_info=True)
         
