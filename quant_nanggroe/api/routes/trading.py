@@ -604,3 +604,26 @@ async def purified_trades() -> dict:
         return {"trades": [{"ticket": d.ticket, "symbol": d.symbol, "type": "BUY" if d.type == 0 else "SELL", "volume": d.volume, "price": d.price, "pnl": d.profit, "time": str(d.time)} for d in deals[-50:]]}
     except Exception as e:
         return {"trades": [], "error": str(e)}
+
+
+@router.get("/accounts")
+async def list_accounts() -> dict:
+    """Return every MT5 account QNA can see (auto-detected terminals + config).
+
+    GATE-6: dashboard monitors ALL accounts, not just the traded one.
+    Fail-closed: empty list if MT5 is unavailable — never a fabricated account.
+    """
+    from quant_nanggroe.engine.execution.account_discovery import discover_accounts
+    try:
+        accounts = discover_accounts()
+    except Exception as e:
+        raise HTTPException(500, f"account discovery failed: {e}")
+    return {"accounts": [a.to_dict() for a in accounts], "count": len(accounts)}
+
+
+@router.get("/accounts/ledger")
+async def get_account_ledger():
+    """All MT5 accounts that have EVER connected (persistent ledger)."""
+    from quant_nanggroe.engine.execution.account_ledger import get_all_accounts
+    accounts = get_all_accounts()
+    return {"accounts": accounts, "count": len(accounts)}
