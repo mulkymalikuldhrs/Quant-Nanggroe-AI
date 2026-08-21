@@ -59,3 +59,5 @@ Coordinate all 7 Hermes profiles for QNA hedge fund autonomous operation. Zero c
 1. Resume 5 paused profile crons (clawbot, devbot, fangbot, traderbot, researchbot) when scope defined.
 2. Fix GitHub auth or remove as archived remote.
 3. Tag v5.1.0 after QNA production cycle validation.
+# OPTIMIZATION NOTE — 2026-08-22 03:52
+Phase 5 (fangbot): Params optimized. Best verified: DhaherSystem v1.1 (lookback=20, atr_mult=1.2, rr_min=2.5, min_conf=2, kelly=0.25). Full 6480-combo grid interrupted (signal-gen bottleneck). Current BEST_STRATEGIES[0] holds verified best. Version: v5.1.0.
