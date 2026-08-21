@@ -77,7 +77,8 @@ def main():
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
     df = df.dropna()
-    log.info(f"{len(df)} bars downloaded")
+    df.columns = [c.lower() if isinstance(c, str) else c for c in df.columns]
+    log.info(f"{len(df)} bars decoded")
 
     grid = {
         'lookback': [14, 17, 20, 23, 25, 28, 30],
