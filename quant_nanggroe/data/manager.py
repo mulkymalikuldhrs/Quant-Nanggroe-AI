@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -305,13 +306,23 @@ class DataProviderManager:
                     asyncio.create_task(self._schedule_recovery(provider.name, 60))
 
         # All providers failed — check if we have stale cache
+        # P0 FIX (2026-08-22): stale fallback is now BOUNDED. Previously any-age
+        # cache was served silently (hours/days-old bars) and bypassed
+        # _get_cached() expiry deletion. Cap: QNA_MAX_STALE_MINUTES (default 60).
         stale_entry = self._cache.get(cache_key)
         if stale_entry is not None:
-            logger.warning(
-                f"All providers failed for {symbol} {method_name}, "
-                f"returning stale cache (age: {time.monotonic() - stale_entry.created_at:.0f}s)"
+            age_s = time.monotonic() - stale_entry.created_at
+            max_stale_s = float(os.environ.get("QNA_MAX_STALE_MINUTES", "60")) * 60.0
+            if age_s <= max_stale_s:
+                logger.warning(
+                    f"All providers failed for {symbol} {method_name}, "
+                    f"returning stale cache (age: {age_s:.0f}s, capped at {max_stale_s:.0f}s)"
+                )
+                return stale_entry.data
+            logger.error(
+                f"All providers failed for {symbol} {method_name}; stale cache "
+                f"is {age_s:.0f}s old (> cap {max_stale_s:.0f}s) — FAIL-CLOSED, not serving"
             )
-            return stale_entry.data
 
         logger.error(
             f"All providers failed for {symbol} {method_name}"

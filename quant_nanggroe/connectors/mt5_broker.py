@@ -36,12 +36,35 @@ class MT5Broker(BrokerConnector):
         except ImportError:
             raise RuntimeError("MetaTrader5 lib missing — pip install MetaTrader5")
         self._mt5 = mt5
-        # P0 fix: add explicit timeout + terminal path so a slow/unresponsive
-        # Valetax terminal cannot hang the entire build_execution_manager() call.
-        # mt5.initialize without `path` can hang on some installs (terminal not
-        # found via registry) — pass the known terminal path explicitly.
         import os as _os
+        import logging as _logging
+        _logger = _logging.getLogger(__name__)
         term_path = _os.environ.get("MT5_TERMINAL_PATH") or r"C:\Program Files\MetaTrader 5\terminal64.exe"
+        # ── USER MANDATE: trade whatever account is ALREADY logged into the
+        # terminal. Attach to the running session FIRST (no creds) and adopt
+        # the active account; only fall back to a credential login when the
+        # terminal is not already authenticated. Prevents QNA from
+        # switching/logging-into the wrong account (e.g. Exness #999 or the
+        # stale config server name instead of ValetaxIntl-Live2 #372044706).
+        try:
+            if mt5.initialize(path=term_path, timeout=15000):
+                info = mt5.account_info()
+                if info is not None:
+                    self.login = int(getattr(info, "login", self.login) or self.login)
+                    self.server = str(getattr(info, "server", self.server) or self.server)
+                    self.connected = True
+                    _logger.info(
+                        "MT5Broker: attached to ALREADY-LOGGED-IN terminal account login=%s server=%s",
+                        self.login, self.server,
+                    )
+                    return True
+                # Initialized but not logged in — fall through to credential login.
+        except Exception as _e:
+            _logger.debug("MT5Broker attach-to-session failed (will try credential login): %s", _e)
+        if not self.login:
+            raise RuntimeError(
+                "MT5 not logged in and no login provided (REAL-ONLY — cannot trade)"
+            )
         # retry=3 survives transient IPC timeouts; timeout=15000ms bounds each try.
         for attempt in range(3):
             try:

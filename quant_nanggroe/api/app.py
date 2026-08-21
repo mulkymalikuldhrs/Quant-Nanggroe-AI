@@ -394,6 +394,12 @@ def create_app() -> FastAPI:
     app.include_router(qna_status.router, prefix="/api", tags=["QNA Status"])
     app.include_router(pipeline_status.router)  # router already has /api/pipeline prefix
     app.include_router(config.router)  # router already has /config prefix
+    # Config Files — file-backed manager for dashboard Config Center
+    try:
+        from quant_nanggroe.api.routes.config_files import router as config_files_router
+        app.include_router(config_files_router, prefix="/api", tags=["Config Files"])
+    except Exception as e:
+        logger.warning("config_files_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:

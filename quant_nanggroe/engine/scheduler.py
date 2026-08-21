@@ -106,6 +106,10 @@ class PipelineScheduler:
         except Exception:
             logger.exception("PipelineScheduler event loop failed")
         finally:
+            # P1 FIX (2026-08-22): zombie-state guard. After a loop crash,
+            # _running stayed True → is_running lied and start() early-returned
+            # → scheduler permanently dead while reporting healthy.
+            self._running = False
             try:
                 self._loop.close()
             except Exception:

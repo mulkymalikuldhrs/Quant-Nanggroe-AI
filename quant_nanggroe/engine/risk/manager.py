@@ -85,6 +85,9 @@ class RiskState:
     active_positions: List[str] = field(default_factory=list)
     peak_equity: float = 0.0
     current_equity: float = 0.0
+    # P1 hygiene (2026-08-22): declared field — update_mtm() writes this and
+    # previously relied on a silent dynamic attribute (phantom dataclass attr).
+    unrealized_pnl: float = 0.0
     last_reset_date: Optional[date] = None
 
 
