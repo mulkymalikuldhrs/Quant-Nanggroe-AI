@@ -220,3 +220,15 @@ async def export_summary(date_from: Optional[str] = None,
             worst_trade=round(min(pnls), 2) if pnls else 0,
         ).model_dump())
     return {"rows": out, "total_trades": len(rows), "strategies": len(out)}
+
+
+@router.get("/awareness")
+async def export_awareness(date_from: Optional[str] = None,
+                           date_to: Optional[str] = None,
+                           strategy: Optional[str] = None,
+                           limit: int = 500) -> dict:
+    """GATE-3: deterministic what/why/how/lesson per closed trade."""
+    from quant_nanggroe.engine.analytics.trade_awareness import explain_journal
+    items = explain_journal(date_from=date_from, date_to=date_to,
+                            strategy=strategy, limit=limit)
+    return {"items": items, "count": len(items)}

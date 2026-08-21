@@ -51,36 +51,39 @@ Unauthenticated open proxy exposing a loopback MCP service. SSRF + encoded-trave
 
 ---
 
-### MEDIUM — `.env` tracked in git with live secrets
+### MEDIUM — `config/mt5_accounts.yaml` tracked with placeholder creds (latent)
 
-**Location:** repo root `.env` (git ls-files confirms tracked)
+**Location:** `config/mt5_accounts.yaml` (tracked)
 
-Prior audit (2026-08-05) retracted: `.env` was claimed "untracked" — that retraction was itself WRONG.
+`git ls-files` confirms tracked. Contents use env-var placeholders only:
+```yaml
+login: "${QNA_MT5_LOGIN}"
+server: "${QNA_MT5_SERVER}"
+password: "${QNA_MT5_PASSWORD}"
+```
 
-`git ls-files`: `.env` IS listed as tracked.
-`.env` contains populated live values: `QNA_MT5_PASSWORD`, `QNA_MT5_LOGIN`, `QNA_MT5_SERVER`, `QNAI_JWT_SECRET`, `QNAI_ENCRYPTION_KEY`, `QNAI_API_KEY`.
+Header comment falsely claims "This file is gitignored" — it is NOT. `.gitignore:54` has `config/mt5_accounts.yaml` but it's tracked, so ignore rule is inert.
 
-`.gitignore` has NO rule matching `.env` (`git check-ignore -v .env` → fires nothing).
+**Impact:** No live credential leak (placeholders only). But operator may paste real creds into a tracked file that `git add -A` will stage. MEDIUM (latent), not CRITICAL.
 
-**Impact:** Broker credentials + JWT secret + API key in version history across all commits.
-
-**Fix:** `git rm --cached .env` immediately; add `.env` to `.gitignore:49`; rotate ALL secrets.
-
-Note: `config/mt5_accounts.yaml` is tracked but uses env-var placeholders only (`${QNA_MT5_PASSWORD}`) — no real leak. `dashboard/.env.local` re-exposes `QNAI_API_KEY` as `NEXT_PUBLIC_API_KEY` (ships to browser) — but git tracking status needs verification.
+**Fix:** `git rm --cached config/mt5_accounts.yaml`; add to `.gitignore`; keep `config/mt5_accounts.example.yaml` as template.
 
 ---
 
-### MEDIUM — `credentials.py` sets `QNAI_API_KEY` at runtime
+### MEDIUM — `credentials.py` sets `QNAI_API_KEY` at runtime (TOCTOU)
 
 **Location:** `quant_nanggroe/api/routes/credentials.py:45-46`
 
-`if not os.environ.get("QNAI_API_KEY"): os.environ["QNAI_API_KEY"] = key`
+```python
+if not os.environ.get("QNAI_API_KEY"):
+    os.environ["QNAI_API_KEY"] = key
+```
 
-This route mutates `os.environ` on the running process — a TOCTOU window where an authenticated user can inject an API key override. Combined with the `middleware.py:58` check (`if not os.environ.get("QNAI_API_KEY")` → warn), a user who authenticates once via `credentials.py` can flip the sentinel state.
+HTTP route mutates `os.environ` on running process — TOCTOU window where authenticated user injects API key override. Combined with `middleware.py:58` check (`if not os.environ.get("QNAI_API_KEY")`), a user who authenticates once flips the sentinel state.
 
-**Impact:** Post-authentication environment mutation; potential auth-bypass if the set value is accepted by downstream middleware in-process.
+**Impact:** Post-auth environment mutation; potential auth-bypass if set value accepted downstream in-process.
 
-**Fix:** Use a dedicated secret store; never write `os.environ` from an HTTP route.
+**Fix:** Use dedicated secret store; never write `os.environ` from HTTP route.
 
 ---
 
@@ -88,6 +91,7 @@ This route mutates `os.environ` on the running process — a TOCTOU window where
 
 - **MT5Broker credential handling** — `quant_nanggroe/connectors/mt5_broker.py:25`: `login: int = 0, password: str = "", server: str = ""` — constructor params, no hardcoded defaults. Credentials passed from env, never logged. ✓
 - **No hardcoded secrets repo-wide** — grep for `password|secret|api_key|token.*=.*` literal patterns in `quant_nanggroe/*.py` returns 0. All env lookups use `os.environ.get("NAME", "")`. ✓
+- **`.env` is gitignored + untracked** — `git check-ignore -v .env` fires `.gitignore:49:.env`; `git ls-files` does NOT list `.env`. Prior audit (2026-08-05) "retraction" claiming `.env` tracked was itself WRONG. ✓
 - **MT5 fail-closed** — `mt5_broker.py:90, 95, 66-69`: `RuntimeError` on init failure, no silent paper fallback. `get_balance/get_positions/get_equity` raise `RuntimeError("not connected")`. ✓
 - **CORS** — `api/app.py:254-260`: explicit allowlist, no wildcard, paired with `allow_credentials=True`. ✓
 - **JWT sentinel** — `api/app.py:198-207`: raises `RuntimeError` before `FastAPI()` construction on `__UNSET_QNAI_JWT_SECRET__`, `change-me-in-production`, `""`. `middleware.py:45-52`: refuses to build `AuthMiddleware` with ephemeral key. ✓
@@ -101,4 +105,5 @@ This route mutates `os.environ` on the running process — a TOCTOU window where
 ## Retracted Prior Findings (not re-raised)
 
 - `.secrets-local/` credential leak — FALSE POSITIVE (dir doesn't exist, not tracked, `.gitignore:52` covers it). ✓ re-confirmed
+- `.env` tracked with live secrets — FALSE (retraction was wrong; `.env` is gitignored + untracked). ✓ re-confirmed
 - `config/mt5_accounts.yaml` held live creds — FALSE (env-var placeholders only). ✓ re-confirmed

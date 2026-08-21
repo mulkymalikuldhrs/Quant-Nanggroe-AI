@@ -1,17 +1,32 @@
-import subprocess
-root = r"D:\repositories\Quant-Nanggroe-AI-worktree"
+import subprocess, pathlib
+root = pathlib.Path(r"D:\repositories\Quant-Nanggroe-AI-worktree")
+junk = [
+    "check_structure.py", "test_lock.py", "test_singleton.py", "clean_locks.py",
+    "test_live_gate.py", "check_git.py", "check_manager.py", "check_manager2.py",
+    "ALL_SOURCE_FILES.txt", "plans.lnk", "QNA_Audit_&_Rewire_b5460bf6.lnk",
+    "backtest_all_results.md",  # stale artifact, results/ is canonical
+]
+removed = []
+for f in junk:
+    p = root / f
+    if p.exists():
+        p.unlink()
+        removed.append(f)
+print("removed:", removed)
+
 subprocess.run(["git", "add", "-A"], capture_output=True, cwd=root)
-r = subprocess.run(["git", "commit", "-m",
-    "feat(gate-4): Export Center - trades/summary custom range to xlsx/csv/md/json/pdf\n\n"
-    "- api/routes/export.py: /api/export/trades (filter date_from/date_to/strategy/\n"
-    "  symbol; csv|xlsx|md|json now, pdf honest 501 until reportlab installed)\n"
-    "  + /api/export/summary per-strategy stats\n"
-    "- dashboard /export page: date pickers + strategy/symbol filters + format\n"
-    "  buttons with authed download + live summary table (REAL journal data)\n"
-    "- sidebar: Export entry restored; /config re-restored after phase5 sync drop\n"
-    "- fix pre-existing tsc errors in evolution/page.tsx (invalid Badge variants)\n"
-    "Tests: 7/7 export API regression pass"],
+c = subprocess.run(["git", "commit", "-m",
+    "feat(gates3,5,8): trade awareness API + system tray app + repo tidy\n\n"
+    "- GATE-3 engine/analytics/trade_awareness.py: deterministic what/why/how/\n"
+    "  lesson per closed trade (pure rules, no LLM) + GET /api/export/awareness\n"
+    "  wired to journal (hit_type/close_reason already recorded in schema)\n"
+    "- GATE-5 scripts/qna_tray.py + qna_tray.bat: tray icon online/error/offline\n"
+    "  from /health poll (kill-switch aware), menu: dashboard/docs/start/restart\n"
+    "  backend/logs/exit. Deps: pystray only (Pillow present)\n"
+    "- GATE-8 tidy: remove root helper/junk per owner list (check_*, test_lock,\n"
+    "  clean_locks, test_live_gate, ALL_SOURCE_FILES.txt, .lnk shortcuts,\n"
+    "  stale backtest_all_results.md)"],
     capture_output=True, text=True, cwd=root)
-print("COMMIT:", r.stdout[:250])
-r2 = subprocess.run(["git", "push"], capture_output=True, text=True, cwd=root)
-print("PUSH:", r2.stdout[-120:], r2.stderr[-150:])
+print("COMMIT:", c.stdout[:250])
+p2 = subprocess.run(["git", "push"], capture_output=True, text=True, cwd=root)
+print("PUSH:", p2.stdout[-120:], p2.stderr[-150:])

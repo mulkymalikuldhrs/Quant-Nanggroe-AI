@@ -36,6 +36,12 @@ for mod_name in _modules:
     except ImportError as e:
         log.debug("Skipped %s: %s", mod_name, e)
 
+# Auto-import archive subpackage so @StrategyRegistry.register decorators fire
+try:
+    __import__('quant_nanggroe.engine.strategies.archive', globals(), locals(), [], 0)
+except Exception as e:
+    log.debug("Skipped archive package: %s", e)
+
 # ── Public convenience API ────────────────────────────────────
 from quant_nanggroe.engine.strategies.registry import (
     StrategyRegistry,
@@ -45,3 +51,4 @@ from quant_nanggroe.engine.strategies.registry import (
 )
 
 __all__ = ["create_strategy", "list_strategies", "get_strategy_metadata", "StrategyRegistry"]
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-f978584ba2f2.sh.tmp.XXXXXXXXXX': No such file or directory
