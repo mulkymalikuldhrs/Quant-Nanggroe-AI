@@ -245,15 +245,21 @@ class MT5ExecutionBroker(Broker):
     async def get_price(self, symbol: str) -> float:
         """Fetch the current ask price for a symbol via MT5.
 
-        Uses MT5_SYMBOL_MAP for correct symbol translation
-        (e.g. BTCUSDT → BTCUSD). Falls back to the raw symbol
-        if no mapping exists, then uppercased and stripped of hyphens.
+        P0 FIX (2026-08-22): translation now goes through the SAME
+        ``_mt5_symbol()`` used by the order path (place_order), so price and
+        order always resolve to the identical broker symbol. The old path —
+        MT5_SYMBOL_MAP (bare values, no .vx) + ``.upper()`` fallback — turned
+        ``EURUSD.vx`` into ``EURUSD.VX`` → symbol_info_tick None → 0.0 →
+        orders marked REJECTED/ZERO_PRICE even when the broker filled them.
         """
-        import MetaTrader5 as mt5
-        mt5_sym = MT5_SYMBOL_MAP.get(symbol)
-        if not mt5_sym:
-            mt5_sym = symbol.replace("-", "").upper()
-        tick = mt5.symbol_info_tick(mt5_sym)
+        from quant_nanggroe.connectors.mt5_broker import _mt5_symbol
+        mt5_sym = _mt5_symbol(symbol)
+        tick = self._mt5._mt5.symbol_info_tick(mt5_sym) if getattr(self._mt5, "_mt5", None) is not None else None
+        if tick is None:
+            # legacy map fallback (bare names for non-Valetax brokers)
+            import MetaTrader5 as mt5
+            mt5_sym_legacy = MT5_SYMBOL_MAP.get(symbol) or mt5_sym
+            tick = mt5.symbol_info_tick(mt5_sym_legacy)
         return float(tick.ask if tick else 0.0)
 
     def get_rates(self, symbol: str, timeframe=None, count: int = 200):

@@ -386,6 +386,29 @@ class KillSwitch:
             logger.warning("Cannot activate kill switch at NONE level")
             return KillSwitchEvent()
 
+        # P1 FIX (2026-08-22): escalation-only guard. A stale process holding
+        # in-memory NONE/LEVEL_1 must never _flush() a downgrade over a higher
+        # shared level (e.g. overwriting LEVEL_2 weekly breach with LEVEL_1
+        # daily, which auto-expires → violation silently lost). Higher shared
+        # state always wins; the lower activation is logged and ignored.
+        try:
+            self._ensure_reconciled()
+        except Exception:  # noqa: BLE001 — fail-safe: proceed on reconcile error
+            pass
+        _ORDER = {
+            KillSwitchLevel.NONE: 0,
+            KillSwitchLevel.LEVEL_1: 1,
+            KillSwitchLevel.LEVEL_2: 2,
+            KillSwitchLevel.LEVEL_3: 3,
+        }
+        if _ORDER.get(level, 0) < _ORDER.get(self._current_level, 0):
+            logger.warning(
+                "activate(%s) ignored: shared kill-switch already at %s "
+                "(escalation-only — downgrade blocked)",
+                level.value, self._current_level.value,
+            )
+            return KillSwitchEvent(previous_level=self._current_level)
+
         previous_level = self._current_level
         self._current_level = level
         self._status = KillSwitchStatus.ACTIVE

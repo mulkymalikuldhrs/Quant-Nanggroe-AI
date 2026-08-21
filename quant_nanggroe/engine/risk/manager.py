@@ -970,6 +970,14 @@ class RiskManager:
 
     def _auto_check_kill_switch(self, mtm_daily_loss_pct: Optional[float] = None) -> None:
         """Auto-check if kill switch should activate based on risk limits."""
+        # P1 FIX (2026-08-22): reconcile with the C5 shared state file BEFORE
+        # deciding/activating. Without this, a stale process re-triggers a
+        # LOWER level and _flush() overwrites a higher shared level
+        # (last-writer-wins downgrade race → weekly breach silently lost).
+        try:
+            self.kill_switch._ensure_reconciled()
+        except Exception:  # noqa: BLE001 — never block the veto path on reconcile errors
+            pass
         if mtm_daily_loss_pct is not None:
             daily_loss_pct = abs(mtm_daily_loss_pct) / self.state.peak_equity if self.state.peak_equity > 0 else 0
         else:
