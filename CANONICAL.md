@@ -586,6 +586,23 @@ python -m ruff check .
 
 ---
 
+## 15.5 Gates 1-8 — Feature Completion Wave (2026-08-22)
+
+| Gate | Deliverable | Evidence |
+|------|-------------|----------|
+| G1 | **Scorers NOT lost** — all 10 (Bond/Crypto/Economic/Geopolitical/Macro/News/Positioning/Sentiment/Technical/Volatility) live in `core/scoring/`, wired at `hedge_fund/portfolio/main.py:418-447` + evolver weights | file:line verified |
+| G2 | **Broker suffix auto-detect** — `MT5Broker.resolve_symbol()` snapshots terminal's real catalog (`symbols_get()`) at connect; candidates exact/stripped/static-map/suffixed. Any broker: `.vx` Valetax, bare Exness, `.m` IC Markets | `connectors/mt5_broker.py` |
+| G3 | **Trade awareness** — deterministic what/why/how/lesson per closed trade (pure rules, no LLM) from journal `hit_type`/`close_reason`; API `GET /api/export/awareness` | `engine/analytics/trade_awareness.py` |
+| G4 | **Export Center** — `GET /api/export/trades?date_from&date_to&strategy&symbol&format=` → xlsx/csv/md/json (pdf honest 501 until reportlab) + `/summary`; dashboard `/export` page with authed downloads | 7/7 tests `tests/test_api/test_export_center.py` |
+| G5 | **System tray** — `scripts/qna_tray.py` + `qna_tray.bat`: icon online/error/offline polling `/health` (kill-switch aware); menu dashboard/docs/start/restart/logs/exit. Deps: pystray | compile-verified |
+| G6 | **Multi-account restored** — `account_ledger.py` + `GET /api/trading/accounts` (live discovery) + `/accounts/ledger` (all-ever-connected). Phase5-sync had silently no-op'd the ledger writer | fail-closed, never fabricated |
+| G7 | **P0: trailing stop was DEAD on live path** (`update()` never called). Fixed: wired into `autonomous.run()` step 1.2b with ATR(14) from live bars; exit via decision pipeline attributed `trailing_stop`. Manager upgraded: breakeven ratchet (+1% → stop to entry), ATR-adaptive trail, monotonic tightening | 9/9 tests `tests/test_risk/test_trailing_stop_gate7.py` |
+| G8 | Repo tidy — root helper scripts/.lnk/stale artifacts removed | git log |
+
+**Recurring hazard documented:** an external "phase5 sync" process repeatedly drops files (Config Center backend+page, CANONICAL.md itself, account_ledger, sidebar entries). All restored from git history this session. If features vanish again: `git log --all --oneline -- <file>` then `git checkout <commit> -- <file>`.
+
+---
+
 ## 16. Audit Results
 
 ### Session 1: Full Deep Sweep (56 commits)
