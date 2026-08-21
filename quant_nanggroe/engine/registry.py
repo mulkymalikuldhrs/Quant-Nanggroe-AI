@@ -122,6 +122,8 @@ class AutoRegistry:
         # Also scan filesystem-based archive root for non-package archives
         count = self._scan_archive_filesystem(force=force)
         total += count
+        # Merge decorator registry (archive wrappers captured by register loop)
+        total += self._merge_decorator_registry()
         return total
 
     def scan_active(self, force: bool = False) -> int:
@@ -172,7 +174,7 @@ class AutoRegistry:
                 mod = importlib.import_module(name)
                 for _, obj in inspect.getmembers(mod, inspect.isclass):
                     if self._is_strategy_class(obj):
-                        strat_name = obj.__name__
+                        strat_name = getattr(obj, 'name', None) or obj.__name__
                         if strat_name not in self._registry:
                             self.register(strat_name, obj)
                             count += 1
@@ -338,6 +340,24 @@ class AutoRegistry:
             return False
         return issubclass(obj, Strategy)
 
+
+
+    def _merge_decorator_registry(self) -> int:
+        """Pull strategies from decorator StrategyRegistry (archive wrappers)."""
+        try:
+            import importlib
+            _deco_mod = importlib.import_module('quant_nanggroe.engine.strategies.registry')
+        except Exception:
+            return 0
+        count = 0
+        for name, cls in _deco_mod._registry.items():
+            if name not in self._registry:
+                self.register(name, cls)
+                count += 1
+        import logging
+        logging.getLogger("quant_nanggroe.registry").info(
+            "AutoRegistry: merged %d from decorator", count)
+        return count
 
 # ── Singleton + Auto-Init ────────────────────────────────────────────
 
