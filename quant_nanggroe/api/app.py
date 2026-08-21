@@ -400,6 +400,12 @@ def create_app() -> FastAPI:
         app.include_router(config_files_router, prefix="/api", tags=["Config Files"])
     except Exception as e:
         logger.warning("config_files_router_load_failed: %s", e)
+    # Export Center — trades/summary to csv/xlsx/md/json/pdf
+    try:
+        from quant_nanggroe.api.routes.export import router as export_router
+        app.include_router(export_router, prefix="/api", tags=["Export"])
+    except Exception as e:
+        logger.warning("export_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:

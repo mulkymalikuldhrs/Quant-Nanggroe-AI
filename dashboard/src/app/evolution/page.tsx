@@ -92,13 +92,13 @@ interface ConfigData {
 const actionBadge = (action: string | null) => {
   switch (action) {
     case "keep":
-      return <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20">Keep</Badge>;
+      return <Badge variant="info" className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20">Keep</Badge>;
     case "disable":
-      return <Badge variant="secondary" className="bg-red-500/15 text-red-400 border-red-500/20">Disable</Badge>;
+      return <Badge variant="info" className="bg-red-500/15 text-red-400 border-red-500/20">Disable</Badge>;
     case "evolve":
-      return <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 border-amber-500/20">Evolve</Badge>;
+      return <Badge variant="info" className="bg-amber-500/15 text-amber-400 border-amber-500/20">Evolve</Badge>;
     default:
-      return <Badge variant="outline" className="text-white/30">—</Badge>;
+      return <Badge variant="default" className="text-white/30">—</Badge>;
   }
 };
 
@@ -277,7 +277,7 @@ export default function EvolutionPage() {
       header: "Dir",
       width: "60px",
       render: (row: ClosedTrade) => (
-        <Badge variant="outline" className={cn(
+        <Badge variant="default" className={cn(
           "text-[10px] font-mono",
           row.direction.toLowerCase() === "buy" ? "text-emerald-400 border-emerald-500/20" : "text-red-400 border-red-500/20",
         )}>

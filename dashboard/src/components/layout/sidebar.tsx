@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Bot, FlaskConical, Briefcase, ArrowLeftRight, Shield,
   BarChart3, Sigma, Radio, Settings, ChevronLeft, ChevronRight,
   MemoryStick as Memory, Network, Cog, Shrink, Building2, Activity, GitBranch,
-  Menu, X, ChevronRight as ArrowRight, Brain,
+  Menu, X, ChevronRight as ArrowRight, Brain, Download, FileCode,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,6 +42,8 @@ const navItems: NavItem[] = [
   { href: "/security", label: "Security", icon: Shield, category: "system" },
   { href: "/tools", label: "Tools", icon: Cog, category: "system" },
   { href: "/channels", label: "Channels", icon: Radio, category: "system" },
+  { href: "/export", label: "Export", icon: Download, category: "system" },
+  { href: "/config", label: "Config", icon: FileCode, category: "system" },
   { href: "/settings", label: "Settings", icon: Settings, category: "system" },
 ];
 
