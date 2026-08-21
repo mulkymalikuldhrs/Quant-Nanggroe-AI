@@ -458,7 +458,7 @@ class PerformanceTracker:
         if avg_loss == 0:
             avg_loss = 1
         kelly = win_rate - (1 - win_rate) / (avg_win / avg_loss) if avg_win > 0 else 0
-        kelly = max(0.05, min(0.25, kelly))
+        kelly = max(0.05, min(0.20, kelly))
         self.db.execute(
             "UPDATE strategy_stats SET kelly_fraction=? WHERE strategy=?",
             (kelly, strategy)
@@ -1244,7 +1244,7 @@ class LiveEngine:
                         from quant_nanggroe.engine.strategies.registry import StrategyRegistry
                         import random
                         ev = StrategyEvolver()
-                        baseline = {"lookback": 20, "atr_mult": 1.2}
+                        baseline = {"lookback": 17, "atr_mult": 1.2}
                         try:
                             strategy_cls = StrategyRegistry.get(s)
                             if strategy_cls:
