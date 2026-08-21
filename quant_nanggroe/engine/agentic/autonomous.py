@@ -788,6 +788,51 @@ class AutonomousPipeline:
 
             current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
 
+            # ── Step 1.2b: Trailing-stop / Breakeven monitor ────────────
+            # GATE-7 fix (2026-08-22): TrailingStopManager.update() was NEVER
+            # called on the live path — positions were tracked but no price
+            # ever fed in, so breakeven/ATR trailing were dead code. Now every
+            # cycle feeds the current price (+ATR when available) per symbol.
+            if self._trailing_stop is not None:
+                try:
+                    atr_val = None
+                    try:
+                        if all(c in df.columns for c in ("high", "low", "close")) and len(df) >= 15:
+                            h, l, c = df["high"], df["low"], df["close"]
+                            pc = c.shift(1)
+                            tr = pd.concat([
+                                (h - l),
+                                (h - pc).abs(),
+                                (l - pc).abs(),
+                            ], axis=1).max(axis=1)
+                            atr_val = float(tr.rolling(14).mean().iloc[-1])
+                    except Exception:
+                        atr_val = None
+                    fired = self._trailing_stop.update(symbol, current_price, atr=atr_val)
+                    if fired:
+                        logger.info(
+                            "TrailingStop FIRED for %s @ %.2f — closing position",
+                            symbol, current_price,
+                        )
+                        s_ts = PipelineStep(name="trailing_stop_exit")
+                        try:
+                            exit_sig = "sell"  # tracked entries are longs
+                            await self._make_decision(
+                                symbol=symbol, signal=exit_sig, confidence=0.0,
+                                current_price=current_price,
+                                regime=regime,
+                                decision={"strategy_name": "trailing_stop",
+                                          "reason": "trailing_stop_exit"},
+                            )
+                            s_ts.status = "passed"
+                            s_ts.result = f"exit executed @ {current_price:.2f}"
+                        except Exception as exc:
+                            s_ts.status = "failed"
+                            s_ts.error = str(exc)
+                        steps.append(s_ts)
+                except Exception as exc:
+                    logger.debug("TrailingStop update skipped for %s: %s", symbol, exc)
+
             # ── Step 1.5: Regime Detection ──────────────────────────────
             regime = "unknown"
             regime_confidence = 0.0

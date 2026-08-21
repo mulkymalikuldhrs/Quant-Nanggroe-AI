@@ -29,6 +29,7 @@ class MT5Broker(BrokerConnector):
         self.magic = magic
         self._mt5 = None
         self.connected = False
+        self._available_symbols = {}  # GATE-2: populated at connect
 
     def connect(self) -> bool:
         try:
@@ -53,6 +54,7 @@ class MT5Broker(BrokerConnector):
                     self.login = int(getattr(info, "login", self.login) or self.login)
                     self.server = str(getattr(info, "server", self.server) or self.server)
                     self.connected = True
+                    self._snapshot_symbols()  # GATE-2: real symbol catalog
                     _logger.info(
                         "MT5Broker: attached to ALREADY-LOGGED-IN terminal account login=%s server=%s",
                         self.login, self.server,
@@ -77,6 +79,7 @@ class MT5Broker(BrokerConnector):
                 )
                 if ok:
                     self.connected = True
+                    self._snapshot_symbols()  # GATE-2: real symbol catalog
                     return True
                 err = mt5.last_error()
                 if isinstance(err, (tuple, list)) and err and err[0] == -10005:
@@ -93,10 +96,46 @@ class MT5Broker(BrokerConnector):
 
     _TRANSIENT_RETCODES = {"TRADE_RETCODE_REQUOTE", "TRADE_RETCODE_TIMEOUT"}
 
+    # ── GATE-2: broker suffix auto-detect ────────────────────────────
+    # Instead of hardcoding ".vx" (Valetax) or any broker-specific suffix,
+    # we snapshot the terminal's REAL tradable symbol list once at connect
+    # and resolve every internal symbol against it. Works for any broker:
+    # Valetax (.vx), Exness (bare), IC Markets (.m), Future (.r), etc.
+    def _snapshot_symbols(self) -> None:
+        try:
+            raw = self._mt5.symbols_get() or []
+            self._available_symbols = {s.name.lower(): s.name for s in raw}
+        except Exception:
+            self._available_symbols = {}
+
+    def resolve_symbol(self, qna_symbol: str) -> str:
+        """Resolve internal symbol to the terminal's actual tradable name.
+
+        Candidate order: exact → dash-stripped → static map → suffixed
+        variants of the best base. Only candidates that exist in the
+        terminal's own symbol list are accepted; if the snapshot is empty
+        we degrade to the static translation (never invent names).
+        """
+        avail = getattr(self, "_available_symbols", {}) or {}
+        base = _mt5_symbol(qna_symbol)
+        candidates = [qna_symbol, qna_symbol.replace("-", ""), base]
+        # suffix probes derived from what this terminal actually hosts
+        suffixes = set()
+        for name in avail.values():
+            if "." in name:
+                suffixes.add("." + name.rsplit(".", 1)[1])
+        for suf in sorted(suffixes):
+            candidates.append(base + suf)
+        for cand in candidates:
+            hit = avail.get(cand.lower())
+            if hit:
+                return hit
+        return base  # last known-good static translation
+
     def place_order(self, order: Order) -> str:
         if not self.connected:
             raise RuntimeError("not connected")
-        sym = _mt5_symbol(order.symbol)
+        sym = self.resolve_symbol(order.symbol)
         if not self._mt5.symbol_select(sym, True):
             raise RuntimeError(f"MT5 symbol unavailable: {sym}")
 
