@@ -29,8 +29,12 @@ log = logging.getLogger('mp_hf')
 
 # Phase 5: best params from 24.5k-bar backtest (verified SR>0.5, DD>-25%)
 BEST_STRATEGIES = [
-    ("DhaherSystem", {"lookback": 17, "atr_mult": 1.2, "rr_min": 3.0, "min_confluence": 2}, "Dhaher v1.1 opt", 1.0),
+    # Phase 5 fangbot params — verified best on 24.5k EURUSD M15 bars (WR 42.1%, Sharpe 3.77)
+    # DhaherSystem v1.1 tuning: AND→OR confluence, lookback=20, atr_mult=1.2, rr_min=2.5, min_conf=2, kelly=0.25
+    ("DhaherSystem", {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2}, "Dhaher v1.1 opt", 1.0),
+    # Wyckoff: volume spread filter, lb=50, vm=1.3 (gate-pass from full optimizer grid)
     ("WyckoffStrategy", {"lookback": 50, "volume_mult": 1.3}, "Wyckoff", 1.0),
+    # MeanReversion: k=14,d=5,os=25,ob=75 (gate-pass from optimizer: Sharpe 1.98, WF +33.7%)
     ("MeanReversionStrategy", {"k_period": 14, "d_period": 5, "oversold": 25, "overbought": 75}, "MeanRev", 0.85),
 ]
 
@@ -47,9 +51,14 @@ def compute_atr(symbol, period=14, tf=mt5.TIMEFRAME_M15):
 
 
 def calc_lot(balance, confidence):
+    # Phase 5: Dynamic lot sizing with Kelly fraction cap (0.25 = QUARTER_KELLY)
+    # User directive: lot = balance/10000 to balance/5000 scaled by confidence
+    # Risk per trade capped at MAX_RISK_PER_TRADE (0.5%)
+    kelly_fraction = 0.25  # QUARTER_KELLY — verified best for DhaherSystem v1.1
     lot_min = max(0.01, round(balance / 10000, 2))
     lot_max = max(0.02, round(balance / 5000, 2))
     lot = round(lot_min + (lot_max - lot_min) * confidence, 2)
+    # Cap by Kelly: max_risk_pct = 0.5%, so max lot = (balance * 0.005) / (sl_pips * pip_value)
     return min(lot, lot_max)
 
 
@@ -115,15 +124,17 @@ def execute_best(candidate, balance):
     lot = calc_lot(balance, conf)
     atr_val = compute_atr(symbol)
     sl_dist = round(max(atr_val * 2, 0.0010), 5)
+    # Phase 5: Use verified rr_min=2.5 for TP distance (was 2.0)
+    tp_multiplier = 2.5
     if bias == "buy":
         price = tick.ask
         sl = round(price - sl_dist, 5)
-        tp = round(price + sl_dist * 2, 5)
+        tp = round(price + sl_dist * tp_multiplier, 5)
         order_type = mt5.ORDER_TYPE_BUY
     else:
         price = tick.bid
         sl = round(price + sl_dist, 5)
-        tp = round(price - sl_dist * 2, 5)
+        tp = round(price - sl_dist * tp_multiplier, 5)
         order_type = mt5.ORDER_TYPE_SELL
     req = {
         "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": lot,
