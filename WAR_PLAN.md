@@ -1,6 +1,6 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-****Version:** v6.1.0 (commit ea53d00d)
+****Version:** v5.1.0 (commit ea53d00d)
 **Date:** 2026-07-30
 **Status:** ACTIVE
 
@@ -62,5 +62,7 @@ Coordinate all 7 Hermes profiles for QNA hedge fund autonomous operation. Zero c
 2. Fix GitHub auth or remove as archived remote.
 3. Tag v5.1.0 after QNA production cycle validation.
 # OPTIMIZATION NOTE — 2026-08-22 03:52
-Phase 5 (fangbot): Params optimized. Best verified: DhaherSystem v1.1 (lookback=20, atr_mult=1.2, rr_min=2.5, min_conf=2, kelly=0.25). Full 6480-combo grid interrupted (signal-gen bottleneck). Current BEST_STRATEGIES[0] holds verified best. Version: v6.1.0.
+Phase 5 (fangbot): Params optimized. Best verified: DhaherSystem v1.1 (lookback=20, atr_mult=1.2, rr_min=2.5, min_conf=2, kelly=0.25). Full 6480-combo grid interrupted (signal-gen bottleneck). Current BEST_STRATEGIES[0] holds verified best. Version: v5.1.0.
 mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-089637466ea5.sh.tmp.XXXXXXXXXX': No such file or directory
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory

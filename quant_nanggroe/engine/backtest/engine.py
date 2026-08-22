@@ -479,11 +479,16 @@ class BacktestEngine:
 
             # ponytail: signals may be named by first OHLCV col, not 'close'; align
             if isinstance(signal_row, pd.Series) and symbol not in shifted_signals.columns:
-                target_weight = float(signal_row.get(shifted_signals.columns[0], 0.0)) \
+                raw_w = signal_row.get(shifted_signals.columns[0], 0.0) \
                     if hasattr(signal_row, "get") else 0.0
             else:
-                target_weight = float(signal_row.get(symbol, 0.0)) \
-                    if hasattr(signal_row, "get") else 0.0
+                raw_w = signal_row.get(symbol, 0.0) if hasattr(signal_row, "get") else 0.0
+            # defense-in-depth (2026-08-22): a stray enum/object in the signal
+            # frame must never crash the whole backtest — coerce or zero it.
+            try:
+                target_weight = float(raw_w)
+            except (TypeError, ValueError):
+                target_weight = 0.0
 
             target_direction = 1 if target_weight > 0.01 else (-1 if target_weight < -0.01 else 0)
             current_pos = portfolio.get_position(symbol)

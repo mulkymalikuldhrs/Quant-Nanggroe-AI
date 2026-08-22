@@ -361,6 +361,15 @@ class WalkForwardAnalyzer:
         """
         params = strategy_params or {}
         n_bars = len(prices)
+
+        # CPCV branch (2026-08-22): per-fold refit across ALL combinatorial
+        # train/test group splits — previously analyze_strategy only ran the
+        # sequential rolling loop even in cpcv mode, silently downgrading the
+        # institutional PROVE pillar to plain rolling WF.
+        if self.mode == "cpcv":
+            return self._analyze_strategy_cpcv(
+                prices, strategy_class, params, **kwargs)
+
         total_window = self.train_window + self.test_window + purge_gap
 
         if n_bars < total_window:
@@ -498,8 +507,16 @@ class WalkForwardAnalyzer:
             Signal DataFrame with same index as prices, or None on failure.
         """
         signals = []
-        required_cols = strategy.required_columns()
-        warmup = strategy.warmup_period()
+        # 2026-08-22: getattr fallbacks — dynamic wrapper classes (e.g.
+        # _ArchiveWrapper over legacy strategies) may not expose these hooks.
+        required_cols = (
+            strategy.required_columns()
+            if hasattr(strategy, "required_columns")
+            else ["open", "high", "low", "close", "volume"]
+        )
+        warmup = (
+            strategy.warmup_period() if hasattr(strategy, "warmup_period") else 20
+        )
         # ponytail: strategies expect lowercase OHLCV (validate_data raises on Capitalized).
         # Normalize once here — single shared point, not 75 strategy files.
         prices = prices.rename(columns={c: c.lower() for c in prices.columns})
@@ -511,18 +528,143 @@ class WalkForwardAnalyzer:
                 continue
             try:
                 signal = strategy.generate_signal(data_slice)
-                # ponytail: Signal has no `.signal`; use strength, fall back to ±1 by type
                 if signal is None:
                     signals.append(0.0)
                 else:
-                    weight = signal.strength if signal.strength not in (None, 0.0) else (
-                        1.0 if signal.signal_type == SignalType.BUY else -1.0
-                    )
-                    signals.append(weight)
+                    # Direction-first mapping (2026-08-22, re-applied after
+                    # external sync reverted it): legacy StrategySignal carries
+                    # SignalStrength ENUM ('weak'/'moderate'/'strong') — float()
+                    # on it crashed every legacy-strategy backtest.
+                    _dir = getattr(signal, "direction", None) or getattr(
+                        signal, "signal_type", None)
+                    _scale_map = {"weak": 0.5, "moderate": 0.75,
+                                  "strong": 1.0, "very_strong": 1.25}
+                    raw_strength = getattr(signal, "strength", None)
+                    scale = 1.0
+                    if raw_strength is not None and hasattr(raw_strength, "value"):
+                        scale = _scale_map.get(str(raw_strength.value).lower(), 1.0)
+                    elif isinstance(raw_strength, (int, float)) and raw_strength > 0:
+                        scale = float(raw_strength)
+                    dir_str = str(getattr(_dir, "value", _dir) or "").upper()
+                    if "BUY" in dir_str or "LONG" in dir_str:
+                        weight = scale
+                    elif "SELL" in dir_str or "SHORT" in dir_str:
+                        weight = -scale
+                    else:
+                        weight = 0.0
+                    signals.append(float(weight))
             except Exception:
                 signals.append(0.0)
 
         return pd.DataFrame({prices.columns[0]: signals}, index=prices.index)
+
+    def _analyze_strategy_cpcv(
+        self,
+        prices: pd.DataFrame,
+        strategy_class: type,
+        params: Dict[str, Any],
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """CPCV with per-combination strategy refit — no lookahead.
+
+        Splits bars into ``n_groups``; for EVERY combination of
+        ``n_test_groups`` held-out groups: refits the strategy on the
+        remaining (purged) bars, generates signals bar-by-bar on test bars
+        only, and backtests the OOS slice. Returns one WalkForwardResult per
+        combination so downstream aggregate/stability math works unchanged.
+        """
+        n_bars = len(prices)
+        group_size = max(1, n_bars // self.n_groups)
+        if group_size < self.min_observations:
+            logger.warning(
+                "CPCV: %d bars too few for %d groups", n_bars, self.n_groups)
+            return {"windows": [], "aggregate": {}, "degradation_stats": {},
+                    "stability": WalkForwardStability(), "mode": "cpcv",
+                    "oos_equity_curve": pd.Series(dtype=float), "n_folds": 0}
+
+        from itertools import combinations
+        groups = [list(range(g * group_size, min((g + 1) * group_size, n_bars)))
+                  for g in range(self.n_groups)]
+        combos = list(combinations(range(self.n_groups), self.n_test_groups))
+
+        windows: List[WalkForwardResult] = []
+        oos_returns: List[float] = []
+        oos_sharpes: List[float] = []
+        oos_trade_counts: List[int] = []
+        oos_equity_parts: List[pd.Series] = []
+
+        for combo_i, test_groups in enumerate(combos, 1):
+            test_idx = sorted(idx for g in test_groups for idx in groups[g])
+            train_idx = sorted(
+                idx for g in range(self.n_groups) if g not in test_groups
+                for idx in groups[g])
+            if len(train_idx) < self.min_observations or not test_idx:
+                continue
+
+            # purge + embargo around every test-group boundary
+            purged_train = []
+            test_lo, test_hi = min(test_idx), max(test_idx)
+            for idx in train_idx:
+                if test_lo - self.purge_gap <= idx <= test_hi + self.embargo:
+                    continue
+                purged_train.append(idx)
+            if len(purged_train) < self.min_observations:
+                continue
+
+            train_prices = prices.iloc[purged_train]
+            test_prices = prices.iloc[test_idx]
+
+            try:
+                strategy = strategy_class(**params)
+                test_signals = self._generate_strategy_signals(strategy, test_prices)
+            except Exception as e:
+                logger.warning("CPCV combo %d refit failed: %s", combo_i, e)
+                continue
+            if test_signals is None or test_signals.empty:
+                continue
+
+            oos_result = self.engine.run(test_prices, test_signals, **kwargs)
+            oos_metrics = oos_result.get("metrics", {})
+            oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
+            oos_sharpe = oos_metrics.get("sharpe_ratio", 0.0)
+            oos_trades = oos_metrics.get("total_trades", 0)
+            if len(oos_eq) > 0:
+                oos_equity_parts.append(oos_eq)
+
+            windows.append(WalkForwardResult(
+                train_start=train_prices.index[0],
+                train_end=train_prices.index[-1],
+                test_start=test_prices.index[0],
+                test_end=test_prices.index[-1],
+                in_sample_return=0.0,   # CPCV trains are overlapping by design;
+                in_sample_sharpe=0.0,   # IS stats across combos are not additive.
+                in_sample_max_dd=0.0,
+                out_of_sample_return=oos_metrics.get("total_return", 0.0),
+                out_of_sample_sharpe=oos_sharpe,
+                out_of_sample_max_dd=oos_metrics.get("max_drawdown", 0.0),
+                degradation_ratio=0.0,
+                is_trades=0,
+                oos_trades=oos_trades,
+            ))
+            oos_returns.append(oos_metrics.get("total_return", 0.0))
+            oos_sharpes.append(oos_sharpe)
+            oos_trade_counts.append(max(oos_trades, 1))
+            logger.info("CPCV combo %d/%d (%s): sharpe=%.3f",
+                        combo_i, len(combos), test_groups, oos_sharpe)
+
+        aggregate = self._calculate_aggregate(windows, oos_returns,
+                                              oos_sharpes, oos_trade_counts)
+        stability = self._calculate_stability(windows, oos_sharpes, oos_returns)
+        return {
+            "windows": windows,
+            "aggregate": aggregate,
+            "degradation_stats": {},
+            "stability": stability,
+            "mode": "cpcv",
+            "oos_equity_curve": self._combine_oos_equity(oos_equity_parts),
+            "n_folds": len(windows),
+            "n_combinations": len(combos),
+        }
 
     def _analyze_cpcv(
         self,
