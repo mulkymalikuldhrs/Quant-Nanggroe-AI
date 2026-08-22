@@ -601,6 +601,28 @@ python -m ruff check .
 
 **Recurring hazard documented:** an external "phase5 sync" process repeatedly drops files (Config Center backend+page, CANONICAL.md itself, account_ledger, sidebar entries). All restored from git history this session. If features vanish again: `git log --all --oneline -- <file>` then `git checkout <commit> -- <file>`.
 
+### 15.6 CPCV Validation — PROVE Pillar (2026-08-22)
+
+**Infrastructure:** `walk_forward.analyze_strategy()` now dispatches `mode="cpcv"` to `_analyze_strategy_cpcv()` — refits the strategy per combinatorial train/test group split (de Prado AFML Ch.12) with purge+embargo, signals generated bar-by-bar on OOS bars only. Runner: `scripts/run_cpcv_validation.py`; results in `data/cpcv_registry.json`.
+
+**Root cause fixed en route:** wrapper classes lack `warmup_period()` → 20-bar slices made `generate_signal` raise → silent except produced ALL-ZERO signals for every legacy strategy. Safe default warmup=60 + first-error logging. Also re-applied (sync had reverted twice): direction-first enum signal mapping + vol-scaling Series→scalar + engine coercion of stray non-numeric signal values.
+
+**Tri-asset CPCV results (n_groups=6, n_test=2 → 14 combos; combo-profit-share = % of combinations with OOS Sharpe > 0):**
+
+| Strategy | BTC combos | EURUSD combos | GC combos | Verdict |
+|----------|-----------|---------------|-----------|---------|
+| `archive_aroon` | 86% (+0.356) | 64% (+0.329) | **100% (+0.649)** | most consistent — multi-asset core |
+| `kaufman_ama` | 43% (+0.160) | 71% (**+0.672**) | 93% (**+1.083**) | forex/gold specialist |
+| `archive_amdx` | **93% (+0.627)** | 0% (0.000) | 93% (+0.446) | crypto/gold specialist |
+| `archive_ict_ote` | 86% (+0.544) | 7% (−0.574) | **100% (+0.990)** | commodity/crypto specialist |
+| `archive_gold_inflation` | 79% (+0.268) | 14% (−0.228) | 79% (+0.465) | gold-leaning |
+| `multi_timeframe` | 57% (+0.171) | 43% (−0.074) | 79% (+0.892) | gold-leaning |
+| `archive_algebra` | 57% (+0.201) | 50% (+0.006) | 29% (−0.018) | marginal |
+| `archive_mean_rev` | 79% (+0.272) | 0% (−0.449) | 79% (+0.194) | ex-forex |
+| `archive_wyckoff` | 57% (+0.061) | 0% (0.000) | 29% (−0.340) | weak |
+
+**HONEST INSTITUTIONAL FINDING:** zero strategies survive CPCV with worst-combo Sharpe > 0 across all three assets — single strategies are asset/regime-dependent, exactly as de Prado's framework predicts. **Correct deployment is per-symbol allocation**: aroon (gold/BTC core), kaufman_ama (forex/gold), amdx + ict_ote (crypto/gold satellites). One-size-fits-all ensemble admission would dilute specialists with noise. This per-symbol map is the input for the next evolution of `_viable_engine_strategy_names()`.
+
 ---
 
 ## 16. Audit Results
