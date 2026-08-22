@@ -109,6 +109,26 @@ class SelfAware:
                     f"I should trigger self-evolve to adapt."
                 )
 
+        # GATE-3 wiring (2026-08-22): reason over real closed-trade awareness
+        ta = (s.extra or {}).get("trade_awareness") or {}
+        if ta.get("recent_closed"):
+            wins, losses = int(ta.get("wins", 0)), int(ta.get("losses", 0))
+            statements.append(
+                f"I remember my last {ta['recent_closed']} closed trades: "
+                f"{wins} winners, {losses} losers."
+            )
+            if losses > wins and ta.get("worst_strategy"):
+                anomalies.append(
+                    f"strategy {ta['worst_strategy']} leads recent losses")
+                statements.append(
+                    f"I am concerned: {ta['worst_strategy']} caused most of my recent "
+                    f"losses — lifecycle tuning or walk-forward revalidation is due."
+                )
+            elif wins > 0:
+                statements.append(
+                    f"My recent edge is holding: {wins}W/{losses}L across the last window."
+                )
+
         # Positive reflection
         if not anomalies:
             statements.append(

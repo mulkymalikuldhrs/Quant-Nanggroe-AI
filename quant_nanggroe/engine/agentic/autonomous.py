@@ -510,6 +510,32 @@ class AutonomousPipeline:
         real internal state so the organism can reason about itself."""
         from quant_nanggroe.engine.self_aware import SelfState
         rm = getattr(self._risk_manager, "state", None) if hasattr(self, "_risk_manager") else None
+
+        # GATE-3 wiring (2026-08-22): feed closed-trade awareness into the
+        # organism's self-model so reflect() reasons over REAL trade outcomes
+        # and lessons, not just risk counters. Fail-closed: never crash.
+        awareness_summary = {}
+        try:
+            from quant_nanggroe.engine.analytics.trade_awareness import explain_journal
+            items = explain_journal(limit=25)
+            if items:
+                goods = [i for i in items if i["severity"] == "good"]
+                bads = [i for i in items if i["severity"] == "bad"]
+                bad_strats: dict[str, int] = {}
+                for b in bads:
+                    bad_strats[b["strategy"]] = bad_strats.get(b["strategy"], 0) + 1
+                worst = max(bad_strats, key=bad_strats.get) if bad_strats else ""
+                awareness_summary = {
+                    "recent_closed": len(items),
+                    "wins": len(goods),
+                    "losses": len(bads),
+                    "worst_strategy": worst,
+                    "top_lesson": (bads[0]["lesson"] if bads else
+                                   (goods[0]["lesson"] if goods else "")),
+                }
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("awareness feed skipped: %s", exc)
+
         return SelfState(
             equity=getattr(rm, "current_equity", 0.0) or 0.0,
             peak_equity=getattr(rm, "peak_equity", 0.0) or 0.0,
@@ -522,7 +548,8 @@ class AutonomousPipeline:
             last_strategy=self._last_result.strategy if self._last_result else "",
             last_symbol=self._last_result.symbol if self._last_result else "",
             last_run_ts=time.time(),
-            extra={"pipeline": "AutonomousPipeline"},
+            extra={"pipeline": "AutonomousPipeline",
+                   "trade_awareness": awareness_summary},
         )
 
     def reflect_self(self) -> "Reflection":

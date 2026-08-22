@@ -1,11 +1,12 @@
 import subprocess
-root = r"D:\repositories\Quant-Nanggroe-AI-worktree"
-# uv unsupported --user; use --target into user site-packages (Roaming) which IS writable
-target = r"C:\Users\Hi\AppData\Roaming\Python\Python314\site-packages"
-r = subprocess.run(["uv", "pip", "install", "--target", target, "pystray",
-                    "--python", r"C:\Python314\python.exe"],
-                   capture_output=True, text=True, cwd=root, timeout=180)
-print("rc:", r.returncode, (r.stdout + r.stderr)[-250:])
-v = subprocess.run([r"C:\Python314\python.exe", "-c", "import pystray; print('pystray OK')"],
-                   capture_output=True, text=True, cwd=root)
-print(v.stdout or v.stderr[-150:])
+import pathlib
+root = pathlib.Path(r"D:\repositories\Quant-Nanggroe-AI-worktree")
+sa = root / "quant_nanggroe/engine/self_aware.py"
+print("self_aware exists:", sa.exists())
+ev = root / "quant_nanggroe/engine/strategies/strategy_evolver.py"
+print("strategy_evolver exists:", ev.exists())
+r = subprocess.run(["git", "grep", "-n", "SelfAware", "--",
+                    "quant_nanggroe/engine/agentic/autonomous.py"],
+                   capture_output=True, text=True, cwd=str(root))
+print("autonomous SelfAware refs:")
+print((r.stdout or "(none)").strip()[:400])
