@@ -76,6 +76,7 @@ class AutonomousSelfLoopOrchestrator:
         self._self_aware = None
         self._council_debate = None
         self._risk_manager = None
+        self._kill_switch = None
         self._execution_manager = None
         
     async def _lazy_load_components(self):
@@ -611,4 +612,5 @@ class AutonomousSelfLoopOrchestrator:
         except Exception as e:
             logger.debug(f"Self-awareness reflection failed: {e}")
             return None
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory
 mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory
