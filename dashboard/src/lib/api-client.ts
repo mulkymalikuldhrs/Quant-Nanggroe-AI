@@ -717,6 +717,25 @@ export const configApi = {
     apiRequest<{ success: boolean }>("/api/credentials", { method: "PUT", body: data }),
 };
 
+export interface ConfigFileMeta {
+  name: string; description: string; kind: string; editable: boolean;
+  exists: boolean; size: number; modified: number | null; path: string;
+}
+export interface ConfigFileContent {
+  name: string; exists: boolean; raw: string; parsed: unknown; kind: string;
+}
+export const configFilesApi = {
+  list: () =>
+    apiRequest<{ files: ConfigFileMeta[] }>("/api/config/files"),
+  read: (name: string) =>
+    apiRequest<ConfigFileContent>(`/api/config/files/${encodeURIComponent(name)}`),
+  write: (name: string, body: { raw?: string; data?: unknown }) =>
+    apiRequest<ConfigFileContent>(`/api/config/files/${encodeURIComponent(name)}`, {
+      method: "PUT",
+      body,
+    }),
+};
+
 // ── Evolution Types ──────────────────────────────────────────────────
 
 export interface EvolutionApiResponse<T> {

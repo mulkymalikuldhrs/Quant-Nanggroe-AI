@@ -22,6 +22,12 @@ type SummaryRow = {
   win_rate: number; avg_pnl: number; best_trade: number; worst_trade: number;
 };
 
+type AwarenessItem = {
+  ticket: string; strategy: string; symbol: string;
+  what: string; why: string; how: string; lesson: string;
+  severity: "good" | "bad" | "neutral";
+};
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
@@ -55,6 +61,7 @@ export default function ExportCenterPage() {
   const [symbol, setSymbol] = useState("");
   const [rows, setRows] = useState<SummaryRow[]>([]);
   const [totalTrades, setTotalTrades] = useState(0);
+  const [awareness, setAwareness] = useState<AwarenessItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +76,11 @@ export default function ExportCenterPage() {
       const d = await apiRequest<{ rows: SummaryRow[]; total_trades: number }>(
         `/api/export/summary?${p.toString()}`);
       setRows(d.rows); setTotalTrades(d.total_trades);
+      try {
+        const a = await apiRequest<{ items: AwarenessItem[] }>(
+          `/api/export/awareness?${p.toString()}&limit=25`);
+        setAwareness(a.items);
+      } catch { /* awareness optional */ }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Summary unavailable");
     } finally { setLoading(false); }
@@ -191,6 +203,41 @@ export default function ExportCenterPage() {
           <Calendar className="w-3 h-3" />
           PDF requires reportlab on the backend — other formats always available.
         </p>
+      </ChartCard>
+
+      <ChartCard title="Trade Awareness"
+        subtitle="What / Why / How / Lesson — deterministic post-trade analysis">
+        {awareness.length === 0 ? (
+          <p className="text-sm text-white/30 py-6 text-center">
+            No closed trades in this range.
+          </p>
+        ) : (
+          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+            {awareness.map((a) => (
+              <div key={`${a.ticket}-${a.symbol}`}
+                className={`p-3 rounded-lg border ${
+                  a.severity === "good"
+                    ? "bg-emerald-500/[0.04] border-emerald-500/15"
+                    : a.severity === "bad"
+                    ? "bg-red-500/[0.04] border-red-500/15"
+                    : "bg-white/[0.02] border-white/[0.06]"
+                }`}>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-xs font-medium text-white/70">
+                    {a.what}
+                  </span>
+                  <Badge variant={a.severity === "good" ? "success" : a.severity === "bad" ? "danger" : "default"}
+                    className="text-[10px] shrink-0 font-mono">
+                    {a.ticket}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-white/40"><span className="text-cyan-400/60">Why:</span> {a.why}</p>
+                <p className="text-[11px] text-white/40"><span className="text-cyan-400/60">How:</span> {a.how}</p>
+                <p className="text-[11px] text-amber-300/50 mt-0.5"><span className="text-amber-400/60">Lesson:</span> {a.lesson}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </ChartCard>
     </div>
   );
