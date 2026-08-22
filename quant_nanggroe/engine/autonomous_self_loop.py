@@ -139,6 +139,15 @@ class AutonomousSelfLoopOrchestrator:
             try:
                 from quant_nanggroe.engine.execution import ExecutionManager
                 self._execution_manager = ExecutionManager()
+                from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_switch_file
+                from quant_nanggroe.engine.risk.manager import RiskManager
+                configure_kill_switch_file()
+                if self._kill_switch is None:
+                    self._kill_switch = KillSwitch()
+                if self._risk_manager is None:
+                    self._risk_manager = RiskManager()
+                self._execution_manager.set_kill_switch(self._kill_switch)
+                self._execution_manager.set_risk_manager(self._risk_manager)
             except Exception as e:
                 logger.warning(f"ExecutionManager unavailable: {e}")
     
@@ -602,3 +611,4 @@ class AutonomousSelfLoopOrchestrator:
         except Exception as e:
             logger.debug(f"Self-awareness reflection failed: {e}")
             return None
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory
