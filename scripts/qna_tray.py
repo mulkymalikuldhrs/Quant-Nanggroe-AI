@@ -4,7 +4,7 @@ Shows a green/red/amber tray icon reflecting backend /health, with menu:
 Open Dashboard, Open API Docs, Show Logs, Restart Backend, Exit.
 
 Run:  C:\\Python314\\python.exe scripts\\qna_tray.py
-Deps: pystray (pip install pystray) — Pillow already present.
+Deps: pystray 0.19.5 (installed via uv --target user site) + Pillow + requests.
 """
 from __future__ import annotations
 
