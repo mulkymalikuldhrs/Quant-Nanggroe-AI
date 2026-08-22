@@ -514,16 +514,22 @@ class WalkForwardAnalyzer:
             if hasattr(strategy, "required_columns")
             else ["open", "high", "low", "close", "volume"]
         )
-        warmup = (
-            strategy.warmup_period() if hasattr(strategy, "warmup_period") else 20
-        )
-        # ponytail: strategies expect lowercase OHLCV (validate_data raises on Capitalized).
-        # Normalize once here — single shared point, not 75 strategy files.
+        if hasattr(strategy, "warmup_period"):
+            try:
+                warmup = int(strategy.warmup_period())
+            except Exception:
+                warmup = 60
+        else:
+            # safe default: covers most indicator lookbacks; a too-small
+            # window made legacy strategies raise inside generate_signal,
+            # which the silent except turned into ALL-ZERO signals.
+            warmup = 60
         prices = prices.rename(columns={c: c.lower() for c in prices.columns})
 
+        first_error_logged = False
         for i in range(len(prices)):
             data_slice = prices.iloc[max(0, i - warmup):i + 1]
-            if len(data_slice) < warmup:
+            if len(data_slice) < min(warmup, len(prices)):
                 signals.append(0.0)
                 continue
             try:
@@ -531,10 +537,9 @@ class WalkForwardAnalyzer:
                 if signal is None:
                     signals.append(0.0)
                 else:
-                    # Direction-first mapping (2026-08-22, re-applied after
-                    # external sync reverted it): legacy StrategySignal carries
-                    # SignalStrength ENUM ('weak'/'moderate'/'strong') — float()
-                    # on it crashed every legacy-strategy backtest.
+                    # Direction-first mapping (2026-08-22): legacy
+                    # StrategySignal carries SignalStrength ENUM — float() on
+                    # it crashed every legacy-strategy backtest.
                     _dir = getattr(signal, "direction", None) or getattr(
                         signal, "signal_type", None)
                     _scale_map = {"weak": 0.5, "moderate": 0.75,
@@ -553,7 +558,13 @@ class WalkForwardAnalyzer:
                     else:
                         weight = 0.0
                     signals.append(float(weight))
-            except Exception:
+            except Exception as exc:
+                if not first_error_logged:
+                    logger.warning(
+                        "signal generation error for %s (warmup=%d): %s — "
+                        "subsequent errors silenced",
+                        type(strategy).__name__, warmup, exc)
+                    first_error_logged = True
                 signals.append(0.0)
 
         return pd.DataFrame({prices.columns[0]: signals}, index=prices.index)

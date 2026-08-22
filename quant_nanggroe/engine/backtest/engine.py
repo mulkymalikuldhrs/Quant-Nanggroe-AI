@@ -548,9 +548,19 @@ class BacktestEngine:
             if target_direction != 0 and portfolio.get_position(symbol) is None:
                 if not self.config.short_enabled and target_direction == -1:
                     continue  # shorts disabled: open path blocks this too, guard kept for symmetry
+                # vol-scaling fix (RE-APPLIED 2026-08-22 after external sync
+                # reverted it): rolling_vol_by_symbol holds pd.Series per
+                # symbol; extract the scalar at the current bar timestamp.
+                raw_vol = vol_by_symbol.get(symbol, 0.0)
+                if isinstance(raw_vol, pd.Series):
+                    sym_vol = float(raw_vol.loc[timestamp]) if timestamp in raw_vol.index else 0.0
+                    if pd.isna(sym_vol):
+                        sym_vol = 0.0
+                else:
+                    sym_vol = float(raw_vol)
                 size = self._size_position(
                     target_weight, price, portfolio.equity,
-                    vol_by_symbol.get(symbol, 0.0), position_sizer,
+                    sym_vol, position_sizer,
                 )
                 exec_price = self._get_fill_price(
                     execution_model, price, target_direction, size, timestamp
