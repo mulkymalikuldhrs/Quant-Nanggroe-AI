@@ -1,10 +1,8 @@
 import subprocess, pathlib
 root = pathlib.Path(r"D:\repositories\Quant-Nanggroe-AI-worktree")
 subprocess.run(["git", "add", "-A"], capture_output=True, cwd=str(root))
-c = subprocess.run(["git", "commit", "-m", "chore: final helper drop"],
+c = subprocess.run(["git", "commit", "-m", "chore: drop zz2"],
                    capture_output=True, text=True, cwd=str(root))
-print(c.stdout[:120])
 pu = subprocess.run(["git", "push"], capture_output=True, text=True, cwd=str(root))
-print("PUSH:", pu.stdout[-80:])
 st = subprocess.run(["git", "status", "--short"], capture_output=True, text=True, cwd=str(root)).stdout
-print("FINAL:", repr(st))
+print("FINAL:", repr(st), "| pushed:", pu.returncode == 0)
