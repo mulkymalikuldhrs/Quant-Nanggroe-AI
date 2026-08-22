@@ -1,6 +1,6 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-**Version:** v5.1.0 (commit edc67275)
+****Version:** v6.1.0 (commit ea53d00d)
 **Date:** 2026-07-30
 **Status:** ACTIVE
 
