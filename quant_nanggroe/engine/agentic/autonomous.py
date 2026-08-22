@@ -1275,6 +1275,19 @@ class AutonomousPipeline:
                 active = set(self._lifecycle.get_active_strategies())
                 if active:
                     all_names = [n for n in all_names if n in active]
+            # CANONICAL §15.6 per-symbol CPCV allocation: admit only strategies
+            # with proven combo-profit-share on THIS symbol's asset class.
+            # Fail-closed: evidence missing -> None -> keep lifecycle behavior;
+            # evidence present but nothing qualifies -> no unproven trading.
+            try:
+                from quant_nanggroe.engine.strategy_allocation import admitted_for_symbol
+                admitted = admitted_for_symbol(symbol)
+                if admitted is not None:
+                    all_names = [n for n in all_names if n in set(admitted)]
+                    log.info("CPCV allocation narrowed %s candidates to %d",
+                             symbol, len(all_names))
+            except Exception as alloc_exc:
+                logger.debug("strategy allocation skipped: %s", alloc_exc)
         except (ImportError, ValueError):
             return "hold", 0.0, "Cannot load strategy registry"
 
