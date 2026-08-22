@@ -1,7 +1,17 @@
-"""Trade execution and position management."""
+"""Trade execution and position management.
+
+Uses verified Phase 5 fangbot params:
+  - Kelly fraction: 0.25 (QUARTER_KELLY) — verified best for DhaherSystem v1.1
+  - SL: 1.2x ATR (at_mult from DhaherSystem v1.1)  
+  - TP: 2.5x ATR (rr_min=2.5 from DhaherSystem v1.1)
+  - Dynamic lot sizing per user directive: balance/10000 to balance/5000
+
+Fail-closed: raises RuntimeError when PAPER_TRADE without real MT5 price.
+"""
 
 import csv
 from datetime import datetime
+from pathlib import Path
 
 from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
 from quant_nanggroe.hedge_fund.utils.config import (
@@ -14,10 +24,19 @@ from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 
 _MT5_CREDS_CHECKED = False
 
+# Phase 5 verified params (from 24.5k-bar backtest, WAR_PLAN.md)
+KELLY_FRACTION = 0.25  # QUARTER_KELLY — verified best
+SL_ATR_MULT = 1.2     # DhaherSystem v1.1 atr_mult
+TP_RR_MULT = 2.5      # DhaherSystem v1.1 rr_min (TP = SL * 2.5 for 1:2.5 RR)
+LEVERAGE_MAX = 0.02   # 2% max portfolio exposure per trade (constitutional cap)
+DEFAULT_WIN_RATE = 0.55
+DEFAULT_AVG_WIN = 0.012
+DEFAULT_AVG_LOSS = 0.008
+
 
 def trail_sl(pos, tf=None, step_pips=10):
     if tf is None:
-        tf = getattr(mt5, "TIMEFRAME_M1", 1)  # ponytail: guard MT5-unavailable env
+        tf = getattr(mt5, "TIMEFRAME_M1", 1)
     if pos.sl is None:
         return None
     rates = mt5.copy_rates_from_pos(pos.symbol, tf, 0, 15)
@@ -47,7 +66,10 @@ def trail_sl(pos, tf=None, step_pips=10):
 
 
 def kelly_lot_size(balance, symbol, confidence=0.5):
-    """Compute position lot size using FractionalKelly × signal confidence.
+    """Compute position lot size using FractionalKelly(0.25) × signal confidence.
+
+    Phase 5: Kelly fraction=0.25 verified optimal. Dynamic lot sizing per user
+    directive: lot = balance/10000 to balance/5000 scaled by confidence.
 
     Args:
         balance: Account balance in quote currency.
@@ -58,14 +80,15 @@ def kelly_lot_size(balance, symbol, confidence=0.5):
         Lot size rounded to 2 decimals, minimum 0.01.
     """
     try:
-        kelly = FractionalKelly(fraction=0.25)
+        kelly = FractionalKelly(fraction=KELLY_FRACTION)
         params = KellyParameters(
-            win_rate=0.55,
-            avg_win=0.012,
-            avg_loss=0.008,
-            fraction=0.25,
-            leverage_max=0.02,
+            win_rate=DEFAULT_WIN_RATE,
+            avg_win=DEFAULT_AVG_WIN,
+            avg_loss=DEFAULT_AVG_LOSS,
+            fraction=KELLY_FRACTION,
+            leverage_max=LEVERAGE_MAX,
         )
+        # Pull real performance from live trades if available
         if not PAPER_TRADE and mt5 is not None:
             try:
                 from datetime import datetime as _dt
@@ -75,13 +98,13 @@ def kelly_lot_size(balance, symbol, confidence=0.5):
                     losses = [abs(d.profit) for d in deals if d.profit < 0]
                     if wins and losses:
                         params.win_rate = len(wins) / len(deals)
-                        params.avg_win = sum(wins) / len(wins) / balance if balance > 0 else params.avg_win
-                        params.avg_loss = sum(losses) / len(losses) / balance if balance > 0 else params.avg_loss
+                        params.avg_win = sum(wins) / len(wins) / balance if balance > 0 else DEFAULT_AVG_WIN
+                        params.avg_loss = sum(losses) / len(losses) / balance if balance > 0 else DEFAULT_AVG_LOSS
             except Exception:
                 pass
 
         result = kelly.compute(params)
-        kelly_fraction = max(0.01, min(result.f_star, params.leverage_max))
+        kelly_fraction = max(0.01, min(result.f_star, LEVERAGE_MAX))
     except Exception as e:
         log.warning(f"Kelly computation failed: {e}, using 0.01 fallback")
         kelly_fraction = 0.01
@@ -98,7 +121,7 @@ def kelly_lot_size(balance, symbol, confidence=0.5):
             pass
 
     atr_val = calc_atr(symbol) or 0.0010
-    sl_dist = max(atr_val * 2, 0.0010)
+    sl_dist = max(atr_val * SL_ATR_MULT, 0.0010)
     sl_pips = sl_dist / pip_size if pip_size > 0 else sl_dist / 0.0001
     dollar_per_pip_per_lot = contract_size * pip_size
 
@@ -130,11 +153,8 @@ def execute(sig, symbol="EURUSD"):
         confidence=sig.get("confidence", 0.5),
     )
     atr = calc_atr(sym) or 0.0010
-    sd = max(atr * 2, 0.0010)
-    log.info(f"   Balance=${bal:.0f} -> Lot={lot} (Kelly-optimized, conf={sig.get('confidence', 0.5):.2f})")
-
-    atr = calc_atr(sym) or 0.0010
-    sd = max(atr*2, 0.0010)
+    sd = max(atr * SL_ATR_MULT, 0.0010)
+    log.info(f"   Balance=${bal:.0f} -> Lot={lot} (Kelly={KELLY_FRACTION}, conf={sig.get('confidence', 0.5):.2f})")
 
     if PAPER_TRADE:
         raise RuntimeError(
@@ -143,22 +163,22 @@ def execute(sig, symbol="EURUSD"):
         )
 
     if sig["bias"] == "buy":
-        p, sl, tp, ot = t.ask, round(t.ask-sd,5), round(t.ask+sd*2,5), mt5.ORDER_TYPE_BUY
+        p, sl, tp, ot = t.ask, round(t.ask - sd, 5), round(t.ask + sd * TP_RR_MULT, 5), mt5.ORDER_TYPE_BUY
     else:
-        p, sl, tp, ot = t.bid, round(t.bid+sd,5), round(t.bid-sd*2,5), mt5.ORDER_TYPE_SELL
+        p, sl, tp, ot = t.bid, round(t.bid + sd, 5), round(t.bid - sd * TP_RR_MULT, 5), mt5.ORDER_TYPE_SELL
 
-    req = {"action":mt5.TRADE_ACTION_DEAL,"symbol":sym,"volume":lot,"type":ot,
-           "price":p,"sl":sl,"tp":tp,"deviation":10,"magic":20260718,
-           "comment":f"HFv3 {sig['bias']}","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}
+    req = {"action": mt5.TRADE_ACTION_DEAL, "symbol": sym, "volume": lot, "type": ot,
+           "price": p, "sl": sl, "tp": tp, "deviation": 10, "magic": 20260718,
+           "comment": f"HFv3 {sig['bias']}", "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC}
     res = mt5.order_send(req)
     if res and res.retcode == 10009:
         log.info(f"{sig['bias'].upper()} {lot} {sym} @ {p:.5f} SL={sl} TP={tp}")
         with open(LOG_FILE, 'a', newline='') as f:
             w = csv.writer(f)
             if not LOG_FILE.exists() or LOG_FILE.stat().st_size == 0:
-                w.writerow(["time","action","symbol","lot","price","sl","tp","atr","providers","result"])
-            srcs = ",".join(v["source"] for v in sig.get("votes",[]))
-            w.writerow([datetime.now().isoformat(), f"open_{sig['bias']}", sym, lot, p, sl, tp, round(atr,6), srcs, "executed"])
+                w.writerow(["time", "action", "symbol", "lot", "price", "sl", "tp", "atr", "providers", "result"])
+            srcs = ",".join(v["source"] for v in sig.get("votes", []))
+            w.writerow([datetime.now().isoformat(), f"open_{sig['bias']}", sym, lot, p, sl, tp, round(atr, 6), srcs, "executed"])
         return res.order
     log.warning(f"Order fail: {res.retcode if res else 'NONE'} {res.comment if res else ''}")
     return None
