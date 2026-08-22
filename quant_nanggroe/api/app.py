@@ -352,6 +352,11 @@ def create_app() -> FastAPI:
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
+    # GATE-6 compat: legacy dashboard paths for multi-account endpoints
+    app.add_api_route("/api/accounts", trading.list_accounts, methods=["GET"],
+                      tags=["Trading"], include_in_schema=False)
+    app.add_api_route("/api/accounts/ledger", trading.get_account_ledger,
+                      methods=["GET"], tags=["Trading"], include_in_schema=False)
     app.include_router(trade_history.router, prefix="/api/trading", tags=["Trading"])
     app.include_router(orderbook.router, prefix="/api/market", tags=["Market"])
     app.include_router(agents.router, prefix="/api/agents", tags=["Agents"])

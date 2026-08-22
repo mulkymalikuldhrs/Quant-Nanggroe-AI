@@ -394,6 +394,11 @@ export const brokersApi = {
       method: "POST",
       body: acc,
     }),
+  // GATE-6: multi-account (all logged-in MT5 terminals + all-ever-connected)
+  accounts: () =>
+    apiRequest<{ accounts: Array<{ login: number; server: string; name: string; equity: number; balance: number; currency: string; terminal_path: string }>; count: number }>("/api/trading/accounts"),
+  ledger: () =>
+    apiRequest<LedgerResponse>("/api/accounts/ledger"),
 };
 
 export const schedulerApi = {
@@ -524,6 +529,14 @@ export interface BrokerListResponse { accounts: BrokerAccount[]; count: number; 
 export interface BrokerPosition { symbol: string; side: string; quantity: number; entry_price: number; current_price: number; unrealized_pnl: number; }
 export interface BrokerPositionsResponse { account: string; positions: BrokerPosition[]; }
 export interface MT5AccountInfo { login: number; balance: number; equity: number; margin: number; margin_free: number; margin_level: number; server: string; currency: string; leverage: number; }
+
+// ── Account Ledger (GATE-6: all-ever-connected MT5 accounts) ──────
+export interface LedgerAccount {
+  login: number; name: string; server: string; group: string;
+  first_seen: string; last_seen: string; total_trades: number;
+  total_pnl: number; status: string;
+}
+export interface LedgerResponse { accounts: LedgerAccount[]; count: number; }
 export interface OrderBookLevel {
   price: number;
   quantity: number;
