@@ -438,12 +438,21 @@ def create_app() -> FastAPI:
             except Exception:
                 pass
         status = "degraded" if kill_active else "healthy"
+        # FAZE 0 (replan): include journal stats so dashboard + tray show
+        # real P&L at a glance without hitting a separate endpoint.
+        journal = {}
+        try:
+            from quant_nanggroe.engine.journal_sync import get_journal_stats
+            journal = get_journal_stats()
+        except Exception:
+            pass
         return {
             "status": status,
             "startup_complete": str(ready),
             "service": "quant-nanggroe-ai",
             "kill_switch_active": kill_active,
             "kill_switch_reason": kill_reason,
+            "journal": journal,
         }
 
     @app.get("/config")

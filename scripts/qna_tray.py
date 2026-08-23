@@ -105,10 +105,21 @@ class QNATray:
             r = requests.get(f"{API_URL}/health", timeout=4)
             data = r.json() if r.status_code == 200 else {}
             ks = data.get("kill_switch_active")
+            # Show real P&L in tray tooltip
+            j = data.get("journal", {})
+            pnl = j.get("net_pnl")
+            trades = j.get("total_trades", 0)
+            if pnl is not None:
+                self._pnl_label = f"P&L: ${pnl:+.2f} ({trades} trades)"
+            else:
+                self._pnl_label = ""
             return "online" if not ks else "error"
         except Exception:
+            self._pnl_label = ""
             proc_alive = self._backend_proc and self._backend_proc.poll() is None
             return "error" if proc_alive else "offline"
+
+    _pnl_label = ""
 
     def _health_loop(self) -> None:
         while self.icon.visible or True:
@@ -117,8 +128,8 @@ class QNATray:
                 self.state = new
                 self.icon.icon = _icon_image(COLORS[new])
             label = {
-                "online": "QNA: ONLINE — trading live",
-                "error": "QNA: ERROR — kill switch active / degraded",
+                "online": f"QNA: ONLINE — trading live{(' | ' + self._pnl_label) if self._pnl_label else ''}",
+                "error": f"QNA: ERROR — kill switch active / degraded{(' | ' + self._pnl_label) if self._pnl_label else ''}",
                 "offline": "QNA: OFFLINE — backend down",
             }[new]
             self.icon.title = label
