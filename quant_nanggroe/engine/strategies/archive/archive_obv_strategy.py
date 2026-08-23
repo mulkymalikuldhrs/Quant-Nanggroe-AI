@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchiveObvStrategyStrategy(Strategy):
+class ArchiveObvStrategy(Strategy):
     """Archive wrapper for obv_strategy strategy (pre-consolidation)."""
 
     name = "archive_obv_strategy"

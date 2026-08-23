@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchiveMfiStrategyStrategy(Strategy):
+class ArchiveMfiStrategy(Strategy):
     """Archive wrapper for mfi_strategy strategy (pre-consolidation)."""
 
     name = "archive_mfi_strategy"

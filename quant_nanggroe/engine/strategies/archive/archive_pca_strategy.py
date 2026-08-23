@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchivePcaStrategyStrategy(Strategy):
+class ArchivePcaStrategy(Strategy):
     """Archive wrapper for pca_strategy strategy (pre-consolidation)."""
 
     name = "archive_pca_strategy"

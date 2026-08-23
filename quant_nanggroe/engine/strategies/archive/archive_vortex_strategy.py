@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchiveVortexStrategyStrategy(Strategy):
+class ArchiveVortexStrategy(Strategy):
     """Archive wrapper for vortex_strategy strategy (pre-consolidation)."""
 
     name = "archive_vortex_strategy"

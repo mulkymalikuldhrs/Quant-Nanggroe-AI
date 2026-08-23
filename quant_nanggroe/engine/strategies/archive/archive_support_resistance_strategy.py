@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchiveSupportResistanceStrategyStrategy(Strategy):
+class ArchiveSupportResistanceStrategy(Strategy):
     """Archive wrapper for support_resistance_strategy strategy (pre-consolidation)."""
 
     name = "archive_support_resistance_strategy"

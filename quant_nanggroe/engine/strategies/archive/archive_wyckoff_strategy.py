@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchiveWyckoffStrategyStrategy(Strategy):
+class ArchiveWyckoffStrategy(Strategy):
     """Archive wrapper for wyckoff_strategy strategy (pre-consolidation)."""
 
     name = "archive_wyckoff_strategy"

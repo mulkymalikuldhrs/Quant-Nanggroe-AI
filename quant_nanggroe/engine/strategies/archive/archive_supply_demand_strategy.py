@@ -12,7 +12,7 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 
 @StrategyRegistry.register
-class ArchiveSupplyDemandStrategyStrategy(Strategy):
+class ArchiveSupplyDemandStrategy(Strategy):
     """Archive wrapper for supply_demand_strategy strategy (pre-consolidation)."""
 
     name = "archive_supply_demand_strategy"
