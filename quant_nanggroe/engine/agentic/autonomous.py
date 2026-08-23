@@ -1814,6 +1814,24 @@ class AutonomousPipeline:
                 results.append(PipelineResult(symbol=sym, success=False, reason=str(exc)))
                 self.correction.record("pipeline_batch", f"Pipeline failed for {sym}", str(exc), LessonSeverity.ERROR)
 
+        # ── Journal sync: pull real MT5 deals into journal ──────────
+        # FAZE 0 (replan): closes the feedback loop — self-evaluate and
+        # self-evolve need REAL MT5 PnL data, not stale/missing journal.
+        try:
+            from quant_nanggroe.engine.journal_sync import sync_mt5_deals
+            sync_result = sync_mt5_deals()
+            if sync_result.get("inserted", 0) or sync_result.get("updated", 0):
+                logger.info(
+                    "Journal sync: +%d new, ~%d updated, session PnL=%.2f, "
+                    "journal total=%d trades net=%.2f",
+                    sync_result["inserted"], sync_result["updated"],
+                    sync_result["total_pnl"],
+                    sync_result.get("journal_total_trades", 0),
+                    sync_result.get("journal_net_pnl", 0),
+                )
+        except Exception as exc:
+            logger.warning("Journal sync failed (non-blocking): %s", exc)
+
         # ── Self-evolution loop (post-batch) ─────────────────────────
         try:
             self._post_batch_evolution()
