@@ -180,7 +180,9 @@ export default function PipelinePage() {
     return () => clearInterval(interval);
   }, [autoRefresh, fetchPipelineStatus]);
 
-  const components = liveData || PIPELINE_COMPONENTS;
+  // fail-closed: show empty state when backend unavailable, never fabricated metrics
+  const components = liveData ?? [];
+  const usingFallback = !liveData;
   const filtered = filter === "all" ? components : components.filter((c: PipelineComponent) => c.status === filter);
 
   // ── PipelineCard (moved inside for closure access) ─────────────

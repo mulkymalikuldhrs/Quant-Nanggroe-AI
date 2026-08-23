@@ -137,7 +137,7 @@ export default function MarketPage() {
     return () => { chart?.remove(); };
   }, [chartType, candles]);
 
-  const fearGreed = sentiment?.fear_greed ?? 55;
+  const fearGreed = sentiment?.fear_greed ?? null;
 
   return (
     <div className="space-y-4 animate-slide-up">
@@ -262,7 +262,7 @@ export default function MarketPage() {
                 <div className="relative w-48 h-24">
                   <svg viewBox="0 0 200 100" className="w-full h-full">
                     <path d="M 20 90 A 80 80 0 0 1 180 90" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={12} strokeLinecap="round" />
-                    <path d="M 20 90 A 80 80 0 0 1 180 90" fill="none" stroke="url(#fearGreedGrad)" strokeWidth={12} strokeLinecap="round" strokeDasharray={`${(fearGreed / 100) * 251.2} 251.2`} />
+                    <path d="M 20 90 A 80 80 0 0 1 180 90" fill="none" stroke="url(#fearGreedGrad)" strokeWidth={12} strokeLinecap="round" strokeDasharray={`${((fearGreed ?? 0) / 100) * 251.2} 251.2`} />
                     <defs>
                       <linearGradient id="fearGreedGrad" x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stopColor="#ef4444" /><stop offset="50%" stopColor="#f59e0b" /><stop offset="100%" stopColor="#10b981" />
@@ -270,21 +270,17 @@ export default function MarketPage() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
-                    <span className="text-3xl font-mono font-bold text-emerald-400">{fearGreed}</span>
-                    <span className="text-xs text-white/40">{fearGreed > 60 ? "Greed" : fearGreed > 40 ? "Neutral" : "Fear"}</span>
+                    <span className="text-3xl font-mono font-bold text-emerald-400">{fearGreed ?? "—"}</span>
+                    {fearGreed !== null && <span className="text-xs text-white/40">{fearGreed > 60 ? "Greed" : fearGreed > 40 ? "Neutral" : "Fear"}</span>}
+                    {fearGreed === null && <span className="text-xs text-white/30">No data</span>}
                   </div>
                 </div>
               </div>
             </ChartCard>
             <ChartCard title="Sector Sentiment" subtitle="By sector analysis">
-              <div className="space-y-3">
-                {(sentiment?.sectors ?? [
-                  { name: "Technology", sentiment: 0.72 },
-                  { name: "Crypto", sentiment: 0.65 },
-                  { name: "Energy", sentiment: 0.48 },
-                  { name: "Healthcare", sentiment: 0.55 },
-                  { name: "Financials", sentiment: 0.42 },
-                ]).map((sector) => (
+              {(sentiment?.sectors?.length ?? 0) > 0 ? (
+               <div className="space-y-3">
+                {(sentiment!.sectors ?? []).map((sector) => (
                   <div key={sector.name}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-white/50">{sector.name}</span>
@@ -297,9 +293,12 @@ export default function MarketPage() {
                         style={{ width: `${sector.sentiment * 100}%` }} />
                     </div>
                   </div>
-                ))}
-              </div>
-            </ChartCard>
+                 ))}
+               </div>
+              ) : (
+                <p className="text-sm text-white/30 py-6 text-center">No sector sentiment data — backend unavailable.</p>
+              )}
+             </ChartCard>
           </div>
         </TabsContent>
 

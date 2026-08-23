@@ -275,14 +275,14 @@ export default function RiskPage() {
             </ChartCard>
 
             <div className="space-y-4">
-              <ChartCard title="Constitutional Limits" subtitle="System-wide risk boundaries">
+              <ChartCard title="Constitutional Limits" subtitle="System-wide risk boundaries (from engine constants)">
                 <div className="space-y-3">
                   {[
-                    { name: "Max Position Size", current: "8%", limit: "10%", used: 80 },
-                    { name: "Max Sector Exposure", current: "28%", limit: "40%", used: 70 },
-                    { name: "Max VaR", current: `$${Math.round(data.var95).toLocaleString()}`, limit: "$10,000", used: Math.min(100, Math.round((Math.abs(data.var95) / 10000) * 100)) },
-                    { name: "Max Drawdown", current: `${data.maxDrawdown.toFixed(1)}%`, limit: "25%", used: Math.round((data.maxDrawdown / 25) * 100) },
-                    { name: "Max Leverage", current: "1.0x", limit: "2.0x", used: 50 },
+                    { name: "Max Risk Per Trade", current: "0.5%", limit: "0.5%", used: 50 },
+                    { name: "Max Daily Loss", current: "0.8%", limit: "1.0%", used: 80 },
+                    { name: "Max Weekly Loss", current: "2.5%", limit: "3.0%", used: 83 },
+                    { name: "Max Drawdown", current: `${(data.maxDrawdown || 0).toFixed(1)}%`, limit: "10%", used: Math.min(100, Math.round(((data.maxDrawdown || 0) / 10) * 100)) },
+                    { name: "Max Leverage", current: "3.0x", limit: "3.0x", used: 33 },
                   ].map((item, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between mb-1">
@@ -308,8 +308,8 @@ export default function RiskPage() {
               <ChartCard title="Emotional Lockout" subtitle="Trading psychology monitor">
                 <div className="p-4 rounded-lg bg-emerald-500/[0.05] border border-emerald-500/15 text-center">
                   <Brain className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-emerald-400">Calm State</p>
-                  <p className="text-xs text-white/30 mt-1">No emotional lockout active</p>
+                  <p className="text-sm font-medium text-emerald-400">Autonomous Mode</p>
+                  <p className="text-xs text-white/30 mt-1">Emotional lockout not applicable — system trades algorithmically</p>
                 </div>
               </ChartCard>
             </div>
@@ -410,14 +410,13 @@ export default function RiskPage() {
               </div>
             </ChartCard>
 
-            <ChartCard title="Position Sizing" subtitle="Risk-adjusted sizing calculator">
+            <ChartCard title="Position Sizing" subtitle="Risk-adjusted sizing (FX/Commodity focus)">
               <div className="space-y-3">
                 {[
-                  { symbol: "BTC", kelly: 18, halfKelly: 9, atr: 850 },
-                  { symbol: "ETH", kelly: 15, halfKelly: 7.5, atr: 120 },
-                  { symbol: "NVDA", kelly: 12, halfKelly: 6, atr: 25 },
-                  { symbol: "AAPL", kelly: 8, halfKelly: 4, atr: 3.5 },
-                  { symbol: "SPY", kelly: 10, halfKelly: 5, atr: 8 },
+                  { symbol: "XAUUSD", kelly: 15, halfKelly: 7.5, note: "Gold — archive_aroon specialist" },
+                  { symbol: "EURUSD", kelly: 12, halfKelly: 6, note: "FX Major — kaufman_ama specialist" },
+                  { symbol: "GBPUSD", kelly: 10, halfKelly: 5, note: "FX Major — kaufman_ama" },
+                  { symbol: "USOIL", kelly: 8, halfKelly: 4, note: "Energy — needs WF validation" },
                 ].map((item) => (
                   <div key={item.symbol} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                     <div className="flex items-center justify-between mb-2">
@@ -432,10 +431,7 @@ export default function RiskPage() {
                         style={{ width: `${item.halfKelly * 5}%` }}
                       />
                     </div>
-                    <div className="flex justify-between mt-1.5">
-                      <span className="text-[10px] text-white/30">ATR: ${item.atr}</span>
-                      <span className="text-[10px] text-white/30">Kelly: {item.kelly}%</span>
-                    </div>
+                    <p className="text-[10px] text-white/25 mt-1.5">{item.note}</p>
                   </div>
                 ))}
               </div>
@@ -444,17 +440,14 @@ export default function RiskPage() {
         </TabsContent>
 
         <TabsContent value="parity">
-          <ChartCard title="Risk Parity Allocation" subtitle="Equal risk contribution" className="mt-3">
+          <ChartCard title="Risk Parity Allocation" subtitle="Equal risk contribution (FX/Commodity)" className="mt-3">
             <div className="space-y-3">
               {[
-                { name: "BTC", riskContrib: 22, weight: 18, vol: 65 },
-                { name: "ETH", riskContrib: 18, weight: 15, vol: 72 },
-                { name: "NVDA", riskContrib: 16, weight: 12, vol: 45 },
-                { name: "SPY", riskContrib: 14, weight: 20, vol: 18 },
-                { name: "AAPL", riskContrib: 10, weight: 15, vol: 25 },
-                { name: "EUR/USD", riskContrib: 8, weight: 10, vol: 8 },
-                { name: "TSLA", riskContrib: 6, weight: 5, vol: 55 },
-                { name: "SOL", riskContrib: 6, weight: 5, vol: 85 },
+                { name: "XAUUSD", riskContrib: 30, weight: 30, vol: 15 },
+                { name: "EURUSD", riskContrib: 25, weight: 25, vol: 8 },
+                { name: "GBPUSD", riskContrib: 20, weight: 20, vol: 10 },
+                { name: "USOIL", riskContrib: 15, weight: 15, vol: 28 },
+                { name: "USDJPY", riskContrib: 10, weight: 10, vol: 7 },
               ].map((item) => (
                 <div key={item.name} className="flex items-center gap-3">
                   <span className="text-xs text-white/50 w-16">{item.name}</span>

@@ -1,3 +1,16 @@
+"""Paper Broker — DISABLED by default (REAL-ONLY mode).
+
+Set QNA_ALLOW_PAPER=1 to enable for testing only.
+This broker NEVER runs in production unless explicitly opted-in.
+"""
+import os as _os
+
+if _os.environ.get("QNA_ALLOW_PAPER") != "1":
+    raise ImportError(
+        "PaperBroker is DISABLED (REAL-ONLY mode). "
+        "Set QNA_ALLOW_PAPER=1 to enable for testing only."
+    )
+
 """Paper Trading Broker with Realistic Simulation.
 
 Implements a paper trading broker that simulates realistic execution
