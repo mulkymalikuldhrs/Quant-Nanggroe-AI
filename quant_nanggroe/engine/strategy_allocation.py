@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -115,3 +115,28 @@ def admitted_for_symbol(symbol: str) -> Optional[List[str]]:
     logger.info("CPCV allocation for %s (%s): %d admitted %s",
                 symbol, asset, len(admitted), admitted)
     return admitted
+
+
+_TUNING_PATH = Path("data/tuning_results.json")
+
+
+def best_params_for(strategy: str, symbol: str) -> Optional[Dict[str, Any]]:
+    """Tuned params for a strategy on a symbol's asset class.
+
+    Reads ``data/tuning_results.json`` (written by
+    ``scripts/run_param_tuning.py``). Returns None when no tuning data
+    exists — caller uses strategy defaults.
+    """
+    try:
+        data = json.loads(_TUNING_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    per_symbol = data.get(strategy, {})
+    asset = _lookup_asset(symbol)
+    entry = per_symbol.get(asset) if asset else None
+    if entry and entry.get("improved"):
+        return dict(entry.get("best_params", {}))
+    # even non-improved entries may have valid best params (equal to baseline)
+    if entry and entry.get("best_params"):
+        return dict(entry["best_params"])
+    return None

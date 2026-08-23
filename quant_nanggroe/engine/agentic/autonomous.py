@@ -1315,6 +1315,19 @@ class AutonomousPipeline:
         for name in candidates:
             try:
                 strat = create_strategy(name, lifecycle=self._lifecycle)
+                # Per-symbol tuned params (CANONICAL 15.6 → tuning_results):
+                # inject best CPCV-tuned params for this symbol's asset class.
+                try:
+                    from quant_nanggroe.engine.strategy_allocation import best_params_for
+                    from quant_nanggroe.engine.strategies.base import StrategyParameters as _SP
+                    tuned = best_params_for(name, symbol)
+                    if tuned and hasattr(strat, "_parameters"):
+                        for k, v in tuned.items():
+                            strat._parameters.set(k, v)
+                        logger.debug("Injected tuned params for %s on %s: %s",
+                                     name, symbol, tuned)
+                except Exception:
+                    pass  # tuning is additive — never block signal generation
                 result = strat.generate_signal(df)
                 sig, conf, reason = self._extract_signal(result, name)
                 if sig != "hold" and conf > 0.0:
