@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Phase 5: Optimize Kelly fraction, lot sizing, SL/TP multipliers for top gate-passing strategies."""
+"""Phase 5: Optimize Kelly fraction, lot sizing, SL/TP multipliers for top gate-passing strategies.
+Uses correct QNA Strategy API (generate_signal -> StrategySignal)."""
 import sys, os, json
 from pathlib import Path
 from datetime import datetime
 
 ROOT = r"D:\repositories\Quant-Nanggroe-AI-worktree"
 sys.path.insert(0, ROOT)
-os.environ["PYTHONPATH"] = ROOT
 
 import numpy as np
 import pandas as pd
@@ -25,18 +25,14 @@ def load_eurusd():
     return df
 
 
-def backtest_simple(df, strat_name, params, sl_mult=1.5, tp_mult=2.0, kelly_frac=0.25, lot_balance_ratio=10000):
-    from quant_nanggroe.engine.strategies.registry import get_strategy
-    strat_class = get_strategy(strat_name)
+def backtest_qna(df, strat_name, strat_params, kelly_frac=0.25, sl_mult=1.5, tp_mult=2.0, lot_balance_ratio=10000):
+    from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+    from quant_nanggroe.engine.strategies.base import SignalDirection
+
+    strat_class = StrategyRegistry.create(strat_name, parameters=strat_params) if strat_params else StrategyRegistry.create(strat_name)
     if strat_class is None:
         return None
-    strat = strat_class(parameters=params) if params else strat_class()
-    signals = strat.generate_signals(df)
-    if signals is None or len(signals) == 0:
-        return None
 
-    close = df["close"].values
-    n = len(close)
     equity = 10000.0
     peak_equity = equity
     max_dd = 0.0
@@ -50,44 +46,53 @@ def backtest_simple(df, strat_name, params, sl_mult=1.5, tp_mult=2.0, kelly_frac
     tp_price = 0
     atr_val = 0.001
 
-    for i in range(1, n):
-        if i >= 14:
-            high_r = df["high"].iloc[max(0, i - 14) : i + 1].values
-            low_r = df["low"].iloc[max(0, i - 14) : i + 1].values
-            close_r = df["close"].iloc[max(0, i - 14) : i + 1].values
-            tr = np.maximum(high_r - low_r, np.abs(high_r - np.roll(close_r, 1)))
-            tr[0] = high_r[0] - low_r[0]
-            atr_val = np.mean(tr)
+    # Precompute ATR series for SL/TP distance
+    atr_series = pd.Series(index=df.index, dtype=float)
+    for i in range(14, len(df)):
+        high_r = df["high"].iloc[max(0, i - 14): i + 1].values
+        low_r = df["low"].iloc[max(0, i - 14): i + 1].values
+        close_r = df["close"].iloc[max(0, i - 14): i + 1].values
+        tr = np.maximum(high_r - low_r, np.abs(high_r - np.roll(close_r, 1)))
+        tr[0] = high_r[0] - low_r[0]
+        atr_series.iloc[i] = np.mean(tr)
+    atr_series = atr_series.ffill().fillna(df["close"].iloc[0] * 0.001)
 
-        sig = signals.iloc[i] if i < len(signals) else 0
+    # Warmup period for strategy (generate_signal needs enough history)
+    warmup = 50
+
+    for i in range(warmup, len(df)):
+        window = df.iloc[:i + 1]
+        sig = strat_class.generate_signal(window)
 
         if position != 0:
             if position == 1:
-                if close[i] <= sl_price:
+                if df["close"].iloc[i] <= sl_price:
                     pnl = (sl_price - entry_price) / entry_price * equity
                     equity += pnl; total_pnl += pnl; pnl_list.append(pnl); trades += 1
                     if pnl > 0: wins += 1
                     position = 0
-                elif close[i] >= tp_price:
+                elif df["close"].iloc[i] >= tp_price:
                     pnl = (tp_price - entry_price) / entry_price * equity
                     equity += pnl; total_pnl += pnl; pnl_list.append(pnl); trades += 1
                     if pnl > 0: wins += 1
                     position = 0
             elif position == -1:
-                if close[i] >= sl_price:
+                if df["close"].iloc[i] >= sl_price:
                     pnl = (entry_price - sl_price) / entry_price * equity
                     equity += pnl; total_pnl += pnl; pnl_list.append(pnl); trades += 1
                     if pnl > 0: wins += 1
                     position = 0
-                elif close[i] <= tp_price:
+                elif df["close"].iloc[i] <= tp_price:
                     pnl = (entry_price - tp_price) / entry_price * equity
                     equity += pnl; total_pnl += pnl; pnl_list.append(pnl); trades += 1
                     if pnl > 0: wins += 1
                     position = 0
 
-        if position == 0 and sig != 0:
-            sl_dist = atr_val * sl_mult if atr_val > 0 else close[i] * 0.001
-            tp_dist = atr_val * tp_mult if atr_val > 0 else close[i] * 0.002
+        # Entry on non-HOLD signal
+        if position == 0 and sig.direction != SignalDirection.HOLD and sig.confidence > 0:
+            atr_val = atr_series.iloc[i]
+            sl_dist = atr_val * sl_mult if atr_val > 0 else df["close"].iloc[i] * 0.001
+            tp_dist = atr_val * tp_mult if atr_val > 0 else df["close"].iloc[i] * 0.002
 
             if trades > 5:
                 win_rate = wins / trades
@@ -102,12 +107,12 @@ def backtest_simple(df, strat_name, params, sl_mult=1.5, tp_mult=2.0, kelly_frac
                 kelly_actual = kelly_frac
 
             lot_size = max(0.01, min(equity / lot_balance_ratio, equity * kelly_actual / (max(sl_dist, 0.0001) * 10000)))
-            entry_price = close[i]
-            if sig == 1:
+            entry_price = df["close"].iloc[i]
+            if sig.direction == SignalDirection.BUY:
                 sl_price = entry_price - sl_dist
                 tp_price = entry_price + tp_dist
                 position = 1
-            elif sig == -1:
+            elif sig.direction == SignalDirection.SELL:
                 sl_price = entry_price + sl_dist
                 tp_price = entry_price - tp_dist
                 position = -1
@@ -132,34 +137,27 @@ def main():
     df = load_eurusd()
     print(f"Loaded {len(df)} bars EURUSD", flush=True)
 
+    # Top gate-passing strategies from previous audits
     strategies = {
-        "WyckoffStrategy": {
+        "wyckoff": {
             "base": {"lookback": 50, "volume_threshold": 1.3},
-            "tune": {
-                "lookback": [30, 50, 70],
-                "volume_threshold": [1.0, 1.3, 1.5],
-            }
+            "tune": {"lookback": [30, 50, 70], "volume_threshold": [1.0, 1.3, 1.5]},
         },
-        "MeanReversionStrategy": {
+        "mean_rev": {
             "base": {"k_period": 14, "d_period": 3, "oversold": 20, "overbought": 80},
-            "tune": {
-                "k_period": [10, 14, 20],
-                "d_period": [3, 5],
-                "oversold": [20, 25],
-                "overbought": [75, 80],
-            }
+            "tune": {"k_period": [10, 14, 20], "d_period": [3, 5], "oversold": [20, 25], "overbought": [75, 80]},
         },
-        "DhaherSystem": {
-            "base": {"lookback": 14, "atr_mult": 1.5, "rr_min": 2.0, "min_confluence": 2},
-            "tune": {
-                "lookback": [14, 20],
-                "atr_mult": [1.2, 1.5, 2.0],
-                "rr_min": [2.0, 2.5],
-                "min_confluence": [1, 2],
-            }
+        "dhaher_system": {
+            "base": {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2},
+            "tune": {"lookback": [14, 17, 20, 25], "atr_mult": [1.0, 1.2, 1.5], "rr_min": [2.0, 2.5, 3.0], "min_confluence": [2, 3]},
+        },
+        "smc": {
+            "base": {"swing_length": 5, "min_ob_strength": 30},
+            "tune": {"swing_length": [3, 5, 7], "min_ob_strength": [10, 20, 30, 50]},
         },
     }
 
+    # Risk param combos
     risk_combos = [
         {"kelly_fraction": kf, "sl_mult": sl, "tp_mult": 2.0, "lot_balance_ratio": lb}
         for kf in [0.15, 0.25, 0.35]
@@ -184,7 +182,7 @@ def main():
             for rc in risk_combos:
                 combo_count += 1
                 try:
-                    result = backtest_simple(
+                    result = backtest_qna(
                         df, strat_name, test_params,
                         sl_mult=rc["sl_mult"], tp_mult=rc["tp_mult"],
                         kelly_frac=rc["kelly_fraction"],
@@ -199,7 +197,9 @@ def main():
                             "metrics": result,
                             "score": round(score, 4),
                         })
-                except Exception:
+                except Exception as e:
+                    if combo_count % 100 == 0:
+                        print(f"  ERR {combo_count}: {e}", flush=True)
                     pass
 
                 if combo_count % 100 == 0:
@@ -209,7 +209,7 @@ def main():
     print(f"\nTotal combinations tested: {combo_count}", flush=True)
     print(f"Valid results: {len(all_results)}", flush=True)
 
-    for i, r in enumerate(all_results[:5]):
+    for i, r in enumerate(all_results[:10]):
         print(f"  {i+1}. {r['strategy']} score={r['score']:.4f} {r['metrics']}", flush=True)
 
     out_path = Path(ROOT) / "results" / "param_optimization.json"
