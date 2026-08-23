@@ -36,6 +36,14 @@ export default function StrategiesPage() {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [comparison, setComparison] = useState<StrategyComparison | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  // CANONICAL 15.6: per-symbol CPCV specialists
+  const [allocationMap, setAllocationMap] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    apiRequest<{ allocation_map: Record<string, string[]> }>("/api/export/allocation")
+      .then((d) => setAllocationMap(d.allocation_map || {}))
+      .catch(() => { /* allocation optional */ });
+  }, []);
 
   const loadStrategies = async () => {
     setLoading(true);
@@ -279,6 +287,35 @@ export default function StrategiesPage() {
         <StatusCard title="WF Validated" value={String(wfStatus?.validated_count || 0)} variant="info" />
         <StatusCard title="Avg Sharpe" value={(() => { const avg = strategies.reduce((s, st) => { const bt = (st as any).backtest; return s + (bt?.btc_sharpe || 0); }, 0) / (strategies.length || 1); return avg.toFixed(2); })()} />
       </div>
+
+      {/* CANONICAL 15.6: per-symbol CPCV specialists */}
+      {Object.keys(allocationMap).length > 0 && (
+        <ChartCard title="Per-Symbol Specialists"
+          subtitle="CPCV-proven allocation — only these strategies trade each asset class (combo-profit-share ≥ 50%)">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              { key: "BTC-USD", label: "Crypto (BTC/ETH/SOL)", icon: "₿" },
+              { key: "EURUSD=X", label: "Forex Majors", icon: "$" },
+              { key: "GC=F", label: "Gold / Metals", icon: "Au" },
+            ].map(({ key, label, icon }) => (
+              <div key={key} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-6 h-6 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center text-[10px] font-bold">{icon}</span>
+                  <span className="text-xs font-medium text-white/70">{label}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(allocationMap[key] || []).map((s) => (
+                    <Badge key={s} variant="info" className="text-[10px] font-mono">{s}</Badge>
+                  ))}
+                  {!(allocationMap[key] || []).length && (
+                    <span className="text-[10px] text-white/25">No proven specialists</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      )}
 
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3">

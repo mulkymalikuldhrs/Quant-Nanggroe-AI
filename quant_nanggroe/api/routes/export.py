@@ -232,3 +232,22 @@ async def export_awareness(date_from: Optional[str] = None,
     items = explain_journal(date_from=date_from, date_to=date_to,
                             strategy=strategy, limit=limit)
     return {"items": items, "count": len(items)}
+
+
+@router.get("/allocation")
+async def strategy_allocation_view(symbol: Optional[str] = None) -> dict:
+    """CANONICAL 15.6: per-symbol CPCV specialists view.
+
+    No ``symbol`` -> full allocation map (asset class -> admitted strategies).
+    With ``symbol`` -> admitted list for that symbol (None evidence => null).
+    """
+    from quant_nanggroe.engine import strategy_allocation as sa
+    if symbol:
+        admitted = sa.admitted_for_symbol(symbol)
+        return {"symbol": symbol, "admitted": admitted,
+                "threshold": sa.MIN_COMBO_PROFIT_SHARE}
+    return {
+        "allocation_map": sa.allocation_map(),
+        "threshold": sa.MIN_COMBO_PROFIT_SHARE,
+        "asset_map": {k: v for k, v in sorted(sa.SYMBOL_ASSET_MAP.items())},
+    }
