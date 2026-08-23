@@ -25,6 +25,7 @@ Constitutional Risk Limits (HARDCODED — no override):
     Max trades/day:        5
 """
 
-__version__ = "6.1.0"  # ponytail: keep in sync with pyproject.toml
+__version__ = "5.1.0"  # ponytail: keep in sync with pyproject.toml
 __author__ = "Quant Nanggroe AI Team"
 QNA_VERSION = __version__
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-7d9a88c4af78.sh.tmp.XXXXXXXXXX': No such file or directory
