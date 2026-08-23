@@ -149,6 +149,11 @@ class MT5Broker(BrokerConnector):
             "type_filling": self._mt5.ORDER_FILLING_FOK,
             "type_time": self._mt5.ORDER_TIME_GTC,
         }
+        # FAZE 0.3: strategy attribution via MT5 comment field
+        strat = (order.metadata.get("strategy_name", "")
+                 if hasattr(order, "metadata") and isinstance(order.metadata, dict)
+                 else "") or "qna"
+        req["comment"] = str(strat)[:31]  # MT5 comment max ~31 chars
         if order.stop_loss is not None:
             req["sl"] = float(order.stop_loss)
         if order.take_profit is not None:

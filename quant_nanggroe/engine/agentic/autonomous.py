@@ -1631,7 +1631,9 @@ class AutonomousPipeline:
                 order_type=OrderType.MARKET, quantity=qty,
                 status=OrderStatus.PENDING,
                 stop_loss=order_sl, take_profit=order_tp,
-                metadata={"confidence": confidence},
+                metadata={"confidence": confidence,
+                          "strategy_name": strategy_name or "ensemble",
+                          "symbol": symbol},
             )
             fill = await em.execute_order(order)
             reason = "filled"
