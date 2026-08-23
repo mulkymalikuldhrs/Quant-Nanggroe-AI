@@ -1599,8 +1599,33 @@ class AutonomousPipeline:
                     order_sl = prev_fd['sl']
                     order_tp = prev_fd['tp']
                 else:
-                    order_sl = current_price * 0.95 if signal == "buy" else (current_price * 1.05 if signal == "sell" else 0.0)
-                    order_tp = current_price * 1.05 if signal == "buy" else (current_price * 0.95 if signal == "sell" else 0.0)
+                    # GATE: ATR + timeframe-profile adaptive SL/TP (replaces
+                    # hardcoded 5% which was too wide for forex, too tight
+                    # for swing BTC). Falls back to 2% if ATR unavailable.
+                    try:
+                        from quant_nanggroe.engine.risk.trading_profile import compute_sl_tp
+                        _atr = atr_val if 'atr_val' in dir() and atr_val else None
+                        if _atr is None or _atr <= 0:
+                            # derive rough ATR from recent bars
+                            try:
+                                h, l, c = df["high"], df["low"], df["close"]
+                                pc = c.shift(1)
+                                tr = pd.concat([(h-l), (h-pc).abs(), (l-pc).abs()], axis=1).max(axis=1)
+                                _atr = float(tr.rolling(14).mean().iloc[-1])
+                            except Exception:
+                                _atr = current_price * 0.01
+                        sltp = compute_sl_tp(
+                            side=signal, entry_price=current_price,
+                            atr_value=_atr, timeframe="H1")
+                        order_sl = sltp["sl"]
+                        order_tp = sltp["tp"]
+                        logger.info("Profile SL/TP %s %s @%.5f -> SL=%.5f TP=%.5f (%s)",
+                                    signal, symbol, current_price,
+                                    order_sl, order_tp, sltp["profile"])
+                    except Exception as sltp_exc:
+                        logger.warning("Profile SL/TP failed, using fixed 2%%: %s", sltp_exc)
+                        order_sl = current_price * (0.98 if signal == "buy" else 1.02)
+                        order_tp = current_price * (1.04 if signal == "buy" else 0.96)
             order = Order(
                 id=str(uuid.uuid4()), symbol=symbol, side=side,
                 order_type=OrderType.MARKET, quantity=qty,
