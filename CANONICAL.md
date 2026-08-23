@@ -623,6 +623,22 @@ python -m ruff check .
 
 **HONEST INSTITUTIONAL FINDING:** zero strategies survive CPCV with worst-combo Sharpe > 0 across all three assets — single strategies are asset/regime-dependent, exactly as de Prado's framework predicts. **Correct deployment is per-symbol allocation**: aroon (gold/BTC core), kaufman_ama (forex/gold), amdx + ict_ote (crypto/gold satellites). One-size-fits-all ensemble admission would dilute specialists with noise. This per-symbol map is the input for the next evolution of `_viable_engine_strategy_names()`.
 
+### 15.7 REPLAN — FAZE 0-1 Complete (2026-08-23)
+
+**Journal-MT5 Sync LIVE:** `engine/journal_sync.py` pulls ALL closed deals from active MT5 terminal every cycle. Backfilled 87 historical deals. Journal now shows 243 trades, net P&L **+$629.98** (matches MT5 terminal).
+
+**Strategy Attribution:** New orders carry `strategy_name` in MT5 comment field via `connectors/mt5_broker.py`. `journal_sync._attribute_strategy()` parses it back. Historical trades remain "unknown" but new trades are properly attributed.
+
+**Per-Symbol Allocation LIVE:** `strategy_allocation.py` reads `data/cpcv_registry.json`, admits only strategies with combo_profit_share ≥ 50% on the symbol's asset class. Wired into autonomous ensemble at `autonomous.py:1283`.
+
+**Tuned Params Injected:** `best_params_for(strategy, symbol)` reads `data/tuning_results.json`, injects CPCV-optimal params per symbol into strategy instances before signal generation.
+
+**Trading Profiles:** scalp(M15)/day(H1)/swing(D1) with ATR-adaptive SL/TP replacing hardcoded 5% fallback.
+
+**Conservative Sizing:** `confidence * 0.05` (was * 0.1). Scale up only after portfolio expectancy > 0 over 50+ live trades.
+
+**52/52 regression tests pass.**
+
 ---
 
 ## 16. Audit Results
