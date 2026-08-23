@@ -19,8 +19,22 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger('dhaher_bt')
 
 from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
-from backtest_pipeline import get_historical, gate_decision
-from risk_module import kelly_fraction, strategy_score
+import yfinance as yf
+
+def get_historical(symbol, days=365, tf="M15"):
+    """Get historical data using yfinance."""
+    try:
+        df = yf.download(f"{symbol}=X", period=f"{days}d", interval="1d", progress=False)
+        if df is None or len(df) < 30:
+            return None
+        # Flatten yfinance MultiIndex columns
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        df = df.rename(columns={"Open":"open","High":"high","Low":"low","Close":"close","Volume":"volume"})
+        df = df[['open','high','low','close','volume']].dropna()
+        return df
+    except Exception:
+        return None
 
 
 def backtest_with_sltp(df, strategy, initial_capital=1000):
