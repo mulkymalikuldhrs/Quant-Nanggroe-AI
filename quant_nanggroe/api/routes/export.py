@@ -251,3 +251,17 @@ async def strategy_allocation_view(symbol: Optional[str] = None) -> dict:
         "threshold": sa.MIN_COMBO_PROFIT_SHARE,
         "asset_map": {k: v for k, v in sorted(sa.SYMBOL_ASSET_MAP.items())},
     }
+
+
+@router.get("/scorecard")
+async def strategy_scorecard() -> dict:
+    """Real per-strategy scorecard from synced journal (FAZE 2).
+
+    Returns expectancy / PF / Sharpe / WR / max_dd / t-statistic per
+    strategy with KEEP/TUNE/KILL verdict. This is the bridge between
+    raw MT5 deals and the self-evolve loop.
+    """
+    from quant_nanggroe.engine.analytics.strategy_scorecard import (
+        compute_all_strategies,
+    )
+    return compute_all_strategies()

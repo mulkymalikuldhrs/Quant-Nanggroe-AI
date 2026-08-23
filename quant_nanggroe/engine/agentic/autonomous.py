@@ -1878,6 +1878,7 @@ class AutonomousPipeline:
                     total_pnl = stats.get("total_pnl", 0)
                     if win_rate < 0.4 and total_pnl < 0:
                         underperformers.append({
+
                             "name": sname,
                             "win_rate": win_rate,
                             "total_pnl": total_pnl,
