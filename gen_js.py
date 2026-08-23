@@ -1,5 +1,8 @@
 import pathlib
 
+ROOT = pathlib.Path(r"D:\repositories\Quant-Nanggroe-AI-worktree")
+JS = ROOT / "quant_nanggroe" / "engine" / "journal_sync.py"
+
 PART1 = '''"""MT5 -> Journal Sync - closes the feedback loop."""
 from __future__ import annotations
 
@@ -101,15 +104,11 @@ def _attribute_strategy(magic, comment, symbol):
 
 '''
 
-js = pathlib.Path(__file__).resolve().parents[0] / ".." / ".." / "quant_nanggroe" / "engine" / "journal_sync.py"
-js = js.resolve()
-old = js.read_text(encoding="utf-8", errors="ignore") if js.exists() else ""
-lines = old.splitlines()
-start = next((i for i, l in enumerate(lines) if "def sync_mt5_deals" in l), None)
-if start is None:
-    print("ERROR: sync_mt5_deals not found in existing file")
-else:
-    body = "\n".join(lines[start:])
-    full = PART1 + "\n\n" + body + "\n"
-    js.write_text(full, encoding="utf-8")
-    print(f"written: {len(full.splitlines())} lines to {js}")
+# Read old file, find sync_mt5_deals body
+old_lines = JS.read_text(encoding="utf-8", errors="ignore").splitlines()
+start = next(i for i, l in enumerate(old_lines) if "def sync_mt5_deals" in l)
+body = "\n".join(old_lines[start:])
+
+full = PART1 + "\n\n" + body + "\n"
+JS.write_text(full, encoding="utf-8")
+print(f"WROTE {len(full.splitlines())} lines to {JS}")
