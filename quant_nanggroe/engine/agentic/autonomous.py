@@ -1580,7 +1580,11 @@ class AutonomousPipeline:
             side = OrderSide.BUY if signal == "buy" else (OrderSide.SELL if signal == "sell" else None)
             if side is None:
                 return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "execution": "hold", "note": "signal=hold, no order"}
-            qty = max(0.01, round(confidence * 0.1, 4))
+            # FAZE 1.2 (replan): conservative sizing until edge proven in live.
+            # Old: confidence * 0.1 → up to 0.09 lots on high confidence.
+            # New: confidence * 0.05 → max 0.045 lots; 0.01 floor for micro accounts.
+            # Scale up only after portfolio expectancy > 0 over 50+ trades.
+            qty = max(0.01, round(confidence * 0.05, 4))
             if current_price > 0:
                 for broker in em._brokers.values():
                     if hasattr(broker, 'set_price'):
