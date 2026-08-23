@@ -19,6 +19,8 @@ sys.path.insert(0, str(_TOOLS_DIR))
 import MetaTrader5 as mt5
 from mtf_framework import STYLES, load_mtf, mtf_signal, strategy_wrapper
 from risk_module import adaptive_risk
+from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
+from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
 
 _HF_DIR = Path(__file__).resolve().parent
 _DATA_DIR = _HF_DIR.parent / "data"
@@ -29,14 +31,15 @@ log = logging.getLogger('mp_hf')
 
 # Phase 5: best params from 24.5k-bar backtest (verified SR>0.5, DD>-25%)
 BEST_STRATEGIES = [
-    # Phase 5 fangbot params — verified best on 24.5k EURUSD M15 bars (WR 42.1%, Sharpe 3.77)
-    # DhaherSystem v1.1 tuning: AND→OR confluence, lookback=20, atr_mult=1.2, rr_min=2.5, min_conf=2, kelly=0.25
-    ("DhaherSystem", {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2}, "Dhaher v1.1 opt", 1.0),
-    # Wyckoff: volume spread filter, lb=50, vm=1.3 (gate-pass from full optimizer grid)
-    ("WyckoffStrategy", {"lookback": 50, "volume_mult": 1.3}, "Wyckoff", 1.0),
-    # MeanReversion: k=14,d=5,os=25,ob=75 (gate-pass from optimizer: Sharpe 1.98, WF +33.7%)
-    ("MeanReversionStrategy", {"k_period": 14, "d_period": 5, "oversold": 25, "overbought": 75}, "MeanRev", 0.85),
+    ("DhaherSystem", {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2, "kelly_fraction": 0.25}, "Dhaher v1.1 opt", 1.0),
+    ("WyckoffStrategy", {"lookback": 50, "volume_mult": 1.3, "kelly_fraction": 0.25}, "Wyckoff", 1.0),
+    ("MeanReversionStrategy", {"k_period": 14, "d_period": 5, "oversold": 25, "overbought": 75, "kelly_fraction": 0.25}, "MeanRev", 0.85),
 ]
+
+# Kelly engine — QUARTER_KELLY verified best for DhaherSystem v1.1
+# Default win_rate/avg_win/avg_loss from WAR_PLAN verified stats (WR 42.1%, SR 3.77)
+_DEFAULT_KELLY_PARAMS = {"win_rate": 0.421, "avg_win": 0.015, "avg_loss": 0.010, "method": KellyMethod.QUARTER}
+_KELLY = KellyCriterion(max_position=MAX_RISK_PER_TRADE, min_position=0.01)
 
 
 def compute_atr(symbol, period=14, tf=mt5.TIMEFRAME_M15):
@@ -50,16 +53,18 @@ def compute_atr(symbol, period=14, tf=mt5.TIMEFRAME_M15):
     return round(sum(trs) / len(trs), 6)
 
 
-def calc_lot(balance, confidence):
+def calc_lot(balance, confidence, kelly_fraction=0.25):
     # Phase 5: Dynamic lot sizing with Kelly fraction cap (0.25 = QUARTER_KELLY)
     # User directive: lot = balance/10000 to balance/5000 scaled by confidence
     # Risk per trade capped at MAX_RISK_PER_TRADE (0.5%)
-    kelly_fraction = 0.25  # QUARTER_KELLY — verified best for DhaherSystem v1.1
+    # ponytail: kelly_fraction now actually scales the lot — was declared dead before
     lot_min = max(0.01, round(balance / 10000, 2))
     lot_max = max(0.02, round(balance / 5000, 2))
-    lot = round(lot_min + (lot_max - lot_min) * confidence, 2)
+    base_lot = round(lot_min + (lot_max - lot_min) * confidence, 2)
+    # Scale by Kelly fraction: 0.25 baseline, higher → larger, lower → smaller
+    lot = round(base_lot * (kelly_fraction / 0.25), 2)
     # Cap by Kelly: max_risk_pct = 0.5%, so max lot = (balance * 0.005) / (sl_pips * pip_value)
-    return min(lot, lot_max)
+    return max(lot_min, min(lot, lot_max))
 
 
 def log_trade(action, symbol, lot, price, sl, tp, atr, result, pnl=""):
@@ -104,6 +109,7 @@ def evaluate_all_pairs(valid_pairs):
             candidates.append({
                 "symbol": symbol, "bias": sig['bias'], "confidence": combined,
                 "style": sig['style'], "strategy": strat_label,
+                "strat_params": dict(strat_params),
                 "htf_bias": sig.get('htf_bias', 'neutral'),
                 "bid": pair['bid'], "ask": pair['ask'], "spread": pair['spread'],
             })
@@ -121,11 +127,15 @@ def execute_best(candidate, balance):
         log.warning(f"  ❌ No tick for {symbol}")
         log_trade(f"fail_{bias}", symbol, 0, 0, 0, 0, 0, "no_tick")
         return False
-    lot = calc_lot(balance, conf)
+    # Phase 5: use strategy params for SL/TP (was hardcoded 2.0×ATR / 2.5×RR)
+    strat_params = candidate.get('strat_params', {})
+    atr_mult = strat_params.get('atr_mult', 2.0)
+    rr_min = strat_params.get('rr_min', 2.5)
+    kelly_fraction = strat_params.get('kelly_fraction', 0.25)
+    lot = calc_lot(balance, conf, kelly_fraction)
     atr_val = compute_atr(symbol)
-    sl_dist = round(max(atr_val * 2, 0.0010), 5)
-    # Phase 5: Use verified rr_min=2.5 for TP distance (was 2.0)
-    tp_multiplier = 2.5
+    sl_dist = round(max(atr_val * atr_mult, 0.0010), 5)
+    tp_multiplier = rr_min
     if bias == "buy":
         price = tick.ask
         sl = round(price - sl_dist, 5)
@@ -210,4 +220,4 @@ def run_multipair_cycle():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
     run_multipair_cycle()
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-f978584ba2f2.sh.tmp.XXXXXXXXXX': No such file or directory
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-93d2c617dbe5.sh.tmp.XXXXXXXXXX': No such file or directory
