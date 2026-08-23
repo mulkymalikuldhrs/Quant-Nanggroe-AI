@@ -1312,11 +1312,12 @@ class AutonomousPipeline:
                 candidates.append(name)
 
         signals: list[tuple[str, float, str, str]] = []
+        signals_named: list[tuple[str, float, str, str, str]] = []
+        signals: list[tuple[str, float, str, str]] = []
         for name in candidates:
             try:
                 strat = create_strategy(name, lifecycle=self._lifecycle)
                 # Per-symbol tuned params (CANONICAL 15.6 → tuning_results):
-                # inject best CPCV-tuned params for this symbol's asset class.
                 try:
                     from quant_nanggroe.engine.strategy_allocation import best_params_for
                     from quant_nanggroe.engine.strategies.base import StrategyParameters as _SP
@@ -1330,9 +1331,10 @@ class AutonomousPipeline:
                     pass  # tuning is additive — never block signal generation
                 result = strat.generate_signal(df)
                 sig, conf, reason = self._extract_signal(result, name)
+                cat = _classify(name)
                 if sig != "hold" and conf > 0.0:
-                    cat = _classify(name)
                     signals.append((sig, conf, reason, cat))
+                    signals_named.append((sig, conf, reason, cat, name))
             except Exception:
                 continue
 
@@ -1341,9 +1343,47 @@ class AutonomousPipeline:
         if not signals:
             return "hold", 0.0, "No strategy produced a signal"
 
+        # ── Signal Aggregation Engine (v8.0) ────────────────────────
+        try:
+            from quant_nanggroe.engine.execution.signal_aggregator import (
+                SignalAggregator, StrategyVote,
+            )
+            agg = SignalAggregator(min_conviction=0.30, risk_per_symbol=0.005)
+
+            votes: list[StrategyVote] = []
+            for sig, conf, reason, cat, sname in signals_named:
+                from quant_nanggroe.engine.strategy_allocation import best_params_for
+                tuned = best_params_for(sname, symbol)
+                w = 1.2 if tuned else 1.0  # boosted weight for tuned strategies
+                votes.append(StrategyVote(
+                    strategy_name=sname or cat,
+                    direction=sig,
+                    confidence=conf,
+                    weight=w,
+                    tuned_params=tuned or {},
+                ))
+
+            aggregated = agg.aggregate(symbol, votes)
+
+            if not aggregated.should_trade:
+                return ("hold", aggregated.conviction,
+                        f"Signal aggregation: conviction={aggregated.conviction:.2f} "
+                        f"< threshold ({aggregated.direction}, "
+                        f"buy_w={aggregated.buy_weight:.2f} sell_w={aggregated.sell_weight:.2f})")
+
+            return (
+                aggregated.direction,
+                min(aggregated.conviction, 1.0),
+                f"Aggregated [{aggregated.direction}] conviction="
+                f"{aggregated.conviction:.2f} contributors="
+                f"{aggregated.contributors} opposers={aggregated.opposers}",
+            )
+        except ImportError:
+            pass  # fallback to legacy below
+
+        # Legacy ensemble voting (kept as fallback if aggregator import fails)
         buy_weight = sum(c * weights.get(cat, 1.0) for sig, c, _, cat in signals if sig == "buy")
         sell_weight = sum(c * weights.get(cat, 1.0) for sig, c, _, cat in signals if sig == "sell")
-        total_weight = buy_weight + sell_weight
 
         if total_weight == 0:
             return "hold", 0.0, "All signals zero weight"
