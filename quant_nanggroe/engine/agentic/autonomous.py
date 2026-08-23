@@ -1838,6 +1838,38 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.warning("Journal sync failed (non-blocking): %s", exc)
 
+        # ── Scorecard: real per-strategy metrics from synced journal ──
+        # FAZE 2 (replan): compute REAL expectancy/PF/Sharpe per strategy,
+        # transition lifecycle states based on verdicts.
+        try:
+            from quant_nanggroe.engine.analytics.strategy_scorecard import (
+                compute_all_strategies,
+            )
+            from quant_nanggroe.engine.strategy_lifecycle import StrategyStatus
+            scores = compute_all_strategies()
+            result["strategies_scored"] = len(scores.get("strategies", {}))
+            if self._lifecycle:
+                for sname, card in scores.get("strategies", {}).items():
+                    if sname not in self._lifecycle.strategies:
+                        continue
+                    verdict = card["verdict"]
+                    n = card["n_trades"]
+                    exp = card["expectancy"]
+                    if verdict == "NEGATIVE_EDGE" and n >= 20:
+                        self._lifecycle._transition(
+                            sname, StrategyStatus.KILLED,
+                            f"Scorecard auto-kill: expectancy={exp}, n={n}")
+                        logger.warning("SCORECARD KILL: %s (exp=%.2f, n=%d)",
+                                       sname, exp, n)
+                    elif verdict in ("PROVEN_GOOD", "MARGINAL_POSITIVE"):
+                        if self._lifecycle.strategies[sname].state != StrategyStatus.ACTIVE:
+                            self._lifecycle._transition(
+                                sname, StrategyStatus.ACTIVE,
+                                f"Scorecard: positive edge")
+                            logger.info("SCORECARD ACTIVATE: %s", sname)
+        except Exception as exc:
+            logger.debug("Scorecard evolution skipped: %s", exc)
+
         # ── Self-evolution loop (post-batch) ─────────────────────────
         try:
             self._post_batch_evolution()
