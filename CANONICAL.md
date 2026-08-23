@@ -2,8 +2,8 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2 acct 372044706), LiveModeGuard active.
-> Version: v7.1.0 | Last verified: 2026-08-21
-> Swarm: 100+ sub-agents autonomous, hedge-fund grade, nonstop
+> Version: v7.2.0 | Last verified: 2026-08-23
+> Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
 
