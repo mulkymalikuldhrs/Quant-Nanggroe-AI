@@ -402,3 +402,49 @@ async def run_stress_test(http_request: Request) -> dict[str, Any]:
         },
         "timestamp": datetime.now().isoformat(),
     }
+
+
+@router.get("/equity-curve")
+async def equity_curve() -> dict[str, Any]:
+    """Cumulative PnL over time from the trade journal (REAL MT5 data).
+
+    Returns time-series of cumulative profit after each closed trade.
+    """
+    import sqlite3
+    from pathlib import Path as _P
+
+    db = _P(__file__).resolve().parents[2] / "data" / "qna_trade_journal.db"
+    if not db.exists():
+        return {"points": [], "total_pnl": 0, "total_trades": 0}
+
+    con = sqlite3.connect(str(db))
+    try:
+        rows = con.execute(
+            """SELECT close_time, pnl, strategy, symbol
+               FROM trades
+               WHERE close_time IS NOT NULL AND pnl IS NOT NULL
+               ORDER BY close_time ASC"""
+        ).fetchall()
+    finally:
+        con.close()
+
+    points: list[dict] = []
+    cumulative = 0.0
+    for close_ts, pnl, strat, sym in rows:
+        cumulative += float(pnl or 0)
+        ts = datetime.fromtimestamp(float(close_ts)).isoformat()[:16]
+        points.append({
+            "date": ts,
+            "value": round(cumulative, 2),
+            "trade_pnl": round(float(pnl or 0), 2),
+            "strategy": strat,
+            "symbol": sym,
+        })
+
+    return {
+        "points": points,
+        "total_pnl": round(cumulative, 2),
+        "total_trades": len(points),
+        "start_equity": 10000.0,
+        "current_equity": round(10000.0 + cumulative, 2),
+    }
