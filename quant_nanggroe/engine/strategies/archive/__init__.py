@@ -2,7 +2,7 @@
 from quant_nanggroe.engine.strategies.archive.archive_macro_rates import ArchiveMacroRatesStrategy
 from quant_nanggroe.engine.strategies.archive.archive_market_making import ArchiveMarketMakingStrategy
 from quant_nanggroe.engine.strategies.archive.archive_mean_reversion_stat import ArchiveMeanReversionStatStrategy
-from quant_nanggroe.engine.strategies.archive.archive_mfi_strategy import ArchiveMfiStrategyStrategy
+from quant_nanggroe.engine.strategies.archive.archive_mfi_strategy import ArchiveMfiStrategy
 from quant_nanggroe.engine.strategies.archive.archive_momentum import ArchiveMomentumStrategy
 from quant_nanggroe.engine.strategies.archive.archive_momentum_crash_filter import ArchiveMomentumCrashFilterStrategy
 from quant_nanggroe.engine.strategies.archive.archive_momentum_factor import ArchiveMomentumFactorStrategy
@@ -89,3 +89,4 @@ __all__ = [
     "ArchiveYieldCurveStrategy", "MSNRStrategyFixed",
     "QuarterlyTheoryStrategyFixed", "SMCStrategyFixed",
 ]
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-af84e8a4f715.sh.tmp.XXXXXXXXXX': No such file or directory

@@ -9,18 +9,19 @@ import pandas as pd
 import numpy as np
 
 SRC = Path(r'E:/trading')
-sys.path.insert(0, str(SRC))
-sys.path.insert(0, str(SRC / 'strategies'))
 RESULT = SRC / 'results'
 RESULT.mkdir(parents=True, exist_ok=True)
+HERE = Path(r'D:/repositories/Quant-Nanggroe-AI-worktree')
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / 'quant_nanggroe' / 'engine' / 'strategies'))
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('dhaher_bt')
 
-import strategies.dhaher_system
-from quant_nanggroe.engine.strategy.strategies import get_strategy
+from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 from backtest_pipeline import get_historical, gate_decision
 from risk_module import kelly_fraction, strategy_score
+
 
 def backtest_with_sltp(df, strategy, initial_capital=1000):
     """
@@ -133,6 +134,7 @@ def backtest_with_sltp(df, strategy, initial_capital=1000):
         "avg_loss": round(np.mean([t['pnl'] for t in closed if t['pnl'] <= 0]), 2) if any(t['pnl'] <= 0 for t in closed) else 0,
     }, trades, eq
 
+
 def main():
     log.info("══════════════════════════════════════════════")
     log.info("  DHAHER SYSTEM v1.0 — SL/TP-AWARE BACKTEST ")
@@ -156,7 +158,7 @@ def main():
     
     results = []
     for label, params in configs:
-        strat = get_strategy('DhaherSystem', **params)
+        strat = DhaherSystem(**params)
         bt, trades, eq = backtest_with_sltp(df, strat)
         bt['config'] = label
         bt['params'] = params
@@ -205,6 +207,7 @@ def main():
     report_file.write_text(json.dumps(report, indent=2, default=str))
     log.info(f"📁 Saved: {report_file}")
     return report
+
 
 if __name__ == "__main__":
     main()

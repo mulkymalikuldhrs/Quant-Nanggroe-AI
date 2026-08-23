@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-08-24T05:33:26.245503",
+  "total_configs_tested": 24,
+  "passing_count": 1,
+  "best": {
+    "sharpe": 0.635,
+    "ret_pct": 0.43,
+    "dd_pct": -1.87,
+    "wr": 28.3,
+    "trades": 237,
+    "lookback": 17,
+    "atr_mult": 1.2,
+    "rr_min": 2.5,
+    "min_confluence": 2
+  },
+  "top_5": [
+    {
+      "sharpe": 0.635,
+      "ret_pct": 0.43,
+      "dd_pct": -1.87,
+      "wr": 28.3,
+      "trades": 237,
+      "lookback": 17,
+      "atr_mult": 1.2,
+      "rr_min": 2.5,
+      "min_confluence": 2
+    }
+  ]
+}
