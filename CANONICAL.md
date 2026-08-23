@@ -641,6 +641,58 @@ python -m ruff check .
 
 ---
 
+
+### 15.8 GRAND REPLAN v8.0 — REAL ENGINE, FX FOCUS, PREMIUM UI (2026-08-23)
+
+**DIRECTIVE:** Real native engines (not porting), eliminate crypto+stocks, focus FX/Commodity/Indices on MT5, premium UI.
+
+**KEY DECISIONS:**
+1. SIGNAL AGGREGATION — one position per symbol, fixed 0.5% risk, net conviction from all strategies
+2. ELIMINATE CRYPTO+STOCKS — FX majors + Gold + Silver + Oil + Indices only
+3. NATIVE ENGINES — implement algorithms natively (SMC, Hyperopt, Regime, RiskParity)
+4. PREMIUM UI — trader-first layout, real-time everything, zero clutter
+5. NO PAPER — REAL ONLY, conservative sizing during proof phase
+
+**SPRINTS:**
+Sprint 1 (Days 1-4): SignalAggregator + symbol cleanup (remove crypto/stocks) + FX-only CPCV re-validation
+Sprint 2 (Days 5-9): Native engines — SMC Engine, Hyperopt Engine, Enhanced Regime, Risk Parity
+Sprint 3 (Days 10-14): Mock elimination + UI premium redesign
+Sprint 4 (Days 15-17): Docs consolidation + codebase cleanup + cross-repo sync
+Sprint 5+ (Ongoing): Forward-live validation, self-evolve on real data
+
+**FX-ONLY SYMBOLS:**
+| Asset | Symbols | Evidence |
+|-------|---------|----------|
+| FX Majors | EURUSD.vx, GBPUSD.vx, USDJPY.vx, AUDUSD.vx | EURUSD=X |
+| Gold | XAUUSD.vx | GC=F |
+| Silver | XAGUSD.vx | GC=F proxy |
+| Oil | USOIL.vx / XTIUSD.vx | TBD |
+| Indices | NAS100.vx, SPX500.vx | TBD |
+
+**ELIMINATED:** BTCUSDT, ETHUSDT, SOLUSDT, all crypto pairs, NVDA/AAPL stocks, crypto-specific strategies
+
+**SIGNAL AGGREGATION ARCHITECTURE:**
+```
+All admitted strategies vote per symbol per cycle
+  ↓ SignalAggregator.aggregate(symbol, votes)
+Net conviction = Σ(direction × weight × confidence)
+  ↓ if |conviction| > threshold AND no existing position:
+ONE entry at fixed 0.5% equity risk per symbol
+SL/TP from trading_profile (scalp/day/swing ATR-adaptive)
+  ↓ attribution tracked per contributing strategy
+journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
+```
+
+**NATIVE ENGINES TO BUILD:**
+| Module | Inspired By | Output |
+|--------|------------|--------|
+| engine/smc/native_smc.py | E:\smart-money-concepts\ | OrderBlock+FVG+Sweep+BOS detection |
+| engine/backtest/hyperopt.py | E:\freqtrade\ hyperopt | Bayesian param optimization |
+| engine/regime/enhanced_regime.py | E:\hidden-regime\ | HMM+GARCH+ADX composite |
+| engine/portfolio/risk_parity.py | E:\PyPortfolioOpt\ | HRP weights across strategies |
+
+---
+
 ## 16. Audit Results
 
 ### Session 1: Full Deep Sweep (56 commits)

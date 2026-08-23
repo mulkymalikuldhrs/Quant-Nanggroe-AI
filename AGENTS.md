@@ -106,3 +106,9 @@ End every response to owner with structured format: verified evidence → change
 - Signal type dedup (5 Signal variants)
 - Weekly loss veto on Path-B (P1 gap)
 - Verify all 77 strategies instantiate without error
+
+## FAZE Status (2026-08-23)
+- FAZE 0 COMPLETE: Journal-MT5 sync live (+$629.98 verified), attribution via MT5 comment
+- FAZE 1 COMPLETE: Conservative sizing (0.05x conf), allocation gate active
+- FAZE 2 STARTED: Scorecard from real data, lifecycle auto-kill/activate
+- NEXT: Signal aggregation (one position per symbol), FX-only focus, native SMC engine
