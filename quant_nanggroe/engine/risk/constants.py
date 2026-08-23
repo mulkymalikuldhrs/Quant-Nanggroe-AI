@@ -58,32 +58,14 @@ TRADING_BUDGET_PCT: Final[float] = 0.001        # 0.1% of initial capital alloca
 MAX_SECTOR_EXPOSURE_PCT: Final[float] = 0.30    # Max 30% of portfolio in any single sector
 
 SECTOR_MAP: dict[str, str] = {
-    # Crypto
-    "BTC-USD": "crypto", "ETH-USD": "crypto", "SOL-USD": "crypto",
-    "XRP-USD": "crypto", "ADA-USD": "crypto", "DOT-USD": "crypto",
-    "DOGE-USD": "crypto", "AVAX-USD": "crypto", "LINK-USD": "crypto",
-    "MATIC-USD": "crypto", "UNI7083-USD": "crypto", "ATOM-USD": "crypto",
-    # Forex
+    # FX Majors
     "EURUSD": "forex", "GBPUSD": "forex", "USDJPY": "forex",
     "USDCAD": "forex", "AUDUSD": "forex", "NZDUSD": "forex",
     "EURGBP": "forex", "EURJPY": "forex", "GBPJPY": "forex",
     "CHFJPY": "forex", "AUDJPY": "forex", "NZDJPY": "forex",
-    # Indices
-    "SPY": "index", "QQQ": "index", "DIA": "index", "IWM": "index",
-    "SPX": "index", "NDX": "index", "VIX": "index",
-    # US Tech
-    "NVDA": "tech", "AAPL": "tech", "MSFT": "tech", "GOOGL": "tech",
-    "AMZN": "tech", "META": "tech", "TSLA": "tech", "AMD": "tech",
-    "INTC": "tech", "CRM": "tech", "ADBE": "tech", "NFLX": "tech",
-    # US Finance
-    "JPM": "finance", "GS": "finance", "MS": "finance", "V": "finance",
-    "MA": "finance", "BAC": "finance", "WFC": "finance", "C": "finance",
-    # US Energy
-    "XOM": "energy", "CVX": "energy", "COP": "energy", "SLB": "energy",
-    "OXY": "energy", "EOG": "energy",
     # Commodities
-    "XAUUSD": "commodity", "XAGUSD": "commodity", "USOIL": "commodity",
-    "UKOIL": "commodity", "NG": "commodity", "HG": "commodity",
+    "XAUUSD": "commodity", "XAGUSD": "commodity",
+    "USOIL": "energy", "UKOIL": "energy", "NG": "energy", "HG": "metal",
 }
 SECTOR_DEFAULT: str = "other"
 
@@ -92,24 +74,10 @@ SECTOR_DEFAULT: str = "other"
 # This map ensures correct price lookups, SL/TP placement, and PnL calculation.
 # Keys are internal symbols, values are MT5 terminal symbol names.
 MT5_SYMBOL_MAP: dict[str, str] = {
-    "BTCUSDT": "BTCUSD",
-    "ETHUSDT": "ETHUSD",
-    "SOLUSDT": "SOLUSD",
-    "BNBUSDT": "BNBUSD",
-    "AVAXUSDT": "AVAXUSD",
-    "LINKUSDT": "LINKUSD",
-    "XRPUSDT": "XRPUSD",
-    "ADAUSDT": "ADAUSD",
-    "EURUSD": "EURUSD",
-    "GBPUSD": "GBPUSD",
-    "USDJPY": "USDJPY",
-    "USDCAD": "USDCAD",
-    "AUDUSD": "AUDUSD",
-    "NZDUSD": "NZDUSD",
-    "XAUUSD": "XAUUSD",
-    "XAGUSD": "XAGUSD",
-    "USOIL": "USOIL",
-    "UKOIL": "UKOIL",
+    "EURUSD": "EURUSD", "GBPUSD": "GBPUSD", "USDJPY": "USDJPY",
+    "USDCAD": "USDCAD", "AUDUSD": "AUDUSD", "NZDUSD": "NZDUSD",
+    "XAUUSD": "XAUUSD", "XAGUSD": "XAGUSD",
+    "USOIL": "USOIL", "UKOIL": "UKOIL",
 }
 MT5_SYMBOL_DEFAULT: str = ""
 
@@ -129,14 +97,11 @@ KILL_SWITCH_WEEKLY_PNL: Final[float] = -0.025   # Kill switch at -2.5% weekly Pn
 # Import from here instead of hardcoding values inline.
 
 ASSET_ALLOCATIONS: Final[dict[str, float]] = {
-    "BTCUSDT": 0.25,
-    "ETHUSDT": 0.18,
-    "SOLUSDT": 0.14,
-    "BNBUSDT": 0.11,
-    "AVAXUSDT": 0.08,
-    "LINKUSDT": 0.08,
-    "XRPUSDT": 0.08,
-    "ADAUSDT": 0.08,
+    "EURUSD": 0.30,
+    "XAUUSD": 0.30,
+    "GBPUSD": 0.20,
+    "USOIL": 0.10,
+    "USDJPY": 0.10,
 }
 
 TP_TARGETS: Final[dict[str, float]] = {

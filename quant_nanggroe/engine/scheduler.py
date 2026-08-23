@@ -42,8 +42,8 @@ class PipelineScheduler:
 
         self.interval_minutes = interval_minutes
         self.symbols = symbols or [
-            "BTC-USD", "ETH-USD", "SOL-USD", "EURUSD", "USDJPY",
-        ]
+            "EURUSD.vx", "GBPUSD.vx", "XAUUSD.vx",
+        ]  # v8.0: FX + Gold only (CANONICAL 15.8)
 
         self._running = False
         self._thread: Optional[threading.Thread] = None

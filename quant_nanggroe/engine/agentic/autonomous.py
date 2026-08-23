@@ -1810,7 +1810,7 @@ class AutonomousPipeline:
         and results stored in WalkForwardRegistry for next-batch filtering.
         """
         if symbols is None:
-            symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "EURUSD", "USDJPY"]
+            symbols = ["EURUSD.vx", "GBPUSD.vx", "XAUUSD.vx"]
         results = []
         for sym in symbols:
             try:
