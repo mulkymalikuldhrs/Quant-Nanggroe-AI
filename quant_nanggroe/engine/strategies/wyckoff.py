@@ -39,12 +39,12 @@ class WyckoffStrategy(Strategy):
 
     def __init__(self, parameters: Optional[StrategyParameters] = None) -> None:
         params = parameters or StrategyParameters()
-        if not params.get("volume_threshold"):
-            params.set("volume_threshold", 1.5)  # 1.5x average volume
-        if not params.get("spring_threshold"):
-            params.set("spring_threshold", 0.02)  # 2% below support
         if not params.get("lookback"):
-            params.set("lookback", 20)
+            params.set("lookback", 50)
+        if not params.get("volume_threshold"):
+            params.set("volume_threshold", 1.3)
+        if not params.get("spring_threshold"):
+            params.set("spring_threshold", 0.02)
         super().__init__(parameters=params)
 
     def generate_signal(self, data: Any, **kwargs) -> StrategySignal:

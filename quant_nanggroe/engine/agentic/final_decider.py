@@ -101,9 +101,9 @@ class FinalDecider:
             return _veto(Action.HOLD, "Max positions", ["positions"])
         try:
             from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters, compute_kelly
-            kp = KellyParameters(win_rate=best.confidence**1.5, avg_win=0.02, avg_loss=0.01, fraction=0.25, max_drawdown=risk.max_drawdown, current_drawdown=risk.current_drawdown)
+            kp = KellyParameters(win_rate=best.confidence**1.5, avg_win=0.02, avg_loss=0.01, fraction=0.0025, max_drawdown=risk.max_drawdown, current_drawdown=risk.current_drawdown)
             kf = compute_kelly(kp, method=KellyMethod.FRACTIONAL).f_star * regime_mult
-            kf = min(kf, 0.25)
+            kf = min(kf, 0.01)
         except Exception:
             kf = 0.02 * regime_mult
         pct = min(kf, portfolio.max_exposure - portfolio.total_exposure)

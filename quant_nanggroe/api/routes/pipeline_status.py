@@ -95,7 +95,7 @@ PIPELINE_STAGES = [
         "name": "Final Decider",
         "stage": 10,
         "status": "operational",
-        "config": {"min_confidence": 0.6, "min_rr_ratio": 2.5, "kelly_fraction": 0.25, "min_regime_compat": 0.35},
+        "config": {"min_confidence": 0.6, "min_rr_ratio": 2.5, "kelly_fraction": 0.0025, "min_regime_compat": 0.35},
         "metrics": {"last_decision": "—", "confidence": "—", "kelly": "—"},
     },
     {

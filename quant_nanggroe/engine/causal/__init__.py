@@ -494,7 +494,7 @@ class MasterQuantNanggroeEngine:
         # Fractional Kelly (safety factor = 0.25)
         is_executable = aligned and (expectancy > 0.2) and (rrr >= 2.0)
         kelly_f = (
-            0.25 * (((winrate * rrr) - (1 - winrate)) / rrr)
+            0.0025 * (((winrate * rrr) - (1 - winrate)) / rrr)
             if is_executable
             else 0.0
         )

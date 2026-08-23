@@ -76,7 +76,7 @@ class Config:
     MAX_DRAWDOWN_PCT = 0.15          # 15% max drawdown
     MAX_POSITIONS_PER_SYMBOL = 1
     MAX_TOTAL_POSITIONS = 5
-    DEFAULT_KELLY = 0.25
+    DEFAULT_KELLY = 0.0025
     MIN_CONFIDENCE = 0.6             # Minimum signal confidence to trade
     
     # Position management
@@ -535,7 +535,7 @@ class PerformanceTracker:
             avg_loss = stats["loss_pnl"] / stats["losses"] if stats["losses"] > 0 else 1
             if avg_loss > 0:
                 kelly = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_win
-                kelly = max(0.05, min(0.25, kelly))  # Cap 5%-25%
+                kelly = max(0.001, min(0.01, kelly))  # Cap 5%-25%
                 self.risk_guard._kelly_cache[strategy] = kelly
                 log.info(f"Kelly updated for {strategy}: {kelly:.3f} (wr={win_rate:.2f})")
     

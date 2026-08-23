@@ -10,7 +10,7 @@ class StrategyConfig:
     name: str
     params: Dict[str, Any] = field(default_factory=dict)
     weight: float = 1.0
-    Kelly: Dict[str, Any] = field(default_factory=lambda: {"fraction": 0.25})
+    Kelly: Dict[str, Any] = field(default_factory=lambda: {"fraction": 0.0025})
 
 
 @dataclass
@@ -56,7 +56,7 @@ REGIME_STRATEGY_MAP: Dict[str, List[StrategyConfig]] = {
                        Kelly={"fraction": 0.20}),
         StrategyConfig("MeanReversion", {"strategy_type": "bollinger", "lookback": 20,
                                           "bollinger_std": 2.0, "atr_stop_mult": 1.5},
-                       weight=0.9, Kelly={"fraction": 0.25}),
+                       weight=0.9, Kelly={"fraction": 0.0025}),
     ],
     "crisis": [
         StrategyConfig("RegimeBased", {"n_regimes": 3, "hmm_lookback": 252}, weight=1.0,

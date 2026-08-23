@@ -214,7 +214,7 @@ class Backtester:
                     trades.append((entry_price, price, "short", pnl))
                     position = 0
                 # Open long
-                position = balance * 0.25 / price
+                position = balance * 0.0025 / price
                 entry_price = price
 
             elif signal == -1 and position >= 0:

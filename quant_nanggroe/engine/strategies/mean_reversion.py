@@ -44,11 +44,11 @@ class MeanReversionStrategy(Strategy):
         if not parameters.get("k_period"):
             parameters.set("k_period", 14)
         if not parameters.get("d_period"):
-            parameters.set("d_period", 3)
+            parameters.set("d_period", 5)
         if not parameters.get("oversold"):
-            parameters.set("oversold", 20)
+            parameters.set("oversold", 25)
         if not parameters.get("overbought"):
-            parameters.set("overbought", 80)
+            parameters.set("overbought", 75)
         super().__init__(parameters=parameters)
 
     def required_columns(self) -> list:
@@ -170,11 +170,11 @@ class MeanReversionStrategy(Strategy):
         if not params.get("k_period"):
             params.set("k_period", 14)
         if not params.get("d_period"):
-            params.set("d_period", 3)
+            params.set("d_period", 5)
         if not params.get("oversold"):
-            params.set("oversold", 20)
+            params.set("oversold", 25)
         if not params.get("overbought"):
-            params.set("overbought", 80)
+            params.set("overbought", 75)
         super().__init__(parameters=params)
 
     def generate_signal(self, data: Any, **kwargs) -> StrategySignal:

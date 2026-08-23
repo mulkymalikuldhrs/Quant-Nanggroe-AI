@@ -294,7 +294,7 @@ class MasterQuantNanggroeEngine:
             p = winrate
             q = 1 - p
             kelly_raw = (p * b - q) / b if b > 0 else 0.0
-            kelly_f = 0.25 * kelly_raw  # safety factor λ = 0.25
+            kelly_f = 0.0025 * kelly_raw  # quarter-Kelly (0.25% safety factor) → overridden by quarter-Kelly cap below  # safety factor λ = 0.25
             risk_pct = min(max(kelly_f, 0.0), 0.005)  # strict 0.5% max
 
         return {

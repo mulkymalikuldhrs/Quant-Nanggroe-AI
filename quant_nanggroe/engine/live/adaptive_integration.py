@@ -377,7 +377,7 @@ class RiskGate:
         return True, "ok"
 
     def position_size(
-        self, price: float, balance: float, kelly: float = 0.25
+        self, price: float, balance: float, kelly: float = 0.0025
     ) -> float:
         if self._loaded and self._risk_enforcer:
             try:

@@ -108,7 +108,7 @@ class EnhancedRiskAnalytics:
 
     def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.kelly_fraction_pct = self.config.get("kelly_fraction", 0.25)
+        self.kelly_fraction_pct = self.config.get("kelly_fraction", 0.0025)
         self.mc_simulations = self.config.get("mc_simulations", 10000)
         self.mc_confidence = self.config.get("mc_confidence", 0.95)
         self.rf_rate = self.config.get("risk_free_rate", 0.05)

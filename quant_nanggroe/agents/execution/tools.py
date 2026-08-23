@@ -307,12 +307,12 @@ def kelly_lot_size(
         JSON string with lot_size and kelly_fraction
     """
     try:
-        kelly = FractionalKelly(fraction=0.25)
+        kelly = FractionalKelly(fraction=0.0025)
         params = KellyParameters(
             win_rate=win_rate or 0.55,
             avg_win=avg_win or 0.012,
             avg_loss=avg_loss or 0.008,
-            fraction=0.25,
+            fraction=0.0025,
             leverage_max=0.02,
         )
         result = kelly.compute(params)

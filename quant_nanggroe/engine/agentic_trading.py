@@ -366,7 +366,7 @@ class ConsensusEngine:
 
         # Position sizing: Kelly-inspired
         kelly_fraction = (2 * consensus_conf - 1) * 0.5
-        position_pct = max(0, min(0.25, kelly_fraction))
+        position_pct = max(0, min(0.01, kelly_fraction))
 
         # Build reasoning
         all_reasons = "\n".join(
