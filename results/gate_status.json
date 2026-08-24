@@ -1,553 +1,1615 @@
 {
-  "timestamp": "2026-08-24T03:38:15.318107",
-  "symbol": "EURUSD",
-  "timeframe": "M15",
-  "gate": {
-    "sharpe_min": 0.5,
-    "return_min": 0,
-    "dd_max": -25
+ "timestamp": "2026-08-24T20:22:54.024628",
+ "source": "yfinance EURUSD M15 60d real (5688 bars)",
+ "strategies_tested": 200,
+ "walkforward_folds": 5,
+ "results": [
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=20]",
+   "pass": "False",
+   "sharpe": -0.99,
+   "return_pct": -0.13,
+   "dd": -1.14,
+   "trades": 77
   },
-  "passed": 9,
-  "total": 77,
-  "results": [
-    {
-      "strategy": "adaptive_moving_average",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "adx",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "algebra",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "alternative_data",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "amdx",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "aroon",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "atr_breakout",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "bayesian_ridge",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "bollinger_squeeze",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "camarilla_pivot",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "carry_trade",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "cci",
-      "sharpe": -2.378,
-      "return_pct": -0.5,
-      "max_dd_pct": -5.81,
-      "pass": false
-    },
-    {
-      "strategy": "choppiness_index",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "commodity_trend",
-      "sharpe": -2.378,
-      "return_pct": -0.5,
-      "max_dd_pct": -5.81,
-      "pass": false
-    },
-    {
-      "strategy": "cot",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "crypto_funding",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "crypto_specific",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "dark_cloud_cover",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "dark_pool_flow",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "dema",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "dhaher_system",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "dmi",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "doji_pattern",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "dxy_momentum",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "elder_ray",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "elder_triple_screen",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "em_carry",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "ema_adx",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "engulfing_pattern",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "entropy",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "evening_star",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "ewma_vol",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "factor_model_sdf",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fibo",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fibonacci",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "fibonacci_arc",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fibonacci_extension",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fibonacci_fan",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fibonacci_retracement",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fibonacci_time",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "fundamental",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "garch_vol",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "gold_inflation",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "half_life_mean_reversion",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "hammer_pattern",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "harami_pattern",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "hull_ma",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "hurst_exponent",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "ichimoku_cloud",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "ict_ote",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "ict_strategy",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "inverted_hammer",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "kalman_filter",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "kaufman_ama",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "kelly_optimal",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "keltner_squeeze",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "kmeans_regime",
-      "sharpe": -2.378,
-      "return_pct": -0.5,
-      "max_dd_pct": -5.81,
-      "pass": false
-    },
-    {
-      "strategy": "kronos",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "kronos_ensemble",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "linear_regression_channel",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "macro_fx",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "market_profile",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "mean_rev",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "microstructure_alpha",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "msnr",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "multi_timeframe",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "pairs_trade",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "quarterly",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "smc",
-      "sharpe": 1.609,
-      "return_pct": 0.44,
-      "max_dd_pct": -3.66,
-      "pass": true
-    },
-    {
-      "strategy": "statistical_arbitrage",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "tradebobby_smc",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "trend_follow",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "tsmom",
-      "sharpe": -2.378,
-      "return_pct": -0.5,
-      "max_dd_pct": -5.81,
-      "pass": false
-    },
-    {
-      "strategy": "unified_retail",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "volume_delta",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "wyckoff",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    },
-    {
-      "strategy": "xgboost_alpha",
-      "sharpe": 0.0,
-      "return_pct": 0.0,
-      "max_dd_pct": 0.0,
-      "pass": false
-    }
-  ]
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=30]",
+   "pass": "False",
+   "sharpe": -1.317,
+   "return_pct": -0.1,
+   "dd": -0.31,
+   "trades": 53
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=40]",
+   "pass": "False",
+   "sharpe": -1.172,
+   "return_pct": -0.08,
+   "dd": -0.4,
+   "trades": 47
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=50]",
+   "pass": "False",
+   "sharpe": 0.477,
+   "return_pct": 0.02,
+   "dd": -0.4,
+   "trades": 37
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=60]",
+   "pass": "False",
+   "sharpe": -0.217,
+   "return_pct": 0.02,
+   "dd": -0.25,
+   "trades": 30
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=70]",
+   "pass": "False",
+   "sharpe": 0.263,
+   "return_pct": 0.02,
+   "dd": -0.29,
+   "trades": 29
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=80]",
+   "pass": true,
+   "sharpe": 1.765,
+   "return_pct": 0.15,
+   "dd": -0.2,
+   "trades": 27
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=90]",
+   "pass": "False",
+   "sharpe": 0.076,
+   "return_pct": 0.0,
+   "dd": -0.47,
+   "trades": 25
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=100]",
+   "pass": "False",
+   "sharpe": -0.441,
+   "return_pct": 0.04,
+   "dd": -0.29,
+   "trades": 26
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=110]",
+   "pass": true,
+   "sharpe": 0.968,
+   "return_pct": 0.09,
+   "dd": -0.22,
+   "trades": 27
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=120]",
+   "pass": "False",
+   "sharpe": 0.129,
+   "return_pct": -0.01,
+   "dd": -0.21,
+   "trades": 24
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=130]",
+   "pass": true,
+   "sharpe": 0.603,
+   "return_pct": 0.02,
+   "dd": -0.43,
+   "trades": 23
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=140]",
+   "pass": true,
+   "sharpe": 2.568,
+   "return_pct": 0.2,
+   "dd": -0.15,
+   "trades": 20
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=150]",
+   "pass": true,
+   "sharpe": 1.35,
+   "return_pct": 0.09,
+   "dd": -0.19,
+   "trades": 22
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=160]",
+   "pass": true,
+   "sharpe": 2.101,
+   "return_pct": 0.13,
+   "dd": -0.18,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=170]",
+   "pass": true,
+   "sharpe": 1.876,
+   "return_pct": 0.15,
+   "dd": -0.23,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=180]",
+   "pass": true,
+   "sharpe": 1.046,
+   "return_pct": 0.11,
+   "dd": -0.2,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=190]",
+   "pass": true,
+   "sharpe": 1.876,
+   "return_pct": 0.14,
+   "dd": -0.17,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=5,slow=200]",
+   "pass": "False",
+   "sharpe": 0.397,
+   "return_pct": 0.0,
+   "dd": -0.25,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=30]",
+   "pass": "False",
+   "sharpe": 0.003,
+   "return_pct": -0.01,
+   "dd": -0.29,
+   "trades": 43
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=40]",
+   "pass": "False",
+   "sharpe": -0.492,
+   "return_pct": -0.02,
+   "dd": -0.23,
+   "trades": 35
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=50]",
+   "pass": "False",
+   "sharpe": 0.019,
+   "return_pct": -0.0,
+   "dd": -0.43,
+   "trades": 30
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=60]",
+   "pass": true,
+   "sharpe": 0.952,
+   "return_pct": 0.06,
+   "dd": -0.23,
+   "trades": 25
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=70]",
+   "pass": true,
+   "sharpe": 1.512,
+   "return_pct": 0.1,
+   "dd": -0.18,
+   "trades": 22
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=80]",
+   "pass": true,
+   "sharpe": 2.488,
+   "return_pct": 0.14,
+   "dd": -0.15,
+   "trades": 22
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=90]",
+   "pass": "False",
+   "sharpe": 0.363,
+   "return_pct": -0.01,
+   "dd": -0.25,
+   "trades": 21
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=100]",
+   "pass": "False",
+   "sharpe": -0.353,
+   "return_pct": -0.02,
+   "dd": -0.26,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=110]",
+   "pass": true,
+   "sharpe": 3.42,
+   "return_pct": 0.2,
+   "dd": -0.08,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=120]",
+   "pass": true,
+   "sharpe": 0.917,
+   "return_pct": 0.04,
+   "dd": -0.17,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=130]",
+   "pass": "False",
+   "sharpe": -0.625,
+   "return_pct": -0.03,
+   "dd": -0.19,
+   "trades": 15
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=140]",
+   "pass": true,
+   "sharpe": 0.677,
+   "return_pct": 0.16,
+   "dd": -0.16,
+   "trades": 15
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=150]",
+   "pass": "False",
+   "sharpe": 0.221,
+   "return_pct": 0.07,
+   "dd": -0.28,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=160]",
+   "pass": "False",
+   "sharpe": -2.065,
+   "return_pct": -0.11,
+   "dd": -0.33,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=170]",
+   "pass": "False",
+   "sharpe": -1.494,
+   "return_pct": -0.08,
+   "dd": -0.33,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=180]",
+   "pass": "False",
+   "sharpe": -0.299,
+   "return_pct": -0.05,
+   "dd": -0.32,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=190]",
+   "pass": "False",
+   "sharpe": -0.332,
+   "return_pct": -0.02,
+   "dd": -0.16,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=10,slow=200]",
+   "pass": "False",
+   "sharpe": -0.301,
+   "return_pct": 0.01,
+   "dd": -0.12,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=40]",
+   "pass": true,
+   "sharpe": 1.91,
+   "return_pct": 0.09,
+   "dd": -0.41,
+   "trades": 31
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=50]",
+   "pass": true,
+   "sharpe": 1.171,
+   "return_pct": 0.08,
+   "dd": -0.27,
+   "trades": 26
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=60]",
+   "pass": true,
+   "sharpe": 0.812,
+   "return_pct": 0.07,
+   "dd": -0.18,
+   "trades": 24
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=70]",
+   "pass": true,
+   "sharpe": 1.345,
+   "return_pct": 0.05,
+   "dd": -0.37,
+   "trades": 19
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=80]",
+   "pass": true,
+   "sharpe": 1.005,
+   "return_pct": 0.06,
+   "dd": -0.19,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=90]",
+   "pass": true,
+   "sharpe": 1.203,
+   "return_pct": 0.05,
+   "dd": -0.16,
+   "trades": 17
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=100]",
+   "pass": "False",
+   "sharpe": 0.448,
+   "return_pct": -0.01,
+   "dd": -0.32,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=110]",
+   "pass": "False",
+   "sharpe": -0.151,
+   "return_pct": -0.04,
+   "dd": -0.49,
+   "trades": 15
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=120]",
+   "pass": "False",
+   "sharpe": -0.801,
+   "return_pct": -0.01,
+   "dd": -0.24,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=130]",
+   "pass": "False",
+   "sharpe": 0.458,
+   "return_pct": 0.02,
+   "dd": -0.27,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=140]",
+   "pass": true,
+   "sharpe": 0.561,
+   "return_pct": 0.08,
+   "dd": -0.11,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=150]",
+   "pass": true,
+   "sharpe": 1.223,
+   "return_pct": 0.13,
+   "dd": -0.09,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=160]",
+   "pass": true,
+   "sharpe": 1.295,
+   "return_pct": 0.05,
+   "dd": -0.16,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=170]",
+   "pass": "False",
+   "sharpe": -1.941,
+   "return_pct": -0.07,
+   "dd": -0.22,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=180]",
+   "pass": "False",
+   "sharpe": -1.049,
+   "return_pct": -0.06,
+   "dd": -0.25,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=190]",
+   "pass": "False",
+   "sharpe": -0.908,
+   "return_pct": -0.04,
+   "dd": -0.21,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=15,slow=200]",
+   "pass": "False",
+   "sharpe": -0.514,
+   "return_pct": -0.01,
+   "dd": -0.2,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=50]",
+   "pass": true,
+   "sharpe": 2.652,
+   "return_pct": 0.14,
+   "dd": -0.21,
+   "trades": 27
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=60]",
+   "pass": true,
+   "sharpe": 1.31,
+   "return_pct": 0.09,
+   "dd": -0.18,
+   "trades": 22
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=70]",
+   "pass": true,
+   "sharpe": 1.401,
+   "return_pct": 0.1,
+   "dd": -0.13,
+   "trades": 17
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=80]",
+   "pass": true,
+   "sharpe": 0.931,
+   "return_pct": 0.06,
+   "dd": -0.13,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=90]",
+   "pass": "False",
+   "sharpe": -0.451,
+   "return_pct": 0.03,
+   "dd": -0.22,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=100]",
+   "pass": true,
+   "sharpe": 0.571,
+   "return_pct": 0.05,
+   "dd": -0.22,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=110]",
+   "pass": "False",
+   "sharpe": -0.236,
+   "return_pct": 0.04,
+   "dd": -0.17,
+   "trades": 15
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=120]",
+   "pass": "False",
+   "sharpe": 0.275,
+   "return_pct": 0.01,
+   "dd": -0.21,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=130]",
+   "pass": "False",
+   "sharpe": -0.71,
+   "return_pct": -0.06,
+   "dd": -0.36,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=140]",
+   "pass": "False",
+   "sharpe": -0.683,
+   "return_pct": -0.05,
+   "dd": -0.42,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=150]",
+   "pass": "False",
+   "sharpe": -2.887,
+   "return_pct": -0.12,
+   "dd": -0.24,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=160]",
+   "pass": "False",
+   "sharpe": -2.821,
+   "return_pct": -0.1,
+   "dd": -0.22,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=170]",
+   "pass": "False",
+   "sharpe": -2.226,
+   "return_pct": -0.09,
+   "dd": -0.25,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=180]",
+   "pass": "False",
+   "sharpe": -1.393,
+   "return_pct": -0.04,
+   "dd": -0.18,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=190]",
+   "pass": "False",
+   "sharpe": -1.242,
+   "return_pct": -0.07,
+   "dd": -0.25,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=20,slow=200]",
+   "pass": "False",
+   "sharpe": -1.142,
+   "return_pct": -0.04,
+   "dd": -0.17,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=60]",
+   "pass": "False",
+   "sharpe": -1.212,
+   "return_pct": -0.05,
+   "dd": -0.22,
+   "trades": 22
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=70]",
+   "pass": "False",
+   "sharpe": -0.377,
+   "return_pct": -0.01,
+   "dd": -0.13,
+   "trades": 18
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=80]",
+   "pass": "False",
+   "sharpe": -0.622,
+   "return_pct": -0.02,
+   "dd": -0.24,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=90]",
+   "pass": "False",
+   "sharpe": -0.225,
+   "return_pct": 0.02,
+   "dd": -0.18,
+   "trades": 15
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=100]",
+   "pass": true,
+   "sharpe": 0.977,
+   "return_pct": 0.06,
+   "dd": -0.13,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=110]",
+   "pass": false,
+   "sharpe": 0.543,
+   "return_pct": 0.0,
+   "dd": -0.17,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=120]",
+   "pass": true,
+   "sharpe": 1.859,
+   "return_pct": 0.08,
+   "dd": -0.1,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=130]",
+   "pass": "False",
+   "sharpe": -1.421,
+   "return_pct": -0.07,
+   "dd": -0.27,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=140]",
+   "pass": "False",
+   "sharpe": -2.687,
+   "return_pct": -0.08,
+   "dd": -0.16,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=150]",
+   "pass": "False",
+   "sharpe": -0.484,
+   "return_pct": -0.04,
+   "dd": -0.25,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=160]",
+   "pass": "False",
+   "sharpe": -1.252,
+   "return_pct": -0.05,
+   "dd": -0.16,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=170]",
+   "pass": "False",
+   "sharpe": -2.159,
+   "return_pct": -0.09,
+   "dd": -0.21,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=180]",
+   "pass": "False",
+   "sharpe": -2.378,
+   "return_pct": -0.07,
+   "dd": -0.25,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=190]",
+   "pass": "False",
+   "sharpe": -0.066,
+   "return_pct": -0.01,
+   "dd": -0.23,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=25,slow=200]",
+   "pass": "False",
+   "sharpe": -0.141,
+   "return_pct": 0.01,
+   "dd": -0.1,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=70]",
+   "pass": "False",
+   "sharpe": -1.058,
+   "return_pct": -0.04,
+   "dd": -0.23,
+   "trades": 19
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=80]",
+   "pass": "False",
+   "sharpe": -0.685,
+   "return_pct": -0.04,
+   "dd": -0.24,
+   "trades": 16
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=90]",
+   "pass": true,
+   "sharpe": 1.378,
+   "return_pct": 0.06,
+   "dd": -0.2,
+   "trades": 14
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=100]",
+   "pass": "False",
+   "sharpe": 0.268,
+   "return_pct": -0.01,
+   "dd": -0.22,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=110]",
+   "pass": "False",
+   "sharpe": -0.283,
+   "return_pct": -0.04,
+   "dd": -0.22,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=120]",
+   "pass": "False",
+   "sharpe": -0.864,
+   "return_pct": -0.01,
+   "dd": -0.16,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=130]",
+   "pass": "False",
+   "sharpe": -1.079,
+   "return_pct": -0.03,
+   "dd": -0.17,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=140]",
+   "pass": "False",
+   "sharpe": 0.152,
+   "return_pct": 0.01,
+   "dd": -0.23,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=150]",
+   "pass": "False",
+   "sharpe": 0.38,
+   "return_pct": 0.01,
+   "dd": -0.2,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=160]",
+   "pass": "False",
+   "sharpe": -1.099,
+   "return_pct": -0.03,
+   "dd": -0.11,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=170]",
+   "pass": "False",
+   "sharpe": -2.471,
+   "return_pct": -0.09,
+   "dd": -0.26,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=180]",
+   "pass": "False",
+   "sharpe": -2.199,
+   "return_pct": -0.08,
+   "dd": -0.23,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=190]",
+   "pass": "False",
+   "sharpe": -0.544,
+   "return_pct": 0.01,
+   "dd": -0.1,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=30,slow=200]",
+   "pass": true,
+   "sharpe": 1.766,
+   "return_pct": 0.04,
+   "dd": -0.1,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=80]",
+   "pass": "False",
+   "sharpe": -1.684,
+   "return_pct": -0.08,
+   "dd": -0.3,
+   "trades": 17
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=90]",
+   "pass": "False",
+   "sharpe": -0.736,
+   "return_pct": -0.04,
+   "dd": -0.28,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=100]",
+   "pass": true,
+   "sharpe": 1.966,
+   "return_pct": 0.1,
+   "dd": -0.16,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=110]",
+   "pass": "False",
+   "sharpe": 0.315,
+   "return_pct": -0.0,
+   "dd": -0.14,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=120]",
+   "pass": "False",
+   "sharpe": -0.851,
+   "return_pct": -0.01,
+   "dd": -0.22,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=130]",
+   "pass": "False",
+   "sharpe": -0.324,
+   "return_pct": -0.02,
+   "dd": -0.16,
+   "trades": 11
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=140]",
+   "pass": "False",
+   "sharpe": -0.611,
+   "return_pct": -0.05,
+   "dd": -0.28,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=150]",
+   "pass": true,
+   "sharpe": 0.762,
+   "return_pct": 0.03,
+   "dd": -0.12,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=160]",
+   "pass": "False",
+   "sharpe": 0.398,
+   "return_pct": 0.01,
+   "dd": -0.17,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=170]",
+   "pass": true,
+   "sharpe": 2.423,
+   "return_pct": 0.09,
+   "dd": -0.06,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=180]",
+   "pass": "False",
+   "sharpe": -0.525,
+   "return_pct": -0.0,
+   "dd": -0.12,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=190]",
+   "pass": true,
+   "sharpe": 0.624,
+   "return_pct": 0.01,
+   "dd": -0.12,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=35,slow=200]",
+   "pass": "False",
+   "sharpe": 0.29,
+   "return_pct": 0.0,
+   "dd": -0.12,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=90]",
+   "pass": "False",
+   "sharpe": -0.079,
+   "return_pct": 0.01,
+   "dd": -0.14,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=100]",
+   "pass": "False",
+   "sharpe": -0.36,
+   "return_pct": -0.01,
+   "dd": -0.19,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=110]",
+   "pass": "False",
+   "sharpe": -1.074,
+   "return_pct": -0.03,
+   "dd": -0.18,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=120]",
+   "pass": "False",
+   "sharpe": -1.676,
+   "return_pct": -0.06,
+   "dd": -0.17,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=130]",
+   "pass": "False",
+   "sharpe": -2.087,
+   "return_pct": -0.07,
+   "dd": -0.21,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=140]",
+   "pass": "False",
+   "sharpe": -2.104,
+   "return_pct": -0.05,
+   "dd": -0.14,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=150]",
+   "pass": true,
+   "sharpe": 2.544,
+   "return_pct": 0.08,
+   "dd": -0.08,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=160]",
+   "pass": "False",
+   "sharpe": 0.152,
+   "return_pct": -0.03,
+   "dd": -0.28,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=170]",
+   "pass": "False",
+   "sharpe": -0.769,
+   "return_pct": -0.01,
+   "dd": -0.24,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=180]",
+   "pass": "False",
+   "sharpe": -0.508,
+   "return_pct": 0.1,
+   "dd": -0.1,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=190]",
+   "pass": "False",
+   "sharpe": -0.331,
+   "return_pct": -0.04,
+   "dd": -0.17,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=40,slow=200]",
+   "pass": false,
+   "sharpe": 0.533,
+   "return_pct": -0.0,
+   "dd": -0.17,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=100]",
+   "pass": true,
+   "sharpe": 0.734,
+   "return_pct": 0.06,
+   "dd": -0.16,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=110]",
+   "pass": "False",
+   "sharpe": 0.062,
+   "return_pct": 0.01,
+   "dd": -0.1,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=120]",
+   "pass": "False",
+   "sharpe": 0.302,
+   "return_pct": 0.0,
+   "dd": -0.19,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=130]",
+   "pass": "False",
+   "sharpe": -0.234,
+   "return_pct": -0.03,
+   "dd": -0.2,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=140]",
+   "pass": true,
+   "sharpe": 1.528,
+   "return_pct": 0.07,
+   "dd": -0.09,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=150]",
+   "pass": "False",
+   "sharpe": -2.111,
+   "return_pct": -0.05,
+   "dd": -0.13,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=160]",
+   "pass": "False",
+   "sharpe": -0.192,
+   "return_pct": -0.0,
+   "dd": -0.11,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=170]",
+   "pass": "False",
+   "sharpe": -2.132,
+   "return_pct": -0.05,
+   "dd": -0.24,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=180]",
+   "pass": "False",
+   "sharpe": -0.004,
+   "return_pct": -0.02,
+   "dd": -0.23,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=190]",
+   "pass": true,
+   "sharpe": 0.588,
+   "return_pct": 0.02,
+   "dd": -0.13,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=45,slow=200]",
+   "pass": "False",
+   "sharpe": 0.192,
+   "return_pct": 0.0,
+   "dd": -0.08,
+   "trades": 7
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=110]",
+   "pass": "False",
+   "sharpe": -1.918,
+   "return_pct": -0.07,
+   "dd": -0.26,
+   "trades": 13
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=120]",
+   "pass": "False",
+   "sharpe": -2.333,
+   "return_pct": -0.08,
+   "dd": -0.2,
+   "trades": 12
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=130]",
+   "pass": "False",
+   "sharpe": -1.165,
+   "return_pct": -0.03,
+   "dd": -0.1,
+   "trades": 10
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=140]",
+   "pass": "False",
+   "sharpe": -0.491,
+   "return_pct": -0.02,
+   "dd": -0.12,
+   "trades": 9
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=150]",
+   "pass": "False",
+   "sharpe": 0.032,
+   "return_pct": 0.0,
+   "dd": -0.09,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=160]",
+   "pass": "False",
+   "sharpe": -0.097,
+   "return_pct": -0.01,
+   "dd": -0.17,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=170]",
+   "pass": "False",
+   "sharpe": -0.306,
+   "return_pct": 0.01,
+   "dd": -0.09,
+   "trades": 7
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=180]",
+   "pass": "False",
+   "sharpe": 0.322,
+   "return_pct": 0.02,
+   "dd": -0.08,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=190]",
+   "pass": "False",
+   "sharpe": -0.445,
+   "return_pct": -0.01,
+   "dd": -0.19,
+   "trades": 8
+  },
+  {
+   "strategy": "SMA_Crossover[fast=50,slow=200]",
+   "pass": "False",
+   "sharpe": 0.496,
+   "return_pct": -0.01,
+   "dd": -0.15,
+   "trades": 6
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=10]",
+   "pass": "False",
+   "sharpe": -0.62,
+   "return_pct": -0.08,
+   "dd": -1.05,
+   "trades": 204
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=10]",
+   "pass": true,
+   "sharpe": 0.773,
+   "return_pct": 0.15,
+   "dd": -0.73,
+   "trades": 169
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=10]",
+   "pass": "False",
+   "sharpe": -1.541,
+   "return_pct": -0.22,
+   "dd": -0.85,
+   "trades": 154
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=10]",
+   "pass": "False",
+   "sharpe": -1.531,
+   "return_pct": -0.18,
+   "dd": -0.8,
+   "trades": 142
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=10]",
+   "pass": "False",
+   "sharpe": -1.29,
+   "return_pct": -0.14,
+   "dd": -0.6,
+   "trades": 138
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=10]",
+   "pass": "False",
+   "sharpe": -2.498,
+   "return_pct": -0.32,
+   "dd": -0.74,
+   "trades": 132
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=15]",
+   "pass": "False",
+   "sharpe": -0.469,
+   "return_pct": -0.04,
+   "dd": -0.91,
+   "trades": 182
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=15]",
+   "pass": "False",
+   "sharpe": -1.408,
+   "return_pct": -0.17,
+   "dd": -0.84,
+   "trades": 152
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=15]",
+   "pass": "False",
+   "sharpe": -1.07,
+   "return_pct": -0.11,
+   "dd": -0.59,
+   "trades": 138
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=15]",
+   "pass": "False",
+   "sharpe": -2.233,
+   "return_pct": -0.27,
+   "dd": -0.66,
+   "trades": 126
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=15]",
+   "pass": "False",
+   "sharpe": -1.51,
+   "return_pct": -0.16,
+   "dd": -0.56,
+   "trades": 118
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=15]",
+   "pass": "False",
+   "sharpe": -1.649,
+   "return_pct": -0.19,
+   "dd": -0.58,
+   "trades": 110
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=20]",
+   "pass": true,
+   "sharpe": 0.699,
+   "return_pct": 0.14,
+   "dd": -0.57,
+   "trades": 172
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=20]",
+   "pass": "False",
+   "sharpe": -0.969,
+   "return_pct": -0.09,
+   "dd": -0.69,
+   "trades": 142
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=20]",
+   "pass": "False",
+   "sharpe": -2.461,
+   "return_pct": -0.3,
+   "dd": -0.79,
+   "trades": 130
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=20]",
+   "pass": "False",
+   "sharpe": -1.599,
+   "return_pct": -0.19,
+   "dd": -0.56,
+   "trades": 114
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=20]",
+   "pass": "False",
+   "sharpe": -1.282,
+   "return_pct": -0.16,
+   "dd": -0.45,
+   "trades": 106
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=20]",
+   "pass": "False",
+   "sharpe": -1.999,
+   "return_pct": -0.25,
+   "dd": -0.95,
+   "trades": 102
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=25]",
+   "pass": "False",
+   "sharpe": -0.469,
+   "return_pct": -0.04,
+   "dd": -0.58,
+   "trades": 165
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=25]",
+   "pass": "False",
+   "sharpe": -2.712,
+   "return_pct": -0.34,
+   "dd": -0.88,
+   "trades": 141
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=25]",
+   "pass": "False",
+   "sharpe": -1.576,
+   "return_pct": -0.17,
+   "dd": -0.56,
+   "trades": 119
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=25]",
+   "pass": "False",
+   "sharpe": -1.56,
+   "return_pct": -0.19,
+   "dd": -0.49,
+   "trades": 108
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=25]",
+   "pass": "False",
+   "sharpe": -2.279,
+   "return_pct": -0.31,
+   "dd": -0.78,
+   "trades": 99
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=25]",
+   "pass": "False",
+   "sharpe": -1.163,
+   "return_pct": -0.2,
+   "dd": -0.62,
+   "trades": 92
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=30]",
+   "pass": "False",
+   "sharpe": -0.442,
+   "return_pct": -0.03,
+   "dd": -0.97,
+   "trades": 162
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=30]",
+   "pass": "False",
+   "sharpe": -2.713,
+   "return_pct": -0.34,
+   "dd": -0.72,
+   "trades": 133
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=30]",
+   "pass": "False",
+   "sharpe": -1.84,
+   "return_pct": -0.23,
+   "dd": -0.52,
+   "trades": 114
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=30]",
+   "pass": "False",
+   "sharpe": -1.239,
+   "return_pct": -0.18,
+   "dd": -0.54,
+   "trades": 103
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=30]",
+   "pass": "False",
+   "sharpe": -1.42,
+   "return_pct": -0.23,
+   "dd": -0.67,
+   "trades": 93
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=30]",
+   "pass": "False",
+   "sharpe": -2.85,
+   "return_pct": -0.35,
+   "dd": -0.69,
+   "trades": 91
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=35]",
+   "pass": "False",
+   "sharpe": -0.107,
+   "return_pct": 0.03,
+   "dd": -0.74,
+   "trades": 160
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=35]",
+   "pass": "False",
+   "sharpe": -2.598,
+   "return_pct": -0.34,
+   "dd": -0.65,
+   "trades": 130
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=35]",
+   "pass": "False",
+   "sharpe": -1.815,
+   "return_pct": -0.23,
+   "dd": -0.55,
+   "trades": 110
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=35]",
+   "pass": "False",
+   "sharpe": -2.057,
+   "return_pct": -0.28,
+   "dd": -0.81,
+   "trades": 100
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=35]",
+   "pass": "False",
+   "sharpe": -3.513,
+   "return_pct": -0.44,
+   "dd": -0.86,
+   "trades": 93
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=35]",
+   "pass": "False",
+   "sharpe": -3.896,
+   "return_pct": -0.4,
+   "dd": -0.74,
+   "trades": 86
+  },
+  {
+   "strategy": "MACD[fast=5,signal=5,slow=40]",
+   "pass": "False",
+   "sharpe": -0.592,
+   "return_pct": -0.03,
+   "dd": -0.59,
+   "trades": 158
+  },
+  {
+   "strategy": "MACD[fast=5,signal=8,slow=40]",
+   "pass": "False",
+   "sharpe": -2.193,
+   "return_pct": -0.27,
+   "dd": -0.65,
+   "trades": 127
+  },
+  {
+   "strategy": "MACD[fast=5,signal=11,slow=40]",
+   "pass": "False",
+   "sharpe": -1.832,
+   "return_pct": -0.26,
+   "dd": -0.53,
+   "trades": 107
+  },
+  {
+   "strategy": "MACD[fast=5,signal=14,slow=40]",
+   "pass": "False",
+   "sharpe": -2.817,
+   "return_pct": -0.38,
+   "dd": -0.82,
+   "trades": 98
+  },
+  {
+   "strategy": "MACD[fast=5,signal=17,slow=40]",
+   "pass": "False",
+   "sharpe": -2.974,
+   "return_pct": -0.32,
+   "dd": -0.63,
+   "trades": 89
+  },
+  {
+   "strategy": "MACD[fast=5,signal=20,slow=40]",
+   "pass": "False",
+   "sharpe": -4.207,
+   "return_pct": -0.42,
+   "dd": -0.94,
+   "trades": 83
+  },
+  {
+   "strategy": "MACD[fast=8,signal=5,slow=15]",
+   "pass": "False",
+   "sharpe": -1.408,
+   "return_pct": -0.17,
+   "dd": -0.84,
+   "trades": 152
+  },
+  {
+   "strategy": "MACD[fast=8,signal=8,slow=15]",
+   "pass": "False",
+   "sharpe": -1.579,
+   "return_pct": -0.23,
+   "dd": -0.69,
+   "trades": 125
+  },
+  {
+   "strategy": "MACD[fast=8,signal=11,slow=15]",
+   "pass": "False",
+   "sharpe": -1.173,
+   "return_pct": -0.14,
+   "dd": -0.67,
+   "trades": 109
+  },
+  {
+   "strategy": "MACD[fast=8,signal=14,slow=15]",
+   "pass": "False",
+   "sharpe": -2.225,
+   "return_pct": -0.27,
+   "dd": -0.67,
+   "trades": 103
+  },
+  {
+   "strategy": "MACD[fast=8,signal=17,slow=15]",
+   "pass": "False",
+   "sharpe": -2.755,
+   "return_pct": -0.36,
+   "dd": -0.73,
+   "trades": 96
+  },
+  {
+   "strategy": "MACD[fast=8,signal=20,slow=15]",
+   "pass": "False",
+   "sharpe": -2.105,
+   "return_pct": -0.3,
+   "dd": -0.78,
+   "trades": 89
+  },
+  {
+   "strategy": "MACD[fast=8,signal=5,slow=20]",
+   "pass": "False",
+   "sharpe": -0.969,
+   "return_pct": -0.09,
+   "dd": -0.69,
+   "trades": 142
+  },
+  {
+   "strategy": "MACD[fast=8,signal=8,slow=20]",
+   "pass": "False",
+   "sharpe": -1.205,
+   "return_pct": -0.14,
+   "dd": -0.63,
+   "trades": 117
+  },
+  {
+   "strategy": "MACD[fast=8,signal=11,slow=20]",
+   "pass": "False",
+   "sharpe": -2.225,
+   "return_pct": -0.27,
+   "dd": -0.6,
+   "trades": 103
+  },
+  {
+   "strategy": "MACD[fast=8,signal=14,slow=20]",
+   "pass": "False",
+   "sharpe": -1.925,
+   "return_pct": -0.28,
+   "dd": -0.82,
+   "trades": 93
+  },
+  {
+   "strategy": "MACD[fast=8,signal=17,slow=20]",
+   "pass": "False",
+   "sharpe": -2.002,
+   "return_pct": -0.27,
+   "dd": -0.84,
+   "trades": 87
+  },
+  {
+   "strategy": "MACD[fast=8,signal=20,slow=20]",
+   "pass": "False",
+   "sharpe": -2.303,
+   "return_pct": -0.25,
+   "dd": -0.73,
+   "trades": 81
+  },
+  {
+   "strategy": "MACD[fast=8,signal=5,slow=25]",
+   "pass": "False",
+   "sharpe": -2.712,
+   "return_pct": -0.34,
+   "dd": -0.88,
+   "trades": 141
+  }
+ ],
+ "passing_count": 43,
+ "gate_criteria": {
+  "sharpe_gt": 0.5,
+  "return_gt": 0,
+  "dd_gt": -25
+ },
+ "note": "Tested 200 StrategyFactory variants (of 1137 total). 5-fold WF. 2s."
 }
