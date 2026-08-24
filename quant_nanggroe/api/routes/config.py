@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/config", tags=["config"])
@@ -30,6 +30,7 @@ CONFIG_PATH = Path(os.environ.get(
 
 class SystemConfig(BaseModel):
     """System configuration exposed to UI."""
+    model_config = ConfigDict(validate_assignment=True)
     # Trading
     symbols: list[str] = Field(default_factory=lambda: ["EURUSD", "XAUUSD", "BTC-USD"])
     max_position_pct: float = 0.02
