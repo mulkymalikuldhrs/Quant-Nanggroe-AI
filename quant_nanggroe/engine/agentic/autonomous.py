@@ -1724,9 +1724,10 @@ class AutonomousPipeline:
                         if (_atr is None or _atr <= 0) and df is not None:
                             # derive rough ATR from recent bars
                             try:
+                                import pandas as _pd
                                 h, l, c = df["high"], df["low"], df["close"]
                                 pc = c.shift(1)
-                                tr = pd.concat([(h-l), (h-pc).abs(), (l-pc).abs()], axis=1).max(axis=1)
+                                tr = _pd.concat([(h-l), (h-pc).abs(), (l-pc).abs()], axis=1).max(axis=1)
                                 _atr = float(tr.rolling(14).mean().iloc[-1])
                             except Exception:
                                 _atr = current_price * 0.01

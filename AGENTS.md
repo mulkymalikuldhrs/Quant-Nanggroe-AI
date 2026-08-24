@@ -20,7 +20,7 @@ cd dashboard && npm run dev # dashboard :3000
 python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # 61 core regression tests
 ```
 
-## Key Modules (v8.0.2)
+## Key Modules (v8.0.3)
 | Module | Purpose |
 |--------|---------|
 | `engine/candle_scheduler.py` | Real-time M15/H1/H4/D1 candle-close scheduler |

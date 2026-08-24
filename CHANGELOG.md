@@ -1,5 +1,18 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.3 — Fail-Closed Risk Wiring + Launcher Fix (2026-08-25)
+
+### 🔒 Fail-Closed Risk Guard
+- **FIX: `autonomous.py:_check_risk()`** — Fail-closed when execution manager / risk gates not wired (was silently allowing trades through)
+- **FIX: `autonomous.py:_make_decision()`** — Accept `df`, `atr_value`, `timeframe` params properly (was using broken `atr_val in dir()` check)
+- **ATR fallback chain**: param → derive from df → 1% of price (no more `NameError`)
+
+### 🚀 Launcher Fix
+- **FIX: `QNA Launcher.bat`** — Use `/D` flag for `start` (no nested quote bug), auto-generate `.env` with JWT secret, verify `logs/` dir exists
+
+### 📦 Version
+- **Version bump** 8.0.2 → 8.0.3 (qna.py + CANONICAL.md)
+
 ## v8.0.2 — Candle Scheduler + Dashboard + Critical Fixes (2026-08-25)
 
 ### 🕯️ Real-Time Candle-Close Scheduler
