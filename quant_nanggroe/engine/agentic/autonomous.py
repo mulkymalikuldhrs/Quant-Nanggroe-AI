@@ -784,7 +784,7 @@ class AutonomousPipeline:
         """Return list of available strategy names."""
         return list(self._strategies.keys())
 
-    async def run(self, symbol: str, strategy_name: str | None = None, use_llm: bool = False, data: Any = None) -> PipelineResult:
+    async def run(self, symbol: str, strategy_name: str | None = None, use_llm: bool = False, data: Any = None, timeframe: str = "D1") -> PipelineResult:
         await self._run_lock.acquire()
         try:
             steps: list[PipelineStep] = []
@@ -795,7 +795,7 @@ class AutonomousPipeline:
             try:
                 s1.status = "running"
                 t0 = time.perf_counter()
-                df = await self._fetch_data(symbol, data)
+                df = await self._fetch_data(symbol, data, timeframe=timeframe)
                 s1.duration_ms = (time.perf_counter() - t0) * 1000
                 if df is None or (hasattr(df, 'empty') and df.empty):
                     raise ValueError("No data returned")
@@ -1146,6 +1146,23 @@ class AutonomousPipeline:
                         self._strategy_logger.log_trigger(log_entry)
                     except Exception as exc:
                         logger.warning("StrategyLogger failed: %s", exc)
+
+                # ── Notification: send Telegram alert on trade execution ──
+                if exec_decision.get("action") in ("buy", "sell") and exec_decision.get("execution") == "filled":
+                    try:
+                        from quant_nanggroe.notifier import send_telegram
+                        _emoji = "🟢" if exec_decision["action"] == "buy" else "🔴"
+                        _msg = (
+                            f"{_emoji} *QNA Trade Executed*\n"
+                            f"*{symbol}* | `{exec_decision['action'].upper()}`\n"
+                            f"Price: `{exec_decision.get('fill_price', current_price):.5f}`\n"
+                            f"Confidence: `{confidence:.0%}` | Regime: {regime}\n"
+                            f"Strategy: {trigger_strategy}\n"
+                            f"Time: {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}"
+                        )
+                        send_telegram(_msg)
+                    except Exception as _notify_err:
+                        logger.debug("Trade notification failed: %s", _notify_err)
 
                 # ── NEW: TradeLifecycleManager — closed trade → eval → evolve ──
                 if self._trade_lifecycle is not None and ClosedTrade is not None:
@@ -1521,7 +1538,7 @@ class AutonomousPipeline:
         except Exception as exc:
             return {"action": signal, "reason": f"LLM unavailable: {exc}", "confidence": confidence, "model": "none"}
 
-    async def _fetch_data(self, symbol: str, data: Any = None) -> Any:
+    async def _fetch_data(self, symbol: str, data: Any = None, timeframe: str = "D1") -> Any:
         if data is not None:
             return data
         import asyncio
@@ -1531,7 +1548,12 @@ class AutonomousPipeline:
         if dm is not None:
             try:
                 from quant_nanggroe.types.market import TimeFrame
-                ohlcv_list = await dm.get_ohlcv(symbol, timeframe=TimeFrame.D1, limit=500)
+                # Map timeframe string to TimeFrame enum
+                _tf_str_map = {"M1": "M1", "M5": "M5", "M15": "M15", "M30": "M30",
+                               "H1": "H1", "H4": "H4", "D1": "D1"}
+                _tf_name = _tf_str_map.get(timeframe.upper(), "D1")
+                _tf_enum = getattr(TimeFrame, _tf_name, TimeFrame.D1)
+                ohlcv_list = await dm.get_ohlcv(symbol, timeframe=_tf_enum, limit=500)
                 if ohlcv_list and len(ohlcv_list) >= 50:
                     rows = [{"open": float(c.open), "high": float(c.high), "low": float(c.low), "close": float(c.close), "volume": float(c.volume)} for c in ohlcv_list]
                     df = pd.DataFrame(rows, index=pd.DatetimeIndex([c.timestamp for c in ohlcv_list]))
@@ -1552,7 +1574,11 @@ class AutonomousPipeline:
                     if hasattr(b, "_mt5") and b._mt5 and b._mt5.connected:
                         import MetaTrader5 as _mt5mod
                         resolved = b._mt5.resolve_symbol(symbol)
-                        raw = b._mt5.get_rates(resolved, _mt5mod.TIMEFRAME_D1, 500)
+                        # Map timeframe string to MT5 enum
+                        _tf_map = {"M1": 1, "M5": 5, "M15": 15, "M30": 30,
+                                   "H1": 16385, "H4": 16388, "D1": 16408}
+                        _tf_enum = _tf_map.get(timeframe.upper(), 16408)
+                        raw = b._mt5.get_rates(resolved, _tf_enum, 500)
                         if raw and len(raw) >= 50:
                             # MT5 rates are tuples: (time, open, high, low, close, tick_volume, ...)
                             df = pd.DataFrame(raw, columns=["time", "open", "high", "low", "close", "volume"] + [f"_extra_{i}" for i in range(len(raw[0]) - 6)] if len(raw[0]) > 6 else ["time", "open", "high", "low", "close", "volume"])

@@ -359,15 +359,21 @@ def run_daemon(args: argparse.Namespace) -> int:
     _write_pid()
     agents = load_agent_config()
 
-    # ── Start PipelineScheduler (ALWAYS — this is the trading loop) ──
+    # ── Start CandleScheduler (real-time candle-close watcher) ──
     _scheduler = None
     try:
-        from quant_nanggroe.engine.scheduler import start_default_scheduler
-        interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
-        _scheduler = start_default_scheduler(interval_minutes=interval)
-        logger.info("PipelineScheduler started (interval=%d min)", interval)
+        from quant_nanggroe.engine.candle_scheduler import start_candle_scheduler
+        _scheduler = start_candle_scheduler()
+        logger.info("CandleScheduler started (real-time multi-TF candle-close watcher)")
     except Exception as e:
-        logger.warning("Failed to start PipelineScheduler: %s", e)
+        logger.warning("CandleScheduler failed, falling back to PipelineScheduler: %s", e)
+        try:
+            from quant_nanggroe.engine.scheduler import start_default_scheduler
+            interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
+            _scheduler = start_default_scheduler(interval_minutes=interval)
+            logger.info("PipelineScheduler fallback started (interval=%d min)", interval)
+        except Exception as e2:
+            logger.warning("Both schedulers failed: %s / %s", e, e2)
 
     daemon = DaemonRunner(agents)
     try:
@@ -378,9 +384,10 @@ def run_daemon(args: argparse.Namespace) -> int:
         daemon.stop_all()
         if _scheduler is not None:
             try:
-                from quant_nanggroe.engine.scheduler import stop_default_scheduler
-                stop_default_scheduler()
-                logger.info("PipelineScheduler stopped")
+                # Try candle scheduler stop first, then legacy scheduler
+                if hasattr(_scheduler, 'stop'):
+                    _scheduler.stop()
+                    logger.info("Scheduler stopped")
             except Exception as e:
                 logger.warning("Error stopping scheduler: %s", e)
         if PID_FILE.exists():
