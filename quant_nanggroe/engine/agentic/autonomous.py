@@ -1121,7 +1121,8 @@ class AutonomousPipeline:
             try:
                 s5.status = "running"
                 t0 = time.perf_counter()
-                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision)
+                _atr_for_exec = self._compute_atr(df) if df is not None else 0.0
+                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision, df=df, atr_value=_atr_for_exec, timeframe=timeframe)
                 s5.duration_ms = (time.perf_counter() - t0) * 1000
                 s5.status = "passed"
                 s5.result = exec_decision.get("action", "hold")
@@ -1496,23 +1497,26 @@ class AutonomousPipeline:
 
     def _check_risk(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0) -> tuple[bool, str, dict]:
         metrics = {"max_drawdown": 0.0, "daily_pnl": 0.0, "price": current_price}
+        em = self._em
+        # FAIL-CLOSED: no execution manager / risk gates wired => BLOCK.
+        # The old code swallowed this and let the trade proceed unchecked.
+        if em is None or getattr(em, "_risk_manager", None) is None or getattr(em, "_kill_switch", None) is None:
+            return False, "FAIL-CLOSED: execution manager / risk gates not wired", metrics
         try:
-            em = self._em
-            if em._kill_switch:
-                ks_status = em._kill_switch.status()
-                if ks_status.get("is_active") or ks_status.get("active"):
-                    return False, "Kill switch active", metrics
-            if em._risk_manager:
-                from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
-                balance = em._risk_manager.state.current_equity
-                stop_loss = current_price * 0.95 if signal == "buy" else (current_price * 1.05 if signal == "sell" else current_price)
-                lot_size = max(0.01, round(balance * MAX_RISK_PER_TRADE / current_price, 4)) if current_price > 0 else 0.01
-                verdict = em._risk_manager.check_trade(symbol=symbol, direction=signal.upper() if signal != "hold" else "HOLD", lot_size=lot_size, entry=current_price, stop_loss=stop_loss, account_balance=balance)
-                if verdict.get("verdict") == "VETOED":
-                    return False, f"RiskManager vetoed: {verdict.get('reason','?')}", {**metrics, "risk_verdict": "VETOED", "checkpoints": verdict.get("checkpoints", {})}
-                metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance})
+            ks_status = em._kill_switch.status()
+            if ks_status.get("is_active") or ks_status.get("active"):
+                return False, "Kill switch active", metrics
+            from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
+            balance = em._risk_manager.state.current_equity
+            stop_loss = current_price * 0.95 if signal == "buy" else (current_price * 1.05 if signal == "sell" else current_price)
+            lot_size = max(0.01, round(balance * MAX_RISK_PER_TRADE / current_price, 4)) if current_price > 0 else 0.01
+            verdict = em._risk_manager.check_trade(symbol=symbol, direction=signal.upper() if signal != "hold" else "HOLD", lot_size=lot_size, entry=current_price, stop_loss=stop_loss, account_balance=balance)
+            if verdict.get("verdict") == "VETOED":
+                return False, f"RiskManager vetoed: {verdict.get('reason','?')}", {**metrics, "risk_verdict": "VETOED", "checkpoints": verdict.get("checkpoints", {})}
+            metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance})
         except Exception as exc:
-            logger.warning("RiskManager check failed: %s", exc)
+            # FAIL-CLOSED: any error inside the risk path BLOCKS the trade.
+            return False, f"FAIL-CLOSED: risk check error: {exc}", metrics
         if confidence < 0.15:
             return False, f"Confidence {confidence:.2f} below 0.15 floor", metrics
         if signal == "hold":
@@ -1681,7 +1685,7 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.debug("Paper price feed skipped: %s", exc)
 
-    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None) -> dict[str, Any]:
+    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1") -> dict[str, Any]:
         try:
             from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
             em = self._em
@@ -1716,8 +1720,8 @@ class AutonomousPipeline:
                     # for swing BTC). Falls back to 2% if ATR unavailable.
                     try:
                         from quant_nanggroe.engine.risk.trading_profile import compute_sl_tp
-                        _atr = atr_val if 'atr_val' in dir() and atr_val else None
-                        if _atr is None or _atr <= 0:
+                        _atr = atr_value if atr_value and atr_value > 0 else None
+                        if (_atr is None or _atr <= 0) and df is not None:
                             # derive rough ATR from recent bars
                             try:
                                 h, l, c = df["high"], df["low"], df["close"]
@@ -1726,9 +1730,11 @@ class AutonomousPipeline:
                                 _atr = float(tr.rolling(14).mean().iloc[-1])
                             except Exception:
                                 _atr = current_price * 0.01
+                        if _atr is None or _atr <= 0:
+                            _atr = current_price * 0.01
                         sltp = compute_sl_tp(
                             side=signal, entry_price=current_price,
-                            atr_value=_atr, timeframe="H1")
+                            atr_value=_atr, timeframe=timeframe)
                         order_sl = sltp["sl"]
                         order_tp = sltp["tp"]
                         logger.info("Profile SL/TP %s %s @%.5f -> SL=%.5f TP=%.5f (%s)",
