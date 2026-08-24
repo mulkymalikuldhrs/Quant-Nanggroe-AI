@@ -1,12 +1,13 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { cn } from "@/lib/utils";
+import { useWebSocket, type WSMessage } from "@/lib/websocket";
 import { Activity, RefreshCw, Zap, Clock, TrendingUp, AlertTriangle, Flame, Filter } from "lucide-react";
 
 interface CandleEvent {
@@ -107,6 +108,41 @@ function CandleMonitorContent() {
     const iv = setInterval(load, 5000);
     return () => clearInterval(iv);
   }, [page, filterSymbol, filterTf]);
+
+  // ── WebSocket live stream (v8.0.6): instant candle-close pushes.
+  // Polling above stays as fallback; both feed the same state.
+  const wsUrl = typeof window !== "undefined"
+    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:8000/api/ws/stream`
+    : "ws://localhost:8000/api/ws/stream";
+  const onWsMessage = useCallback((msg: WSMessage) => {
+    if (msg.type !== "candle" || !msg.candle) return;
+    const ev = msg.candle;
+    setData((prev) => {
+      if (!prev) return prev;
+      const matches =
+        (!filterSymbol || ev.symbol === filterSymbol) &&
+        (!filterTf || ev.timeframe === filterTf);
+      const nextEvents: CandleEvent[] = matches
+        ? [{
+            symbol: ev.symbol, timeframe: ev.timeframe, timestamp: ev.timestamp,
+            signal: ev.signal, confidence: ev.confidence, traded: ev.traded,
+            notified: ev.type !== "system", error: ev.error ?? null,
+            duration_ms: ev.duration_ms ?? 0,
+          }, ...prev.events].slice(0, 50)
+        : prev.events;
+      return { ...prev, events: nextEvents };
+    });
+  }, [filterSymbol, filterTf]);
+
+  const { isConnected: wsConnected, subscribe } = useWebSocket(wsUrl, {
+    autoReconnect: true,
+    onMessage: onWsMessage,
+  });
+  useEffect(() => {
+    if (wsConnected) subscribe(["candles"], []);
+  }, [wsConnected, subscribe]);
+  const wsLive = wsConnected;
+
 
   if (loading && !data) {
     return (

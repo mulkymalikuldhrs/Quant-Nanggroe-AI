@@ -7,6 +7,11 @@ import { useAppStore } from "./store";
 
 export type WSChannel = "price" | "regime" | "risk" | "portfolio" | "candles";
 
+export interface WSSubscription {
+  channels: WSChannel[];
+  symbols: string[];
+}
+
 export interface CandleCloseEvent {
   id: string;
   type: "trade" | "signal" | "system";
