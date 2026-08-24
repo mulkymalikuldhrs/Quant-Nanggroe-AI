@@ -1,0 +1,17 @@
+{
+  "total": 32,
+  "passing": 0,
+  "best": {
+    "sharpe": 0.334,
+    "ret_pct": 3.66,
+    "dd_pct": -3.78,
+    "wr": 29.2,
+    "trades": 281,
+    "lookback": 17,
+    "atr_mult": 1.2,
+    "rr_min": 3.0,
+    "min_confluence": 2,
+    "kelly_fraction": 0.25
+  },
+  "top": []
+}
