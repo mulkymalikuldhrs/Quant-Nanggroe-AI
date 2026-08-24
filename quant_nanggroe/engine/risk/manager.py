@@ -964,11 +964,15 @@ class RiskManager:
         # MTM equity = peak + realized daily + open MTM. Drawdown reads from peak.
         mtm_equity = self.state.peak_equity + self.state.daily_pnl + unrealized_pnl
         self.drawdown_monitor.update(max(mtm_equity, 0.0))
-        # Ponytail fix (phantom-veto kill): do NOT auto-activate kill switch on
-        # unrealized MTM P&L. update_pnl (realized close) handles the real veto;
-        # update_mtm is purely for drawdown monitoring / reporting. Phantom MTM
-        # fluctuations (paper P&L on open positions) that recover by close would
-        # otherwise permanently kill all trading.
+        # Pitfall #41 + phantom-veto reconciliation (2026-08-25): feed the open
+        # loss into the kill-switch auto-check so a mid-crash bleed blocks NEW
+        # positions immediately, not only at trade close. This is now safe to
+        # re-enable because KillSwitch._reconcile() auto-expires stale LEVEL_1
+        # (daily) activations on a new day — a transient MTM fluctuation can no
+        # longer permanently freeze trading. Weekly/drawdown breaches still
+        # require explicit human review by design.
+        if unrealized_pnl < 0:
+            self._auto_check_kill_switch(mtm_daily_loss_pct=unrealized_pnl)
         self._save_state()
 
     def _auto_check_kill_switch(self, mtm_daily_loss_pct: Optional[float] = None) -> None:

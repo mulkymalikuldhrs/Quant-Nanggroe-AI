@@ -143,6 +143,11 @@ class AutoDisableManager:
 
         trailing_sharpe = self._compute_trailing_sharpe(pnl_series)
 
+        if self._paper_mode:
+            # Paper mode observes Sharpe but never flips live enable/disable
+            # state — the decision belongs to the live gate only.
+            return not perf.disabled
+
         if perf.disabled:
             self._check_re_enable(perf, trailing_sharpe)
         else:
