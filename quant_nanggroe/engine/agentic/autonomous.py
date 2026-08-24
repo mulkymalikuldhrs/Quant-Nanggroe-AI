@@ -1897,6 +1897,25 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.warning("Journal sync failed (non-blocking): %s", exc)
 
+        # ── COT Position Guard: close positions conflicting with smart money ──
+        # FAZE 0+ (user mandate): on Monday (or whenever fresh COT data is
+        # available), check open positions against latest COT positioning.
+        # Close only if CONFLICTING + LOSING. Winning conflicts get a warning.
+        try:
+            from quant_nanggroe.engine.risk.cot_position_guard import (
+                scan_and_close_conflicts,
+            )
+            cot_closed = scan_and_close_conflicts(self._em)
+            if cot_closed:
+                logger.warning(
+                    "COT GUARD: closed %d position(s) conflicting with COT: %s",
+                    len(cot_closed),
+                    [(c["symbol"], c["side"], f"${c['pnl']:.2f}") for c in cot_closed],
+                )
+                result["cot_closes"] = cot_closed
+        except Exception as exc:
+            logger.debug("COT guard skipped: %s", exc)
+
         # ── Scorecard: real per-strategy metrics from synced journal ──
         # FAZE 2 (replan): compute REAL expectancy/PF/Sharpe per strategy,
         # transition lifecycle states based on verdicts.

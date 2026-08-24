@@ -31,7 +31,7 @@ log = logging.getLogger('mp_hf')
 
 # Phase 5: best params from 24.5k-bar backtest (verified SR>0.5, DD>-25%)
 BEST_STRATEGIES = [
-    ("DhaherSystem", {"lookback": 14, "atr_mult": 1.5, "rr_min": 3.0, "min_confluence": 3, "kelly_fraction": 0.25}, "Dhaher v1.1 opt", 1.0),
+    ("DhaherSystem", {"lookback": 20, "atr_mult": 1.2, "rr_min": 2.5, "min_confluence": 2, "kelly_fraction": 0.25}, "Dhaher v1.1 gate-pass", 1.0),
     ("WyckoffStrategy", {"lookback": 50, "volume_mult": 1.3, "kelly_fraction": 0.25}, "Wyckoff", 1.0),
     ("MeanReversionStrategy", {"k_period": 14, "d_period": 5, "oversold": 25, "overbought": 75, "kelly_fraction": 0.25}, "MeanRev", 0.85),
 ]
