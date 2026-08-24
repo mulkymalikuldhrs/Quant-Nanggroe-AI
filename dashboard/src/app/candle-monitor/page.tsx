@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { cn } from "@/lib/utils";
-import { Activity, RefreshCw, Zap, Clock, TrendingUp, AlertTriangle, Flame } from "lucide-react";
+import { Activity, RefreshCw, Zap, Clock, TrendingUp, AlertTriangle, Flame, Filter } from "lucide-react";
 
 interface CandleEvent {
   symbol: string;
@@ -63,14 +63,34 @@ function formatUptime(seconds: number): string {
   return `${h}h ${m}m`;
 }
 
+interface SymbolPerf {
+  total: number;
+  traded: number;
+  signals: { buy: number; sell: number; hold: number };
+  avg_confidence: number;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 function CandleMonitorContent() {
-  const [data, setData] = useState<{ status: SchedulerStatus; events: CandleEvent[]; tf_performance: Record<string, TfPerf> } | null>(null);
+  const [data, setData] = useState<{ status: SchedulerStatus; events: CandleEvent[]; tf_performance: Record<string, TfPerf>; symbol_performance: Record<string, SymbolPerf>; pagination: Pagination } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [filterSymbol, setFilterSymbol] = useState<string>("");
+  const [filterTf, setFilterTf] = useState<string>("");
 
   const load = async () => {
     try {
-      const res = await fetch("/api/candle-monitor", { cache: "no-store" });
+      const params = new URLSearchParams({ page: String(page), limit: "50" });
+      if (filterSymbol) params.set("symbol", filterSymbol);
+      if (filterTf) params.set("timeframe", filterTf);
+      const res = await fetch(`/api/candle-monitor?${params}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
@@ -86,7 +106,7 @@ function CandleMonitorContent() {
     load();
     const iv = setInterval(load, 5000);
     return () => clearInterval(iv);
-  }, []);
+  }, [page, filterSymbol, filterTf]);
 
   if (loading && !data) {
     return (
@@ -216,12 +236,65 @@ function CandleMonitorContent() {
         </Card>
       )}
 
+      {/* Symbol Performance */}
+      {data?.symbol_performance && Object.keys(data.symbol_performance).length > 0 && (
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Per-Symbol Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {Object.entries(data.symbol_performance).map(([sym, perf]) => (
+                <button
+                  key={sym}
+                  onClick={() => setFilterSymbol(filterSymbol === sym ? "" : sym)}
+                  className={cn(
+                    "rounded-lg border p-3 text-left transition-colors",
+                    filterSymbol === sym ? "border-blue-500 bg-blue-500/10" : "border-border/30 hover:bg-muted/30"
+                  )}
+                >
+                  <div className="font-mono text-sm font-medium">{sym}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {perf.total} events | {perf.traded} trades
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Avg: {(perf.avg_confidence * 100).toFixed(0)}%
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <div className="flex items-center gap-2">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        {["", "M15", "H1", "H4", "D1"].map((tf) => (
+          <Button
+            key={tf}
+            variant={filterTf === tf ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilterTf(tf)}
+            className="text-xs"
+          >
+            {tf || "All TFs"}
+          </Button>
+        ))}
+        {filterSymbol && (
+          <Badge variant="info" className="gap-1">
+            {filterSymbol}
+            <button onClick={() => setFilterSymbol("")} className="ml-1 hover:text-white">×</button>
+          </Badge>
+        )}
+      </div>
+
       {/* Recent Events */}
       <Card className="border-border/50 bg-card/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Recent Candle Close Events</CardTitle>
+          <CardTitle className="text-sm font-medium">Candle Close Events</CardTitle>
           <CardDescription className="text-xs">
-            {events.length} events | Auto-refreshing every 5s
+            {data?.pagination?.total ?? 0} total events | Page {data?.pagination?.page ?? 1}/{data?.pagination?.pages ?? 1} | Auto-refreshing every 5s
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -232,8 +305,8 @@ function CandleMonitorContent() {
               <p className="text-xs mt-1">Start the daemon to begin monitoring</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-              {events.slice().reverse().map((ev, i) => (
+            <div className="space-y-2">
+              {events.map((ev, i) => (
                 <div
                   key={`${ev.timestamp}-${i}`}
                   className="flex items-center gap-3 rounded-lg border border-border/30 p-3 hover:bg-muted/30 transition-colors"
@@ -264,6 +337,33 @@ function CandleMonitorContent() {
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {(data?.pagination?.pages ?? 0) > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/30">
+              <span className="text-xs text-muted-foreground">
+                Page {data?.pagination?.page ?? 1} of {data?.pagination?.pages ?? 1}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= (data?.pagination?.pages ?? 1)}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

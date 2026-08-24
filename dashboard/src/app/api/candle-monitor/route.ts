@@ -89,10 +89,55 @@ function getTfPerformance() {
   return perf;
 }
 
-export async function GET() {
+function getSymbolPerformance(events: CandleEvent[]) {
+  const perf: Record<string, { total: number; traded: number; signals: Record<string, number>; avg_confidence: number }> = {};
+
+  for (const ev of events) {
+    const sym = ev.symbol;
+    if (!perf[sym]) {
+      perf[sym] = { total: 0, traded: 0, signals: { buy: 0, sell: 0, hold: 0 }, avg_confidence: 0 };
+    }
+    perf[sym].total++;
+    if (ev.traded) perf[sym].traded++;
+    perf[sym].avg_confidence += ev.confidence;
+    if (ev.signal in perf[sym].signals) {
+      const sig = ev.signal as "buy" | "sell" | "hold";
+      perf[sym].signals[sig]++;
+    }
+  }
+
+  for (const sym of Object.keys(perf)) {
+    if (perf[sym].total > 0) {
+      perf[sym].avg_confidence = perf[sym].avg_confidence / perf[sym].total;
+    }
+  }
+
+  return perf;
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const limit = parseInt(searchParams.get("limit") || "100", 10);
+  const symbol = searchParams.get("symbol") || undefined;
+  const timeframe = searchParams.get("timeframe") || undefined;
+
+  let events = getCandleEvents();
+
+  // Filter
+  if (symbol) events = events.filter((e) => e.symbol === symbol);
+  if (timeframe) events = events.filter((e) => e.timeframe === timeframe);
+
+  // Paginate (newest first)
+  const total = events.length;
+  const offset = (page - 1) * limit;
+  const paged = events.slice().reverse().slice(offset, offset + limit);
+
   return NextResponse.json({
     status: getSchedulerStatus(),
-    events: getCandleEvents(),
+    events: paged,
     tf_performance: getTfPerformance(),
+    symbol_performance: getSymbolPerformance(events),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   });
 }

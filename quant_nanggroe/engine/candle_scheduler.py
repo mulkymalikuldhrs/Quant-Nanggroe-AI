@@ -382,117 +382,42 @@ class CandleScheduler:
     async def _run_analysis(
         self, symbol: str, timeframe: str,
     ) -> tuple[str, float, bool]:
-        """Run multi-TF analysis for a symbol after candle close.
+        """Run analysis for a symbol after candle close.
+
+        Delegates to the autonomous pipeline which handles:
+        data fetch, regime detection, signal generation, risk checks, execution.
 
         Returns (signal, confidence, traded).
         """
-        # Get multi-TF data (current TF + lower TFs for alignment)
-        tf_index = self.timeframes.index(timeframe) if timeframe in self.timeframes else len(self.timeframes) - 1
-        relevant_tfs = self.timeframes[tf_index:]  # current + lower
-
-        # Fetch data for each timeframe
-        import MetaTrader5 as mt5
-        from quant_nanggroe.connectors.mt5_broker import MT5Broker
-        import pandas as pd
-
-        tf_data: dict[str, pd.DataFrame] = {}
-        for tf in relevant_tfs:
-            tf_enum = MT5_TF_MAP.get(tf, 16408)
-            try:
-                rates = mt5.copy_rates_from_pos(symbol, tf_enum, 0, 500)
-                if rates and len(rates) >= 50:
-                    cols = ["time", "open", "high", "low", "close", "volume"]
-                    if len(rates[0]) > 6:
-                        cols += [f"_e{i}" for i in range(len(rates[0]) - 6)]
-                    df = pd.DataFrame(rates, columns=cols[:len(rates[0])])
-                    df["time"] = pd.to_datetime(df["time"], unit="s")
-                    df.set_index("time", inplace=True)
-                    df = df[["open", "high", "low", "close", "volume"]].astype(float)
-                    tf_data[tf] = df
-            except Exception:
-                pass
-
-        if not tf_data:
-            return "hold", 0.0, False
-
-        # Use the triggering TF as primary data
-        primary_df = tf_data.get(timeframe)
-        if primary_df is None or len(primary_df) < 50:
-            return "hold", 0.0, False
-
-        # Get current price
         try:
-            tick = mt5.symbol_info_tick(symbol)
-            current_price = float(tick.ask) if tick else float(primary_df["close"].iloc[-1])
-        except Exception:
-            current_price = float(primary_df["close"].iloc[-1])
-
-        # ── News/Geo/Sentiment context ──
-        news_bias = 0.0
-        try:
-            from quant_nanggroe.providers.news_provider import fetch_news_sentiment
-            news = fetch_news_sentiment(symbol)
-            if news and "sentiment_score" in news:
-                news_bias = float(news["sentiment_score"])
-        except Exception:
-            pass
-
-        # ── Regime detection on primary TF ──
-        regime = "unknown"
-        regime_conf = 0.0
-        try:
-            from quant_nanggroe.engine.regime.enhanced_regime import detect_enhanced_regime
-            er = detect_enhanced_regime(primary_df)
-            regime = er.regime
-            regime_conf = er.confidence
-        except Exception:
-            pass
-
-        # ── Multi-TF alignment check ──
-        alignment = self._check_mtf_alignment(tf_data, timeframe)
-
-        # ── Signal generation via autonomous pipeline ──
-        try:
+            import MetaTrader5 as mt5
             from quant_nanggroe.engine.agentic import get_autonomous_pipeline
             pipeline = get_autonomous_pipeline()
             if not pipeline.list_available_strategies():
                 pipeline.load_strategies()
 
-            signal, confidence, reason = pipeline._generate_signal(
-                symbol, None, primary_df,
-                regime=regime,
+            # Run the full pipeline — it fetches its own data, generates signals,
+            # runs risk checks, and executes trades
+            result = await pipeline.run(
+                symbol=symbol,
+                strategy_name=None,
+                data=None,
+                timeframe=timeframe,
             )
 
-            # Adjust confidence based on MTF alignment
-            if alignment["aligned"]:
-                confidence = min(1.0, confidence * 1.2)  # boost for alignment
-            else:
-                confidence = confidence * 0.7  # penalty for misalignment
-
-            # Apply news bias
-            if news_bias != 0:
-                if (news_bias > 0 and signal == "buy") or (news_bias < 0 and signal == "sell"):
-                    confidence = min(1.0, confidence * 1.1)
-                elif (news_bias > 0 and signal == "sell") or (news_bias < 0 and signal == "buy"):
-                    confidence = confidence * 0.8
+            signal = result.signal if hasattr(result, "signal") else "hold"
+            confidence = result.decision.get("confidence", 0.0) if hasattr(result, "decision") else 0.0
+            traded = result.success and signal in ("buy", "sell")
 
             logger.info(
-                "Analysis %s %s: signal=%s conf=%.2f regime=%s align=%s news=%.2f",
-                symbol, timeframe, signal, confidence, regime,
-                "YES" if alignment["aligned"] else "NO", news_bias,
+                "Pipeline %s %s: signal=%s conf=%.2f success=%s",
+                symbol, timeframe, signal, confidence, result.success,
             )
-
-            # ── Execute trade if confidence >= threshold ──
-            traded = False
-            if signal != "hold" and confidence >= self.min_confidence:
-                traded = await self._execute_trade(
-                    symbol, signal, confidence, current_price, regime, timeframe,
-                )
 
             return signal, confidence, traded
 
         except Exception as exc:
-            logger.debug("Signal generation failed for %s %s: %s", symbol, timeframe, exc)
+            logger.debug("Pipeline failed for %s %s: %s", symbol, timeframe, exc)
             return "hold", 0.0, False
 
     def _check_mtf_alignment(
@@ -532,24 +457,6 @@ class CandleScheduler:
             "bullish_count": bullish,
             "bearish_count": bearish,
         }
-
-    async def _execute_trade(
-        self, symbol: str, signal: str, confidence: float,
-        price: float, regime: str, timeframe: str,
-    ) -> bool:
-        """Execute a trade through the autonomous pipeline."""
-        try:
-            from quant_nanggroe.engine.agentic import get_autonomous_pipeline
-            pipeline = get_autonomous_pipeline()
-            result = await pipeline.run(
-                symbol=symbol,
-                strategy_name=None,
-                data=None,  # pipeline fetches its own data
-            )
-            return result.success and result.signal in ("buy", "sell")
-        except Exception as exc:
-            logger.warning("Trade execution failed for %s: %s", symbol, exc)
-            return False
 
     async def _notify(
         self, symbol: str, timeframe: str, signal: str,
