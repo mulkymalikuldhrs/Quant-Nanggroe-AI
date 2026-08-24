@@ -860,22 +860,41 @@ class AutonomousPipeline:
                 except Exception as exc:
                     logger.debug("TrailingStop update skipped for %s: %s", symbol, exc)
 
-            # ── Step 1.5: Regime Detection ──────────────────────────────
+            # ── Step 1.5: Regime Detection (Enhanced Composite) ─────────
+            # v8.0: Uses ADX + momentum + GARCH composite instead of single
+            # MarketRegimeDetector. More robust, harder to fool.
             regime = "unknown"
             regime_confidence = 0.0
             try:
-                from quant_nanggroe.engine.autoswitch import REGIME_STRATEGY_MAP, StrategyType
-                from quant_nanggroe.engine.market_state import MarketRegimeDetector
-                closes = df["close"].tolist() if "close" in df.columns else []
-                volumes = df["volume"].tolist() if "volume" in df.columns else None
-                detector = MarketRegimeDetector()
-                regime_result = detector.detect(closes, volumes, symbol)
-                regime = regime_result.regime.value if hasattr(regime_result, "regime") else "unknown"
-                regime_confidence = regime_result.confidence if hasattr(regime_result, "confidence") else 0.0
-                strategy_type = REGIME_STRATEGY_MAP.get(regime_result.regime, StrategyType.PAUSED)
-                result.decision["regime"] = {"regime": regime, "confidence": regime_confidence, "strategy_type": strategy_type.value}
+                from quant_nanggroe.engine.regime.enhanced_regime import (
+                    detect_enhanced_regime,
+                )
+                er = detect_enhanced_regime(df)
+                regime = er.regime
+                regime_confidence = er.confidence
+                result.decision["regime"] = {
+                    "regime": regime,
+                    "confidence": regime_confidence,
+                    "scores": er.scores,
+                }
+                logger.debug("Enhanced regime %s: %s conf=%.2f",
+                             symbol, regime, regime_confidence)
             except Exception as exc:
-                logger.warning("Regime detection failed: %s", exc)
+                logger.warning("Enhanced regime failed, falling back: %s", exc)
+                # Fallback to legacy detector
+                try:
+                    from quant_nanggroe.engine.autoswitch import REGIME_STRATEGY_MAP, StrategyType
+                    from quant_nanggroe.engine.market_state import MarketRegimeDetector
+                    closes = df["close"].tolist() if "close" in df.columns else []
+                    volumes = df["volume"].tolist() if "volume" in df.columns else None
+                    detector = MarketRegimeDetector()
+                    regime_result = detector.detect(closes, volumes, symbol)
+                    regime = regime_result.regime.value if hasattr(regime_result, "regime") else "unknown"
+                    regime_confidence = regime_result.confidence if hasattr(regime_result, "confidence") else 0.0
+                    strategy_type = REGIME_STRATEGY_MAP.get(regime_result.regime, StrategyType.PAUSED)
+                    result.decision["regime"] = {"regime": regime, "confidence": regime_confidence, "strategy_type": strategy_type.value}
+                except Exception as exc2:
+                    logger.warning("Legacy regime also failed: %s", exc2)
 
             # ── AIHF Bridge Signals (before council/ensemble) ──────────
             aihf_signal_override = None
