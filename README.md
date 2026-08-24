@@ -44,6 +44,9 @@ cp .env.example .env
 # Full autonomous mode (real-time candle-close scheduler)
 python qna.py daemon
 
+# System tray (start/stop daemon, open dashboard — Windows)
+python qna_tray.py
+
 # API server
 python qna.py api
 
@@ -56,23 +59,29 @@ cd dashboard && npm run dev
 ## 📊 System Architecture
 
 ```
-qna.py daemon
+qna.py daemon / qna_tray.py
   → candle_scheduler.py:start_candle_scheduler()
     → _tick_loop() — monitors MT5 ticks every 1s
       → _check_all_closes() — detects candle close per symbol+TF
         → _run_analysis(symbol, tf)
-          → pipeline.run() — full pipeline: data → signal → risk → execute
+          → pipeline.run() — full pipeline:
+             data(stale-veto) → signal(aggregation) → risk(9-gate)
+             → context gate(news blackout) → execute(duplicate-position
+               gate + fill-status gate) → broker truth
             → Telegram notification on trade/signal
             → SQLite trade history (unlimited)
-            → Strategy scorecard + lifecycle eval
+            → WebSocket push ("candles" channel) + dashboard live
 ```
 
 ### Key Modules
 
 | Module | Purpose |
 |--------|---------|
+| `qna_tray.py` | Windows system tray: daemon control, dashboard links |
 | `engine/candle_scheduler.py` | Real-time candle-close multi-TF scheduler |
+| `engine/candle_events.py` | Thread→async event bus for WS candle pushes |
 | `engine/agentic/autonomous.py` | Autonomous trading pipeline (timeframe-aware) |
+| `engine/agentic/context_gate.py` | High-impact news blackout veto (±30 min) |
 | `engine/execution/signal_aggregator.py` | ONE position per symbol, fixed 0.5% risk |
 | `engine/risk/manager.py` | 9-checkpoint risk gate + kill switch |
 | `engine/trade_history.py` | SQLite-backed unlimited trade history |

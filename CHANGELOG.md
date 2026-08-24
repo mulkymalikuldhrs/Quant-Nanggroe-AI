@@ -1,5 +1,28 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.6 — News Gate + WebSocket Live + System Tray (2026-08-25)
+
+### 📰 Macro/News Context Gate (wired into live path)
+- **FIX: phantom calendar** (`fundamental/calendar.py`) — wrapper imported `engine/data/economic_calendar.EconomicCalendarData` which DOES NOT EXIST → silently returned [] forever. Now points at the real provider (`engine/macro/economic_calendar.EconomicCalendarProvider`).
+- **NEW: `engine/agentic/context_gate.py`** — pre-trade event-risk veto: a high-importance release within ±30 min blocks NEW entries. Calendar unavailable → NEUTRAL (context filter, not constitutional); real data showing imminent event → VETO. Result cached 5 min.
+- Wired into pipeline `run()` as Step 3.5, after risk check.
+
+### 📡 WebSocket Candle-Close Events (real-time push)
+- **NEW: `engine/candle_events.py`** — thread-safe event bus bridging CandleScheduler thread → async WS world. Bounded queues per subscriber + 200-event ring buffer for REST fallback.
+- **CandleScheduler** publishes every candle-close event (signal/confidence/traded/duration).
+- **ws.py**: new `"candles"` channel + drain task; clients subscribe via standard protocol; heartbeat/ping unchanged.
+- **Dashboard `/candle-monitor`**: consumes WS pushes instantly (badge shows WS LIVE vs POLLING); REST polling kept as fallback.
+
+### 🖥️ System Tray (`qna_tray.py`)
+- Windows tray icon: green = daemon running, red = stopped (auto-refreshes every 3s from PID-file broker truth).
+- Menu: Start/Stop Daemon · Open Dashboard · Open API Docs · Quit. Run: `python qna_tray.py`.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_context_gate.py`** — 7 tests: no-events allow, imminent/recent veto, distant allow, broken feed NEUTRAL, unparsable time ignored, wrapper reaches REAL provider.
+- **Full battery**: 285 pass · Dashboard build clean (36 pages).
+
+---
+
 ## v8.0.5 — Data Layer Audit: Stale Veto + REAL-ONLY Data (2026-08-25)
 
 ### 🔴 Fixes (audit round 2 — data layer)
