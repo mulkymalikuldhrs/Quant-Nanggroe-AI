@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import queue
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -58,6 +59,8 @@ class ConnectionManager:
             self._push_task = asyncio.create_task(self._push_loop())
         if self._heartbeat_task is None or self._heartbeat_task.done():
             self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        if getattr(self, "_candle_task", None) is None or self._candle_task.done():
+            self._candle_task = asyncio.create_task(self._candle_event_loop())
 
         return cid
 
@@ -129,6 +132,39 @@ class ConnectionManager:
             except Exception as exc:
                 logger.warning("ws_push_loop_error", extra={"error": str(exc)})
                 await asyncio.sleep(5.0)
+
+    async def _candle_event_loop(self) -> None:
+        """Drain the candle_events bus and push to clients on the 'candles' channel.
+
+        Bridges the CandleScheduler thread → async WS world (v8.0.6).
+        """
+        from quant_nanggroe.engine import candle_events
+
+        q = candle_events.subscribe()
+        try:
+            while self.active_connections:
+                try:
+                    # async-friendly wait: poll with small sleep (bus is thread-side)
+                    event = None
+                    try:
+                        event = q.get_nowait()
+                    except queue.Empty:
+                        await asyncio.sleep(0.25)
+                        continue
+                    if event is None:
+                        continue
+                    payload = {"type": "candle", "data": event}
+                    for ws in self.active_connections[:]:
+                        sub = self.subscriptions.get(id(ws)) or {}
+                        if "candles" in sub.get("channels", set()):
+                            await self.send(ws, payload)
+                except asyncio.CancelledError:
+                    break
+                except Exception as exc:
+                    logger.warning("ws_candle_loop_error", extra={"error": str(exc)})
+                    await asyncio.sleep(1.0)
+        finally:
+            candle_events.unsubscribe(q)
 
     # ------------------------------------------------------------------ #
     # Data source access
@@ -458,7 +494,7 @@ async def websocket_stream(websocket: WebSocket) -> None:
             elif action == "list_channels":
                 await websocket.send_json({
                     "type": "channels",
-                    "available": ["price", "regime", "risk", "portfolio"],
+                    "available": ["price", "regime", "risk", "portfolio", "candles"],
                 })
 
     except WebSocketDisconnect:

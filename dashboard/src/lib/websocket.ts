@@ -5,11 +5,19 @@ import { useAppStore } from "./store";
 
 // ── Types ───────────────────────────────────────────────────────────
 
-export type WSChannel = "price" | "regime" | "risk" | "portfolio";
+export type WSChannel = "price" | "regime" | "risk" | "portfolio" | "candles";
 
-export interface WSSubscription {
-  channels: WSChannel[];
-  symbols: string[];
+export interface CandleCloseEvent {
+  id: string;
+  type: "trade" | "signal" | "system";
+  symbol: string;
+  timeframe: string;
+  signal: string;
+  confidence: number;
+  traded: boolean;
+  duration_ms?: number;
+  error?: string;
+  timestamp: string;
 }
 
 export interface WSMessage {
@@ -19,6 +27,7 @@ export interface WSMessage {
   regime?: { market: string; confidence: number };
   risk?: { var_95: number; drawdown: number; kill_switch: boolean };
   portfolio?: { total_value: number; daily_pnl: number; positions: number };
+  candle?: CandleCloseEvent;
   [key: string]: unknown;
 }
 

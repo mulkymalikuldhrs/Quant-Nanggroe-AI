@@ -341,6 +341,26 @@ class CandleScheduler:
             self._results = self._results[-self._max_results:]
         self._save_state()
         self._log_to_history(result)
+        self._publish_event(result)
+
+    def _publish_event(self, result: "CycleResult") -> None:
+        """Push candle-close event to the WS event bus (never blocks)."""
+        try:
+            from quant_nanggroe.engine.candle_events import publish_candle_event
+            publish_candle_event({
+                "id": f"{result.symbol}:{result.timeframe}:{result.timestamp}",
+                "type": "trade" if result.traded else ("signal" if result.signal != "hold" else "system"),
+                "symbol": result.symbol,
+                "timeframe": result.timeframe,
+                "signal": result.signal,
+                "confidence": result.confidence,
+                "traded": result.traded,
+                "duration_ms": round(result.duration_ms, 1),
+                "error": result.error or "",
+                "timestamp": result.timestamp,
+            })
+        except Exception as exc:
+            logger.debug("candle event publish skipped: %s", exc)
 
     def _save_state(self) -> None:
         """Persist scheduler state to JSON for dashboard consumption."""
