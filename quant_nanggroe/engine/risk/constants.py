@@ -74,6 +74,9 @@ SECTOR_DEFAULT: str = "other"
 # This map ensures correct price lookups, SL/TP placement, and PnL calculation.
 # Keys are internal symbols, values are MT5 terminal symbol names.
 MT5_SYMBOL_MAP: dict[str, str] = {
+    # NOTE: suffix resolution is handled dynamically by MT5Broker.resolve_symbol()
+    # which scans the terminal's real symbol list. These are bare-name fallbacks
+    # only used when the broker snapshot is empty.
     "EURUSD": "EURUSD", "GBPUSD": "GBPUSD", "USDJPY": "USDJPY",
     "USDCAD": "USDCAD", "AUDUSD": "AUDUSD", "NZDUSD": "NZDUSD",
     "XAUUSD": "XAUUSD", "XAGUSD": "XAGUSD",

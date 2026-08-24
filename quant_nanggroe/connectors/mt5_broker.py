@@ -111,21 +111,24 @@ class MT5Broker(BrokerConnector):
     def resolve_symbol(self, qna_symbol: str) -> str:
         """Resolve internal symbol to the terminal's actual tradable name.
 
-        Candidate order: exact → dash-stripped → static map → suffixed
-        variants of the best base. Only candidates that exist in the
-        terminal's own symbol list are accepted; if the snapshot is empty
-        we degrade to the static translation (never invent names).
+        Candidate order: exact → dash-stripped → base-only → suffixed
+        variants of the base. The base is always the symbol WITHOUT any
+        existing suffix (so "EURUSD.vx" probes "EURUSD.vxc", not
+        "EURUSD.vx.vxc"). Only candidates that exist in the terminal's
+        own symbol list are accepted.
         """
         avail = getattr(self, "_available_symbols", {}) or {}
         base = _mt5_symbol(qna_symbol)
-        candidates = [qna_symbol, qna_symbol.replace("-", ""), base]
+        # Strip any existing suffix to get the bare base for suffix probing
+        bare = base.split(".")[0] if "." in base else base
+        candidates = [qna_symbol, qna_symbol.replace("-", ""), base, bare]
         # suffix probes derived from what this terminal actually hosts
         suffixes = set()
         for name in avail.values():
             if "." in name:
                 suffixes.add("." + name.rsplit(".", 1)[1])
         for suf in sorted(suffixes):
-            candidates.append(base + suf)
+            candidates.append(bare + suf)
         for cand in candidates:
             hit = avail.get(cand.lower())
             if hit:
@@ -220,13 +223,16 @@ class MT5Broker(BrokerConnector):
         the 'copy_rates_from_pos returned exception set' C-API corruption that
         happens when the cycle imports MetaTrader5 as a second bare module and
         calls copy_rates after the broker already initialized the terminal.
+        Resolves symbol through resolve_symbol() to handle broker suffixes
+        (.vx, .vxc, .m, etc.) automatically.
         Returns a list of rate tuples or empty list on failure.
         """
         if not self.connected or self._mt5 is None:
             return []
         tf = timeframe if timeframe is not None else self._mt5.TIMEFRAME_M15
+        resolved = self.resolve_symbol(symbol)
         try:
-            raw = self._mt5.copy_rates_from_pos(symbol, tf, 0, count)
+            raw = self._mt5.copy_rates_from_pos(resolved, tf, 0, count)
             return list(raw) if raw is not None else []
         except Exception:
             return []

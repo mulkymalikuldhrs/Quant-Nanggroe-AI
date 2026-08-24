@@ -1543,10 +1543,33 @@ class AutonomousPipeline:
                             pass
                     return self._validate_ohlcv(df, symbol)
             except Exception as exc:
-                logger.warning("DataProviderManager failed (%s) — falling back to yfinance", exc)
+                logger.warning("DataProviderManager failed (%s) — falling back to MT5", exc)
+
+        # ── PRIMARY: fetch from connected MT5 broker (real data, real suffixes) ──
+        try:
+            if self._em is not None:
+                for b in self._em._brokers.values():
+                    if hasattr(b, "_mt5") and b._mt5 and b._mt5.connected:
+                        import MetaTrader5 as _mt5mod
+                        resolved = b._mt5.resolve_symbol(symbol)
+                        raw = b._mt5.get_rates(resolved, _mt5mod.TIMEFRAME_D1, 500)
+                        if raw and len(raw) >= 50:
+                            # MT5 rates are tuples: (time, open, high, low, close, tick_volume, ...)
+                            df = pd.DataFrame(raw, columns=["time", "open", "high", "low", "close", "volume"] + [f"_extra_{i}" for i in range(len(raw[0]) - 6)] if len(raw[0]) > 6 else ["time", "open", "high", "low", "close", "volume"])
+                            df["time"] = pd.to_datetime(df["time"], unit="s")
+                            df.set_index("time", inplace=True)
+                            df = df[["open", "high", "low", "close", "volume"]].astype(float)
+                            logger.info("MT5 data fetch: %s → %d bars (real broker data)", symbol, len(df))
+                            return self._validate_ohlcv(df, symbol)
+        except Exception as exc:
+            logger.warning("MT5 data fetch failed for %s: %s", exc)
+
+        # ── FALLBACK: yfinance (only for symbols yfinance knows about) ──
         import yfinance as yf
-        sym_map = {"BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD", "SOL-USD": "SOL-USD", "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X"}
-        yf_sym = sym_map.get(symbol, symbol)
+        sym_map = {"BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD", "SOL-USD": "SOL-USD",
+                    "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X"}
+        bare = symbol.split(".")[0] if "." in symbol else symbol
+        yf_sym = sym_map.get(bare, bare)
         for attempt in range(3):
             try:
                 ticker = yf.Ticker(yf_sym)
@@ -1860,6 +1883,49 @@ class AutonomousPipeline:
         )
         return result
 
+    def _discover_tradable_symbols(self) -> list[str]:
+        """Discover tradable FX/commodity symbols from the connected MT5 terminal.
+
+        Scans the broker's real symbol catalog and returns internal-format
+        names for every enabled FX pair + commodity. Falls back to hardcoded
+        defaults only when MT5 is unavailable.
+        """
+        # Internal names we want to trade (base names, no suffix)
+        WANTED = {"EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD",
+                  "XAUUSD", "XAGUSD", "USOIL", "UKOIL"}
+        try:
+            if self._em is None:
+                raise RuntimeError("no execution manager")
+            for b in self._em._brokers.values():
+                if hasattr(b, "_mt5") and b._mt5 and b._mt5.connected:
+                    import MetaTrader5 as mt5
+                    raw = mt5.symbols_get() or []
+                    found = []
+                    for s in raw:
+                        base = s.name.split(".")[0] if "." in s.name else s.name
+                        if base.upper() in WANTED:
+                            # Use the actual broker symbol name with internal format
+                            if "." in s.name:
+                                # e.g. EURUSD.vxc → internal "EURUSD.vxc"
+                                found.append(s.name)
+                            else:
+                                found.append(base)
+                    if found:
+                        logger.info("MT5 symbol discovery: %d tradable symbols: %s",
+                                    len(found), found)
+                        return found
+                    # If no wanted symbols found with suffix, try bare
+                    found_bare = [s.name for s in raw
+                                  if s.name.upper() in WANTED]
+                    if found_bare:
+                        return found_bare
+        except Exception as exc:
+            logger.debug("MT5 symbol discovery failed: %s", exc)
+        # Fallback — use bare names (MT5Broker.resolve_symbol will handle suffix)
+        fallback = ["EURUSD", "GBPUSD", "XAUUSD"]
+        logger.info("Using fallback symbols: %s", fallback)
+        return fallback
+
     async def run_batch(self, symbols: list[str] | None = None, strategy_name: str | None = None, use_llm: bool = False) -> list[PipelineResult]:
         """Run pipeline for all symbols, then trigger self-evolution loop.
 
@@ -1869,7 +1935,7 @@ class AutonomousPipeline:
         and results stored in WalkForwardRegistry for next-batch filtering.
         """
         if symbols is None:
-            symbols = ["EURUSD.vx", "GBPUSD.vx", "XAUUSD.vx"]
+            symbols = self._discover_tradable_symbols()
         results = []
         for sym in symbols:
             try:
