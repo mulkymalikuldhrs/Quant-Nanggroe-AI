@@ -3,6 +3,7 @@
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
+import { AssistantWidget } from "@/components/assistant/assistant-widget";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +32,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </ErrorBoundary>
         </div>
       </main>
+
+      {/* QNA Assistant — draggable/resizable floating copilot */}
+      <AssistantWidget />
     </div>
   );
 }

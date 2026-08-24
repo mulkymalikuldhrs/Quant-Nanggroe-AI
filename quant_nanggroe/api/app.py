@@ -411,6 +411,12 @@ def create_app() -> FastAPI:
         app.include_router(export_router, prefix="/api", tags=["Export"])
     except Exception as e:
         logger.warning("export_router_load_failed: %s", e)
+    # Assistant — natural-language trading copilot
+    try:
+        from quant_nanggroe.api.routes.assistant import router as assistant_router
+        app.include_router(assistant_router, prefix="/api", tags=["Assistant"])
+    except Exception as e:
+        logger.warning("assistant_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:
