@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 211098748 cent .vxc)
-> Version: v8.0.1 | Last verified: 2026-08-25
+> Version: v8.0.2 | Last verified: 2026-08-25
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,12 +13,12 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.1 (pyproject: 5.1.0) |
+| **Version** | v8.0.2 (pyproject: 5.1.0) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
 | **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$767 USC |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
 | **LiveModeGuard** | ACTIVE — `LiveModeGuard` enforced; no paper mode, MT5 live only |
-| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade) |
+| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications) |
 | **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 9 admitted via CPCV allocation) |
 | **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |
@@ -32,16 +32,21 @@
 
 ```
 qna.py daemon
-  → scheduler.py:256 start_default_scheduler()
-    → _run_cycle()
-      → autonomous.py:1855 run_batch()
-        → ensemble voting (81 strategies loaded, 7 WF-validated admitted)
-          → council of changes (fail-closed)
-            → risk check (9-checkpoint gate)
-              → execution (MT5 live)
-                → trade_journal.py (SQLite, strategy attribution)
-                  → strategy_lifecycle.py (auto-kill/evolve/hibernate)
-                    → self_eval() (per-strategy win_rate, expectancy, kelly, sharpe)
+  → candle_scheduler.py:start_candle_scheduler()
+    → _tick_loop() — monitors MT5 ticks every 1s
+      → _check_all_closes() — detects candle close per symbol+TF
+        → _on_candle_close(symbol, tf, bar_time)
+          → _run_analysis(symbol, tf)
+            → _fetch_data(symbol, tf) — multi-TF: M15/H1/H4/D1
+            → regime detection (enhanced_regime.py)
+            → news/sentiment integration
+            → signal generation (ensemble voting, 83 strategies)
+            → multi-TF alignment check
+            → _execute_trade() if confidence >= 30%
+            → _notify() — Telegram alert on trade/signal
+              → strategy_scorecard.py (per-strategy metrics)
+                → trade_lifecycle.py (eval → evolve)
+                  → strategy_evolver.py (WF-validated mutations)
 ```
 
 ### Core Pipeline
@@ -49,14 +54,16 @@ qna.py daemon
 | Stage | Module | Purpose |
 |-------|--------|---------|
 | Entry | `qna.py` | CLI modes: daemon, api, status, backtest |
-| Scheduler | `engine/scheduler.py` | `_run_cycle()` on interval + crash-restart respawn |
-| Autonomous | `engine/agentic/autonomous.py` | `AutonomousPipeline.run_batch()` — single position per symbol |
+| Scheduler | `engine/candle_scheduler.py` | **CandleScheduler** — real-time candle-close watcher, M15/H1/H4/D1 |
+| Fallback | `engine/scheduler.py` | PipelineScheduler (timer-based, fallback only) |
+| Autonomous | `engine/agentic/autonomous.py` | `AutonomousPipeline.run()` — timeframe-aware, multi-TF data |
 | Ensemble | `engine/agentic/ensemble.py` | Multi-strategy voting with contributor attribution |
 | Council | `engine/agentic/council.py` | `CouncilOfChanges` fail-closed |
 | Risk | `engine/risk/manager.py` | 9-checkpoint gate + kill switch |
 | Execution | `engine/execution/builder.py` | `build_execution_manager()` — account auto-detect |
 | Journal | `trade_journal.py` | SQLite trade log with strategy attribution |
 | Lifecycle | `engine/strategy_lifecycle.py` | Auto-kill/evolve/hibernate per strategy |
+| Notifications | `notifier.py` | Telegram alerts on trades and signals |
 | Self-Eval | `TradeJournal.self_eval()` | Per-strategy win_rate, expectancy, kelly, sharpe |
 
 ---
