@@ -180,6 +180,10 @@ function CandleMonitorContent() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant={wsLive ? "success" : "info"} className="gap-1">
+            <Zap className="h-3 w-3" />
+            {wsLive ? "WS LIVE" : "POLLING"}
+          </Badge>
           <Badge variant={status?.running ? "default" : "danger"} className="gap-1">
             <span className={cn("h-2 w-2 rounded-full", status?.running ? "bg-emerald-400 animate-pulse" : "bg-red-400")} />
             {status?.running ? "RUNNING" : "STOPPED"}
