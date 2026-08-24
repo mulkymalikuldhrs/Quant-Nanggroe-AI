@@ -1,313 +1,299 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/shared/data-table";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
-import { cn, formatCurrency, formatPercent, formatPrice, formatTimestamp } from "@/lib/utils";
-import { apiRequest } from "@/lib/api-client";
-import { Clock, Filter, RefreshCw, Search, TrendingDown, TrendingUp, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { History, RefreshCw, Filter, TrendingUp, BarChart3, AlertTriangle } from "lucide-react";
 
-interface TradeDetail {
-  id: string;
-  ticket: number | null;
+interface TradeEvent {
+  id: number;
   symbol: string;
-  side: "buy" | "sell";
-  volume: number;
+  timeframe: string;
+  signal: string;
+  confidence: number;
+  traded: boolean;
+  regime: string;
+  strategy: string;
   entry_price: number;
-  exit_price: number;
-  entry_time: string;
-  exit_time: string;
   pnl: number;
-  pnl_pct: number | null;
-  commission: number;
-  swap: number;
-  strategy: string | null;
-  broker: string | null;
-  comment: string | null;
+  duration_ms: number;
+  error: string;
+  timestamp: string;
 }
 
-interface TradeHistoryResponse {
-  trades: TradeDetail[];
-  total_count: number;
-  limit: number;
-  filters: Record<string, unknown>;
+interface TradeStats {
+  total: number;
+  trades: number;
+  signals: number;
+  errors: number;
+  last_24h: number;
+  by_symbol: Array<{ symbol: string; total: number; trades: number; avg_confidence: number }>;
+  by_timeframe: Array<{ timeframe: string; total: number; trades: number; avg_confidence: number }>;
 }
+
+const TF_COLORS: Record<string, string> = {
+  M15: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  H1: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  H4: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  D1: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+};
+
+const SIGNAL_COLORS: Record<string, string> = {
+  buy: "bg-emerald-500/20 text-emerald-400",
+  sell: "bg-red-500/20 text-red-400",
+  hold: "bg-slate-500/20 text-slate-400",
+};
 
 function TradeHistoryContent() {
-  const [trades, setTrades] = useState<TradeDetail[]>([]);
+  const [data, setData] = useState<{ events: TradeEvent[]; pagination: { page: number; limit: number; total: number; pages: number }; stats: TradeStats } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [page, setPage] = useState(1);
   const [filterSymbol, setFilterSymbol] = useState("");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [filterStrategy, setFilterStrategy] = useState("");
-  const [filterLimit, setFilterLimit] = useState(50);
+  const [filterTf, setFilterTf] = useState("");
+  const [tradedOnly, setTradedOnly] = useState(false);
 
-  const fetchHistory = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = async () => {
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({ page: String(page), limit: "50" });
       if (filterSymbol) params.set("symbol", filterSymbol);
-      if (filterDateFrom) params.set("date_from", filterDateFrom);
-      if (filterDateTo) params.set("date_to", filterDateTo);
-      if (filterStrategy) params.set("strategy", filterStrategy);
-      params.set("limit", String(filterLimit));
-
-      const data = await apiRequest<TradeHistoryResponse>(`/api/trading/history?${params.toString()}`);
-      setTrades(data.trades || []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load trade history");
-      setTrades([]);
+      if (filterTf) params.set("timeframe", filterTf);
+      if (tradedOnly) params.set("traded", "1");
+      const res = await fetch(`/api/trade-history?${params}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [filterSymbol, filterDateFrom, filterDateTo, filterStrategy, filterLimit]);
+  };
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    load();
+  }, [page, filterSymbol, filterTf, tradedOnly]);
 
-  const totals = useMemo(() => {
-    let grossPnl = 0;
-    let wins = 0;
-    let losses = 0;
-    for (const t of trades) {
-      grossPnl += t.pnl;
-      if (t.pnl > 0) wins++;
-      else if (t.pnl < 0) losses++;
-    }
-    const totalTrades = trades.length;
-    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-    const avgWin = wins > 0 ? grossPnl / totalTrades : 0;
-    return { grossPnl, totalTrades, wins, losses, winRate, avgWin };
-  }, [trades]);
-
-  const columns = [
-    {
-      key: "exit_time",
-      label: "Date",
-      width: "140px",
-      render: (r: TradeDetail) => (
-        <span className="text-[11px] text-white/60">{formatTimestamp(r.exit_time)}</span>
-      ),
-    },
-    {
-      key: "symbol",
-      label: "Symbol",
-      width: "90px",
-      render: (r: TradeDetail) => <span className="font-medium text-white">{r.symbol}</span>,
-    },
-    {
-      key: "side",
-      label: "Side",
-      width: "60px",
-      render: (r: TradeDetail) => (
-        <Badge variant={r.side === "buy" ? "success" : "danger"} size="sm">
-          {r.side === "buy" ? "BUY" : "SELL"}
-        </Badge>
-      ),
-    },
-    {
-      key: "volume",
-      label: "Qty",
-      align: "right" as const,
-      width: "70px",
-      render: (r: TradeDetail) => <span className="font-mono">{r.volume}</span>,
-    },
-    {
-      key: "entry_price",
-      label: "Entry",
-      align: "right" as const,
-      width: "90px",
-      render: (r: TradeDetail) => (
-        <span className="font-mono text-white/60">{formatPrice(r.entry_price, "$")}</span>
-      ),
-    },
-    {
-      key: "exit_price",
-      label: "Exit",
-      align: "right" as const,
-      width: "90px",
-      render: (r: TradeDetail) => (
-        <span className="font-mono text-white/60">{formatPrice(r.exit_price, "$")}</span>
-      ),
-    },
-    {
-      key: "pnl",
-      label: "P&L",
-      align: "right" as const,
-      sortable: true,
-      width: "120px",
-      render: (r: TradeDetail) => (
-        <span className={cn("font-mono font-medium", r.pnl >= 0 ? "text-profit" : "text-loss")}>
-          {formatCurrency(r.pnl)}
-        </span>
-      ),
-    },
-    {
-      key: "pnl_pct",
-      label: "P&L %",
-      align: "right" as const,
-      width: "80px",
-      render: (r: TradeDetail) => (
-        <span className={cn("font-mono", r.pnl_pct != null && r.pnl_pct >= 0 ? "text-profit" : "text-loss")}>
-          {r.pnl_pct != null ? `${r.pnl_pct >= 0 ? "+" : ""}${r.pnl_pct.toFixed(2)}%` : "—"}
-        </span>
-      ),
-    },
-    {
-      key: "strategy",
-      label: "Strategy",
-      width: "100px",
-      render: (r: TradeDetail) => (
-        <span className="text-xs text-white/40">{r.strategy || "—"}</span>
-      ),
-    },
-  ];
-
-  return (
-    <div className="space-y-4 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/trading"
-            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Trading
-          </Link>
+  if (loading && !data) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <History className="h-4 w-4 text-purple-400" />
+          </div>
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Clock className="w-5 h-5 text-emerald-400" />
-              Trade History
-            </h1>
-            <p className="text-sm text-white/40">Closed trades • MT5 & journal sources</p>
+            <h1 className="text-2xl font-bold tracking-tight">Trade History</h1>
+            <p className="text-sm text-muted-foreground">Complete trade and signal log</p>
           </div>
         </div>
-        <Button variant="primary" size="sm" onClick={fetchHistory} loading={loading}>
-          <RefreshCw className="w-3.5 h-3.5" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-32 rounded-xl bg-muted/30 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  const events = data?.events ?? [];
+  const stats = data?.stats;
+  const pagination = data?.pagination;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <History className="h-4 w-4 text-purple-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Trade History</h1>
+            <p className="text-sm text-muted-foreground">Complete trade and signal log (unlimited SQLite storage)</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={load}>
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card className="p-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-white/20" />
-            <span className="text-[10px] text-white/30 uppercase tracking-wider">Filters</span>
-          </div>
-          <Input
-            placeholder="Symbol"
-            value={filterSymbol}
-            onChange={(e) => setFilterSymbol(e.target.value)}
-            className="w-28 h-8 text-xs"
-          />
-          <Input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => setFilterDateFrom(e.target.value)}
-            className="w-36 h-8 text-xs"
-          />
-          <Input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => setFilterDateTo(e.target.value)}
-            className="w-36 h-8 text-xs"
-          />
-          <Input
-            placeholder="Strategy"
-            value={filterStrategy}
-            onChange={(e) => setFilterStrategy(e.target.value)}
-            className="w-28 h-8 text-xs"
-          />
-          <Button variant="secondary" size="sm" onClick={fetchHistory}>
-            <Search className="w-3 h-3" />
-            Search
-          </Button>
-          {(filterSymbol || filterDateFrom || filterDateTo || filterStrategy) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setFilterSymbol("");
-                setFilterDateFrom("");
-                setFilterDateTo("");
-                setFilterStrategy("");
-              }}
-            >
-              Clear
-            </Button>
-          )}
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-red-400" />
+          <span className="text-sm text-red-400">{error}</span>
         </div>
-      </Card>
+      )}
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Total Trades</p>
-            <p className="text-lg font-bold font-mono text-white">{totals.totalTrades}</p>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Total Events</span>
+            </div>
+            <div className="text-2xl font-bold">{stats?.total ?? 0}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Gross P&L</p>
-            <p className={cn("text-lg font-bold font-mono", totals.grossPnl >= 0 ? "text-profit" : "text-loss")}>
-              {formatCurrency(totals.grossPnl)}
-            </p>
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm">💰</span>
+              <span className="text-xs text-muted-foreground">Trades</span>
+            </div>
+            <div className="text-2xl font-bold text-emerald-400">{stats?.trades ?? 0}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Win Rate</p>
-            <p className="text-lg font-bold font-mono text-white">{totals.winRate.toFixed(1)}%</p>
-            <p className="text-[10px] text-white/20 mt-0.5">
-              {totals.wins}W / {totals.losses}L
-            </p>
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Signals</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-400">{stats?.signals ?? 0}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Avg Trade</p>
-            <p className={cn("text-lg font-bold font-mono", totals.avgWin >= 0 ? "text-profit" : "text-loss")}>
-              {formatCurrency(totals.avgWin)}
-            </p>
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Errors</span>
+            </div>
+            <div className="text-2xl font-bold text-amber-400">{stats?.errors ?? 0}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Last 24h</span>
+            </div>
+            <div className="text-2xl font-bold">{stats?.last_24h ?? 0}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Error */}
-      {error && (
-        <Card className="border-red-500/20 bg-red-500/5">
-          <CardContent className="p-3 text-xs text-red-400">{error}</CardContent>
-        </Card>
-      )}
-
-      {/* Trade Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Closed Trades</CardTitle>
-          <Badge variant="info" size="sm">
-            {trades.length} trades
+      {/* Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        {["", "M15", "H1", "H4", "D1"].map((tf) => (
+          <Button
+            key={tf}
+            variant={filterTf === tf ? "default" : "outline"}
+            size="sm"
+            onClick={() => { setFilterTf(tf); setPage(1); }}
+            className="text-xs"
+          >
+            {tf || "All TFs"}
+          </Button>
+        ))}
+        <Button
+          variant={tradedOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => { setTradedOnly(!tradedOnly); setPage(1); }}
+          className="text-xs"
+        >
+          Trades Only
+        </Button>
+        {filterSymbol && (
+          <Badge variant="info" className="gap-1">
+            {filterSymbol}
+            <button onClick={() => { setFilterSymbol(""); setPage(1); }} className="ml-1 hover:text-white">×</button>
           </Badge>
+        )}
+      </div>
+
+      {/* Events */}
+      <Card className="border-border/50 bg-card/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Trade Events</CardTitle>
+          <CardDescription className="text-xs">
+            {pagination?.total ?? 0} total | Page {pagination?.page ?? 1}/{pagination?.pages ?? 1}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={columns}
-            data={trades}
-            keyExtractor={(r) => r.id}
-            loading={loading}
-            emptyMessage="No closed trades found"
-          />
+          {events.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <History className="h-8 w-8 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No trade events yet</p>
+              <p className="text-xs mt-1">Start the daemon to begin recording</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {events.map((ev) => (
+                <div
+                  key={ev.id}
+                  className="flex items-center gap-3 rounded-lg border border-border/30 p-3 hover:bg-muted/30 transition-colors"
+                >
+                  <Badge variant="info" className={cn("text-xs font-mono", TF_COLORS[ev.timeframe])}>
+                    {ev.timeframe}
+                  </Badge>
+                  <button
+                    onClick={() => setFilterSymbol(ev.symbol)}
+                    className="font-mono text-sm font-medium min-w-[80px] hover:text-blue-400 transition-colors"
+                  >
+                    {ev.symbol}
+                  </button>
+                  <Badge className={cn("text-xs", SIGNAL_COLORS[ev.signal])}>
+                    {ev.signal.toUpperCase()}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground min-w-[40px]">
+                    {(ev.confidence * 100).toFixed(0)}%
+                  </span>
+                  {ev.traded && (
+                    <Badge variant="default" className="text-xs bg-emerald-600">
+                      TRADE
+                    </Badge>
+                  )}
+                  {ev.entry_price > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      @ {ev.entry_price.toFixed(5)}
+                    </span>
+                  )}
+                  {ev.pnl !== 0 && (
+                    <span className={cn("text-xs font-medium", ev.pnl > 0 ? "text-emerald-400" : "text-red-400")}>
+                      {ev.pnl > 0 ? "+" : ""}{ev.pnl.toFixed(2)}
+                    </span>
+                  )}
+                  {ev.error && (
+                    <Badge variant="danger" className="text-xs">ERR</Badge>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {new Date(ev.timestamp).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {(pagination?.pages ?? 0) > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/30">
+              <span className="text-xs text-muted-foreground">
+                Page {pagination?.page ?? 1} of {pagination?.pages ?? 1}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= (pagination?.pages ?? 1)}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

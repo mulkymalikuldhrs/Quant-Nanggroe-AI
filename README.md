@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v5.1.0 — Autonomous Quant Hedge Fund
+# Quant Nanggroe AI v8.0.2 — Autonomous Quant Hedge Fund
 
 > **Autonomous Quantitative Hedge Fund — Institutional Grade**
 > **Self-Aware · Self-Correct · Self-Evolve · Self-Fine-Tune · Self-Evaluate**
@@ -19,8 +19,8 @@ QNA is a **fully autonomous quantitative hedge fund platform** that runs, evolve
 | **Self-Evolve** | `engine/strategy/strategies/strategy_evolver.py` | ✅ Walk-forward validated mutations |
 | **Self-Fine-Tune** | `engine/strategy/strategies/self_finetune.py` | ✅ Grid search + optimization |
 | **Self-Evaluate** | `engine/strategy/strategies/strategy_evolver.py` | ✅ Accept/reject gate |
-| **Auto-Registry** | `engine/registry.py` | ✅ Scans ENTIRE repo (1017+ files) |
-| **Standalone** | `engine/standalone.py` | ✅ Runs without Hermes |
+| **Auto-Registry** | `engine/registry.py` | ✅ Scans ENTIRE repo (800+ files) |
+| **Candle Scheduler** | `engine/candle_scheduler.py` | ✅ Real-time M15/H1/H4/D1 candle-close watcher |
 
 ---
 
@@ -41,133 +41,123 @@ cp .env.example .env
 
 ### 3. Run
 ```bash
-# Standalone mode (no Hermes dependency)
-uv run python -m quant_nanggroe.standalone --once --symbols EURUSD
+# Full autonomous mode (real-time candle-close scheduler)
+python qna.py daemon
 
-# Full autonomous mode
-uv run python qna.py status
-uv run python qna.py api
+# API server
+python qna.py api
+
+# Dashboard
+cd dashboard && npm run dev
 ```
 
 ---
 
-## 🏗️ Architecture
+## 📊 System Architecture
 
 ```
-qna.py (single entry point)
-├── engine/
-│   ├── agentic/autonomous.py    — Main pipeline (3,528 LOC)
-│   ├── self_aware.py            — Self-reflection module
-│   ├── registry.py              — Auto-discovery registry (ENTIRE repo)
-│   ├── strategies/              — Active strategies + evolver + fine-tuner
-│   ├── risk/                    — 9-checkpoint risk gate + kill switch
-│   ├── backtest/                — Walk-forward + Monte Carlo + CPCV
-│   ├── execution/               — TWAP/VWAP order slicing
-│   ├── factors/                 — Alpha factor library (15K LOC)
-│   └── 30+ subpackages
-├── agents/                      — 7 AI agent personas
-├── api/                         — 179 FastAPI endpoints
-├── exchange/                    — 6 broker integrations
-├── dashboard/                   — Next.js React UI
-├── tests/                       — 492+ tests
-└── standalone.py                — Zero-Hermes entry point
+qna.py daemon
+  → candle_scheduler.py:start_candle_scheduler()
+    → _tick_loop() — monitors MT5 ticks every 1s
+      → _check_all_closes() — detects candle close per symbol+TF
+        → _run_analysis(symbol, tf)
+          → pipeline.run() — full pipeline: data → signal → risk → execute
+            → Telegram notification on trade/signal
+            → SQLite trade history (unlimited)
+            → Strategy scorecard + lifecycle eval
 ```
+
+### Key Modules
+
+| Module | Purpose |
+|--------|---------|
+| `engine/candle_scheduler.py` | Real-time candle-close multi-TF scheduler |
+| `engine/agentic/autonomous.py` | Autonomous trading pipeline (timeframe-aware) |
+| `engine/execution/signal_aggregator.py` | ONE position per symbol, fixed 0.5% risk |
+| `engine/risk/manager.py` | 9-checkpoint risk gate + kill switch |
+| `engine/trade_history.py` | SQLite-backed unlimited trade history |
+| `engine/strategy_allocation.py` | CPCV per-symbol admission |
+| `engine/analytics/strategy_scorecard.py` | Per-strategy metrics |
+| `engine/analytics/trade_awareness.py` | What/why/how/lesson per trade |
+| `engine/risk/trailing_stop.py` | Breakeven ratchet + ATR trail |
+| `engine/risk/trading_profile.py` | Scalp/day/swing SL-TP profiles |
+| `engine/smc/native_smc.py` | OrderBlock/FVG/BOS/Sweep native |
 
 ---
 
-## 📊 Codebase Metrics
+## 🖥️ Dashboard
 
-| Metric | Value |
-|---|---|
-| Total files | 3,037 |
-| Python LOC | 180,007 (pkg) + 57,014 (tests) |
-| API endpoints | 174 |
-| Strategies | 152 wired (auto-discovered) |
-| Exchange brokers | 6 |
-| Agent personas | 7 |
-| Test pass rate | 94/94 (fast suite) |
+Next.js 16 + React 19 + Tailwind + Radix UI. 36 pages, 10 API routes.
 
----
-
-## 🛡️ Risk Management
-
-- **9-checkpoint constitutional gate** — Every trade validated
-- **Kill switch** — Emergency halt all trading
-- **Daily loss limit** — 2% max daily drawdown
-- **Weekly loss limit** — 3% max weekly drawdown
-- **Position sizing** — Max 10% per trade
-- **TWAP/VWAP** — Smart order execution for large orders
+| Page | Purpose |
+|------|---------|
+| `/` | Main dashboard |
+| `/trading` | Live trading view |
+| `/trading/history` | Unlimited trade history (SQLite) |
+| `/candle-monitor` | Real-time candle close events |
+| `/notifications` | Signal/trade notification feed |
+| `/strategies` | Strategy management |
+| `/risk` | Risk management |
+| `/config` | Configuration center |
+| `/export` | Data export (xlsx/pdf) |
+| `/autonomous` | Autonomous pipeline status |
 
 ---
 
-## 🔄 Evolution Cycle
-
-```
-1. STRATEGY RUNS → produces signals
-2. TRADES EXECUTED → PnL tracked
-3. SELF-EVALUATE → win rate, Sharpe, drawdown analyzed
-4. IF UNDERPERFORMING → trigger evolution
-5. SELF-EVOLVE → mutate parameters (±30% jitter)
-6. VALIDATE → walk-forward backtest on mutated params
-7. SELF-FINE-TUNE → grid search optimization
-8. PROMOTE → only if improved > 2% over baseline
-9. REPEAT → continuously improving
-```
-
----
-
-## 🧪 Testing
+## 🧪 Tests
 
 ```bash
-# Fast suite (core modules)
-uv run python -m pytest tests/ -v --tb=short
+# Core regression (61 tests)
+python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q
 
-# Risk tests only
-uv run python -m pytest tests/test_risk_checks.py tests/test_engine/test_risk.py -v
-
-# Specific module
-uv run python -m pytest tests/test_autonomous_pipeline.py -v
+# Dashboard build
+cd dashboard && node node_modules/next/dist/bin/next build
 ```
 
 ---
 
-## 🔧 Configuration
+## 📁 Project Structure
 
-All credentials use environment variables (never hardcoded):
+```
+Quant-Nanggroe-AI/
+├── qna.py                    # Entry point (daemon/api/status/backtest)
+├── quant_nanggroe/           # Core Python package (800+ files)
+│   ├── engine/               # Trading engine
+│   │   ├── agentic/          # Autonomous pipeline
+│   │   ├── candle_scheduler.py  # Real-time scheduler
+│   │   ├── trade_history.py  # SQLite trade history
+│   │   ├── risk/             # Risk management
+│   │   ├── execution/        # Order execution
+│   │   ├── analytics/        # Performance analytics
+│   │   └── smc/              # Smart Money Concepts
+│   ├── api/                  # FastAPI backend
+│   └── connectors/           # MT5 broker
+├── dashboard/                # Next.js 16 dashboard
+│   └── src/app/              # 36 pages + 10 API routes
+├── tests/                    # 183 test files
+├── CANONICAL.md              # Single Source of Truth
+└── config/                   # Configuration files
+```
 
-| Variable | Description |
-|---|---|
-| `QNA_ADMIN_API_KEY` | Admin API key |
-| `MT5_LOGIN` | MT5 account login |
-| `MT5_PASSWORD` | MT5 account password |
-| `MT5_SERVER` | MT5 broker server |
-| `FREQTRADE_JWT_SECRET` | JWT secret for API server |
-| `FREQTRADE_USERNAME` | API server username |
-| `FREQTRADE_PASSWORD` | API server password |
+---
+
+## 🔒 Security
+
+- **Fail-closed JWT**: Refuses boot if secret is weak/default
+- **REAL-ONLY mode**: No paper trading by default
+- **Kill switch**: C5 cross-process shared state
+- **API key auth**: All routes protected
+- **Rate limiting**: 60 req/min per IP
 
 ---
 
 ## 📚 Documentation
 
-| Doc | Description |
-|---|---|
-| `docs/00_VISION.md` | Project vision |
-| `docs/01_PRD.md` | Product requirements |
-| `docs/02_ARCHITECTURE.md` | Technical architecture |
-| `docs/04_API.md` | API reference |
-| `docs/07_SECURITY.md` | Security architecture |
-| `docs/09_TESTING.md` | Testing guide |
-| `docs/10_ROADMAP.md` | Development roadmap |
-| `docs/19_RISK_REGISTER.md` | Risk management |
-| `QNA_EXTREM_AUDIT_2026-07-24.md` | Latest deep audit |
-| `session-QNA.md` | Session history |
+- `CANONICAL.md` — Single Source of Truth (v8.0.2)
+- `CHANGELOG.md` — Version history
+- `AGENTS.md` — Agent configuration
+- `CLAUDE.md` — Claude Code configuration
 
 ---
 
-## 📜 License
-
-Proprietary — Dhaher Labs. All rights reserved.
-
----
-
-*v5.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+**Version:** v8.0.2 | **Status:** GREEN — LIVE on MT5 | **Broker:** ValetaxIntl-Live2 (Cent, .vxc)

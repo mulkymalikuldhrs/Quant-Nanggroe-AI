@@ -1744,7 +1744,7 @@ class AutonomousPipeline:
                 status=OrderStatus.PENDING,
                 stop_loss=order_sl, take_profit=order_tp,
                 metadata={"confidence": confidence,
-                          "strategy_name": strategy_name or "ensemble",
+                          "strategy_name": (decision or {}).get("strategy_name", "ensemble"),
                           "symbol": symbol},
             )
             fill = await em.execute_order(order)

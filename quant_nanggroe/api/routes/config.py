@@ -30,7 +30,7 @@ CONFIG_PATH = Path(os.environ.get(
 
 class SystemConfig(BaseModel):
     """System configuration exposed to UI."""
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, extra="allow")
     # Trading
     symbols: list[str] = Field(default_factory=lambda: ["EURUSD", "XAUUSD", "BTC-USD"])
     max_position_pct: float = 0.02
@@ -55,9 +55,6 @@ class SystemConfig(BaseModel):
     # Display
     theme: str = "dark"
     language: str = "en"
-
-    class Config:
-        extra = "allow"
 
 
 class ConfigUpdate(BaseModel):

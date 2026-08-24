@@ -1,5 +1,69 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.2 — Candle Scheduler + Dashboard + Critical Fixes (2026-08-25)
+
+### 🕯️ Real-Time Candle-Close Scheduler
+- **NEW: `engine/candle_scheduler.py`** — Monitors MT5 ticks every 1s, detects candle close per symbol+TF
+- **M15/H1/H4/D1 analysis pyramid** with HTF alignment check
+- **Delegates to `pipeline.run()`** for end-to-end execution (data→signal→risk→trade)
+- **Telegram notifications** on every trade/signal
+- **SQLite trade history** (unlimited storage, replaces 500-event JSON buffer)
+- **State persistence** to `data/` for dashboard consumption
+
+### 🖥️ Dashboard Upgrades
+- **NEW: `/candle-monitor`** — Live TF performance, event history, per-symbol breakdown
+- **NEW: `/notifications`** — Signal/trade notification feed with filtering
+- **NEW: `/trading/history`** — Unlimited trade history with pagination
+- **NEW: `/api/candle-monitor`** — Paginated candle close events
+- **NEW: `/api/notifications`** — Notification stats and history
+- **NEW: `/api/trade-history`** — SQLite-backed trade history API
+- **36 pages, 10 API routes** — all clean build
+
+### 🐛 Critical Fixes
+- **FIX: `candle_scheduler.py:474`** — `regime` undefined in `_notify()` (every Telegram notification crashed)
+- **FIX: `autonomous.py:1747`** — `strategy_name` undefined in `_make_decision()` (every trade execution crashed)
+- **FIX: `brokers/paper.py:23`** — `from __future__` not at top of file (broke AutoRegistry)
+- **FIX: `assistant-widget.tsx:40`** — `window.innerWidth` in `useState` (SSR crash on `/_not-found`)
+- **FIX: `qna.py`** — PID_DIR relative path → absolute path using PROJECT_ROOT
+- **FIX: `qna.py`** — Version sync 5.1.0 → 8.0.2
+- **FIX: `QNA Launcher.bat`** — Nested quote issues + added `mkdir logs`
+
+### 🧪 Tests
+- **NEW: `test_candle_scheduler.py`** — 15 tests (constants, state, alignment, persistence, singleton)
+- **REWRITE: `test_ml.py`** — Matches actual `engine.models.signal_generator` API
+- **61/61 core regression tests pass**
+
+### 📦 Remotes
+- Codeberg, GitHub ×3, GitLab — all synced + tagged
+
+---
+
+## v8.0.1 — MT5 Suffix Fix + Scheduler Ungating (2026-08-25)
+
+### 🐛 Fixes
+- **FIX: MT5 `.vxc` suffix** — resolve_symbol() probing bug, dynamic symbol discovery
+- **FIX: Scheduler ungated** — removed `QNA_SCHEDULER_ENABLED` env var gate
+- **FIX: `_fetch_data()`** — MT5-primary/yfinance-fallback data path
+- **66/66 core tests pass**
+
+---
+
+## v8.0.0 — Full Autonomous Pipeline Overhaul (2026-08-25)
+
+### 🏗️ Architecture
+- **Signal Aggregation** — ONE position per symbol, fixed 0.5% risk
+- **Native SMC** — OrderBlock/FVG/BOS/Sweep detection
+- **Bayesian Hyperopt** — Parameter optimization
+- **Trading Profiles** — Scalp(M15)/Day(H1)/Swing(D1) SL-TP profiles
+- **Trailing Stop** — Breakeven ratchet + ATR trail
+- **Trade Awareness** — What/why/how/lesson per trade
+- **Strategy Scorecard** — Per-strategy expectancy/PF/Sharpe
+- **Config Center** — Dashboard-based configuration
+- **Export Center** — xlsx/pdf trade export
+- **AI Assistant** — Floating copilot widget
+
+---
+
 ## v5.1.0 — Security Sweep + Cleanup + AutoRegistry v3 (2026-07-24)
 
 ### 🔒 Security

@@ -340,6 +340,7 @@ class CandleScheduler:
         if len(self._results) > self._max_results:
             self._results = self._results[-self._max_results:]
         self._save_state()
+        self._log_to_history(result)
 
     def _save_state(self) -> None:
         """Persist scheduler state to JSON for dashboard consumption."""
@@ -378,6 +379,26 @@ class CandleScheduler:
             events_file.write_text(json.dumps({"notifications": notifications}, default=str), encoding="utf-8")
         except Exception as exc:
             logger.debug("State save failed: %s", exc)
+
+    def _log_to_history(self, result: "CycleResult") -> None:
+        """Log event to SQLite trade history for unlimited persistence."""
+        try:
+            from quant_nanggroe.engine.trade_history import get_trade_history, TradeEvent
+            history = get_trade_history()
+            event = TradeEvent(
+                symbol=result.symbol,
+                timeframe=result.timeframe,
+                signal=result.signal,
+                confidence=result.confidence,
+                traded=result.traded,
+                notified=result.notified,
+                error=result.error or "",
+                duration_ms=result.duration_ms,
+                timestamp=result.timestamp,
+            )
+            history.add_event(event)
+        except Exception as exc:
+            logger.debug("History log failed: %s", exc)
 
     async def _run_analysis(
         self, symbol: str, timeframe: str,
@@ -471,7 +492,6 @@ class CandleScheduler:
                 f"{emoji} *QNA Signal*{trade_tag}\n"
                 f"*{symbol}* [{timeframe}]\n"
                 f"Signal: `{signal.upper()}` @ `{confidence:.0%}`\n"
-                f"Regime: {regime}\n"
                 f"Time: {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}"
             )
             send_telegram(msg)

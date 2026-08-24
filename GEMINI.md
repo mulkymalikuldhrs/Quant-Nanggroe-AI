@@ -2,12 +2,14 @@
 
 Canonical instructions in **AGENTS.md**. This is a quick reference.
 
-**Single entry:** `python qna.py [unified|api|daemon|hedge|status|stop]`
+**Single entry:** `python qna.py [daemon|api|status|stop]`
 
 **Critical:**
 - `PYTHONPATH=""` always — Hermes venv leak breaks `pydantic_core`
 - Fail-closed: C5 KillSwitch cross-process shared state
-- ✅ **Scoring FULLY WIRED** — FusionEngine + 8 scorers + MTFEngine (4-frame) + WeightEvolver (self-evolve) active in 7-stage pipeline
+- ✅ **Candle Scheduler** — real-time M15/H1/H4/D1 candle-close analysis
+- ✅ **Signal Aggregation** — one position per symbol, fixed 0.5% risk
+- ✅ **Trade History** — SQLite-backed unlimited persistence
 - **TTLCache** wired to EconomicScorer + SentimentScorer
 - **mue-x 992 providers** dynamically discovered (no more 760-line manual list)
 - **Weekly loss veto** hard-gated on Path-B

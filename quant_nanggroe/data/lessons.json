@@ -2585,5 +2585,18 @@
     "occurred_at": "2026-07-27T19:25:56.480334+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "a7060c49-bb0",
+    "category": "scheduler",
+    "severity": "error",
+    "summary": "Pipeline cycle failed",
+    "detail": "REAL-ONLY mode: no MT5 account connected. PaperBroker removed \u2014 cannot trade on simulation.",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-24T19:12:10.741282+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

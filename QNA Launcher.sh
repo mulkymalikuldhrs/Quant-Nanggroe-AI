@@ -9,7 +9,7 @@ export PYTHONPATH=""
 
 echo ""
 echo "  ╔════════════════════════════════════════════╗"
-echo "  ║   Quant-Nanggroe-AI v8.0                   ║"
+echo "  ║   Quant-Nanggroe-AI v8.0.2                 ║"
 echo "  ║   Autonomous Quant Hedge Fund              ║"
 echo "  ╚════════════════════════════════════════════╝"
 echo ""

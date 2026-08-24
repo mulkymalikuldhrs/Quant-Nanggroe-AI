@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Paper Broker — DISABLED by default (REAL-ONLY mode).
 
 Set QNA_ALLOW_PAPER=1 to enable for testing only.
@@ -19,8 +21,6 @@ with configurable slippage, commission, and market impact.
 This is the primary broker for backtesting and development.
 Extracted from Misi-Screener's PaperTradingBroker with enhancements.
 """
-
-from __future__ import annotations
 
 import logging
 import random

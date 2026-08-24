@@ -6,7 +6,7 @@ import {
   BarChart3, Sigma, Radio, Settings, ChevronLeft, ChevronRight,
   MemoryStick as Memory, Network, Cog, Shrink, Building2, Activity, GitBranch,
   Menu, X, ChevronRight as ArrowRight, Brain, Download, FileCode,
-  Flame, Bell,
+  Flame, Bell, History,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +24,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, category: "main" },
   { href: "/trading", label: "Trading", icon: ArrowLeftRight, category: "trading" },
+  { href: "/trading/history", label: "Trade History", icon: History, category: "trading", badge: "NEW" },
   { href: "/portfolio", label: "Portfolio", icon: Briefcase, category: "trading" },
   { href: "/brokers", label: "Brokers", icon: Building2, category: "trading" },
   { href: "/risk", label: "Risk", icon: Shield, category: "trading" },

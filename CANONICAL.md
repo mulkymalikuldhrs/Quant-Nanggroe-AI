@@ -111,6 +111,7 @@ qna.py daemon
 | **smc/** | `engine/smc/` | Smart Money Concepts (ICT) |
 | **strategies/** | `engine/strategies/` | 83 strategy implementations — see Section 4 |
 | **strategy_lifecycle.py** | `engine/strategy_lifecycle.py` | Strategy lifecycle management, WF gate |
+| **trade_history.py** | `engine/trade_history.py` | SQLite-backed unlimited trade/signal history (replaces JSON buffer) |
 | **stress_testing/** | `engine/stress_testing/` | Stress testing |
 | **visualization/** | `engine/visualization/` | Visualization |
 

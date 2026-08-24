@@ -5,7 +5,7 @@
 ## Critical Gotchas
 - **PYTHONPATH must be empty** — use `launch.bat`, `qna.bat`, or `set PYTHONPATH=`
 - **QNAI_JWT_SECRET** required for API boot (fail-closed)
-- **Symbols need `.vx` suffix** on Valetax broker
+- **Symbols need `.vxc` suffix** on Valetax broker
 - **FX/Commodity only** — crypto/stocks eliminated per CANONICAL 15.8
 - **Signal Aggregation active** — one position per symbol, fixed 0.5% risk
 - **numpy broken** in .venv — Python 3.14 removed `np.clip`. Use `max(min(x,100),-100)`
@@ -17,12 +17,14 @@
 python qna.py daemon        # autonomous trading loop
 python qna.py api           # FastAPI :8000
 cd dashboard && npm run dev # dashboard :3000
-python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py -q  # core regression
+python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # 61 core regression tests
 ```
 
-## Key Modules (v8.0)
+## Key Modules (v8.0.2)
 | Module | Purpose |
 |--------|---------|
+| `engine/candle_scheduler.py` | Real-time M15/H1/H4/D1 candle-close scheduler |
+| `engine/trade_history.py` | SQLite-backed unlimited trade history |
 | `engine/journal_sync.py` | MT5→journal sync, real PnL |
 | `engine/execution/signal_aggregator.py` | ONE position per symbol |
 | `engine/strategy_allocation.py` | CPCV per-symbol admission + tuned params |

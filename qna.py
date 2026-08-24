@@ -30,11 +30,11 @@ if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
     os.environ["PYTHONPATH"] = ";".join(clean)
     sys.path = [p for p in sys.path if "hermes" not in p.lower()]
-__version__ = "5.1.0"
+__version__ = "8.0.2"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────
-PID_DIR = Path("data/daemons")
+PID_DIR = PROJECT_ROOT / "data" / "daemons"
 PID_FILE = PID_DIR / "qna_daemon.pid"
 
 # ── Logging ─────────────────────────────────────────────────────────
@@ -373,7 +373,8 @@ def run_daemon(args: argparse.Namespace) -> int:
             _scheduler = start_default_scheduler(interval_minutes=interval)
             logger.info("PipelineScheduler fallback started (interval=%d min)", interval)
         except Exception as e2:
-            logger.warning("Both schedulers failed: %s / %s", e, e2)
+            logger.error("CRITICAL: Both schedulers failed — daemon will run but NO TRADING will occur: %s / %s", e, e2)
+            logger.error("Check MT5 connection and try: python qna.py status")
 
     daemon = DaemonRunner(agents)
     try:
