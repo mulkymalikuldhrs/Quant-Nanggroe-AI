@@ -1,8 +1,8 @@
 # CANONICAL.md — Quant-Nanggroe-AI
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
-> Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2 acct 372044706), LiveModeGuard active.
-> Version: v7.2.0 | Last verified: 2026-08-23
+> Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 211098748 cent .vxc)
+> Version: v8.0.1 | Last verified: 2026-08-25
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,18 +13,18 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v7.0.0 (pyproject: 5.1.0) |
+| **Version** | v8.0.1 (pyproject: 5.1.0) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
-| **Live broker** | ValetaxIntl-Live2, account 372044706, balance $1,122.05 |
+| **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$767 USC |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
 | **LiveModeGuard** | ACTIVE — `LiveModeGuard` enforced; no paper mode, MT5 live only |
-| **Session** | 70+ commits this session (8-phase overhaul + deep sweep + strategy consolidation + MT5 auto-detect + Config Center + hygiene + premium UI) |
-| **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 2 admitted via `get_active_strategies`) |
+| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade) |
+| **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 9 admitted via CPCV allocation) |
 | **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |
-| **Tests passing** | 342 core + 18 new (config files + MT5 connector attach) — 73 MT5 broker, 14 config, 4 attach |
-| **Repo stats** | 70+ commits, 806 Python files, 228 test files, 48 API routes (+/api/config/files), 83 strategies |
-| **Dashboard** | 22 routes + Config Center (`/config`), Next.js 16, 48 API backend routes, premium dark-tech |
+| **Tests passing** | 66 core + 14 API (pre-existing pydantic/prometheus errors) — 66/66 core regression |
+| **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 83 strategies |
+| **Dashboard** | 22 routes + Config Center (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes, premium dark-tech |
 
 ---
 
