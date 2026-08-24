@@ -3,10 +3,9 @@ QNA WAR PLAN — Phase 2: Backtest ALL registered strategies.
 Gate: Sharpe>0.5, Return>0%, MaxDD>-25% on EURUSD=X (6mo daily).
 Vectorized generate_signals when possible, bar-by-bar fallback otherwise.
 """
-import sys, json, logging, time
+import sys, json, logging, time, threading
 from pathlib import Path
 from datetime import datetime
-import threading
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -18,7 +17,6 @@ HERE = Path(r'D:/repositories/Quant-Nanggroe-AI-worktree')
 sys.path.insert(0, str(HERE))
 logging.basicConfig(level=logging.ERROR)
 
-# Data
 raw = yf.download("EURUSD=X", period="6mo", interval="1d", progress=False)
 if isinstance(raw.columns, pd.MultiIndex):
     raw.columns = raw.columns.get_level_values(0)
@@ -70,28 +68,29 @@ def extract_signals(name, inst):
                 return pd.Series(result, index=df.index)
         except Exception:
             pass
-    # Bar-by-bar fallback with 60s timeout
+    # Bar-by-bar fallback
     if hasattr(inst, 'generate_signal') and callable(inst.generate_signal):
-        res = {'val': None, 'err': None, 'done': False}
-        def worker():
-            try:
-                warm = 50
-                for i in range(warm, N):
-                    win = inst.generate_signal(df.iloc[:i+1])
-                    if win is None: continue
-                    if isinstance(win, pd.Series):
-                        signals.iloc[i] = win.iloc[-1] if len(win) > 0 else 0
-                    elif hasattr(win, 'signal_type'):
-                        st = win.signal_type.value if hasattr(win.signal_type, 'value') else str(win.signal_type)
-                        signals.iloc[i] = 1 if st == 'buy' else -1 if st == 'sell' else 0
-                res['val'] = signals; res['done'] = True
-            except Exception as e:
-                res['err'] = e; res['done'] = True
-        t = threading.Thread(target=worker, daemon=True); t.start(); t.join(timeout=60)
-        if t.is_alive():
-            raise TimeoutError("timed out 60s")
-        if res['err']: raise res['err']
-        return res['val']
+        warm = 50
+        for i in range(warm, N):
+            win = inst.generate_signal(df.iloc[:i+1])
+            if win is None: continue
+            # StrategySignal
+            direction = getattr(win, 'direction', None)
+            if direction is not None:
+                d = str(direction).lower()
+                if 'buy' in d: signals.iloc[i] = 1
+                elif 'sell' in d: signals.iloc[i] = -1
+                continue
+            # pd.Series fallback
+            if isinstance(win, pd.Series):
+                signals.iloc[i] = win.iloc[-1] if len(win) > 0 else 0
+                continue
+            # Old signal_type fallback
+            if hasattr(win, 'signal_type'):
+                st = win.signal_type.value if hasattr(win.signal_type, 'value') else str(win.signal_type)
+                if st == 'buy': signals.iloc[i] = 1
+                elif st == 'sell': signals.iloc[i] = -1
+        return signals
     return None
 
 results = []
@@ -110,10 +109,6 @@ for idx, name in enumerate(strategies):
         continue
     try:
         signals = extract_signals(name, instance)
-    except TimeoutError:
-        skipped.append(name)
-        print(f"[{idx+1}/{len(strategies)}] {name:30s} SKIP (timeout 60s)")
-        continue
     except Exception as e:
         failed.append(name)
         print(f"[{idx+1}/{len(strategies)}] {name:30s} FAIL ({e})")
