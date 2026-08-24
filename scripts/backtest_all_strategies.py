@@ -10,10 +10,11 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-SRC = Path(r'E:/trading')
-RESULT = SRC / 'results'
+_HERE = Path(__file__).resolve().parent.parent
+SRC = _HERE / 'results'
+RESULT = SRC
 RESULT.mkdir(parents=True, exist_ok=True)
-HERE = Path(r'D:/repositories/Quant-Nanggroe-AI-worktree')
+HERE = _HERE
 sys.path.insert(0, str(HERE))
 logging.basicConfig(level=logging.ERROR)
 

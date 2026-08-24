@@ -10,8 +10,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree")
-sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe")
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
+sys.path.insert(0, str(_REPO / "quant_nanggroe"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger("phase5")
@@ -126,7 +127,7 @@ report = {
     "top_10_sharpe": no_errors[:10],
 }
 
-out = Path(r"D:/repositories/Quant-Nanggroe-AI-worktree/results/phase5_grid_v2.json")
+out = _REPO / "results" / "phase5_grid_v2.json"
 out.write_text(json.dumps(report, indent=2, default=str))
 log.info(f"\n=== GRID COMPLETE === {total} tested, {len(passing)} pass")
 if best:

@@ -6,7 +6,8 @@ import sys, json, logging
 from pathlib import Path
 from datetime import datetime
 
-SRC = Path(r'E:/trading')
+_HERE = Path(__file__).resolve().parent.parent
+SRC = _HERE
 sys.path.insert(0, str(SRC))
 
 RESULT = SRC / 'results'

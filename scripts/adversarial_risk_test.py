@@ -8,7 +8,8 @@ the veto fires correctly. Four tests:
 4. Rubber-stamp check → veto gate actually BLOCKS, not just warns
 """
 import sys
-sys.path.insert(0, "D:/repositories/Quant-Nanggroe-AI-worktree")
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from quant_nanggroe.engine.risk.manager import RiskManager, RiskState
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger

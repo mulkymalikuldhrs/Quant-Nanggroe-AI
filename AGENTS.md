@@ -20,12 +20,13 @@ cd dashboard && npm run dev # dashboard :3000
 python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # 61 core regression tests
 ```
 
-## Key Modules (v8.0.3)
+## Key Modules (v8.0.4)
 | Module | Purpose |
 |--------|---------|
 | `engine/candle_scheduler.py` | Real-time M15/H1/H4/D1 candle-close scheduler |
 | `engine/trade_history.py` | SQLite-backed unlimited trade history |
 | `engine/journal_sync.py` | MT5→journal sync, real PnL |
+| `engine/execution/manager.py` | Guard pipeline → kill switch → risk veto → duplicate-position gate → fill-status gate |
 | `engine/execution/signal_aggregator.py` | ONE position per symbol |
 | `engine/strategy_allocation.py` | CPCV per-symbol admission + tuned params |
 | `engine/analytics/trade_awareness.py` | what/why/how/lesson per trade |
@@ -40,4 +41,4 @@ python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/t
 2. Fail-closed defaults. Phantom/unverifiable = STOP.
 3. REAL-ONLY — no paper/sim/mock fallbacks on live path.
 4. Every risk guard must VETO, not just warn.
-5. One position per symbol. Fixed 0.5% risk per pair.
+5. One position per symbol — ENFORCED at broker-truth level in execute_order().

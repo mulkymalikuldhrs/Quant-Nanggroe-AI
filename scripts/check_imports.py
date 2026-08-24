@@ -1,7 +1,9 @@
 import sys, os, importlib
-sys.path.insert(0, 'D:/repositories/Quant-Nanggroe-AI-worktree')
+from pathlib import Path
+_REPO = str(Path(__file__).resolve().parent.parent)
+sys.path.insert(0, _REPO)
 errors = []
-for root, dirs, files in os.walk('D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe'):
+for root, dirs, files in os.walk(os.path.join(_REPO, 'quant_nanggroe')):
     if '__pycache__' in root or 'archive' in root:
         continue
     for f in files:
@@ -9,7 +11,7 @@ for root, dirs, files in os.walk('D:/repositories/Quant-Nanggroe-AI-worktree/qua
             full = os.path.join(root, f)
             mod = full.replace('/', '.').replace('\\\\', '.').replace('.py', '')
             # also try short form
-            short = full.replace('D:/repositories/Quant-Nanggroe-AI-worktree/', '').replace('/', '.').replace('\\\\', '.').replace('.py', '')
+            short = full.replace(_REPO + '/', '').replace('/', '.').replace('\\', '.').replace('.py', '')
             for m in [mod, short]:
                 try:
                     importlib.import_module(m)

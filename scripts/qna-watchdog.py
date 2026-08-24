@@ -76,6 +76,7 @@ def check_data_staleness() -> bool:
 
 def refresh_cache() -> bool:
     logger.info("Triggering cache refresh...")
+    os.environ["QNA_PROJECT_ROOT"] = str(PROJECT_ROOT)
     try:
         subprocess.run(
             [sys.executable, "-c", """
@@ -83,7 +84,7 @@ import requests, os, csv, sys
 from datetime import datetime, timezone
 key = os.environ.get("QNAI_ALPHA_VANTAGE_API_KEY", "QHZWJNDI1TNNLWV3")
 symbols = {"BTC": "BTC", "ETH": "ETH", "SOL": "SOL", "XRP": "XRP"}
-base = "/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/data/cached_ohlcv"
+base = os.path.join(os.environ.get("QNA_PROJECT_ROOT", str(PROJECT_ROOT)), "data", "cached_ohlcv")
 for sym, av_sym in symbols.items():
     url = f"https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol={av_sym}&market=USD&apikey={key}"
     try:

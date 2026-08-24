@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CREDENTIALS_PATH = "/sdcard/dhaherlabs/credentials.md"
+CREDENTIALS_PATH = str(REPO_ROOT / "credentials.md")
 EXCLUDE_PATTERNS = [
     ".git/", "__pycache__/", ".venv/", "node_modules/",
     "data/backup-orphans/", CREDENTIALS_PATH, "scripts/security_audit.py",

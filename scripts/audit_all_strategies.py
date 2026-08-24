@@ -8,9 +8,10 @@ from pathlib import Path
 from datetime import datetime
 from functools import lru_cache
 
-sys.path.insert(0, 'D:/repositories/Quant-Nanggroe-AI-worktree')
-sys.path.insert(0, 'D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe')
-os.environ["PYTHONPATH"] = 'D:/repositories/Quant-Nanggroe-AI-worktree'
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
+sys.path.insert(0, str(_REPO / 'quant_nanggroe'))
+os.environ["PYTHONPATH"] = str(_REPO)
 
 import numpy as np
 

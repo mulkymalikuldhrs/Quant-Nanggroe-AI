@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from quant_nanggroe.engine.execution.base import Broker, Fill, Order
+from quant_nanggroe.engine.execution.base import Broker, Fill, Order, OrderStatus
 from quant_nanggroe.engine.execution.fill import FillTracker
 from quant_nanggroe.engine.execution.guards.cooldown import CooldownGuard
 from quant_nanggroe.engine.execution.guards.max_position import MaxPositionGuard
@@ -220,6 +220,42 @@ class ExecutionManager:
             logger.error("No broker available for order %s", order.id)
             return None
 
+        # 2.5 ONE-POSITION-PER-SYMBOL mandate (non-negotiable rule #5).
+        # Query BROKER TRUTH (not local state) so restarts/reconciliations
+        # cannot desync. Fail-closed: a failed position query blocks the trade.
+        try:
+            open_positions = await broker.get_positions()
+            duplicates = [
+                p for p in (open_positions or [])
+                if getattr(p, "symbol", "") == order.symbol
+            ]
+            if duplicates:
+                logger.critical(
+                    "Order %s BLOCKED: position already OPEN on %s "
+                    "(%d open, sides=%s) — one-position-per-symbol mandate",
+                    order.id, order.symbol, len(duplicates),
+                    [getattr(p, "side", "?") for p in duplicates],
+                )
+                self._record_audit({
+                    "action": "DUPLICATE_POSITION_BLOCKED",
+                    "order_id": order.id,
+                    "symbol": order.symbol,
+                    "open_count": len(duplicates),
+                })
+                return None
+        except Exception as pos_exc:
+            logger.critical(
+                "Order %s BLOCKED: position query failed (%s) — fail-closed",
+                order.id, pos_exc,
+            )
+            self._record_audit({
+                "action": "POSITION_QUERY_FAILED",
+                "order_id": order.id,
+                "symbol": order.symbol,
+                "reason": str(pos_exc),
+            })
+            return None
+
         # 3. Kill switch — ENFORCED (not just a warning)
         if self._kill_switch is not None:
             # Auto-activate if thresholds breached, then hard-block the order
@@ -305,8 +341,27 @@ class ExecutionManager:
             updated_order = await broker.submit_order(order)
             self._order_manager.track(updated_order)
 
-            # 4. Wait for fill (simplified - in production would be async)
-            # For now, we return the order and let the fill tracker handle it
+            # 5.5 Fill-status gate: a REJECTED order must NEVER produce a Fill.
+            # The old code built a phantom Fill (price 0.0) for rejected orders —
+            # fake Telegram "TRADE EXECUTED", trailing stop anchored at 0,
+            # polluted guard/cooldown state. Fail-closed on any non-FILLED status.
+            if getattr(updated_order, "status", None) != OrderStatus.FILLED:
+                logger.critical(
+                    "Order %s NOT FILLED (status=%s, reason=%s) — no fill returned",
+                    order.id,
+                    getattr(updated_order.status, "value", updated_order.status),
+                    updated_order.metadata.get("reason", "n/a"),
+                )
+                self._record_audit({
+                    "action": "ORDER_NOT_FILLED",
+                    "order_id": order.id,
+                    "status": getattr(updated_order.status, "value", str(updated_order.status)),
+                    "error_code": updated_order.metadata.get("error_code"),
+                    "reason": updated_order.metadata.get("reason"),
+                    "symbol": order.symbol,
+                })
+                return None
+
             self._record_audit({
                 "action": "ORDER_SUBMITTED",
                 "order_id": order.id,

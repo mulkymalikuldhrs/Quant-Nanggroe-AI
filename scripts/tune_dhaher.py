@@ -19,7 +19,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-SRC = Path(r'E:/trading')
+_HERE = Path(__file__).resolve().parent.parent
+SRC = _HERE
 RESULT = SRC / 'results'
 RESULT.mkdir(parents=True, exist_ok=True)
 

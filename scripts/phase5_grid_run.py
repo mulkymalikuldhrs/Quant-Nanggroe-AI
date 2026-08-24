@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree")
-sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe")
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
+sys.path.insert(0, str(_REPO / "quant_nanggroe"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger("phase5")

@@ -1,5 +1,29 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.4 — Full Risk Audit: Fail-Closed Everywhere (2026-08-25)
+
+### 🔴 Critical Fixes (audit round 1)
+- **FIX: `autonomous.py:_check_risk()`** — was FAIL-OPEN: exception or None execution manager got swallowed and the trade proceeded with NO risk check. Now FAIL-CLOSED: blocks on any gate error, missing EM, missing risk manager, or missing kill switch.
+- **FIX: `autonomous.py:_make_decision()`** — referenced phantom variables (`atr_val`, `df`) outside its scope → silent NameError degraded every SL/TP to a fixed 1% ATR guess instead of profile-based SL/TP. Now receives `df`/`atr_value`/`timeframe` from `run()`.
+- **FIX:** `pd.concat` used without pandas import in the ATR derivation fallback.
+
+### 🔴 Critical Fixes (audit round 2 — execution path)
+- **NEW GUARD: ONE-position-per-symbol enforcement** (`manager.py` step 2.5) — the mandate existed on paper but NOTHING blocked a second entry while a position was already open on that symbol. Now `execute_order()` queries BROKER TRUTH via `get_positions()` and blocks duplicates. Fail-closed: a failed position query BLOCKS the trade.
+- **FILL-STATUS GATE** (`manager.py` step 5.5) — a REJECTED order (circuit breaker / MT5 error / zero fill price) used to produce a phantom `Fill(price=0.0)` → fake Telegram "TRADE EXECUTED", trailing stop anchored at 0, polluted cooldown/max-position state. Non-FILLED status now returns None + audit `ORDER_NOT_FILLED`.
+
+### 🟠 Risk Fixes
+- **MTM kill-switch blindness (pitfall #41 regression)** — open-position unrealized loss now trips the daily kill switch (LEVEL_1) mid-crash, not only at trade close. Safe to re-enable because LEVEL_1 auto-expires on a new day via `_reconcile()`; weekly/drawdown breaches still require explicit human review.
+- **`StrategyCorrelationMonitor.paper_mode`** — stored but IGNORED: `check_and_act()` activated the LIVE kill switch from paper data. Suppressed in paper mode now (observes, logs, never acts).
+- **`AutoDisableManager._paper_mode`** — ignored: strategies were auto-disabled from paper P&L. `update()` no longer flips enable/disable state in paper mode.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_risk_gate_failclosed.py`** — 10 tests: fail-closed contract (None EM, missing gates, exceptions, VETOED verdict, hold signal, low confidence), `_make_decision` signature.
+- **NEW: `tests/test_engine/test_one_position_per_symbol.py`** — 6 tests: duplicate symbol blocked, different symbol allowed, empty book allowed, query failure fail-closed, rejected submit → no phantom fill.
+- **Risk suite**: 211 pass (was 197 pass / 4 FAIL).
+- **Full battery**: 272 pass (risk + kill-switch + core regression + new suites).
+
+---
+
 ## v8.0.3 — Fail-Closed Risk Wiring + Launcher Fix (2026-08-25)
 
 ### 🔒 Fail-Closed Risk Guard

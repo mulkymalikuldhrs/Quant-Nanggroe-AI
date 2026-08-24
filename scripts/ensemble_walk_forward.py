@@ -1,14 +1,15 @@
 """Ensemble walk-forward: simpler approach — detect regime, run enabled strategies, combine."""
 import json
 import sys
-
-sys.path.insert(0, "/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree")
 from pathlib import Path
+
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
 
 import numpy as np
 import pandas as pd
 
-DATA_DIR = Path("/sdcard/dhaherlabs/repositories/Quant-Nanggroe-AI-worktree/data/cached_ohlcv")
+DATA_DIR = _REPO / "data" / "cached_ohlcv"
 SYMBOLS = ["BTC", "ETH", "SOL", "XRP", "SPY", "QQQ", "IWM"]
 TRAIN = 252
 TEST = 63

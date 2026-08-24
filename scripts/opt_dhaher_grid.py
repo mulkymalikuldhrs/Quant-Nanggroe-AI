@@ -5,7 +5,8 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-sys.path.insert(0, r'D:/repositories/Quant-Nanggroe-AI-worktree')
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 log = logging.getLogger('opt')
 

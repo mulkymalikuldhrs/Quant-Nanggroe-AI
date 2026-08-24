@@ -49,7 +49,7 @@ def run_grid():
         log.error(f"yfinance failed: {e}")
         # fallback: use backtest_pipeline's get_historical
         try:
-            sys.path.insert(0, "E:/trading")
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from backtest_pipeline import get_historical
             df = get_historical(symbol, days=365, tf="M15")
         except Exception as e2:

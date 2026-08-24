@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-REPO = Path(r"D:/repositories/Quant-Nanggroe-AI-worktree")
+REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 RESULTS = REPO / "results"
 RESULTS.mkdir(parents=True, exist_ok=True)

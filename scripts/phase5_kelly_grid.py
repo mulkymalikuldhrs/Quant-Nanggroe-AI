@@ -7,8 +7,9 @@ import sys, json, logging
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree")
-sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe")
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
+sys.path.insert(0, str(_REPO / "quant_nanggroe"))
 
 import numpy as np, pandas as pd, yfinance as yf
 from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
@@ -16,7 +17,7 @@ from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s')
 log = logging.getLogger('phase5_kelly')
 
-CACHE = Path("D:/repositories/Quant-Nanggroe-AI-worktree/results/eurusd_m15_cache.csv")
+CACHE = _REPO / "results" / "eurusd_m15_cache.csv"
 
 def load_data():
     if CACHE.exists():

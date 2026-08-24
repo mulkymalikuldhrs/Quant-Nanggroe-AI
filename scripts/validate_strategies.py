@@ -8,7 +8,8 @@ Categorizes each failure via the exception type:
 """
 from __future__ import annotations
 import sys, time, traceback
-sys.path.insert(0, "D:/repositories/Quant-Nanggroe-AI-worktree")
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from quant_nanggroe.engine.strategy.strategies import list_strategies, create_strategy
 import quant_nanggroe.engine.strategy.strategies as pkg

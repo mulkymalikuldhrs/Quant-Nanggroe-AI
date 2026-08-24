@@ -1,5 +1,7 @@
 import sys, json, math, time
-sys.path.insert(0, 'D:/repositories/Quant-Nanggroe-AI-worktree')
+from pathlib import Path
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))
 import yfinance as yf
 import numpy as np
 from quant_nanggroe.backtest.strategy_factory import StrategyFactory, StrategyVariant

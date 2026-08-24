@@ -1,5 +1,6 @@
 import sys, os, re
-root = 'D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe'
+from pathlib import Path
+root = str(Path(__file__).resolve().parent.parent / 'quant_nanggroe')
 py_files = []
 for r, dirs, files in os.walk(root):
     if '__pycache__' in r or 'archive' in r:
