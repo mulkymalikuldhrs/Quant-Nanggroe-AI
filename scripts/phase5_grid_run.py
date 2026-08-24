@@ -100,7 +100,7 @@ passing.sort(key=lambda x: x["ret"], reverse=True)
 best = passing[0] if passing else None
 
 report = {"timestamp": datetime.now().isoformat(), "data_bars": len(df), "total_configs": total, "passing": len(passing), "best": best, "top_5": passing[:5]}
-out = Path(r"E:/trading/results/phase5_grid.json")
+out = _REPO / "results" / "phase5_grid.json"
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps(report, indent=2, default=str))
 log.info("\n=== Phase 5 GRID RESULTS ===")

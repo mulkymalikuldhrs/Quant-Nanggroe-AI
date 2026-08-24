@@ -1563,8 +1563,7 @@ class AutonomousPipeline:
                     df = pd.DataFrame(rows, index=pd.DatetimeIndex([c.timestamp for c in ohlcv_list]))
                     if self._data_monitor is not None:
                         try:
-                            from quant_nanggroe.types.market import TimeFrame as _TF
-                            self._data_monitor.record_fetch(symbol, _TF.D1)
+                            self._data_monitor.record_fetch(symbol, _tf_enum)
                         except Exception:
                             pass
                     return self._validate_ohlcv(df, symbol)
@@ -1594,7 +1593,18 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.warning("MT5 data fetch failed for %s: %s", exc)
 
-        # ── FALLBACK: yfinance (only for symbols yfinance knows about) ──
+        # ── FALLBACK: yfinance (RESEARCH/BACKTEST ONLY) ──────────────────
+        # REAL-ONLY mandate: never generate live-trading signals from
+        # indicative Yahoo prices and execute them on MT5 spread prices.
+        # Live mode always has an EM with a connected MT5 broker (builder
+        # raises RuntimeError otherwise) — reaching this branch WITH an EM
+        # means MT5 data failed → FAIL CLOSED, no signal this cycle.
+        if self._em is not None:
+            logger.error(
+                "MT5 data unavailable for %s — FAIL-CLOSED live path "
+                "(yfinance forbidden for live trading signals)", symbol,
+            )
+            return None
         import yfinance as yf
         sym_map = {"BTC-USD": "BTC-USD", "ETH-USD": "ETH-USD", "SOL-USD": "SOL-USD",
                     "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X"}

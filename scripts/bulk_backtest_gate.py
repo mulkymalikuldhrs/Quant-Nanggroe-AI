@@ -112,8 +112,9 @@ out = {
     "note": f"Tested {len(variants)} StrategyFactory variants (of {len(all_variants)} total). 5-fold WF. {elapsed:.0f}s.",
 }
 import os
-os.makedirs("D:/repositories/Quant-Nanggroe-AI-worktree/results", exist_ok=True)
-with open("D:/repositories/Quant-Nanggroe-AI-worktree/results/gate_status.json", "w") as f:
+_results_dir = str(_REPO / "results")
+os.makedirs(_results_dir, exist_ok=True)
+with open(os.path.join(_results_dir, "gate_status.json"), "w") as f:
     json.dump(out, f, indent=1, default=str)
 
 print(f"BACKTEST: {gate_count}/{len(variants)} pass gate. Source: real yfinance M15 EURUSD. WF 5-fold. {elapsed:.0f}s. File: results/gate_status.json")

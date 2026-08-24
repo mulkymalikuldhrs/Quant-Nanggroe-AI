@@ -27,13 +27,19 @@ from quant_nanggroe.engine.agentic.voting import Bias, Signal
 
 logger = logging.getLogger(__name__)
 
-# External project paths
-E_TRADING = "E:/trading"
-E_AI_HEDGE_FUND = "E:/ai-hedge-fund"
-E_HIDDEN_REGIME = "E:/hidden-regime"
-E_TRADING_AGENTS = "E:/tradingagents"
-E_AI_TRADER = "E:/AI-Trader"
-E_LANG_ALPHA = "E:/LangAlpha"
+# External project paths — auto-detect via env vars, fallback to known locations
+import pathlib as _pl
+_REPO = _pl.Path(__file__).resolve().parent.parent.parent.parent
+
+def _ext(name: str, fallback: str) -> str:
+    return os.environ.get(f"QNA_EXT_{name.upper()}", fallback)
+
+E_TRADING = _ext("trading", str(_REPO))
+E_AI_HEDGE_FUND = _ext("ai_hedge_fund", "E:/ai-hedge-fund")
+E_HIDDEN_REGIME = _ext("hidden_regime", "E:/hidden-regime")
+E_TRADING_AGENTS = _ext("trading_agents", "E:/tradingagents")
+E_AI_TRADER = _ext("ai_trader", "E:/AI-Trader")
+E_LANG_ALPHA = _ext("lang_alpha", "E:/LangAlpha")
 
 
 class SignalAdapter:

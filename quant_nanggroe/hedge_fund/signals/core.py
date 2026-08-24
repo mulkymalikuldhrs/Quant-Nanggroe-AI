@@ -191,7 +191,8 @@ def signal_wyckoff(symbol="EURUSD", ctx=None):
 
 def signal_aihf(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/ai-hedge-fund')
+        _path = os.environ.get("QNA_EXT_AI_HEDGE_FUND", "E:/ai-hedge-fund")
+        sys.path.insert(0, _path)
         from src.main import run_hedge_fund
         res = run_hedge_fund({"symbol": symbol})
         b = "neutral" if res.get("decision", "hold") == "hold" else res["decision"]
@@ -204,7 +205,8 @@ def signal_aihf(symbol="EURUSD", ctx=None):
 
 def signal_hidden(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/hidden-regime')
+        _path = os.environ.get("QNA_EXT_HIDDEN_REGIME", "E:/hidden-regime")
+        sys.path.insert(0, _path)
         import yfinance as yf
         from hidden_regime import create_financial_pipeline
         p = create_financial_pipeline()
@@ -232,7 +234,8 @@ def signal_hidden(symbol="EURUSD", ctx=None):
 
 def signal_tradingagents(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/tradingagents')
+        _path = os.environ.get("QNA_EXT_TRADING_AGENTS", "E:/tradingagents")
+        sys.path.insert(0, _path)
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         cfg = DEFAULT_CONFIG.copy()
@@ -259,8 +262,9 @@ def signal_tradingagents(symbol="EURUSD", ctx=None):
 
 def signal_aitrader(symbol="EURUSD", ctx=None):
     try:
+        _cwd = os.environ.get("QNA_EXT_AI_TRADER", "E:/AI-Trader")
         r = subprocess.run(["node", "src/index.js", f"--symbol={symbol}"],
-                           cwd="E:/AI-Trader", capture_output=True, text=True, timeout=15)
+                           cwd=_cwd, capture_output=True, text=True, timeout=15)
         out = r.stdout.lower()
         if "buy" in out:
             return apply_causal_bias({"bias": "buy", "confidence": 0.5, "source": "aitrader"}, symbol, ctx=ctx)
@@ -273,7 +277,8 @@ def signal_aitrader(symbol="EURUSD", ctx=None):
 
 def signal_langalpha(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/LangAlpha')
+        _path = os.environ.get("QNA_EXT_LANG_ALPHA", "E:/LangAlpha")
+        sys.path.insert(0, _path)
         from ptc_cli.main import research
         res = research(symbol)
         if res and isinstance(res, dict):
@@ -289,7 +294,8 @@ def signal_langalpha(symbol="EURUSD", ctx=None):
 
 def signal_aimarketmaker(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/ai-market-maker')
+        _path = os.environ.get("QNA_EXT_AI_MARKET_MAKER", "E:/ai-market-maker")
+        sys.path.insert(0, _path)
         from aimm.execution.executor import execute_strategy as aimm_execute
         res = aimm_execute(symbol, mode="signal")
         if isinstance(res, dict):
@@ -305,7 +311,8 @@ def signal_aimarketmaker(symbol="EURUSD", ctx=None):
 
 def signal_kronos(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/trading')
+        _path = os.environ.get("QNA_EXT_TRADING", str(pathlib.Path(__file__).resolve().parent.parent.parent.parent))
+        sys.path.insert(0, _path)
         import pandas as pd
         import yfinance as yf
         from strategies.kronos_wrapper import KronosSignalProvider
@@ -337,7 +344,8 @@ def signal_kronos(symbol="EURUSD", ctx=None):
 
 def signal_pyportfolioopt(symbol="EURUSD", ctx=None):
     try:
-        sys.path.insert(0, 'E:/PyPortfolioOpt')
+        _path = os.environ.get("QNA_EXT_PYPORTFOLIO_OPT", "E:/PyPortfolioOpt")
+        sys.path.insert(0, _path)
         from pypfopt.efficient_frontier import EfficientFrontier
         from pypfopt.expected_returns import mean_historical_return
         from pypfopt.risk_models import CovarianceShrinkage
