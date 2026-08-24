@@ -331,7 +331,13 @@ class StrategyCorrelationMonitor:
             return status
 
         if avg_corr > self.threshold:
-            if self.kill_switch is not None and not self._fired:
+            if self.paper_mode:
+                # Paper mode observes but never acts on the live kill switch.
+                logger.warning(
+                    "Correlation herding detected in PAPER mode (avg=%.3f) "
+                    "— kill switch suppressed", avg_corr,
+                )
+            elif self.kill_switch is not None and not self._fired:
                 self.kill_switch.activate(
                     level=KillSwitchLevel.LEVEL_1,
                     trigger=KillSwitchTrigger.CORRELATION_HERDING,
