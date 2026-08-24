@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Phase 5 — fangbot Kelly fraction optimization (minimal runtime).
 Precomputes DhaherSystem signals once, then sweeps kelly_fraction + lot scaling.
+SL/TP-aware backtest using EURUSD 1h data.
 """
 import sys, json, logging
 from pathlib import Path
@@ -12,10 +13,10 @@ sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree/quant_nanggroe")
 import numpy as np, pandas as pd, yfinance as yf
 from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 
-logging.basicConfig(level=logging.WARNING, format='%(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s')
 log = logging.getLogger('phase5_kelly')
 
-CACHE = Path("D:/repositories/Quant-Nanggroe-AI-worktree/data/eurusd_h1_730d_cache.csv")
+CACHE = Path("D:/repositories/Quant-Nanggroe-AI-worktree/results/eurusd_m15_cache.csv")
 
 def load_data():
     if CACHE.exists():
@@ -23,7 +24,7 @@ def load_data():
         log.warning(f"Loaded cache: {len(df)} bars")
         return df
     log.warning("Downloading EURUSD 1h (730d)...")
-    df = yf.download("EURUSD=X", period="730d", interval="1h", auto_adjust=False, progress=False)
+    df = yf.download("EURUSD=X", period="60d", interval="15m", auto_adjust=False, progress=False)
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
     df.columns = [c.lower() for c in df.columns]
@@ -50,17 +51,21 @@ def backtest_sltp(sig, kelly_fraction, lot_conf_mult=1.0):
         if pos != 0:
             if pos == 1:
                 if row['low'] <= sl_p:
-                    capital -= abs(ep - sl_p) * lot
+                    risk_pips = abs(ep - sl_p) / 0.0001
+                    capital -= risk_pips * lot * 0.10  # $0.10 per pip per 0.01 lot
                     losses += 1; trades += 1; pos = 0
                 elif row['high'] >= tp_p:
-                    capital += abs(tp_p - ep) * lot
+                    reward_pips = abs(tp_p - ep) / 0.0001
+                    capital += reward_pips * lot * 0.10
                     wins += 1; trades += 1; pos = 0
             elif pos == -1:
                 if row['high'] >= sl_p:
-                    capital -= abs(sl_p - ep) * lot
+                    risk_pips = abs(sl_p - ep) / 0.0001
+                    capital -= risk_pips * lot * 0.10
                     losses += 1; trades += 1; pos = 0
                 elif row['low'] <= tp_p:
-                    capital += abs(ep - tp_p) * lot
+                    reward_pips = abs(ep - tp_p) / 0.0001
+                    capital += reward_pips * lot * 0.10
                     wins += 1; trades += 1; pos = 0
         if pos == 0 and pd.notna(row.get('entry')) and row['entry'] != 0:
             if pd.notna(row['sl']) and pd.notna(row['tp']) and row['sl'] != 0 and row['tp'] != 0:
@@ -81,7 +86,7 @@ def backtest_sltp(sig, kelly_fraction, lot_conf_mult=1.0):
     if trades > 1:
         avg_r = ret / trades / 100.0
         std_r = max(abs(avg_r) * 0.15, 0.0001)
-        sharpe = (avg_r / std_r) * np.sqrt(252)
+        sharpe = (avg_r / std_r) * np.sqrt(252) if std_r > 0 else 0
     else:
         sharpe = 0
     gate_pass = sharpe > 0.5 and ret > 0 and max_dd < 25
@@ -95,9 +100,11 @@ def backtest_sltp(sig, kelly_fraction, lot_conf_mult=1.0):
 def run():
     log.warning("Loading data...")
     df = load_data()
-    log.warning("Precomputing signals (slow)...")
+    log.warning(f"Data: {len(df)} rows")
+    log.warning("Precomputing signals...")
     sig = precompute_signals(df)
-    log.warning(f"Signals: {((sig['entry'] != 0).sum())} entries")
+    entries = int((sig['entry'] != 0).sum())
+    log.warning(f"Signals: {entries} entries")
 
     kelly_fractions = [0.1, 0.125, 0.15, 0.1875, 0.2, 0.25, 0.3, 0.375, 0.5]
     results = []
@@ -118,7 +125,7 @@ def run():
         "version_lock": "v5.1.0",
     }
     out = Path(__file__).parent.parent / "results" / f"phase5_kelly_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    out.write_text(json.dumps(report, indent=2))
+    out.write_text(json.dumps(report, indent=2, default=str))
     log.warning(f"Saved: {out}")
     return report
 
