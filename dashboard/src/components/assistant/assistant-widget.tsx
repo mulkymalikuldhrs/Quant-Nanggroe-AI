@@ -37,7 +37,10 @@ export function AssistantWidget() {
   // ── Panel state ──
   const [visible, setVisible] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const [pos, setPos] = useState({ x: window.innerWidth - 420, y: 80 });
+  const [pos, setPos] = useState(() => ({
+    x: typeof window !== "undefined" ? window.innerWidth - 420 : 0,
+    y: 80,
+  }));
   const [size, setSize] = useState({ w: 380, h: 520 });
   const dragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);

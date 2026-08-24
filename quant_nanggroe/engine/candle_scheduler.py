@@ -99,6 +99,7 @@ class CandleScheduler:
         self.min_confidence = min_confidence
 
         self._running = False
+        self._start_time = time.time()
         self._thread: Optional[threading.Thread] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._task: Optional[asyncio.Task] = None
@@ -338,6 +339,45 @@ class CandleScheduler:
         self._results.append(result)
         if len(self._results) > self._max_results:
             self._results = self._results[-self._max_results:]
+        self._save_state()
+
+    def _save_state(self) -> None:
+        """Persist scheduler state to JSON for dashboard consumption."""
+        try:
+            import json
+            from pathlib import Path
+            state_dir = Path("data")
+            state_dir.mkdir(exist_ok=True)
+            state_file = state_dir / "candle_scheduler_state.json"
+            events_file = state_dir / "notifications.json"
+
+            state = {
+                "running": self._running,
+                "symbols": self.symbols or [],
+                "timeframes": self.timeframes,
+                "total_events": len(self._results),
+                "last_event": self._results[-1].timestamp if self._results else None,
+                "uptime_seconds": time.time() - (self._start_time if hasattr(self, "_start_time") else time.time()),
+            }
+            state_file.write_text(json.dumps(state, default=str), encoding="utf-8")
+
+            # Also write notifications for the notifications page
+            notifications = []
+            for r in self._results:
+                notifications.append({
+                    "id": f"{r.symbol}:{r.timeframe}:{r.timestamp}",
+                    "type": "trade" if r.traded else ("signal" if r.signal != "hold" else "system"),
+                    "symbol": r.symbol,
+                    "timeframe": r.timeframe,
+                    "message": f"{r.signal.upper()} @ {r.confidence:.0%}" + (" [TRADED]" if r.traded else "") + (f" ERR: {r.error}" if r.error else ""),
+                    "signal": r.signal,
+                    "confidence": r.confidence,
+                    "traded": r.traded,
+                    "timestamp": r.timestamp,
+                })
+            events_file.write_text(json.dumps({"notifications": notifications}, default=str), encoding="utf-8")
+        except Exception as exc:
+            logger.debug("State save failed: %s", exc)
 
     async def _run_analysis(
         self, symbol: str, timeframe: str,
