@@ -223,7 +223,7 @@ export default function MarketPage() {
             }
           >
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
-              <span suppressHydrationWarning className="text-2xl font-mono font-bold text-white">{formatCurrency(livePrice)}</span>
+              <span suppressHydrationWarning className="text-2xl font-mono font-bold text-white">{livePrice !== null ? formatCurrency(livePrice) : "—"}</span>
               <Badge variant={wsPrice ? "success" : "info"} className="text-xs">
                 <Activity className="w-3 h-3 mr-1" />
                 {wsPrice ? "WS LIVE" : "FALLBACK"}

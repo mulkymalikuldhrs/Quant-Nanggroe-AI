@@ -738,15 +738,18 @@ function TradingDashboardContent() {
                           <span>Total</span>
                         </div>
                         <div className="space-y-[1px] max-h-[180px] overflow-y-auto">
-                          {orderBook.bids.map((level, i) => (
+                          {(orderBook?.bids ?? []).map((level, i) => (
                             <div key={i} className="flex items-center justify-between text-[11px] font-mono relative">
                               <div className="absolute right-0 top-0 bottom-0 bg-profit/5"
-                                style={{ width: `${(level.total / (orderBook.bids[orderBook.bids.length - 1]?.total || 1)) * 100}%` }} />
+                                style={{ width: `${(level.total / (orderBook?.bids[orderBook.bids.length - 1]?.total || 1)) * 100}%` }} />
                               <span className="text-profit/90 z-10 relative">{level.price.toFixed(2)}</span>
                               <span className="text-white/60 z-10 relative">{level.size.toFixed(3)}</span>
                               <span className="text-white/30 z-10 relative">{level.total.toFixed(3)}</span>
                             </div>
                           ))}
+                          {!orderBook?.bids?.length && (
+                            <p className="text-[10px] text-white/20 py-4 text-center">No order book data</p>
+                          )}
                         </div>
                       </div>
                       {/* Asks */}
@@ -757,15 +760,18 @@ function TradingDashboardContent() {
                           <span>Total</span>
                         </div>
                         <div className="space-y-[1px] max-h-[180px] overflow-y-auto">
-                          {orderBook.asks.map((level, i) => (
+                          {(orderBook?.asks ?? []).map((level, i) => (
                             <div key={i} className="flex items-center justify-between text-[11px] font-mono relative">
                               <div className="absolute right-0 top-0 bottom-0 bg-loss/5"
-                                style={{ width: `${(level.total / (orderBook.asks[orderBook.asks.length - 1]?.total || 1)) * 100}%` }} />
+                                style={{ width: `${(level.total / (orderBook?.asks[orderBook.asks.length - 1]?.total || 1)) * 100}%` }} />
                               <span className="text-loss/90 z-10 relative">{level.price.toFixed(2)}</span>
                               <span className="text-white/60 z-10 relative">{level.size.toFixed(3)}</span>
                               <span className="text-white/30 z-10 relative">{level.total.toFixed(3)}</span>
                             </div>
                           ))}
+                          {!orderBook?.asks?.length && (
+                            <p className="text-[10px] text-white/20 py-4 text-center">No order book data</p>
+                          )}
                         </div>
                       </div>
                     </div>
