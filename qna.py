@@ -30,7 +30,7 @@ if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
     os.environ["PYTHONPATH"] = ";".join(clean)
     sys.path = [p for p in sys.path if "hermes" not in p.lower()]
-__version__ = "6.1.0"
+__version__ = "5.1.0"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────
@@ -960,3 +960,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.critical("Fatal error: %s", e)
         sys.exit(1)
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-e55451c785ac.sh.tmp.XXXXXXXXXX': No such file or directory
