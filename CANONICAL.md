@@ -18,11 +18,12 @@
 | **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$767 USC |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
 | **LiveModeGuard** | ACTIVE — `LiveModeGuard` enforced; no paper mode, MT5 live only |
-| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications + v8.0.3 fail-closed risk wiring + launcher quoting fix) |
+| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications + v8.0.3 fail-closed risk wiring + launcher quoting fix + v8.0.4 universal path auto-detect + full risk audit) |
 | **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 9 admitted via CPCV allocation) |
 | **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |
 | **Tests passing** | 66 core + 14 API (pre-existing pydantic/prometheus errors) — 66/66 core regression |
+| **Path auto-detect** | Universal — all scripts use `Path(__file__).resolve().parent.parent`; no hardcoded `/sdcard`, `D:/`, `E:/` paths. External integrations configurable via `QNA_EXT_*` env vars. |
 | **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 83 strategies |
 | **Dashboard** | 22 routes + Config Center (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes, premium dark-tech |
 

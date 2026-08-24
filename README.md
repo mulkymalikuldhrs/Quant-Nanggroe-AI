@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v8.0.5 — Autonomous Quant Hedge Fund
+# Quant Nanggroe AI v8.0.4 — Autonomous Quant Hedge Fund
 
 > **Autonomous Quantitative Hedge Fund — Institutional Grade**
 > **Self-Aware · Self-Correct · Self-Evolve · Self-Fine-Tune · Self-Evaluate**
@@ -153,11 +153,11 @@ Quant-Nanggroe-AI/
 
 ## 📚 Documentation
 
-- `CANONICAL.md` — Single Source of Truth (v8.0.5)
+- `CANONICAL.md` — Single Source of Truth (v8.0.4)
 - `CHANGELOG.md` — Version history
 - `AGENTS.md` — Agent configuration
 - `CLAUDE.md` — Claude Code configuration
 
 ---
 
-**Version:** v8.0.5 | **Status:** GREEN — LIVE on MT5 | **Broker:** ValetaxIntl-Live2 (Cent, .vxc)
+**Version:** v8.0.4 | **Status:** GREEN — LIVE on MT5 | **Broker:** ValetaxIntl-Live2 (Cent, .vxc)

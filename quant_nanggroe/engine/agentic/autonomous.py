@@ -1057,6 +1057,22 @@ class AutonomousPipeline:
                 result.steps = steps
                 return result
 
+            # ── Step 3.5: Macro/News Context Gate (event-risk veto) ─────
+            try:
+                from quant_nanggroe.engine.agentic.context_gate import check_event_risk
+                ctx = check_event_risk()
+                result.decision["context_gate"] = {"vetoed": ctx["vetoed"], "reason": ctx["reason"]}
+                if ctx["vetoed"] and signal_type != "hold":
+                    s35 = PipelineStep(name="context_gate")
+                    s35.status = "failed"
+                    s35.result = ctx["reason"]
+                    steps.append(s35)
+                    result.reason = f"Context gate blocked: {ctx['reason']}"
+                    result.steps = steps
+                    return result
+            except Exception as gate_exc:
+                logger.warning("Context gate skipped: %s", gate_exc)
+
             # ── Step 4: LLM Reasoning ───────────────────────────────────
             if use_llm and self._llm_router:
                 s4 = PipelineStep(name="llm_reasoning")

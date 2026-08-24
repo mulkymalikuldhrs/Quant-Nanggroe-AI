@@ -29,6 +29,13 @@
 - **`StrategyCorrelationMonitor.paper_mode`** — stored but IGNORED: `check_and_act()` activated the LIVE kill switch from paper data. Suppressed in paper mode now (observes, logs, never acts).
 - **`AutoDisableManager._paper_mode`** — ignored: strategies were auto-disabled from paper P&L. `update()` no longer flips enable/disable state in paper mode.
 
+### 🌐 Universal Path Auto-Detect
+- **FIX: All `/sdcard` hardcoded paths** — `security_audit.py`, `qna-watchdog.py`, `ensemble_walk_forward.py` now use `Path(__file__).resolve().parent.parent`
+- **FIX: All `D:/repositories/Quant-Nanggroe-AI-worktree` hardcoded paths** — 15 scripts now use `Path(__file__).resolve().parent.parent`
+- **FIX: All `E:/trading` hardcoded paths** — `backtest_dhaher.py`, `test_dhaher_live.py`, `tune_dhaher.py`, `backtest_all_strategies.py` now use auto-detected root
+- **FIX: External integrations** — `adapters.py` and `core.py` now use env vars (`QNA_EXT_*`) for external project paths with fallback to known locations
+- **NEW: `scripts/_path_utils.py`** — shared PROJECT_ROOT auto-detection (finds pyproject.toml or .git)
+
 ### 🧪 Tests
 - **NEW: `tests/test_engine/test_risk_gate_failclosed.py`** — 10 tests: fail-closed contract (None EM, missing gates, exceptions, VETOED verdict, hold signal, low confidence), `_make_decision` signature.
 - **NEW: `tests/test_engine/test_one_position_per_symbol.py`** — 6 tests: duplicate symbol blocked, different symbol allowed, empty book allowed, query failure fail-closed, rejected submit → no phantom fill.
