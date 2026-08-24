@@ -359,16 +359,15 @@ def run_daemon(args: argparse.Namespace) -> int:
     _write_pid()
     agents = load_agent_config()
 
-    # ── Start PipelineScheduler if enabled ─────────────────────────
+    # ── Start PipelineScheduler (ALWAYS — this is the trading loop) ──
     _scheduler = None
-    if os.environ.get("QNA_SCHEDULER_ENABLED"):
-        try:
-            from quant_nanggroe.engine.scheduler import start_default_scheduler
-            interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
-            _scheduler = start_default_scheduler(interval_minutes=interval)
-            logger.info("PipelineScheduler started (interval=%d min)", interval)
-        except Exception as e:
-            logger.warning("Failed to start PipelineScheduler: %s", e)
+    try:
+        from quant_nanggroe.engine.scheduler import start_default_scheduler
+        interval = int(os.environ.get("QNA_SCHEDULER_INTERVAL", "15"))
+        _scheduler = start_default_scheduler(interval_minutes=interval)
+        logger.info("PipelineScheduler started (interval=%d min)", interval)
+    except Exception as e:
+        logger.warning("Failed to start PipelineScheduler: %s", e)
 
     daemon = DaemonRunner(agents)
     try:

@@ -41,9 +41,7 @@ class PipelineScheduler:
             raise ValueError("interval_minutes must be >= 1")
 
         self.interval_minutes = interval_minutes
-        self.symbols = symbols or [
-            "EURUSD.vx", "GBPUSD.vx", "XAUUSD.vx",
-        ]  # v8.0: FX + Gold only (CANONICAL 15.8)
+        self.symbols = symbols  # None = discover dynamically from MT5
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -153,7 +151,9 @@ class PipelineScheduler:
             if not pipeline.list_available_strategies():
                 pipeline.load_strategies()
 
-            results = await pipeline.run_batch(symbols=self.symbols)
+            # Dynamic symbol discovery: use configured symbols, or discover from MT5
+            symbols = self.symbols or pipeline._discover_tradable_symbols()
+            results = await pipeline.run_batch(symbols=symbols)
             success_count = sum(1 for r in results if r.success)
 
             logger.info(
