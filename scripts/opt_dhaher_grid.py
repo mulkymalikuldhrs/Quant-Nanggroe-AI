@@ -121,7 +121,7 @@ def main():
         'best': best,
         'top_5': passing[:5] if len(passing) >= 5 else passing,
     }
-    out = Path(r'D:/repositories/Quant-Nanggroe-AI-worktree/results') / f"dhaher_opt_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+    out = _REPO / 'results' / f"dhaher_opt_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, default=str))
     log.info(f"\nResults: {len(results)} tested, {len(passing)} passing gate")

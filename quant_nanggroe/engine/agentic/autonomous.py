@@ -1566,7 +1566,7 @@ class AutonomousPipeline:
                             self._data_monitor.record_fetch(symbol, _tf_enum)
                         except Exception:
                             pass
-                    return self._validate_ohlcv(df, symbol)
+                    return self._reject_stale(self._validate_ohlcv(df, symbol), symbol, timeframe)
             except Exception as exc:
                 logger.warning("DataProviderManager failed (%s) — falling back to MT5", exc)
 
@@ -1589,7 +1589,7 @@ class AutonomousPipeline:
                             df.set_index("time", inplace=True)
                             df = df[["open", "high", "low", "close", "volume"]].astype(float)
                             logger.info("MT5 data fetch: %s → %d bars (real broker data)", symbol, len(df))
-                            return self._validate_ohlcv(df, symbol)
+                            return self._reject_stale(self._validate_ohlcv(df, symbol), symbol, timeframe)
         except Exception as exc:
             logger.warning("MT5 data fetch failed for %s: %s", exc)
 
@@ -1633,7 +1633,7 @@ class AutonomousPipeline:
                 self._data_monitor.record_fetch(symbol, _TF.D1)
             except Exception:
                 pass
-        return self._validate_ohlcv(df, symbol)
+        return self._reject_stale(self._validate_ohlcv(df, symbol), symbol, timeframe)
 
     def _validate_ohlcv(self, df: Any, symbol: str) -> Any:
         if df is None or df.empty:
@@ -1676,6 +1676,51 @@ class AutonomousPipeline:
         if issues:
             logger.warning("[%s] OHLCV validation: %d/%d removed — %s", symbol, removed, initial_len, "; ".join(issues))
         if len(df) < 50:
+            return None
+        return df
+
+    # Bar older than 4× its interval is considered stale → FAIL-CLOSED.
+    # 4× keeps weekend gaps (FX closed Fri→Mon ≈ 2 days) inside the D1 budget
+    # while catching frozen feeds / corrupted rates within one session.
+    STALE_BAR_MULTIPLIER: int = 4
+    _TF_INTERVAL_MINUTES: dict = {"M1": 1, "M5": 5, "M15": 15, "M30": 30,
+                                  "H1": 60, "H4": 240, "D1": 1440}
+
+    def _reject_stale(self, df: Any, symbol: str, timeframe: str) -> Any:
+        """FINDING #11 fix: consume data freshness as a VETO, not a metric.
+
+        A frozen MT5 feed (terminal claims connected, rates never update)
+        previously sailed straight into signal generation. Now the newest
+        bar's age is checked against 4× the timeframe interval; older data
+        returns None → no signal this cycle.
+        """
+        if df is None or df.empty or len(df.index) == 0:
+            return None
+        try:
+            import pandas as pd
+            interval_min = self._TF_INTERVAL_MINUTES.get(
+                (timeframe or "D1").upper(), 1440)
+            max_age = pd.Timedelta(
+                minutes=interval_min * self.STALE_BAR_MULTIPLIER)
+            last_bar = df.index[-1]
+            now = (pd.Timestamp.now(tz=last_bar.tz)
+                   if getattr(last_bar, "tzinfo", None) is not None
+                   else pd.Timestamp.now())
+            age = now - last_bar
+            if age > max_age:
+                logger.error(
+                    "STALE DATA VETO %s %s: last bar %s (age %.1f min) "
+                    "exceeds %.0f min limit — FAIL-CLOSED, no signal",
+                    symbol, timeframe, last_bar,
+                    age.total_seconds() / 60.0, max_age.total_seconds() / 60.0,
+                )
+                return None
+        except Exception as exc:
+            # Malformed index → cannot prove freshness → FAIL CLOSED
+            logger.error(
+                "Staleness check failed for %s (%s) — FAIL-CLOSED",
+                symbol, exc,
+            )
             return None
         return df
 

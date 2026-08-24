@@ -379,7 +379,7 @@ def main():
             print(f"  - {r['strategy']:<40} [{r['gate']}] {r.get('notes',' ')}")
 
     # Save full JSON for further processing
-    out_path = Path("D:/repositories/Quant-Nanggroe-AI-worktree/data/strategy_audit.json")
+    out_path = _REPO / "data" / "strategy_audit.json"
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, "w") as f:
         json.dump({"ranked": ranked, "all": results,

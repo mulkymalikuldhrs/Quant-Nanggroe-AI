@@ -1,5 +1,18 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.5 — Data Layer Audit: Stale Veto + REAL-ONLY Data (2026-08-25)
+
+### 🔴 Fixes (audit round 2 — data layer)
+- **STALE-DATA VETO** (`autonomous.py:_reject_stale()`) — `DataFreshnessMonitor` recorded fetches but NOTHING consumed staleness (dead guard). Now the newest bar's age is checked against 4× the timeframe interval; stale/frozen feeds → None → no signal. Malformed index → FAIL-CLOSED.
+- **yfinance REMOVED from live path** (REAL-ONLY) — when MT5 rates failed transiently, signals were generated from indicative Yahoo prices and executed on MT5 spread prices. Live path (EM present) now FAIL-CLOSED; yfinance only in research/backtest contexts (no EM).
+- **`record_fetch` timeframe fix** — was hardcoded `_TF.D1` for ALL timeframes; freshness monitor now records the actual fetched TF.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_stale_data_veto.py`** — 6 tests: fresh passes, frozen M15 vetoed, weekend gap D1 passes, unknown TF default, empty fail-closed, bad index fail-closed.
+- **Full battery**: 278 pass.
+
+---
+
 ## v8.0.4 — Full Risk Audit: Fail-Closed Everywhere (2026-08-25)
 
 ### 🔴 Critical Fixes (audit round 1)
