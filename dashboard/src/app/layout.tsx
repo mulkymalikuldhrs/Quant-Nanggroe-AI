@@ -18,6 +18,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Quant-Nanggroe-AI | Agentic Trading Intelligence OS",
   description: "Multi-Agent Quant Research & Decision Intelligence Operating System",
+  icons: {
+    icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icon-512.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a14"/>
+      <stop offset="100%" stop-color="#050510"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA500"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00E5AA"/>
+      <stop offset="100%" stop-color="#00B894"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04" stroke="#ffffff" stroke-width="1">
+    <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="384" y1="0" x2="384" y2="512"/>
+    <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="384" x2="512" y2="384"/>
+  </g>
+
+  <!-- Q letter — bold geometric -->
+  <text x="216" y="340"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="280"
+        font-weight="bold"
+        fill="url(#gold)"
+        text-anchor="middle">Q</text>
+
+  <!-- Candlestick accents (right of Q) -->
+  <g filter="url(#glow)">
+    <!-- Bull candle -->
+    <rect x="330" y="160" width="16" height="80" rx="3" fill="url(#teal)"/>
+    <line x1="338" y1="140" x2="338" y2="170" stroke="url(#teal)" stroke-width="3"/>
+    <line x1="338" y1="240" x2="338" y2="260" stroke="url(#teal)" stroke-width="3"/>
+    <!-- Bear candle -->
+    <rect x="360" y="200" width="16" height="70" rx="3" fill="#ef4444"/>
+    <line x1="368" y1="185" x2="368" y2="210" stroke="#ef4444" stroke-width="3"/>
+    <line x1="368" y1="270" x2="368" y2="290" stroke="#ef4444" stroke-width="3"/>
+    <!-- Bull candle (smaller) -->
+    <rect x="390" y="230" width="14" height="60" rx="3" fill="url(#teal)"/>
+    <line x1="397" y1="215" x2="397" y2="240" stroke="url(#teal)" stroke-width="2.5"/>
+    <line x1="397" y1="290" x2="397" y2="308" stroke="url(#teal)" stroke-width="2.5"/>
+  </g>
+
+  <!-- Bottom accent line -->
+  <rect x="96" y="400" width="320" height="4" rx="2" fill="url(#gold)" opacity="0.6"/>
+
+  <!-- Nanggroe pattern hint (top-right corner, subtle) -->
+  <g opacity="0.08" fill="#FFD700">
+    <path d="M420 48 L440 28 L460 48 L440 68 Z"/>
+    <path d="M450 78 L470 58 L490 78 L470 98 Z"/>
+  </g>
+</svg>

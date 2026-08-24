@@ -112,9 +112,10 @@ export function Sidebar() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-blue-600 flex-shrink-0 shadow-[0_0_16px_rgba(16,185,129,0.25)] mr-1"
+            className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-[0_0_16px_rgba(255,215,0,0.2)] mr-1 border border-amber-500/30"
           >
-            <span className="text-xs font-bold text-white">Q</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon-192.png" alt="QNA" className="w-full h-full object-cover" />
           </Link>
 
           {/* Primary nav items (visible on desktop) */}
