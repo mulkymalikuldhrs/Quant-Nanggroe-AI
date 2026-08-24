@@ -960,4 +960,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.critical("Fatal error: %s", e)
         sys.exit(1)
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-e55451c785ac.sh.tmp.XXXXXXXXXX': No such file or directory
