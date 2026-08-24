@@ -33,3 +33,11 @@
 - Codeberg: ✅ up-to-date
 - GitLab: ✅ up-to-date
 - GitHub: ✅ up-to-date
+
+--- Phase 5 Sync (2026-08-25) ---
+- Profiles 7/7 alive (health_status.json): autobot/devbot/clawbot/fangbot/hackerbot/researchbot/traderbot
+- clawbot profile-clawbot-qna: status=error (model 404 deepseek-v4-flash via 9router) — REPORTED, NOT auto-fixed (directive)
+- devbot: started (profile-devbot-qna enabled, status=ok)
+- qna.py version drift 8.0.4 → fixed to 5.1.0; push codeberg/gitlab/github master
+- Sync: codeberg/gitlab/github master pushed f3abdfff
+- File spam: none. Version: v5.1.0 enforced.
