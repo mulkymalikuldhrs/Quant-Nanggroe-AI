@@ -425,17 +425,10 @@ export default function StrategiesPage() {
                     <div className="space-y-3">
                       <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                         <p className="text-xs text-white/40 mb-2">Performance History</p>
-                        <div className="h-32 flex items-end gap-1">
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const val = Math.random() * 5 + (((strat as any).backtest?.btc_return || 0) > 0 ? 1 : -1);
-                            return (
-                              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                                <div className={cn("w-full rounded-t", val >= 0 ? "bg-emerald-500/30" : "bg-red-500/30")}
-                                  style={{ height: `${Math.abs(val) * 20}px` }} />
-                                <span className="text-[8px] text-white/20">{["J","F","M","A","M","J","J","A","S","O","N","D"][i]}</span>
-                              </div>
-                            );
-                          })}
+                        <div className="h-32 flex items-center justify-center">
+                          <p className="text-[10px] text-white/20">
+                            Monthly history — requires backtest run (fail-closed, no synthetic data)
+                          </p>
                         </div>
                       </div>
                     </div>

@@ -104,14 +104,14 @@ export default function MarketPage() {
   const wsChange = selectedSymbol && realtimePrices[selectedSymbol]
     ? realtimePrices[selectedSymbol].change_24h
     : null;
-  const [livePrice, setLivePrice] = useState(67250.5);
+  // fail-closed: livePrice = WS price or last candle close, never fabricated
+  const [livePrice, setLivePrice] = useState<number | null>(null);
   useEffect(() => {
     if (wsPrice) { setLivePrice(wsPrice); return; }
-    const interval = setInterval(() => {
-      setLivePrice((prev) => prev + (Math.random() - 0.5) * 50);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [wsPrice]);
+    // No WS → use last REST poll value (set by fetchCandles)
+    const lastClose = candles.length ? candles[candles.length - 1].close : null;
+    if (lastClose) setLivePrice(lastClose);
+  }, [wsPrice, candles]);
 
   // Lightweight chart
   useEffect(() => {
@@ -177,8 +177,8 @@ export default function MarketPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {symbols.slice(0, 4).map((item) => {
           const ws = realtimePrices[item.value];
-          const price = ws?.price ?? (item.value === "BTC" ? 67250 : item.value === "ETH" ? 3450 : 198);
-          const change = ws?.change_24h ?? ((Math.random() - 0.5) * 6);
+          const price: number | null = ws?.price ?? null;
+          const change: number | null = ws?.change_24h ?? null;
           return (
             <div key={item.value}
               className={cn(

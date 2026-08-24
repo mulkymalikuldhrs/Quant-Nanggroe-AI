@@ -100,7 +100,8 @@ function TradingDashboardContent() {
     catch { return WATCHLIST_DEFAULT; }
   });
   const [newWatchSymbol, setNewWatchSymbol] = useState("");
-  const [orderBook, setOrderBook] = useState<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] }>({ bids: [], asks: [] });
+  const [orderBook, setOrderBook] = useState<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] } | null>(null);
+  // REAL-ONLY: time&sales show empty until backend provides real tick data
   const [trades, setTrades] = useState<TradeTick[]>([]);
 
   useEffect(() => {
@@ -175,35 +176,9 @@ function TradingDashboardContent() {
   }, [realtimePrices, watchlist]);
 
   // Simulate order book data (real data would come from WS)
-  useEffect(() => {
-    const currentPrice = restPrices[orderSymbol]?.price || 50000;
-    const bids: OrderBookLevel[] = [];
-    const asks: OrderBookLevel[] = [];
-    let bidTotal = 0; let askTotal = 0;
-    for (let i = 0; i < 8; i++) {
-      const bidSize = Math.random() * 5 + 0.1;
-      bidTotal += bidSize;
-      bids.push({ price: currentPrice - (i + 1) * 0.5, size: bidSize, total: bidTotal });
-      const askSize = Math.random() * 5 + 0.1;
-      askTotal += askSize;
-      asks.push({ price: currentPrice + (i + 1) * 0.5, size: askSize, total: askTotal });
-    }
-    setOrderBook({ bids, asks });
-  }, [restPrices, orderSymbol]);
-
-  // Simulate time & sales ticks
-  useEffect(() => {
-    const id = setInterval(() => {
-      const currentPrice = restPrices[orderSymbol]?.price || 50000;
-      const side = Math.random() > 0.5 ? "buy" : "sell";
-      const offset = (Math.random() - 0.5) * 2;
-      setTrades(prev => [
-        { price: currentPrice + offset, size: Math.random() * 2 + 0.01, side, time: new Date().toLocaleTimeString() },
-        ...prev.slice(0, 49),
-      ]);
-    }, 2000);
-    return () => clearInterval(id);
-  }, [restPrices, orderSymbol]);
+  // REAL-ONLY: order book and time&sales show NO DATA when backend doesn't provide them.
+  // Previously these were Math.random() fabricated — hedge-fund integrity violation.
+  // Data comes from WebSocket or REST when available.
 
   const activeAcct = accounts.find(a => a.id === activeAccount);
   const accountPositions = positions.filter(p => p.account === activeAccount);
