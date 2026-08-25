@@ -9,7 +9,7 @@
 | devbot | ⏳ pending | 0 | not started |
 | fangbot | ❌ 502 | 51 | deepseek-v4-flash timeout (502) |
 | hackerbot | ❌ 404 | 16 | deepseek-v4-flash via 9router (404) |
-| researchbot | ❌ 410 | 2 | deepseek-v4-flash EOL (2026-08-07) |
+| researchbot | ❌ 410 | 4 | deepseek-v4-flash EOL (2026-08-07) |
 | traderbot | ❌ 410 | 23 | deepseek-v4-flash EOL (2026-08-07) |
 
 ## 2. Action Items
