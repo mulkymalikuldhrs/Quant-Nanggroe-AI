@@ -254,6 +254,7 @@ class UnifiedExecutionRouter:
         self._lazy_engine()
         if self._engine is not None:
             try:
+                import asyncio as _aio
                 from uuid import uuid4
 
                 from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
@@ -266,7 +267,38 @@ class UnifiedExecutionRouter:
                     stop_loss=sl,
                     take_profit=tp,
                 )
-                fill = self._engine.execute_order(order)
+                coro = self._engine.execute_order(order)
+                if _aio.iscoroutine(coro):
+                    # F5 fix: execute_order is async — the old sync call created
+                    # a never-awaited coroutine, reported executed=True and
+                    # phantom-filled bookkeeping while nothing reached a broker.
+                    try:
+                        _loop = _aio.get_running_loop()
+                    except RuntimeError:
+                        _loop = None
+                    fill = _loop.run_until_complete(coro) if (
+                        _loop is None
+                    ) else None
+                    if _loop is not None:
+                        # Inside a running loop we cannot block — run in a
+                        # dedicated thread loop to preserve gate enforcement.
+                        import concurrent.futures as _cf
+
+                        def _run():
+                            return _aio.new_event_loop().run_until_complete(coro)
+
+                        with _cf.ThreadPoolExecutor(max_workers=1) as _ex:
+                            fill = _ex.submit(_run).result(timeout=30)
+                else:
+                    fill = coro
+                if fill is None:
+                    log.warning("Engine execution rejected order (gate veto)")
+                    return {
+                        "symbol": symbol, "side": side, "qty": qty,
+                        "price": price, "strategy": "pipeline",
+                        "mode": "engine", "executed": False,
+                        "status": "rejected",
+                    }
                 return {
                     "symbol": symbol,
                     "side": side,

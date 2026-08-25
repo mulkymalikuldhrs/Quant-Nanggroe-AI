@@ -2112,12 +2112,14 @@ class AutonomousPipeline:
             )
             cot_closed = scan_and_close_conflicts(self._em)
             if cot_closed:
+                # F12 fix: `result` is undefined in run_batch scope — the
+                # assignment raised NameError and the DEBUG swallow hid every
+                # COT close from operators. Log at WARNING directly.
                 logger.warning(
                     "COT GUARD: closed %d position(s) conflicting with COT: %s",
                     len(cot_closed),
                     [(c["symbol"], c["side"], f"${c['pnl']:.2f}") for c in cot_closed],
                 )
-                result["cot_closes"] = cot_closed
         except Exception as exc:
             logger.debug("COT guard skipped: %s", exc)
 
@@ -2130,7 +2132,9 @@ class AutonomousPipeline:
             )
             from quant_nanggroe.engine.strategy_lifecycle import StrategyStatus
             scores = compute_all_strategies()
-            result["strategies_scored"] = len(scores.get("strategies", {}))
+            # F12 fix: same undefined-`result` bug as cot_closes — count via log.
+            logger.info("Scorecard: %d strategies scored",
+                        len(scores.get("strategies", {})))
             if self._lifecycle:
                 for sname, card in scores.get("strategies", {}).items():
                     if sname not in self._lifecycle.strategies:

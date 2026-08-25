@@ -423,7 +423,48 @@ def run_daemon(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.warning("AutoRetrainer init skipped: %s", e)
 
+    # ── Start Journal Sync thread (F9: MT5 deals → journal, hourly) ──
+    _journal_thread = None
+    try:
+        from quant_nanggroe.engine.journal_sync import sync_mt5_deals
+        import threading as _threading
+
+        def _journal_loop():
+            # First sync after boot grace, then hourly. Feeds the scorecard /
+            # lifecycle feedback loop that starves under the candle scheduler.
+            _stop = getattr(daemon_holder, "stop", False)
+            while not _stop:
+                try:
+                    res = sync_mt5_deals()
+                    logger.info("JournalSync: %s", res)
+                except Exception as e:
+                    logger.warning("JournalSync failed: %s", e)
+                for _ in range(3600):
+                    if getattr(daemon_holder, "stop", False):
+                        return
+                    time.sleep(1)
+
+        class _DaemonHolder:
+            stop = False
+
+        daemon_holder = _DaemonHolder()
+        _journal_thread = _threading.Thread(
+            target=_journal_loop, daemon=True, name="qna-journal-sync")
+        _journal_thread.start()
+        logger.info("JournalSync thread started (hourly)")
+    except Exception as e:
+        logger.warning("JournalSync init skipped: %s", e)
+        daemon_holder = None
+
     daemon = DaemonRunner(agents)
+    try:
+        daemon.start()
+    except KeyboardInterrupt:
+        logger.info("Shutdown requested...")
+    finally:
+        daemon.stop_all()
+        if daemon_holder is not None:
+            daemon_holder.stop = True
     try:
         daemon.start()
     except KeyboardInterrupt:

@@ -76,8 +76,9 @@ def check_event_risk(now: Optional[datetime] = None) -> Dict[str, Any]:
             "Context gate: calendar unavailable (%s) — failure %d/%d",
             exc, _consecutive_failures, MAX_CONSECUTIVE_FAILURES,
         )
-        events = []
         if _consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            # Fail-closed AND uncached: every cycle re-attempts, so recovery
+            # is detected immediately instead of after cache TTL.
             return {
                 "vetoed": True,
                 "reason": (
@@ -86,6 +87,9 @@ def check_event_risk(now: Optional[datetime] = None) -> Dict[str, Any]:
                 ),
                 "events": 0,
             }
+        # Below threshold: NEUTRAL this cycle but DO NOT cache — the next call
+        # must retry the provider or the breaker can never advance.
+        return {"vetoed": False, "reason": "", "events": 0}
 
     for ev in events:
         ev_time = _parse_event_time(

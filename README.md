@@ -1,4 +1,4 @@
-# Quant Nanggroe AI v8.0.8 — Autonomous Quant Hedge Fund
+# Quant Nanggroe AI v8.0.9 — Autonomous Quant Hedge Fund
 
 > **Autonomous Quantitative Hedge Fund — Institutional Grade**
 > **Self-Aware · Self-Correct · Self-Evolve · Self-Fine-Tune · Self-Evaluate**
@@ -68,9 +68,10 @@ qna.py daemon / qna_tray.py
              data(stale-veto) → signal(aggregation) → risk(9-gate)
              → context gate(news blackout) → execute(duplicate-position
                gate + fill-status gate) → broker truth
-            → Telegram notification on trade/signal
-            → SQLite trade history (unlimited)
-            → WebSocket push ("candles" channel) + dashboard live
+             → Telegram notification on trade/signal
+             → SQLite trade history (unlimited)
+             → WebSocket push ("candles" channel) + dashboard live
+  → auto_retrain.py (hourly Bayesian re-tune → decay guard)
 ```
 
 ### Key Modules
@@ -91,6 +92,7 @@ qna.py daemon / qna_tray.py
 | `engine/risk/trailing_stop.py` | Breakeven ratchet + ATR trail |
 | `engine/risk/trading_profile.py` | Scalp/day/swing SL-TP profiles |
 | `engine/smc/native_smc.py` | OrderBlock/FVG/BOS/Sweep native |
+| `engine/auto_retrain.py` | Autonomous Bayesian re-tune loop + decay guard |
 
 ---
 
@@ -162,11 +164,11 @@ Quant-Nanggroe-AI/
 
 ## 📚 Documentation
 
-- `CANONICAL.md` — Single Source of Truth (v8.0.8)
+- `CANONICAL.md` — Single Source of Truth (v8.0.9)
 - `CHANGELOG.md` — Version history
 - `AGENTS.md` — Agent configuration
 - `CLAUDE.md` — Claude Code configuration
 
 ---
 
-**Version:** v8.0.8 | **Status:** GREEN — LIVE on MT5 | **Broker:** ValetaxIntl-Live2 (Cent, .vxc)
+**Version:** v8.0.9 | **Status:** GREEN — LIVE on MT5 | **Broker:** ValetaxIntl-Live2 (Cent, .vxc)

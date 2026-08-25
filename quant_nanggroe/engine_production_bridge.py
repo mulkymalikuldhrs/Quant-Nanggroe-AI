@@ -431,16 +431,23 @@ class ProductionExecutionManager:
             except Exception as e:
                 log.debug(f"No execution engine: {e}")
         # v6.5.0: Skip paper broker when MT5 is live
-        if self._paper is None and os.environ.get("QNA_MT5_LIVE") != "1":
+        # F5 fix: converge env flags — QNA_LIVE_TRADING or QNA_MT5_LIVE both
+        # mean "live intent" (previously the split let live-intent traffic hit
+        # SyncPaperBroker when only QNA_LIVE_TRADING was set).
+        _live_intent = (
+            os.environ.get("QNA_LIVE_TRADING") == "1"
+            or os.environ.get("QNA_MT5_LIVE") == "1"
+        )
+        if self._paper is None and not _live_intent:
             try:
                 self._paper = SyncPaperBroker()
                 log.info("PaperExchangeBroker loaded via sync wrapper (MT5 not live)")
             except Exception as e:
                 log.debug(f"No paper broker: {e}")
-        elif os.environ.get("QNA_MT5_LIVE") == "1":
+        elif _live_intent:
             log.info("MT5 live — SyncPaperBroker DISABLED")
         # ponytail: live MT5 backend — opt-in via env, fail-closed (no terminal -> skipped, not silent)
-        if os.environ.get("QNA_MT5_LIVE") == "1" and self._mt5 is None:
+        if _live_intent and self._mt5 is None:
             try:
                 from quant_nanggroe.connectors.mt5_broker import MT5Broker
                 self._mt5 = MT5Broker(
@@ -530,40 +537,19 @@ class ProductionExecutionManager:
                     "executed": False,
                 }
 
-        # v6.5.0: Paper broker ONLY when MT5 is not live
-        if self._paper is not None and os.environ.get("QNA_MT5_LIVE") != "1":
+        # v6.5.0: Paper broker ONLY when live intent is absent (F5 converged flag)
+        if self._paper is not None and not _live_intent:
             result = self._paper.place_order(signal.symbol, signal.side, qty, price)
             if result is not None:
                 result["strategy"] = signal.strategy
                 return result
             log.debug("Paper broker failed, falling back")
 
-        # Secondary: engine execution
-        if self._exec_mgr:
-            try:
-                from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
-                side = OrderSide.BUY if signal.side == "buy" else OrderSide.SELL
-                order = Order(
-                    symbol=signal.symbol,
-                    side=side,
-                    order_type=OrderType.MARKET,
-                    quantity=qty,
-                    # P0 fix: carry protective SL/TP into engine order path too
-                    stop_loss=getattr(signal, "stop_loss", None),
-                    take_profit=getattr(signal, "take_profit", None),
-                )
-                fill = self._exec_mgr.execute_order(order)
-                return {
-                    "symbol": signal.symbol,
-                    "side": signal.side,
-                    "qty": qty,
-                    "price": price,
-                    "fill_id": getattr(fill, "id", None),
-                    "strategy": signal.strategy,
-                    "mode": "engine",
-                }
-            except Exception as e:
-                log.debug(f"Engine exec failed: {e}")
+        # F5 fix: the old engine fallback called async execute_order() without
+        # await from this SYNC method — a never-awaited coroutine that reported
+        # mode="engine" with fill_id=None while NOTHING reached any broker
+        # (phantom "ORDER SENT" in live_engine). Deleted: callers fall through
+        # to the order-dict path which live_engine executes through gated EM.
 
         # Fallback: order dict for live_engine
         return {

@@ -1,5 +1,38 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.9 — Full-Stack Parallel Audit Fixes (2026-08-25)
+
+> 4-agent parallel audit (backend/UI/runtime/docs): 50+ findings, all P0/P1 fixed same-session.
+
+### 🔴 Trading unblocked (runtime root causes)
+- **MT5 data fetch shape bug** — get_rates returns numpy structured records; pd.DataFrame(raw, columns=8) raised "Shape (500,1) != (500,8)" → ZERO live data → zero signals since boot. Now builds from dtype field names (+ tick_volume→volume fallback).
+- **Kill-switch test pollution** — pytest activation leaked into production shared state file, blocking all orders all day. conftest autouse isolation added.
+- **TZ bug in stale veto** — naive-UTC bars vs naive-local now inflated age by UTC offset (+7h WIB); M15/H1 permanently "stale". Now TZ-safe.
+- **Trailing-exit UnboundLocalError (F1)** — regime referenced before assignment killed every GATE-7 protective exit silently; tracking was already removed → never retried. Fixed init order.
+- **Duplicate gate blocked CLOSES** — one-position gate blocked opposite-side orders too; trailing exits could never execute. Now blocks only same-side pyramiding; reduce_only passes; suffix variants normalized (F8).
+- **Side inversion (F2)** — engine enum BUY ("BUY") vs connector literal ("buy") always False → every direct-MT5 order sent as SELL. Normalized at connector boundary; invalid sides raise.
+- **PnL zeroing chain (F3)** — history_deals_get swallowed read failures → real −4% day became 0.00 → loss vetoes blind. Connector raises; RiskManager keeps last-known values + vetoes PNL_SYNC_STALE until recovery.
+- **False "TRADE EXECUTED" (F10)** — rejected orders reported success; scheduler derived traded=True → fake Telegram fills. Now verdict-driven.
+
+### 🟠 Backend P1
+- F4: context-gate circuit breaker — calendar outage NEUTRAL for ≤2 consecutive failures, then VETO until recovery (uncached).
+- F5: env-flag convergence QNA_LIVE_TRADING/QNA_MT5_LIVE = single live intent (bridge); deleted un-awaited async execute_order phantom-executed branches; pipeline router awaits properly (thread-loop when sync context).
+- F9: JournalSync thread hourly in daemon (scorecard/lifecycle feedback no longer starves).
+- F12/F14: NameError cleanups (run_batch result refs), execute_order pulls real PnL fractions from wired RiskManager internally.
+- PID file name unified: data/daemons/qna_daemon.pid (tray now matches daemon).
+
+### 🖥️ Dashboard (UI agent)
+- WS auth: new POST /api/auth/token endpoint (API-key → JWT); websocket.ts caches token, appends ?token=, stops reconnect on 4001/4003.
+- Candle channel key aligned (data payload); scheduler state now persists events[] (50) for REST fallback.
+- trade-history route: shell-injection fixed (execFileSync argv, sanitized).
+- autonomous/pipeline pages routed through authenticated apiRequest; fabricated cash_balance removed; ErrorBoundary wrapped on all pages; sidebar/footer/version strings updated.
+
+### 🧪 Tests
+- NEW test_v809_parallel_fixes.py (12 tests): duplicate-gate side semantics, connector side normalization, PNL_SYNC_STALE veto, circuit breaker, structured-rates shape.
+- Battery: ~900 tests (893 pass + 6 pre-existing failures unrelated to this batch: walk-forward window assertions, observability default flag, ict→ict_ote registry rename).
+
+---
+
 ## v8.0.8 — HOTFIX: Trading Blocked Root Causes (2026-08-25)
 
 > Incident: "QNA ga trading" — two independent blockers found via runtime diagnosis.

@@ -195,6 +195,20 @@ class ExecutionManager:
         ks_drawdown = max_drawdown_pct / 100.0
         ks_volatility = volatility_pct / 100.0
 
+        # F14: the daemon calls execute_order WITHOUT pnl args (all zeros),
+        # which left the governance veto and EM-level kill-switch auto-activate
+        # inert. Pull REAL fractions from the wired RiskManager state instead.
+        if self._risk_manager is not None and hasattr(self._risk_manager, "state"):
+            try:
+                rm_state = self._risk_manager.state
+                peak = float(getattr(rm_state, "peak_equity", 0.0) or 0.0)
+                if daily_pnl_pct == 0.0 and peak > 0:
+                    ks_daily = min(0.0, float(getattr(rm_state, "daily_pnl", 0.0) or 0.0)) / peak
+                if weekly_pnl_pct == 0.0 and peak > 0:
+                    ks_weekly = min(0.0, float(getattr(rm_state, "weekly_pnl", 0.0) or 0.0)) / peak
+            except Exception:
+                pass
+
         # 1. Run guard pipeline
         self._governance_veto.update_pnl(ks_daily, ks_weekly)
         self._governance_veto.update_drawdown(ks_drawdown)
@@ -231,9 +245,17 @@ class ExecutionManager:
             open_positions = await broker.get_positions()
             incoming_buy = order.side.value.lower() == "buy"
             reduce_only = bool(order.metadata.get("reduce_only", False))
+
+            def _base_name(s: str) -> str:
+                # F8: broker positions carry suffixed names (EURUSD.vx) while
+                # orders may carry bare names (EURUSD) — compare base-only so
+                # suffix variants cannot defeat the one-position mandate.
+                return str(s).upper().split(".")[0]
+
+            order_base = _base_name(order.symbol)
             conflicts = []
             for p in (open_positions or []):
-                if getattr(p, "symbol", "") != order.symbol:
+                if _base_name(getattr(p, "symbol", "")) != order_base:
                     continue
                 pos_side = str(getattr(p, "side", "") or "").lower()
                 if not pos_side:
