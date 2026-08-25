@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/api-client";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import {
   Download,
   FileSpreadsheet,
@@ -54,7 +55,7 @@ async function authedDownload(params: Record<string, string>) {
   URL.revokeObjectURL(url);
 }
 
-export default function ExportCenterPage() {
+function ExportCenterContent() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [strategy, setStrategy] = useState("");

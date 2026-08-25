@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 
 const OrderFlowMap = dynamic(() => import("@/components/OrderFlowMap"), {
   ssr: false,
@@ -29,7 +30,7 @@ const POPULAR_INSTRUMENTS = [
   { sym: "ETHUSDT", name: "ETH/USDT", tick: 0.01, mid: 3450 },
 ];
 
-export default function OrderFlowPage() {
+function OrderFlowContent() {
   const [selected, setSelected] = useState(POPULAR_INSTRUMENTS[0]);
   const [showPicker, setShowPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);

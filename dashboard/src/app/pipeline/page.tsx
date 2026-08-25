@@ -25,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { apiRequest } from "@/lib/api-client";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 
 const PIPELINE_COMPONENTS = [
@@ -156,14 +157,11 @@ export default function PipelinePage() {
 
   const fetchPipelineStatus = useCallback(async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiBase}/api/pipeline/status`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`API returned ${res.status}`);
-      const data = await res.json();
+      const data = await apiRequest<{ stages?: PipelineComponent[] }>("/api/pipeline/status");
       if (data?.stages && Array.isArray(data.stages)) setLiveData(data.stages);
       setError(null);
-    } catch (err) {
-      console.debug("Pipeline API fetch failed:", err);
+    } catch {
+      console.debug("Pipeline API fetch failed");
     } finally {
       setLoading(false);
     }

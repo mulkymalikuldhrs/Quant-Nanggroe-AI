@@ -311,6 +311,7 @@ def create_app() -> FastAPI:
         agentic,
         agents,
         analytics,
+        auth,
         autonomous,
         backtest,
         channels,
@@ -352,6 +353,7 @@ def create_app() -> FastAPI:
 
     app.include_router(market.router, prefix="/api/market", tags=["Market"])
     app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
+    app.include_router(auth.router, prefix="/api", tags=["Auth"])
     # GATE-6 compat: legacy dashboard paths for multi-account endpoints
     app.add_api_route("/api/accounts", trading.list_accounts, methods=["GET"],
                       tags=["Trading"], include_in_schema=False)

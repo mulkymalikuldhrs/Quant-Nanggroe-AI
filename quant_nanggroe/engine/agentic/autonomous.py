@@ -1612,7 +1612,7 @@ class AutonomousPipeline:
                             logger.info("MT5 data fetch: %s → %d bars (real broker data)", symbol, len(df))
                             return self._reject_stale(self._validate_ohlcv(df, symbol), symbol, timeframe)
         except Exception as exc:
-            logger.warning("MT5 data fetch failed for %s: %s", exc)
+            logger.warning("MT5 data fetch failed for %s: %s", symbol, exc)
 
         # ── FALLBACK: yfinance (RESEARCH/BACKTEST ONLY) ──────────────────
         # REAL-ONLY mandate: never generate live-trading signals from

@@ -22,7 +22,7 @@ interface PortfolioSummary {
   total_value: number;
   unrealized_pnl: number;
   position_count: number;
-  cash_balance: number;
+  cash_balance?: number | null;
 }
 
 interface PortfolioRisk {
@@ -85,6 +85,7 @@ interface RealtimePortfolio {
   total_value: number;
   daily_pnl: number;
   positions: number;
+  cash_balance?: number;
 }
 
 // ── Store Interface ────────────────────────────────────────────────
@@ -280,13 +281,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateRealtimePortfolio: (portfolio) =>
     set({
       realtimePortfolio: portfolio,
-      // Auto-derive portfolio summary from WS data
+      // Auto-derive portfolio summary from WS data. cash_balance only when
+      // the backend actually reports it — never fabricate a split.
       portfolio: portfolio
         ? {
             total_value: portfolio.total_value,
             unrealized_pnl: portfolio.daily_pnl,
             position_count: portfolio.positions,
-            cash_balance: portfolio.total_value * 0.3,
+            ...(portfolio.cash_balance !== undefined && {
+              cash_balance: portfolio.cash_balance,
+            }),
           }
         : get().portfolio,
     }),

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { backtestApi } from "@/lib/api-client";
 import type { WalkForwardResult, WalkForwardStatus, BatchWalkForwardResult } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,7 @@ import {
   Legend,
 } from "recharts";
 
-export default function WalkForwardPage() {
+function WalkForwardContent() {
   const [strategies, setStrategies] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedStrategy, setSelectedStrategy] = useState("");
   const [mode, setMode] = useState<"rolling" | "anchored" | "cpcv">("rolling");
@@ -358,5 +359,13 @@ export default function WalkForwardPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function WalkForwardPage() {
+  return (
+    <ErrorBoundary>
+      <WalkForwardContent />
+    </ErrorBoundary>
   );
 }

@@ -6,6 +6,7 @@ import { ChartCard } from "@/components/shared/chart-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { toolsApi } from "@/lib/api-client";
 import type { Tool, ExecuteToolResponse } from "@/lib/api-client";
 import { cn } from "@/lib/utils";

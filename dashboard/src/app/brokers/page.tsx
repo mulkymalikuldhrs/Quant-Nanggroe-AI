@@ -11,12 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { RefreshCw } from "lucide-react";
 
 // GATE-6 final: dark-tech rewrite (restored) + all-ever-connected ledger +
 // live-discovered terminals. Single page, no extra components.
 
-export default function BrokersPage() {
+function BrokersContent() {
   const [accounts, setAccounts] = useState<BrokerAccount[]>([]);
   const [ledger, setLedger] = useState<LedgerAccount[]>([]);
   const [selected, setSelected] = useState<string>("");

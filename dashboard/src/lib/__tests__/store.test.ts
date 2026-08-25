@@ -259,11 +259,11 @@ describe("WebSocket real-time actions", () => {
     expect(useAppStore.getState().realtimePortfolio?.daily_pnl).toBe(15000);
     expect(useAppStore.getState().realtimePortfolio?.positions).toBe(7);
 
-    // Derived portfolio summary
+    // Derived portfolio summary — no fabricated cash split
     expect(useAppStore.getState().portfolio?.total_value).toBe(1000000);
     expect(useAppStore.getState().portfolio?.unrealized_pnl).toBe(15000);
     expect(useAppStore.getState().portfolio?.position_count).toBe(7);
-    expect(useAppStore.getState().portfolio?.cash_balance).toBe(300000); // 30% of 1M
+    expect(useAppStore.getState().portfolio?.cash_balance).toBeUndefined();
   });
 
   it("setWsConnected updates connection status", () => {

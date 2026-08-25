@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { cn } from "@/lib/utils";
-import { useWebSocket, type WSMessage } from "@/lib/websocket";
+import { useWebSocket, buildWsUrl, type WSMessage, type CandleCloseEvent } from "@/lib/websocket";
 import { Activity, RefreshCw, Zap, Clock, TrendingUp, AlertTriangle, Flame, Filter } from "lucide-react";
 
 interface CandleEvent {
@@ -111,12 +111,29 @@ function CandleMonitorContent() {
 
   // ── WebSocket live stream (v8.0.6): instant candle-close pushes.
   // Polling above stays as fallback; both feed the same state.
-  const wsUrl = typeof window !== "undefined"
-    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:8000/api/ws/stream`
-    : "ws://localhost:8000/api/ws/stream";
+  const [wsUrl, setWsUrl] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const resolve = () => {
+      buildWsUrl()
+        .then((u) => {
+          if (!cancelled) setWsUrl(u);
+        })
+        .catch(() => {
+          if (!cancelled) timer = setTimeout(resolve, 5000);
+        });
+    };
+    resolve();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
   const onWsMessage = useCallback((msg: WSMessage) => {
-    if (msg.type !== "candle" || !msg.candle) return;
-    const ev = msg.candle;
+    if (msg.type !== "candle") return;
+    const ev = msg.data as CandleCloseEvent | undefined;
+    if (!ev) return;
     setData((prev) => {
       if (!prev) return prev;
       const matches =

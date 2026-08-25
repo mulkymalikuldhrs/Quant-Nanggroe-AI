@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAppStore } from "./store";
+import { apiRequest } from "./api-client";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ export interface WSMessage {
   regime?: { market: string; confidence: number };
   risk?: { var_95: number; drawdown: number; kill_switch: boolean };
   portfolio?: { total_value: number; daily_pnl: number; positions: number };
-  candle?: CandleCloseEvent;
+  data?: CandleCloseEvent;
   [key: string]: unknown;
 }
 
@@ -57,6 +58,49 @@ function getReconnectDelay(attempt: number): number {
   );
   const jitter = Math.random() * JITTER_MAX;
   return exponential + jitter;
+}
+
+// ── WS URL + JWT auth ─────────────────────────────────────────────
+// Backend closes with code 4001 unless ?token= carries a valid JWT.
+
+export function getWsBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_WS_URL ||
+    (typeof window !== "undefined"
+      ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:8000/api/ws/stream`
+      : "ws://localhost:8000/api/ws/stream")
+  );
+}
+
+interface WsToken {
+  token: string;
+  expiresAtMs: number;
+}
+
+let wsTokenCache: WsToken | null = null;
+
+export function invalidateWsToken(): void {
+  wsTokenCache = null;
+}
+
+async function fetchWsToken(): Promise<WsToken> {
+  const data = await apiRequest<{ token: string; expires_at: number }>(
+    "/api/auth/token",
+    { method: "POST", deduplicate: false },
+  );
+  wsTokenCache = { token: data.token, expiresAtMs: data.expires_at * 1000 };
+  return wsTokenCache;
+}
+
+// Single URL builder shared by every WS consumer (dashboard, candle-monitor).
+export async function buildWsUrl(base?: string): Promise<string> {
+  const baseUrl = base ?? getWsBaseUrl();
+  if (!wsTokenCache || Date.now() >= wsTokenCache.expiresAtMs - 60_000) {
+    await fetchWsToken();
+  }
+  if (!wsTokenCache) throw new Error("WS auth token unavailable");
+  const sep = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${sep}token=${encodeURIComponent(wsTokenCache.token)}`;
 }
 
 // ── WebSocket Hook ─────────────────────────────────────────────────
@@ -92,6 +136,7 @@ export function useWebSocket(
   const subscribedChannels = useRef<{ channels: WSChannel[]; symbols: string[] } | null>(null);
 
   useEffect(() => {
+    if (!url) return;
     let cancelled = false;
 
     function connect() {
@@ -147,6 +192,14 @@ export function useWebSocket(
           if (cancelled) return;
           setIsConnected(false);
           onDisconnectRef.current?.();
+
+          // Auth rejection (missing/expired/invalid JWT) — reconnecting can
+          // never succeed with the same token. Stop permanently.
+          if (event.code === 4001 || event.code === 4003) {
+            invalidateWsToken();
+            setConnectionError("WS authentication failed");
+            return;
+          }
 
           if (autoReconnect && !cancelled) {
             const delay = getReconnectDelay(reconnectAttemptRef.current);
@@ -241,11 +294,27 @@ export function useWebSocket(
 // ── Pre-configured Hook for QNA Dashboard ─────────────────────────
 
 export function useRealtimeData() {
-  const wsUrl =
-    process.env.NEXT_PUBLIC_WS_URL ||
-    (typeof window !== "undefined"
-      ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:8000/api/ws/stream`
-      : "ws://localhost:8000/api/ws/stream");
+  const [wsUrl, setWsUrl] = useState("");
+
+  // Resolve JWT-authenticated WS URL once; retry while backend is down.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: NodeJS.Timeout | null = null;
+    const resolve = () => {
+      buildWsUrl()
+        .then((u) => {
+          if (!cancelled) setWsUrl(u);
+        })
+        .catch(() => {
+          if (!cancelled) timer = setTimeout(resolve, 5000);
+        });
+    };
+    resolve();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   const addNotification = useAppStore((s) => s.addNotification);
 

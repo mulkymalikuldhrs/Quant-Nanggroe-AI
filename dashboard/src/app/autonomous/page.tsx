@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiRequest } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,11 +76,8 @@ export default function AutonomousPage() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch("/api/autonomous/status");
-      if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
-      }
+      const data = await apiRequest<AutonomousStatus>("/api/autonomous/status");
+      setStatus(data);
     } catch (err) {
       console.error("Failed to fetch autonomous status:", err);
     } finally {
@@ -89,12 +87,11 @@ export default function AutonomousPage() {
 
   const fetchReflection = async () => {
     try {
-      const res = await fetch("/api/autonomous/self-awareness");
-      if (res.ok) {
-        const data = await res.json();
-        setReflection(data.reflection);
-      }
-    } catch (err) {
+      const data = await apiRequest<{ reflection: SelfAwarenessReflection }>(
+        "/api/autonomous/self-awareness",
+      );
+      setReflection(data.reflection);
+    } catch {
       // Self-awareness not available
     }
   };
@@ -102,17 +99,16 @@ export default function AutonomousPage() {
   const handleStart = async () => {
     setIsStarting(true);
     try {
-      await fetch("/api/autonomous/start", {
+      await apiRequest("/api/autonomous/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           evaluation_interval_minutes: 30,
           evolution_interval_hours: 6,
           validation_interval_hours: 12,
           min_trades_for_evaluation: 10,
           max_strategies_to_evolve: 5,
           capital_allocation_pct: 0.8,
-        }),
+        },
       });
       await fetchStatus();
     } catch (err) {
@@ -125,7 +121,7 @@ export default function AutonomousPage() {
   const handleStop = async () => {
     setIsStopping(true);
     try {
-      await fetch("/api/autonomous/stop", { method: "POST" });
+      await apiRequest("/api/autonomous/stop", { method: "POST" });
       await fetchStatus();
     } catch (err) {
       console.error("Failed to stop autonomous loop:", err);
@@ -136,7 +132,7 @@ export default function AutonomousPage() {
 
   const handleTrigger = async (action: "evaluate" | "evolve" | "validate" | "reallocate") => {
     try {
-      await fetch(`/api/autonomous/${action}`, { method: "POST" });
+      await apiRequest(`/api/autonomous/${action}`, { method: "POST" });
       await fetchStatus();
     } catch (err) {
       console.error(`Failed to trigger ${action}:`, err);

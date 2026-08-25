@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { apiRequest, backtestApi, strategiesApi } from "@/lib/api-client";
 import type { Strategy, WalkForwardStatus, StrategyPerformance, StrategyComparison } from "@/lib/api-client";
 import { cn, formatPercent, formatCurrency, pnlColor } from "@/lib/utils";
@@ -20,7 +21,7 @@ import {
   Sliders, BarChart3, GitCompare, CheckCircle2, XCircle,
 } from "lucide-react";
 
-export default function StrategiesPage() {
+function StrategiesContent() {
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -606,5 +607,13 @@ export default function StrategiesPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function StrategiesPage() {
+  return (
+    <ErrorBoundary>
+      <StrategiesContent />
+    </ErrorBoundary>
   );
 }

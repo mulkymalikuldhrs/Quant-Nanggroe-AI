@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { channelsApi } from "@/lib/api-client";
 import type { Channel } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,7 @@ const CHANNEL_ICONS: Record<string, string> = {
   discord: "🎮", slack: "💼", telegram: "✈️", whatsapp: "📱", email: "📧",
 };
 
-export default function ChannelsPage() {
+function ChannelsContent() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

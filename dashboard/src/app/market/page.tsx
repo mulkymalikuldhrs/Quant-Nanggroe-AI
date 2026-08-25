@@ -6,6 +6,7 @@ import { ChartCard } from "@/components/shared/chart-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { marketApi } from "@/lib/api-client";
 import { useAppStore } from "@/lib/store";
 import { useRealtimeData } from "@/lib/websocket";
@@ -49,7 +50,7 @@ const FALLBACK_SCANNER = [
   { symbol: "AAPL", price: 198.22, change: 1.15, volume: "22.4M", signal: "Accumulation" },
 ];
 
-export default function MarketPage() {
+function MarketContent() {
   const { realtimePrices } = useAppStore();
   const { isConnected } = useRealtimeData();
   const [selectedSymbol, setSelectedSymbol] = useState("BTC");

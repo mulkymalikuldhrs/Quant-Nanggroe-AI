@@ -49,7 +49,7 @@ interface RiskData {
   profitFactor: number;
 }
 
-export default function RiskPage() {
+function RiskContent() {
   const { killSwitch, toggleKillSwitch, killSwitchStatus, loadingStates } = useAppStore();
   const [riskData, setRiskData] = useState<RiskData | null>(null);
   const [loading, setLoading] = useState(true);

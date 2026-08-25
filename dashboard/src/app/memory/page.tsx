@@ -2,12 +2,13 @@
 export const dynamic = "force-dynamic";
 
 import React from "react";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { memoryApi } from '@/lib/api-client';
 import type { MemoryEntry, MemoryEntryType } from '@/lib/api-client';
 import { useEffect, useState } from 'react';
 
-export default function MemoryPage() {
+function MemoryContent() {
   const [entries, setEntries] = useState<MemoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

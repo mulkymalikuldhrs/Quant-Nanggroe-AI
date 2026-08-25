@@ -232,15 +232,48 @@ class CandleScheduler:
         tick_count = 0
         total_closes = 0
         last_error_log = 0.0
+        loop = asyncio.get_running_loop()
+        import concurrent.futures as _cf
+        _probe_lock = threading.Lock()
+
+        def _sync_probe(syms):
+            """Blocking MT5 bar-time probe — isolated off the event loop.
+            A hung/wedged IPC call previously froze the whole tick loop
+            silently; in the executor + timeout it becomes a visible,
+            recoverable failure."""
+            if not _probe_lock.acquire(blocking=False):
+                return None, "previous probe still running"
+            try:
+                return self._check_all_closes_sync(syms), None
+            finally:
+                _probe_lock.release()
+
         while self._running:
             try:
-                closes = await self._check_all_closes(symbols)
-                total_closes += int(closes or 0)
+                detected, err = await asyncio.wait_for(
+                    loop.run_in_executor(None, _sync_probe, symbols),
+                    timeout=30.0,
+                )
+                if err:
+                    if time.monotonic() - last_error_log > 300:
+                        logger.warning("Tick probe skipped: %s", err)
+                        last_error_log = time.monotonic()
+                else:
+                    total_closes += len(detected or [])
+                    # Process closes on the loop, higher TFs first for context
+                    for sym, tf, bar_time in sorted(
+                        detected or [],
+                        key=lambda x: TIMEFRAME_SECONDS.get(x[1], 0),
+                        reverse=True,
+                    ):
+                        await self._on_candle_close(sym, tf, bar_time)
+            except asyncio.TimeoutError:
+                if time.monotonic() - last_error_log > 300:
+                    logger.warning("Tick probe TIMEOUT (>30s) — MT5 IPC wedged?")
+                    last_error_log = time.monotonic()
             except Exception as exc:
-                # OBSERVABILITY FIX (2026-08-25): this was logger.debug — a
-                # repeating failure here vanished at INFO level and the
-                # scheduler looked alive while detecting nothing. Throttled
-                # WARNING instead.
+                # OBSERVABILITY FIX (2026-08-25): was logger.debug — repeating
+                # failures vanished at INFO level while detecting nothing.
                 now_mono = time.monotonic()
                 if now_mono - last_error_log > 300:
                     logger.warning("Tick check error: %s", exc)
@@ -254,6 +287,39 @@ class CandleScheduler:
                     "states=%d", tick_count, total_closes, len(self._candle_states),
                 )
             await asyncio.sleep(self.tick_interval)
+
+    def _check_all_closes_sync(self, symbols: list[str]) -> list[tuple[str, str, float]]:
+        """Synchronous bar-time scan returning detected closes.
+
+        Runs INSIDE the executor thread — must not touch the event loop.
+        """
+        import MetaTrader5 as mt5
+
+        now = time.time()
+        closes_detected = []
+
+        for sym in symbols:
+            for tf in self.timeframes:
+                key = f"{sym}:{tf}"
+                state = self._candle_states.get(key)
+                if state is None:
+                    continue
+
+                tf_enum = MT5_TF_MAP.get(tf, 16408)
+                try:
+                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+                    if not rates or len(rates) < 1:
+                        continue
+                    current_bar_time = float(rates[-1][0])
+                    # New candle closed if bar time changed
+                    if current_bar_time > state.last_close_time and state.last_close_time > 0:
+                        closes_detected.append((sym, tf, current_bar_time))
+                    state.last_close_time = current_bar_time
+                    state.last_check = now
+                except Exception:
+                    pass
+
+        return closes_detected
 
     async def _discover_symbols(self) -> list[str]:
         """Discover tradable symbols from the connected MT5 terminal."""

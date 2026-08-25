@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { execFileSync } from "node:child_process";
 
 export const dynamic = "force-dynamic";
 
 const WORKTREE = process.cwd();
+const PYTHON = "C:\\Python314\\python.exe";
+const SUBPROCESS_TIMEOUT_MS = 10000;
 
 interface TradeEvent {
   id: number;
@@ -34,32 +37,59 @@ interface TradeStats {
   by_timeframe: Array<{ timeframe: string; total: number; trades: number; avg_confidence: number }>;
 }
 
-function queryHistory(params: URLSearchParams): { events: TradeEvent[]; total: number; stats: TradeStats } {
-  // Read from SQLite via Python subprocess
-  try {
-    const { execSync } = require("child_process");
-    const page = params.get("page") || "1";
-    const limit = params.get("limit") || "50";
-    const symbol = params.get("symbol") || "";
-    const timeframe = params.get("timeframe") || "";
-    const traded = params.get("traded") || "";
-
-    const pyCmd = `
-import sys; sys.path.insert(0, '${WORKTREE.replace(/\\/g, "\\\\")}')
+// Query params are passed via argv (execFileSync, no shell) and read through
+// sys.argv inside Python — never interpolated into the source string.
+const QUERY_SCRIPT = `
+import sys, json
+sys.path.insert(0, sys.argv[1])
+symbol = sys.argv[2] or None
+timeframe = sys.argv[3] or None
+traded_only = sys.argv[4] == "1"
+limit = int(sys.argv[5])
+page = int(sys.argv[6])
 from quant_nanggroe.engine.trade_history import get_trade_history
 h = get_trade_history()
-events = h.query(symbol="${symbol}" or None, timeframe="${timeframe}" or None, traded_only=${traded === "1"}, limit=${limit}, offset=(${page} - 1) * ${limit})
-total = h.count(symbol="${symbol}" or None, timeframe="${timeframe}" or None, traded_only=${traded === "1"})
-import json
+events = h.query(symbol=symbol, timeframe=timeframe, traded_only=traded_only, limit=limit, offset=(page - 1) * limit)
+total = h.count(symbol=symbol, timeframe=timeframe, traded_only=traded_only)
 print(json.dumps({"events": events, "total": total}))
 `.trim();
 
-    const result = execSync(`set "PYTHONPATH=" && C:\\Python314\\python.exe -c "${pyCmd.replace(/"/g, '\\"')}"`, {
-      cwd: WORKTREE,
-      encoding: "utf8",
-      timeout: 10000,
-    });
+const STATS_SCRIPT = `
+import sys, json
+sys.path.insert(0, sys.argv[1])
+from quant_nanggroe.engine.trade_history import get_trade_history
+print(json.dumps(get_trade_history().stats()))
+`.trim();
 
+function sanitizeText(value: string | null): string {
+  return (value || "").replace(/['"\\`]/g, "").slice(0, 64);
+}
+
+function sanitizeInt(value: string | null, fallback: number, max: number): number {
+  const parsed = parseInt(value || "", 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
+function runPython(args: string[]): string {
+  return execFileSync(PYTHON, ["-c", ...args], {
+    cwd: WORKTREE,
+    encoding: "utf8",
+    timeout: SUBPROCESS_TIMEOUT_MS,
+    windowsHide: true,
+    env: { ...process.env, PYTHONPATH: "" },
+  });
+}
+
+function queryHistory(params: URLSearchParams): { events: TradeEvent[]; total: number; stats: TradeStats } {
+  try {
+    const symbol = sanitizeText(params.get("symbol"));
+    const timeframe = sanitizeText(params.get("timeframe"));
+    const traded = params.get("traded") === "1" ? "1" : "0";
+    const limit = sanitizeInt(params.get("limit"), 50, 500);
+    const page = sanitizeInt(params.get("page"), 1, 100000);
+
+    const result = runPython([QUERY_SCRIPT, WORKTREE, symbol, timeframe, traded, String(limit), String(page)]);
     const parsed = JSON.parse(result.trim());
     const stats = getStats();
     return { events: parsed.events, total: parsed.total, stats };
@@ -70,20 +100,7 @@ print(json.dumps({"events": events, "total": total}))
 
 function getStats(): TradeStats {
   try {
-    const { execSync } = require("child_process");
-    const pyCmd = `
-import sys; sys.path.insert(0, '${WORKTREE.replace(/\\/g, "\\\\")}')
-from quant_nanggroe.engine.trade_history import get_trade_history
-import json
-print(json.dumps(get_trade_history().stats()))
-`.trim();
-
-    const result = execSync(`set "PYTHONPATH=" && C:\\Python314\\python.exe -c "${pyCmd.replace(/"/g, '\\"')}"`, {
-      cwd: WORKTREE,
-      encoding: "utf8",
-      timeout: 10000,
-    });
-
+    const result = runPython([STATS_SCRIPT, WORKTREE]);
     return JSON.parse(result.trim());
   } catch {
     return { total: 0, trades: 0, signals: 0, errors: 0, last_24h: 0, by_symbol: [], by_timeframe: [] };
@@ -94,8 +111,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const { events, total, stats } = queryHistory(searchParams);
 
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "50", 10);
+  const page = sanitizeInt(searchParams.get("page"), 1, 100000);
+  const limit = sanitizeInt(searchParams.get("limit"), 50, 500);
 
   return NextResponse.json({
     events,

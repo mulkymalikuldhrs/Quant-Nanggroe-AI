@@ -8,6 +8,7 @@ import { StatusCard } from "@/components/shared/status-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { colonyApi, agentsApi } from "@/lib/api-client";
 import type { Colony, Agent } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -19,7 +20,7 @@ import {
   Play,
 } from "lucide-react";
 
-export default function ColonyPage() {
+function ColonyContent() {
   const [colonies, setColonies] = useState<Colony[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { backtestApi } from "@/lib/api-client";
 import type { FactorZoo } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ const factorDetails: Record<string, { name: string; category: string; ic: number
   ],
 };
 
-export default function FactorsPage() {
+function FactorsContent() {
   const [factorZoos, setFactorZoos] = useState<FactorZoo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

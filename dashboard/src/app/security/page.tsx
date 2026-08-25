@@ -7,6 +7,7 @@ import { StatusCard } from "@/components/shared/status-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { securityApi } from "@/lib/api-client";
 import type { SecurityEvent, SecurityStatus } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,7 @@ const FALLBACK_EVENTS: SecurityEvent[] = [
   { id: "e5", type: "config_change", severity: "info", message: "Risk limits updated", timestamp: new Date(Date.now() - 14400000).toISOString(), detail: "Max drawdown changed to -5%", agent: "admin" },
 ];
 
-export default function SecurityPage() {
+function SecurityContent() {
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [status, setStatus] = useState<SecurityStatus | null>(null);
   const [loading, setLoading] = useState(true);

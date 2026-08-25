@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { backtestApi } from "@/lib/api-client";
 import type { BacktestResult, Strategy, WalkForwardResult, TuneResult } from "@/lib/api-client";
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export default function BacktestPage() {
+function BacktestContent() {
   const [symbol, setSymbol] = useState("AAPL");
   const [strategy, setStrategy] = useState("momentum_alpha");
   const [startDate, setStartDate] = useState("2023-01-01");
@@ -466,5 +467,13 @@ export default function BacktestPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function BacktestPage() {
+  return (
+    <ErrorBoundary>
+      <BacktestContent />
+    </ErrorBoundary>
   );
 }
