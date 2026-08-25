@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
  "timestamp": "2026-08-24T20:22:54.024628",
  "source": "yfinance EURUSD M15 60d real (5688 bars)",
  "strategies_tested": 200,
@@ -1612,4 +1613,417 @@
   "dd_gt": -25
  },
  "note": "Tested 200 StrategyFactory variants (of 1137 total). 5-fold WF. 2s."
+=======
+  "timestamp": "2026-08-21 10:48:35",
+  "total_strategies": 81,
+  "pass_count": 0,
+  "fail_count": 81,
+  "results": [
+    {
+      "name": "_df_signal_adapter",
+      "status": "FAIL",
+      "reason": "no Strategy subclass"
+    },
+    {
+      "name": "adaptive_moving_average",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "adx_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "algebra",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "alternative_data_signals",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "amdx",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "aroon_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "atr_breakout",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "bayesian_ridge",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "bollinger_squeeze",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "camarilla_pivot",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "carry_trade",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "cci_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "choppiness_index",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "commodity_trend",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "cot_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "crypto_funding",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "crypto_specific",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "dark_cloud",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "dark_pool_flow",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "dema_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "dhaher_system",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "dmi_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "doji_pattern",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "dxy_momentum",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "elder_ray",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "elder_triple_screen",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "em_carry",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "ema_adx",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "engulfing_pattern",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "entropy_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "evening_star",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "ewma_vol",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "factor_model_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibo_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibonacci",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibonacci_arc",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibonacci_extension",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibonacci_fan",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibonacci_retracement",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fibonacci_time",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "fundamental_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "garch_vol",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "gene_loader",
+      "status": "FAIL",
+      "reason": "no Strategy subclass"
+    },
+    {
+      "name": "gold_inflation",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "half_life_mean_reversion",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "hammer_pattern",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "harami_pattern",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "hull_ma",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "hurst_exponent",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "ichimoku_cloud",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "ict",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "ict_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "inverted_hammer",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "kalman_filter",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "kaufman_ama",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "kelly_optimal",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "keltner_squeeze",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "kmeans_regime",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "kronos_wrapper",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "linear_regression_channel",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "macro_fx",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "market_profile",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "mean_reversion",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "microstructure_alpha",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "msnr",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "multi_timeframe_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "pairs_trade_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "quarterly_theory",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "registry",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "self_finetune",
+      "status": "ERROR",
+      "reason": "'NoneType' object has no attribute '__dict__'"
+    },
+    {
+      "name": "smc_strategy",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "statistical_arbitrage",
+      "status": "ERROR",
+      "reason": "-1"
+    },
+    {
+      "name": "strategy_evolver",
+      "status": "ERROR",
+      "reason": "'NoneType' object has no attribute '__dict__'"
+    },
+    {
+      "name": "tradebobby_smc_scanner",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "trend_follow_strategy",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "tsmom_strategy",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "unified_retail",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "volume_delta",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "wyckoff",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    },
+    {
+      "name": "xgboost_alpha_strategy",
+      "status": "FAIL",
+      "reason": "init: Can't instantiate abstract class Strategy without an implementation for abstract method 'generate_signal'"
+    }
+  ]
+>>>>>>> Stashed changes
 }
