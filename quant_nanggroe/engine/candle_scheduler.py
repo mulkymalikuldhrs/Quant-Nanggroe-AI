@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -193,6 +194,27 @@ class CandleScheduler:
 
     async def _tick_loop(self) -> None:
         """Main loop: check for candle closes on every tick interval."""
+        # ── MT5 INIT: ensure C-API is initialized in THIS thread ──
+        try:
+            import MetaTrader5 as mt5
+            term = os.environ.get("MT5_TERMINAL_PATH",
+                                  r"C:\Program Files\MetaTrader 5\terminal64.exe")
+            if not mt5.initialize(path=term, timeout=15000):
+                logger.error("MT5 initialize failed in scheduler thread — retrying in 10s")
+                await asyncio.sleep(10)
+                if not mt5.initialize(path=term, timeout=15000):
+                    logger.error("MT5 initialize failed again — scheduler idle")
+                    return
+            info = mt5.account_info()
+            if info:
+                logger.info("MT5 initialized in scheduler thread: login=%s server=%s",
+                            info.login, info.server)
+            else:
+                logger.warning("MT5 initialized but no account info — proceeding anyway")
+        except Exception as exc:
+            logger.error("MT5 init in scheduler thread failed: %s", exc)
+            return
+
         # Initial discovery
         symbols = await self._discover_symbols()
         if not symbols:
@@ -207,11 +229,30 @@ class CandleScheduler:
             len(symbols), len(self.timeframes), len(symbols) * len(self.timeframes),
         )
 
+        tick_count = 0
+        total_closes = 0
+        last_error_log = 0.0
         while self._running:
             try:
-                await self._check_all_closes(symbols)
+                closes = await self._check_all_closes(symbols)
+                total_closes += int(closes or 0)
             except Exception as exc:
-                logger.debug("Tick check error: %s", exc)
+                # OBSERVABILITY FIX (2026-08-25): this was logger.debug — a
+                # repeating failure here vanished at INFO level and the
+                # scheduler looked alive while detecting nothing. Throttled
+                # WARNING instead.
+                now_mono = time.monotonic()
+                if now_mono - last_error_log > 300:
+                    logger.warning("Tick check error: %s", exc)
+                    last_error_log = now_mono
+            tick_count += 1
+            # Heartbeat every 5 min: proves the loop is ticking even when
+            # nothing fires, and counts lifetime closes.
+            if tick_count % 300 == 0:
+                logger.info(
+                    "CandleScheduler heartbeat: ticks=%d, closes_total=%d, "
+                    "states=%d", tick_count, total_closes, len(self._candle_states),
+                )
             await asyncio.sleep(self.tick_interval)
 
     async def _discover_symbols(self) -> list[str]:
@@ -232,7 +273,7 @@ class CandleScheduler:
                 logger.info("CandleScheduler discovered %d symbols: %s", len(found), found)
                 return found
         except Exception as exc:
-            logger.debug("Symbol discovery failed: %s", exc)
+            logger.warning("Symbol discovery failed: %s", exc)
         return ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD", "USDCHF", "EURGBP"]
 
     async def _init_candle_states(self, symbols: list[str]) -> None:
@@ -283,6 +324,7 @@ class CandleScheduler:
                 try:
                     rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
                     if not rates or len(rates) < 1:
+                        logger.debug("No rates for %s %s — MT5 returned empty", sym, tf)
                         continue
                     current_bar_time = float(rates[-1][0])
                     # New candle closed if bar time changed
@@ -290,8 +332,8 @@ class CandleScheduler:
                         closes_detected.append((sym, tf, current_bar_time))
                     state.last_close_time = current_bar_time
                     state.last_check = now
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Rate fetch failed %s %s: %s", sym, tf, exc)
 
         # Process closes (higher TFs first for context)
         for sym, tf, bar_time in sorted(
@@ -300,6 +342,8 @@ class CandleScheduler:
             reverse=True,
         ):
             await self._on_candle_close(sym, tf, bar_time)
+
+        return len(closes_detected)
 
     async def _on_candle_close(self, symbol: str, timeframe: str, bar_time: float) -> None:
         """Handle a candle close event — run full analysis pipeline."""
@@ -379,6 +423,21 @@ class CandleScheduler:
                 "total_events": len(self._results),
                 "last_event": self._results[-1].timestamp if self._results else None,
                 "uptime_seconds": time.time() - (self._start_time if hasattr(self, "_start_time") else time.time()),
+                # Last 50 results so /api/candle-monitor has real events to serve
+                "events": [
+                    {
+                        "symbol": r.symbol,
+                        "timeframe": r.timeframe,
+                        "timestamp": r.timestamp,
+                        "signal": r.signal,
+                        "confidence": r.confidence,
+                        "traded": r.traded,
+                        "notified": r.notified,
+                        "error": r.error,
+                        "duration_ms": round(r.duration_ms, 1),
+                    }
+                    for r in self._results[-50:]
+                ],
             }
             state_file.write_text(json.dumps(state, default=str), encoding="utf-8")
 

@@ -133,19 +133,8 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                         mt5_connected = True
                         _wired_logins.add(login)
                         wired += 1
-                        try:
-                            det = MT5Broker.detect_active_account()
-                            if det:
-                                logger.info("LIVE MT5 wired: %s (primary=%s) | ACTIVE ACCOUNT login=%s server=%s equity=%.2f balance=%.2f",
-                                            name, is_live, det.get("login"),
-                                            det.get("server"), det.get("equity", 0.0), det.get("balance", 0.0))
-                                if int(login) != int(det.get("login") or 0):
-                                    logger.warning("ACCOUNT MISMATCH: configured login=%s but terminal active=%s — trading the ACTIVE account",
-                                                   login, det.get("login"))
-                            else:
-                                logger.info("LIVE MT5 wired: %s (primary=%s) (account_info unavailable)", name, is_live)
-                        except Exception as _de:
-                            logger.info("LIVE MT5 wired: %s (primary=%s) (detect failed: %s)", name, is_live, _de)
+                        logger.info("LIVE MT5 wired: %s (primary=%s) login=%s server=%s",
+                                    name, is_live, login, server)
                     else:
                         logger.warning("MT5 connect failed for %s (login=%s) — skipped", name, login)
 

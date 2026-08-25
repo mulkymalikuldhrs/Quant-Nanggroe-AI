@@ -1138,9 +1138,13 @@ class AutonomousPipeline:
                 s5.status = "running"
                 t0 = time.perf_counter()
                 _atr_for_exec = self._compute_atr(df) if df is not None else 0.0
-                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision, df=df, atr_value=_atr_for_exec, timeframe=timeframe)
+                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision, df=df, atr_value=_atr_for_exec, timeframe=timeframe, risk_lot_size=risk_metrics.get("lot_size", 0.0))
                 s5.duration_ms = (time.perf_counter() - t0) * 1000
-                s5.status = "passed"
+                if exec_decision.get("error"):
+                    s5.status = "failed"
+                    s5.error = exec_decision["error"]
+                else:
+                    s5.status = "passed"
                 s5.result = exec_decision.get("action", "hold")
                 result.decision["execution"] = exec_decision
 
@@ -1435,6 +1439,7 @@ class AutonomousPipeline:
             pass  # fallback to legacy below
 
         # Legacy ensemble voting (kept as fallback if aggregator import fails)
+        total_weight = sum(weights.get(cat, 1.0) for _, _, _, cat in signals)
         buy_weight = sum(c * weights.get(cat, 1.0) for sig, c, _, cat in signals if sig == "buy")
         sell_weight = sum(c * weights.get(cat, 1.0) for sig, c, _, cat in signals if sig == "sell")
 
@@ -1761,18 +1766,18 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.debug("Paper price feed skipped: %s", exc)
 
-    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1") -> dict[str, Any]:
+    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1", risk_lot_size: float = 0.0) -> dict[str, Any]:
         try:
             from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
             em = self._em
             side = OrderSide.BUY if signal == "buy" else (OrderSide.SELL if signal == "sell" else None)
             if side is None:
                 return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "execution": "hold", "note": "signal=hold, no order"}
-            # FAZE 1.2 (replan): conservative sizing until edge proven in live.
-            # Old: confidence * 0.1 → up to 0.09 lots on high confidence.
-            # New: confidence * 0.05 → max 0.045 lots; 0.01 floor for micro accounts.
-            # Scale up only after portfolio expectancy > 0 over 50+ trades.
-            qty = max(0.01, round(confidence * 0.05, 4))
+            # FIX: use risk-computed lot size if available, else confidence-based fallback
+            if risk_lot_size > 0:
+                qty = risk_lot_size
+            else:
+                qty = max(0.01, round(confidence * 0.05, 4))
             if current_price > 0:
                 for broker in em._brokers.values():
                     if hasattr(broker, 'set_price'):

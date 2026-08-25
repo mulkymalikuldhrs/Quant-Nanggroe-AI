@@ -391,8 +391,8 @@ def run_daemon(args: argparse.Namespace) -> int:
 
         class _PipelineFetcher:
             """Lazy pipeline handle — resolves on first fetch, not at boot.
-            Runs the async _fetch_data on a dedicated loop in this thread
-            (the retrain thread has no running loop of its own)."""
+            Runs the async _fetch_data via asyncio.run() in the retrain thread
+            (which has no running loop of its own)."""
             def __init__(self):
                 self._pipe = None
             def _resolve(self):
@@ -405,12 +405,15 @@ def run_daemon(args: argparse.Namespace) -> int:
                 import asyncio as _aio
                 coro = self._resolve()._fetch_data(symbol, timeframe=timeframe)
                 try:
-                    _aio.get_running_loop()
-                    coro.close()  # we're in a loop context we don't own — abort cleanly
-                    raise RuntimeError("fetcher must run outside the main event loop")
-                except RuntimeError as _re:
-                    if "fetcher must run" in str(_re):
-                        raise
+                    loop = _aio.get_running_loop()
+                except RuntimeError:
+                    loop = None
+                if loop is not None and loop.is_running():
+                    # We're inside an async context — use run_coroutine_threadsafe
+                    import concurrent.futures
+                    future = _aio.run_coroutine_threadsafe(coro, loop)
+                    return future.result(timeout=30)
+                else:
                     return _aio.run(coro)
 
         _symbols = list(getattr(_scheduler, "symbols", None) or ["EURUSD"])
