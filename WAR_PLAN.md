@@ -1,6 +1,6 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-> Version: v8.0.8 | Last updated: 2026-08-25
+> Version: v8.0.10 | Last updated: 2026-08-25
 ## 1. Profile Status Matrix
 | Profile | Cron OK | Failures | Last Error |
 |---------|---------|----------|------------|
@@ -37,4 +37,4 @@
 |- Version drift fixed: pyproject.toml 5.1.0 → 8.0.8 (match qna.py + __init__.py). All three files now v8.0.8.
 |- File spam removed: results/ dir (18 files incl. gate_status.json with merge conflict markers) deleted + added to .gitignore.
 |- Sync: codeberg/gitlab/github master pushed 288f1701.
-|- Version: v8.0.8 enforced. No drift.
+|- Version: v8.0.10 enforced. No drift.

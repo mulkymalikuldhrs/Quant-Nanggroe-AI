@@ -328,9 +328,15 @@ class CandleScheduler:
                 try:
                     if broker is not None:
                         # Broker session: resolves suffixes internally.
-                        rates = broker.get_rates(sym, tf_enum, 2)
-                    else:
-                        rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+rates = broker.get_rates(sym, tf_enum, 2)
+                else:
+                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+                if not rates or len(rates) < 1:
+                    # RATE EMPTY: attempt MT5 re-initialization (self-heal),
+                    # then retry once. This mirrors the dedicated self-heal loop
+                    # and restores data feed after terminal/IPC glitches.
+                    ok = mt5.initialize()
+                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
                     if not rates or len(rates) < 1:
                         empty_count += 1
                         continue
