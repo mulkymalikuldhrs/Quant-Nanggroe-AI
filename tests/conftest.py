@@ -6,6 +6,7 @@ Pytest Configuration — Shared Fixtures for Quant-Nanggroe-AI Test Suite
 from __future__ import annotations
 
 import os
+import tempfile
 
 import pytest
 import numpy as np
@@ -16,6 +17,35 @@ os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///test_qna.db")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("QNAI_JWT_SECRET", "test-secret-key-for-pytest")
+
+# ── PRODUCTION STATE ISOLATION (2026-08-25 incident) ─────────────────────
+# A test activation ("reason": "test") leaked into data/kill_switch_state.json
+# and BLOCKED ALL LIVE TRADING for the rest of the day (same-day level_1 has
+# no auto-expiry). Every test process MUST point the cross-process kill
+# switch at a throwaway location. Set at import time so it applies even to
+# modules that create KillSwitch() during collection.
+_KS_TMP = tempfile.mkdtemp(prefix="qna-test-ks-")
+os.environ["QNA_KILL_SWITCH_STATE_FILE"] = os.path.join(_KS_TMP, "ks_state.json")
+os.environ["QNA_KILL_SWITCH_AUDIT_LOG"] = os.path.join(_KS_TMP, "ks_audit.jsonl")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_kill_switch_file(monkeypatch):
+    """Belt-and-suspenders: per-test KS state file, restored after each test.
+
+    NOTE: deliberately NOT using pytest's tmp_path — its shared
+    C:\\...\\Temp\\pytest-of-Hi root can be access-denied when it was created
+    by an elevated process, which would error every test.
+    """
+    import shutil
+    import tempfile as _tf
+    ks_dir = _tf.mkdtemp(prefix="qna-ks-")
+    monkeypatch.setenv(
+        "QNA_KILL_SWITCH_STATE_FILE", os.path.join(ks_dir, "ks_state.json"))
+    monkeypatch.setenv(
+        "QNA_KILL_SWITCH_AUDIT_LOG", os.path.join(ks_dir, "ks_audit.jsonl"))
+    yield
+    shutil.rmtree(ks_dir, ignore_errors=True)
 
 
 @pytest.fixture

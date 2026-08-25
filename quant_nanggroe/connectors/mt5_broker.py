@@ -104,7 +104,14 @@ class MT5Broker(BrokerConnector):
     def _snapshot_symbols(self) -> None:
         try:
             raw = self._mt5.symbols_get() or []
-            self._available_symbols = {s.name.lower(): s.name for s in raw}
+            # Only store symbols that are FULLY TRADEABLE (trade_mode=0).
+            # Disabled symbols (mode=4) like .vxc must be excluded so
+            # resolve_symbol() never resolves to an untradeable name.
+            self._available_symbols = {
+                s.name.lower(): s.name
+                for s in raw
+                if s.trade_mode == 0
+            }
         except Exception:
             self._available_symbols = {}
 

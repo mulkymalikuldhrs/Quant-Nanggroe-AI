@@ -1,5 +1,26 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.8 — HOTFIX: Trading Blocked Root Causes (2026-08-25)
+
+> Incident: "QNA ga trading" — two independent blockers found via runtime diagnosis.
+
+### 🔴 ROOT CAUSE 1: Kill switch poisoned by test run
+- A pytest activation (`"reason": "test"`, level_1) leaked into the PRODUCTION cross-process state file `data/kill_switch_state.json` at 00:02 UTC. Same-day level_1 has no auto-expiry → **every order blocked all day**.
+- **FIX: `tests/conftest.py` autouse isolation** — `QNA_KILL_SWITCH_STATE_FILE` + `QNA_KILL_SWITCH_AUDIT_LOG` now point at a per-test temp dir (set at import time AND per-test via monkeypatch). Tests can never touch production state again.
+- **NOTE:** pytest's own `tmp_path` is deliberately avoided in the fixture — its shared root can be access-denied when created by an elevated process.
+- Production state cleared manually (inactive).
+
+### 🔴 ROOT CAUSE 2: Timezone bug in stale-data veto
+- MT5 epochs become naive-UTC timestamps; `_reject_stale` compared them against naive LOCAL time (WIB = UTC+7). Every age inflated by +7h → M15 (budget 60m) and H1 (budget 240m) **permanently vetoed since v8.0.5 → zero signals**.
+- **FIX: TZ-safe comparison** — naive index explicitly localized to UTC; now always taken as `Timestamp.now(tz="UTC")`.
+- New regression test: fresh naive-UTC bar must pass regardless of local TZ.
+
+### 🧪 Verification
+- **294 tests pass** (full battery).
+- Kill switch state file verified INACTIVE after a full test run — isolation proven.
+
+---
+
 ## v8.0.7 — Auto-Retrain Loop + Decay Guard (2026-08-25)
 
 ### 🔄 Closed-Loop Parameter Freshness

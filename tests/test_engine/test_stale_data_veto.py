@@ -17,8 +17,10 @@ def _make_pipeline() -> AutonomousPipeline:
 
 
 def _df_with_last_bar(age_minutes: float, interval_min: int = 15, bars: int = 60) -> pd.DataFrame:
-    now = pd.Timestamp.now()
-    idx = pd.date_range(end=now - pd.Timedelta(minutes=age_minutes),
+    """Bars stamped in tz-aware UTC — matches the MT5 data path after the
+    2026-08-25 TZ hotfix (naive index is treated as UTC by the veto)."""
+    now_utc = pd.Timestamp.now(tz="UTC")
+    idx = pd.date_range(end=now_utc - pd.Timedelta(minutes=age_minutes),
                         periods=bars, freq=f"{interval_min}min")
     return pd.DataFrame(
         {"open": 1.0, "high": 1.1, "low": 0.9, "close": 1.05,
@@ -35,6 +37,16 @@ class TestStaleDataVeto(unittest.TestCase):
         df = _df_with_last_bar(age_minutes=5)          # 5 min < 4×15=60
         out = self.p._reject_stale(df, "EURUSD", "M15")
         self.assertIsNotNone(out)
+
+    def test_fresh_naive_utc_data_passes(self):
+        """MT5 path produces NAIVE-UTC timestamps — must NOT be inflated
+        by the local offset (the WIB +7h bug that blocked all trading)."""
+        idx = pd.date_range(end=pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=5),
+                            periods=60, freq="15min")
+        df = pd.DataFrame({"open": 1.0, "high": 1.1, "low": 0.9,
+                           "close": 1.05, "volume": 100.0}, index=idx.tz_localize(None))
+        out = self.p._reject_stale(df, "EURUSD", "M15")
+        self.assertIsNotNone(out, "fresh naive-UTC bar must pass regardless of local TZ")
 
     def test_stale_m15_blocked(self):
         df = _df_with_last_bar(age_minutes=120)        # 2h >> 60min budget

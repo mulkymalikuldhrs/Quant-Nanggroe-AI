@@ -21,7 +21,7 @@ cd dashboard && npm run dev # dashboard :3000
 python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # 61 core regression tests
 ```
 
-## Key Modules (v8.0.7)
+## Key Modules (v8.0.8)
 | Module | Purpose |
 |--------|---------|
 | `qna_tray.py` | Windows system tray daemon control |

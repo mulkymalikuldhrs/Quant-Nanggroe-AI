@@ -1719,10 +1719,15 @@ class AutonomousPipeline:
             max_age = pd.Timedelta(
                 minutes=interval_min * self.STALE_BAR_MULTIPLIER)
             last_bar = df.index[-1]
-            now = (pd.Timestamp.now(tz=last_bar.tz)
-                   if getattr(last_bar, "tzinfo", None) is not None
-                   else pd.Timestamp.now())
-            age = now - last_bar
+            # TZ-SAFE comparison (2026-08-25 hotfix): MT5 epochs become naive
+            # UTC timestamps; comparing them against naive LOCAL time inflated
+            # every age by the UTC offset (WIB +7h) -> M15/H1 permanently
+            # "stale" -> zero signals. Treat naive index as UTC explicitly.
+            if getattr(last_bar, "tzinfo", None) is not None:
+                last_bar_utc = last_bar.tz_convert("UTC")
+            else:
+                last_bar_utc = last_bar.tz_localize("UTC")
+            age = pd.Timestamp.now(tz="UTC") - last_bar_utc
             if age > max_age:
                 logger.error(
                     "STALE DATA VETO %s %s: last bar %s (age %.1f min) "
@@ -1995,8 +2000,9 @@ class AutonomousPipeline:
         defaults only when MT5 is unavailable.
         """
         # Internal names we want to trade (base names, no suffix)
+        # NOTE: XAUUSD/XAGUSD are NOT available on ValetaxIntl-Live2 cent account
         WANTED = {"EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD",
-                  "XAUUSD", "XAGUSD", "USOIL", "UKOIL"}
+                  "USDCHF", "EURGBP"}
         try:
             if self._em is None:
                 raise RuntimeError("no execution manager")
@@ -2006,16 +2012,15 @@ class AutonomousPipeline:
                     raw = mt5.symbols_get() or []
                     found = []
                     for s in raw:
+                        # ONLY include tradeable symbols (trade_mode=0).
+                        # Disabled symbols (.vxc) must be excluded.
+                        if s.trade_mode != 0:
+                            continue
                         base = s.name.split(".")[0] if "." in s.name else s.name
                         if base.upper() in WANTED:
-                            # Use the actual broker symbol name with internal format
-                            if "." in s.name:
-                                # e.g. EURUSD.vxc → internal "EURUSD.vxc"
-                                found.append(s.name)
-                            else:
-                                found.append(base)
+                            found.append(base)
                     if found:
-                        logger.info("MT5 symbol discovery: %d tradable symbols: %s",
+                        logger.info("MT5 symbol discovery: %d tradeable symbols: %s",
                                     len(found), found)
                         return found
                     # If no wanted symbols found with suffix, try bare
@@ -2025,8 +2030,8 @@ class AutonomousPipeline:
                         return found_bare
         except Exception as exc:
             logger.debug("MT5 symbol discovery failed: %s", exc)
-        # Fallback — use bare names (MT5Broker.resolve_symbol will handle suffix)
-        fallback = ["EURUSD", "GBPUSD", "XAUUSD"]
+        # Fallback — use bare names that are actually tradeable on this broker
+        fallback = ["EURUSD", "GBPUSD", "USDJPY"]
         logger.info("Using fallback symbols: %s", fallback)
         return fallback
 
