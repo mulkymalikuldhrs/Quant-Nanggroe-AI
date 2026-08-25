@@ -194,6 +194,29 @@ class CandleScheduler:
 
     async def _tick_loop(self) -> None:
         """Main loop: check for candle closes on every tick interval."""
+        # ── WAR-TIME GUARD (2026-08-25): NOTHING in-process may tear down
+        # the shared MT5 IPC. Multiple components call mt5.shutdown()
+        # (account_discovery, guardian, assistant...) which kills EVERY
+        # consumer in this process — root cause of "scheduler sees empty
+        # rates forever". The MetaTrader5 module is a process-global singleton;
+        # shutdown anywhere = blackout everywhere. Neutralize it.
+        try:
+            import MetaTrader5 as _mt5mod
+            if not getattr(_mt5mod, "_qna_shutdown_guarded", False):
+                _orig_shutdown = _mt5mod.shutdown
+
+                def _guarded_shutdown(*a, **kw):
+                    logger.warning(
+                        "mt5.shutdown() BLOCKED by scheduler guard "
+                        "(shared IPC protected)")
+                    return None
+
+                _mt5mod.shutdown = _guarded_shutdown
+                _mt5mod._qna_shutdown_guarded = True  # type: ignore[attr-defined]
+                logger.info("MT5 shutdown guard installed (IPC protected)")
+        except Exception as _guard_exc:
+            logger.error("shutdown guard install failed: %s", _guard_exc)
+
         # ── MT5 INIT: reuse the builder's live session — NEVER re-init ──
         # HOTFIX (2026-08-25): calling mt5.initialize() a SECOND time (after
         # build_execution_manager already initialized the terminal) corrupts
@@ -327,21 +350,13 @@ class CandleScheduler:
                 tf_enum = MT5_TF_MAP.get(tf, 16408)
                 try:
                     if broker is not None:
-                        # Broker session: resolves suffixes internally.
-rates = broker.get_rates(sym, tf_enum, 2)
-                else:
-                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
-                if not rates or len(rates) < 1:
-                    # RATE EMPTY: attempt MT5 re-initialization (self-heal),
-                    # then retry once. This mirrors the dedicated self-heal loop
-                    # and restores data feed after terminal/IPC glitches.
-                    ok = mt5.initialize()
-                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+                        rates = broker.get_rates(sym, tf_enum, 2)
+                    else:
+                        rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
                     if not rates or len(rates) < 1:
                         empty_count += 1
                         continue
                     current_bar_time = float(rates[-1][0])
-                    # New candle closed if bar time changed
                     if current_bar_time > state.last_close_time and state.last_close_time > 0:
                         closes_detected.append((sym, tf, current_bar_time))
                     state.last_close_time = current_bar_time
