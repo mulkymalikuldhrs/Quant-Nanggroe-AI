@@ -711,27 +711,20 @@ class WalkForwardAnalyzer:
         # Dynamically adjust n_groups so each group is large enough
         n_groups = self.n_groups
         group_size = n_bars // n_groups
-        n_test_groups = self.n_test_groups
         if group_size < self.min_observations:
             logger.warning(
                 "CPCV: Group size %d < min_observations %d. Reducing n_groups.",
                 group_size, self.min_observations,
             )
             n_groups = max(2, n_bars // self.min_observations)
-            if n_test_groups >= n_groups:
-                logger.warning(
-                    "CPCV: n_test_groups %d >= n_groups %d. Reducing to %d.",
-                    n_test_groups, n_groups, n_groups - 1,
-                )
-                n_test_groups = n_groups - 1
 
         # Build the CombinatorialPurgedCV splitter
         cpcv_splitter = CombinatorialPurgedCV(
             n_groups=n_groups,
-            n_test_groups=n_test_groups,
+            n_test_groups=self.n_test_groups,
             purge_gap=self.purge_gap,
             embargo=self.embargo,
-            min_train_fraction=min(0.9, self.min_observations / max(n_bars, 1)),
+            min_train_fraction=self.min_observations / max(n_bars, 1),
         )
 
         # Use split_detailed for metadata-rich splits
