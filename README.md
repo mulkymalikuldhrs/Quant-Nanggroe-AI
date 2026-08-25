@@ -1,5 +1,12 @@
 # Quant Nanggroe AI v8.0.10 — Autonomous Quant Hedge Fund
 
+
+<!-- AUTO-PACKAGE-BADGES:START -->
+<!-- Auto-generated package badges -->
+
+![PyPI version](https://img.shields.io/pypi/v/quant-nanggroe-ai?style=flat-square&logo=pypi&color=green) ![PyPI downloads](https://img.shields.io/pypi/dm/quant-nanggroe-ai?style=flat-square&color=brightgreen) ![PyPI license](https://img.shields.io/pypi/l/quant-nanggroe-ai?style=flat-square) [![Deployed](https://img.shields.io/badge/deployed-8.0.8-blue?style=flat-square)](https://pypi.org/project/quant-nanggroe-ai)
+
+<!-- AUTO-PACKAGE-BADGES:END -->
 > **Autonomous Quantitative Hedge Fund — Institutional Grade**
 > **Self-Aware · Self-Correct · Self-Evolve · Self-Fine-Tune · Self-Evaluate**
 > *"Mesin uang autonomous, jalan tanpa Hermes, optionally assisted."* — Mulky Malikul Dhaher
