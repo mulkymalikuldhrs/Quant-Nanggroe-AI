@@ -13,7 +13,7 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.10 (pyproject: 5.1.0) |
+| **Version** | v8.0.10 (pyproject: 8.0.10) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
 | **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$2110 USC |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
