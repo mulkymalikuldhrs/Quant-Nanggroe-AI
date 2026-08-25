@@ -6,6 +6,8 @@ See **AGENTS.md** (canonical). Below is a quick reference.
 
 **Key:**
 - `PYTHONPATH=""` mandatory (Hermes venv leak)
+- **MT5 C-API not thread-safe** — `copy_rates_from_pos` must run in thread that called `mt5.initialize()`. Executor threads fail silently.
+- **get_rates returns numpy** — do NOT call `list()` on MT5 rates; destroys dtype names. Use `np.asarray()` directly.
 - 84 strategies in `quant_nanggroe/engine/strategies/` via `@StrategyRegistry.register`
 - Scoring engine wiring disputed between audits — verify core/scoring imports before relying (FusionEngine + 8 scorers + MTFEngine 4-frame overlay + WeightEvolver in `run_once()`)
 - KillSwitch C5 in `quant_nanggroe/engine/risk/kill_switch.py`

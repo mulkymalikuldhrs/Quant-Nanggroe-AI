@@ -1,5 +1,25 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.10 — MT5 Data Pipeline + Candle Scheduler Thread Fix (2026-08-25)
+
+> Root cause analysis: QNA was not trading due to 5 chained critical issues across the data pipeline.
+
+### 🔴 Trading unblocked (data pipeline root causes)
+- **get_rates() numpy return** — `mt5_broker.get_rates()` returned `list(raw)` which destroyed numpy structured array `dtype.names` needed by `autonomous._fetch_data()` for DataFrame construction. Error: "Shape of passed values is (500, 1), indices imply (500, 8)" → ALL autonomous cycle fetches failed → zero signals → zero trades. Fix: return `np.asarray(raw)` to preserve dtype.
+- **CandleScheduler executor thread** — `_check_all_closes_sync` ran via `loop.run_in_executor` which spawns a fresh thread with NO MT5 handle. MT5 C-API is not thread-safe — `copy_rates_from_pos` returns None in uninitialized threads → zero candle close detections for 6900+ consecutive ticks. Fix: run probe directly in scheduler thread which already has MT5 initialized.
+- **Symbol discovery dedup** — `_discover_symbols` found 16 symbols (8 bare + 8 `.vxc`) because it matched both suffixed and unsuffixed variants. Bare names are disabled on ValetaxIntl-Live2 (trade_mode=4) → MT5 returns None → silent failures. Fix: deduplicate by base name, prefer suffixed variants, only use visible symbols.
+
+### 🟠 Pipeline fixes
+- **Lot size mismatch** — `_check_risk()` computed `balance*0.005/price` but `_make_decision()` used `confidence*0.05`. Risk gate validated different sizing than execution used. Fix: pass `risk_lot_size` from `_check_risk` to `_make_decision`.
+- **`MT5Broker.detect_active_account` broken** — called as class method in `builder.py` but it's an instance method. Fix: simplified logging, removed broken call.
+- **Legacy `total_weight` NameError** — undefined in ensemble fallback path. Fix: defined `total_weight = sum of all weights`.
+- **`result.success` True on exception** — `_make_decision()` caught exceptions internally, returned error dict, but outer handler never fired → `s5.status` stayed "running". Fix: check `exec_decision.error` and set `s5.status = "failed"`.
+
+### 🧪 Tests
+- **33/33 targeted regression tests pass** (risk gate, context gate, signal aggregator, strategy allocation).
+
+---
+
 ## v8.0.9 — Full-Stack Parallel Audit Fixes (2026-08-25)
 
 > 4-agent parallel audit (backend/UI/runtime/docs): 50+ findings, all P0/P1 fixed same-session.

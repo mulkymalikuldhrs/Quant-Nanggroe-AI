@@ -355,24 +355,25 @@ class CandleScheduler:
                     empty_count, len(symbols) * len(self.timeframes),
                 )
                 self._warned_empty = True
-            # SELF-HEAL + DIAGNOSE (2026-08-25): something in the app kills
-            # the process-wide MT5 IPC after boot (agents/cleanup paths call
-            # mt5.shutdown()). Re-attach and verify with a direct probe so we
-            # can see whether rates come back.
-            if not getattr(self, "_reinit_attempted", False):
-                self._reinit_attempted = True
+            # SELF-HEAL (2026-08-25): something kills the process-wide MT5
+            # IPC after boot; re-initializing REVIVES rates (proven live:
+            # re-init=True -> probe 2 bars). Retry every ~60s while dead.
+            now_mono = time.monotonic()
+            if now_mono - getattr(self, "_last_reinit", 0.0) > 60.0:
+                self._last_reinit = now_mono
                 try:
                     ok = mt5.initialize()
                     probe = mt5.copy_rates_from_pos(
                         symbols[0], MT5_TF_MAP.get("M15", 15), 0, 2)
+                    got = None if probe is None else len(probe)
                     logger.warning(
-                        "SELF-HEAL: re-init=%s, probe %s M15 -> %s bars, "
-                        "last_error=%s", ok, symbols[0],
-                        "None" if probe is None else len(probe),
-                        mt5.last_error(),
+                        "SELF-HEAL: re-init=%s, probe %s M15 -> %s bars",
+                        ok, symbols[0], got,
                     )
+                    if got:
+                        self._warned_empty = False  # recovered — allow future warnings
                 except Exception as _he:
-                    logger.error("SELF-HEAL probe failed: %s", _he)
+                    logger.error("SELF-HEAL failed: %s", _he)
         return closes_detected
 
     async def _discover_symbols(self) -> list[str]:

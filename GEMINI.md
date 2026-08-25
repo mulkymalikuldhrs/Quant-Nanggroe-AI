@@ -6,13 +6,15 @@ Canonical instructions in **AGENTS.md**. This is a quick reference.
 
 **Critical:**
 - `PYTHONPATH=""` always — Hermes venv leak breaks `pydantic_core`
+- **MT5 C-API not thread-safe** — `copy_rates_from_pos` must run in thread that called `mt5.initialize()`. Executor threads fail silently.
+- **get_rates returns numpy** — do NOT call `list()` on MT5 rates; destroys dtype names. Use `np.asarray()` directly.
 - Fail-closed: C5 KillSwitch cross-process shared state (`QNA_KILL_SWITCH_STATE_FILE`)
 - ✅ **Candle Scheduler** — real-time M15/H1/H4/D1 candle-close analysis
 - ✅ **Signal Aggregation** — one position per symbol, fixed 0.5% risk
 - ✅ **Auto-Retrain** — hourly Bayesian re-tune + decay guard
 - ✅ **Context Gate** — high-impact news blackout veto (±30 min, circuit breaker)
 - **Weekly loss veto** hard-gated on Path-B
-- Test counts: see CHANGELOG (pytest green as of v8.0.9)
+- Test counts: see CHANGELOG (pytest green as of v8.0.10)
 
 **Commands:**
 ```bash

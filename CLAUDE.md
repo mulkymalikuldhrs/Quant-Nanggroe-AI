@@ -1,3 +1,5 @@
+# CLAUDE.md � Quant Nanggroe AI v8.0.10
+
 # CLAUDE.md — Quant Nanggroe AI (Quant Nation)
 
 Autonomous quantitative hedge fund. 800+ .py files, 83 strategies, 9 agents, 10 API routes, 36 dashboard pages.
@@ -15,8 +17,10 @@ python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/t
 **Critical gotchas:**
 - `PYTHONPATH=""` mandatory — Hermes venv leaks `pydantic_core` → crash
 - `QNAI_JWT_SECRET` env var required for API boot (fail-closed)
-- **numpy 2.5.1** ✅ in .venv (reinstalled). System Python 3.14 has working numpy/pandas/scipy.
-- **pytest works** ✅ — core battery green (see CHANGELOG)
+- **MT5 C-API not thread-safe** — `copy_rates_from_pos` must run in thread that called `mt5.initialize()`. Executor threads fail silently.
+- **get_rates returns numpy** — do NOT call `list()` on MT5 rates; destroys dtype names. Use `np.asarray()` directly.
+- **load_dotenv() in qna.py** — must be called before `build_execution_manager()` or `.env` vars invisible
+- **Brokers __init__** — never import paper.py unconditionally; it raises ImportError when QNA_ALLOW_PAPER != "1"
 - Hardware: i7-10th gen, 16GB RAM, no GPU
 
 ## Architecture

@@ -6,6 +6,8 @@ See **AGENTS.md** for canonical instructions.
 
 **Rules:**
 - `PYTHONPATH=""` mandatory (Hermes venv leak)
+- **MT5 C-API not thread-safe** — `copy_rates_from_pos` must run in thread that called `mt5.initialize()`. Executor threads fail silently.
+- **get_rates returns numpy** — do NOT call `list()` on MT5 rates; destroys dtype names. Use `np.asarray()` directly.
 - `qna.py` is the ONLY root entry point. Never create another.
 - Use `uv` for package management (not pip, not poetry).
 - `archive/` = read-only orphan artifacts from v6.2.
