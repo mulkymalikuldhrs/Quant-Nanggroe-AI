@@ -194,20 +194,29 @@ class CandleScheduler:
 
     async def _tick_loop(self) -> None:
         """Main loop: check for candle closes on every tick interval."""
-        # ── MT5 INIT: ensure C-API is initialized in THIS thread ──
+        # ── MT5 INIT: reuse the builder's live session — NEVER re-init ──
+        # HOTFIX (2026-08-25): calling mt5.initialize() a SECOND time (after
+        # build_execution_manager already initialized the terminal) corrupts
+        # the IPC channel — every copy_rates_from_pos then returned empty
+        # ("Bar probe returning EMPTY for 64/64 pairs") and ZERO candle closes
+        # were ever detected. The MetaTrader5 module is process-global.
         try:
             import MetaTrader5 as mt5
-            term = os.environ.get("MT5_TERMINAL_PATH",
-                                  r"C:\Program Files\MetaTrader 5\terminal64.exe")
-            if not mt5.initialize(path=term, timeout=15000):
-                logger.error("MT5 initialize failed in scheduler thread — retrying in 10s")
-                await asyncio.sleep(10)
-                if not mt5.initialize(path=term, timeout=15000):
-                    logger.error("MT5 initialize failed again — scheduler idle")
-                    return
+
             info = mt5.account_info()
+            if info is None:
+                term = os.environ.get(
+                    "MT5_TERMINAL_PATH",
+                    r"C:\Program Files\MetaTrader 5\terminal64.exe")
+                if not mt5.initialize(path=term, timeout=15000):
+                    logger.error("MT5 initialize failed in scheduler thread — retrying in 10s")
+                    await asyncio.sleep(10)
+                    if not mt5.initialize(path=term, timeout=15000):
+                        logger.error("MT5 initialize failed again — scheduler idle")
+                        return
+                info = mt5.account_info()
             if info:
-                logger.info("MT5 initialized in scheduler thread: login=%s server=%s",
+                logger.info("MT5 ready in scheduler thread: login=%s server=%s",
                             info.login, info.server)
             else:
                 logger.warning("MT5 initialized but no account info — proceeding anyway")
@@ -232,48 +241,23 @@ class CandleScheduler:
         tick_count = 0
         total_closes = 0
         last_error_log = 0.0
-        loop = asyncio.get_running_loop()
-        import concurrent.futures as _cf
-        _probe_lock = threading.Lock()
-
-        def _sync_probe(syms):
-            """Blocking MT5 bar-time probe — isolated off the event loop.
-            A hung/wedged IPC call previously froze the whole tick loop
-            silently; in the executor + timeout it becomes a visible,
-            recoverable failure."""
-            if not _probe_lock.acquire(blocking=False):
-                return None, "previous probe still running"
-            try:
-                return self._check_all_closes_sync(syms), None
-            finally:
-                _probe_lock.release()
 
         while self._running:
             try:
-                detected, err = await asyncio.wait_for(
-                    loop.run_in_executor(None, _sync_probe, symbols),
-                    timeout=30.0,
-                )
-                if err:
-                    if time.monotonic() - last_error_log > 300:
-                        logger.warning("Tick probe skipped: %s", err)
-                        last_error_log = time.monotonic()
-                else:
-                    total_closes += len(detected or [])
-                    # Process closes on the loop, higher TFs first for context
-                    for sym, tf, bar_time in sorted(
-                        detected or [],
-                        key=lambda x: TIMEFRAME_SECONDS.get(x[1], 0),
-                        reverse=True,
-                    ):
-                        await self._on_candle_close(sym, tf, bar_time)
-            except asyncio.TimeoutError:
-                if time.monotonic() - last_error_log > 300:
-                    logger.warning("Tick probe TIMEOUT (>30s) — MT5 IPC wedged?")
-                    last_error_log = time.monotonic()
+                # FIX (2026-08-25): MT5 C-API is NOT thread-safe.
+                # run_in_executor spawns a fresh thread with NO MT5 handle —
+                # copy_rates_from_pos returns None silently → zero closes.
+                # Run the probe DIRECTLY in this thread (the scheduler thread)
+                # which already called mt5.initialize() above.
+                detected = self._check_all_closes_sync(symbols)
+                total_closes += len(detected)
+                for sym, tf, bar_time in sorted(
+                    detected,
+                    key=lambda x: TIMEFRAME_SECONDS.get(x[1], 0),
+                    reverse=True,
+                ):
+                    await self._on_candle_close(sym, tf, bar_time)
             except Exception as exc:
-                # OBSERVABILITY FIX (2026-08-25): was logger.debug — repeating
-                # failures vanished at INFO level while detecting nothing.
                 now_mono = time.monotonic()
                 if now_mono - last_error_log > 300:
                     logger.warning("Tick check error: %s", exc)
@@ -291,6 +275,27 @@ class CandleScheduler:
                 )
             await asyncio.sleep(self.tick_interval)
 
+    def _get_broker_mt5(self):
+        """Return the LIVE MT5Broker whose session provably serves rates.
+
+        HOTFIX (2026-08-25): bare-module copy_rates_from_pos inside the
+        executor returned EMPTY for 64/64 pairs while the broker-owned handle
+        served 500 bars in the same process. Prefer the broker session;
+        fall back to bare module only when no live broker exists.
+        """
+        try:
+            from quant_nanggroe.engine.execution.builder import (
+                _em_singleton as _em,
+            )
+            if _em is not None:
+                for b in _em.get_brokers().values():
+                    h = getattr(b, "_mt5", None)
+                    if h is not None and getattr(h, "connected", False):
+                        return h
+        except Exception:
+            pass
+        return None
+
     def _check_all_closes_sync(self, symbols: list[str]) -> list[tuple[str, str, float]]:
         """Synchronous bar-time scan returning detected closes.
 
@@ -302,14 +307,17 @@ class CandleScheduler:
         closes_detected = []
         empty_count = 0
 
+        broker = self._get_broker_mt5()
+
         for sym in symbols:
             # SYMBOL_SELECT FIX (2026-08-25): symbols present in the terminal
             # but not enabled in Market Watch return None from copy_rates
             # forever -> zero closes with total silence. Selecting is idempotent.
-            try:
-                mt5.symbol_select(sym, True)
-            except Exception:
-                pass
+            if broker is None:
+                try:
+                    mt5.symbol_select(sym, True)
+                except Exception:
+                    pass
             for tf in self.timeframes:
                 key = f"{sym}:{tf}"
                 state = self._candle_states.get(key)
@@ -318,7 +326,11 @@ class CandleScheduler:
 
                 tf_enum = MT5_TF_MAP.get(tf, 16408)
                 try:
-                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+                    if broker is not None:
+                        # Broker session: resolves suffixes internally.
+                        rates = broker.get_rates(sym, tf_enum, 2)
+                    else:
+                        rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
                     if not rates or len(rates) < 1:
                         empty_count += 1
                         continue
@@ -343,6 +355,24 @@ class CandleScheduler:
                     empty_count, len(symbols) * len(self.timeframes),
                 )
                 self._warned_empty = True
+            # SELF-HEAL + DIAGNOSE (2026-08-25): something in the app kills
+            # the process-wide MT5 IPC after boot (agents/cleanup paths call
+            # mt5.shutdown()). Re-attach and verify with a direct probe so we
+            # can see whether rates come back.
+            if not getattr(self, "_reinit_attempted", False):
+                self._reinit_attempted = True
+                try:
+                    ok = mt5.initialize()
+                    probe = mt5.copy_rates_from_pos(
+                        symbols[0], MT5_TF_MAP.get("M15", 15), 0, 2)
+                    logger.warning(
+                        "SELF-HEAL: re-init=%s, probe %s M15 -> %s bars, "
+                        "last_error=%s", ok, symbols[0],
+                        "None" if probe is None else len(probe),
+                        mt5.last_error(),
+                    )
+                except Exception as _he:
+                    logger.error("SELF-HEAL probe failed: %s", _he)
         return closes_detected
 
     async def _discover_symbols(self) -> list[str]:
@@ -354,11 +384,23 @@ class CandleScheduler:
             raw = mt5.symbols_get() or []
             WANTED = {"EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD",
                       "NZDUSD", "USDCHF", "EURGBP"}
-            found = []
+            # Collect all candidates per base name, prefer suffixed (tradeable)
+            candidates: dict[str, list[str]] = {}
             for s in raw:
+                if not s.visible:
+                    continue
                 base = s.name.split(".")[0] if "." in s.name else s.name
                 if base.upper() in WANTED:
-                    found.append(s.name)
+                    candidates.setdefault(base.upper(), []).append(s.name)
+            found = []
+            for base, names in candidates.items():
+                # Prefer suffixed (.vxc etc.) over bare names — bare names
+                # are often disabled on this broker (trade_mode=4)
+                suffixed = [n for n in names if "." in n]
+                if suffixed:
+                    found.append(suffixed[0])
+                elif names:
+                    found.append(names[0])
             if found:
                 logger.info("CandleScheduler discovered %d symbols: %s", len(found), found)
                 return found

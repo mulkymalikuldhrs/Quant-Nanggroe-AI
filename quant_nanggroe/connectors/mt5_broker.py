@@ -252,7 +252,12 @@ class MT5Broker(BrokerConnector):
         resolved = self.resolve_symbol(symbol)
         try:
             raw = self._mt5.copy_rates_from_pos(resolved, tf, 0, count)
-            return list(raw) if raw is not None else []
+            if raw is None:
+                return []
+            # Return numpy structured array directly — list() destroys dtype
+            # names needed by autonomous._fetch_data for DataFrame construction.
+            import numpy as _np
+            return _np.asarray(raw)
         except Exception:
             return []
 
