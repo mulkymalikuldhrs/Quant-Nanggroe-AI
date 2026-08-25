@@ -103,3 +103,11 @@ function OrderFlowContent() {
     </div>
   );
 }
+
+export default function OrderFlowPage() {
+  return (
+    <ErrorBoundary>
+      <OrderFlowContent />
+    </ErrorBoundary>
+  );
+}

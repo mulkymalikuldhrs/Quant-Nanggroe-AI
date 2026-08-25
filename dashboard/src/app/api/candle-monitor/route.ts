@@ -61,8 +61,7 @@ function getSchedulerStatus() {
   return { running: false, symbols: [], timeframes: [], total_events: 0, last_event: null, uptime_seconds: 0 };
 }
 
-function getTfPerformance() {
-  const events = getCandleEvents();
+function getTfPerformance(events: CandleEvent[]) {
   const perf: Record<string, { total: number; traded: number; avg_confidence: number; signals: Record<string, number> }> = {};
 
   for (const ev of events) {
@@ -136,7 +135,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     status: getSchedulerStatus(),
     events: paged,
-    tf_performance: getTfPerformance(),
+    tf_performance: getTfPerformance(events),
     symbol_performance: getSymbolPerformance(events),
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   });

@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { configFilesApi, type ConfigFileMeta, type ConfigFileContent } from "@/lib/api-client";
 import {
@@ -40,7 +41,7 @@ const FILE_ICON: Record<string, React.ReactNode> = {
   "config.yaml": <FileCode className="w-3.5 h-3.5" />,
 };
 
-export default function ConfigCenterPage() {
+function ConfigCenterContent() {
   const [files, setFiles] = useState<ConfigFileMeta[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [content, setContent] = useState<ConfigFileContent | null>(null);
@@ -332,5 +333,13 @@ export default function ConfigCenterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConfigCenterPage() {
+  return (
+    <ErrorBoundary>
+      <ConfigCenterContent />
+    </ErrorBoundary>
   );
 }

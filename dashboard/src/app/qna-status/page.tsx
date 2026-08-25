@@ -6,6 +6,7 @@ import { ChartCard } from "@/components/shared/chart-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { cn } from "@/lib/utils";
 
 interface QueueItem {
@@ -37,7 +38,7 @@ const sevVariant: Record<string, "success" | "danger" | "warning" | "info" | "de
   low: "info",
 };
 
-export default function QnaStatusPage() {
+function QnaStatusContent() {
   const [data, setData] = useState<QnaStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,5 +196,13 @@ export default function QnaStatusPage() {
         </ChartCard>
       </div>
     </div>
+  );
+}
+
+export default function QnaStatusPage() {
+  return (
+    <ErrorBoundary>
+      <QnaStatusContent />
+    </ErrorBoundary>
   );
 }

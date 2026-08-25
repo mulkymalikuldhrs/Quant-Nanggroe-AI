@@ -195,7 +195,7 @@ export function Sidebar() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-lg font-bold text-white">Navigation</h2>
-                  <p className="text-xs text-white/30 mt-0.5">Quant-Nanggroe AI v4.7.0</p>
+                  <p className="text-xs text-white/30 mt-0.5">Quant-Nanggroe AI v8.0.9</p>
                 </div>
                 <button
                   onClick={() => setPanelOpen(false)}
@@ -258,7 +258,7 @@ export function Sidebar() {
 
               {/* Bottom info */}
               <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-white/20">
-                <span>19 modules • Autonomous HF</span>
+                <span>{navItems.length} modules • Autonomous HF</span>
                 <span className="font-mono">Pipeline: 15/15 wired</span>
               </div>
             </div>

@@ -169,3 +169,11 @@ function ColonyContent() {
     </div>
   );
 }
+
+export default function ColonyPage() {
+  return (
+    <ErrorBoundary>
+      <ColonyContent />
+    </ErrorBoundary>
+  );
+}

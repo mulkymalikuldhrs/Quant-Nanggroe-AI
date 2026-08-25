@@ -123,3 +123,11 @@ function MemoryContent() {
 
   );
 }
+
+export default function MemoryPage() {
+  return (
+    <ErrorBoundary>
+      <MemoryContent />
+    </ErrorBoundary>
+  );
+}

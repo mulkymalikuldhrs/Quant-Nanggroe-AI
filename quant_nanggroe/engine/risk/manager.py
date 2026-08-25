@@ -191,6 +191,9 @@ class RiskManager:
         # NOTE: the public method is set_broker_handle(); do NOT call a
         # non-existent attach_mt5_handle() — it would raise AttributeError.
         self._mt5_handle = None
+        # R6 (F3): True while the last realized-PnL broker read FAILED —
+        # check_trade vetoes until a fresh successful read restores truth.
+        self._pnl_sync_stale = False
         self._load_state()
 
     def set_broker_handle(self, mt5_handle) -> None:
@@ -285,6 +288,11 @@ class RiskManager:
         Closes the phantom-veto hole: previously ``check_trade`` ran on
         ``daily_pnl_pct=0.0`` because nothing fed real P&L, so the constitutional
         daily/weekly-loss veto could NEVER trip (and could never correctly allow).
+
+        R6 hotfix (F3): a FAILED broker read now keeps the previous values and
+        sets ``_pnl_sync_stale`` — it must NEVER overwrite real losses with a
+        fresher-than-truth 0.0. check_trade vetoes while the sync is stale
+        (fail-closed): trading halts until the broker read recovers.
         """
         if self._mt5_handle is None:
             return
@@ -298,19 +306,23 @@ class RiskManager:
             week_deals = self._mt5_handle.history_deals_get(week_start, now) or []
             day_pnl = sum(float(d.profit) for d in day_deals)
             week_pnl = sum(float(d.profit) for d in week_deals)
-            # ponytail: always reflect truth. The old `!= 0.0` guard kept a
-            # STALE negative daily_pnl when the day recovered to flat /
-            # break-even (broker returns 0 realized) -> phantom-permanent veto
-            # blocked all trading on a recovered day. Always assign so a
-            # recovered day is no longer blocked.
+            # ponytail: always reflect truth on a SUCCESSFUL read. The old
+            # `!= 0.0` guard kept a STALE negative daily_pnl when the day
+            # recovered to flat / break-even -> phantom-permanent veto blocked
+            # all trading on a recovered day.
             self.state.daily_pnl = day_pnl
             self.state.weekly_pnl = week_pnl
             # Equity: peak + realized PnL. Use initial_equity as base
             # so that drawdown is never understated on recovery days.
             self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
+            self._pnl_sync_stale = False
             self._auto_check_kill_switch()
         except Exception as e:
-            logger.warning("RiskManager._sync_realized_pnl failed: %s", e)
+            # Read failure: keep last-known values, flag stale → veto in gate.
+            self._pnl_sync_stale = True
+            logger.warning(
+                "RiskManager._sync_realized_pnl failed (%s) — PnL STALE, "
+                "vetoes engaged until broker read recovers", e)
 
     @traced("check_trade", attributes={"component": "risk", "operation": "check_trade"})
     def check_trade(
@@ -354,6 +366,18 @@ class RiskManager:
         # P0 fix: sync REALIZED P&L from the live broker before evaluating, so the
         # constitutional daily/weekly-loss veto sees real numbers (not 0.0).
         self._sync_realized_pnl()
+
+        # R6 (F3): stale PnL = cannot prove loss limits are respected → VETO.
+        if self._pnl_sync_stale:
+            return {
+                "symbol": symbol,
+                "direction": direction.upper(),
+                "verdict": "VETOED",
+                "reason": "PNL_SYNC_STALE",
+                "message": "Realized-PnL broker read failed — loss-limit "
+                           "enforcement unverifiable. Trading halted until "
+                           "the next successful sync.",
+            }
 
         # First check kill switch
         if self.kill_switch.is_active:

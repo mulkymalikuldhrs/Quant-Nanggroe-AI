@@ -111,7 +111,7 @@ const pnlCell = (pnl: number | null) => {
 
 // ── Page Component ─────────────────────────────────────────────────────
 
-export default function EvolutionPage() {
+function EvolutionContent() {
   const [stats, setStats] = useState<EvolutionStats | null>(null);
   const [strategies, setStrategies] = useState<StrategySnapshot[]>([]);
   const [trades, setTrades] = useState<ClosedTrade[]>([]);
@@ -510,5 +510,13 @@ function ConfigField({
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function EvolutionPage() {
+  return (
+    <ErrorBoundary>
+      <EvolutionContent />
+    </ErrorBoundary>
   );
 }

@@ -223,24 +223,40 @@ class ExecutionManager:
         # 2.5 ONE-POSITION-PER-SYMBOL mandate (non-negotiable rule #5).
         # Query BROKER TRUTH (not local state) so restarts/reconciliations
         # cannot desync. Fail-closed: a failed position query blocks the trade.
+        # R2 companion fix (2026-08-25): an OPPOSITE-side order CLOSES the open
+        # position — blocking it left trailing-stop exits permanently blocked.
+        # Rule now: block only SAME-SIDE additions (pyramiding) or unknown-side
+        # positions unless the order is explicitly reduce_only.
         try:
             open_positions = await broker.get_positions()
-            duplicates = [
-                p for p in (open_positions or [])
-                if getattr(p, "symbol", "") == order.symbol
-            ]
-            if duplicates:
+            incoming_buy = order.side.value.lower() == "buy"
+            reduce_only = bool(order.metadata.get("reduce_only", False))
+            conflicts = []
+            for p in (open_positions or []):
+                if getattr(p, "symbol", "") != order.symbol:
+                    continue
+                pos_side = str(getattr(p, "side", "") or "").lower()
+                if not pos_side:
+                    qty = float(getattr(p, "quantity", 0.0) or 0.0)
+                    pos_side = "buy" if qty > 0 else ("sell" if qty < 0 else "")
+                if reduce_only:
+                    continue  # explicit exit intent — never blocked by this gate
+                if pos_side == "":
+                    conflicts.append(p)  # unknown direction → fail-closed
+                elif (pos_side == "buy") == incoming_buy:
+                    conflicts.append(p)  # same-side pyramid → forbidden
+            if conflicts:
                 logger.critical(
                     "Order %s BLOCKED: position already OPEN on %s "
-                    "(%d open, sides=%s) — one-position-per-symbol mandate",
-                    order.id, order.symbol, len(duplicates),
-                    [getattr(p, "side", "?") for p in duplicates],
+                    "(%d conflicting, sides=%s) — one-position-per-symbol mandate",
+                    order.id, order.symbol, len(conflicts),
+                    [getattr(p, "side", getattr(p, "quantity", "?")) for p in conflicts],
                 )
                 self._record_audit({
                     "action": "DUPLICATE_POSITION_BLOCKED",
                     "order_id": order.id,
                     "symbol": order.symbol,
-                    "open_count": len(duplicates),
+                    "open_count": len(conflicts),
                 })
                 return None
         except Exception as pos_exc:

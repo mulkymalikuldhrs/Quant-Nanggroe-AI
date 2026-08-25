@@ -243,3 +243,11 @@ function ExportCenterContent() {
     </div>
   );
 }
+
+export default function ExportCenterPage() {
+  return (
+    <ErrorBoundary>
+      <ExportCenterContent />
+    </ErrorBoundary>
+  );
+}

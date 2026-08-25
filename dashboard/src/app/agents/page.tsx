@@ -69,7 +69,7 @@ const AGENT_GRAPH = {
   ] as [string, string][],
 };
 
-export default function AgentsPage() {
+function AgentsContent() {
   const { killSwitch, toggleKillSwitch, killSwitchStatus, agents: storeAgents, loadingStates, fetchAgents } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
@@ -347,5 +347,13 @@ export default function AgentsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function AgentsPage() {
+  return (
+    <ErrorBoundary>
+      <AgentsContent />
+    </ErrorBoundary>
   );
 }

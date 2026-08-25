@@ -573,11 +573,16 @@ class CandleScheduler:
 
             signal = result.signal if hasattr(result, "signal") else "hold"
             confidence = result.decision.get("confidence", 0.0) if hasattr(result, "decision") else 0.0
-            traded = result.success and signal in ("buy", "sell")
+            # R3 hotfix: traded must come from the ACTUAL execution verdict,
+            # not pipeline success (a risk-vetoed/rejected order reported
+            # success and produced fake "TRADE EXECUTED" alerts).
+            exec_info = result.decision.get("execution", {}) if hasattr(result, "decision") else {}
+            traded = isinstance(exec_info, dict) and exec_info.get("execution") == "filled"
 
             logger.info(
-                "Pipeline %s %s: signal=%s conf=%.2f success=%s",
+                "Pipeline %s %s: signal=%s conf=%.2f success=%s execution=%s",
                 symbol, timeframe, signal, confidence, result.success,
+                (exec_info.get("execution") if isinstance(exec_info, dict) else "?"),
             )
 
             return signal, confidence, traded

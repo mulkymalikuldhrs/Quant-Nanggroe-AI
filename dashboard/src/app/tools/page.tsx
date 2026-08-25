@@ -33,7 +33,7 @@ const FALLBACK_TOOLS: Tool[] = [
   { id: "notify", name: "Notify", description: "Send notifications via channels", status: "active", category: "comms", executions: 892, lastUsed: "4m ago" },
 ];
 
-export default function ToolsPage() {
+function ToolsContent() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,5 +184,13 @@ export default function ToolsPage() {
         </ChartCard>
       </div>
     </div>
+  );
+}
+
+export default function ToolsPage() {
+  return (
+    <ErrorBoundary>
+      <ToolsContent />
+    </ErrorBoundary>
   );
 }

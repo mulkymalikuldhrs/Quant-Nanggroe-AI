@@ -233,3 +233,11 @@ function Stat({ label, value }: { label: string; value: string | number }) {
     </div>
   );
 }
+
+export default function BrokersPage() {
+  return (
+    <ErrorBoundary>
+      <BrokersContent />
+    </ErrorBoundary>
+  );
+}

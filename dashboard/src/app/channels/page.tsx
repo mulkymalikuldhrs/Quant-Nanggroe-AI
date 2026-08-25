@@ -154,3 +154,11 @@ function ChannelsContent() {
     </div>
   );
 }
+
+export default function ChannelsPage() {
+  return (
+    <ErrorBoundary>
+      <ChannelsContent />
+    </ErrorBoundary>
+  );
+}

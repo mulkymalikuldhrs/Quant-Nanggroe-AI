@@ -149,11 +149,21 @@ class MT5Broker(BrokerConnector):
         if not self._mt5.symbol_select(sym, True):
             raise RuntimeError(f"MT5 symbol unavailable: {sym}")
 
+        # R5 hotfix (F2): engine OrderSide is an enum ("BUY"/"SELL" uppercase)
+        # while connector Orders carry plain "buy"/"sell". Comparing the enum
+        # against the lowercase literal was always False → EVERY order went
+        # out as ORDER_TYPE_SELL. Normalize via .value first.
+        side_str = getattr(order.side, "value", order.side)
+        side_str = str(side_str).strip().lower()
+        if side_str not in ("buy", "sell"):
+            raise RuntimeError(f"invalid order side: {order.side!r}")
+        is_buy = side_str == "buy"
+
         req = {
             "action": self._mt5.TRADE_ACTION_DEAL,
             "symbol": sym,
             "volume": float(order.quantity),
-            "type": self._mt5.ORDER_TYPE_BUY if order.side == "buy" else self._mt5.ORDER_TYPE_SELL,
+            "type": self._mt5.ORDER_TYPE_BUY if is_buy else self._mt5.ORDER_TYPE_SELL,
             "deviation": 20,
             "magic": self.magic,
             "type_filling": self._mt5.ORDER_FILLING_FOK,
@@ -176,7 +186,7 @@ class MT5Broker(BrokerConnector):
             tick = self._mt5.symbol_info_tick(sym)
             if tick is None:
                 raise RuntimeError(f"no tick for {sym}")
-            req["price"] = tick.ask if order.side == "buy" else tick.bid
+            req["price"] = tick.ask if is_buy else tick.bid
 
             res = self._mt5.order_send(req)
             if res.retcode == self._mt5.TRADE_RETCODE_DONE:
@@ -213,15 +223,17 @@ class MT5Broker(BrokerConnector):
     def history_deals_get(self, from_dt, to_dt):
         """P0 fix: expose MT5 realized-deal history so RiskManager can read REAL
         daily/weekly P&L (closes the phantom-veto hole). Returns list of deals
-        with `.profit` attribute, or empty list on failure."""
+        with `.profit` attribute.
+
+        R6 hotfix (F3): a read FAILURE must RAISE, not return []. The old
+        swallow made a transient MT5 IPC error indistinguishable from "no
+        deals" — RiskManager then overwrote a real -4% day with 0.00 and the
+        constitutional loss vetoes went blind. Fail-closed at the data layer.
+        """
         if not self.connected or self._mt5 is None:
-            return []
-        try:
-            # MT5 expects (from, to) as datetime tuples
-            deals = self._mt5.history_deals_get(from_dt, to_dt)
-            return list(deals) if deals else []
-        except Exception:
-            return []
+            raise RuntimeError("history_deals_get: broker not connected")
+        deals = self._mt5.history_deals_get(from_dt, to_dt)
+        return list(deals) if deals else []
 
     def get_rates(self, symbol: str, timeframe: int = None, count: int = 200):
         """Fetch OHLCV bars via the broker's own MT5 handle.

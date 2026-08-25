@@ -328,3 +328,11 @@ function MarketContent() {
     </div>
   );
 }
+
+export default function MarketPage() {
+  return (
+    <ErrorBoundary>
+      <MarketContent />
+    </ErrorBoundary>
+  );
+}

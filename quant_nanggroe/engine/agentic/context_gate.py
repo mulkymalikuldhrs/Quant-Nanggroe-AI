@@ -24,9 +24,15 @@ logger = logging.getLogger("QNA.ContextGate")
 EVENT_BLACKOUT_MINUTES = 30
 EVENT_RISK_CACHE_SECONDS = 300.0
 
+# R-F4 circuit breaker: NEUTRAL-on-outage is bounded. After this many
+# consecutive provider failures the gate flips to VETO (fail-closed) until
+# one successful read proves the calendar alive again.
+MAX_CONSECUTIVE_FAILURES = 3
+
 _cache_lock = threading.Lock()
 _cached_result: Optional[Dict[str, Any]] = None
 _cached_at: float = 0.0
+_consecutive_failures: int = 0
 
 
 def _parse_event_time(raw: Any) -> Optional[datetime]:
@@ -58,13 +64,28 @@ def check_event_risk(now: Optional[datetime] = None) -> Dict[str, Any]:
     events: List[Dict[str, Any]] = []
     vetoed = False
     reason = ""
+    global _consecutive_failures
     try:
         from quant_nanggroe.engine.fundamental.calendar import EconomicCalendar
         cal = EconomicCalendar()
         events = cal.get_high_impact_events(days_ahead=1) or []
+        _consecutive_failures = 0  # healthy read resets the breaker
     except Exception as exc:
-        logger.warning("Context gate: calendar unavailable (%s) — NEUTRAL", exc)
+        _consecutive_failures += 1
+        logger.warning(
+            "Context gate: calendar unavailable (%s) — failure %d/%d",
+            exc, _consecutive_failures, MAX_CONSECUTIVE_FAILURES,
+        )
         events = []
+        if _consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            return {
+                "vetoed": True,
+                "reason": (
+                    f"CALENDAR_UNREACHABLE: {_consecutive_failures} consecutive "
+                    f"provider failures — event risk unverifiable (fail-closed)"
+                ),
+                "events": 0,
+            }
 
     for ev in events:
         ev_time = _parse_event_time(
@@ -92,7 +113,8 @@ def check_event_risk(now: Optional[datetime] = None) -> Dict[str, Any]:
 
 def reset_cache() -> None:
     """Test hook / periodic refresh."""
-    global _cached_result, _cached_at
+    global _cached_result, _cached_at, _consecutive_failures
     with _cache_lock:
         _cached_result = None
         _cached_at = 0.0
+        _consecutive_failures = 0

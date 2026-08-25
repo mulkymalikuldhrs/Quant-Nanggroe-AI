@@ -19,7 +19,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 PYTHON = sys.executable
-PID_FILE = PROJECT_ROOT / "data" / "daemons" / "qna-daemon.pid"
+PID_FILE = PROJECT_ROOT / "data" / "daemons" / "qna_daemon.pid"
 DASHBOARD_URL = os.environ.get("QNA_DASHBOARD_URL", "http://localhost:3000")
 API_URL = os.environ.get("QNA_API_URL", "http://localhost:8000")
 

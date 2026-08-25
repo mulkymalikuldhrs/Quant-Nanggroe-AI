@@ -556,3 +556,11 @@ function RiskContent() {
     </div>
   );
 }
+
+export default function RiskPage() {
+  return (
+    <ErrorBoundary>
+      <RiskContent />
+    </ErrorBoundary>
+  );
+}

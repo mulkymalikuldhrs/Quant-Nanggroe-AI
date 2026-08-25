@@ -185,3 +185,11 @@ function SecurityContent() {
     </div>
   );
 }
+
+export default function SecurityPage() {
+  return (
+    <ErrorBoundary>
+      <SecurityContent />
+    </ErrorBoundary>
+  );
+}

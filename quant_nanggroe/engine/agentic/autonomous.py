@@ -815,6 +815,12 @@ class AutonomousPipeline:
 
             current_price = float(df['close'].iloc[-1]) if hasattr(df, 'iloc') else 0.0
 
+            # R2 hotfix: regime must exist BEFORE the trailing-stop monitor —
+            # its exit path passes regime into _make_decision; referencing the
+            # not-yet-assigned local raised UnboundLocalError (swallowed), so
+            # every GATE-7 protective exit died silently.
+            regime = "unknown"
+
             # ── Step 1.2b: Trailing-stop / Breakeven monitor ────────────
             # GATE-7 fix (2026-08-22): TrailingStopManager.update() was NEVER
             # called on the live path — positions were tracked but no price
@@ -850,6 +856,7 @@ class AutonomousPipeline:
                                 regime=regime,
                                 decision={"strategy_name": "trailing_stop",
                                           "reason": "trailing_stop_exit"},
+                                reduce_only=True,
                             )
                             s_ts.status = "passed"
                             s_ts.result = f"exit executed @ {current_price:.2f}"
@@ -859,11 +866,6 @@ class AutonomousPipeline:
                         steps.append(s_ts)
                 except Exception as exc:
                     logger.debug("TrailingStop update skipped for %s: %s", symbol, exc)
-
-            # ── Step 1.5: Regime Detection (Enhanced Composite) ─────────
-            # v8.0: Uses ADX + momentum + GARCH composite instead of single
-            # MarketRegimeDetector. More robust, harder to fool.
-            regime = "unknown"
             regime_confidence = 0.0
             try:
                 from quant_nanggroe.engine.regime.enhanced_regime import (
@@ -1143,6 +1145,12 @@ class AutonomousPipeline:
                 if exec_decision.get("error"):
                     s5.status = "failed"
                     s5.error = exec_decision["error"]
+                elif exec_decision.get("execution") == "rejected":
+                    # R3 hotfix: a REJECTED order must not report success —
+                    # downstream scheduler derived traded=True from success and
+                    # sent fake "TRADE EXECUTED" Telegram alerts.
+                    s5.status = "failed"
+                    s5.error = f"rejected: {exec_decision.get('reason', 'no fill')}"
                 else:
                     s5.status = "passed"
                 s5.result = exec_decision.get("action", "hold")
@@ -1604,8 +1612,24 @@ class AutonomousPipeline:
                         _tf_enum = _tf_map.get(timeframe.upper(), 16408)
                         raw = b._mt5.get_rates(resolved, _tf_enum, 500)
                         if raw and len(raw) >= 50:
-                            # MT5 rates are tuples: (time, open, high, low, close, tick_volume, ...)
-                            df = pd.DataFrame(raw, columns=["time", "open", "high", "low", "close", "volume"] + [f"_extra_{i}" for i in range(len(raw[0]) - 6)] if len(raw[0]) > 6 else ["time", "open", "high", "low", "close", "volume"])
+                            # R1 hotfix (2026-08-25): get_rates returns numpy
+                            # structured records (np.void), not plain tuples.
+                            # pd.DataFrame(raw, columns=[...]) on those raised
+                            # "Shape of passed values is (500, 1), indices
+                            # imply (500, 8)" → every live fetch failed → zero
+                            # signals. Build from dtype field names instead.
+                            import numpy as _np
+                            recs = _np.asarray(raw)
+                            if recs.dtype.names:
+                                cols = {name: recs[name] for name in recs.dtype.names}
+                                df = pd.DataFrame(cols)
+                                if "volume" not in df.columns and "tick_volume" in df.columns:
+                                    df["volume"] = df["tick_volume"]
+                            else:
+                                base = ["time", "open", "high", "low", "close", "volume"]
+                                width = len(recs[0]) if hasattr(recs[0], "__len__") else len(base)
+                                columns = base + [f"_extra_{i}" for i in range(max(0, width - len(base)))] if width > len(base) else base[:width]
+                                df = pd.DataFrame([tuple(r) for r in recs], columns=columns)
                             df["time"] = pd.to_datetime(df["time"], unit="s")
                             df.set_index("time", inplace=True)
                             df = df[["open", "high", "low", "close", "volume"]].astype(float)
@@ -1766,7 +1790,7 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.debug("Paper price feed skipped: %s", exc)
 
-    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1", risk_lot_size: float = 0.0) -> dict[str, Any]:
+    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1", risk_lot_size: float = 0.0, reduce_only: bool = False) -> dict[str, Any]:
         try:
             from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
             em = self._em
@@ -1833,7 +1857,8 @@ class AutonomousPipeline:
                 stop_loss=order_sl, take_profit=order_tp,
                 metadata={"confidence": confidence,
                           "strategy_name": (decision or {}).get("strategy_name", "ensemble"),
-                          "symbol": symbol},
+                          "symbol": symbol,
+                          "reduce_only": reduce_only},
             )
             fill = await em.execute_order(order)
             reason = "filled"

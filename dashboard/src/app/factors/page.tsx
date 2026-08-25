@@ -288,3 +288,11 @@ function FactorsContent() {
     </div>
   );
 }
+
+export default function FactorsPage() {
+  return (
+    <ErrorBoundary>
+      <FactorsContent />
+    </ErrorBoundary>
+  );
+}

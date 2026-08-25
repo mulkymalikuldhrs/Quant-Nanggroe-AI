@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest } from "@/lib/api-client";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 
 import {
   Settings,
@@ -51,7 +52,7 @@ interface LlmKeyEntry {
   id: string; provider: string; key: string; status: string;
 }
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ok: boolean; text: string} | null>(null);
@@ -430,5 +431,13 @@ export default function SettingsPage() {
         </ChartCard>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <ErrorBoundary>
+      <SettingsContent />
+    </ErrorBoundary>
   );
 }

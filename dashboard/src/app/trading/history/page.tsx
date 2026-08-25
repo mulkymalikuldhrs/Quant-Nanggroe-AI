@@ -77,6 +77,8 @@ function TradeHistoryContent() {
 
   useEffect(() => {
     load();
+    const iv = setInterval(load, 5000);
+    return () => clearInterval(iv);
   }, [page, filterSymbol, filterTf, tradedOnly]);
 
   if (loading && !data) {
