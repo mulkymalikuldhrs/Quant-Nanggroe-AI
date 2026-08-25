@@ -1,7 +1,1 @@
-# Package init
-
-__all__ = [
-    'paper',
-]
-
-from . import paper
+# Package init — REAL-ONLY mode. PaperBroker removed per CANONICAL §15.8.

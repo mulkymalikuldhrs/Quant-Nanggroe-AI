@@ -390,7 +390,9 @@ def run_daemon(args: argparse.Namespace) -> int:
         from quant_nanggroe.engine.agentic import get_autonomous_pipeline
 
         class _PipelineFetcher:
-            """Lazy pipeline handle — resolves on first fetch, not at boot."""
+            """Lazy pipeline handle — resolves on first fetch, not at boot.
+            Runs the async _fetch_data on a dedicated loop in this thread
+            (the retrain thread has no running loop of its own)."""
             def __init__(self):
                 self._pipe = None
             def _resolve(self):
@@ -400,7 +402,16 @@ def run_daemon(args: argparse.Namespace) -> int:
                     self._pipe = p
                 return self._pipe
             def __call__(self, symbol, timeframe):
-                return self._resolve()._fetch_data(symbol, timeframe=timeframe)
+                import asyncio as _aio
+                coro = self._resolve()._fetch_data(symbol, timeframe=timeframe)
+                try:
+                    _aio.get_running_loop()
+                    coro.close()  # we're in a loop context we don't own — abort cleanly
+                    raise RuntimeError("fetcher must run outside the main event loop")
+                except RuntimeError as _re:
+                    if "fetcher must run" in str(_re):
+                        raise
+                    return _aio.run(coro)
 
         _symbols = list(getattr(_scheduler, "symbols", None) or ["EURUSD"])
         _retrainer = get_auto_retrainer(fetcher=_PipelineFetcher(), symbols=_symbols)
