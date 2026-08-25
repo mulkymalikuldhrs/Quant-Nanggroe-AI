@@ -254,7 +254,7 @@ class PurifiedEngine:
     def __init__(self, initial_balance: float = 10000.0):
         self.mt5 = MT5Adapter()
         self.risk = RiskGuard(initial_balance)
-        self.symbols = ["EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "XAUUSD"]
+        self.symbols = ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD", "USDCHF", "EURGBP"]
         self.active = False
 
     def start(self):

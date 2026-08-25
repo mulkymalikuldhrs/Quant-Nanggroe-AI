@@ -222,7 +222,7 @@ class CandleScheduler:
             import MetaTrader5 as mt5
             raw = mt5.symbols_get() or []
             WANTED = {"EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD",
-                      "NZDUSD", "XAUUSD", "XAGUSD", "USOIL", "UKOIL"}
+                      "NZDUSD", "USDCHF", "EURGBP"}
             found = []
             for s in raw:
                 base = s.name.split(".")[0] if "." in s.name else s.name
@@ -233,7 +233,7 @@ class CandleScheduler:
                 return found
         except Exception as exc:
             logger.debug("Symbol discovery failed: %s", exc)
-        return ["EURUSD", "GBPUSD", "XAUUSD"]
+        return ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD", "USDCHF", "EURGBP"]
 
     async def _init_candle_states(self, symbols: list[str]) -> None:
         """Initialize candle states with current bar close times."""

@@ -18,9 +18,8 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 VALID_ASSETS = [
-    "BTC", "BTCUSDT", "ETH", "ETHUSDT", "XAUUSD",
     "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NZDUSD",
-    "USDCAD", "USDCHF", "SOL", "SOLUSDT",
+    "USDCAD", "USDCHF", "EURGBP",
 ]
 
 SIGNAL_TEMPLATE = (

@@ -47,7 +47,8 @@ def _close_pipeline_loop() -> None:
 FOREX_SYMBOLS = {
     "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD",
     "AUDUSD", "NZDUSD", "EURGBP", "EURJPY", "GBPJPY",
-    "XAUUSD", "XAGUSD", "GBPAUD", "GBPNZD", "EURAUD",
+    # XAUUSD, XAGUSD — commodities, not available on ValetaxIntl-Live2 cent
+    "GBPAUD", "GBPNZD", "EURAUD",
     "AUDCAD", "AUDJPY", "AUDNZD", "CADJPY", "CHFJPY",
     "EURNZD", "EURCAD", "EURCHF", "GBPCAD", "GBPCHF",
     "NZDCAD", "NZDJPY", "NZDCHF",

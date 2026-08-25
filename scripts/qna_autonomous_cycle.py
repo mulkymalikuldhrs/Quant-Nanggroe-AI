@@ -36,7 +36,7 @@ log = logging.getLogger("qna.cycle")
 
 # ── Config ────────────────────────────────────────────────────────────────
 QNA_DIR = r"D:\repositories\Quant-Nanggroe-AI-worktree"
-SYMBOLS = ["EURUSD.vx", "GBPUSD.vx", "XAUUSD.vx"]   # Valetax forex + gold
+SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD"]
 RISK_PCT = 0.01          # 1% account balance per trade
 SL_ATR_MULT = 1.5
 TP_ATR_MULT = 2.5

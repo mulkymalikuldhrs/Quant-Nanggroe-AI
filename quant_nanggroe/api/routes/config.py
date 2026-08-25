@@ -32,7 +32,7 @@ class SystemConfig(BaseModel):
     """System configuration exposed to UI."""
     model_config = ConfigDict(validate_assignment=True, extra="allow")
     # Trading
-    symbols: list[str] = Field(default_factory=lambda: ["EURUSD", "XAUUSD", "BTC-USD"])
+    symbols: list[str] = Field(default_factory=lambda: ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD"])
     max_position_pct: float = 0.02
     max_daily_loss_pct: float = 0.01
     max_weekly_loss_pct: float = 0.03
@@ -98,7 +98,7 @@ def _load_config() -> dict[str, Any]:
     # Flatten nested structure for frontend consumption
     flat: dict[str, Any] = {}
     trading = raw.get("trading", {})
-    flat["symbols"] = trading.get("symbols", ["EURUSD", "XAUUSD", "BTC-USD"])
+    flat["symbols"] = trading.get("symbols", ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD"])
     flat["max_position_pct"] = trading.get("max_position_pct", 0.02)
     flat["max_daily_loss_pct"] = trading.get("max_daily_loss_pct", 0.01)
     flat["max_weekly_loss_pct"] = trading.get("max_weekly_loss_pct", 0.03)

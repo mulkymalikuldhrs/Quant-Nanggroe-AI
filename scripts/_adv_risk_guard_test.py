@@ -16,7 +16,7 @@ rm = mk()
 rm.state.daily_pnl = -60.0  # -6% of 1000
 r = trade(rm)
 assert r["verdict"] == "VETOED", f"TEST1 FAIL: {r}"
-for sym in ["EURUSD", "GBPUSD", "BTCUSD", "XAUUSD", "USDJPY"]:
+for sym in ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD"]:
     rr = trade(rm, sym)
     assert rr["verdict"] == "VETOED", f"TEST1 FAIL not-blocking {sym}: {rr}"
 print("TEST1 daily>5%: PASS (veto fires, blocks ALL orders)")

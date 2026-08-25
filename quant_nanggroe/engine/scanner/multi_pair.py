@@ -70,9 +70,9 @@ VALETAX_PAIRS: list[dict[str, Any]] = [
     {"name": "USDCAD", "mt5": "USDCAD.vx", "spread": 106, "mode": "ENABLED", "margin": 0.50, "ccy": "USD", "cs": 100000, "digits": 5, "ask": 1.40239, "bid": 1.40133},
     {"name": "AUDUSD", "mt5": "AUDUSD.vx", "spread": 102, "mode": "ENABLED", "margin": 0.35, "ccy": "AUD", "cs": 100000, "digits": 5, "ask": 0.69873, "bid": 0.69771},
     {"name": "NZDUSD", "mt5": "NZDUSD.vx", "spread": 109, "mode": "ENABLED", "margin": 0.29, "ccy": "NZD", "cs": 100000, "digits": 5, "ask": 0.58484, "bid": 0.58375},
-    # COMMODITIES
-    {"name": "XAUUSD", "mt5": "XAUUSD.vx", "spread": 29, "mode": "ENABLED", "margin": 2.01, "ccy": "USD", "cs": 100, "digits": 2, "ask": 4016.38, "bid": 4016.09},
-    {"name": "XAGUSD", "mt5": "XAGUSD.vx", "spread": 204, "mode": "ENABLED", "margin": 2.80, "ccy": "USD", "cs": 5000, "digits": 3, "ask": 56.017, "bid": 55.813},
+    # COMMODITIES — not available on ValetaxIntl-Live2 cent account
+    # {"name": "XAUUSD", ...},  # REMOVED: trade_mode=4 (disabled)
+    # {"name": "XAGUSD", ...},  # REMOVED: trade_mode=4 (disabled)
     # INDICES
     {"name": "US30", "mt5": "US30.vx", "spread": 118, "mode": "ENABLED", "margin": 26.09, "ccy": "USD", "cs": 10, "digits": 1, "ask": 52172.3, "bid": 52160.5},
 ]

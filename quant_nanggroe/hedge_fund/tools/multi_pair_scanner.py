@@ -58,12 +58,13 @@ SL_JILAT_PAIRS = [
     ("NZDCAD",  "NZDCAD.vx",  125, "ENABLED", 0.29, "NZD", 100000, 5, 0.81969,  0.81844),
     ("NZDCHF",  "NZDCHF.vx",  108, "ENABLED", 0.29, "NZD", 100000, 5, 0.47231,  0.47123),
 
-    ("XAUUSD",  "XAUUSD.vx",  29,  "ENABLED", 2.01, "USD", 100,    2, 4016.38,  4016.09),
-    ("XAGUSD",  "XAGUSD.vx",  204, "ENABLED", 2.80, "USD", 5000,   3, 56.017,   55.813),
-    ("XAUEUR",  "XAUEUR.vx",  90,  "ENABLED", 2.01, "EUR", 100,    2, 3512.12,  3511.22),
-    ("XAGEUR",  "XAGEUR.vx",  183, "ENABLED", 14.01,"EUR", 5000,   3, 48.971,   48.788),
-    ("XPDUSD",  "XPDUSD.vx",  2168,"ENABLED", 63.08,"USD", 100,    2, 1261.54,  1239.86),
-    ("XPTUSD",  "XPTUSD.vx",  1777,"ENABLED", 80.20,"USD", 100,    2, 1603.99,  1586.22),
+    # Commodities — not available on ValetaxIntl-Live2 cent account
+    # ("XAUUSD", ...),  # REMOVED: trade_mode=4
+    # ("XAGUSD", ...),  # REMOVED: trade_mode=4
+    # ("XAUEUR", ...),  # REMOVED: trade_mode=4
+    # ("XAGEUR", ...),  # REMOVED: trade_mode=4
+    # ("XPDUSD", ...),  # REMOVED: trade_mode=4
+    # ("XPTUSD", ...),  # REMOVED: trade_mode=4
 
     ("XBRUSD",  "XBRUSD.vx",  94,  "ENABLED", 4.42, "USD", 1000,   2, 88.440,   87.500),
     ("XNGUSD",  "XNGUSD.vx",  150, "ENABLED", 14.82,"USD", 10000,  3, 2.964,    2.814),

@@ -65,7 +65,7 @@ log = logging.getLogger("QNA-Autonomous")
 # ──────────────────────────────────────────────────────────────
 class Config:
     # Trading symbols (MT5 format)
-    SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "XAUUSD"]
+    SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD", "USDCHF", "EURGBP"]
     
     # Cycle timing
     CYCLE_INTERVAL_SEC = 60          # 1 minute between cycles

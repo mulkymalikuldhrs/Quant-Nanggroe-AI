@@ -24,6 +24,13 @@ from typing import Any, Dict, Optional
 PROJECT_ROOT = Path(__file__).parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# ── Load .env BEFORE any module import reads env vars (QNA_LIVE_TRADING, JWT, etc.) ──
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv(str(PROJECT_ROOT / ".env"), override=False)
+except ImportError:
+    pass  # dotenv not installed; rely on explicit env vars only.
+
 # ── Environment sanitize (strip Hermes venv leak) ──────────────
 _hermes_paths = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" in p.lower()]
 if _hermes_paths:
