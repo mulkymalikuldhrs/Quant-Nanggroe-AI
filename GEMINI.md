@@ -2,32 +2,26 @@
 
 Canonical instructions in **AGENTS.md**. This is a quick reference.
 
-**Single entry:** `python qna.py [daemon|api|status|stop]`
+**Single entry:** `python qna.py [daemon|api|status]` (hedge/unified/live legacy modes exist)
 
 **Critical:**
 - `PYTHONPATH=""` always — Hermes venv leak breaks `pydantic_core`
-- Fail-closed: C5 KillSwitch cross-process shared state
+- Fail-closed: C5 KillSwitch cross-process shared state (`QNA_KILL_SWITCH_STATE_FILE`)
 - ✅ **Candle Scheduler** — real-time M15/H1/H4/D1 candle-close analysis
 - ✅ **Signal Aggregation** — one position per symbol, fixed 0.5% risk
-- ✅ **Trade History** — SQLite-backed unlimited persistence
-- **TTLCache** wired to EconomicScorer + SentimentScorer
-- **mue-x 992 providers** dynamically discovered (no more 760-line manual list)
+- ✅ **Auto-Retrain** — hourly Bayesian re-tune + decay guard
+- ✅ **Context Gate** — high-impact news blackout veto (±30 min, circuit breaker)
 - **Weekly loss veto** hard-gated on Path-B
-- **np.clip → _clamp()** fixed across 8 scoring files (numpy 2.x compat)
-- 84 registered strategies, 10 exchange clients, 16 agents
-- numpy broken in .venv (Python 3.14 `np.clip` removed — scoring files fixed but other modules may still use numpy)
-- pytest env broken (langsmith plugin)
+- Test counts: see CHANGELOG (pytest green as of v8.0.9)
 
 **Commands:**
 ```bash
-launch.bat api              # FastAPI on :8000
-guardian_cli.py --once      # Guardian watchtower
-ruff check quant_nanggroe/
-uv sync
+python qna.py daemon         # autonomous trading loop
+python qna_tray.py           # system tray control
+python qna.py api            # FastAPI on :8000
+cd dashboard && npm run dev  # dashboard :3000
 ```
 
 **Architecture:**
-- 9-stage pipeline in `hedge_fund/portfolio/main.py:run_once()` (555 lines)
-- Stage 8 (FusionEngine scoring) = **dead code** — not called
-- 4 git remotes, github2 has 4141 diverged files (Next.js dashboard)
-- E:\ drive: hidden-regime (COT), mue-x (992 evolved providers), AI-Trader (cache/TTL 1911 lines)
+- Candle-close pipeline: scheduler → context gate → signal aggregation → 9-gate risk → execution gates → MT5
+- FusionEngine wiring disputed between audits — verify core/scoring imports before relying

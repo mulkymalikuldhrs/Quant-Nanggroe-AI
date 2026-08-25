@@ -18,16 +18,17 @@ python qna.py daemon        # autonomous trading loop
 python qna_tray.py          # system tray control (start/stop/dashboard)
 python qna.py api           # FastAPI :8000
 cd dashboard && npm run dev # dashboard :3000
-python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # 61 core regression tests
+python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # core regression battery
 ```
 
-## Key Modules (v8.0.8)
+## Key Modules (v8.0.9)
 | Module | Purpose |
 |--------|---------|
 | `qna_tray.py` | Windows system tray daemon control |
 | `engine/candle_scheduler.py` | Real-time M15/H1/H4/D1 candle-close scheduler |
 | `engine/candle_events.py` | Thread→async event bus → WS "candles" channel |
 | `engine/agentic/context_gate.py` | High-impact news blackout veto |
+| `engine/auto_retrain.py` | Autonomous Bayesian re-tune loop + decay guard |
 | `engine/trade_history.py` | SQLite-backed unlimited trade history |
 | `engine/journal_sync.py` | MT5→journal sync, real PnL |
 | `engine/execution/manager.py` | Guard pipeline → kill switch → risk veto → duplicate-position gate → fill-status gate |

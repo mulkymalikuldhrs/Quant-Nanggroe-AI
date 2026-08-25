@@ -9,14 +9,14 @@ python qna.py daemon           # autonomous trading loop (candle-close scheduler
 python qna.py api              # FastAPI on :8000
 python qna.py status           # system status
 cd dashboard && npm run dev    # Next.js 16 on :3000
-python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # 61 core regression tests
+python -m pytest tests/test_engine/test_strategy_allocation.py tests/test_risk/test_trailing_stop_gate7.py tests/test_engine/test_analytics.py tests/test_engine/test_signal_aggregator.py tests/test_engine/test_ml.py tests/test_engine/test_candle_scheduler.py -q  # core regression battery
 ```
 
 **Critical gotchas:**
 - `PYTHONPATH=""` mandatory — Hermes venv leaks `pydantic_core` → crash
 - `QNAI_JWT_SECRET` env var required for API boot (fail-closed)
 - **numpy 2.5.1** ✅ in .venv (reinstalled). System Python 3.14 has working numpy/pandas/scipy.
-- **pytest works** ✅ — 61 core tests pass
+- **pytest works** ✅ — core battery green (see CHANGELOG)
 - Hardware: i7-10th gen, 16GB RAM, no GPU
 
 ## Architecture
@@ -39,7 +39,7 @@ quant_nanggroe/
   agents/                         ← 16 agents
   api/                            ← FastAPI server
   pipeline/                       ← UnifiedPipeline (auto mode-routing)
-  tests/                          ← 134 test files (env broken — 3 pre-existing paper_mode failures)
+  tests/                          ← ~150+ test files (**pytest green** ✅ — see CHANGELOG for latest count)
   dashboard/                      ← Next.js 16 + React 19 + Recharts
 ```
 

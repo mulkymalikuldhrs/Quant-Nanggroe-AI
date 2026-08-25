@@ -2,7 +2,7 @@
 
 See **AGENTS.md** for canonical instructions.
 
-**Entry:** `python qna.py [unified|api|daemon|hedge|status|stop]`
+**Entry:** `python qna.py [daemon|api|status]` (hedge/unified/live legacy modes exist)
 
 **Rules:**
 - `PYTHONPATH=""` mandatory (Hermes venv leak)
@@ -10,7 +10,7 @@ See **AGENTS.md** for canonical instructions.
 - Use `uv` for package management (not pip, not poetry).
 - `archive/` = read-only orphan artifacts from v6.2.
 - Keep docs synchronized with code changes.
-- ✅ Scoring engine FULLY WIRED — FusionEngine + 8 scorers + MTFEngine + WeightEvolver in run_once(). 117 tests pass.
+- Scoring engine wiring disputed between audits — verify core/scoring imports before relying (FusionEngine + 8 scorers + MTFEngine + WeightEvolver in run_once()). Test counts: see CHANGELOG.
 
 **Index:**
 - Include: `quant_nanggroe/`, `dashboard/src/`, `docs/`, `qna.py`

@@ -6,6 +6,8 @@ __all__ = [
     'agent',
     'prompts',
     'tools',
+    'StrategistAgent',
 ]
 
 from . import agent, prompts, tools
+from .agent import StrategistAgent

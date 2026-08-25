@@ -282,9 +282,12 @@ class CandleScheduler:
             # Heartbeat every 5 min: proves the loop is ticking even when
             # nothing fires, and counts lifetime closes.
             if tick_count % 300 == 0:
+                stats = getattr(self, "_last_probe_stats", {})
                 logger.info(
                     "CandleScheduler heartbeat: ticks=%d, closes_total=%d, "
-                    "states=%d", tick_count, total_closes, len(self._candle_states),
+                    "states=%d, probe_empty=%s/%s",
+                    tick_count, total_closes, len(self._candle_states),
+                    stats.get("empty", "?"), stats.get("total", "?"),
                 )
             await asyncio.sleep(self.tick_interval)
 
@@ -297,8 +300,16 @@ class CandleScheduler:
 
         now = time.time()
         closes_detected = []
+        empty_count = 0
 
         for sym in symbols:
+            # SYMBOL_SELECT FIX (2026-08-25): symbols present in the terminal
+            # but not enabled in Market Watch return None from copy_rates
+            # forever -> zero closes with total silence. Selecting is idempotent.
+            try:
+                mt5.symbol_select(sym, True)
+            except Exception:
+                pass
             for tf in self.timeframes:
                 key = f"{sym}:{tf}"
                 state = self._candle_states.get(key)
@@ -309,6 +320,7 @@ class CandleScheduler:
                 try:
                     rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
                     if not rates or len(rates) < 1:
+                        empty_count += 1
                         continue
                     current_bar_time = float(rates[-1][0])
                     # New candle closed if bar time changed
@@ -317,8 +329,20 @@ class CandleScheduler:
                     state.last_close_time = current_bar_time
                     state.last_check = now
                 except Exception:
-                    pass
+                    empty_count += 1
 
+        self._last_probe_stats = {"empty": empty_count,
+                                  "total": len(symbols) * len(self.timeframes)}
+        if empty_count and not closes_detected:
+            # First few diagnostics so a dead feed is VISIBLE, then throttled
+            # by heartbeat stats.
+            if not getattr(self, "_warned_empty", False):
+                logger.warning(
+                    "Bar probe returning EMPTY for %d/%d pairs — check "
+                    "Market Watch symbol selection / terminal feed",
+                    empty_count, len(symbols) * len(self.timeframes),
+                )
+                self._warned_empty = True
         return closes_detected
 
     async def _discover_symbols(self) -> list[str]:

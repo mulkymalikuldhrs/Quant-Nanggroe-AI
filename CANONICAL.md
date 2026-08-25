@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 211098748 cent .vxc)
-> Version: v8.0.8 | Last verified: 2026-08-25
+> Version: v8.0.9 | Last verified: 2026-08-25
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,7 +13,7 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.8 (pyproject: 5.1.0) |
+| **Version** | v8.0.9 (pyproject: 5.1.0) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
 | **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$767 USC |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
@@ -22,7 +22,7 @@
 | **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 9 admitted via CPCV allocation) |
 | **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |
-| **Tests passing** | 66 core + 14 API (pre-existing pydantic/prometheus errors) — 66/66 core regression |
+| **Tests passing** | See CHANGELOG (latest full-battery count) |
 | **Path auto-detect** | Universal — all scripts use `Path(__file__).resolve().parent.parent`; no hardcoded `/sdcard`, `D:/`, `E:/` paths. External integrations configurable via `QNA_EXT_*` env vars. |
 | **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 83 strategies |
 | **Dashboard** | 22 routes + Config Center (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes, premium dark-tech |
@@ -60,14 +60,17 @@ qna.py daemon / qna_tray.py (system tray)
 |-------|--------|---------|
 | Entry | `qna.py` | CLI modes: daemon, api, status, backtest |
 | Scheduler | `engine/candle_scheduler.py` | **CandleScheduler** — real-time candle-close watcher, M15/H1/H4/D1 |
+| Events | `engine/candle_events.py` | Thread→async bus feeding WS "candles" channel |
 | Fallback | `engine/scheduler.py` | PipelineScheduler (timer-based, fallback only) |
 | Autonomous | `engine/agentic/autonomous.py` | `AutonomousPipeline.run()` — timeframe-aware, multi-TF data |
 | Ensemble | `engine/agentic/ensemble.py` | Multi-strategy voting with contributor attribution |
 | Council | `engine/agentic/council.py` | `CouncilOfChanges` fail-closed |
+| ContextGate | `engine/agentic/context_gate.py` | High-impact news blackout veto w/ circuit breaker |
 | Risk | `engine/risk/manager.py` | 9-checkpoint gate + kill switch |
 | Execution | `engine/execution/builder.py` | `build_execution_manager()` — account auto-detect |
 | Journal | `trade_journal.py` | SQLite trade log with strategy attribution |
 | Lifecycle | `engine/strategy_lifecycle.py` | Auto-kill/evolve/hibernate per strategy |
+| Retrain | `engine/auto_retrain.py` | AutoRetrainer — hourly Bayesian re-tune, decay guard feeds best_params_for() |
 | Notifications | `notifier.py` | Telegram alerts on trades and signals |
 | Self-Eval | `TradeJournal.self_eval()` | Per-strategy win_rate, expectancy, kelly, sharpe |
 
