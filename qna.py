@@ -376,6 +376,32 @@ def run_daemon(args: argparse.Namespace) -> int:
             logger.error("CRITICAL: Both schedulers failed — daemon will run but NO TRADING will occur: %s / %s", e, e2)
             logger.error("Check MT5 connection and try: python qna.py status")
 
+    # ── Start Auto-Retrain loop (parameter freshness, fail-closed) ──
+    _retrainer = None
+    try:
+        from quant_nanggroe.engine.auto_retrain import AutoRetrainer, get_auto_retrainer
+        from quant_nanggroe.engine.agentic import get_autonomous_pipeline
+
+        class _PipelineFetcher:
+            """Lazy pipeline handle — resolves on first fetch, not at boot."""
+            def __init__(self):
+                self._pipe = None
+            def _resolve(self):
+                if self._pipe is None:
+                    p = get_autonomous_pipeline()
+                    p.load_strategies()
+                    self._pipe = p
+                return self._pipe
+            def __call__(self, symbol, timeframe):
+                return self._resolve()._fetch_data(symbol, timeframe=timeframe)
+
+        _symbols = list(getattr(_scheduler, "symbols", None) or ["EURUSD"])
+        _retrainer = get_auto_retrainer(fetcher=_PipelineFetcher(), symbols=_symbols)
+        if _retrainer.start():
+            logger.info("AutoRetrainer started (every %.1fh)", _retrainer.interval_hours)
+    except Exception as e:
+        logger.warning("AutoRetrainer init skipped: %s", e)
+
     daemon = DaemonRunner(agents)
     try:
         daemon.start()
@@ -383,6 +409,11 @@ def run_daemon(args: argparse.Namespace) -> int:
         logger.info("Shutdown requested...")
     finally:
         daemon.stop_all()
+        if _retrainer is not None:
+            try:
+                _retrainer.stop()
+            except Exception as e:
+                logger.warning("Error stopping retrainer: %s", e)
         if _scheduler is not None:
             try:
                 # Try candle scheduler stop first, then legacy scheduler

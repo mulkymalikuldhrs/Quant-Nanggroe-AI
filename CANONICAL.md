@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 211098748 cent .vxc)
-> Version: v8.0.6 | Last verified: 2026-08-25
+> Version: v8.0.7 | Last verified: 2026-08-25
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,12 +13,12 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.6 (pyproject: 5.1.0) |
+| **Version** | v8.0.7 (pyproject: 5.1.0) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
 | **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$767 USC |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
 | **LiveModeGuard** | ACTIVE — `LiveModeGuard` enforced; no paper mode, MT5 live only |
-| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications + v8.0.3 fail-closed risk wiring + launcher quoting fix + v8.0.6 universal path auto-detect + full risk audit) |
+| **Session** | 80+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications + v8.0.3 fail-closed risk wiring + launcher quoting fix + v8.0.7 universal path auto-detect + full risk audit) |
 | **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 9 admitted via CPCV allocation) |
 | **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |

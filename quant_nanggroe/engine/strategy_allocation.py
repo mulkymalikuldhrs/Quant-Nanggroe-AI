@@ -118,15 +118,39 @@ def admitted_for_symbol(symbol: str) -> Optional[List[str]]:
 
 
 _TUNING_PATH = Path("data/tuning_results.json")
+_RETRAIN_REPORT_PATH = Path("data/retrain_report.json")
+
+
+def _stale_strategies() -> set:
+    """Strategies flagged by the AutoRetrainer decay ledger.
+
+    A key appears here when baseline score was negative on >= 3 consecutive
+    retrain runs — the edge has decayed and its tuned params are no longer
+    trustworthy. Fail-closed: fall back to strategy defaults.
+    """
+    try:
+        report = json.loads(_RETRAIN_REPORT_PATH.read_text(encoding="utf-8"))
+        return set(report.get("stale_strategies") or [])
+    except Exception:
+        return set()
 
 
 def best_params_for(strategy: str, symbol: str) -> Optional[Dict[str, Any]]:
     """Tuned params for a strategy on a symbol's asset class.
 
     Reads ``data/tuning_results.json`` (written by
-    ``scripts/run_param_tuning.py``). Returns None when no tuning data
-    exists — caller uses strategy defaults.
+    ``scripts/run_param_tuning.py`` or engine/auto_retrain.py).
+    Returns None when no tuning data exists — caller uses strategy defaults.
+    Decay guard: if the retrain ledger flags ``strategy:symbol`` as stale
+    (>= 3 consecutive negative baselines), tuned params are WITHHELD —
+    trading falls back to un-tuned defaults until fresh evidence arrives.
     """
+    if f"{strategy}:{_normalize(symbol)}" in _stale_strategies() or \
+       f"{strategy}:{symbol}" in _stale_strategies():
+        logger.info(
+            "Decay guard: %s on %s flagged stale by retrain ledger — "
+            "withholding tuned params", strategy, symbol)
+        return None
     try:
         data = json.loads(_TUNING_PATH.read_text(encoding="utf-8"))
     except Exception:

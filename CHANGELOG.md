@@ -1,5 +1,20 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.7 — Auto-Retrain Loop + Decay Guard (2026-08-25)
+
+### 🔄 Closed-Loop Parameter Freshness
+- **NEW: `engine/auto_retrain.py`** — the tuning loop that was MANUAL (`scripts/run_param_tuning.py`) is now autonomous: fetch broker bars → Bayesian-optimize numeric params (±50% around current) → fold-validated holdout scoring (no lookahead) → **persist ONLY when candidate beats incumbent by >0.05 margin AND is positive** → atomic write to `data/tuning_results.json`.
+- **Background schedule**: thread inside daemon, first pass after 5-min grace; cadence via `QNA_RETRAIN_INTERVAL_HOURS` (default 12, `0` = off). Wired in `qna.py daemon` next to CandleScheduler with lazy pipeline fetcher.
+- **Decay ledger**: `data/retrain_report.json` keeps last 50 baselines per strategy:symbol.
+- **DECAY GUARD (WF refresh)**: a strategy flagged stale (≥3 consecutive negative baselines) has its tuned params WITHHELD by `best_params_for()` → falls back to defaults until fresh evidence arrives. Fail-closed against alpha decay.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_auto_retrain.py`** — 8 tests: space discovery, broken-strategy reject, signal-shape handling, no-allocation noop, singleton contract, disabled interval, stale-withhold gate, ledger flagging.
+- Fixed `_append_report` structure-corruption bug on reload (top-level keys treated as strategy entries).
+- **Full battery**: 287 pass.
+
+---
+
 ## v8.0.6 — News Gate + WebSocket Live + System Tray (2026-08-25)
 
 ### 📰 Macro/News Context Gate (wired into live path)

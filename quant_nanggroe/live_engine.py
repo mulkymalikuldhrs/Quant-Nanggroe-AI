@@ -62,17 +62,15 @@ logging.basicConfig(
 log = logging.getLogger("QNA-Live")
 
 # Asset allocations sourced from constants.py (single source of truth).
+# CANONICAL.md 15.8: FX/Commodity/Indices only — crypto/stocks eliminated.
 ASSETS = [
     {"symbol": sym, "coin_gecko_id": cg_id, "allocation": alloc}
     for sym, cg_id, alloc in [
-        ("BTCUSDT", "bitcoin", ASSET_ALLOCATIONS["BTCUSDT"]),
-        ("ETHUSDT", "ethereum", ASSET_ALLOCATIONS["ETHUSDT"]),
-        ("SOLUSDT", "solana", ASSET_ALLOCATIONS["SOLUSDT"]),
-        ("BNBUSDT", "binancecoin", ASSET_ALLOCATIONS["BNBUSDT"]),
-        ("AVAXUSDT", "avalanche-2", ASSET_ALLOCATIONS["AVAXUSDT"]),
-        ("LINKUSDT", "chainlink", ASSET_ALLOCATIONS["LINKUSDT"]),
-        ("XRPUSDT", "ripple", ASSET_ALLOCATIONS["XRPUSDT"]),
-        ("ADAUSDT", "cardano", ASSET_ALLOCATIONS["ADAUSDT"]),
+        ("EURUSD", "euro", ASSET_ALLOCATIONS["EURUSD"]),
+        ("XAUUSD", "gold", ASSET_ALLOCATIONS["XAUUSD"]),
+        ("GBPUSD", "british-pound", ASSET_ALLOCATIONS["GBPUSD"]),
+        ("USOIL", "brent-crude-oil", ASSET_ALLOCATIONS["USOIL"]),
+        ("USDJPY", "japanese-yen", ASSET_ALLOCATIONS["USDJPY"]),
     ]
 ]
 ASSET_CG_MAP = {a["symbol"]: a["coin_gecko_id"] for a in ASSETS}
