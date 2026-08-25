@@ -330,17 +330,14 @@ class CandleScheduler:
         closes_detected = []
         empty_count = 0
 
-        broker = self._get_broker_mt5()
-
+        # Use bare MT5 for bar-time probes — broker.get_rates was
+        # returning empty for 32 pairs while bare copy_rates succeeds for
+        # single probes (IPC session mismatch). Bare is proven to work.
         for sym in symbols:
-            # SYMBOL_SELECT FIX (2026-08-25): symbols present in the terminal
-            # but not enabled in Market Watch return None from copy_rates
-            # forever -> zero closes with total silence. Selecting is idempotent.
-            if broker is None:
-                try:
-                    mt5.symbol_select(sym, True)
-                except Exception:
-                    pass
+            try:
+                mt5.symbol_select(sym, True)
+            except Exception:
+                pass
             for tf in self.timeframes:
                 key = f"{sym}:{tf}"
                 state = self._candle_states.get(key)
@@ -349,10 +346,7 @@ class CandleScheduler:
 
                 tf_enum = MT5_TF_MAP.get(tf, 16408)
                 try:
-                    if broker is not None:
-                        rates = broker.get_rates(sym, tf_enum, 2)
-                    else:
-                        rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
                     if not rates or len(rates) < 1:
                         empty_count += 1
                         continue
