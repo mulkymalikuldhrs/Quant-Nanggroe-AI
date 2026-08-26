@@ -1439,6 +1439,17 @@ class AutonomousPipeline:
             if name not in candidates and len(candidates) < 15:
                 candidates.append(name)
 
+        # ── Strategy Evaluator: filter out auto-disabled strategies ──
+        try:
+            from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
+            evaluator = StrategyEvaluator()
+            candidates = [n for n in candidates if evaluator.is_strategy_enabled(n, symbol)]
+            if len(candidates) < len(all_names):
+                log.info("Evaluator filtered %d disabled strategies for %s",
+                         len(all_names) - len(candidates), symbol)
+        except Exception as eval_exc:
+            logger.debug("StrategyEvaluator skipped: %s", eval_exc)
+
         signals: list[tuple[str, float, str, str]] = []
         signals_named: list[tuple[str, float, str, str, str]] = []
         signals: list[tuple[str, float, str, str]] = []
@@ -2259,6 +2270,21 @@ class AutonomousPipeline:
             self._post_batch_evolution()
         except Exception as exc:
             logger.warning("Post-batch evolution failed: %s", exc)
+
+        # ── Strategy Evaluator Review ──────────────────────────────
+        try:
+            from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
+            evaluator = StrategyEvaluator()
+            report = evaluator.review_all()
+            disabled = [s for s in report if not s["enabled"]]
+            if disabled:
+                logger.warning("EVALUATOR: %d strategies auto-disabled: %s",
+                               len(disabled),
+                               [(s["strategy"], s["disable_reason"]) for s in disabled])
+            else:
+                logger.info("Evaluator: all %d tracked strategies enabled", len(report))
+        except Exception as eval_exc:
+            logger.debug("Evaluator review skipped: %s", eval_exc)
 
         return results
 
