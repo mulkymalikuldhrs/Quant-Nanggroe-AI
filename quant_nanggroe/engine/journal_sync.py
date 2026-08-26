@@ -357,6 +357,13 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
                         (close_ts, exit_price, pnl, outcome, close_reason, hit_type,
                          _sl, _tp, _conf, ticket))
                     updated += 1
+                    # Wire to strategy_evaluator for auto-disable tracking
+                    if close_deal:
+                        try:
+                            from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
+                            StrategyEvaluator().record_outcome(ticket, exit_price, pnl)
+                        except Exception:
+                            pass
             else:
                 con.execute(
                     """INSERT INTO trades (ticket, strategy, symbol, side, entry,
@@ -369,6 +376,13 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
                      pnl, outcome, comment, f"magic={magic}", "",
                      close_reason, hit_type, "", "intraday"))
                 inserted += 1
+                # Wire to strategy_evaluator for auto-disable tracking
+                if close_deal:
+                    try:
+                        from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
+                        StrategyEvaluator().record_outcome(ticket, exit_price, pnl)
+                    except Exception:
+                        pass
 
         except Exception as exc:
             errors.append(f"deal {pid}: {exc}")

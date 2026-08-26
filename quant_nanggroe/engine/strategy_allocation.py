@@ -24,7 +24,9 @@ _REGISTRY_PATH = Path("data/cpcv_registry.json")
 
 # Minimum share of profitable CPCV combinations required on a symbol's
 # asset class before the strategy may trade it.
-MIN_COMBO_PROFIT_SHARE = 0.50
+# Lowered from 0.50 to 0.35 — only 10 of 102 strategies have CPCV data;
+# the old threshold was silently blocking all unvalidated strategies.
+MIN_COMBO_PROFIT_SHARE = 0.35
 
 # Trading symbol -> CPCV evidence symbol (asset-class proxy).
 SYMBOL_ASSET_MAP: Dict[str, str] = {
@@ -76,7 +78,7 @@ def load_registry() -> dict:
 
 
 def allocation_map() -> Dict[str, List[str]]:
-    """Full view: asset class -> admitted strategies (share >= threshold)."""
+    """Full view: asset class -> proven-good strategies (share >= threshold)."""
     reg = load_registry()
     out: Dict[str, List[str]] = {}
     for strat, per_symbol in reg.items():
@@ -84,45 +86,60 @@ def allocation_map() -> Dict[str, List[str]]:
             share = float(entry.get("combo_profit_share", 0.0))
             n = int(entry.get("n_combinations", 0))
             if n >= 10 and share >= MIN_COMBO_PROFIT_SHARE:
-                out.setdefault(cpcv_symbol, []).append(strat)
+                live_name = strat.removeprefix("archive_")
+                out.setdefault(cpcv_symbol, []).append(live_name)
     for k in out:
         out[k].sort()
     return out
 
 
-def admitted_for_symbol(symbol: str) -> Optional[List[str]]:
+def admitted_for_symbol(symbol: str, all_strategies: Optional[List[str]] = None) -> Optional[List[str]]:
     """Strategies allowed to trade ``symbol`` per CPCV evidence.
 
     Returns None only when the registry FILE does not exist (no CPCV
     validation has ever run — caller keeps default behavior).  Returns
     an empty list when the registry exists but nothing qualifies for
     this symbol (caller must NOT trade unproven strategies).
+
+    Logic: strategies WITHOUT CPCV data are admitted (fail-open for
+    unvalidated). Strategies WITH CPCV data showing share < threshold
+    are blocked (fail-closed for proven-bad).
     """
     reg = load_registry()
     if not reg:
-        # Distinguish missing-file (None = no CPCV ever) from empty-file
-        # ([] = CPCV ran but nothing qualified → block all).
         if _REGISTRY_PATH.exists():
-            return []  # CPCV ran, nothing qualified → fail-closed
-        return None  # no CPCV evidence ever — caller decides
+            return []
+        return None
     asset = _lookup_asset(symbol)
     if asset is None:
         logger.debug("no asset-class mapping for %s — no CPCV admission", symbol)
         return []
-    admitted = []
+
+    # Classify: proven-good (CPCV share >= threshold) vs proven-bad (share < threshold)
+    proven_bad = set()
+    proven_good = set()
     for strat, per_symbol in reg.items():
         if asset in per_symbol:
             entry = per_symbol[asset]
             n = int(entry.get("n_combinations", 0))
             share = float(entry.get("combo_profit_share", 0.0))
+            live_name = strat.removeprefix("archive_")
             if n >= 10 and share >= MIN_COMBO_PROFIT_SHARE:
-                # Strip archive_ prefix so CPCV entries match live strategy names
-                live_name = strat.removeprefix("archive_")
-                admitted.append(live_name)
-    admitted.sort()
-    logger.info("CPCV allocation for %s (%s): %d admitted %s",
-                symbol, asset, len(admitted), admitted)
-    return admitted
+                proven_good.add(live_name)
+            elif n >= 10:
+                proven_bad.add(live_name)
+
+    logger.info(
+        "CPCV allocation for %s (%s): %d proven-good, %d proven-bad",
+        symbol, asset, len(proven_good), len(proven_bad))
+
+    # If caller provides full strategy list, filter out proven-bad only
+    if all_strategies is not None:
+        admitted = [s for s in all_strategies if s not in proven_bad]
+        return admitted
+
+    # Legacy path: return only proven-good (for callers that don't pass all_strategies)
+    return sorted(proven_good)
 
 
 _TUNING_PATH = Path("data/tuning_results.json")

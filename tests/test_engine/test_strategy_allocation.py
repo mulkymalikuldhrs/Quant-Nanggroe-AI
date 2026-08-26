@@ -85,10 +85,11 @@ class TestAllocation:
     def test_allocation_map_shape(self, sample_registry):
         m = sa.allocation_map()
         assert set(m) <= {"BTC-USD", "EURUSD=X", "GC=F"}
-        assert "archive_aroon" in m["GC=F"]
+        assert "aroon" in m["GC=F"]
 
     def test_symbol_normalize_variants(self, sample_registry):
-        a = sa.admitted_for_symbol("XAUUSD.vx")
-        b = sa.admitted_for_symbol("xauusd")
-        c = sa.admitted_for_symbol("XAU-USD")
+        all_strats = ["aroon", "algebra", "kaufman_ama"]
+        a = sa.admitted_for_symbol("XAUUSD.vx", all_strategies=all_strats)
+        b = sa.admitted_for_symbol("xauusd", all_strategies=all_strats)
+        c = sa.admitted_for_symbol("XAU-USD", all_strategies=all_strats)
         assert a == b == c

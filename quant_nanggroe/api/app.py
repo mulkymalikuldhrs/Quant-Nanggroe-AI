@@ -341,7 +341,6 @@ def create_app() -> FastAPI:
         scheduler,
         sec_edgar,
         security,
-        security_tools,
         signal_generator,
         strategies,
         strategy,
@@ -349,7 +348,6 @@ def create_app() -> FastAPI:
         trade_history,
         trading,
         whatsapp,
-        wiring_compat,
         ws,
     )
     from quant_nanggroe.api.routes.brokers import router as brokers_router
@@ -391,13 +389,11 @@ def create_app() -> FastAPI:
     app.include_router(scheduler.router)
     app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
     app.include_router(security.router, prefix="/api", tags=["Security"])
-    app.include_router(security_tools.router, prefix="/api/security-tools", tags=["Security Tools"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
     app.include_router(otto_proxy.router, prefix="/api/otto", tags=["Otto"])
 
     app.include_router(evolution.router)
 
-    app.include_router(wiring_compat.router)
     app.include_router(ensemble.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)

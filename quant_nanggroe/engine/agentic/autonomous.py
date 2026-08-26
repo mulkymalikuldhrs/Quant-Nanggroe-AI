@@ -1249,6 +1249,15 @@ class AutonomousPipeline:
                             confidence=confidence, atr=atr_value, lot_size=_lot)
                     except Exception:
                         pass
+                    # Wire to strategy_evaluator for auto-disable tracking
+                    try:
+                        from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
+                        _ticket = exec_decision.get("ticket", 0)
+                        if _ticket:
+                            StrategyEvaluator().record_signal(
+                                trigger_strategy, symbol, _ticket, current_price)
+                    except Exception:
+                        pass
 
                 # ── Notification: send Telegram alert on trade execution ──
                 if exec_decision.get("action") in ("buy", "sell") and exec_decision.get("execution") == "filled":
@@ -1428,9 +1437,9 @@ class AutonomousPipeline:
             # evidence present but nothing qualifies -> no unproven trading.
             try:
                 from quant_nanggroe.engine.strategy_allocation import admitted_for_symbol
-                admitted = admitted_for_symbol(symbol)
+                admitted = admitted_for_symbol(symbol, all_strategies=all_names)
                 if admitted is not None:
-                    all_names = [n for n in all_names if n in set(admitted)]
+                    all_names = admitted
                     logger.info("CPCV allocation narrowed %s candidates to %d",
                              symbol, len(all_names))
             except Exception as alloc_exc:

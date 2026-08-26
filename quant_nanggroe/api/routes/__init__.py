@@ -35,7 +35,6 @@ __all__ = [
     'trade_history',
     'trading',
     'whatsapp',
-    'wiring_compat',
     'ws',
     'otto_proxy',
 ]
@@ -74,6 +73,5 @@ from . import (
     trade_history,
     trading,
     whatsapp,
-    wiring_compat,
     ws,
 )
