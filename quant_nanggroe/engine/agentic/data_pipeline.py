@@ -4,7 +4,9 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -16,6 +18,10 @@ logger = logging.getLogger("QNA.DataPipeline")
 
 _DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 _PIPELINE_DB = _DATA_DIR / "data_pipeline.db"
+
+# Singleton lock
+_singleton_lock = threading.Lock()
+_singleton_instance: DataPipeline | None = None
 
 
 @dataclass
@@ -55,38 +61,55 @@ class MarketSentiment:
 
 
 class DataPipeline:
-    """Multi-source data aggregation for committee agents."""
+    """Multi-source data aggregation for committee agents. Thread-safe singleton."""
 
-    def __init__(self, db_path: Path | None = None):
-        self._db = db_path or _PIPELINE_DB
-        self._init_db()
+    def __new__(cls, db_path: Path | None = None):
+        global _singleton_instance
+        if _singleton_instance is None:
+            with _singleton_lock:
+                if _singleton_instance is None:
+                    inst = super().__new__(cls)
+                    inst._db = db_path or _PIPELINE_DB
+                    inst._init_db()
+                    _singleton_instance = inst
+        return _singleton_instance
+
+    @contextmanager
+    def _conn(self):
+        con = sqlite3.connect(str(self._db), timeout=5)
+        try:
+            yield con
+            con.commit()
+        except Exception:
+            con.rollback()
+            raise
+        finally:
+            con.close()
 
     def _init_db(self) -> None:
-        con = sqlite3.connect(str(self._db))
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS news (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT, source TEXT, sentiment REAL, relevance REAL,
-                timestamp TEXT, url TEXT, symbols TEXT
-            )
-        """)
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS cot_reports (
-                asset TEXT, date TEXT, long_institutional INTEGER,
-                short_institutional INTEGER, long_speculative INTEGER,
-                short_speculative INTEGER, net_long INTEGER, net_change INTEGER,
-                classification TEXT, PRIMARY KEY (asset, date)
-            )
-        """)
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS sentiment_cache (
-                symbol TEXT PRIMARY KEY, news_sentiment REAL, cot_bias REAL,
-                dxy_correlation REAL, vix_level REAL, overall_score REAL,
-                confidence REAL, timestamp TEXT
-            )
-        """)
-        con.commit()
-        con.close()
+        with self._conn() as con:
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS news (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT, source TEXT, sentiment REAL, relevance REAL,
+                    timestamp TEXT, url TEXT, symbols TEXT
+                )
+            """)
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS cot_reports (
+                    asset TEXT, date TEXT, long_institutional INTEGER,
+                    short_institutional INTEGER, long_speculative INTEGER,
+                    short_speculative INTEGER, net_long INTEGER, net_change INTEGER,
+                    classification TEXT, PRIMARY KEY (asset, date)
+                )
+            """)
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS sentiment_cache (
+                    symbol TEXT PRIMARY KEY, news_sentiment REAL, cot_bias REAL,
+                    dxy_correlation REAL, vix_level REAL, overall_score REAL,
+                    confidence REAL, timestamp TEXT
+                )
+            """)
 
     def fetch_news(self, symbols: list[str] | None = None,
                    max_items: int = 50) -> list[NewsItem]:
@@ -102,7 +125,6 @@ class DataPipeline:
                     title = item.get("headline", "")
                     source = item.get("source", "")
                     summary = item.get("summary", "")
-                    # Simple sentiment: positive keywords - negative keywords
                     pos_words = ["surge", "rally", "gain", "bull", "rise", "up", "high", "growth"]
                     neg_words = ["crash", "drop", "fall", "bear", "down", "low", "loss", "recession"]
                     text = (title + " " + summary).lower()
@@ -118,15 +140,12 @@ class DataPipeline:
                         url=item.get("url", ""),
                         symbols=self._extract_symbols(title + " " + summary)))
 
-                # Cache
-                con = sqlite3.connect(str(self._db))
-                for item in items:
-                    con.execute(
-                        "INSERT INTO news (title, source, sentiment, relevance, timestamp, url, symbols) VALUES (?,?,?,?,?,?,?)",
-                        (item.title, item.source, item.sentiment, item.relevance,
-                         item.timestamp, item.url, json.dumps(item.symbols)))
-                con.commit()
-                con.close()
+                with self._conn() as con:
+                    for item in items:
+                        con.execute(
+                            "INSERT INTO news (title, source, sentiment, relevance, timestamp, url, symbols) VALUES (?,?,?,?,?,?,?)",
+                            (item.title, item.source, item.sentiment, item.relevance,
+                             item.timestamp, item.url, json.dumps(item.symbols)))
                 logger.info("Fetched %d news items from Finnhub", len(items))
         except Exception as exc:
             logger.warning("News fetch failed: %s — using cache", exc)
@@ -138,12 +157,10 @@ class DataPipeline:
         """Fetch COT data from CFTC (via free CSV)."""
         try:
             import urllib.request
-            # CFTC legacy data (most recent)
             url = "https://www.cftc.gov/dea/futures/other_lf.htm"
             req = urllib.request.Request(url, headers={"User-Agent": "QNA/8.0"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 html = resp.read().decode("utf-8", errors="ignore")
-                # Parse simplified — look for EUR row
                 lines = html.split("\n")
                 for line in lines:
                     if asset in line.upper():
@@ -172,42 +189,37 @@ class DataPipeline:
     def get_sentiment(self, symbol: str) -> MarketSentiment:
         """Get aggregated sentiment for a symbol from all sources."""
         try:
-            con = sqlite3.connect(str(self._db))
-            con.row_factory = sqlite3.Row
-            row = con.execute(
-                "SELECT * FROM sentiment_cache WHERE symbol=?", (symbol,)).fetchone()
-            con.close()
-            if row:
-                return MarketSentiment(
-                    symbol=symbol,
-                    news_sentiment=row["news_sentiment"],
-                    cot_bias=row["cot_bias"],
-                    dxy_correlation=row["dxy_correlation"],
-                    overall_score=row["overall_score"],
-                    confidence=row["confidence"],
-                    timestamp=row["timestamp"])
+            with self._conn() as con:
+                con.row_factory = sqlite3.Row
+                row = con.execute(
+                    "SELECT * FROM sentiment_cache WHERE symbol=?", (symbol,)).fetchone()
+                if row:
+                    return MarketSentiment(
+                        symbol=symbol,
+                        news_sentiment=row["news_sentiment"],
+                        cot_bias=row["cot_bias"],
+                        dxy_correlation=row["dxy_correlation"],
+                        overall_score=row["overall_score"],
+                        confidence=row["confidence"],
+                        timestamp=row["timestamp"])
         except Exception:
             pass
 
-        # Compute fresh
         sentiment = MarketSentiment(
             symbol=symbol,
             timestamp=datetime.now(timezone.utc).isoformat())
 
-        # News sentiment for this symbol
         try:
-            con = sqlite3.connect(str(self._db))
-            rows = con.execute(
-                """SELECT sentiment FROM news
-                   WHERE symbols LIKE ? ORDER BY timestamp DESC LIMIT 10""",
-                (f'%"{symbol}"%',)).fetchall()
-            con.close()
-            if rows:
-                sentiment.news_sentiment = float(np.mean([r[0] for r in rows]))
+            with self._conn() as con:
+                rows = con.execute(
+                    """SELECT sentiment FROM news
+                       WHERE symbols LIKE ? ORDER BY timestamp DESC LIMIT 10""",
+                    (f'%"{symbol}"%',)).fetchall()
+                if rows:
+                    sentiment.news_sentiment = float(np.mean([r[0] for r in rows]))
         except Exception:
             pass
 
-        # COT bias
         base = symbol.replace("USD", "").replace("XAU", "")[:3]
         if base:
             cot = self.fetch_cot(base)
@@ -217,9 +229,8 @@ class DataPipeline:
                 elif cot.classification == "extreme_short":
                     sentiment.cot_bias = -0.5
                 else:
-                    sentiment.cot_bias = cot.net_long / 100000  # normalize
+                    sentiment.cot_bias = cot.net_long / 100000
 
-        # Overall score (weighted)
         sentiment.overall_score = (
             0.4 * sentiment.news_sentiment +
             0.3 * sentiment.cot_bias +
@@ -227,12 +238,10 @@ class DataPipeline:
         )
         sentiment.confidence = min(1.0, abs(sentiment.overall_score) + 0.2)
 
-        # Cache
         self._cache_sentiment(sentiment)
         return sentiment
 
     def _extract_symbols(self, text: str) -> list[str]:
-        """Extract currency pair mentions from text."""
         import re
         pairs = re.findall(r'\b(EUR|GBP|USD|JPY|AUD|CAD|CHF|NZD|XAU|BTC)\s*/\s*(EUR|GBP|USD|JPY|AUD|CAD|CHF|NZD)\b',
                           text.upper())
@@ -240,57 +249,51 @@ class DataPipeline:
 
     def _get_cached_news(self, limit: int) -> list[NewsItem]:
         try:
-            con = sqlite3.connect(str(self._db))
-            rows = con.execute(
-                "SELECT title, source, sentiment, relevance, timestamp, url, symbols FROM news ORDER BY timestamp DESC LIMIT ?",
-                (limit,)).fetchall()
-            con.close()
-            return [NewsItem(title=r[0], source=r[1], sentiment=r[2], relevance=r[3],
-                             timestamp=r[4], url=r[5], symbols=json.loads(r[6]) if r[6] else [])
-                    for r in rows]
+            with self._conn() as con:
+                rows = con.execute(
+                    "SELECT title, source, sentiment, relevance, timestamp, url, symbols FROM news ORDER BY timestamp DESC LIMIT ?",
+                    (limit,)).fetchall()
+                return [NewsItem(title=r[0], source=r[1], sentiment=r[2], relevance=r[3],
+                                 timestamp=r[4], url=r[5], symbols=json.loads(r[6]) if r[6] else [])
+                        for r in rows]
         except Exception:
             return []
 
     def _cache_cot(self, report: COTReport) -> None:
         try:
-            con = sqlite3.connect(str(self._db))
-            con.execute(
-                "INSERT OR REPLACE INTO cot_reports VALUES (?,?,?,?,?,?,?,?,?)",
-                (report.asset, report.date, report.long_institutional,
-                 report.short_institutional, report.long_speculative,
-                 report.short_speculative, report.net_long, report.net_change,
-                 report.classification))
-            con.commit()
-            con.close()
+            with self._conn() as con:
+                con.execute(
+                    "INSERT OR REPLACE INTO cot_reports VALUES (?,?,?,?,?,?,?,?,?)",
+                    (report.asset, report.date, report.long_institutional,
+                     report.short_institutional, report.long_speculative,
+                     report.short_speculative, report.net_long, report.net_change,
+                     report.classification))
         except Exception:
             pass
 
     def _get_cached_cot(self, asset: str) -> COTReport | None:
         try:
-            con = sqlite3.connect(str(self._db))
-            row = con.execute(
-                "SELECT * FROM cot_reports WHERE asset=? ORDER BY date DESC LIMIT 1",
-                (asset,)).fetchone()
-            con.close()
-            if row:
-                return COTReport(
-                    asset=row[0], date=row[1], long_institutional=row[2],
-                    short_institutional=row[3], long_speculative=row[4],
-                    short_speculative=row[5], net_long=row[6], net_change=row[7],
-                    classification=row[8])
+            with self._conn() as con:
+                row = con.execute(
+                    "SELECT * FROM cot_reports WHERE asset=? ORDER BY date DESC LIMIT 1",
+                    (asset,)).fetchone()
+                if row:
+                    return COTReport(
+                        asset=row[0], date=row[1], long_institutional=row[2],
+                        short_institutional=row[3], long_speculative=row[4],
+                        short_speculative=row[5], net_long=row[6], net_change=row[7],
+                        classification=row[8])
         except Exception:
             pass
         return None
 
     def _cache_sentiment(self, sentiment: MarketSentiment) -> None:
         try:
-            con = sqlite3.connect(str(self._db))
-            con.execute(
-                "INSERT OR REPLACE INTO sentiment_cache VALUES (?,?,?,?,?,?,?,?)",
-                (sentiment.symbol, sentiment.news_sentiment, sentiment.cot_bias,
-                 sentiment.dxy_correlation, sentiment.vix_level,
-                 sentiment.overall_score, sentiment.confidence, sentiment.timestamp))
-            con.commit()
-            con.close()
+            with self._conn() as con:
+                con.execute(
+                    "INSERT OR REPLACE INTO sentiment_cache VALUES (?,?,?,?,?,?,?,?)",
+                    (sentiment.symbol, sentiment.news_sentiment, sentiment.cot_bias,
+                     sentiment.dxy_correlation, sentiment.vix_level,
+                     sentiment.overall_score, sentiment.confidence, sentiment.timestamp))
         except Exception:
             pass

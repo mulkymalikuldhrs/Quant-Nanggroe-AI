@@ -1362,6 +1362,14 @@ class AutonomousPipeline:
     def _generate_signal(self, symbol: str, strategy_name: str | None, df: Any, regime: str = "unknown", compatible_strategies: list[str] | None = None) -> tuple[str, float, str]:
         """Generate signal via ensemble. If compatible_strategies provided, filters by regime."""
         if strategy_name:
+            # Evaluator gate: check if strategy is disabled
+            try:
+                from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
+                evaluator = StrategyEvaluator()
+                if not evaluator.is_strategy_enabled(strategy_name, symbol):
+                    return "hold", 0.0, f"Strategy {strategy_name} auto-disabled by evaluator"
+            except Exception:
+                pass
             try:
                 from quant_nanggroe.engine.strategies import create_strategy
                 strategy = create_strategy(strategy_name, lifecycle=self._lifecycle)
@@ -1638,14 +1646,17 @@ class AutonomousPipeline:
             _contract_size = 100000.0
             _pip_value = 10.0
             try:
-                import MetaTrader5 as _mt5
-                _si = _mt5.symbol_info(symbol)
-                if _si:
-                    _contract_size = float(getattr(_si, "trade_contract_size", 100000))
-                    _tv = float(getattr(_si, "trade_tick_value", 0))
-                    _ts = float(getattr(_si, "trade_tick_size", 0.0001))
-                    if _tv > 0 and _ts > 0:
-                        _pip_value = _tv * (0.0001 / _ts)
+                # Route through broker handle for thread-safety
+                _broker = next(iter(self._em._brokers.values()), None) if self._em else None
+                _mt5_handle = getattr(_broker, '_mt5', None)
+                if _mt5_handle:
+                    _si = _mt5_handle.symbol_info(symbol)
+                    if _si:
+                        _contract_size = float(getattr(_si, "trade_contract_size", 100000))
+                        _tv = float(getattr(_si, "trade_tick_value", 0))
+                        _ts = float(getattr(_si, "trade_tick_size", 0.0001))
+                        if _tv > 0 and _ts > 0:
+                            _pip_value = _tv * (0.0001 / _ts)
             except Exception:
                 pass
 
@@ -1722,7 +1733,6 @@ class AutonomousPipeline:
             if self._em is not None:
                 for b in self._em._brokers.values():
                     if hasattr(b, "_mt5") and b._mt5 and b._mt5.connected:
-                        import MetaTrader5 as _mt5mod
                         resolved = b._mt5.resolve_symbol(symbol)
                         # Map timeframe string to MT5 enum
                         _tf_map = {"M1": 1, "M5": 5, "M15": 15, "M30": 30,
@@ -2169,8 +2179,7 @@ class AutonomousPipeline:
                 raise RuntimeError("no execution manager")
             for b in self._em._brokers.values():
                 if hasattr(b, "_mt5") and b._mt5 and b._mt5.connected:
-                    import MetaTrader5 as mt5
-                    raw = mt5.symbols_get() or []
+                    raw = b._mt5._mt5.symbols_get() or []
                     found = []
                     for s in raw:
                         # ONLY include tradeable symbols (trade_mode=0).
