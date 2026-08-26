@@ -1041,12 +1041,17 @@ class AutonomousPipeline:
                 s25.error = str(exc)
             steps.append(s25)
 
+            # ── Step 2.75: Compute ATR early (used by risk + TP/SL) ─────
+            _atr_for_risk = self._compute_atr(df) if df is not None else 0.0
+            if _atr_for_risk <= 0 and current_price > 0:
+                _atr_for_risk = current_price * 0.005  # fallback: 0.5% of price
+
             # ── Step 3: Risk Check ──────────────────────────────────────
             s3 = PipelineStep(name="risk_check")
             try:
                 s3.status = "running"
                 t0 = time.perf_counter()
-                risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price)
+                risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price, atr_value=_atr_for_risk, timeframe=timeframe)
                 s3.duration_ms = (time.perf_counter() - t0) * 1000
                 s3.status = "passed" if risk_ok else "failed"
                 s3.result = risk_reason
@@ -1524,11 +1529,10 @@ class AutonomousPipeline:
         except Exception:
             pass
 
-    def _check_risk(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0) -> tuple[bool, str, dict]:
+    def _check_risk(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, atr_value: float = 0.0, timeframe: str = "H1") -> tuple[bool, str, dict]:
         metrics = {"max_drawdown": 0.0, "daily_pnl": 0.0, "price": current_price}
         em = self._em
         # FAIL-CLOSED: no execution manager / risk gates wired => BLOCK.
-        # The old code swallowed this and let the trade proceed unchecked.
         if em is None or getattr(em, "_risk_manager", None) is None or getattr(em, "_kill_switch", None) is None:
             return False, "FAIL-CLOSED: execution manager / risk gates not wired", metrics
         try:
@@ -1537,20 +1541,55 @@ class AutonomousPipeline:
                 return False, "Kill switch active", metrics
             from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
             balance = em._risk_manager.state.current_equity
-            stop_loss = current_price * 0.95 if signal == "buy" else (current_price * 1.05 if signal == "sell" else current_price)
-            lot_size = max(0.01, round(balance * MAX_RISK_PER_TRADE / current_price, 4)) if current_price > 0 else 0.01
+            risk_amount = balance * MAX_RISK_PER_TRADE
+
+            # ATR-based SL via TradingProfile (scalp/day/swing)
+            try:
+                from quant_nanggroe.engine.risk.trading_profile import detect_profile, compute_sl_tp
+                profile = detect_profile(timeframe)
+                _atr = atr_value if atr_value > 0 else current_price * 0.005
+                sltp = compute_sl_tp(side=signal, entry_price=current_price, atr_value=_atr, timeframe=timeframe)
+                stop_loss = sltp["sl"]
+            except Exception:
+                stop_loss = current_price * (0.985 if signal == "buy" else 1.015)
+
+            stop_distance = abs(current_price - stop_loss)
+
+            # Position sizing: risk$ / (sl_pips × pip_value_per_lot)
+            _contract_size = 100000.0
+            _pip_value = 10.0
+            try:
+                import MetaTrader5 as _mt5
+                _si = _mt5.symbol_info(symbol)
+                if _si:
+                    _contract_size = float(getattr(_si, "trade_contract_size", 100000))
+                    _tv = float(getattr(_si, "trade_tick_value", 0))
+                    _ts = float(getattr(_si, "trade_tick_size", 0.0001))
+                    if _tv > 0 and _ts > 0:
+                        _pip_value = _tv * (0.0001 / _ts)
+            except Exception:
+                pass
+
+            _pip_size = 0.0001
+            sl_pips = stop_distance / _pip_size if stop_distance > 0 else 1
+            lot_size = max(0.01, round(risk_amount / (sl_pips * _pip_value), 2)) if sl_pips > 0 and _pip_value > 0 else 0.01
+
+            # Cap at MAX_POSITION_SIZE_PCT (10%) of equity
+            max_notional = balance * 0.10
+            max_lots = max_notional / (_contract_size * current_price) if current_price > 0 and _contract_size > 0 else lot_size
+            lot_size = min(lot_size, max(0.01, round(max_lots, 2)))
+
             verdict = em._risk_manager.check_trade(symbol=symbol, direction=signal.upper() if signal != "hold" else "HOLD", lot_size=lot_size, entry=current_price, stop_loss=stop_loss, account_balance=balance)
             if verdict.get("verdict") == "VETOED":
                 return False, f"RiskManager vetoed: {verdict.get('reason','?')}", {**metrics, "risk_verdict": "VETOED", "checkpoints": verdict.get("checkpoints", {})}
-            metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance})
+            metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance, "atr": atr_value, "sl_dist": stop_distance, "pip_value": _pip_value})
         except Exception as exc:
-            # FAIL-CLOSED: any error inside the risk path BLOCKS the trade.
             return False, f"FAIL-CLOSED: risk check error: {exc}", metrics
         if confidence < 0.15:
             return False, f"Confidence {confidence:.2f} below 0.15 floor", metrics
         if signal == "hold":
             return False, "Signal is HOLD", metrics
-        return True, f"Risk passed: {signal} @ {confidence:.1%}", metrics
+        return True, f"Risk passed: {signal} @ {confidence:.1%} | lot={lot_size} SL={stop_loss:.5f} ATR={atr_value:.5f}", metrics
 
     async def _llm_reason(self, symbol: str, signal: str, confidence: float) -> dict[str, Any]:
         """Use 9router combo mode for LLM reasoning. Falls back to standard routing if combo unavailable."""

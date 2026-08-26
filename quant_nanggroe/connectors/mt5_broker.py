@@ -102,15 +102,17 @@ class MT5Broker(BrokerConnector):
     # and resolve every internal symbol against it. Works for any broker:
     # Valetax (.vx), Exness (bare), IC Markets (.m), Future (.r), etc.
     def _snapshot_symbols(self) -> None:
+        """Snapshot ALL terminal symbols for suffix auto-detect.
+
+        Stores every symbol the terminal knows about (trade_mode 0 and 4).
+        resolve_symbol() will pick the best match at order time.  This
+        lets us support ANY broker suffix: bare, .vx, .vxc, .m, .r, etc.
+        """
         try:
             raw = self._mt5.symbols_get() or []
-            # Only store symbols that are FULLY TRADEABLE (trade_mode=0).
-            # Disabled symbols (mode=4) like .vxc must be excluded so
-            # resolve_symbol() never resolves to an untradeable name.
             self._available_symbols = {
-                s.name.lower(): s.name
+                s.name.lower(): (s.name, s.trade_mode)
                 for s in raw
-                if s.trade_mode == 0
             }
         except Exception:
             self._available_symbols = {}
@@ -123,33 +125,51 @@ class MT5Broker(BrokerConnector):
         existing suffix (so "EURUSD.vx" probes "EURUSD.vxc", not
         "EURUSD.vx.vxc"). Only candidates that exist in the terminal's
         own symbol list are accepted.
+
+        v8.0.12 FIX: MT5 trade_mode semantics:
+          0=DISABLED, 1=LONG_ONLY, 2=SHORT_ONLY, 3=CLOSE_ONLY, 4=FULL
+        The old code PREFERRING trade_mode=0 was fatal — it selected
+        DISABLED symbols over FULL ones. Now prefers HIGHER trade_mode.
         """
         avail = getattr(self, "_available_symbols", {}) or {}
         base = _mt5_symbol(qna_symbol)
-        # Strip any existing suffix to get the bare base for suffix probing
         bare = base.split(".")[0] if "." in base else base
         candidates = [qna_symbol, qna_symbol.replace("-", ""), base, bare]
         # suffix probes derived from what this terminal actually hosts
         suffixes = set()
-        for name in avail.values():
+        for name, _tm in avail.values():
             if "." in name:
                 suffixes.add("." + name.rsplit(".", 1)[1])
         for suf in sorted(suffixes):
             candidates.append(bare + suf)
+
+        # Collect all hits — prefer HIGHER trade_mode (4=FULL > 0=DISABLED)
+        best_tradeable = None  # best with trade_mode >= 3 (close/full)
+        best_any = None        # any trade_mode > 0
         for cand in candidates:
             hit = avail.get(cand.lower())
-            if hit:
-                return hit
-        return base  # last known-good static translation
+            if hit is None:
+                continue
+            name, trade_mode = hit
+            if trade_mode == 0:
+                continue  # skip DISABLED symbols entirely
+            if trade_mode >= 3 and best_tradeable is None:
+                best_tradeable = name
+            if best_any is None:
+                best_any = name
+        result = best_tradeable or best_any or base
+        return result
 
     def place_order(self, order: Order) -> str:
         if not self.connected:
             raise RuntimeError("not connected")
         sym = self.resolve_symbol(order.symbol)
+        avail_entry = (getattr(self, "_available_symbols", {}) or {}).get(sym.lower())
+        tm = avail_entry[1] if avail_entry and isinstance(avail_entry, tuple) else "?"
         import logging as _log
         _log.getLogger(__name__).info(
-            "place_order: %s -> resolved=%s (available=%d)",
-            order.symbol, sym, len(getattr(self, "_available_symbols", {})),
+            "place_order: %s -> resolved=%s (trade_mode=%s, available=%d)",
+            order.symbol, sym, tm, len(getattr(self, "_available_symbols", {})),
         )
         if not self._mt5.symbol_select(sym, True):
             raise RuntimeError(f"MT5 symbol unavailable: {sym}")
@@ -164,15 +184,21 @@ class MT5Broker(BrokerConnector):
             raise RuntimeError(f"invalid order side: {order.side!r}")
         is_buy = side_str == "buy"
 
-        # Auto-detect filling mode from symbol info (FOK not supported on
-        # all symbols/brokers — retcode=10017 "Trade disabled" when wrong)
+        # v8.0.12 FIX: filling_mode is a BITMASK, not an enum index.
+        # SYMBOL_FILLING_FOK=1, SYMBOL_FILLING_IOC=2 (MT5 docs).
+        # ORDER_FILLING_FOK=0, ORDER_FILLING_IOC=1, ORDER_FILLING_RETURN=2.
+        # The old code treated bitmask 1 as enum IOC — ALWAYS WRONG.
+        # ValetaxIntl-Live2 .vx symbols: filling_mode=1 (FOK only) →
+        # required ORDER_FILLING_FOK(0), not ORDER_FILLING_IOC(1).
         _sym_info = self._mt5.symbol_info(sym)
         _filling = self._mt5.ORDER_FILLING_FOK
         if _sym_info:
             fm = getattr(_sym_info, "filling_mode", 0)
-            if fm == 1:
+            if fm & 2:   # IOC bit set
                 _filling = self._mt5.ORDER_FILLING_IOC
-            elif fm == 2:
+            elif fm & 1:  # FOK bit set
+                _filling = self._mt5.ORDER_FILLING_FOK
+            else:         # unknown — safe fallback
                 _filling = self._mt5.ORDER_FILLING_RETURN
 
         req = {

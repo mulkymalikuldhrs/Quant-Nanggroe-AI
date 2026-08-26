@@ -406,7 +406,12 @@ class CandleScheduler:
         return closes_detected
 
     async def _discover_symbols(self) -> list[str]:
-        """Discover tradable symbols from the connected MT5 terminal."""
+        """Discover tradable symbols from the connected MT5 terminal.
+
+        Auto-detects broker suffix (.vx, .vxc, bare, etc.) by scanning
+        ALL symbols and preferring trade_mode=0 (fully tradeable) over
+        trade_mode=4 (market watch only).
+        """
         if self.symbols:
             return self.symbols
         try:
@@ -414,25 +419,25 @@ class CandleScheduler:
             raw = mt5.symbols_get() or []
             WANTED = {"EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD",
                       "NZDUSD", "USDCHF", "EURGBP"}
-            # Collect all candidates per base name, prefer suffixed (tradeable)
-            candidates: dict[str, list[str]] = {}
+            # Collect all candidates per base name with trade_mode
+            candidates: dict[str, list[tuple[str, int]]] = {}
             for s in raw:
                 if not s.visible:
                     continue
                 base = s.name.split(".")[0] if "." in s.name else s.name
                 if base.upper() in WANTED:
-                    candidates.setdefault(base.upper(), []).append(s.name)
+                    candidates.setdefault(base.upper(), []).append((s.name, s.trade_mode))
             found = []
             for base, names in candidates.items():
-                # v8.0.11 FIX: On ValetaxIntl-Live2, .vx symbols have
-                # trade_mode=4 (CFD data only, CANNOT trade). Bare symbols
-                # (e.g. EURUSD) have trade_mode=0 (tradeable). Prefer BARE.
-                bare = [n for n in names if "." not in n]
-                suffixed = [n for n in names if "." in n]
-                if bare:
-                    found.append(bare[0])
-                elif suffixed:
-                    found.append(suffixed[0])
+                # Prefer trade_mode=0 (tradeable) over trade_mode=4 (disabled)
+                tradeable = [n for n, tm in names if tm == 0]
+                disabled = [n for n, tm in names if tm != 0]
+                if tradeable:
+                    # Among tradeable, prefer bare (no suffix)
+                    bare = [n for n in tradeable if "." not in n]
+                    found.append(bare[0] if bare else tradeable[0])
+                elif disabled:
+                    found.append(disabled[0])
             if found:
                 logger.info("CandleScheduler discovered %d symbols: %s", len(found), found)
                 return found
