@@ -424,13 +424,15 @@ class CandleScheduler:
                     candidates.setdefault(base.upper(), []).append(s.name)
             found = []
             for base, names in candidates.items():
-                # Prefer suffixed (.vxc etc.) over bare names — bare names
-                # are often disabled on this broker (trade_mode=4)
+                # v8.0.11 FIX: On ValetaxIntl-Live2, .vx symbols have
+                # trade_mode=4 (CFD data only, CANNOT trade). Bare symbols
+                # (e.g. EURUSD) have trade_mode=0 (tradeable). Prefer BARE.
+                bare = [n for n in names if "." not in n]
                 suffixed = [n for n in names if "." in n]
-                if suffixed:
+                if bare:
+                    found.append(bare[0])
+                elif suffixed:
                     found.append(suffixed[0])
-                elif names:
-                    found.append(names[0])
             if found:
                 logger.info("CandleScheduler discovered %d symbols: %s", len(found), found)
                 return found

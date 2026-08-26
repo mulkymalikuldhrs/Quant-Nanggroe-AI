@@ -146,6 +146,11 @@ class MT5Broker(BrokerConnector):
         if not self.connected:
             raise RuntimeError("not connected")
         sym = self.resolve_symbol(order.symbol)
+        import logging as _log
+        _log.getLogger(__name__).info(
+            "place_order: %s -> resolved=%s (available=%d)",
+            order.symbol, sym, len(getattr(self, "_available_symbols", {})),
+        )
         if not self._mt5.symbol_select(sym, True):
             raise RuntimeError(f"MT5 symbol unavailable: {sym}")
 
@@ -159,6 +164,17 @@ class MT5Broker(BrokerConnector):
             raise RuntimeError(f"invalid order side: {order.side!r}")
         is_buy = side_str == "buy"
 
+        # Auto-detect filling mode from symbol info (FOK not supported on
+        # all symbols/brokers — retcode=10017 "Trade disabled" when wrong)
+        _sym_info = self._mt5.symbol_info(sym)
+        _filling = self._mt5.ORDER_FILLING_FOK
+        if _sym_info:
+            fm = getattr(_sym_info, "filling_mode", 0)
+            if fm == 1:
+                _filling = self._mt5.ORDER_FILLING_IOC
+            elif fm == 2:
+                _filling = self._mt5.ORDER_FILLING_RETURN
+
         req = {
             "action": self._mt5.TRADE_ACTION_DEAL,
             "symbol": sym,
@@ -166,7 +182,7 @@ class MT5Broker(BrokerConnector):
             "type": self._mt5.ORDER_TYPE_BUY if is_buy else self._mt5.ORDER_TYPE_SELL,
             "deviation": 20,
             "magic": self.magic,
-            "type_filling": self._mt5.ORDER_FILLING_FOK,
+            "type_filling": _filling,
             "type_time": self._mt5.ORDER_TIME_GTC,
         }
         # FAZE 0.3: strategy attribution via MT5 comment field
