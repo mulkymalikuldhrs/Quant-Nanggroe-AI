@@ -296,6 +296,15 @@ class CandleScheduler:
                     tick_count, total_closes, len(self._candle_states),
                     stats.get("empty", "?"), stats.get("total", "?"),
                 )
+            # JournalSync every hour (3600 ticks at 1s interval).
+            # Runs HERE in the scheduler thread where MT5 is initialized.
+            if tick_count % 3600 == 0:
+                try:
+                    from quant_nanggroe.engine.journal_sync import async_sync_mt5_deals
+                    res = await async_sync_mt5_deals()
+                    logger.info("JournalSync: %s", res)
+                except Exception as _je:
+                    logger.warning("JournalSync failed: %s", _je)
             await asyncio.sleep(self.tick_interval)
 
     def _get_broker_mt5(self):
@@ -322,22 +331,21 @@ class CandleScheduler:
     def _check_all_closes_sync(self, symbols: list[str]) -> list[tuple[str, str, float]]:
         """Synchronous bar-time scan returning detected closes.
 
-        Runs INSIDE the executor thread — must not touch the event loop.
-        """
-        import MetaTrader5 as mt5
+        Runs in the scheduler thread (same thread that called mt5.initialize).
 
+        v8.0.11 FIX: Use broker.get_rates() as primary data source — it routes
+        through the broker's own MT5 handle (initialized once at startup) and
+        resolves symbol suffixes (.vxc etc.) automatically. Bare MT5 module
+        loses IPC connection between probes, causing 32/32 EMPTY.
+        """
         now = time.time()
         closes_detected = []
         empty_count = 0
 
-        # Use bare MT5 for bar-time probes — broker.get_rates was
-        # returning empty for 32 pairs while bare copy_rates succeeds for
-        # single probes (IPC session mismatch). Bare is proven to work.
+        broker = self._get_broker_mt5()
+        use_broker = broker is not None and getattr(broker, "connected", False)
+
         for sym in symbols:
-            try:
-                mt5.symbol_select(sym, True)
-            except Exception:
-                pass
             for tf in self.timeframes:
                 key = f"{sym}:{tf}"
                 state = self._candle_states.get(key)
@@ -346,14 +354,23 @@ class CandleScheduler:
 
                 tf_enum = MT5_TF_MAP.get(tf, 16408)
                 try:
-                    rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
-                    if not rates or len(rates) < 1:
+                    if use_broker:
+                        rates = broker.get_rates(sym, tf_enum, count=2)
+                    else:
+                        import MetaTrader5 as mt5
+                        mt5.symbol_select(sym, True)
+                        rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
+
+                    if rates is None or len(rates) < 1:
                         empty_count += 1
                         continue
+
                     current_bar_time = float(rates[-1][0])
-                    if current_bar_time > state.last_close_time and state.last_close_time > 0:
+                    if state.last_close_time == 0:
+                        state.last_close_time = current_bar_time
+                    elif current_bar_time > state.last_close_time:
                         closes_detected.append((sym, tf, current_bar_time))
-                    state.last_close_time = current_bar_time
+                        state.last_close_time = current_bar_time
                     state.last_check = now
                 except Exception:
                     empty_count += 1
@@ -361,8 +378,6 @@ class CandleScheduler:
         self._last_probe_stats = {"empty": empty_count,
                                   "total": len(symbols) * len(self.timeframes)}
         if empty_count and not closes_detected:
-            # First few diagnostics so a dead feed is VISIBLE, then throttled
-            # by heartbeat stats.
             if not getattr(self, "_warned_empty", False):
                 logger.warning(
                     "Bar probe returning EMPTY for %d/%d pairs — check "
@@ -370,13 +385,12 @@ class CandleScheduler:
                     empty_count, len(symbols) * len(self.timeframes),
                 )
                 self._warned_empty = True
-            # SELF-HEAL (2026-08-25): something kills the process-wide MT5
-            # IPC after boot; re-initializing REVIVES rates (proven live:
-            # re-init=True -> probe 2 bars). Retry every ~60s while dead.
+            # SELF-HEAL: re-init bare MT5 and probe single pair to verify IPC
             now_mono = time.monotonic()
             if now_mono - getattr(self, "_last_reinit", 0.0) > 60.0:
                 self._last_reinit = now_mono
                 try:
+                    import MetaTrader5 as mt5
                     ok = mt5.initialize()
                     probe = mt5.copy_rates_from_pos(
                         symbols[0], MT5_TF_MAP.get("M15", 15), 0, 2)
@@ -386,7 +400,7 @@ class CandleScheduler:
                         ok, symbols[0], got,
                     )
                     if got:
-                        self._warned_empty = False  # recovered — allow future warnings
+                        self._warned_empty = False
                 except Exception as _he:
                     logger.error("SELF-HEAL failed: %s", _he)
         return closes_detected
@@ -425,34 +439,41 @@ class CandleScheduler:
         return ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "NZDUSD", "USDCHF", "EURGBP"]
 
     async def _init_candle_states(self, symbols: list[str]) -> None:
-        """Initialize candle states with current bar close times."""
-        try:
-            import MetaTrader5 as mt5
-            from quant_nanggroe.connectors.mt5_broker import MT5Broker
-            for sym in symbols:
-                for tf in self.timeframes:
-                    key = f"{sym}:{tf}"
-                    tf_enum = MT5_TF_MAP.get(tf, 16408)  # default D1
-                    try:
+        """Initialize candle states with current bar close times.
+
+        v8.0.11: Use broker.get_rates() which resolves suffixes and reconnects.
+        """
+        broker = self._get_broker_mt5()
+        use_broker = broker is not None and getattr(broker, "connected", False)
+        init_count = 0
+        for sym in symbols:
+            for tf in self.timeframes:
+                key = f"{sym}:{tf}"
+                tf_enum = MT5_TF_MAP.get(tf, 16408)
+                try:
+                    if use_broker:
+                        rates = broker.get_rates(sym, tf_enum, count=2)
+                    else:
+                        import MetaTrader5 as mt5
+                        mt5.symbol_select(sym, True)
                         rates = mt5.copy_rates_from_pos(sym, tf_enum, 0, 2)
-                        if rates and len(rates) >= 1:
-                            # Last closed candle time
-                            last_close = float(rates[-1][0])  # time column
-                            self._candle_states[key] = CandleState(
-                                symbol=sym, timeframe=tf,
-                                last_close_time=last_close,
-                            )
-                        else:
-                            self._candle_states[key] = CandleState(
-                                symbol=sym, timeframe=tf, last_close_time=0,
-                            )
-                    except Exception:
+                    if rates is not None and len(rates) >= 1:
+                        last_close = float(rates[-1][0])
+                        self._candle_states[key] = CandleState(
+                            symbol=sym, timeframe=tf,
+                            last_close_time=last_close,
+                        )
+                        init_count += 1
+                    else:
                         self._candle_states[key] = CandleState(
                             symbol=sym, timeframe=tf, last_close_time=0,
                         )
-            logger.info("Initialized %d candle states", len(self._candle_states))
-        except Exception as exc:
-            logger.warning("Candle state init failed: %s", exc)
+                except Exception:
+                    self._candle_states[key] = CandleState(
+                        symbol=sym, timeframe=tf, last_close_time=0,
+                    )
+        logger.info("Initialized %d/%d candle states (broker=%s)",
+                     init_count, len(symbols) * len(self.timeframes), use_broker)
 
     async def _check_all_closes(self, symbols: list[str]) -> None:
         """Check all symbol+TF pairs for candle closes."""

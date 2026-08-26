@@ -1,5 +1,24 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.11 — Autonomous Pipeline + Candle Close + JournalSync Thread-Safe (2026-08-26)
+
+> Root cause: system ran 3+ hours with zero trades despite $1,720 live balance. 4 chained bugs blocked entire autonomous pipeline.
+
+### 🔴 Trading unblocked (zero-trades root causes)
+- **Candle close detection broken** — `_check_all_closes_sync` used bare `mt5.copy_rates_from_pos` which loses IPC connection between probes. Self-heal single-pair probe succeeded (2 bars) but batch 32/32 returned EMPTY. Fix: use `broker.get_rates()` as primary data source (handles suffixes + reconnection); init states also use broker. Result: candle closes now detected.
+- **Autonomous pipeline `discover_all` missing** — `AutoRegistry` has `scan_all()` not `discover_all()`. AttributeError silently disabled all auto-discovery → zero signals generated. Fix: `discover_all()` → `scan_all()`. 15/15 tests pass.
+- **MT5 data fetch numpy boolean** — `if raw:` on numpy array with >1 element raises `ValueError: truth value ambiguous`. Every MT5 data fetch silently failed → zero data for strategies. Fix: `if raw:` → `if raw is not None and len(raw) >= 50:`. 15/15 tests pass.
+
+### 🟠 JournalSync thread-safe
+- **MT5 C-API not thread-safe** — daemon thread called `mt5.history_deals_get()` which crashed silently (no output, no exception). `qna_trade_journal.db` remained 0 bytes despite 147 deals on MT5. Fix: moved JournalSync into CandleScheduler's asyncio event loop (runs on scheduler thread where MT5 is initialized). Added `async_sync_mt5_deals()` wrapper + `deals` parameter for pre-fetched data. Removed broken daemon thread from `qna.py`.
+
+### 🧪 Tests
+- **15/15 candle scheduler tests pass**
+- **15/15 ML pipeline tests pass**
+- All compile checks pass
+
+---
+
 ## v8.0.10 — MT5 Data Pipeline + Candle Scheduler Thread Fix (2026-08-25)
 
 > Root cause analysis: QNA was not trading due to 5 chained critical issues across the data pipeline.

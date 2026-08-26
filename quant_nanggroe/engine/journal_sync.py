@@ -36,6 +36,35 @@ def _ensure_schema(db_path):
     con.execute(
         "CREATE TABLE IF NOT EXISTS _sync_meta"
         " (key TEXT PRIMARY KEY, value TEXT)")
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket INTEGER UNIQUE,
+            strategy TEXT DEFAULT 'unknown',
+            symbol TEXT NOT NULL,
+            side TEXT DEFAULT 'buy',
+            entry REAL DEFAULT 0.0,
+            sl REAL,
+            tp REAL,
+            confidence REAL DEFAULT 0.0,
+            open_time INTEGER,
+            close_time INTEGER,
+            exit_price REAL DEFAULT 0.0,
+            pnl REAL DEFAULT 0.0,
+            outcome TEXT DEFAULT 'breakeven',
+            comment TEXT DEFAULT '',
+            hypothesis TEXT DEFAULT '',
+            setup_ctx TEXT DEFAULT '',
+            close_reason TEXT DEFAULT '',
+            hit_type TEXT DEFAULT '',
+            market_ctx TEXT DEFAULT '',
+            tf_category TEXT DEFAULT 'intraday'
+        )
+    """)
+    con.execute("CREATE INDEX IF NOT EXISTS idx_trades_ticket ON trades(ticket)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_trades_strategy ON trades(strategy)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_trades_open_time ON trades(open_time)")
     con.commit()
     con.close()
 
@@ -101,55 +130,71 @@ def _attribute_strategy(magic, comment, symbol):
 
 
 
-def sync_mt5_deals(backfill_days: int = 0) -> Dict[str, Any]:
-    """Pull closed deals from active MT5 terminal into the trade journal."""
-    try:
-        import MetaTrader5 as mt5
-    except ImportError:
-        logger.error("MetaTrader5 lib missing - cannot sync")
-        return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
-                "errors": ["MetaTrader5 not installed"]}
+def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
+    """Pull closed deals from active MT5 terminal into the trade journal.
 
-    # Initialize MT5 — attach to already-logged-in terminal session
-    if not mt5.initialize():
-        err = mt5.last_error()
-        logger.error("MT5 initialize failed: %s", err)
-        return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
-                "errors": [f"MT5 init failed: {err}"]}
-    acct = mt5.account_info()
-    if acct:
-        logger.info("Journal sync on account %s (%s)", acct.login, acct.server)
+    v8.0.11 FIX: Accept optional ``deals`` parameter to avoid calling
+    MT5 C-API from daemon threads (not thread-safe). Caller in
+    CandleScheduler's asyncio loop fetches deals on the main thread
+    and passes them here.
 
+    Args:
+        backfill_days: If >0, override last-sync and look back this many days.
+        deals: Pre-fetched MT5 deal objects. If None, fetch via mt5 module.
+    """
     db_path = _get_db()
     _ensure_schema(db_path)
-    con = sqlite3.connect(str(db_path))
-    con.row_factory = sqlite3.Row
 
-    now = time.time()
-    last_sync = _read_last_sync(con)
-    if backfill_days > 0:
-        from_dt = datetime.now(timezone.utc) - timedelta(days=backfill_days)
-    elif last_sync > 0:
-        from_dt = datetime.fromtimestamp(last_sync, tz=timezone.utc) - timedelta(hours=1)
+    if deals is None:
+        try:
+            import MetaTrader5 as mt5
+        except ImportError:
+            logger.error("MetaTrader5 lib missing - cannot sync")
+            return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
+                    "errors": ["MetaTrader5 not installed"]}
+
+        if not mt5.initialize():
+            err = mt5.last_error()
+            logger.error("MT5 initialize failed: %s", err)
+            return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
+                    "errors": [f"MT5 init failed: {err}"]}
+        acct = mt5.account_info()
+        if acct:
+            logger.info("Journal sync on account %s (%s)", acct.login, acct.server)
+
+        con = sqlite3.connect(str(db_path))
+        con.row_factory = sqlite3.Row
+
+        now = time.time()
+        last_sync = _read_last_sync(con)
+        if backfill_days > 0:
+            from_dt = datetime.now(timezone.utc) - timedelta(days=backfill_days)
+        elif last_sync > 0:
+            from_dt = datetime.fromtimestamp(last_sync, tz=timezone.utc) - timedelta(hours=1)
+        else:
+            from_dt = datetime.now(timezone.utc) - timedelta(days=365)
+
+        to_dt = datetime.now(timezone.utc)
+
+        try:
+            deals = mt5.history_deals_get(from_dt, to_dt)
+        except Exception as e:
+            logger.error("history_deals_get failed: %s", e)
+            con.close()
+            return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
+                    "errors": [str(e)]}
+
+        if not deals:
+            logger.info("No new MT5 deals found (%s to %s)", from_dt.date(), to_dt.date())
+            _write_last_sync(con, now)
+            con.close()
+            return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
+                    "errors": []}
     else:
-        from_dt = datetime.now(timezone.utc) - timedelta(days=365)
-
-    to_dt = datetime.now(timezone.utc)
-
-    try:
-        deals = mt5.history_deals_get(from_dt, to_dt)
-    except Exception as e:
-        logger.error("history_deals_get failed: %s", e)
-        con.close()
-        return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
-                "errors": [str(e)]}
-
-    if not deals:
-        logger.info("No new MT5 deals found (%s to %s)", from_dt.date(), to_dt.date())
-        _write_last_sync(con, now)
-        con.close()
-        return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
-                "errors": []}
+        con = sqlite3.connect(str(db_path))
+        con.row_factory = sqlite3.Row
+        now = time.time()
+        logger.info("Journal sync using %d pre-fetched deals", len(deals))
 
     # Group by position_id: pair open+close
     position_map = {}
@@ -275,3 +320,26 @@ def get_journal_stats() -> Dict[str, Any]:
         }
     finally:
         con.close()
+
+
+async def async_sync_mt5_deals(backfill_days: int = 0) -> Dict[str, Any]:
+    """Async wrapper: fetch deals via broker's MT5 handle (thread-safe),
+    then pass to sync_mt5_deals for DB persistence.
+
+    v8.0.11: Runs inside CandleScheduler's asyncio event loop where MT5
+    is already initialized on the scheduler thread.
+    """
+    try:
+        from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+        import MetaTrader5 as _mt5
+        now = _dt.now(_tz.utc)
+        from_dt = (now - _td(days=backfill_days)) if backfill_days > 0 else (now - _td(days=365))
+        deals = _mt5.history_deals_get(from_dt, now)
+        if deals is None:
+            deals = []
+    except Exception as exc:
+        logger.error("async_sync: MT5 fetch failed: %s", exc)
+        return {"synced": 0, "inserted": 0, "updated": 0, "total_pnl": 0.0,
+                "errors": [str(exc)]}
+
+    return sync_mt5_deals(backfill_days=backfill_days, deals=deals)

@@ -710,7 +710,7 @@ class AutonomousPipeline:
                 if inits:
                     logger.info("Auto-generated %d __init__.py files", inits)
                 # Scan ALL directories WITHOUT base_class filter
-                discovered = self._auto_registry.discover_all()
+                discovered = self._auto_registry.scan_all()
                 total = self._auto_registry.count()
                 logger.info("AutoRegistry discovered %d components across %d dirs", total, len(discovered))
                 # Health check
@@ -1611,7 +1611,7 @@ class AutonomousPipeline:
                                    "H1": 16385, "H4": 16388, "D1": 16408}
                         _tf_enum = _tf_map.get(timeframe.upper(), 16408)
                         raw = b._mt5.get_rates(resolved, _tf_enum, 500)
-                        if raw and len(raw) >= 50:
+                        if raw is not None and len(raw) >= 50:
                             # R1 hotfix (2026-08-25): get_rates returns numpy
                             # structured records (np.void), not plain tuples.
                             # pd.DataFrame(raw, columns=[...]) on those raised

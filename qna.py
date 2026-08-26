@@ -37,7 +37,7 @@ if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
     os.environ["PYTHONPATH"] = ";".join(clean)
     sys.path = [p for p in sys.path if "hermes" not in p.lower()]
-__version__ = "8.0.10"
+__version__ = "8.0.11"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────
@@ -452,38 +452,9 @@ def run_daemon(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.warning("AutoRetrainer init skipped: %s", e)
 
-    # ── Start Journal Sync thread (F9: MT5 deals → journal, hourly) ──
-    _journal_thread = None
-    try:
-        from quant_nanggroe.engine.journal_sync import sync_mt5_deals
-        import threading as _threading
-
-        def _journal_loop():
-            # First sync after boot grace, then hourly. Feeds the scorecard /
-            # lifecycle feedback loop that starves under the candle scheduler.
-            _stop = getattr(daemon_holder, "stop", False)
-            while not _stop:
-                try:
-                    res = sync_mt5_deals()
-                    logger.info("JournalSync: %s", res)
-                except Exception as e:
-                    logger.warning("JournalSync failed: %s", e)
-                for _ in range(3600):
-                    if getattr(daemon_holder, "stop", False):
-                        return
-                    time.sleep(1)
-
-        class _DaemonHolder:
-            stop = False
-
-        daemon_holder = _DaemonHolder()
-        _journal_thread = _threading.Thread(
-            target=_journal_loop, daemon=True, name="qna-journal-sync")
-        _journal_thread.start()
-        logger.info("JournalSync thread started (hourly)")
-    except Exception as e:
-        logger.warning("JournalSync init skipped: %s", e)
-        daemon_holder = None
+    # ── Journal Sync: now runs inside CandleScheduler's asyncio loop ──
+    # (MT5 C-API is not thread-safe; daemon thread approach silently crashed)
+    logger.info("JournalSync: integrated into CandleScheduler event loop (hourly)")
 
     daemon = DaemonRunner(agents)
     try:
@@ -492,8 +463,7 @@ def run_daemon(args: argparse.Namespace) -> int:
         logger.info("Shutdown requested...")
     finally:
         daemon.stop_all()
-        if daemon_holder is not None:
-            daemon_holder.stop = True
+        # JournalSync is now in CandleScheduler's loop — no daemon thread to stop
         if _retrainer is not None:
             try:
                 _retrainer.stop()
