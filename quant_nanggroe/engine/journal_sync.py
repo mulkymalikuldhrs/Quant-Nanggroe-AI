@@ -65,8 +65,84 @@ def _ensure_schema(db_path):
     con.execute("CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_trades_strategy ON trades(strategy)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_trades_open_time ON trades(open_time)")
+    # Signal context: stores sl/tp/confidence from pipeline, linked to deals via ticket
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS signal_context (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            strategy TEXT DEFAULT 'unknown',
+            entry_price REAL DEFAULT 0.0,
+            sl REAL DEFAULT 0.0,
+            tp REAL DEFAULT 0.0,
+            confidence REAL DEFAULT 0.0,
+            atr REAL DEFAULT 0.0,
+            lot_size REAL DEFAULT 0.01,
+            timestamp TEXT NOT NULL,
+            ticket INTEGER,
+            filled INTEGER DEFAULT 0,
+            pnl REAL DEFAULT 0.0,
+            outcome TEXT DEFAULT '',
+            hit_type TEXT DEFAULT ''
+        )
+    """)
+    con.execute("CREATE INDEX IF NOT EXISTS idx_sigctx_symbol ON signal_context(symbol)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_sigctx_ticket ON signal_context(ticket)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_sigctx_timestamp ON signal_context(timestamp)")
     con.commit()
     con.close()
+
+
+def record_signal_context(symbol: str, strategy: str, entry_price: float,
+                          sl: float, tp: float, confidence: float,
+                          atr: float = 0.0, lot_size: float = 0.01) -> None:
+    """Record signal context (sl/tp/confidence) for later linking to MT5 deals."""
+    try:
+        con = sqlite3.connect(str(_get_db()))
+        con.execute(
+            """INSERT INTO signal_context
+               (symbol, strategy, entry_price, sl, tp, confidence, atr, lot_size, timestamp)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (symbol, strategy, entry_price, sl, tp, confidence, atr, lot_size,
+             datetime.now(timezone.utc).isoformat()))
+        con.commit()
+        con.close()
+    except Exception as exc:
+        logger.warning("record_signal_context failed: %s", exc)
+
+
+def link_signal_to_ticket(symbol: str, entry_price: float, ticket: int,
+                          tolerance: float = 0.001) -> bool:
+    """Link an unfilled signal_context to an MT5 deal ticket by symbol+price match."""
+    try:
+        con = sqlite3.connect(str(_get_db()))
+        row = con.execute(
+            """SELECT id FROM signal_context
+               WHERE symbol=? AND ticket IS NULL
+                 AND ABS(entry_price - ?) < ?
+               ORDER BY timestamp DESC LIMIT 1""",
+            (symbol, entry_price, tolerance)).fetchone()
+        if row:
+            con.execute("UPDATE signal_context SET ticket=? WHERE id=?", (ticket, row[0]))
+            con.commit()
+            con.close()
+            return True
+        con.close()
+    except Exception:
+        pass
+    return False
+
+
+def get_signal_context_by_ticket(ticket: int) -> dict | None:
+    """Retrieve signal context for a given MT5 ticket."""
+    try:
+        con = sqlite3.connect(str(_get_db()))
+        con.row_factory = sqlite3.Row
+        row = con.execute(
+            "SELECT * FROM signal_context WHERE ticket=?", (ticket,)).fetchone()
+        con.close()
+        return dict(row) if row else None
+    except Exception:
+        return None
 
 
 def _read_last_sync(con):
@@ -247,13 +323,39 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
                 "SELECT ticket, pnl FROM trades WHERE ticket=?", (ticket,)
             ).fetchone()
 
+            # Look up signal context (sl/tp/confidence) from pipeline
+            sig_ctx = None
+            try:
+                sig_row = con.execute(
+                    """SELECT sl, tp, confidence, atr, lot_size FROM signal_context
+                       WHERE symbol=? AND ticket IS NULL
+                         AND ABS(entry_price - ?) < 0.002
+                       ORDER BY timestamp DESC LIMIT 1""",
+                    (symbol, entry_price)).fetchone()
+                if sig_row:
+                    sig_ctx = {"sl": sig_row[0], "tp": sig_row[1],
+                               "confidence": sig_row[2], "atr": sig_row[3],
+                               "lot_size": sig_row[4]}
+                    # Link ticket back to signal context
+                    con.execute(
+                        "UPDATE signal_context SET ticket=?, filled=1, pnl=?, outcome=?, hit_type=? WHERE rowid=?",
+                        (ticket, pnl, outcome, hit_type, sig_row.rowid if hasattr(sig_row, 'rowid') else None))
+            except Exception:
+                pass
+
+            _sl = sig_ctx["sl"] if sig_ctx else None
+            _tp = sig_ctx["tp"] if sig_ctx else None
+            _conf = sig_ctx["confidence"] if sig_ctx else 0.0
+
             if existing:
                 if existing["pnl"] is None or existing["pnl"] == 0.0:
                     con.execute(
                         """UPDATE trades SET close_time=?, exit_price=?,
-                           pnl=?, outcome=?, close_reason=?, hit_type=?
+                           pnl=?, outcome=?, close_reason=?, hit_type=?,
+                           sl=?, tp=?, confidence=?
                            WHERE ticket=?""",
-                        (close_ts, exit_price, pnl, outcome, close_reason, hit_type, ticket))
+                        (close_ts, exit_price, pnl, outcome, close_reason, hit_type,
+                         _sl, _tp, _conf, ticket))
                     updated += 1
             else:
                 con.execute(
@@ -263,7 +365,7 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
                        close_reason, hit_type, market_ctx, tf_category)
                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (ticket, strategy, symbol, side, entry_price,
-                     None, None, 0.0, open_ts, close_ts, exit_price,
+                     _sl, _tp, _conf, open_ts, close_ts, exit_price,
                      pnl, outcome, comment, f"magic={magic}", "",
                      close_reason, hit_type, "", "intraday"))
                 inserted += 1

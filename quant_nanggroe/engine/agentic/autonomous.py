@@ -1178,6 +1178,18 @@ class AutonomousPipeline:
                             "atr": atr_value,
                         }
                         self._strategy_logger.log_trigger(log_entry)
+                        # Record signal context for journal_sync linking
+                        try:
+                            from quant_nanggroe.engine.journal_sync import record_signal_context
+                            _sl = exec_decision.get("sl", 0.0)
+                            _tp = exec_decision.get("tp", 0.0)
+                            _lot = risk_metrics.get("lot_size", 0.01)
+                            record_signal_context(
+                                symbol=symbol, strategy=trigger_strategy,
+                                entry_price=current_price, sl=_sl, tp=_tp,
+                                confidence=confidence, atr=atr_value, lot_size=_lot)
+                        except Exception:
+                            pass
                     except Exception as exc:
                         logger.warning("StrategyLogger failed: %s", exc)
 
