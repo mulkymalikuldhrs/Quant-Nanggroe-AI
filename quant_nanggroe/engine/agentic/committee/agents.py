@@ -203,6 +203,17 @@ class MacroAnalyst(BaseAgent):
             evidence.append(f"Range-bound regime → mean reversion bias")
             score += 0.1
 
+        # Data pipeline sentiment
+        try:
+            from quant_nanggroe.engine.agentic.data_pipeline import DataPipeline
+            pipeline = DataPipeline()
+            sentiment = pipeline.get_sentiment(symbol)
+            if sentiment.confidence > 0.3:
+                evidence.append(f"News sentiment: {sentiment.news_sentiment:+.2f}, COT bias: {sentiment.cot_bias:+.2f}")
+                score += sentiment.overall_score * 0.2
+        except Exception:
+            pass
+
         # Session timing (forex)
         if "XAU" not in symbol and "BTC" not in symbol:
             from datetime import datetime, timezone
