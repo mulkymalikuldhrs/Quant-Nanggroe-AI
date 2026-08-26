@@ -58,10 +58,49 @@ def _ks_read(path: Path) -> Optional[dict]:
 
 
 def _ks_write(path: Path, data: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(data, default=str), encoding="utf-8")
-    os.replace(tmp, path)  # atomic on POSIX + Windows
+    # Cross-process mutual exclusion on a sidecar lock file (HIGH-1 fix):
+    # the shared JSON state file was previously last-writer-wins across OS
+    # processes (split-brain under multi-worker uvicorn). Serialize writers
+    # via the platform file lock so concurrent activate()/deactivate() calls
+    # cannot silently drop each other's update. Non-blocking + fail-safe:
+    # if the lock cannot be obtained we still write (preserving prior behavior)
+    # but warn — never deadlock the kill switch.
+    lock_path = path.with_name(path.name + ".lock")
+    acquired = False
+    lock_fh = None
+    try:
+        lock_fh = open(lock_path, "wb")
+        try:
+            if os.name == "nt":
+                import msvcrt
+                try:
+                    msvcrt.locking(lock_fh.fileno(), msvcrt.LK_NBLCK, 1)
+                    acquired = True
+                except OSError:
+                    logger.warning("Kill switch: cross-proc lock busy — writing without it (race possible)")
+            else:
+                import fcntl
+                fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = True
+        except ImportError:
+            pass  # platform has neither primitive — degrade gracefully
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(data, default=str), encoding="utf-8")
+        os.replace(tmp, path)  # atomic on POSIX + Windows
+    finally:
+        if acquired and lock_fh is not None:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    msvcrt.locking(lock_fh.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
+            except (ImportError, OSError):
+                pass
+        if lock_fh is not None:
+            lock_fh.close()
 
 
 def configure_kill_switch_file(path: Optional[str] = None) -> None:
