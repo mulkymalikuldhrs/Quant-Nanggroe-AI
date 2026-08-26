@@ -252,22 +252,34 @@ class RiskOfficer(BaseAgent):
         evidence = []
         approved = True
 
+        # Use real risk constants from engine.risk.constants
+        try:
+            from quant_nanggroe.engine.risk.constants import (
+                MAX_RISK_PER_TRADE, DAILY_LOSS_LIMIT, WEEKLY_LOSS_LIMIT)
+            max_risk_pct = MAX_RISK_PER_TRADE  # 0.5%
+            daily_limit = DAILY_LOSS_LIMIT      # 1%
+            weekly_limit = WEEKLY_LOSS_LIMIT    # 3%
+        except ImportError:
+            max_risk_pct = 0.005
+            daily_limit = 0.01
+            weekly_limit = 0.03
+
         portfolio_state = kwargs.get("portfolio_state", {})
         current_equity = portfolio_state.get("equity", 0)
         daily_pnl = portfolio_state.get("daily_pnl", 0)
         open_positions = portfolio_state.get("open_positions", 0)
         max_drawdown = portfolio_state.get("max_drawdown", 0)
 
-        # Daily loss limit (1%)
+        # Daily loss limit
         if current_equity > 0 and daily_pnl < 0:
             daily_loss_pct = abs(daily_pnl) / current_equity
-            if daily_loss_pct >= 0.01:
-                evidence.append(f"Daily loss limit hit: {daily_loss_pct:.2%} >= 1%")
+            if daily_loss_pct >= daily_limit:
+                evidence.append(f"Daily loss limit hit: {daily_loss_pct:.2%} >= {daily_limit:.0%}")
                 approved = False
 
-        # Max drawdown (3%)
-        if max_drawdown >= 0.03:
-            evidence.append(f"Max drawdown breached: {max_drawdown:.2%} >= 3%")
+        # Max drawdown
+        if max_drawdown >= weekly_limit:
+            evidence.append(f"Max drawdown breached: {max_drawdown:.2%} >= {weekly_limit:.0%}")
             approved = False
 
         # Max open positions (5)

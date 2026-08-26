@@ -478,6 +478,14 @@ class PipelineResult:
     signal: str = "hold"
     confidence: float = 0.0
     reason: str = ""
+    steps: list = field(default_factory=list)
+    decision: dict = field(default_factory=dict)
+    timestamp: str = ""
+    sla: dict = field(default_factory=dict)
+    strategy: str = ""
+    self_reflection: Any = None
+    confidence: float = 0.0
+    reason: str = ""
     steps: list[PipelineStep] = field(default_factory=list)
     decision: dict[str, Any] = field(default_factory=dict)
     timestamp: str = ""
@@ -1051,11 +1059,12 @@ class AutonomousPipeline:
                 _atr_for_comm = self._compute_atr(df) if df is not None else 0.0
                 portfolio_state = {}
                 try:
+                    rm_state = self._em._risk_manager.state if self._em and hasattr(self._em, '_risk_manager') else None
                     portfolio_state = {
-                        "equity": em._risk_manager.state.current_equity if em and hasattr(em, '_risk_manager') else 0,
-                        "daily_pnl": 0,
-                        "open_positions": 0,
-                        "max_drawdown": 0,
+                        "equity": rm_state.current_equity if rm_state else 0,
+                        "daily_pnl": rm_state.daily_pnl if rm_state else 0,
+                        "open_positions": rm_state.open_positions if rm_state else 0,
+                        "max_drawdown": rm_state.max_drawdown if rm_state else 0,
                     }
                 except Exception:
                     pass
@@ -1224,20 +1233,22 @@ class AutonomousPipeline:
                             "atr": atr_value,
                         }
                         self._strategy_logger.log_trigger(log_entry)
-                        # Record signal context for journal_sync linking
-                        try:
-                            from quant_nanggroe.engine.journal_sync import record_signal_context
-                            _sl = exec_decision.get("sl", 0.0)
-                            _tp = exec_decision.get("tp", 0.0)
-                            _lot = risk_metrics.get("lot_size", 0.01)
-                            record_signal_context(
-                                symbol=symbol, strategy=trigger_strategy,
-                                entry_price=current_price, sl=_sl, tp=_tp,
-                                confidence=confidence, atr=atr_value, lot_size=_lot)
-                        except Exception:
-                            pass
                     except Exception as exc:
                         logger.warning("StrategyLogger failed: %s", exc)
+
+                # Record signal context for journal_sync linking (always, not just when logger loaded)
+                if exec_decision.get("action") in ("buy", "sell"):
+                    try:
+                        from quant_nanggroe.engine.journal_sync import record_signal_context
+                        _sl = exec_decision.get("sl", 0.0)
+                        _tp = exec_decision.get("tp", 0.0)
+                        _lot = risk_metrics.get("lot_size", 0.01)
+                        record_signal_context(
+                            symbol=symbol, strategy=trigger_strategy,
+                            entry_price=current_price, sl=_sl, tp=_tp,
+                            confidence=confidence, atr=atr_value, lot_size=_lot)
+                    except Exception:
+                        pass
 
                 # ── Notification: send Telegram alert on trade execution ──
                 if exec_decision.get("action") in ("buy", "sell") and exec_decision.get("execution") == "filled":
@@ -1412,7 +1423,7 @@ class AutonomousPipeline:
                 admitted = admitted_for_symbol(symbol)
                 if admitted is not None:
                     all_names = [n for n in all_names if n in set(admitted)]
-                    log.info("CPCV allocation narrowed %s candidates to %d",
+                    logger.info("CPCV allocation narrowed %s candidates to %d",
                              symbol, len(all_names))
             except Exception as alloc_exc:
                 logger.debug("strategy allocation skipped: %s", alloc_exc)
@@ -1445,14 +1456,13 @@ class AutonomousPipeline:
             evaluator = StrategyEvaluator()
             candidates = [n for n in candidates if evaluator.is_strategy_enabled(n, symbol)]
             if len(candidates) < len(all_names):
-                log.info("Evaluator filtered %d disabled strategies for %s",
+                logger.info("Evaluator filtered %d disabled strategies for %s",
                          len(all_names) - len(candidates), symbol)
         except Exception as eval_exc:
             logger.debug("StrategyEvaluator skipped: %s", eval_exc)
 
         signals: list[tuple[str, float, str, str]] = []
         signals_named: list[tuple[str, float, str, str, str]] = []
-        signals: list[tuple[str, float, str, str]] = []
         for name in candidates:
             try:
                 strat = create_strategy(name, lifecycle=self._lifecycle)
@@ -1905,11 +1915,24 @@ class AutonomousPipeline:
             side = OrderSide.BUY if signal == "buy" else (OrderSide.SELL if signal == "sell" else None)
             if side is None:
                 return {"symbol": symbol, "action": signal, "confidence": round(confidence, 4), "position_size_pct": 0, "execution": "hold", "note": "signal=hold, no order"}
-            # FIX: use risk-computed lot size if available, else confidence-based fallback
+            # FIX: use risk-computed lot size if available, else ATR-based fallback
             if risk_lot_size > 0:
                 qty = risk_lot_size
             else:
-                qty = max(0.01, round(confidence * 0.05, 4))
+                # ATR-based fallback: risk 0.5% of equity, SL = 1.5 * ATR
+                try:
+                    _atr = self._compute_atr(df) if df is not None else 0.0
+                    _equity = em._risk_manager.state.current_equity if em and hasattr(em, '_risk_manager') else 1000
+                    _risk_amount = _equity * 0.005
+                    if _atr > 0 and current_price > 0:
+                        # Approximate pip value: 1 lot = 100000 units, 1 pip = 0.0001 for forex
+                        _pip_value = 10.0  # $10 per pip for 1 lot standard forex
+                        _sl_pips = (_atr * 1.5) / 0.0001 if current_price < 100 else (_atr * 1.5) / 0.01
+                        qty = max(0.01, min(1.0, round(_risk_amount / (_sl_pips * _pip_value), 2)))
+                    else:
+                        qty = 0.01
+                except Exception:
+                    qty = 0.01
             if current_price > 0:
                 for broker in em._brokers.values():
                     if hasattr(broker, 'set_price'):

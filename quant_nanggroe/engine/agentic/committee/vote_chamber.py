@@ -71,11 +71,13 @@ class VoteChamber:
         """Run all analysts, collect votes, determine consensus."""
         vote = CommitteeVote(symbol=symbol, final_action="hold", final_confidence=0.0)
         all_evidence = []
+        real_votes = 0  # Track actual successful votes for quorum
 
         # 1. Run analysts (parallel-safe, all pure functions)
         try:
             vote.bull_vote = self.bull.analyze(symbol, df, **kwargs)
             all_evidence.extend([f"[BULL] {e}" for e in vote.bull_vote.evidence])
+            real_votes += 1
         except Exception as exc:
             logger.warning("Bull analyst failed for %s: %s", symbol, exc)
             vote.bull_vote = AgentVote("bull_analyst", "neutral", 0.0, [f"error: {exc}"])
@@ -83,6 +85,7 @@ class VoteChamber:
         try:
             vote.bear_vote = self.bear.analyze(symbol, df, **kwargs)
             all_evidence.extend([f"[BEAR] {e}" for e in vote.bear_vote.evidence])
+            real_votes += 1
         except Exception as exc:
             logger.warning("Bear analyst failed for %s: %s", symbol, exc)
             vote.bear_vote = AgentVote("bear_analyst", "neutral", 0.0, [f"error: {exc}"])
@@ -90,13 +93,13 @@ class VoteChamber:
         try:
             vote.macro_vote = self.macro.analyze(symbol, df, **kwargs)
             all_evidence.extend([f"[MACRO] {e}" for e in vote.macro_vote.evidence])
+            real_votes += 1
         except Exception as exc:
             logger.warning("Macro analyst failed for %s: %s", symbol, exc)
             vote.macro_vote = AgentVote("macro_analyst", "neutral", 0.0, [f"error: {exc}"])
 
-        # 2. Quorum check
-        votes = [v for v in [vote.bull_vote, vote.bear_vote, vote.macro_vote] if v]
-        vote.quorum_met = len(votes) >= QUORUM
+        # 2. Quorum check — only real votes count, not error fallbacks
+        vote.quorum_met = real_votes >= QUORUM
 
         if not vote.quorum_met:
             vote.all_evidence = all_evidence
