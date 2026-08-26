@@ -484,8 +484,6 @@ class PipelineResult:
     sla: dict = field(default_factory=dict)
     strategy: str = ""
     self_reflection: Any = None
-    confidence: float = 0.0
-    reason: str = ""
     steps: list[PipelineStep] = field(default_factory=list)
     decision: dict[str, Any] = field(default_factory=dict)
     timestamp: str = ""

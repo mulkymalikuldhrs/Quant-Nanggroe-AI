@@ -682,7 +682,7 @@ class CandleScheduler:
             )
 
             signal = result.signal if hasattr(result, "signal") else "hold"
-            confidence = result.decision.get("confidence", 0.0) if hasattr(result, "decision") else 0.0
+            confidence = getattr(result, "confidence", 0.0) if hasattr(result, "confidence") else result.decision.get("confidence", 0.0)
             # R3 hotfix: traded must come from the ACTUAL execution verdict,
             # not pipeline success (a risk-vetoed/rejected order reported
             # success and produced fake "TRADE EXECUTED" alerts).
