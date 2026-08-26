@@ -1041,6 +1041,52 @@ class AutonomousPipeline:
                 s25.error = str(exc)
             steps.append(s25)
 
+            # ── Step 2.6: Committee Per-Pair Debate ─────────────────────
+            s26 = PipelineStep(name="committee_debate")
+            try:
+                s26.status = "running"
+                t0 = time.perf_counter()
+                from quant_nanggroe.engine.agentic.committee import VoteChamber
+                chamber = VoteChamber()
+                _atr_for_comm = self._compute_atr(df) if df is not None else 0.0
+                portfolio_state = {}
+                try:
+                    portfolio_state = {
+                        "equity": em._risk_manager.state.current_equity if em and hasattr(em, '_risk_manager') else 0,
+                        "daily_pnl": 0,
+                        "open_positions": 0,
+                        "max_drawdown": 0,
+                    }
+                except Exception:
+                    pass
+                committee_vote = chamber.convene(
+                    symbol, df,
+                    entry_price=current_price,
+                    atr=_atr_for_comm,
+                    regime=regime,
+                    timeframe=timeframe,
+                    lot_size=risk_metrics.get("lot_size", 0.01) if 'risk_metrics' in dir() else 0.01,
+                    portfolio_state=portfolio_state)
+                s26.duration_ms = (time.perf_counter() - t0) * 1000
+                if committee_vote.risk_vetoed:
+                    s26.result = f"VETOED: {committee_vote.risk_reason}"
+                    s26.status = "failed"
+                elif committee_vote.final_action != "hold" and committee_vote.consensus_strength > 0.2:
+                    signal_type = committee_vote.final_action
+                    confidence = committee_vote.final_confidence
+                    result.signal = signal_type
+                    result.confidence = confidence
+                    s26.result = f"{signal_type} @ {confidence:.2f} (consensus={committee_vote.consensus_strength:.2f})"
+                    s26.status = "passed"
+                else:
+                    s26.result = f"HOLD (consensus={committee_vote.consensus_strength:.2f})"
+                    s26.status = "passed"
+                result.decision["committee"] = committee_vote.to_dict()
+            except Exception as exc:
+                s26.status = "skipped"
+                s26.error = str(exc)
+            steps.append(s26)
+
             # ── Step 2.75: Compute ATR early (used by risk + TP/SL) ─────
             _atr_for_risk = self._compute_atr(df) if df is not None else 0.0
             if _atr_for_risk <= 0 and current_price > 0:
