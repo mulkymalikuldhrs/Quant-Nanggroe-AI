@@ -746,6 +746,179 @@ export const configFilesApi = {
     }),
 };
 
+// ── Committee / Evaluator API ─────────────────────────────────────
+
+export const committeeApi = {
+  listDecisions: (limit = 50) =>
+    apiRequest<CommitteeDecision[]>(`/api/council/list?limit=${limit}`),
+  getStats: () =>
+    apiRequest<CommitteeStats>("/api/council/stats"),
+  getDecision: (id: string) =>
+    apiRequest<CommitteeDecision>(`/api/council/${id}`),
+  runDebate: (req: { symbol: string; strategy?: string }) =>
+    apiRequest<DebateResult>("/api/debate/new", { method: "POST", body: req }),
+  runWeightedVote: (req: { symbol: string; votes: AgentVote[] }) =>
+    apiRequest<DebateResult>("/api/debate/weighted", { method: "POST", body: req }),
+};
+
+export const evaluatorApi = {
+  getRegistry: () =>
+    apiRequest<StrategyRegistryEntry[]>("/api/strategy/registry"),
+  getStrategy: (name: string) =>
+    apiRequest<StrategyRegistryEntry>(`/api/strategy/registry/${name}`),
+  getEvolutionStatus: () =>
+    apiRequest<EvolutionStatus>("/api/backtest/evolution/status"),
+  getPipelineStatus: () =>
+    apiRequest<PipelineStatus>("/api/pipeline/status"),
+};
+
+export const causalApi = {
+  getStatus: () =>
+    apiRequest<CausalStatus>("/api/causal/status"),
+  getCotData: () =>
+    apiRequest<CotData>("/api/causal/cot"),
+  getMsi: () =>
+    apiRequest<MsiData>("/api/causal/msi"),
+  getSmtPairs: () =>
+    apiRequest<SmtPair[]>("/api/causal/smt/pairs"),
+  getThesis: () =>
+    apiRequest<ThesisData>("/api/causal/thesis"),
+  getBiases: () =>
+    apiRequest<BiasData[]>("/api/causal/biases"),
+  getMacroWeather: () =>
+    apiRequest<MacroWeather>("/api/causal/weather"),
+  getPipeline: () =>
+    apiRequest<CausalPipelineStage[]>("/api/causal/pipeline"),
+};
+
+// ── Committee Types ────────────────────────────────────────────────
+
+export interface AgentVote {
+  agent: string;
+  vote: "bull" | "bear" | "neutral";
+  confidence: number;
+  reasoning: string;
+}
+
+export interface CommitteeDecision {
+  id: string;
+  timestamp: string;
+  symbol: string;
+  decision: "BUY" | "SELL" | "HOLD" | "NO_TRADE";
+  confidence: number;
+  votes: AgentVote[];
+  risk_veto: boolean;
+  risk_reason?: string;
+}
+
+export interface CommitteeStats {
+  total_decisions: number;
+  buy_count: number;
+  sell_count: number;
+  hold_count: number;
+  no_trade_count: number;
+  avg_confidence: number;
+  risk_veto_count: number;
+}
+
+export interface DebateResult {
+  decision: string;
+  confidence: number;
+  votes: AgentVote[];
+  risk_veto: boolean;
+  reasoning: string;
+}
+
+export interface StrategyRegistryEntry {
+  name: string;
+  description: string;
+  category: string;
+  asset_classes: string[];
+  timeframes: string[];
+  enabled: boolean;
+}
+
+export interface EvolutionStatus {
+  total_strategies: number;
+  active_strategies: number;
+  disabled_strategies: number;
+  last_evaluation: string | null;
+  last_evolution: string | null;
+}
+
+export interface PipelineStatus {
+  running: boolean;
+  last_cycle: string | null;
+  cycle_count: number;
+  success_rate: number;
+  stages: Array<{
+    id: string;
+    name: string;
+    status: "active" | "idle" | "error" | "disabled";
+    last_run: string | null;
+  }>;
+}
+
+export interface CausalStatus {
+  running: boolean;
+  last_update: string | null;
+  components: Record<string, boolean>;
+}
+
+export interface CotData {
+  updated_at: string | null;
+  instruments: Array<{
+    name: string;
+    net_long: number;
+    net_short: number;
+    change_week: number;
+    sentiment: "bullish" | "bearish" | "neutral";
+  }>;
+}
+
+export interface MsiData {
+  value: number;
+  label: string;
+  components: Record<string, number>;
+}
+
+export interface SmtPair {
+  pair: string;
+  divergence: boolean;
+  strength: number;
+  description: string;
+}
+
+export interface ThesisData {
+  current_thesis: string;
+  confidence: number;
+  drift: number;
+  factors: string[];
+}
+
+export interface BiasData {
+  name: string;
+  direction: "bullish" | "bearish" | "neutral";
+  strength: number;
+  source: string;
+}
+
+export interface MacroWeather {
+  regime: string;
+  risk_on: boolean;
+  vix: number | null;
+  dxy: number | null;
+  yields: Record<string, number>;
+}
+
+export interface CausalPipelineStage {
+  id: string;
+  name: string;
+  status: "active" | "idle" | "error";
+  last_run: string | null;
+  data_points: number;
+}
+
 // ── Evolution Types ──────────────────────────────────────────────────
 
 export interface EvolutionApiResponse<T> {

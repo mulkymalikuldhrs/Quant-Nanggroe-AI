@@ -6,7 +6,7 @@ import {
   BarChart3, Sigma, Radio, Settings, ChevronLeft, ChevronRight,
   MemoryStick as Memory, Network, Cog, Shrink, Building2, Activity, GitBranch,
   Menu, X, ChevronRight as ArrowRight, Brain, Download, FileCode,
-  Flame, Bell, History,
+  Flame, Bell, History, Vote, Database,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,6 +38,9 @@ const navItems: NavItem[] = [
   { href: "/evolution", label: "Evolution", icon: GitBranch, category: "analysis" },
   { href: "/memory", label: "Memory", icon: Memory, category: "analysis" },
   { href: "/colony", label: "Colony", icon: Network, category: "analysis" },
+  { href: "/committee", label: "Committee", icon: Vote, category: "analysis", badge: "NEW" },
+  { href: "/evaluator", label: "Evaluator", icon: Sigma, category: "analysis", badge: "NEW" },
+  { href: "/data-pipeline", label: "Data Pipeline", icon: Database, category: "analysis", badge: "NEW" },
   { href: "/qna-status", label: "QNA Status", icon: Activity, category: "analysis" },
   { href: "/autonomous", label: "Autonomous", icon: Brain, category: "analysis", badge: "AI" },
   { href: "/candle-monitor", label: "Candle Monitor", icon: Flame, category: "trading", badge: "NEW" },
