@@ -20,25 +20,17 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-// ── Fallback data ──────────────────────────────────────────────────
-
-const FALLBACK_EVENTS: SecurityEvent[] = [
-  { id: "e1", type: "api_access", severity: "info", message: "API access from 192.168.1.1", timestamp: new Date().toISOString(), detail: "Authorized API request", agent: "trader" },
-  { id: "e2", type: "login", severity: "info", message: "User authenticated", timestamp: new Date(Date.now() - 3600000).toISOString(), detail: "Password auth successful", agent: "system" },
-  { id: "e3", type: "kill_switch", severity: "warning", message: "Kill switch triggered", timestamp: new Date(Date.now() - 7200000).toISOString(), detail: "Drawdown limit reached", agent: "risk" },
-  { id: "e4", type: "unauthorized", severity: "critical", message: "Unauthorized access attempt", timestamp: new Date(Date.now() - 10800000).toISOString(), detail: "Blocked IP 10.0.0.99", agent: "security" },
-  { id: "e5", type: "config_change", severity: "info", message: "Risk limits updated", timestamp: new Date(Date.now() - 14400000).toISOString(), detail: "Max drawdown changed to -5%", agent: "admin" },
-];
-
 function SecurityContent() {
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [status, setStatus] = useState<SecurityStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [backendUnavailable, setBackendUnavailable] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
+    setBackendUnavailable(false);
     try {
       const [evts, st] = await Promise.all([
         securityApi.getEvents(),
@@ -47,7 +39,10 @@ function SecurityContent() {
       setEvents(evts);
       setStatus(st);
     } catch {
-      // Keep fallback
+      setEvents([]);
+      setStatus(null);
+      setBackendUnavailable(true);
+      setError("Backend unavailable — security data could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -108,7 +103,13 @@ function SecurityContent() {
             {events.length === 0 ? (
               <div className="text-center py-8 text-white/30">
                 <ShieldCheck className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No security events</p>
+                <p className="text-sm">{backendUnavailable ? "No security events — backend unavailable" : "No security events"}</p>
+                {error && <p className="text-xs text-amber-400/70 mt-1">{error}</p>}
+                {backendUnavailable && (
+                  <Button variant="outline" size="sm" onClick={loadData} className="mt-3 gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry
+                  </Button>
+                )}
               </div>
             ) : (
               events.map((event) => (

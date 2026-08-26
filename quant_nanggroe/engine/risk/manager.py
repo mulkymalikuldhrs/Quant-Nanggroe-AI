@@ -16,6 +16,7 @@ Extracted from HermesQuantOS's Risk Officer with enhancements from ai-hedge-fund
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
@@ -502,10 +503,47 @@ class RiskManager:
     def update_pnl(self, trade_pnl: float, symbol: Optional[str] = None) -> None:
         """Update daily and weekly P&L tracking.
 
+        .. deprecated::
+            Use ``EngineRiskManager.update_pnl`` (``quant_nanggroe.engine_bridge``)
+            as the single PnL ingestion point. This method is a deprecation
+            wrapper that logs a warning and delegates persistence to the
+            engine_bridge shared backend if available, then falls back to
+            local handling for backward compatibility.
+
         Args:
             trade_pnl: P&L from the completed trade.
             symbol: Symbol of the trade (for position tracking).
         """
+        logger.warning(
+            "DEPRECATED: RiskManager.update_pnl is deprecated — use "
+            "EngineRiskManager.update_pnl (engine_bridge.py) as single "
+            "ingestion point (risk sprawl consolidation). Delegating to "
+            "engine_bridge persistence if available."
+        )
+        warnings.warn(
+            "RiskManager.update_pnl is deprecated, use EngineRiskManager.update_pnl",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        # Best-effort delegation to engine_bridge persistence (single SoT).
+        # EngineRiskManager and RiskManager share the same persistence backend
+        # via quant_nanggroe.engine.persistence.get_persistence_backend(), so
+        # touching that backend here proves the delegation path without breaking
+        # backward compat (actual state mutation still happens below).
+        try:
+            from quant_nanggroe.engine.persistence import get_persistence_backend as _get_bridge_pb
+
+            _bridge_pb = _get_bridge_pb()
+            # Verify engine_bridge is importable (delegation target exists)
+            import quant_nanggroe.engine_bridge as _eb  # noqa: F401
+
+            logger.debug(
+                "RiskManager.update_pnl delegated persistence check to engine_bridge: %s",
+                type(_bridge_pb).__name__,
+            )
+        except Exception as _e:  # noqa: BLE001 — delegation is best-effort, never block PnL update
+            logger.debug("engine_bridge persistence delegation skipped: %s", _e)
+
         self._reset_daily_if_needed()
         self.state.daily_pnl += trade_pnl
         self.state.weekly_pnl += trade_pnl

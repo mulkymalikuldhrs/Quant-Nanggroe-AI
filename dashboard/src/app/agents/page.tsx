@@ -24,21 +24,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-// Fallback agents when backend is unavailable
-const FALLBACK_AGENTS: Agent[] = [
-  { id: "research", name: "Research", status: "active", emotion: "curious", action: "Analyzing market trends", lastDecision: "Bullish on tech sector", icon: "🔬" },
-  { id: "market_intel", name: "Market Intel", status: "active", emotion: "focused", action: "Scanning news feeds", lastDecision: "Rate hike probability 65%", icon: "📡" },
-  { id: "macro", name: "Macro", status: "active", emotion: "analytical", action: "Processing economic data", lastDecision: "GDP growth revised down", icon: "🌍" },
-  { id: "strategy", name: "Strategy", status: "active", emotion: "confident", action: "Optimizing parameters", lastDecision: "Momentum factor overweight", icon: "🧠" },
-  { id: "portfolio", name: "Portfolio", status: "idle", emotion: "thoughtful", action: "Rebalancing in progress", lastDecision: "Reduce bond exposure", icon: "📊" },
-  { id: "risk", name: "Risk", status: "active", emotion: "cautious", action: "Monitoring VaR limits", lastDecision: "VaR within threshold", icon: "🛡️" },
-  { id: "crypto", name: "Crypto", status: "active", emotion: "excited", action: "Tracking on-chain data", lastDecision: "BTC accumulation zone", icon: "₿" },
-  { id: "forex", name: "Forex", status: "idle", emotion: "patient", action: "Waiting for setup", lastDecision: "EUR/USD range bound", icon: "💱" },
-  { id: "prediction", name: "Prediction", status: "active", emotion: "analytical", action: "Running ML models", lastDecision: "NVDA target $180", icon: "🔮" },
-  { id: "trader", name: "Trader", status: "active", emotion: "decisive", action: "Executing strategy signals", lastDecision: "BTC long entry $67,200", icon: "⚡" },
-  { id: "execution", name: "Execution", status: "idle", emotion: "neutral", action: "Awaiting orders", lastDecision: "No pending executions", icon: "🤖" },
-];
-
 // Agent graph visualization
 const AGENT_GRAPH = {
   nodes: [
@@ -233,9 +218,14 @@ function AgentsContent() {
         </div>
       ) : (
         <>
-          {/* Agent Grid */}
+          {/* Agent Grid — fail-closed: empty when backend unavailable, never fabricated */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filteredAgents.length === 0 ? (
+            {agents.length === 0 ? (
+              <div className="col-span-full p-8 text-center text-white/30">
+                <Bot className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No agents — backend unavailable</p>
+              </div>
+            ) : filteredAgents.length === 0 ? (
               <div className="col-span-full p-8 text-center text-white/30">
                 <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No agents found matching &quot;{searchTerm}&quot;</p>

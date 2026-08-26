@@ -32,24 +32,6 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// ── Fallback data ──────────────────────────────────────────────────
-
-const FALLBACK_CANDLES: CandleStick[] = Array.from({ length: 30 }, (_, i) => ({
-  time: `2026-${String(Math.min(i + 6, 12)).padStart(2, "0")}-${String(Math.min(i + 1, 28)).padStart(2, "0")}`,
-  open: 65000 + i * 100 + (i % 7) * 50,
-  high: 65500 + i * 120 + (i % 5) * 80,
-  low: 64800 + i * 80 + (i % 3) * 60,
-  close: 65200 + i * 110 + (i % 4) * 70,
-}));
-
-const FALLBACK_SCANNER = [
-  { symbol: "NVDA", price: 875.28, change: 5.23, volume: "52.3M", signal: "Breakout" },
-  { symbol: "SOL", price: 148.32, change: 4.87, volume: "3.2B", signal: "Momentum" },
-  { symbol: "META", price: 502.34, change: 3.45, volume: "18.7M", signal: "Reversal" },
-  { symbol: "TSLA", price: 178.35, change: -2.87, volume: "89.5M", signal: "Oversold" },
-  { symbol: "AAPL", price: 198.22, change: 1.15, volume: "22.4M", signal: "Accumulation" },
-];
-
 function MarketContent() {
   const { realtimePrices } = useAppStore();
   const { isConnected } = useRealtimeData();
@@ -59,26 +41,31 @@ function MarketContent() {
   const [sentiment, setSentiment] = useState<MarketSentiment | null>(null);
   const [candles, setCandles] = useState<CandleStick[]>([]);
   const [scanner, setScanner] = useState<{ symbol: string; price: number; change: number; volume: string; signal: string }[]>([]);
+  const [candlesError, setCandlesError] = useState<string | null>(null);
+  const [scannerError, setScannerError] = useState<string | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     marketApi.getSentiment()
       .then(setSentiment)
-      .catch(() => { /* fallback */ });
+      .catch(() => { /* fail-closed: keep null, sector UI shows backend unavailable */ });
     marketApi.getCandles(selectedSymbol)
-      .then(setCandles)
-      .catch(() => { setCandles(FALLBACK_CANDLES); });
+      .then((data) => { setCandles(data); setCandlesError(null); })
+      .catch(() => { setCandles([]); setCandlesError("Failed to load candles — live data unavailable."); });
     marketApi.getSignals()
-      .then((signals) => setScanner(
-        signals.map((s) => ({
-          symbol: s.symbol || "UNKNOWN",
-          price: s.price ?? 0,
-          change: s.change_pct ?? 0,
-          volume: String(s.volume ?? 0),
-          signal: s.signal ?? "Neutral",
-        }))
-      ))
-      .catch(() => { setScanner(FALLBACK_SCANNER); });
+      .then((signals) => {
+        setScanner(
+          signals.map((s) => ({
+            symbol: s.symbol || "UNKNOWN",
+            price: s.price ?? 0,
+            change: s.change_pct ?? 0,
+            volume: String(s.volume ?? 0),
+            signal: s.signal ?? "Neutral",
+          }))
+        );
+        setScannerError(null);
+      })
+      .catch(() => { setScanner([]); setScannerError("Failed to load scanner signals — live data unavailable."); });
   }, [selectedSymbol]);
 
   const symbols = [
@@ -105,13 +92,12 @@ function MarketContent() {
   const wsChange = selectedSymbol && realtimePrices[selectedSymbol]
     ? realtimePrices[selectedSymbol].change_24h
     : null;
-  // fail-closed: livePrice = WS price or last candle close, never fabricated
+  // fail-closed: livePrice = WS price or last candle close or null — never fabricated, no random
   const [livePrice, setLivePrice] = useState<number | null>(null);
   useEffect(() => {
-    if (wsPrice) { setLivePrice(wsPrice); return; }
-    // No WS → use last REST poll value (set by fetchCandles)
+    if (wsPrice != null) { setLivePrice(wsPrice); return; }
     const lastClose = candles.length ? candles[candles.length - 1].close : null;
-    if (lastClose) setLivePrice(lastClose);
+    setLivePrice(lastClose ?? null);
   }, [wsPrice, candles]);
 
   // Lightweight chart
@@ -174,6 +160,14 @@ function MarketContent() {
         </div>
       </div>
 
+      {/* Fail-closed error banner — no mock data */}
+      {(candlesError || scannerError) && (
+        <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {candlesError && <p>{candlesError}</p>}
+          {scannerError && <p>{scannerError}</p>}
+        </div>
+      )}
+
       {/* Price Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {symbols.slice(0, 4).map((item) => {
@@ -225,13 +219,19 @@ function MarketContent() {
           >
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
               <span suppressHydrationWarning className="text-2xl font-mono font-bold text-white">{livePrice !== null ? formatCurrency(livePrice) : "—"}</span>
-              <Badge variant={wsPrice ? "success" : "info"} className="text-xs">
+              <Badge variant={wsPrice != null ? "success" : "info"} className="text-xs">
                 <Activity className="w-3 h-3 mr-1" />
-                {wsPrice ? "WS LIVE" : "FALLBACK"}
+                {wsPrice != null ? "WS LIVE" : livePrice != null ? "LAST CLOSE" : "NO DATA"}
               </Badge>
             </div>
+            {candlesError && (
+              <p role="alert" className="text-xs text-red-300 mb-2">{candlesError}</p>
+            )}
+            {!candlesError && chartData.length === 0 && (
+              <p className="text-sm text-white/30 py-8 text-center">No candle data — waiting for live feed.</p>
+            )}
             <div ref={chartContainerRef} className="h-80">
-              {chartType === "area" && (
+              {chartType === "area" && chartData.length > 0 && (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData}>
                     <defs>
@@ -305,6 +305,12 @@ function MarketContent() {
 
         <TabsContent value="scanner">
           <ChartCard title="Market Scanner" subtitle="Top movers and signals" className="mt-3">
+            {scannerError && (
+              <p role="alert" className="text-xs text-red-300 mb-3">{scannerError}</p>
+            )}
+            {!scannerError && scanner.length === 0 && (
+              <p className="text-sm text-white/30 py-6 text-center">No scanner data — waiting for live feed.</p>
+            )}
             <div className="space-y-2">
               {scanner.map((item) => (
                 <div key={item.symbol} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors cursor-pointer">

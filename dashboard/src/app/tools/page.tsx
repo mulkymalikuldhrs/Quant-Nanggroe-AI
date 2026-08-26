@@ -20,19 +20,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-// ── Fallback data ──────────────────────────────────────────────────
-
-const FALLBACK_TOOLS: Tool[] = [
-  { id: "web_search", name: "Web Search", description: "Search the web for real-time information", status: "active", category: "web", executions: 1245, lastUsed: "2m ago" },
-  { id: "code_runner", name: "Code Runner", description: "Execute Python code in sandbox", status: "active", category: "dev", executions: 892, lastUsed: "5m ago" },
-  { id: "docker_exec", name: "Docker Exec", description: "Run commands in Docker containers", status: "active", category: "infra", executions: 456, lastUsed: "12m ago" },
-  { id: "file_system", name: "File System", description: "Read/write files in sandbox", status: "active", category: "system", executions: 2341, lastUsed: "1m ago" },
-  { id: "api_client", name: "API Client", description: "Make HTTP requests to external APIs", status: "active", category: "web", executions: 678, lastUsed: "8m ago" },
-  { id: "memory_query", name: "Memory Query", description: "Search vector memory store", status: "active", category: "cognitive", executions: 1567, lastUsed: "3m ago" },
-  { id: "data_analysis", name: "Data Analysis", description: "Analyze data with pandas/numpy", status: "active", category: "dev", executions: 345, lastUsed: "15m ago" },
-  { id: "notify", name: "Notify", description: "Send notifications via channels", status: "active", category: "comms", executions: 892, lastUsed: "4m ago" },
-];
-
 function ToolsContent() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +36,8 @@ function ToolsContent() {
       const data = await toolsApi.list();
       setTools(data);
     } catch {
-      // Keep fallback
+      setTools([]);
+      setError("No tools — backend unavailable");
     } finally {
       setLoading(false);
     }
@@ -105,84 +93,94 @@ function ToolsContent() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Tool Categories */}
-        <div className="lg:col-span-2 space-y-4">
-          {categories.map((cat) => (
-            <ChartCard key={cat} title={cat.toUpperCase()} subtitle={`${tools.filter((t) => t.category === cat).length} tools`}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {tools.filter((t) => t.category === cat).map((tool) => (
-                  <div key={tool.id} onClick={() => { setSelectedTool(tool.id); setExecResult(null); }}
-                    className={cn(
-                      "p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02]",
-                      selectedTool === tool.id
-                        ? "bg-purple-500/10 border-purple-500/30"
-                        : "bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.06]",
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-white/80">{tool.name}</span>
-                      <span className="text-[10px] font-mono text-white/30">{tool.executions} runs</span>
-                    </div>
-                    <p className="text-xs text-white/40">{tool.description}</p>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[9px] text-white/20">Last: {tool.lastUsed}</span>
-                      <Badge variant={tool.status === "active" ? "success" : "warning"} className="text-[9px]">{tool.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ChartCard>
-          ))}
+      {tools.length === 0 ? (
+        <div className="py-16 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
+          <Wrench className="w-8 h-8 mx-auto mb-3 text-white/20" />
+          <p className="text-sm text-white/40">No tools — backend unavailable</p>
+          <Button variant="outline" size="sm" onClick={loadTools} className="mt-4 gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5" /> Retry
+          </Button>
         </div>
-
-        {/* Execution Panel */}
-        <ChartCard title="Execute Tool" subtitle={selectedTool ? tools.find((t) => t.id === selectedTool)?.name || "" : "Select a tool"}>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Selected Tool</label>
-              <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-white/70 text-sm font-mono">
-                {selectedTool || "None selected"}
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Parameters (JSON)</label>
-              <textarea value={params} onChange={(e) => setParams(e.target.value)}
-                className="w-full h-28 bg-white/5 border border-white/10 rounded-lg p-2 text-white/70 text-xs font-mono focus:outline-none focus:border-purple-500/50 resize-none"
-              />
-            </div>
-            <Button variant="glow" className="w-full" onClick={handleExecute} disabled={!selectedTool || executing}>
-              {executing ? (
-                <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              {executing ? "Executing..." : "Execute"}
-            </Button>
-            {execResult && (
-              <div className={cn("p-3 rounded-lg border", execResult.success ? "bg-emerald-500/5 border-emerald-500/20" : "bg-red-500/5 border-red-500/20")}>
-                <div className="flex items-center gap-2 mb-1">
-                  {execResult.success ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <XCircle className="w-3.5 h-3.5 text-red-400" />
-                  )}
-                  <span className={cn("text-xs font-medium", execResult.success ? "text-emerald-400" : "text-red-400")}>
-                    {execResult.success ? "Success" : "Failed"}
-                  </span>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Tool Categories */}
+          <div className="lg:col-span-2 space-y-4">
+            {categories.map((cat) => (
+              <ChartCard key={cat} title={cat.toUpperCase()} subtitle={`${tools.filter((t) => t.category === cat).length} tools`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {tools.filter((t) => t.category === cat).map((tool) => (
+                    <div key={tool.id} onClick={() => { setSelectedTool(tool.id); setExecResult(null); }}
+                      className={cn(
+                        "p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02]",
+                        selectedTool === tool.id
+                          ? "bg-purple-500/10 border-purple-500/30"
+                          : "bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.06]",
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-white/80">{tool.name}</span>
+                        <span className="text-[10px] font-mono text-white/30">{tool.executions} runs</span>
+                      </div>
+                      <p className="text-xs text-white/40">{tool.description}</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[9px] text-white/20">Last: {tool.lastUsed}</span>
+                        <Badge variant={tool.status === "active" ? "success" : "warning"} className="text-[9px]">{tool.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-white/50 font-mono break-all">{execResult.result}</p>
-              </div>
-            )}
-            {!execResult && (
-              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5 text-center">
-                <Terminal className="w-6 h-6 text-white/10 mx-auto mb-1" />
-                <p className="text-xs text-white/20 italic">Select a tool and execute to see results</p>
-              </div>
-            )}
+              </ChartCard>
+            ))}
           </div>
-        </ChartCard>
-      </div>
+
+          {/* Execution Panel */}
+          <ChartCard title="Execute Tool" subtitle={selectedTool ? tools.find((t) => t.id === selectedTool)?.name || "" : "Select a tool"}>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Selected Tool</label>
+                <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-white/70 text-sm font-mono">
+                  {selectedTool || "None selected"}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Parameters (JSON)</label>
+                <textarea value={params} onChange={(e) => setParams(e.target.value)}
+                  className="w-full h-28 bg-white/5 border border-white/10 rounded-lg p-2 text-white/70 text-xs font-mono focus:outline-none focus:border-purple-500/50 resize-none"
+                />
+              </div>
+              <Button variant="glow" className="w-full" onClick={handleExecute} disabled={!selectedTool || executing}>
+                {executing ? (
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                {executing ? "Executing..." : "Execute"}
+              </Button>
+              {execResult && (
+                <div className={cn("p-3 rounded-lg border", execResult.success ? "bg-emerald-500/5 border-emerald-500/20" : "bg-red-500/5 border-red-500/20")}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {execResult.success ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-red-400" />
+                    )}
+                    <span className={cn("text-xs font-medium", execResult.success ? "text-emerald-400" : "text-red-400")}>
+                      {execResult.success ? "Success" : "Failed"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/50 font-mono break-all">{execResult.result}</p>
+                </div>
+              )}
+              {!execResult && (
+                <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5 text-center">
+                  <Terminal className="w-6 h-6 text-white/10 mx-auto mb-1" />
+                  <p className="text-xs text-white/20 italic">Select a tool and execute to see results</p>
+                </div>
+              )}
+            </div>
+          </ChartCard>
+        </div>
+      )}
     </div>
   );
 }
