@@ -612,5 +612,3 @@ class AutonomousSelfLoopOrchestrator:
         except Exception as e:
             logger.debug(f"Self-awareness reflection failed: {e}")
             return None
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-88399c8b7cd6.sh.tmp.XXXXXXXXXX': No such file or directory

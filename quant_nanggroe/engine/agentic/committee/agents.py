@@ -255,10 +255,10 @@ class RiskOfficer(BaseAgent):
         # Use real risk constants from engine.risk.constants
         try:
             from quant_nanggroe.engine.risk.constants import (
-                MAX_RISK_PER_TRADE, DAILY_LOSS_LIMIT, WEEKLY_LOSS_LIMIT)
+                MAX_RISK_PER_TRADE, MAX_DAILY_LOSS, MAX_WEEKLY_LOSS)
             max_risk_pct = MAX_RISK_PER_TRADE  # 0.5%
-            daily_limit = DAILY_LOSS_LIMIT      # 1%
-            weekly_limit = WEEKLY_LOSS_LIMIT    # 3%
+            daily_limit = MAX_DAILY_LOSS      # 1%
+            weekly_limit = MAX_WEEKLY_LOSS    # 3%
         except ImportError:
             max_risk_pct = 0.005
             daily_limit = 0.01

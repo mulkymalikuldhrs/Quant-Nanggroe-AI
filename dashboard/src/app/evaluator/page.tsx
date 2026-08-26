@@ -9,7 +9,7 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { evaluatorApi } from "@/lib/api-client";
 import type {
-  StrategyRegistryEntry, EvolutionStatus, PipelineStatus,
+  StrategyRegistryEntry, EvaluatorEvolutionStatus, PipelineStatus,
 } from "@/lib/api-client";
 import { cn, formatPercent } from "@/lib/utils";
 import {
@@ -62,7 +62,7 @@ function PipelineStageRow({ stage }: { stage: PipelineStatus["stages"][0] }) {
 
 function EvaluatorContent() {
   const [strategies, setStrategies] = useState<StrategyRegistryEntry[]>([]);
-  const [evolution, setEvolution] = useState<EvolutionStatus | null>(null);
+  const [evolution, setEvolution] = useState<EvaluatorEvolutionStatus | null>(null);
   const [pipeline, setPipeline] = useState<PipelineStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

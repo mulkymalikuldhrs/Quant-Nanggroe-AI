@@ -767,7 +767,7 @@ export const evaluatorApi = {
   getStrategy: (name: string) =>
     apiRequest<StrategyRegistryEntry>(`/api/strategy/registry/${name}`),
   getEvolutionStatus: () =>
-    apiRequest<EvolutionStatus>("/api/backtest/evolution/status"),
+    apiRequest<EvaluatorEvolutionStatus>("/api/backtest/evolution/status"),
   getPipelineStatus: () =>
     apiRequest<PipelineStatus>("/api/pipeline/status"),
 };
@@ -838,7 +838,7 @@ export interface StrategyRegistryEntry {
   enabled: boolean;
 }
 
-export interface EvolutionStatus {
+export interface EvaluatorEvolutionStatus {
   total_strategies: number;
   active_strategies: number;
   disabled_strategies: number;

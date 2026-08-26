@@ -28,7 +28,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/memory", tags=["memory"])
+router = APIRouter(tags=["memory"])
 
 # ---------------------------------------------------------------------------
 # Real memory modules — graceful fallback

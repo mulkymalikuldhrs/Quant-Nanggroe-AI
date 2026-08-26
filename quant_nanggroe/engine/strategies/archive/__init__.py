@@ -32,8 +32,7 @@ from .archive_piercing_line import *
 from .archive_pivot_points import *
 from .archive_polynomial_regression import *
 from .archive_quality_factor import *
-from .archive_quarterly import *
-from .archive_quarterly_fixed import *
+from .quarterly_fixed import *
 from .archive_regime_based import *
 from .archive_regime_hmm import *
 from .archive_relative_vigor import *
@@ -59,10 +58,8 @@ from .archive_vol_surface_arb import *
 from .archive_volatility_arbitrage import *
 from .archive_volatility_regime import *
 from .archive_volatility_selling import *
-from .archive_volume_delta import *
 from .archive_vortex_strategy import *
 from .archive_williams_r import *
 from .archive_woodie_pivot import *
-from .archive_wyckoff import *
 from .archive_wyckoff_strategy import *
 from .archive_yield_curve import *

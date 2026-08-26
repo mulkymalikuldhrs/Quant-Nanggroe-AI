@@ -103,7 +103,7 @@ class VoteChamber:
 
         if not vote.quorum_met:
             vote.all_evidence = all_evidence
-            vote.risk_reason = f"Quorum not met: {len(votes)}/{QUORUM}"
+            vote.risk_reason = f"Quorum not met: {real_votes}/{QUORUM}"
             return vote
 
         # 3. Weighted consensus
@@ -112,7 +112,8 @@ class VoteChamber:
         bearish_score = 0.0
         total_weight = 0.0
 
-        for v in votes:
+        analyst_votes = [v for v in [vote.bull_vote, vote.bear_vote, vote.macro_vote] if v is not None]
+        for v in analyst_votes:
             w = weights.get(v.agent_name, 0.33)
             total_weight += w
             if v.bias == "bullish":

@@ -49,7 +49,7 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 - **numpy in .venv** — Python 3.14 removed `np.clip` usage here; use `max(min(x,100),-100)`.
 - **pytest `langsmith` plugin** — crashes collection; `pip uninstall langsmith` if you see it.
 
-## Key Modules (v8.0.10)
+## Key Modules (v8.0.16)
 | Module | Purpose |
 |--------|---------|
 | `qna_tray.py` | Windows tray daemon control |
@@ -62,6 +62,10 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 | `engine/execution/signal_aggregator.py` | ONE position per symbol |
 | `engine/strategy_allocation.py` | CPCV per-symbol admission |
 | `engine/risk/trailing_stop.py` + `trading_profile.py` | Breakeven ratchet + ATR trail / scalp/day/swing SL-TP |
+| `engine/committee/agents.py` | 5 specialist agents per pair (bull/bear/risk/macro/execution) |
+| `engine/committee/vote_chamber.py` | Weighted consensus + RiskAgent VETO |
+| `engine/strategy_evaluator.py` | Rolling Sharpe/win rate, auto-disable |
+| `engine/data_pipeline.py` | Finnhub news, CFTC COT, sentiment cache |
 
 ## Non-Negotiable Rules
 1. Code is source of truth. Verify against `file:line`.
@@ -69,3 +73,5 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 3. REAL-ONLY — no paper/sim/mock on live path.
 4. Every risk guard must VETO, not just warn.
 5. One position per symbol — enforced at broker truth.
+6. Committee RiskAgent VETO is absolute — no override, no bypass.
+7. Data pipeline returns None on failure (not empty), so committee treats it as unavailable, not neutral.

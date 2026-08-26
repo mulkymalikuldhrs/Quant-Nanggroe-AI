@@ -1,5 +1,72 @@
 # Quant Nanggroe AI — Changelog
 
+## v8.0.16 — Data Pipeline: News + COT + Sentiment Cache (2026-08-27)
+
+### 📡 Committee Data Sources
+- **NEW: `engine/committee/data_pipeline.py`** — feeds the committee with structured external intelligence:
+  - **Finnhub news** — real-time headline scanning, keyword-filtered for symbol relevance, sentiment-scored per article (bullish/bearish/neutral), aggregated into rolling bias.
+  - **CFTC COT** — weekly Commitment of Traders positioning data (leveraged funds, asset managers, commercial), delta computation vs prior week, extreme-positioning alerts (>80th / <20th percentile).
+  - **Sentiment cache** — per-symbol sentiment scores cached in `data/sentiment_cache.json` with TTL (configurable via `QNA_SENTIMENT_TTL_MINUTES`, default 30). Avoids redundant API calls within the same candle cycle.
+- **Circuit breaker**: if Finnhub is down, pipeline returns `None` (not `[]`) so committee treats it as unavailable, not neutral. Fail-closed against silent data starvation.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_data_pipeline.py`** — 6 tests: news fetch + sentiment scoring, COT delta parsing, cache TTL expiry, circuit breaker on API failure, empty-response handling.
+
+---
+
+## v8.0.15 — Strategy Evaluator: Rolling Backtest + Auto-Disable (2026-08-27)
+
+### 📊 Strategy Health Monitoring
+- **NEW: `engine/strategy_evaluator.py`** — continuous per-strategy performance tracking:
+  - **Rolling Sharpe ratio** — 30-trade window, recomputed every N trades (configurable via `QNA_EVAL_WINDOW_TRADES`, default 30).
+  - **Win rate tracking** — 30-trade rolling window, compared against strategy-specific threshold.
+  - **Auto-disable** — strategy flagged DISABLED if rolling Sharpe < -0.5 OR win rate < 40% for 3 consecutive evaluation windows. Disabled strategies still appear in reports but never generate signals.
+  - **Re-enable** — manual via `python qna.py enable-strategy <name>`, or automatic after 7 days of no trades (decay guard integration).
+- **SQLite backing** — evaluation history in `data/strategy_eval.db`, queryable by strategy/symbol/window.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_strategy_evaluator.py`** — 8 tests: Sharpe computation correctness, win rate threshold, auto-disable trigger, re-enable flow, disabled strategy blocks signal generation.
+
+---
+
+## v8.0.14 — Committee Architecture: Per-Pair Specialist Agents (2026-08-27)
+
+### 🤖 Multi-Agent Decision Engine
+- **NEW: `engine/committee/agents.py`** — 5 specialist agents per symbol:
+  - **BullAgent** — identifies bullish catalysts (breakout, momentum, positive flow)
+  - **BearAgent** — identifies bearish catalysts (breakdown, divergence, negative flow)
+  - **RiskAgent** — position sizing, correlation exposure, portfolio heat, drawdown proximity
+  - **MacroAgent** — economic calendar alignment, intermarket correlation, regime detection
+  - **ExecutionAgent** — order type selection, spread assessment, slippage estimation
+- **Each agent** returns a structured `AgentVerdict` with `bias`, `confidence`, `evidence`, and `dissent` fields. No agent can overrule the RiskAgent (fail-closed).
+- **NEW: `engine/committee/vote_chamber.py`** — weighted consensus:
+  - BullAgent/BearAgent/MacroAgent each carry configurable weight (default 1.0).
+  - RiskAgent carries weight 2.0 (double-weighted, VETO-capable).
+  - ExecutionAgent carries weight 0.5 (execution quality modifier, never blocks).
+  - **Consensus threshold**: weighted average confidence ≥ 0.65 to proceed.
+  - **RiskAgent VETO** is absolute — no override. Fail-closed: committee always defers to risk on conflict.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_committee.py`** — 10 tests: agent verdict structure, weighted consensus math, RiskAgent VETO blocks all, ExecutionAgent cannot block, consensus threshold enforcement.
+
+---
+
+## v8.0.13 — Signal Context Logging (SL/TP/Confidence Linked to MT5 Deals) (2026-08-27)
+
+### 📝 Trade Audit Trail
+- **NEW: `engine/signal_context.py`** — every executed order now carries the full decision context:
+  - **SL/TP rationale** — ATR multiplier, profile name, risk-reward ratio at time of entry.
+  - **Confidence score** — raw signal confidence + committee consensus (when available).
+  - **Strategy origin** — which strategy generated the signal, with parameter snapshot.
+  - **Linked to MT5 deals** — `deal_id` stored alongside context in `data/signal_context.jsonl`.
+- **Journal enrichment** — `qna_trade_journal.db` now includes `context_json` column with full signal snapshot. Trade history queries return context for post-trade analysis.
+- **No latency** — context logging is non-blocking; fire-and-forget in executor thread.
+
+### 🧪 Tests
+- **NEW: `tests/test_engine/test_signal_context.py`** — 5 tests: context JSON structure, deal_id linkage, missing context fails closed, journal context column, concurrent writes safe.
+
+---
+
 ## v8.0.11 — Autonomous Pipeline + Candle Close + JournalSync Thread-Safe (2026-08-26)
 
 > Root cause: system ran 3+ hours with zero trades despite $1,720 live balance. 4 chained bugs blocked entire autonomous pipeline.
