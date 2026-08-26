@@ -17,7 +17,6 @@ _explicit_order = [
     'dhaher_system',
     'kronos_wrapper',
     'tradebobby_smc_scanner',
-    'smc_strategy_OLD',
 ]
 
 _modules = list(_explicit_order)
