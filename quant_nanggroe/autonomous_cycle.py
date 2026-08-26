@@ -635,7 +635,47 @@ class AutonomousCycle:
                 if r.get("status") == "FILLED" or r.get("ticket"):
                     pass  # Will be tracked when position closes
         
-        # 5. Risk status check
+        # 5. Sync REAL PnL into the risk guard (fix: veto never fired on a frozen 10k counter)
+        #     MT5Adapter exposes realized deal history; feed net realized pnl to RiskGuard
+        #     so the 3% daily-loss / 15% DD constitutional veto measures REAL equity, not fiction.
+        try:
+            deals = self.engine.mt5.get_history_deals(days=1)
+            if deals:
+                # RiskGuard tracks per-trade cumulative; only advance on NEW deals since last sync
+                last = getattr(self, "_last_deal_ticket", None)
+                new_deals = [d for d in deals if last is None or d["ticket"] > last]
+                if new_deals:
+                    for d in new_deals:
+                        won = float(d.get("pnl", 0.0)) > 0
+                        self.engine.risk.update_pnl(float(d.get("pnl", 0.0)), won)
+                    self._last_deal_ticket = max(d["ticket"] for d in deals)
+            # Day-rollover reset for daily-loss tracking
+            today = __import__("datetime").date.today()
+            if getattr(self, "_last_day", None) != today:
+                self.engine.risk.reset_daily()
+                self._last_day = today
+        except Exception as e:
+            # Fail-closed: if we cannot read real PnL, treat risk as UNKNOWN and veto new entries
+            log.critical("PNL SYNC FAILED — fail-closed, pausing new entries: %s", e)
+            self.engine.risk.balance = 0.0  # forces can_trade() -> False (Zero balance)
+
+        # 5b. KillSwitch gate (fail-closed) — matches live_engine.py:622/1012
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+            if not hasattr(self, "_kill_switch"):
+                self._kill_switch = KillSwitch()
+            if self._kill_switch.is_active:
+                log.critical("KILLSWITCH ACTIVE — halting cycle, no new positions")
+                return {"risk_ok": False, "risk_reason": "KILLSWITCH_ACTIVE",
+                        "balance": self.engine.risk.balance, "trades": self.engine.risk.total_trades,
+                        "wins": self.engine.risk.wins, "mt5": "live" if self.engine.mt5._initialized else "paper"}
+        except Exception as e:
+            log.critical("KILLSWITCH CHECK FAILED — fail-closed: %s", e)
+            return {"risk_ok": False, "risk_reason": "KILLSWITCH_UNVERIFIABLE",
+                    "balance": self.engine.risk.balance, "trades": self.engine.risk.total_trades,
+                    "wins": self.engine.risk.wins, "mt5": "live" if self.engine.mt5._initialized else "paper"}
+
+        # 6. Risk status check
         status = self.engine.status()
         if not status["risk_ok"]:
             log.warning(f"RISK VETO: {status['risk_reason']} — pausing new entries")

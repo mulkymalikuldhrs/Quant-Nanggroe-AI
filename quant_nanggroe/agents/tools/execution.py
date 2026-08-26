@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -250,6 +251,26 @@ class ExecutionTool:
             ExecutionError: If the order cannot be executed.
         """
         await self._ensure_connected()
+
+        # ── Constitutional guards (fix CRITICAL-3: docstring claimed these, body had none) ──
+        # (a) Kill switch — fail-closed. Refuse if engaged or unverifiable.
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+            if KillSwitch().is_active:
+                raise KillSwitchActiveError("Kill switch engaged — order refused")
+        except KillSwitchActiveError:
+            raise
+        except Exception as e:  # unverifiable kill-switch state => fail closed
+            raise KillSwitchActiveError(f"Kill switch state unverifiable: {e}") from e
+
+        # (b) REAL-ONLY: on live trading, paper brokers are forbidden on the live path.
+        #     Repo's live flag is env QNA_LIVE_TRADING (settings has no live_trading field).
+        if os.environ.get("QNA_LIVE_TRADING") == "1":
+            # Live mode: never route through a paper broker. This tool is for non-live use.
+            raise OrderRejectedError(
+                "ExecutionTool is disabled on the live path (REAL-ONLY). "
+                "Use the ExecutionManager live bridge, not the paper/alpaca tool surface."
+            )
 
         # ── Pre-trade checks ──────────────────────────────────────────
         self._validate_order_params(symbol, side, quantity, order_type, price,
