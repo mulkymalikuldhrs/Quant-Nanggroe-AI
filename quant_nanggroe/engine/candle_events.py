@@ -18,10 +18,13 @@ _RING_SIZE = 200
 _ring: Deque[Dict[str, Any]] = deque(maxlen=_RING_SIZE)
 _subs_lock = threading.Lock()
 _subscribers: List["queue.Queue[Dict[str, Any]]"] = []
+_dropped_events: int = 0
+_drop_log_interval: int = 50  # log every N drops to avoid spam
 
 
 def publish_candle_event(event: Dict[str, Any]) -> None:
     """Publish a candle-close event. Never raises, never blocks."""
+    global _dropped_events
     try:
         _ring.append(event)
         with _subs_lock:
@@ -30,7 +33,12 @@ def publish_candle_event(event: Dict[str, Any]) -> None:
             try:
                 q.put_nowait(event)
             except queue.Full:
-                pass  # slow consumer — drop rather than block the scheduler
+                _dropped_events += 1
+                if _dropped_events % _drop_log_interval == 1:
+                    logger.warning(
+                        "Candle event queue full — %d events dropped (slow consumer)",
+                        _dropped_events,
+                    )
     except Exception as exc:
         logger.debug("candle event publish failed: %s", exc)
 
@@ -55,3 +63,8 @@ def recent_events(limit: int = 50) -> List[Dict[str, Any]]:
     """Most recent events, newest first (for REST fallback)."""
     items = list(_ring)
     return list(reversed(items[-limit:]))
+
+
+def get_dropped_count() -> int:
+    """Total events dropped due to full subscriber queues."""
+    return _dropped_events

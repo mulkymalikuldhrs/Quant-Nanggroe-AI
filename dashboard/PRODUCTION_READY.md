@@ -196,7 +196,7 @@ npm start             # Start production server
 ### Environment Variables
 ```bash
 NEXT_PUBLIC_API_URL=http://your-api-server:8000
-NEXT_PUBLIC_API_KEY=your-production-key
+QNA_API_KEY=your-production-key
 NODE_ENV=production
 ```
 

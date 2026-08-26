@@ -262,7 +262,36 @@ class DaemonRunner:
             if agent_instance is None and class_name:
                 agent_class = getattr(module, class_name, None)
                 if agent_class:
-                    agent_instance = agent_class()
+                    # Agents require an LLM instance — create one from settings
+                    # Fallback chain: settings -> 9router (free local gateway)
+                    import inspect
+                    sig = inspect.signature(agent_class)
+                    if "llm" in sig.parameters:
+                        from quant_nanggroe.agents.base import create_llm
+                        llm = None
+                        # Try settings-based LLM first
+                        try:
+                            from quant_nanggroe.config.settings import get_settings
+                            _s = get_settings()
+                            llm = create_llm(
+                                provider=config.get("llm_provider", _s.default_llm_provider),
+                                model=config.get("llm_model", _s.default_llm_model),
+                                temperature=config.get("llm_temperature", _s.default_llm_temperature),
+                            )
+                        except Exception:
+                            pass
+                        # Fallback: 9router local gateway (free, always available)
+                        if llm is None:
+                            llm = create_llm(
+                                provider="openrouter",
+                                model="deepseek/deepseek-chat-v3-0324",
+                                base_url="http://localhost:20128/v1",
+                                api_key="9router",
+                                temperature=0.0,
+                            )
+                        agent_instance = agent_class(llm=llm)
+                    else:
+                        agent_instance = agent_class()
 
             if agent_instance is not None:
                 self.running[agent_id] = {
@@ -465,12 +494,6 @@ def run_daemon(args: argparse.Namespace) -> int:
         daemon.stop_all()
         if daemon_holder is not None:
             daemon_holder.stop = True
-    try:
-        daemon.start()
-    except KeyboardInterrupt:
-        logger.info("Shutdown requested...")
-    finally:
-        daemon.stop_all()
         if _retrainer is not None:
             try:
                 _retrainer.stop()
@@ -478,7 +501,6 @@ def run_daemon(args: argparse.Namespace) -> int:
                 logger.warning("Error stopping retrainer: %s", e)
         if _scheduler is not None:
             try:
-                # Try candle scheduler stop first, then legacy scheduler
                 if hasattr(_scheduler, 'stop'):
                     _scheduler.stop()
                     logger.info("Scheduler stopped")

@@ -296,15 +296,18 @@ def create_app() -> FastAPI:
     app.state.auth = jwt_auth
     app.state.api_key_auth = api_key_auth
 
+    # Rate limit AFTER auth so we can key by user_id (not IP).
+    # Starlette executes middleware in reverse add order:
+    #   add(Auth) → add(RateLimit) ⇒ execution: RateLimit → Auth → route
+    # We need Auth first, so add RateLimit FIRST, then Auth.
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
+
     app.add_middleware(
         AuthMiddleware,
         auth=jwt_auth,
         api_key_auth=api_key_auth,
         exclude_paths={"/api/otto"},
     )
-
-    # ── Rate Limit Middleware ────────────────────────────────────────
-    app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
     # ── Include Routers ─────────────────────────────────────────────
     from quant_nanggroe.api.routes import (

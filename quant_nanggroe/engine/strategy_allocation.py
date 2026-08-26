@@ -93,24 +93,32 @@ def allocation_map() -> Dict[str, List[str]]:
 def admitted_for_symbol(symbol: str) -> Optional[List[str]]:
     """Strategies allowed to trade ``symbol`` per CPCV evidence.
 
-    Returns None when no evidence exists (caller keeps default behavior);
-    returns a possibly-empty list when evidence exists but nothing qualifies
-    (caller should NOT trade unproven strategies on this symbol).
+    Returns None only when the registry FILE does not exist (no CPCV
+    validation has ever run — caller keeps default behavior).  Returns
+    an empty list when the registry exists but nothing qualifies for
+    this symbol (caller must NOT trade unproven strategies).
     """
     reg = load_registry()
     if not reg:
-        return None  # no evidence at all — caller decides
+        # Distinguish missing-file (None = no CPCV ever) from empty-file
+        # ([] = CPCV ran but nothing qualified → block all).
+        if _REGISTRY_PATH.exists():
+            return []  # CPCV ran, nothing qualified → fail-closed
+        return None  # no CPCV evidence ever — caller decides
     asset = _lookup_asset(symbol)
     if asset is None:
         logger.debug("no asset-class mapping for %s — no CPCV admission", symbol)
         return []
-    admitted = [
-        strat for strat, per_symbol in reg.items()
-        if asset in per_symbol
-        and int(per_symbol[asset].get("n_combinations", 0)) >= 10
-        and float(per_symbol[asset].get("combo_profit_share", 0.0))
-        >= MIN_COMBO_PROFIT_SHARE
-    ]
+    admitted = []
+    for strat, per_symbol in reg.items():
+        if asset in per_symbol:
+            entry = per_symbol[asset]
+            n = int(entry.get("n_combinations", 0))
+            share = float(entry.get("combo_profit_share", 0.0))
+            if n >= 10 and share >= MIN_COMBO_PROFIT_SHARE:
+                # Strip archive_ prefix so CPCV entries match live strategy names
+                live_name = strat.removeprefix("archive_")
+                admitted.append(live_name)
     admitted.sort()
     logger.info("CPCV allocation for %s (%s): %d admitted %s",
                 symbol, asset, len(admitted), admitted)

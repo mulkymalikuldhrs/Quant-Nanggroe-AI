@@ -30,20 +30,16 @@ type AwarenessItem = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
 function downloadUrl(params: Record<string, string>): string {
   const q = new URLSearchParams(params).toString();
-  const url = `${API_BASE}/api/export/trades?${q}`;
-  // fetch with auth then trigger browser save (fetch keeps Authorization header)
-  return url;
+  return `${API_BASE}/api/export/trades?${q}`;
 }
 
 async function authedDownload(params: Record<string, string>) {
   const q = new URLSearchParams(params).toString();
-  const res = await fetch(`${API_BASE}/api/export/trades?${q}`, {
-    headers: API_KEY ? { Authorization: `ApiKey ${API_KEY}` } : {},
-  });
+  // API key is injected server-side by middleware — no client-side key needed
+  const res = await fetch(`${API_BASE}/api/export/trades?${q}`);
   if (!res.ok) throw new Error(`${res.status}: ${await res.text().catch(() => "")}`);
   const blob = await res.blob();
   const cd = res.headers.get("Content-Disposition") || "";

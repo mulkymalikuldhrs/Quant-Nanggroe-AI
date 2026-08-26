@@ -1,12 +1,9 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-// ponytail: backend enforces API-key auth (Authorization: ApiKey ***). Inject
-// the dev key from env so the dashboard can actually talk to /api/*.
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
+// ponytail: API key is now injected server-side by middleware (not NEXT_PUBLIC).
+// Never read API keys in client code — they'd be bundled into JS.
 function defaultHeaders(extra: Record<string, string> = {}): Record<string, string> {
-  const h: Record<string, string> = { ...extra };
-  if (API_KEY && !h["Authorization"]) h["Authorization"] = `ApiKey ${API_KEY}`;
-  return h;
+  return { ...extra };
 }
 
 // ── Retry configuration ───────────────────────────────────────────

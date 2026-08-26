@@ -149,7 +149,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._request_count: int = 0
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
-        client_id = request.client.host if request.client else "unknown"
+        # Key by authenticated user_id (set by AuthMiddleware) when available;
+        # behind a reverse proxy all IPs appear as 127.0.0.1, making IP-based
+        # limiting useless. Fall back to IP for unauthenticated requests.
+        user_id = getattr(request.state, "user_id", None)
+        client_id = str(user_id) if user_id else (
+            request.client.host if request.client else "unknown"
+        )
         now = time.time()
 
         self._request_count += 1

@@ -51,12 +51,12 @@ class TestAllocation:
     def test_gold_admits_aroon_not_amdx(self, sample_registry):
         got = sa.admitted_for_symbol("XAUUSD.vx")
         assert got is not None
-        assert "archive_aroon" in got
+        assert "aroon" in got  # archive_ prefix stripped
         assert "weak_strategy" not in got
 
     def test_crypto_admits_amdx(self, sample_registry):
         got = sa.admitted_for_symbol("BTCUSDT")
-        assert "archive_amdx" in got
+        assert "amdx" in got  # archive_ prefix stripped
         assert "kaufman_ama" not in got
 
     def test_forex_admits_kaufman(self, sample_registry):
