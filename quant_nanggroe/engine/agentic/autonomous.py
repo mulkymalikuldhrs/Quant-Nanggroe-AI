@@ -1099,7 +1099,13 @@ class AutonomousPipeline:
             # ── Step 2.75: Compute ATR early (used by risk + TP/SL) ─────
             _atr_for_risk = self._compute_atr(df) if df is not None else 0.0
             if _atr_for_risk <= 0 and current_price > 0:
-                _atr_for_risk = current_price * 0.005  # fallback: 0.5% of price
+                # Per-asset-class ATR fallback (GAP-15 fix)
+                if "XAU" in symbol:
+                    _atr_for_risk = current_price * 0.003  # Gold: 0.3%
+                elif "BTC" in symbol or "ETH" in symbol:
+                    _atr_for_risk = current_price * 0.02   # Crypto: 2%
+                else:
+                    _atr_for_risk = current_price * 0.002  # FX: 0.2% (~20 pips)
 
             # ── Step 3: Risk Check ──────────────────────────────────────
             s3 = PipelineStep(name="risk_check")
@@ -2422,8 +2428,10 @@ class AutonomousPipeline:
                     if mutated_strategies and bt_runner._engine is not None:
                         try:
                             # Fetch candles for walk-forward from data provider
+                            # Use actual batch symbols, not hardcoded ones
+                            _batch_syms = list(self._discover_tradable_symbols())[:4] or ["EURUSD", "GBPUSD", "USDJPY", "USDCAD"]
                             candles: dict[str, list] = {}
-                            for sym in ["BTCUSDT", "ETHUSDT"]:
+                            for sym in _batch_syms:
                                 try:
                                     import yfinance as yf
                                     yf_sym = sym if "-" not in sym else sym.replace("-", "")
@@ -2507,9 +2515,10 @@ class AutonomousPipeline:
                 logger.debug("Auto-tune: no candidates (need positive PnL + Sharpe 0-1)")
                 return 0
 
-            # Fetch data once for all candidates
+            # Fetch data once for all candidates — use first tradable symbol
             try:
-                df = yf.Ticker("BTC-USD").history(period="6mo")
+                _tune_sym = next(iter(self._discover_tradable_symbols()), "EURUSD")
+                df = yf.Ticker(_tune_sym).history(period="6mo")
                 if isinstance(df.columns, pd.MultiIndex):
                     df.columns = df.columns.get_level_values(0)
                 df.columns = [c.lower() for c in df.columns]
