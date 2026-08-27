@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-08-28T02:20:24.930810",
+  "symbol": "EURUSD",
+  "timeframe": "M15",
+  "bars": 5657,
+  "baseline": {
+    "risk_per_trade": 0.01,
+    "atr_mult": 1.2,
+    "rr_min": 2.5
+  },
+  "best": {
+    "rp": 0.001,
+    "sl": 1.0,
+    "rr": 2.0,
+    "sharpe": -0.4909633619143928,
+    "return_pct": -0.49750331856930646,
+    "max_dd_pct": -1.2973613723288142,
+    "win_rate": 48.4472049689441,
+    "trades": 161,
+    "pass": false
+  },
+  "passers": 0,
+  "total_combos": 48,
+  "elapsed_s": 650.4
+}

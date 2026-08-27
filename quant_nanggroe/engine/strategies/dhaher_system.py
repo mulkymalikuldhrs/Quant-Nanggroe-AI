@@ -49,8 +49,8 @@ class DhaherSystem(DFStrategyAdapter, Strategy):
     name = "dhaher_system"
     description = "Dhaher System v1.1: Smart Money Concepts + partial confluence entry"
     
-    def __init__(self, parameters=None, lookback=20, atr_mult=1.2, rr_min=2.5,
-                 max_positions=3, risk_per_trade=0.01,
+    def __init__(self, parameters=None, lookback=20, atr_mult=1.0, rr_min=2.0,
+                 max_positions=3, risk_per_trade=0.001,
                  min_confluence=2, use_adx_filter=True,
                  adx_threshold=20, use_volume_conf=False):
         """
