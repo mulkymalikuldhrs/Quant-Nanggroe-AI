@@ -65,7 +65,7 @@ All external dependencies are bundled inside `quant_nanggroe/external/`:
 | **OrderFlowMap** | `external/orderflow_map/` | Orderflow visualization |
 | **smart-money-concepts** | `external/smc/` | SMC/ICT indicator library |
 
-These are loaded via relative paths from `quant_nanggroe/` — no hardcoded `E:\` paths.
+These are loaded via relative paths from `quant_nanggroe/` — no hardcoded `E:\` for Kronos/mue_x/hidden_regime. `quant_nanggroe/engine/execution/account_discovery.py:49` still scans `E:\Program Files\MetaTrader 5` to auto-detect the live terminal (functional, documented).
 
 ---
 
