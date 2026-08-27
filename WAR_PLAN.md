@@ -1,40 +1,37 @@
-# QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
+# QNA WAR PLAN — Phase 5: Parallel Profile Orchestration (Coordinator)
 
-> Version: v8.0.10 | Last updated: 2026-08-25
-## 1. Profile Status Matrix
-| Profile | Cron OK | Failures | Last Error |
-|---------|---------|----------|------------|
-| autobot | ⚠️ timeout | 0 | TERMINAL_CWD lock timeout 660s |
-| clawbot | ❌ 404 | 47 | deepseek-v4-flash via 9router (404) |
-| devbot | ⏳ pending | 0 | not started |
-| fangbot | ❌ 502 | 51 | deepseek-v4-flash timeout (502) |
-| hackerbot | ❌ 404 | 16 | deepseek-v4-flash via 9router (404) |
-| researchbot | ❌ 410 | 4 | deepseek-v4-flash EOL (2026-08-07) |
-| traderbot | ❌ 410 | 23 | deepseek-v4-flash EOL (2026-08-07) |
+> Version: 8.0.18 | Last updated: 2026-08-28 | Coordinator run
 
-## 2. Action Items
-- **clawbot/hackerbot**: 9router model 404 — model unavailable, NOT a code defect
-- **fangbot/researchbot/traderbot**: `nvidia/deepseek-ai/deepseek-v4-flash` EOL (410) since 2026-08-07; fangbot also 502 timeout
-- **devbot**: Not yet started — check scheduler
-- **autobot**: TERMINAL_CWD lock timeout — schedule conflict with workdir writers
-- **ALL**: Per directive, do NOT auto-fix model/provider. Report only.
+## 1. Profile Cron Status (live read 2026-08-28)
+| Profile | Status | Failures | Last Error |
+|---------|--------|----------|------------|
+| autobot | ✅ ok | 0 | — |
+| devbot | ✅ ok | 0 | — |
+| traderbot | ✅ ok | 0 | — |
+| autobot-heartbeat | ✅ ok | 0 | — |
+| researchbot | ❌ lock | 6 | TERMINAL_CWD read lock timeout 660s |
+| fangbot | ❌ lock | 9 | TERMINAL_CWD read lock timeout 660s |
+| hackerbot | ❌ lock | 9 | TERMINAL_CWD read lock timeout 660s |
+| clawbot | ❌ lock | 3 | TERMINAL_CWD read lock timeout 660s |
+
+## 2. Findings
+- **4 of 7 profiles erroring** — all `TERMINAL_CWD read lock timeout` (workdir contention), NOT model/provider. Previously assumed 404/502/410 model issues — those are resolved; residual failure is scheduling/resource lock.
+- Errors > 3x on researchbot(6), fangbot(9), hackerbot(9) → REPORTED, not auto-fixed (directive). Root cause: concurrent workdir writers holding the read lock past the 660s inactivity limit.
+- Model/provider: no model change made (directive respected).
 
 ## 3. Version Status
-- pyproject.toml: 8.0.8 ✅
-- quant_nanggroe/__init__.py: 8.0.8 ✅
-- qna.py: 8.0.8 ✅
-- No file spam (results/ removed from tracking, added to .gitignore).
+- pyproject.toml: **8.0.18** ✅
+- quant_nanggroe/__init__.py: **8.0.18** ✅
+- qna.py: **8.0.18** ✅
+- Internal version drift: NONE — all three aligned. (WAR_PLAN previously stale at 8.0.10; corrected here.)
 
 ## 4. Sync Status
-- Codeberg: ✅ up-to-date
-- GitLab: ✅ up-to-date
-- GitHub: ✅ up-to-date
+- origin/codeberg/gitlab/github: a4824e37 ✅ pushed
+- gh_dhaherlabs (GitHub mirror): pushed to a4824e37 ✅
+- Uncommitted local changes (NOT committed): `quant_nanggroe/data/account_ledger.json` — live trading ledger, excluded to avoid file spam.
+- File spam: results/ remains in .gitignore. No new spam.
 
---- Phase 5 Sync (2026-08-25) ---
-|- Profiles 7/7 alive: autobot/devbot/clawbot/fangbot/hackerbot/researchbot/traderbot
-|- clawbot profile-clawbot-qna: status=error (model 404 deepseek-v4-flash via 9router) — REPORTED, NOT auto-fixed (directive)
-|- devbot: started (profile-devbot-qna enabled, status=ok)
-|- Version drift fixed: pyproject.toml 5.1.0 → 8.0.8 (match qna.py + __init__.py). All three files now v8.0.8.
-|- File spam removed: results/ dir (18 files incl. gate_status.json with merge conflict markers) deleted + added to .gitignore.
-|- Sync: codeberg/gitlab/github master pushed 288f1701.
-|- Version: v8.0.10 enforced. No drift.
+---
+## Coordinator Notes
+- Lock-timeout failures are schedule/resource contention, not code or model defects. Resolution requires staggering cron schedules or removing shared workdir — OUT OF SCOPE for this coordinator (no auto-config change).
+- Next trigger: next profile cron run or explicit user directive to stagger schedules.
