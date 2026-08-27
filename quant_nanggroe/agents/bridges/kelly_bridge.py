@@ -409,4 +409,3 @@ class KellyBridge:
             "decisions": modified_decisions,
             "sender": "kelly_bridge",
         }
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory

@@ -1,6 +1,6 @@
 """Configuration files and templates"""
 
-import os
+
 from pathlib import Path
 
 
