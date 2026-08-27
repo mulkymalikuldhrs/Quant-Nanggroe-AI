@@ -28,4 +28,3 @@ Constitutional Risk Limits (HARDCODED — no override):
 __version__ = "8.0.18"  # ponytail: keep in sync with pyproject.toml
 __author__ = "Quant Nanggroe AI Team"
 QNA_VERSION = __version__
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
