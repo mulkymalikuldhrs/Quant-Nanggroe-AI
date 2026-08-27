@@ -2624,5 +2624,31 @@
     "occurred_at": "2026-08-27T15:03:07.340574+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "26bb7200-916",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for AUDUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-27T23:01:38.966795+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "c5da8f15-8ac",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURGBP",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-27T23:05:35.182853+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
