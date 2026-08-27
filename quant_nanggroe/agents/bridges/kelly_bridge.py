@@ -78,7 +78,7 @@ class KellyBridgeResult:
     risk_amount: float = 0.0
     risk_pct: float = 0.0
     stop_loss_distance: float = 0.0
-    method: str = "HALF_KELLY"
+    method: str = "QUARTER_KELLY"
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -121,7 +121,7 @@ class KellyBridge:
     def __init__(
         self,
         account_balance: float = 1_000_000.0,
-        default_method: str = "HALF_KELLY",
+        default_method: str = "QUARTER_KELLY",
         win_rate_override: Optional[float] = None,
         avg_win_override: Optional[float] = None,
         avg_loss_override: Optional[float] = None,
@@ -409,3 +409,4 @@ class KellyBridge:
             "decisions": modified_decisions,
             "sender": "kelly_bridge",
         }
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory

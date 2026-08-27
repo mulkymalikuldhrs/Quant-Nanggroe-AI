@@ -351,7 +351,7 @@ def kelly_sizing(
                 avg_loss=avg_loss,
             )
             # Calculate Half-Kelly (standard safety measure)
-            result = kelly.calculate(params, method=KellyMethod.HALF_KELLY)
+            result = kelly.calculate(params, method=KellyMethod.QUARTER_KELLY)
 
             # Cap at constitutional limit
             capped_fraction = min(result.fraction, MAX_POSITION_SIZE_PCT)
@@ -368,7 +368,7 @@ def kelly_sizing(
                 "position_size_pct": round(capped_fraction * 100, 2),
                 "max_position_constitutional": f"{MAX_POSITION_SIZE_PCT * 100}%",
                 "capped": result.fraction > MAX_POSITION_SIZE_PCT,
-                "method": "HALF_KELLY",
+                "method": "QUARTER_KELLY",
                 "note": "Half-Kelly applied for safety. Capped at constitutional maximum.",
                 "timestamp": datetime.now().isoformat(),
                 "_source": "KellyCriterion",

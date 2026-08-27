@@ -649,7 +649,7 @@ class RiskManager:
         avg_win: float,
         avg_loss: float,
         account_balance: float,
-        method: str = "HALF_KELLY",
+        method: str = "QUARTER_KELLY",
     ) -> Dict[str, Any]:
         """Calculate position size using Kelly Criterion.
 

@@ -548,7 +548,7 @@ class RiskGateBridge:
                 avg_win=abs(entry - stop_loss) * 2 if entry and stop_loss else 1.0,
                 avg_loss=abs(entry - stop_loss) if entry and stop_loss else 1.0,
                 account_balance=account_balance,
-                method="HALF_KELLY",
+                method="QUARTER_KELLY",
             )
             return result
         except Exception as e:
