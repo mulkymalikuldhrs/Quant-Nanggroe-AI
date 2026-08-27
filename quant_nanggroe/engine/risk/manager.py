@@ -16,6 +16,7 @@ Extracted from HermesQuantOS's Risk Officer with enhancements from ai-hedge-fund
 from __future__ import annotations
 
 import logging
+import threading
 import warnings
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -118,6 +119,7 @@ class RiskManager:
             current_equity=initial_equity,
             last_reset_date=datetime.now().date(),
         )
+        self._lock = threading.RLock()
         self.check_gate = RiskCheckGate()
         self.kill_switch = KillSwitch()
         self.drawdown_monitor = DrawdownMonitor(
@@ -251,26 +253,33 @@ class RiskManager:
         eff_daily_limit = MAX_DAILY_LOSS * mult["daily_loss"]
         eff_weekly_limit = MAX_WEEKLY_LOSS * mult["weekly_loss"]
 
-        if account_balance > 0:
-            daily_pnl_frac = daily_pnl / account_balance
-            weekly_pnl_frac = weekly_pnl / account_balance
+        # Fail-closed: balance unavailable -> veto (doubt #1, #8a)
+        if account_balance is None or account_balance != account_balance or account_balance <= 0:  # NaN or <=0
+            return {
+                "verdict": "VETOED",
+                "reason": f"ACCOUNT_BALANCE_UNAVAILABLE: {account_balance} -> fail-closed veto",
+                "vol_regime": regime.value,
+                "vol_regime_mult": mult,
+            }
+        daily_pnl_frac = daily_pnl / account_balance
+        weekly_pnl_frac = weekly_pnl / account_balance
 
-            if daily_pnl_frac <= -eff_daily_limit:
-                return {
-                    "verdict": "VETOED",
-                    "reason": f"VOL_REGIME_DAILY_LOSS: {daily_pnl_frac:.2%} exceeds "
-                              f"regime-adjusted {eff_daily_limit:.2%} ({regime.value})",
-                    "vol_regime": regime.value,
-                    "vol_regime_mult": mult,
-                }
-            if weekly_pnl_frac <= -eff_weekly_limit:
-                return {
-                    "verdict": "VETOED",
-                    "reason": f"VOL_REGIME_WEEKLY_LOSS: {weekly_pnl_frac:.2%} exceeds "
-                              f"regime-adjusted {eff_weekly_limit:.2%} ({regime.value})",
-                    "vol_regime": regime.value,
-                    "vol_regime_mult": mult,
-                }
+        if daily_pnl_frac <= -eff_daily_limit:
+            return {
+                "verdict": "VETOED",
+                "reason": f"VOL_REGIME_DAILY_LOSS: {daily_pnl_frac:.2%} exceeds "
+                           f"regime-adjusted {eff_daily_limit:.2%} ({regime.value})",
+                "vol_regime": regime.value,
+                "vol_regime_mult": mult,
+            }
+        if weekly_pnl_frac <= -eff_weekly_limit:
+            return {
+                "verdict": "VETOED",
+                "reason": f"VOL_REGIME_WEEKLY_LOSS: {weekly_pnl_frac:.2%} exceeds "
+                           f"regime-adjusted {eff_weekly_limit:.2%} ({regime.value})",
+                "vol_regime": regime.value,
+                "vol_regime_mult": mult,
+            }
         return None
 
     @property
@@ -296,27 +305,52 @@ class RiskManager:
         (fail-closed): trading halts until the broker read recovers.
         """
         if self._mt5_handle is None:
+            self._pnl_sync_stale = True
             return
-        try:
-            from datetime import timedelta
-            now = datetime.now()
-            day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            # week start = Monday 00:00
-            week_start = day_start - timedelta(days=now.weekday())
-            day_deals = self._mt5_handle.history_deals_get(day_start, now) or []
-            week_deals = self._mt5_handle.history_deals_get(week_start, now) or []
-            day_pnl = sum(float(d.profit) for d in day_deals)
-            week_pnl = sum(float(d.profit) for d in week_deals)
-            # ponytail: always reflect truth on a SUCCESSFUL read. The old
-            # `!= 0.0` guard kept a STALE negative daily_pnl when the day
-            # recovered to flat / break-even -> phantom-permanent veto blocked
-            # all trading on a recovered day.
-            self.state.daily_pnl = day_pnl
-            self.state.weekly_pnl = week_pnl
-            # Equity: peak + realized PnL. Use initial_equity as base
-            # so that drawdown is never understated on recovery days.
-            self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
-            self._pnl_sync_stale = False
+        with self._lock:
+            try:
+                from datetime import timedelta, timezone
+                now = datetime.now(timezone.utc).replace(tzinfo=None)
+                day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                # week start = Monday 00:00 UTC
+                week_start = day_start - timedelta(days=now.weekday())
+                day_raw = self._mt5_handle.history_deals_get(day_start, now)
+                week_raw = self._mt5_handle.history_deals_get(week_start, now)
+                if day_raw is None or week_raw is None:  # fail-closed: broker error → stale, not 0
+                    self._pnl_sync_stale = True
+                    logger.warning("RiskManager._sync_realized_pnl broker returned None → stale")
+                    return
+                day_deals = day_raw
+                week_deals = week_raw
+                # Include swap/commission/fee and filter non-trading deals (doubt #6)
+                def _deal_net(d):
+                    try:
+                        # MT5 Deal: profit + swap + commission + fee; filter withdrawal/balance ops
+                        if getattr(d, 'type', 0) in (2,):  # DEAL_TYPE_BALANCE
+                            return 0.0
+                        return float(getattr(d, 'profit', 0) or 0) + float(getattr(d, 'swap', 0) or 0) + float(getattr(d, 'commission', 0) or 0) + float(getattr(d, 'fee', 0) or 0)
+                    except Exception:
+                        return 0.0
+                day_pnl = sum(_deal_net(d) for d in day_deals)
+                week_pnl = sum(_deal_net(d) for d in week_deals)
+                # ponytail: always reflect truth on a SUCCESSFUL read. The old
+                # `!= 0.0` guard kept a STALE negative daily_pnl when the day
+                # recovered to flat / break-even -> phantom-permanent veto blocked
+                # all trading on a recovered day.
+                self.state.daily_pnl = day_pnl
+                self.state.weekly_pnl = week_pnl
+                # Equity: try MT5 truth first, fallback to peak+daily (doubt #4)
+                try:
+                    import MetaTrader5 as _mt5m
+                    _acc = _mt5m.account_info()
+                    if _acc is not None and getattr(_acc, 'equity', None) is not None:
+                        self.state.current_equity = float(_acc.equity)
+                        self.state.peak_equity = max(float(self.state.peak_equity), self.state.current_equity)
+                    else:
+                        self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
+                except Exception:
+                    self.state.current_equity = self.state.peak_equity + self.state.daily_pnl
+                self._pnl_sync_stale = False
             self._auto_check_kill_switch()
         except Exception as e:
             # Read failure: keep last-known values, flag stale → veto in gate.
@@ -735,14 +769,35 @@ class RiskManager:
         }
 
     def _reset_daily_if_needed(self) -> None:
-        """Reset daily counters if new day."""
-        today = datetime.now().date()
-        if self.state.last_reset_date is None or today > self.state.last_reset_date:
+        """Reset daily counters if new day. Handles missed Monday (doubt #5b)."""
+        with self._lock:
+            from datetime import timezone
+            today = datetime.now(timezone.utc).date()
+            if self.state.last_reset_date is None or today > self.state.last_reset_date:
             self.state.daily_pnl = 0.0
             self.state.trade_count_today = 0
             self.asset_daily_pnl.clear()
-            # Reset weekly on Monday
-            if today.weekday() == 0:  # Monday
+            # Clear hard stops across day boundary (doubt #9c)
+            if hasattr(self, '_hard_stops'):
+                try:
+                    self._hard_stops.clear()
+                except Exception:
+                    pass
+            # Reset weekly if ISO week changed or >=7 days since last reset (handles missed Monday)
+            should_reset_weekly = False
+            if self.state.last_reset_date is None:
+                should_reset_weekly = today.weekday() == 0
+            else:
+                try:
+                    iso_today = today.isocalendar()[1]
+                    iso_last = self.state.last_reset_date.isocalendar()[1]
+                    if iso_today != iso_last or (today - self.state.last_reset_date).days >= 7:
+                        should_reset_weekly = True
+                    elif today.weekday() == 0:  # Monday fallback
+                        should_reset_weekly = True
+                except Exception:
+                    should_reset_weekly = today.weekday() == 0
+            if should_reset_weekly:
                 self.state.weekly_pnl = 0.0
                 self.state.trade_count_week = 0
             self.state.last_reset_date = today

@@ -177,6 +177,22 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
                             paper=bool(acc.get("paper", False)),
                         )
 
+                # Sync RiskManager peak/current from live MT5 balance (doubt #3 phantom 1M)
+                if mt5_connected:
+                    try:
+                        import MetaTrader5 as _mt5
+                        _info = _mt5.account_info()
+                        if _info is not None:
+                            _rm = em.get_risk_manager()
+                            if _rm and getattr(_rm.state, 'peak_equity', 0) == 1_000_000.0:
+                                _bal = float(getattr(_info, 'balance', 0) or 0)
+                                _eq = float(getattr(_info, 'equity', _bal) or _bal)
+                                if _bal > 0:
+                                    _rm.state.peak_equity = _bal
+                                    _rm.state.current_equity = _eq
+                                    logger.info("RiskManager synced to MT5 balance=%.2f equity=%.2f (was 1M phantom)", _bal, _eq)
+                    except Exception as _e:
+                        logger.debug("RiskManager MT5 sync failed: %s", _e)
                 if wired == 0:
                     logger.warning("allow_live=True but no MT5 connected — paper only, no market trades")
             except Exception as exc:
