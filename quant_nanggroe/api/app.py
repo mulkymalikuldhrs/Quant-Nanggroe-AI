@@ -441,7 +441,21 @@ def create_app() -> FastAPI:
                 ks = json.loads(Path(ks_file).read_text(encoding="utf-8"))
                 if ks.get("status") == "active" or ks.get("_fail_closed"):
                     kill_active = True
-                    kill_reason = ks.get("activation_reason", "fail_closed")
+                    kill_reason = ks.get("reason", ks.get("activation_reason", "fail_closed"))
+            except Exception:
+                pass
+        # Apply same auto-expire logic as KillSwitch.reconcile() for L1 (daily limit).
+        # Without this, health endpoint reports stale "active" after UTC day rollover.
+        if kill_active:
+            try:
+                from datetime import datetime, timezone
+                activated_at_str = ks.get("activated_at")
+                if activated_at_str:
+                    activated_at = datetime.fromisoformat(activated_at_str.replace("Z", "+00:00"))
+                    if (activated_at.date() < datetime.now(timezone.utc).date()
+                            and ks.get("current_level") == "level_1"):
+                        kill_active = False
+                        kill_reason = "AUTO_EXPIRED"
             except Exception:
                 pass
         status = "degraded" if kill_active else "healthy"
