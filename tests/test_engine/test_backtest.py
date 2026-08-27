@@ -248,7 +248,7 @@ class TestWalkForward:
             "SPY": np.ones(n) * 0.05,
         }, index=dates)
 
-        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50)
+        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50, mode="rolling", force_precomputed=True)
         result = analyzer.analyze(prices, signals)
 
         assert len(result["windows"]) >= 1
@@ -270,7 +270,7 @@ class TestWalkForward:
             "SPY": np.ones(n) * 0.05,
         }, index=dates)
 
-        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50)
+        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50, mode="rolling", force_precomputed=True)
         result = analyzer.analyze(prices, signals)
 
         for window in result["windows"]:
@@ -292,7 +292,7 @@ class TestWalkForward:
             "SPY": np.ones(n) * 0.05,
         }, index=dates)
 
-        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50)
+        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50, mode="rolling", force_precomputed=True)
         result = analyzer.analyze(prices, signals)
 
         for window in result["windows"]:
@@ -309,7 +309,7 @@ class TestWalkForward:
         }, index=dates)
         signals = pd.DataFrame({"SPY": np.ones(n) * 0.05}, index=dates)
 
-        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50)
+        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50, mode="rolling", force_precomputed=True)
         result = analyzer.analyze(prices, signals)
 
         if result["windows"]:
@@ -331,7 +331,7 @@ class TestWalkForward:
         }, index=dates)
         signals = pd.DataFrame({"SPY": np.ones(n) * 0.05}, index=dates)
 
-        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50)
+        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50, mode="rolling", force_precomputed=True)
         result = analyzer.analyze(prices, signals)
 
         if result["aggregate"]:
@@ -350,7 +350,7 @@ class TestWalkForward:
         }, index=dates)
         signals = pd.DataFrame({"SPY": np.ones(n) * 0.05}, index=dates)
 
-        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50)
+        analyzer = WalkForwardAnalyzer(engine, train_window=200, test_window=50, mode="rolling", force_precomputed=True)
         result = analyzer.analyze(prices, signals)
 
         if result["degradation_stats"]:
