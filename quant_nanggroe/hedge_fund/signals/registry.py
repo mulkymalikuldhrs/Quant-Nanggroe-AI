@@ -1,7 +1,7 @@
 """Provider registry — lists of all signal providers used by the aggregator.
 
 CORE_PROVIDERS: hand-crafted strategies (AI-driven, classical, etc.)
-MUE-X providers: 992 dynamically discovered from E:\\mue-x (lazy-loaded on call)
+MUE-X providers: 992 dynamically discovered from external/mue_x (lazy-loaded on call)
 ALL_PROVIDERS: combined list for the aggregator.
 """
 

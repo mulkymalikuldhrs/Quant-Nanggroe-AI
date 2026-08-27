@@ -126,3 +126,6 @@ guardian_issues/
 .bak/
 quant_nanggroe/hedge_fund/tools/data/risk_guard/decisions_*.jsonl
 results/
+
+# Vendored third-party libs (optional runtime deps, 2980+ .py) — keep out of repo
+external/

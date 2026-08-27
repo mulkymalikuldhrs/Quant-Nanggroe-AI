@@ -58,8 +58,8 @@ def calc_lot(balance, confidence, kelly_fraction=0.25):
     # User directive: lot = balance/10000 to balance/5000 scaled by confidence
     # Risk per trade capped at MAX_RISK_PER_TRADE (0.5%)
     # ponytail: kelly_fraction now actually scales the lot — was declared dead before
-    lot_min = max(0.01, round(balance / 10000, 2))
-    lot_max = max(0.02, round(balance / 5000, 2))
+    lot_min = max(0.01, round(balance / 20000, 2))
+    lot_max = max(0.02, round(balance / 10000, 2))
     base_lot = round(lot_min + (lot_max - lot_min) * confidence, 2)
     # Scale by Kelly fraction: 0.25 baseline, higher → larger, lower → smaller
     lot = round(base_lot * (kelly_fraction / 0.25), 2)

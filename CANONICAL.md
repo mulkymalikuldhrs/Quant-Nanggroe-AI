@@ -702,10 +702,10 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 **NATIVE ENGINES TO BUILD:**
 | Module | Inspired By | Output |
 |--------|------------|--------|
-| engine/smc/native_smc.py | E:\smart-money-concepts\ | OrderBlock+FVG+Sweep+BOS detection |
-| engine/backtest/hyperopt.py | E:\freqtrade\ hyperopt | Bayesian param optimization |
-| engine/regime/enhanced_regime.py | E:\hidden-regime\ | HMM+GARCH+ADX composite |
-| engine/portfolio/risk_parity.py | E:\PyPortfolioOpt\ | HRP weights across strategies |
+| engine/smc/native_smc.py | quant_nanggroe/external/smc/ | OrderBlock+FVG+Sweep+BOS detection |
+| engine/backtest/hyperopt.py | quant_nanggroe/external/backtesting/ | Bayesian param optimization |
+| engine/regime/enhanced_regime.py | quant_nanggroe/external/hidden_regime/ | HMM+GARCH+ADX composite |
+| engine/portfolio/risk_parity.py | PyPortfolioOpt (pip) | HRP weights across strategies |
 
 ---
 

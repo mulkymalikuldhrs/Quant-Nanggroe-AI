@@ -51,9 +51,9 @@ class BullAnalyst(BaseAgent):
             evidence.append(f"RSI approaching oversold at {rsi:.1f}")
             score += 0.15
 
-        # MACD cross up
+        # MACD cross up — compare last elements only (full-array comparison gives numpy ambiguity)
         macd_line, signal_line = self._macd(close)
-        if macd_line > signal_line and macd_line[-2] <= signal_line[-2]:
+        if macd_line[-1] > signal_line[-1] and macd_line[-2] <= signal_line[-2]:
             evidence.append("MACD bullish crossover")
             score += 0.25
 
@@ -143,9 +143,9 @@ class BearAnalyst(BaseAgent):
             evidence.append(f"RSI approaching overbought at {rsi:.1f}")
             score += 0.15
 
-        # MACD cross down
+        # MACD cross down — compare last elements only
         macd_line, signal_line = BullAnalyst._macd(close)
-        if macd_line < signal_line and macd_line[-2] >= signal_line[-2]:
+        if macd_line[-1] < signal_line[-1] and macd_line[-2] >= signal_line[-2]:
             evidence.append("MACD bearish crossover")
             score += 0.25
 

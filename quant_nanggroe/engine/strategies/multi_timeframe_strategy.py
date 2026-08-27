@@ -150,9 +150,9 @@ class MultiTimeframeStrategy(Strategy):
             if len(closes) < self._parameters.get("htf_bars", 50) + 5:
                 return self._hold(f"Insufficient data (need {self._parameters.get('htf_bars', 50) + 5}+ bars)")
 
-            htf_bars = self._parameters.get("htf_bars", 50)
-            mtf_bars = self._parameters.get("mtf_bars", 20)
-            ltf_bars = self._parameters.get("ltf_bars", 5)
+            htf_bars = int(self._parameters.get("htf_bars", 50))
+            mtf_bars = int(self._parameters.get("mtf_bars", 20))
+            ltf_bars = int(self._parameters.get("ltf_bars", 5))
 
             # Detect trends
             htf_dir, htf_str = self._detect_trend(closes, htf_bars)

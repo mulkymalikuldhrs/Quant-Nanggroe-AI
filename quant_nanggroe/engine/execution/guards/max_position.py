@@ -36,7 +36,7 @@ class MaxPositionGuard:
         self._max_pct = max_pct
         self._max_notional = max_notional
         self._current_positions: Dict[str, float] = {}  # symbol -> notional value
-        self._portfolio_value: float = 1_000_000.0
+        self._portfolio_value: float = 0.0  # FAIL-CLOSED: must be set via update_portfolio_value()
 
     def check(self, order: Order) -> dict:
         """Check if order passes max position guard.
@@ -54,6 +54,13 @@ class MaxPositionGuard:
             new_notional = current_notional + order_notional
         else:
             new_notional = max(0.0, current_notional - order_notional)
+
+        # FAIL-CLOSED: portfolio value must be set before trading
+        if self._portfolio_value <= 0:
+            return {
+                "allowed": False,
+                "reason": "Portfolio value not initialized — cannot validate position size",
+            }
 
         # Check percentage limit
         max_allowed = self._portfolio_value * self._max_pct

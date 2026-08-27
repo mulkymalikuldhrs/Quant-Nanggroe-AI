@@ -1,8 +1,8 @@
 """Hidden regime provider: COT regime data + signal attribution.
 
-Extracts value from E:\\hidden-regime analysis package or falls back to CFTC API.
+Extracts value from external/hidden_regime analysis package or falls back to CFTC API.
 Returns dict with regime state, signal attribution scores.
-Graceful fallback — no crashes if E:\\ not accessible or package missing.
+Graceful fallback — no crashes if external/ not accessible or package missing.
 """
 from __future__ import annotations
 
@@ -12,11 +12,12 @@ import logging
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
-_HIDDEN_REGIME_DIR = r"E:\hidden-regime"
+_HIDDEN_REGIME_DIR = str(Path(__file__).resolve().parent.parent.parent / 'external' / 'hidden_regime')
 _HIDDEN_REGIME_FOUND: bool | None = None
 """None = not checked yet, True = spec found, False = not found."""
 
@@ -26,7 +27,7 @@ _HIDDEN_REGIME_FOUND: bool | None = None
 
 
 def _find_hidden_regime() -> bool:
-    """Return True if hidden-regime is installable (pip or E:\\). Does NOT import it."""
+    """Return True if hidden-regime is installable (pip or external/). Does NOT import it."""
     global _HIDDEN_REGIME_FOUND
     if _HIDDEN_REGIME_FOUND is not None:
         return _HIDDEN_REGIME_FOUND
@@ -35,7 +36,7 @@ def _find_hidden_regime() -> bool:
     if importlib.util.find_spec("hidden_regime") is not None:
         _HIDDEN_REGIME_FOUND = True
         return True
-    # Check E:\
+    # Check external/
     if os.path.isdir(_HIDDEN_REGIME_DIR) and os.path.isfile(
         os.path.join(_HIDDEN_REGIME_DIR, "hidden_regime", "__init__.py")
     ):
@@ -218,7 +219,7 @@ class HiddenRegimeProvider:
     """Provider for COT regime data and signal attribution.
 
     Tiers:
-        1. hidden-regime Python package (pip or E:\\ source)
+        1. hidden-regime Python package (pip or external/ source)
         2. CFTC public API (no auth required)
         3. Static fallback dict (never crashes)
     """

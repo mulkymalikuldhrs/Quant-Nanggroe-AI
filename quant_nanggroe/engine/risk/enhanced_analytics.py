@@ -153,7 +153,7 @@ class EnhancedRiskAnalytics:
         risk_amount = balance * kelly_frac
         if stop_loss_pips > 0 and pip_value > 0:
             lot_size = risk_amount / (stop_loss_pips * pip_value)
-            lot_size = round(max(0.01, min(lot_size, balance / 5000)), 2)
+            lot_size = round(max(0.01, min(lot_size, balance / 10000)), 2)
         else:
             lot_size = 0
 

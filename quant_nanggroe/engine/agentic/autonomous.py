@@ -639,7 +639,7 @@ class AutonomousPipeline:
 
         if _HAS_FINAL_DECIDER:
             try:
-                self._final_decider = FinalDecider(min_confidence_threshold=0.60, min_regime_compatibility=0.35, risk_per_trade=0.01, min_rr_ratio=2.5)
+                self._final_decider = FinalDecider(min_confidence_threshold=0.60, min_regime_compatibility=0.35, risk_per_trade=0.005, min_rr_ratio=2.5)
                 logger.info("FinalDecider initialized")
             except Exception as exc:
                 logger.warning("FinalDecider init failed: %s", exc)
@@ -1430,7 +1430,13 @@ class AutonomousPipeline:
             if self._lifecycle:
                 active = set(self._lifecycle.get_active_strategies())
                 if active:
-                    all_names = [n for n in all_names if n in active]
+                    filtered = [n for n in all_names if n in active]
+                    if filtered:
+                        all_names = filtered
+                    else:
+                        logger.warning(
+                            "Lifecycle active set (%s) has no overlap with registry — "
+                            "using all %d strategies", active, len(all_names))
             # CANONICAL §15.6 per-symbol CPCV allocation: admit only strategies
             # with proven combo-profit-share on THIS symbol's asset class.
             # Fail-closed: evidence missing -> None -> keep lifecycle behavior;

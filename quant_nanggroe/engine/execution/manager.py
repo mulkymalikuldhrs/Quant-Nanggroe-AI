@@ -504,7 +504,11 @@ class ExecutionManager:
         if not result.allowed:
             return GuardResult(False, "cooldown", result.reason)
 
-        # Max position guard
+        # Max position guard — update portfolio value from RiskManager before check
+        if self._risk_manager is not None:
+            equity = getattr(self._risk_manager.state, "current_equity", 0)
+            if equity > 0:
+                self._max_position_guard.update_portfolio_value(equity)
         result = self._as_guard_result(self._max_position_guard.check(order), "max_position")
         if not result.allowed:
             return GuardResult(False, "max_position", result.reason)

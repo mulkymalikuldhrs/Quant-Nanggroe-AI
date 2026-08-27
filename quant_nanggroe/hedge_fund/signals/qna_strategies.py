@@ -1,4 +1,4 @@
-"""MUE-X evolved signal providers — dynamic discovery from E:\\mue-x.
+"""MUE-X evolved signal providers — dynamic discovery from external/mue_x.
 
 Replaces 760-line hand-coded wrapper list with auto-discovery.
 All 992 evolved providers loaded on demand via MueXSignalProvider factory.
@@ -14,7 +14,7 @@ from quant_nanggroe.hedge_fund.signals.core import apply_causal_bias
 from quant_nanggroe.hedge_fund.utils.config import log
 from quant_nanggroe.hedge_fund.utils.data import get_historical_mt5
 
-_MUE_X_DIR = Path(os.environ.get("MUE_X_STRATEGIES_DIR", r"E:\mue-x\genes\qna_strategies"))
+_MUE_X_DIR = Path(os.environ.get("MUE_X_STRATEGIES_DIR", str(Path(__file__).resolve().parent.parent.parent / 'external' / 'mue_x' / 'genes' / 'qna_strategies')))
 
 class MueXSignalProvider:
     """Lazy-loading signal provider for a single MUE-X evolved strategy module."""

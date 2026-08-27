@@ -59,17 +59,6 @@ def _load_persona(module_name: str, class_name: str):
         return None
 
 
-def _needs_extra_args(agent) -> bool:
-    """Check if agent.analyze() requires more than just symbol."""
-    import inspect
-    try:
-        sig = inspect.signature(agent.analyze)
-        params = [p for p in sig.parameters.values() if p.name != "self"]
-        return len(params) > 1
-    except (ValueError, TypeError):
-        return False
-
-
 def _persona_class_name(module_name: str) -> str:
     """Derive class name from module name (peter_lynch -> PeterLynchAgent)."""
     parts = module_name.split("_")
@@ -170,11 +159,12 @@ def convene_council(
             continue
 
         try:
-            # Warren Buffett agent needs price+intrinsic_value; others just need symbol
-            if hasattr(agent, 'analyze') and _needs_extra_args(agent):
-                _price = price if price else 1.0
-                _iv = _price * 1.1  # assume 10% undervalued as default
-                analysis = agent.analyze(symbol, _price, _iv)
+            # Only WarrenBuffettAgent accepts price + intrinsic_value as positional args.
+            # All other personas use (ticker, **kwargs) — extra positional args cause TypeError.
+            is_buffett = type(agent).__name__ == "WarrenBuffettAgent"
+            if is_buffett and price is not None:
+                _iv = price * 1.1  # assume 10% undervalued as default
+                analysis = agent.analyze(symbol, price, _iv)
             else:
                 analysis = agent.analyze(symbol)
             persona_signal = analysis.get("signal", "neutral")

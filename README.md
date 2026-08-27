@@ -52,6 +52,23 @@ cd dashboard && pnpm install && pnpm dev   # Next.js dashboard :3000
 
 ---
 
+## External Dependencies
+
+All external dependencies are bundled inside `quant_nanggroe/external/`:
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| **Kronos** | `external/kronos/` | Financial foundation model (AAAI 2026) — OHLCV forecast |
+| **MUE-X** | `external/mue_x/` | Evolution engine — 992 evolved strategy genes |
+| **hidden-regime** | `external/hidden_regime/` | Regime detection — trend/range/crisis classification |
+| **backtesting.py** | `external/backtesting/` | Walk-forward backtest engine |
+| **OrderFlowMap** | `external/orderflow_map/` | Orderflow visualization |
+| **smart-money-concepts** | `external/smc/` | SMC/ICT indicator library |
+
+These are loaded via relative paths from `quant_nanggroe/` — no hardcoded `E:\` paths.
+
+---
+
 ## System Architecture
 
 ```

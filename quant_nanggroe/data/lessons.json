@@ -2611,5 +2611,18 @@
     "occurred_at": "2026-08-24T19:27:10.794871+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "0626f9f9-d54",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURGBP",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-27T15:03:07.340574+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

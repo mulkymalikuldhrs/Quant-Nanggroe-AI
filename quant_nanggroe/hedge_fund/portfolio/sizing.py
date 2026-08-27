@@ -4,7 +4,7 @@ from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
 from quant_nanggroe.hedge_fund.utils.config import PAPER_TRADE, log, mt5
 from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 
-MAX_RISK_PER_TRADE = 0.02
+MAX_RISK_PER_TRADE = 0.005  # 0.5% — matches engine/risk/constants.py constitutional limit
 
 
 def calculate_position_size(signal, balance, atr=None, config=None):
@@ -80,7 +80,7 @@ def calculate_position_size(signal, balance, atr=None, config=None):
     risk_amount = balance * position_fraction
     raw_lot = (risk_amount / (sl_pips * dollar_per_pip_per_lot)) if (sl_pips * dollar_per_pip_per_lot) > 0 else 0.01
     lot = max(0.01, round(raw_lot, 2))
-    notional_cap_lot = max(0.01, round((balance * position_fraction * 2) / (1.0 / contract_size) if contract_size > 0 else 0.02, 2))
+    notional_cap_lot = max(0.01, round(balance * position_fraction * 2 / 1000, 2))
     lot = min(lot, notional_cap_lot)
     lot = max(0.01, lot)
 

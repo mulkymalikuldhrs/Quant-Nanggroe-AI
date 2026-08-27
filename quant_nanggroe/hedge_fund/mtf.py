@@ -113,7 +113,7 @@ def signal_to_order(signal: dict, sym: str, balance: float) -> dict:
     lot_min = max(0.01, balance / 10000)
     lot_max = max(0.02, balance / 5000)
     lot = round(lot_min + (lot_max - lot_min) * conf, 2)
-    lot = max(0.01, min(lot, 0.5))
+    lot = max(0.01, min(lot, 0.1))
 
     t = mt5.symbol_info_tick(sym)
     if not t:

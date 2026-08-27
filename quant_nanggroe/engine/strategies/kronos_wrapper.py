@@ -26,13 +26,13 @@ from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 log = logging.getLogger('kronos')
 
 # ─── Attempt Kronos import ─────────────────────────────────────────────────────
-# ponytail: the real Kronos model package lives at E:\Kronos and is OPTIONAL.
+# ponytail: the real Kronos model package lives at quant_nanggroe/external/kronos and is OPTIONAL.
 # The previous bare `from model import ...` raised NameError (safetensors
 # undefined inside the half-installed package) which the `except ImportError`
 # did NOT catch — so every signal call logged a crash and fell back. Widen the
 # guard to Exception and skip the path insertion unless the dir actually exists.
 KRONOS_AVAILABLE = False
-_KRONOS_DIR = r'E:\Kronos'
+_KRONOS_DIR = str(Path(__file__).resolve().parent.parent.parent / 'external' / 'kronos')
 if os.path.isdir(_KRONOS_DIR):
     try:
         sys.path.insert(0, _KRONOS_DIR)
