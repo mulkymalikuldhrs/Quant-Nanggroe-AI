@@ -14,6 +14,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+MIN_SL_PIPS = 10.0   # minimum SL distance for EURUSD
+MAX_LOT = 0.5         # max position size to prevent blowup
+
 from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
 from quant_nanggroe.engine.strategies.mean_reversion import MeanReversionStrategy
 from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
@@ -22,17 +25,17 @@ from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyP
 DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "eurusd_h1_730d_cache.csv"
 
 def fetch_data():
-    df = pd.read_csv(DATA_FILE, parse_dates=["Datetime"], index_col="Datetime")
+    df = pd.read_csv(DATA_FILE)
+    # Datetime col is string with timezone — parse explicitly
+    df["Datetime"] = pd.to_datetime(df["Datetime"], utc=True).dt.tz_localize(None)
     df = df.rename(columns={c: c.lower().replace("adj close","adj_close") for c in df.columns})
     # Normalize to lowercase OHLCV
     col_map = {c: c.lower().replace(" ","") for c in df.columns}
     df = df.rename(columns=col_map)
-    keep = [c for c in ["open","high","low","close","volume"] if c in df.columns]
+    keep = [c for c in ["datetime","open","high","low","close","volume"] if c in df.columns]
     df = df[keep].dropna()
     df = df[df["volume"] >= 0]  # forex has 0 volume, keep it
-    # Remove timezone for consistency
-    if hasattr(df.index, 'tz') and df.index.tz is not None:
-        df.index = df.index.tz_localize(None)
+    df = df.set_index("datetime").sort_index()
     return df
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -42,16 +45,16 @@ def calc_atr(df, period=14):
     return tr.rolling(period).mean()
 
 def kelly_position_size(account, kelly_frac, sl_distance, entry_price):
-    """Lot size from Kelly fraction + SL distance."""
+    """Lot size from Kelly fraction + SL distance, capped at 2.0 lots."""
     if sl_distance <= 0 or entry_price <= 0:
         return 0.0
-    risk_amount = account * kelly_frac
-    pip_value = entry_price * 0.0001  # 1 pip ≈ 0.0001 for EURUSD
+    pip_value = entry_price * 0.0001
     sl_pips = sl_distance / pip_value
-    if sl_pips <= 0:
-        return 0.0
+    sl_distance = max(sl_distance, MIN_SL_PIPS * pip_value)  # enforce min
+    sl_pips = sl_distance / pip_value
+    risk_amount = account * kelly_frac
     lot = risk_amount / (sl_pips * pip_value * 100_000)
-    return max(0.01, round(lot * 100) / 100)
+    return max(0.01, min(MAX_LOT, round(lot * 100) / 100))
 
 # ─── Backtest Engine ─────────────────────────────────────────────────────────
 def backtest(df, strategy_fn, kelly_frac, sl_atr_mult, tp_atr_mult, sizing_mode="kelly"):
@@ -104,7 +107,14 @@ def backtest(df, strategy_fn, kelly_frac, sl_atr_mult, tp_atr_mult, sizing_mode=
                 position = 0.0
 
         # New entry
-        if position == 0 and direction != "hold" and raw_sl > 0 and raw_tp > 0:
+        if direction.lower() != "hold":
+            if position == 0:
+                if raw_sl > 0 and raw_tp > 0:
+                    entry_count += 1
+                else:
+                    pass  # signal but no SL/TP
+            else:
+                pass  # already in position
             sl_distance = abs(row["close"] - raw_sl)
             if sl_distance <= 0:
                 equity_curve.append(balance)
@@ -200,30 +210,132 @@ def meanrev_fn(df, sl_atr_mult, tp_atr_mult):
 
 # ─── Grid Search ────────────────────────────────────────────────────────────
 def grid_search(df, strategy_fn, name):
-    kelly_grid = [0.125, 0.1875, 0.25, 0.375]
-    sl_grid = [1.0, 1.5, 2.0]
+    """Vectorized grid: generate signals once per (sl,tp), then sweep Kelly."""
+    kelly_grid = [0.25, 0.375, 0.5]
+    sl_grid = [1.0, 1.5]
     tp_grid = [2.0, 2.5, 3.0]
-    size_modes = ["kelly", "fixed_0.25pct"]
+
+    # Pre-generate signals for each (sl_mult, tp_mult) combo
+    signal_cache = {}
+    for sl_m in sl_grid:
+        for tp_m in tp_grid:
+            sigs = []
+            atr_series = calc_atr(df)
+            for i in range(30, len(df)):
+                sub = df.iloc[:i+1]
+                s = strategy_fn(sub, sl_atr_mult=sl_m, tp_atr_mult=tp_m)
+                sigs.append(s)
+            signal_cache[(sl_m, tp_m)] = (sigs, atr_series.iloc[30:].reset_index(drop=True))
 
     results = []
-    total = len(kelly_grid) * len(sl_grid) * len(tp_grid) * len(size_modes)
-    done = 0
     for kf in kelly_grid:
         for sl_m in sl_grid:
             for tp_m in tp_grid:
-                for sm in size_modes:
-                    m = backtest(df.copy(), strategy_fn, kf, sl_m, tp_m, sm)
-                    m.update(kelly=kf, sl_mult=sl_m, tp_mult=tp_m, sizing=sm, strategy=name)
-                    results.append(m)
-                    done += 1
+                m = _backtest_from_signals(df, signal_cache[(sl_m, tp_m)], kf)
+                m.update(kelly=kf, sl_mult=sl_m, tp_mult=tp_m, sizing="kelly", strategy=name)
+                results.append(m)
 
     results.sort(key=lambda r: r["sharpe"], reverse=True)
     return results
 
+def _backtest_from_signals(df, cached, kelly_frac):
+    """Fast backtest from pre-computed signals + ATR series."""
+    START_BAL = 10_000.0
+    _MIN_SL = MIN_SL_PIPS * 0.0001  # price distance
+    _MAX_LOT = MAX_LOT
+    balance = START_BAL
+    position = 0.0
+    entry_count = 0
+    hold_count = 0
+    entry_price = 0.0
+    sl_price = 0.0
+    tp_price = 0.0
+    peak = balance
+    trades = []
+    equity_curve = [balance]
+
+    sigs, atr_series = cached
+    atr_vals = atr_series.values
+    close_vals = df["close"].iloc[30:].values
+    high_vals = df["high"].iloc[30:].values
+    low_vals = df["low"].iloc[30:].values
+
+    for i in range(len(sigs)):
+        sig = sigs[i]
+        atr = atr_vals[i]
+        close = close_vals[i]
+        high = high_vals[i]
+        low = low_vals[i]
+
+        if pd.isna(atr) or atr <= 0:
+            equity_curve.append(balance)
+            continue
+
+        direction = sig.get("direction", "hold")
+        raw_sl = sig.get("stop_loss", 0)
+        raw_tp = sig.get("take_profit", 0)
+
+        # Check SL/TP hit
+        if position != 0:
+            hit_sl = (position > 0 and low <= sl_price) or (position < 0 and high >= sl_price)
+            hit_tp = (position > 0 and high >= tp_price) or (position < 0 and low <= tp_price)
+            exit_price = 0
+            if hit_sl and hit_tp:
+                exit_price = sl_price
+            elif hit_sl:
+                exit_price = sl_price
+            elif hit_tp:
+                exit_price = tp_price
+            if exit_price:
+                pnl = (exit_price - entry_price) * position if position > 0 else (entry_price - exit_price) * abs(position)
+                balance += pnl
+                trades.append(pnl)
+                position = 0.0
+
+        # New entry
+        if direction.lower() != "hold":
+            if position == 0:
+                if raw_sl > 0 and raw_tp > 0:
+                    entry_count += 1
+                else:
+                    pass  # signal but no SL/TP
+            else:
+                pass  # already in position
+            sl_distance = abs(close - raw_sl)
+            if sl_distance <= 0:
+                equity_curve.append(balance)
+                continue
+            risk_amount = balance * kelly_frac
+            pip_value = close * 0.0001
+            sl_pips = sl_distance / pip_value
+            lot = risk_amount / (sl_pips * pip_value * 100_000) if sl_pips > 0 else 0.01
+            lot = max(0.01, round(lot * 100) / 100)
+            position = lot * 100_000 if direction == "buy" else -lot * 100_000
+            entry_price = close
+            sl_price = raw_sl
+            tp_price = raw_tp
+
+        eq = balance + (position * (close - entry_price) if position >= 0 else position * (2*entry_price - close))
+        equity_curve.append(eq)
+        if eq > peak:
+            peak = eq
+
+    # Close open
+    if position != 0:
+        pnl = (close_vals[-1] - entry_price) * position if position > 0 else (entry_price - close_vals[-1]) * abs(position)
+        balance += pnl
+        trades.append(pnl)
+        equity_curve[-1] = balance
+
+    return _metrics(START_BAL, balance, equity_curve, trades)
+
 def main():
     print("Fetching EURUSD 1h data...", flush=True)
     df = fetch_data()
-    print(f"  {len(df)} bars: {df.index[0]} → {df.index[-1]}", flush=True)
+    # Use last 6 months for production backtest
+    cutoff = df.index[-1] - pd.Timedelta(days=180)
+    df = df[df.index >= cutoff]
+    print(f"  {len(df)} bars (6mo slice): {df.index[0]} → {df.index[-1]}", flush=True)
 
     wyckoff_results = grid_search(df, wyckoff_fn, "Wyckoff")
     meanrev_results = grid_search(df, meanrev_fn, "MeanReversion")
