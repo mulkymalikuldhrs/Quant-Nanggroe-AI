@@ -16,7 +16,6 @@ Extracted from HermesQuantOS's Risk Officer with enhancements from ai-hedge-fund
 from __future__ import annotations
 
 import logging
-import threading
 import warnings
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -119,7 +118,6 @@ class RiskManager:
             current_equity=initial_equity,
             last_reset_date=datetime.now().date(),
         )
-        self._lock = threading.RLock()
         self.check_gate = RiskCheckGate()
         self.kill_switch = KillSwitch()
         self.drawdown_monitor = DrawdownMonitor(
@@ -307,10 +305,9 @@ class RiskManager:
         if self._mt5_handle is None:
             self._pnl_sync_stale = True
             return
-        with self._lock:
-            try:
-                from datetime import timedelta, timezone
-                now = datetime.now(timezone.utc).replace(tzinfo=None)
+        try:
+            from datetime import timedelta, timezone
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
             day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             # week start = Monday 00:00 UTC
             week_start = day_start - timedelta(days=now.weekday())
@@ -769,38 +766,37 @@ class RiskManager:
 
     def _reset_daily_if_needed(self) -> None:
         """Reset daily counters if new day. Handles missed Monday (doubt #5b)."""
-        with self._lock:
-            from datetime import timezone
-            today = datetime.now(timezone.utc).date()
-            if self.state.last_reset_date is None or today > self.state.last_reset_date:
-                self.state.daily_pnl = 0.0
-                self.state.trade_count_today = 0
-                self.asset_daily_pnl.clear()
-                # Clear hard stops across day boundary (doubt #9c)
-                if hasattr(self, '_hard_stops'):
-                    try:
-                        self._hard_stops.clear()
-                    except Exception:
-                        pass
-                # Reset weekly if ISO week changed or >=7 days since last reset (handles missed Monday)
-                should_reset_weekly = False
-                if self.state.last_reset_date is None:
+        from datetime import timezone
+        today = datetime.now(timezone.utc).date()
+        if self.state.last_reset_date is None or today > self.state.last_reset_date:
+            self.state.daily_pnl = 0.0
+            self.state.trade_count_today = 0
+            self.asset_daily_pnl.clear()
+            # Clear hard stops across day boundary (doubt #9c)
+            if hasattr(self, '_hard_stops'):
+                try:
+                    self._hard_stops.clear()
+                except Exception:
+                    pass
+            # Reset weekly if ISO week changed or >=7 days since last reset (handles missed Monday)
+            should_reset_weekly = False
+            if self.state.last_reset_date is None:
+                should_reset_weekly = today.weekday() == 0
+            else:
+                try:
+                    iso_today = today.isocalendar()[1]
+                    iso_last = self.state.last_reset_date.isocalendar()[1]
+                    if iso_today != iso_last or (today - self.state.last_reset_date).days >= 7:
+                        should_reset_weekly = True
+                    elif today.weekday() == 0:  # Monday fallback
+                        should_reset_weekly = True
+                except Exception:
                     should_reset_weekly = today.weekday() == 0
-                else:
-                    try:
-                        iso_today = today.isocalendar()[1]
-                        iso_last = self.state.last_reset_date.isocalendar()[1]
-                        if iso_today != iso_last or (today - self.state.last_reset_date).days >= 7:
-                            should_reset_weekly = True
-                        elif today.weekday() == 0:  # Monday fallback
-                            should_reset_weekly = True
-                    except Exception:
-                        should_reset_weekly = today.weekday() == 0
-                if should_reset_weekly:
-                    self.state.weekly_pnl = 0.0
-                    self.state.trade_count_week = 0
-                self.state.last_reset_date = today
-                self._save_state()
+            if should_reset_weekly:
+                self.state.weekly_pnl = 0.0
+                self.state.trade_count_week = 0
+            self.state.last_reset_date = today
+            self._save_state()
 
     # ── Persistence ─────────────────────────────────────────────────────
 
