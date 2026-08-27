@@ -1,8 +1,14 @@
 """Inspect dhaher_system schema + params (fast, single strategy)."""
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, r"D:\repositories\Quant-Nanggroe-AI-worktree")
 os.environ["PYTHONPATH"] = r"D:\repositories\Quant-Nanggroe-AI-worktree"
-import numpy as np, pandas as pd, yfinance as yf, inspect
+import inspect
+
+import numpy as np
+import yfinance as yf
+
 from quant_nanggroe.engine.registry import list_strategies
 
 df = yf.download("EURUSD=X", period="60d", interval="15m", auto_adjust=False, progress=False)
@@ -30,6 +36,6 @@ try:
     if "take_profit" in r.columns:
         tp = r["take_profit"].values
         print("take_profit nonzero:", int(np.sum(np.isfinite(tp) & (tp != 0))), "sample:", tp[np.isfinite(tp) & (tp != 0)][:5])
-except Exception as e:
+except Exception:
     import traceback; traceback.print_exc()
 print("DONE")

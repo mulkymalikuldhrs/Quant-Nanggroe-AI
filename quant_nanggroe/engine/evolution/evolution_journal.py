@@ -10,8 +10,7 @@ import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 _JDBC_DATETIME = "YYYY-MM-DDTHH:MM:SS.sss"  # ISO-8601 format
 

@@ -1,11 +1,10 @@
 """Performance tracker for signal providers — Bayesian-smoothed weight computation."""
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-
 
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 

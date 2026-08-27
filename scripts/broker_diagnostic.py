@@ -17,6 +17,7 @@ os.environ.pop("PYTHONPATH", None)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
+
 load_dotenv(".env")
 
 import MetaTrader5 as mt5
@@ -138,7 +139,7 @@ def run_diagnostics() -> dict:
             results["ioc_retcode"] = result.retcode
             results["ioc_comment"] = result.comment
         else:
-            check(f"IOC order: returned None", False)
+            check("IOC order: returned None", False)
             note(f"  Error: {mt5.last_error()}")
 
     banner("ORDER TEST — Market Order (FOK)")
@@ -159,7 +160,7 @@ def run_diagnostics() -> dict:
             check(f"FOK order: retcode={result.retcode}, comment={result.comment}", result.retcode == 0)
             results["fok_retcode"] = result.retcode
         else:
-            check(f"FOK order: returned None", False)
+            check("FOK order: returned None", False)
 
     banner("ORDER TEST — Pending LIMIT Order")
     if tick and si:
@@ -187,7 +188,7 @@ def run_diagnostics() -> dict:
                 note("  (cancelled test order)")
             results["limit_retcode"] = result.retcode
         else:
-            check(f"LIMIT order: returned None", False)
+            check("LIMIT order: returned None", False)
 
     banner("ORDER CHECK — Pre-validation")
     if tick:
@@ -207,7 +208,7 @@ def run_diagnostics() -> dict:
             check(f"order_check: retcode={check_result.retcode}, comment={check_result.comment}", check_result.retcode == 0)
             results["check_retcode"] = check_result.retcode
         else:
-            check(f"order_check: returned None", False)
+            check("order_check: returned None", False)
 
     banner("TRADE HISTORY — Last 10 Deals")
     now = datetime.now(timezone.utc)

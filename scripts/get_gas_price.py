@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Fetch current Ethereum gas price (Wei) via a public RPC endpoint."""
-import json, sys, urllib.request, ssl, os, logging
+import json
+import logging
+import os
+import ssl
+import sys
+import urllib.request
 
 log = logging.getLogger(__name__)
 

@@ -10,17 +10,22 @@ Gate: Sharpe>0.5, Return>0, DD>-25%. Best = gate-passers max Sharpe; fallback
 keeps current defaults if nothing passes.
 """
 from __future__ import annotations
-import sys, os, json, time, traceback
-from pathlib import Path
+
+import json
+import os
+import sys
+import time
+import traceback
 from datetime import datetime
+from pathlib import Path
 
 ROOT = r"D:\repositories\Quant-Nanggroe-AI-worktree"
 sys.path.insert(0, ROOT)
 os.environ["PYTHONPATH"] = ROOT
 
 import numpy as np
-import pandas as pd
 import yfinance as yf
+
 from quant_nanggroe.engine.registry import list_strategies
 
 GATE_SHARPE = 0.5

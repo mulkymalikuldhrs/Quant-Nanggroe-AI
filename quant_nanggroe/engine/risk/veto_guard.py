@@ -107,7 +107,7 @@ class GovernanceVetoGuard:
         if risk_per_trade > 0 and risk_per_trade / self._max_risk_per_trade > 1.0:
             return GovernanceVetoResult(
                 allowed=False,
-                reason=f"Per-trade risk exceeds limit",
+                reason="Per-trade risk exceeds limit",
             )
 
         return GovernanceVetoResult(allowed=True)

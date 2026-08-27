@@ -7,12 +7,13 @@ Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 """
 
 import os
-import sys
-import time
-import subprocess
-import threading
 import signal
+import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
+
 
 def print_banner():
     """Print startup banner"""

@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from .checks import all_checks, CheckResult, Severity
+from .checks import CheckResult, Severity, all_checks
 
 logger = logging.getLogger(__name__)
 

@@ -7,9 +7,12 @@ Usage:
 Output: JSON results to data/backtest/results/ + summary to stdout.
 """
 
-import json, os, sys, time, argparse
+import argparse
+import json
+import sys
+import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -161,8 +164,7 @@ def run_walk_forward(
     the combined series (validation data leaked into signal generation).
     Now uses analyze_strategy: re-fits per fold, separate IS/OOS signal slices.
     """
-    import pandas as pd
-    from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+    from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
     from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
     from quant_nanggroe.engine.strategy.strategies import create_strategy
 

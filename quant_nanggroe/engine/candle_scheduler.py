@@ -24,7 +24,7 @@ import logging
 import os
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -638,7 +638,7 @@ class CandleScheduler:
     def _log_to_history(self, result: "CycleResult") -> None:
         """Log event to SQLite trade history for unlimited persistence."""
         try:
-            from quant_nanggroe.engine.trade_history import get_trade_history, TradeEvent
+            from quant_nanggroe.engine.trade_history import TradeEvent, get_trade_history
             history = get_trade_history()
             event = TradeEvent(
                 symbol=result.symbol,
@@ -666,7 +666,6 @@ class CandleScheduler:
         Returns (signal, confidence, traded).
         """
         try:
-            import MetaTrader5 as mt5
             from quant_nanggroe.engine.agentic import get_autonomous_pipeline
             pipeline = get_autonomous_pipeline()
             if not pipeline.list_available_strategies():
@@ -705,7 +704,6 @@ class CandleScheduler:
         self, tf_data: dict, primary_tf: str,
     ) -> dict:
         """Check if multiple timeframes are aligned in the same direction."""
-        import pandas as pd
         biases = {}
         for tf, df in tf_data.items():
             if len(df) < 50:

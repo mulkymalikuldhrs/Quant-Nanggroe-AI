@@ -3,15 +3,20 @@
 Precomputes DhaherSystem signals once, then sweeps kelly_fraction + lot scaling.
 SL/TP-aware backtest using EURUSD 1h data.
 """
-import sys, json, logging
-from pathlib import Path
+import json
+import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO))
 sys.path.insert(0, str(_REPO / "quant_nanggroe"))
 
-import numpy as np, pandas as pd, yfinance as yf
+import numpy as np
+import pandas as pd
+import yfinance as yf
+
 from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s')

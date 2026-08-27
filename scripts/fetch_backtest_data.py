@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Fetch historical daily OHLCV data via Bybit CDN bypass for backtesting."""
 
-import json, os, sys, time
+import json
+import sys
+import time
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -39,7 +41,7 @@ def fetch_daily_klines(symbol: str, limit: int = 365) -> List[Dict]:
             candles.reverse()
             return candles
     # Fallback: try with smaller limit to debug
-    print(f"  Bybit CDN failed, trying smaller limit=200...")
+    print("  Bybit CDN failed, trying smaller limit=200...")
     for ip in exchange._bybit_ips:
         data = DNSBypass._raw_https(
             ip, exchange.BYBIT_CDN_CNAME, exchange.BYBIT_HOST,
@@ -75,7 +77,7 @@ def main():
             closes = [c["close"] for c in candles]
             print(f"  Price range: ${min(closes):.2f} - ${max(closes):.2f}")
         else:
-            print(f"  FAILED")
+            print("  FAILED")
         time.sleep(0.5)
 
 if __name__ == "__main__":

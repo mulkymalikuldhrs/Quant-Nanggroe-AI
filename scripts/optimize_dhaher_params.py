@@ -1,24 +1,25 @@
 """Grid search over DhaherSystem parameters to maximize Sharpe while passing gate.
 Uses real EURUSD data via yfinance and DhaherSystem's built-in SL/TP.
 """
-import sys, json, logging, itertools, time
-from pathlib import Path
+import itertools
+import json
+import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pandas as pd
-import numpy as np
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 log = logging.getLogger('opt_dhaher')
 
 # Import real DhaherSystem from quant_nanggroe
-from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 from quant_nanggroe.engine.strategy.backtest_adapter import BacktestConfig, backtest
 
 # Also import the pipeline gate
-from quant_nanggromo.engine.backtest.pipeline import gate_decision  # fallback
+from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 
 
 def run_grid():

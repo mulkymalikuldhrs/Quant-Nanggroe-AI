@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from quant_nanggroe.core.scoring.base import BaseScorer, ScorerResult, _clamp
 

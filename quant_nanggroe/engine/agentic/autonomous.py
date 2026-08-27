@@ -1492,7 +1492,6 @@ class AutonomousPipeline:
                 # Per-symbol tuned params (CANONICAL 15.6 → tuning_results):
                 try:
                     from quant_nanggroe.engine.strategy_allocation import best_params_for
-                    from quant_nanggroe.engine.strategies.base import StrategyParameters as _SP
                     tuned = best_params_for(name, symbol)
                     if tuned and hasattr(strat, "_parameters"):
                         for k, v in tuned.items():
@@ -1518,7 +1517,8 @@ class AutonomousPipeline:
         # ── Signal Aggregation Engine (v8.0) ────────────────────────
         try:
             from quant_nanggroe.engine.execution.signal_aggregator import (
-                SignalAggregator, StrategyVote,
+                SignalAggregator,
+                StrategyVote,
             )
             agg = SignalAggregator(min_conviction=0.30, risk_per_symbol=0.005)
 
@@ -1647,7 +1647,7 @@ class AutonomousPipeline:
 
             # ATR-based SL via TradingProfile (scalp/day/swing)
             try:
-                from quant_nanggroe.engine.risk.trading_profile import detect_profile, compute_sl_tp
+                from quant_nanggroe.engine.risk.trading_profile import compute_sl_tp, detect_profile
                 profile = detect_profile(timeframe)
                 _atr = atr_value if atr_value > 0 else current_price * 0.005
                 sltp = compute_sl_tp(side=signal, entry_price=current_price, atr_value=_atr, timeframe=timeframe)
@@ -2307,7 +2307,7 @@ class AutonomousPipeline:
                         if self._lifecycle.strategies[sname].state != StrategyStatus.ACTIVE:
                             self._lifecycle._transition(
                                 sname, StrategyStatus.ACTIVE,
-                                f"Scorecard: positive edge")
+                                "Scorecard: positive edge")
                             logger.info("SCORECARD ACTIVATE: %s", sname)
         except Exception as exc:
             logger.debug("Scorecard evolution skipped: %s", exc)

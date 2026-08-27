@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
-
-import numpy as np
 
 from quant_nanggroe.core.scoring.base import BaseScorer
 from quant_nanggroe.core.scoring.bond_scorer import BondScorer
 from quant_nanggroe.core.scoring.economic_scorer import EconomicScorer
+from quant_nanggroe.core.scoring.fusion_engine import FusionEngine, ScoredSignal
 from quant_nanggroe.core.scoring.geo_scorer import GeopoliticalScorer
 from quant_nanggroe.core.scoring.macro_scorer import MacroScorer
 from quant_nanggroe.core.scoring.sentiment_scorer import SentimentScorer
 from quant_nanggroe.core.scoring.technical_scorer import TechnicalScorer
 from quant_nanggroe.core.scoring.volatility_scorer import VolatilityScorer
-from quant_nanggroe.core.scoring.fusion_engine import FusionEngine, ScoredSignal
 
 logger = logging.getLogger(__name__)
 

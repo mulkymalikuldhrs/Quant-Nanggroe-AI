@@ -1,5 +1,4 @@
 """Adversarial test: break the QNA risk guard. Prove fail-closed."""
-import sys
 from quant_nanggroe.engine.risk.manager import RiskManager
 
 EQ = 1000.0  # $1K demo account (matches Valetax demo)

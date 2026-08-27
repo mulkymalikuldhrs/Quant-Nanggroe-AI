@@ -81,7 +81,7 @@ def get_json(url: str, timeout: int = 15) -> Optional[Any]:
     # 2. Fallback: WARP HTTP proxy (Cloudflare 1.1.1.1) if available
     if _warp_proxy_available():
         try:
-            with httpx.Client(proxy=f"http://172.16.0.1:2480", timeout=httpx.Timeout(5.0, connect=3.0), verify=True) as client:
+            with httpx.Client(proxy="http://172.16.0.1:2480", timeout=httpx.Timeout(5.0, connect=3.0), verify=True) as client:
                 resp = client.get(url, headers={"User-Agent": "QNA/1.0"})
                 resp.raise_for_status()
                 log.info(f"Got response via WARP proxy for {url[:60]}")

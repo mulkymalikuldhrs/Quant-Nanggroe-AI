@@ -1,10 +1,15 @@
 """Phase5 fangbot — SL/TP + Kelly + dynamic-lot grid on 1h EURUSD (reduced grid)."""
-import sys, json, itertools, time
-from pathlib import Path
+import itertools
+import json
+import sys
+import time
 from datetime import datetime
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "quant_nanggroe" / "engine" / "strategies"))
-import numpy as np, pandas as pd
+import numpy as np
+import pandas as pd
 
 from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
 

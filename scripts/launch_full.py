@@ -18,7 +18,6 @@ import signal
 import subprocess
 import sys
 import time
-import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -113,9 +112,9 @@ def print_status(procs: dict, scheduler=None):
         print(f"  {name:20s} {status}")
     if scheduler:
         print(f"  {'Scheduler':20s} {'RUNNING' if scheduler.is_running else 'STOPPED'}")
-    print(f"\n  API:       http://127.0.0.1:8000/docs")
-    print(f"  Proxy:     http://127.0.0.1:8420/v1/models")
-    print(f"  Ensemble:  POST http://127.0.0.1:8000/api/ensemble/vote")
+    print("\n  API:       http://127.0.0.1:8000/docs")
+    print("  Proxy:     http://127.0.0.1:8420/v1/models")
+    print("  Ensemble:  POST http://127.0.0.1:8000/api/ensemble/vote")
     print("=" * 60)
 
 

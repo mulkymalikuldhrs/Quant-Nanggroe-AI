@@ -10,7 +10,6 @@ Usage:
   python3 live_engine.py [start|stop|restart|status|dashboard]
 """
 
-import json
 import logging
 import os
 import sqlite3
@@ -29,6 +28,7 @@ LOG_DIR = QNA_DIR / "logs"
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 
+from quant_nanggroe.data.providers.data_manager import DataManager
 from quant_nanggroe.engine.live.adaptive_integration import create_live_pipeline
 from quant_nanggroe.engine.risk.constants import (
     ASSET_ALLOCATIONS,
@@ -47,7 +47,6 @@ from quant_nanggroe.engine.risk.kill_switch import KillSwitch, configure_kill_sw
 from quant_nanggroe.engine_bridge import EnginePriceProvider, EngineRiskManager, StalePositionAnalyzer
 from quant_nanggroe.engine_production_bridge import create_production_engine
 from quant_nanggroe.notifier import format_error_message, format_heartbeat, send_telegram
-from quant_nanggroe.data.providers.data_manager import DataManager
 from quant_nanggroe.strategies.trend_follow import TrendFollow
 from quant_nanggroe.strategies.tsmom import TSMOM
 
@@ -1238,9 +1237,10 @@ class LiveEngine:
                                  f"({wr:.0%} WR, {t} trades) — candidate for evolver")
                     # Trigger StrategyEvolver if available
                     try:
-                        from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
-                        from quant_nanggroe.engine.strategies.registry import StrategyRegistry
                         import random
+
+                        from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+                        from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver
                         ev = StrategyEvolver()
                         baseline = {"lookback": 17, "atr_mult": 1.2}
                         try:

@@ -22,7 +22,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 logger = logging.getLogger("QNA.AutoRetrain")
 
@@ -96,7 +96,6 @@ class AutoRetrainer:
         second half — no lookahead. Uniform across every strategy output
         shape (single signal or per-bar series).
         """
-        import pandas as pd
 
         from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
@@ -181,11 +180,13 @@ class AutoRetrainer:
         }
 
         try:
-            from quant_nanggroe.engine.strategy_allocation import (
-                allocation_map, _lookup_asset, best_params_for,
-            )
-            from quant_nanggroe.engine.strategies.registry import StrategyRegistry
             from quant_nanggroe.engine.backtest.hyperopt import BayesianOptimizer
+            from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+            from quant_nanggroe.engine.strategy_allocation import (
+                _lookup_asset,
+                allocation_map,
+                best_params_for,
+            )
         except ImportError as exc:
             summary["errors"] += 1
             summary["fatal"] = str(exc)

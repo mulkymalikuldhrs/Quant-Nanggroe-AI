@@ -1,5 +1,5 @@
+from quant_nanggroe.core.regime.attribution import AttributionResult, SignalAttribution
 from quant_nanggroe.core.regime.detector import RegimeDetector, RegimeResult
-from quant_nanggroe.core.regime.attribution import SignalAttribution, AttributionResult
 
 __all__ = [
     "RegimeDetector",

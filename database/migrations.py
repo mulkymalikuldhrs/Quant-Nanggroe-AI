@@ -5,11 +5,11 @@ Handles database schema updates and migrations
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 """
 
-import os
-import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 

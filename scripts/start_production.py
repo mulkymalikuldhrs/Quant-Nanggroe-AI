@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Production startup script — launches API + dashboard."""
-import subprocess, sys, time, os
+import os
+import subprocess
+import sys
+import time
 
 PORT_API = 8000
 PORT_DASH = 3000
@@ -25,11 +28,11 @@ def start_dashboard():
 def main():
     api = start_api()
     dash = start_dashboard()
-    print(f"\nQuant-Nanggroe-AI Hedge Fund running:")
+    print("\nQuant-Nanggroe-AI Hedge Fund running:")
     print(f"  API:     http://localhost:{PORT_API}")
     print(f"  Dashboard: http://localhost:{PORT_DASH}")
     print(f"  Health:  http://localhost:{PORT_API}/health")
-    print(f"\nPress Ctrl+C to stop.")
+    print("\nPress Ctrl+C to stop.")
     try:
         while True:
             time.sleep(1)

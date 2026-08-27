@@ -9,13 +9,15 @@ This script bootstraps it by:
 After this, get_active_strategies() returns only PROVEN strategies.
 """
 import sys
+
 sys.path.insert(0, r"D:\repositories\Quant-Nanggroe-AI-worktree")
 
 import quant_nanggroe.engine.strategies  # noqa: F401
-from quant_nanggroe.engine.strategy_lifecycle import (
-    StrategyLifecycleManager, StrategyStatus,
-)
 from quant_nanggroe.engine.analytics.strategy_scorecard import compute_all_strategies
+from quant_nanggroe.engine.strategy_lifecycle import (
+    StrategyLifecycleManager,
+    StrategyStatus,
+)
 
 
 def main():
@@ -63,7 +65,7 @@ def main():
                 print(f"  REGISTERED {s} (CPCV specialist for {asset_class})")
 
     active = mgr.get_active_strategies()
-    print(f"\n=== RESULT ===")
+    print("\n=== RESULT ===")
     print(f"Registered: {registered}")
     print(f"Killed: {killed}")
     print(f"Active: {len(active)} -> {active[:10]}")

@@ -6,7 +6,6 @@ independently — one failure does not crash the colony.
 
 from __future__ import annotations
 
-import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, List, Optional

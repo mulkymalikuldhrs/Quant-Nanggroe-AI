@@ -10,12 +10,11 @@ Provides legacy interface expected by older test suite:
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
-
-import pandas as pd
+from typing import Any, Dict, Optional
 
 from quant_nanggroe.engine.strategies.base import StrategyParameters
 from quant_nanggroe.engine.strategies.crypto_specific import CryptoSpecificStrategy as _BaseCryptoSpecific
+
 
 class CryptoSpecificStrategy(_BaseCryptoSpecific):
     """Legacy wrapper exposing older API expectations."""

@@ -1,4 +1,6 @@
-import subprocess, pathlib, sqlite3
+import pathlib
+import sqlite3
+
 root = pathlib.Path(r"D:\repositories\Quant-Nanggroe-AI-worktree")
 # 1) libs available?
 for lib in ["openpyxl", "reportlab", "pandas"]:

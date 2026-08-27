@@ -308,7 +308,7 @@ if __name__ == "__main__":
         format_pair_table(non_forex, f"NON-FOREX PAIRS ({len(non_forex)})")
         
         print(f"\n{'='*110}")
-        print(f"  TRADING STATUS SUMMARY")
+        print("  TRADING STATUS SUMMARY")
         print(f"{'='*110}")
         print(f"  Pairs fully ENABLED:  {len(SL_JILAT_ENABLED)}")
         print(f"  Pairs SHORT_ONLY:     {len(SL_JILAT_SHORT_ONLY)}")
@@ -317,5 +317,5 @@ if __name__ == "__main__":
         print()
         print(f"  ✓ ALL {len(SL_JILAT_ENABLED)} pairs are ENABLED (both buy and sell).")
         print(f"  ✓ {len(SL_JILAT_FOREX)} forex pairs with live spreads and margin data.")
-        print(f"  ✓ Use --live to re-scan in real-time against MT5.")
-        print(f"  ✓ Run:  python multi_pair_scanner.py --live")
+        print("  ✓ Use --live to re-scan in real-time against MT5.")
+        print("  ✓ Run:  python multi_pair_scanner.py --live")

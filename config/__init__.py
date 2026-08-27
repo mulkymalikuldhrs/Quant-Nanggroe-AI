@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+
 class SystemConfig:
     """System configuration wrapper"""
     

@@ -202,7 +202,7 @@ class ServiceStatus:
             lines.append(f"  ✘ {s}")
 
         if self.file_based:
-            lines.append(f"\n📁 FILE-BASED CREDENTIALS (plaintext in config/):")
+            lines.append("\n📁 FILE-BASED CREDENTIALS (plaintext in config/):")
             for s in self.file_based:
                 lines.append(f"  ⚠ {s['name']}: {s['location']} — {s['risk']}")
 

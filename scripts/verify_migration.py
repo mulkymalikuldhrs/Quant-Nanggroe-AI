@@ -1,7 +1,6 @@
 """Syntax-check all 50 migrated strategy files without importing deps."""
-import py_compile
 import os
-import sys
+import py_compile
 
 strategies_dir = r"D:\repositories\Quant-Nanggroe-AI-worktree\quant_nanggroe\engine\strategies"
 
@@ -29,12 +28,12 @@ for fname in strategy_files + ref_files:
         failure.append((fname, str(exc)))
         print(f"  FAIL {fname}: {exc}")
 
-print(f"\n\n=== RESULTS ===")
+print("\n\n=== RESULTS ===")
 print(f"Total: {len(strategy_files) + len(ref_files)}")
 print(f"Success: {len(success)}")
 print(f"Failure: {len(failure)}")
 if failure:
-    print(f"Failed files:")
+    print("Failed files:")
     for fname, err in failure:
         print(f"  - {fname}: {err}")
 

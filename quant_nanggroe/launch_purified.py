@@ -3,9 +3,9 @@
 QNA Purified Engine Launcher
 Starts the purified trading engine + API server + dashboard
 """
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 
 # ──────────────────────────────────────────────────────────────
@@ -58,7 +58,6 @@ log = logging.getLogger("QNA-Launcher")
 def create_app():
     """Create FastAPI app with purified routes enabled"""
     from fastapi import FastAPI
-    from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
     
     app = FastAPI(title="QNA Purified Engine", version="0.1.0")

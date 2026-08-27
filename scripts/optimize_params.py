@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Phase 5: Optimize Kelly fraction, lot sizing, SL/TP multipliers for top gate-passing strategies.
 Focus: DhaherSystem only (other strategies have init API bug)."""
-import sys, os, json, itertools
-from pathlib import Path
+import itertools
+import json
+import sys
 from datetime import datetime
+from pathlib import Path
 
 ROOT = r"D:\repositories\Quant-Nanggroe-AI-worktree"
 sys.path.insert(0, ROOT)

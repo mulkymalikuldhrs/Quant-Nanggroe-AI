@@ -1,5 +1,8 @@
-import sys, os, importlib
+import importlib
+import os
+import sys
 from pathlib import Path
+
 _REPO = str(Path(__file__).resolve().parent.parent)
 sys.path.insert(0, _REPO)
 errors = []

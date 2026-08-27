@@ -10,6 +10,7 @@ Usage in engine code:
 """
 from pathlib import Path
 
+
 def find_project_root(start=None):
     """Walk up from `start` until we find pyproject.toml or .git directory."""
     p = Path(start or __file__).resolve()

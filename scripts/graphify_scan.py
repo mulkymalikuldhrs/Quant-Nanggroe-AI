@@ -11,7 +11,6 @@ Usage:
 
 import ast
 import os
-import sys
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
@@ -262,7 +261,7 @@ def main():
 
     print()
     print("=" * 60)
-    print(f"FINAL COUNTS:")
+    print("FINAL COUNTS:")
     print(f"  Modules:  {total}")
     print(f"  Isolated: {isolated}")
     print(f"  Dangling: {dangling_count}")

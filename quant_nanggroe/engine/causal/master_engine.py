@@ -488,7 +488,7 @@ class MasterQuantNanggroeEngine:
                 }
 
         # Fallback to heuristic if cointegration not available
-        if not smt_diag.get("method", "") in ("cointegration",) or not smt_diag.get("n_pairs", 0):
+        if smt_diag.get("method", "") not in ("cointegration",) or not smt_diag.get("n_pairs", 0):
             if gold_highs and silver_highs:
                 smt_flag = self.check_smt_divergence(gold_highs, silver_highs)
                 smt_diag["method"] = "heuristic"

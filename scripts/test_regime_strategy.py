@@ -1,15 +1,14 @@
 """Test regime -> strategy integration"""
 import sys
+
 sys.path.insert(0, '..')
-import pandas as pd
 import numpy as np
+import pandas as pd
+from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
 
 from quant_nanggroe.engine.regime.strategy_selector import (
     RegimeStrategySelector,
-    StrategyConfig,
 )
-from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
-
 
 np.random.seed(42)
 dates = pd.date_range('2023-01-01', periods=252, freq='D')
@@ -27,6 +26,8 @@ kelly = selector.adjust_kelly_for_regime(0.5, "high_volatility", 0.8)
 print(f"Adjusted Kelly (high_vol): {kelly}")
 
 import asyncio
+
+
 async def test():
     strat = RegimeAdaptiveStrategy()
     result = await strat.analyze(df)

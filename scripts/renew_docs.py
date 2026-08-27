@@ -8,10 +8,8 @@ Renews all 49 documentation files based on:
 """
 
 import os
-import json
 import shutil
 from datetime import datetime
-from pathlib import Path
 
 BASE = r"D:\repositories\Quant-Nanggroe-AI-worktree"
 DOCS_DIR = os.path.join(BASE, "docs")
@@ -52,7 +50,7 @@ for doc_file in ["02_ARCHITECTURE.md", "04_API.md", "12_TASKS.md", "48_REPOSITOR
 DOCS = {}
 
 # 00 — VISION
-DOCS["00_VISION.md"] = f"""# Quant Nanggroe AI — Vision
+DOCS["00_VISION.md"] = """# Quant Nanggroe AI — Vision
 
 ## The North Star
 To build a **Sovereign Autonomous Trading Intelligence** — a self-improving, multi-agent AI system capable of operating across global financial markets with full autonomy, constitutional risk management, and continuous learning.
@@ -71,7 +69,7 @@ Stabilize the Python backend core (engine, API, daemon), reconcile the frontend-
 """
 
 # 01 — PRD
-DOCS["01_PRD.md"] = f"""# Quant Nanggroe AI — Product Requirements Document
+DOCS["01_PRD.md"] = """# Quant Nanggroe AI — Product Requirements Document
 
 ## Product Goals
 1. Provide a **unified multi-agent trading intelligence** that covers research, analysis, execution, and risk management.
@@ -102,7 +100,7 @@ DOCS["01_PRD.md"] = f"""# Quant Nanggroe AI — Product Requirements Document
 
 # 02 — ARCHITECTURE (preserve existing, enhance)
 ARCH_EXISTING = EXISTING.get("02_ARCHITECTURE.md", "")
-ARCH_NEW = f"""# Quant Nanggroe AI — System Architecture
+ARCH_NEW = """# Quant Nanggroe AI — System Architecture
 
 *Last updated: July 2026 | AI-Engineering-OS v1.0 compliant*
 
@@ -184,13 +182,13 @@ The system is composed of three main layers:
 DOCS["02_ARCHITECTURE.md"] = ARCH_NEW
 
 # 03 — SPEC
-DOCS["03_SPEC.md"] = f"""# Quant Nanggroe AI — Technical Specification
+DOCS["03_SPEC.md"] = """# Quant Nanggroe AI — Technical Specification
 
 ## System Invariants
 1. **No trade executes without passing risk checks** (Kelly sizing, VaR limit, drawdown limit).
 2. **All agent decisions are logged** to the memory bus for auditability.
 3. **State is persisted** to `paper_state/` on every significant event.
-4. **API responses** follow a consistent `{{"success": bool, "data": ..., "error": str}}` envelope.
+4. **API responses** follow a consistent `{"success": bool, "data": ..., "error": str}` envelope.
 
 ## Data Formats
 - **State Files:** JSON (`paper_state/state.json`), CSV (`paper_state/pnl.csv`).
@@ -212,7 +210,7 @@ DOCS["03_SPEC.md"] = f"""# Quant Nanggroe AI — Technical Specification
 
 # 04 — API (preserve existing, enhance)
 API_EXISTING = EXISTING.get("04_API.md", "")
-API_NEW = f"""# Quant Nanggroe AI — API Reference
+API_NEW = """# Quant Nanggroe AI — API Reference
 
 *Last updated: July 2026*
 
@@ -233,7 +231,7 @@ API_NEW = f"""# Quant Nanggroe AI — API Reference
 |--------|------|-------------|
 | POST | `/api/v1/trade` | Submit trade request |
 | GET | `/api/v1/portfolio` | Current equity, cash, open positions |
-| GET | `/api/v1/risk/{{symbol}}` | Risk checks for a specific asset |
+| GET | `/api/v1/risk/{symbol}` | Risk checks for a specific asset |
 
 ### Agents & Backtesting
 | Method | Path | Description |
@@ -256,7 +254,7 @@ API_NEW = f"""# Quant Nanggroe AI — API Reference
 
 ## Response Envelope
 ```json
-{{"success": true, "data": {{...}}, "error": null}}
+{"success": true, "data": {...}, "error": null}
 ```
 
 > [!WARNING]
@@ -267,7 +265,7 @@ API_NEW = f"""# Quant Nanggroe AI — API Reference
 DOCS["04_API.md"] = API_NEW
 
 # 05 — SDK
-DOCS["05_SDK.md"] = f"""# Quant Nanggroe AI — SDK & Developer Tooling
+DOCS["05_SDK.md"] = """# Quant Nanggroe AI — SDK & Developer Tooling
 
 ## Installation
 ```bash
@@ -321,7 +319,7 @@ risk = RiskEngine(config_path="risk_config.yaml")
 """
 
 # 06 — RUNTIME
-DOCS["06_RUNTIME.md"] = f"""# Quant Nanggroe AI — Runtime Specification
+DOCS["06_RUNTIME.md"] = """# Quant Nanggroe AI — Runtime Specification
 
 ## Execution Model
 - **Primary:** Uvicorn ASGI server running FastAPI app.
@@ -348,7 +346,7 @@ DOCS["06_RUNTIME.md"] = f"""# Quant Nanggroe AI — Runtime Specification
 """
 
 # 07 — SECURITY
-DOCS["07_SECURITY.md"] = f"""# Quant Nanggroe AI — Security Architecture
+DOCS["07_SECURITY.md"] = """# Quant Nanggroe AI — Security Architecture
 
 ## Trust Model
 - **Local-first:** Secrets stored in `.env` file, encrypted at rest via `cryptography` library.
@@ -375,7 +373,7 @@ DOCS["07_SECURITY.md"] = f"""# Quant Nanggroe AI — Security Architecture
 """
 
 # 08 — STYLEGUIDE
-DOCS["08_STYLEGUIDE.md"] = f"""# Quant Nanggroe AI — Style Guide
+DOCS["08_STYLEGUIDE.md"] = """# Quant Nanggroe AI — Style Guide
 
 ## Python Naming
 - **Packages:** lowercase with underscores (`quant_nanggroe`).
@@ -401,7 +399,7 @@ DOCS["08_STYLEGUIDE.md"] = f"""# Quant Nanggroe AI — Style Guide
 """
 
 # 09 — TESTING
-DOCS["09_TESTING.md"] = f"""# Quant Nanggroe AI — Testing Strategy
+DOCS["09_TESTING.md"] = """# Quant Nanggroe AI — Testing Strategy
 
 ## Test Layers
 1. **Unit Tests:** pytest with asyncio support. Cover engine components, risk calculations, agent logic.
@@ -437,7 +435,7 @@ make test-risk
 """
 
 # 10 — ROADMAP
-DOCS["10_ROADMAP.md"] = f"""# Quant Nanggroe AI — Roadmap
+DOCS["10_ROADMAP.md"] = """# Quant Nanggroe AI — Roadmap
 
 ## Phase 1: Stabilization (2026 H2)
 - [ ] Fix API routing mismatches (`/api/*` vs `/api/v1/*`).
@@ -466,7 +464,7 @@ DOCS["10_ROADMAP.md"] = f"""# Quant Nanggroe AI — Roadmap
 """
 
 # 11 — DECISIONS
-DOCS["11_DECISIONS.md"] = f"""# Quant Nanggroe AI — Architecture Decision Records
+DOCS["11_DECISIONS.md"] = """# Quant Nanggroe AI — Architecture Decision Records
 
 ## ADR-001: LangGraph for Agent Orchestration
 - **Problem:** Need a framework for cyclic agent workflows with state persistence.
@@ -495,7 +493,7 @@ DOCS["11_DECISIONS.md"] = f"""# Quant Nanggroe AI — Architecture Decision Reco
 
 # 12 — TASKS (preserve existing, enhance)
 TASKS_EXISTING = EXISTING.get("12_TASKS.md", "")
-DOCS["12_TASKS.md"] = TASKS_EXISTING + f"""
+DOCS["12_TASKS.md"] = TASKS_EXISTING + """
 
 ## Current Sprint (July 2026)
 
@@ -516,7 +514,7 @@ DOCS["12_TASKS.md"] = TASKS_EXISTING + f"""
 """
 
 # 13 — CHANGELOG
-DOCS["13_CHANGELOG.md"] = f"""# Quant Nanggroe AI — Changelog
+DOCS["13_CHANGELOG.md"] = """# Quant Nanggroe AI — Changelog
 
 ## v5.1.0 (Current — July 2026)
 - Multi-agent system with 20+ specialized agents.
@@ -546,7 +544,7 @@ DOCS["13_CHANGELOG.md"] = f"""# Quant Nanggroe AI — Changelog
 """
 
 # 14 — PROJECT_RULES
-DOCS["14_PROJECT_RULES.md"] = f"""# Quant Nanggroe AI — Project Rules
+DOCS["14_PROJECT_RULES.md"] = """# Quant Nanggroe AI — Project Rules
 
 ## Mandatory Rules
 1. **No trade without risk check.** Every order must pass Kelly criterion, VaR limit, and drawdown limit.
@@ -568,7 +566,7 @@ DOCS["14_PROJECT_RULES.md"] = f"""# Quant Nanggroe AI — Project Rules
 """
 
 # 15 — PROJECT_CONTEXT
-DOCS["15_PROJECT_CONTEXT.md"] = f"""# Quant Nanggroe AI — Project Context
+DOCS["15_PROJECT_CONTEXT.md"] = """# Quant Nanggroe AI — Project Context
 
 ## Project Identity
 - **Name:** Quant Nanggroe AI (qnai)
@@ -594,7 +592,7 @@ Build the most comprehensive open-source autonomous trading intelligence system,
 """
 
 # 16 — AI_MEMORY
-DOCS["16_AI_MEMORY.md"] = f"""# Quant Nanggroe AI — AI Memory & Facts
+DOCS["16_AI_MEMORY.md"] = """# Quant Nanggroe AI — AI Memory & Facts
 
 ## Stable Facts
 - **Project Name:** Quant Nanggroe AI
@@ -619,13 +617,13 @@ DOCS["16_AI_MEMORY.md"] = f"""# Quant Nanggroe AI — AI Memory & Facts
 - ❌ Don't break legacy dashboard by changing `paper_state/` format without warning.
 
 ## Patterns
-- Response envelope: `{{"success": bool, "data": ..., "error": str}}`
+- Response envelope: `{"success": bool, "data": ..., "error": str}`
 - Agent pattern: Each agent has `health_check()`, `status` attribute, and `stop()` method.
 - Daemon pattern: Agents auto-start by priority (1 = core, 2 = standard, 3 = advanced).
 """
 
 # 17 — GLOSSARY
-DOCS["17_GLOSSARY.md"] = f"""# Quant Nanggroe AI — Glossary
+DOCS["17_GLOSSARY.md"] = """# Quant Nanggroe AI — Glossary
 
 | Term | Definition |
 |------|------------|
@@ -644,7 +642,7 @@ DOCS["17_GLOSSARY.md"] = f"""# Quant Nanggroe AI — Glossary
 """
 
 # 18 — DOMAIN_MODEL
-DOCS["18_DOMAIN_MODEL.md"] = f"""# Quant Nanggroe AI — Domain Model
+DOCS["18_DOMAIN_MODEL.md"] = """# Quant Nanggroe AI — Domain Model
 
 ## Core Entities
 
@@ -681,7 +679,7 @@ DOCS["18_DOMAIN_MODEL.md"] = f"""# Quant Nanggroe AI — Domain Model
 """
 
 # 19 — RISK_REGISTER
-DOCS["19_RISK_REGISTER.md"] = f"""# Quant Nanggroe AI — Risk Register
+DOCS["19_RISK_REGISTER.md"] = """# Quant Nanggroe AI — Risk Register
 
 | # | Risk | Severity | Likelihood | Mitigation | Status |
 |---|------|----------|------------|------------|--------|
@@ -695,7 +693,7 @@ DOCS["19_RISK_REGISTER.md"] = f"""# Quant Nanggroe AI — Risk Register
 """
 
 # 20 — RELEASE_PLAN
-DOCS["20_RELEASE_PLAN.md"] = f"""# Quant Nanggroe AI — Release Plan
+DOCS["20_RELEASE_PLAN.md"] = """# Quant Nanggroe AI — Release Plan
 
 ## Release Stages
 1. **Development (current):** Active development on main branch. API may change. Docs may lag.
@@ -714,7 +712,7 @@ DOCS["20_RELEASE_PLAN.md"] = f"""# Quant Nanggroe AI — Release Plan
 """
 
 # 21 — CONTRIBUTING
-DOCS["21_CONTRIBUTING.md"] = f"""# Quant Nanggroe AI — Contributing Guide
+DOCS["21_CONTRIBUTING.md"] = """# Quant Nanggroe AI — Contributing Guide
 
 ## How to Contribute
 1. Fork the repository.
@@ -742,7 +740,7 @@ DOCS["21_CONTRIBUTING.md"] = f"""# Quant Nanggroe AI — Contributing Guide
 """
 
 # 22 — REQUIREMENTS
-DOCS["22_REQUIREMENTS.md"] = f"""# Quant Nanggroe AI — Requirements
+DOCS["22_REQUIREMENTS.md"] = """# Quant Nanggroe AI — Requirements
 
 ## Functional Requirements
 - FR-001: System shall support paper trading with historical and real-time data.
@@ -762,7 +760,7 @@ DOCS["22_REQUIREMENTS.md"] = f"""# Quant Nanggroe AI — Requirements
 """
 
 # 23 — VALIDATION
-DOCS["23_VALIDATION.md"] = f"""# Quant Nanggroe AI — Validation Strategy
+DOCS["23_VALIDATION.md"] = """# Quant Nanggroe AI — Validation Strategy
 
 ## Automated Validation
 - **Lint:** `make lint` — ruff check on all Python files.
@@ -783,7 +781,7 @@ DOCS["23_VALIDATION.md"] = f"""# Quant Nanggroe AI — Validation Strategy
 """
 
 # 24 — FEASIBILITY
-DOCS["24_FEASIBILITY.md"] = f"""# Quant Nanggroe AI — Feasibility Assessment
+DOCS["24_FEASIBILITY.md"] = """# Quant Nanggroe AI — Feasibility Assessment
 
 ## Technical Feasibility: HIGH
 - All core technologies (Python, FastAPI, LangGraph, Next.js) are mature and well-supported.
@@ -808,7 +806,7 @@ DOCS["24_FEASIBILITY.md"] = f"""# Quant Nanggroe AI — Feasibility Assessment
 """
 
 # 25 — ADR_PROCESS
-DOCS["25_ADR_PROCESS.md"] = f"""# Quant Nanggroe AI — ADR Process
+DOCS["25_ADR_PROCESS.md"] = """# Quant Nanggroe AI — ADR Process
 
 ## When to Write an ADR
 - Adding or changing a major dependency.
@@ -831,7 +829,7 @@ ADRs live in `docs/11_DECISIONS.md`, appended chronologically.
 """
 
 # 26 — DESIGN_REVIEW
-DOCS["26_DESIGN_REVIEW.md"] = f"""# Quant Nanggroe AI — Design Review Process
+DOCS["26_DESIGN_REVIEW.md"] = """# Quant Nanggroe AI — Design Review Process
 
 ## Review Cadence
 - Major architecture changes: formal review with written ADR.
@@ -852,7 +850,7 @@ DOCS["26_DESIGN_REVIEW.md"] = f"""# Quant Nanggroe AI — Design Review Process
 - Backend implementation gaps documented in `12_TASKS.md`.
 """
 
-DOCS["27_QUALITY_GATES.md"] = f"""# Quant Nanggroe AI — Quality Gates
+DOCS["27_QUALITY_GATES.md"] = """# Quant Nanggroe AI — Quality Gates
 
 ## Pre-Merge Gates
 1. ✅ Lint passes (`make lint`)
@@ -875,7 +873,7 @@ DOCS["27_QUALITY_GATES.md"] = f"""# Quant Nanggroe AI — Quality Gates
 - If security issue: escalate immediately.
 """
 
-DOCS["28_VERSIONING.md"] = f"""# Quant Nanggroe AI — Versioning
+DOCS["28_VERSIONING.md"] = """# Quant Nanggroe AI — Versioning
 
 ## Scheme
 Semantic Versioning (SemVer 2.0.0):
@@ -893,7 +891,7 @@ Semantic Versioning (SemVer 2.0.0):
 - CHANGELOG: `13_CHANGELOG.md`
 """
 
-DOCS["29_PLUGIN_SYSTEM.md"] = f"""# Quant Nanggroe AI — Plugin System
+DOCS["29_PLUGIN_SYSTEM.md"] = """# Quant Nanggroe AI — Plugin System
 
 ## Architecture
 The plugin system is designed around agent skills and data providers:
@@ -916,7 +914,7 @@ Agents self-register on startup via the Daemon Manager's `agents_config` diction
 - Plugin marketplace planned for v6.x.
 """
 
-DOCS["30_MULTI_AGENT_WORKFLOW.md"] = f"""# Quant Nanggroe AI — Multi-Agent Workflow
+DOCS["30_MULTI_AGENT_WORKFLOW.md"] = """# Quant Nanggroe AI — Multi-Agent Workflow
 
 ## Orchestration Engine
 Built on **LangGraph**, supporting:
@@ -937,7 +935,7 @@ Priority 3 (Advanced): Commander AGI, Bug Hunter, Money Maker, Backup Colony, Au
 - **Incident Response Workflow:** Monitoring Agent → Diagnosis Agent → Remediation Agent → Postmortem Agent.
 """
 
-DOCS["31_SELF_REVIEW.md"] = f"""# Quant Nanggroe AI — Self-Review Protocol
+DOCS["31_SELF_REVIEW.md"] = """# Quant Nanggroe AI — Self-Review Protocol
 
 ## Before Finalizing Output
 1. [ ] Check for missing assumptions.
@@ -953,7 +951,7 @@ DOCS["31_SELF_REVIEW.md"] = f"""# Quant Nanggroe AI — Self-Review Protocol
 If any check fails: fix before proceeding, document the issue, and update affected files.
 """
 
-DOCS["32_KNOWLEDGE_UPDATE.md"] = f"""# Quant Nanggroe AI — Knowledge Update Process
+DOCS["32_KNOWLEDGE_UPDATE.md"] = """# Quant Nanggroe AI — Knowledge Update Process
 
 ## Triggers for Knowledge Updates
 - New architecture decision (→ update `11_DECISIONS.md` and `16_AI_MEMORY.md`).
@@ -970,7 +968,7 @@ DOCS["32_KNOWLEDGE_UPDATE.md"] = f"""# Quant Nanggroe AI — Knowledge Update Pr
 5. Commit with `docs:` prefix in commit message.
 """
 
-DOCS["33_OBSERVABILITY.md"] = f"""# Quant Nanggroe AI — Observability
+DOCS["33_OBSERVABILITY.md"] = """# Quant Nanggroe AI — Observability
 
 ## Metrics (Prometheus)
 - **Endpoint:** `GET /metrics`
@@ -992,7 +990,7 @@ DOCS["33_OBSERVABILITY.md"] = f"""# Quant Nanggroe AI — Observability
 - Prometheus metrics for production monitoring.
 """
 
-DOCS["34_DEPLOYMENT.md"] = f"""# Quant Nanggroe AI — Deployment Guide
+DOCS["34_DEPLOYMENT.md"] = """# Quant Nanggroe AI — Deployment Guide
 
 ## Docker Deployment (Recommended)
 ```bash
@@ -1033,7 +1031,7 @@ cd dashboard && npm run build && npm start
 - **Docker:** Local or cloud container orchestration.
 """
 
-DOCS["35_INCIDENT_MANAGEMENT.md"] = f"""# Quant Nanggroe AI — Incident Management
+DOCS["35_INCIDENT_MANAGEMENT.md"] = """# Quant Nanggroe AI — Incident Management
 
 ## Classification
 - **SEV-1 (Critical):** System down, data loss, unauthorized access. Immediate response required.
@@ -1054,7 +1052,7 @@ DOCS["35_INCIDENT_MANAGEMENT.md"] = f"""# Quant Nanggroe AI — Incident Managem
 - Stub/pass blocks in engine cause silent failures (SEV-2).
 """
 
-DOCS["36_MIGRATION_PLAN.md"] = f"""# Quant Nanggroe AI — Migration Plan
+DOCS["36_MIGRATION_PLAN.md"] = """# Quant Nanggroe AI — Migration Plan
 
 ## When Migration Is Needed
 - Breaking API changes (major version bump).
@@ -1075,7 +1073,7 @@ DOCS["36_MIGRATION_PLAN.md"] = f"""# Quant Nanggroe AI — Migration Plan
 - Legacy dashboard health-check cleanup — pending.
 """
 
-DOCS["37_RELEASE_CHECKLIST.md"] = f"""# Quant Nanggroe AI — Release Checklist
+DOCS["37_RELEASE_CHECKLIST.md"] = """# Quant Nanggroe AI — Release Checklist
 
 ## Pre-Release
 - [ ] Version bumped in `pyproject.toml`.
@@ -1098,7 +1096,7 @@ DOCS["37_RELEASE_CHECKLIST.md"] = f"""# Quant Nanggroe AI — Release Checklist
 - [ ] Known issues documented in new release.
 """
 
-DOCS["38_MAINTENANCE.md"] = f"""# Quant Nanggroe AI — Maintenance Guide
+DOCS["38_MAINTENANCE.md"] = """# Quant Nanggroe AI — Maintenance Guide
 
 ## Routine Maintenance
 - **Daily:** Check daemon status (`qnai system status`), review logs for errors.
@@ -1119,7 +1117,7 @@ DOCS["38_MAINTENANCE.md"] = f"""# Quant Nanggroe AI — Maintenance Guide
 - Docker worker container may need memory limit adjustment.
 """
 
-DOCS["39_GOVERNANCE.md"] = f"""# Quant Nanggroe AI — Governance
+DOCS["39_GOVERNANCE.md"] = """# Quant Nanggroe AI — Governance
 
 ## Decision-Making Framework
 - **Technical decisions:** Made by maintainers with ADR documentation.
@@ -1137,7 +1135,7 @@ DOCS["39_GOVERNANCE.md"] = f"""# Quant Nanggroe AI — Governance
 - Trading strategies must be thoroughly backtested before paper trading.
 """
 
-DOCS["40_MULTI_AGENT.md"] = f"""# Quant Nanggroe AI — Multi-Agent System
+DOCS["40_MULTI_AGENT.md"] = """# Quant Nanggroe AI — Multi-Agent System
 
 ## Overview
 The multi-agent system consists of 20+ specialized agents organized in a priority-based hierarchy, managed by the Daemon Manager and orchestrated via LangGraph.
@@ -1169,7 +1167,7 @@ The multi-agent system consists of 20+ specialized agents organized in a priorit
 - **Quality Control:** Visual and analytical assessment.
 """
 
-DOCS["41_WORKFLOW.md"] = f"""# Quant Nanggroe AI — Workflows
+DOCS["41_WORKFLOW.md"] = """# Quant Nanggroe AI — Workflows
 
 ## Trading Workflow
 ```
@@ -1212,7 +1210,7 @@ Alert detected
 ```
 """
 
-DOCS["42_CHECKLISTS.md"] = f"""# Quant Nanggroe AI — Checklists
+DOCS["42_CHECKLISTS.md"] = """# Quant Nanggroe AI — Checklists
 
 ## Daily Operations Checklist
 - [ ] `qnai system status` — check system health.
@@ -1245,7 +1243,7 @@ DOCS["42_CHECKLISTS.md"] = f"""# Quant Nanggroe AI — Checklists
 - [ ] Restart system.
 """
 
-DOCS["43_TEMPLATES.md"] = f"""# Quant Nanggroe AI — Templates
+DOCS["43_TEMPLATES.md"] = """# Quant Nanggroe AI — Templates
 
 ## ADR Template
 ```markdown
@@ -1258,14 +1256,14 @@ DOCS["43_TEMPLATES.md"] = f"""# Quant Nanggroe AI — Templates
 
 ## Agent Registration Template
 ```python
-"agent_name": {{
+"agent_name": {
     "module": "agents.module_name",
     "class": "AgentClass",
     "instance": "agent_instance",
     "priority": 2,
     "auto_start": True,
     "description": "Agent description"
-}}
+}
 ```
 
 ## PR Template
@@ -1281,13 +1279,13 @@ DOCS["43_TEMPLATES.md"] = f"""# Quant Nanggroe AI — Templates
 ```
 """
 
-DOCS["44_PROMPT_LIBRARY.md"] = f"""# Quant Nanggroe AI — Prompt Library
+DOCS["44_PROMPT_LIBRARY.md"] = """# Quant Nanggroe AI — Prompt Library
 
 ## System Prompts
 
 ### Trade Execution Prompt
 ```
-Analyze current market conditions for {{symbol}}.
+Analyze current market conditions for {symbol}.
 Apply Kelly criterion for position sizing.
 Check VaR and drawdown limits.
 Execute trade if all risk checks pass.
@@ -1296,8 +1294,8 @@ Log decision to memory bus.
 
 ### Agent Creation Prompt
 ```
-Create a new {{agent_type}} agent specialized in {{specialization}}.
-Configure with {{experience}} experience level.
+Create a new {agent_type} agent specialized in {specialization}.
+Configure with {experience} experience level.
 Register with Daemon Manager.
 Initialize and start monitoring.
 ```
@@ -1311,7 +1309,7 @@ Alert on any failures.
 ```
 """
 
-DOCS["45_RELEASE_PROCESS.md"] = f"""# Quant Nanggroe AI — Release Process
+DOCS["45_RELEASE_PROCESS.md"] = """# Quant Nanggroe AI — Release Process
 
 ## Steps
 1. **Check readiness:** Run `37_RELEASE_CHECKLIST.md`.
@@ -1332,7 +1330,7 @@ DOCS["45_RELEASE_PROCESS.md"] = f"""# Quant Nanggroe AI — Release Process
 5. Merge back to `main`.
 """
 
-DOCS["46_INCIDENT_RESPONSE.md"] = f"""# Quant Nanggroe AI — Incident Response
+DOCS["46_INCIDENT_RESPONSE.md"] = """# Quant Nanggroe AI — Incident Response
 
 ## Response Procedures
 
@@ -1363,7 +1361,7 @@ DOCS["46_INCIDENT_RESPONSE.md"] = f"""# Quant Nanggroe AI — Incident Response
 - Postmortems stored in `docs/` as ADRs.
 """
 
-DOCS["47_REVERSE_ENGINEERING.md"] = f"""# Quant Nanggroe AI — Reverse Engineering Guide
+DOCS["47_REVERSE_ENGINEERING.md"] = """# Quant Nanggroe AI — Reverse Engineering Guide
 
 ## Purpose
 Document the process of understanding system behavior from code when documentation is missing or outdated.
@@ -1388,7 +1386,7 @@ When reverse engineering, mark findings with:
 - `[needs confirmation]` — should be verified by human.
 """
 
-DOCS["48_REPOSITORY_AUDIT.md"] = EXISTING.get("48_REPOSITORY_AUDIT.md", "") + f"""
+DOCS["48_REPOSITORY_AUDIT.md"] = EXISTING.get("48_REPOSITORY_AUDIT.md", "") + """
 
 ## Update (July 2026 — Docs Renewal)
 
@@ -1410,7 +1408,7 @@ DOCS["48_REPOSITORY_AUDIT.md"] = EXISTING.get("48_REPOSITORY_AUDIT.md", "") + f"
 4. Automated cross-reference validation across all 49 docs.
 """
 
-DOCS["49_PROJECT_BOOTSTRAP.md"] = f"""# Quant Nanggroe AI — Project Bootstrap Guide
+DOCS["49_PROJECT_BOOTSTRAP.md"] = """# Quant Nanggroe AI — Project Bootstrap Guide
 
 ## For New Developers
 
@@ -1462,7 +1460,7 @@ Start with:
 
 # ── Root-level files ──────────────────────────────────────────────────
 ROOT_FILES = {
-    "AGENTS.md": f"""# Quant Nanggroe AI — Agent Instructions
+    "AGENTS.md": """# Quant Nanggroe AI — Agent Instructions
 
 ## How AI Should Read This Repository
 1. Start with `README.md` for project overview.
@@ -1489,7 +1487,7 @@ README.md → 00_VISION → 01_PRD → 02_ARCHITECTURE → 15_CONTEXT → 16_MEM
 - Follow `31_SELF_REVIEW.md` before finalizing.
 - Use ADR format for architecture decisions (`11_DECISIONS.md`).
 """,
-    "CLAUDE.md": f"""# Claude-Specific Instructions — Quant Nanggroe AI
+    "CLAUDE.md": """# Claude-Specific Instructions — Quant Nanggroe AI
 
 ## Tools Available
 - Repository audit (`48_REPOSITORY_AUDIT.md`).
@@ -1508,7 +1506,7 @@ README.md → 00_VISION → 01_PRD → 02_ARCHITECTURE → 15_CONTEXT → 16_MEM
 - Reference specific docs by their number prefix.
 - Flag uncertainties explicitly.
 """,
-    "COPILOT.md": f"""# GitHub Copilot Instructions — Quant Nanggroe AI
+    "COPILOT.md": """# GitHub Copilot Instructions — Quant Nanggroe AI
 
 ## Suggested Ignore Patterns
 - `paper_state/*.json` — auto-generated trading state.
@@ -1524,7 +1522,7 @@ README.md → 00_VISION → 01_PRD → 02_ARCHITECTURE → 15_CONTEXT → 16_MEM
 - `test:` Test changes
 - `chore:` Maintenance
 """,
-    "CURSOR.md": f"""# Cursor IDE Instructions — Quant Nanggroe AI
+    "CURSOR.md": """# Cursor IDE Instructions — Quant Nanggroe AI
 
 ## Rules
 - Always check `14_PROJECT_RULES.md` before making changes.
@@ -1535,7 +1533,7 @@ README.md → 00_VISION → 01_PRD → 02_ARCHITECTURE → 15_CONTEXT → 16_MEM
 - Index: `quant_nanggroe/`, `dashboard/src/`, `docs/`
 - Exclude: `data/`, `paper_state/`, `node_modules/`, `__pycache__/`
 """,
-    "GEMINI.md": f"""# Gemini-Specific Instructions — Quant Nanggroe AI
+    "GEMINI.md": """# Gemini-Specific Instructions — Quant Nanggroe AI
 
 ## Context
 Multi-agent trading intelligence system with FastAPI backend and Next.js dashboard.
@@ -1548,7 +1546,7 @@ Multi-agent trading intelligence system with FastAPI backend and Next.js dashboa
 - `48_REPOSITORY_AUDIT.md` — Known wiring issues.
 - `16_AI_MEMORY.md` — Stable facts to remember.
 """,
-    "MASTER_SYSTEM_PROMPT.md": f"""# Quant Nanggroe AI — Master System Prompt
+    "MASTER_SYSTEM_PROMPT.md": """# Quant Nanggroe AI — Master System Prompt
 
 You are operating Quant Nanggroe AI, an autonomous multi-agent trading intelligence system.
 

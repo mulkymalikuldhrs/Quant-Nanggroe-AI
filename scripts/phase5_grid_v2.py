@@ -2,11 +2,13 @@
 """Phase 5 Grid — focused param tuning for DhaherSystem v1.1
 Runs with Hermes venv python. ~6480 configs on 60d EURUSD M15.
 """
-import sys, json, logging, itertools
-from pathlib import Path
+import itertools
+import json
+import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import yfinance as yf
 

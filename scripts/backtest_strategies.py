@@ -6,10 +6,11 @@ Uses only numpy/pandas/yfinance.
 Outputs comparison table to backtest_results.md
 """
 
+import warnings
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-import warnings, textwrap, sys, os
-from datetime import datetime, timedelta
 
 warnings.filterwarnings("ignore")
 
@@ -829,7 +830,7 @@ def run_all():
     with open('backtest_results.md', 'w') as f:
         f.write(md)
 
-    print(f"\nResults written to backtest_results.md")
+    print("\nResults written to backtest_results.md")
     return results
 
 

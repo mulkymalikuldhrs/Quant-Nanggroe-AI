@@ -5,17 +5,20 @@ Walk-forward 5-fold per strategy. Gate: Sharpe>0.5, Return>0%, DD>-25%.
 Fail-closed: if real data fetch fails, abort (NO random-walk fallback).
 Writes results/gate_status.json with {strategy, sharpe, return_pct, max_dd_pct, wf_sharpe, pass}.
 """
-import sys, os, json, time, traceback
-from pathlib import Path
+import json
+import os
+import sys
+import time
 from datetime import datetime
+from pathlib import Path
 
 ROOT = r"D:\repositories\Quant-Nanggroe-AI-worktree"
 sys.path.insert(0, ROOT)
 os.environ["PYTHONPATH"] = ROOT
 
 import numpy as np
-import pandas as pd
 import yfinance as yf
+
 from quant_nanggroe.engine.registry import list_strategies
 
 W = 300  # trailing window for singular generate_signal strategies (keeps per-bar O(n))

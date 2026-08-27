@@ -183,8 +183,8 @@ async def detect_regime(request: MarketRegimeRequest) -> MarketRegimeResponse:
 async def get_pressure(symbol: str, http_request: Request) -> dict[str, Any]:
     """Market pressure analysis via VolumeDelta / CVD strategy on real OHLCV data."""
     try:
-        from quant_nanggroe.types.market import TimeFrame as TF
         from quant_nanggroe.engine.strategies.volume_delta import VolumeDeltaStrategy
+        from quant_nanggroe.types.market import TimeFrame as TF
 
         em = _get_exchange_manager(http_request)
         candles = await em.get_ohlcv(symbol=symbol, timeframe=TF.D1, limit=60)

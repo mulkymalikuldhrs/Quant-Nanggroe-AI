@@ -1,21 +1,15 @@
 """Tests for core/scoring/ package — real import verification + functional."""
-import math
 import os
-import sys
-from pathlib import Path
 
-import pytest
-
-from quant_nanggroe.core.scoring.base import ScorerResult
+from quant_nanggroe.core.pipeline import PipelineResult, QuantPipeline
 from quant_nanggroe.core.scoring.bond_scorer import BondScorer
 from quant_nanggroe.core.scoring.economic_scorer import EconomicScorer
+from quant_nanggroe.core.scoring.fusion_engine import FusionEngine, ScoredSignal
 from quant_nanggroe.core.scoring.geo_scorer import GeopoliticalScorer
 from quant_nanggroe.core.scoring.macro_scorer import MacroScorer
 from quant_nanggroe.core.scoring.sentiment_scorer import SentimentScorer
 from quant_nanggroe.core.scoring.technical_scorer import TechnicalScorer
 from quant_nanggroe.core.scoring.volatility_scorer import VolatilityScorer
-from quant_nanggroe.core.scoring.fusion_engine import FusionEngine, ScoredSignal
-from quant_nanggroe.core.pipeline import QuantPipeline, PipelineResult
 
 
 class TestMacroScorer:

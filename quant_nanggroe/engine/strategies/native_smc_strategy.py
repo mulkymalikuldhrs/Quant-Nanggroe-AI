@@ -7,16 +7,16 @@ and Liquidity Sweep detection. No external dependency.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
-import numpy as np
-import pandas as pd
-
+from quant_nanggroe.engine.smc.native_smc import SMCEngine
 from quant_nanggroe.engine.strategies.base import (
-    SignalDirection, SignalStrength, Strategy, StrategyParameters, StrategySignal,
+    SignalDirection,
+    SignalStrength,
+    Strategy,
+    StrategyParameters,
+    StrategySignal,
 )
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
-from quant_nanggroe.engine.smc.native_smc import SMCEngine
 
 logger = logging.getLogger("QNA.NativeSMC")
 

@@ -17,7 +17,6 @@ This is a RISK OVERLAY, not a signal generator.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("QNA.COTGuard")

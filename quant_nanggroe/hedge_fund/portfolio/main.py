@@ -9,7 +9,6 @@ Fixed gaps:
 """
 
 import asyncio
-import asyncio
 import json
 import os
 import time
@@ -18,25 +17,24 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Optional
 
+from quant_nanggroe.core.advisory import LLMAdvisor
+from quant_nanggroe.core.scoring.evolver import WeightEvolver
 from quant_nanggroe.engine.backtest.walk_forward import get_viable_strategies
 from quant_nanggroe.engine.causal import MasterQuantNanggroeEngine
 from quant_nanggroe.engine.causal.models import CausalContext
 from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
 from quant_nanggroe.engine.execution.builder import build_execution_manager
+from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.risk.kill_switch import (
     KillSwitch,
-    KillSwitchLevel,
     configure_kill_switch_file,
 )
-from quant_nanggroe.engine.risk.kelly import KellyCriterion
 from quant_nanggroe.engine.strategy_lifecycle import StrategyLifecycleManager
 from quant_nanggroe.hedge_fund.execution.orders import trail_sl
 from quant_nanggroe.hedge_fund.portfolio.sizing import calculate_position_size
 from quant_nanggroe.hedge_fund.risk.guard import risk_guard_approve
 from quant_nanggroe.hedge_fund.signals.aggregator import aggregate
 from quant_nanggroe.hedge_fund.signals.registry import ALL_PROVIDERS
-from quant_nanggroe.core.advisory import AdvisoryResult, LLMAdvisor
-from quant_nanggroe.core.scoring.evolver import WeightEvolver
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
 from quant_nanggroe.hedge_fund.utils import config as _config
 from quant_nanggroe.hedge_fund.utils.config import (
@@ -417,6 +415,8 @@ def _pipeline_vote(result: dict) -> dict:
     result["_fusion_ctx"] = _fusion_ctx
     try:
         from quant_nanggroe.core.cache import TTLCache
+        from quant_nanggroe.core.news import NewsScorer
+        from quant_nanggroe.core.regime import RegimeDetector
         from quant_nanggroe.core.scoring import (
             BondScorer,
             CryptoScorer,
@@ -429,8 +429,6 @@ def _pipeline_vote(result: dict) -> dict:
             TechnicalScorer,
             VolatilityScorer,
         )
-        from quant_nanggroe.core.regime import RegimeDetector
-        from quant_nanggroe.core.news import NewsScorer
         _fusion_scorers = [
             BondScorer(),
             CryptoScorer(),

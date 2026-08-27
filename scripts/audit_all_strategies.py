@@ -3,10 +3,13 @@
 Runs WITHOUT LLM API calls — pure Python computation.
 Output: ranked markdown table | score = (sharpe * return%) / abs(dd%)
 """
-import sys, os, math, traceback, random, json
-from pathlib import Path
+import json
+import math
+import os
+import random
+import sys
 from datetime import datetime
-from functools import lru_cache
+from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO))
@@ -15,12 +18,13 @@ os.environ["PYTHONPATH"] = str(_REPO)
 
 import numpy as np
 
+
 # ── Data: seed-safe random-walk EURUSD simulation (reproducible) ──────────
 def _seed_data(seed=42):
     """Real EURUSD H1 data via yfinance, fallback to seeded random walk."""
     try:
-        import yfinance as yf
         import pandas as pd
+        import yfinance as yf
         df = yf.download("EURUSD=X", period="180d", interval="1h")
         if df is not None and len(df) > 100:
             df = df[["Open", "High", "Low", "Close", "Volume"]].dropna()
@@ -71,7 +75,7 @@ def _load_strategy(name):
         if cls is None:
             return None
         return cls()
-    except Exception as ex:
+    except Exception:
         return None
 
 def _try_import(name):
@@ -358,8 +362,8 @@ def main():
     print(f"{'='*80}\n")
 
     # Table header
-    print(f"| # | Strategy | Ret% | Sharpe | DD% | WR% | WF-Sharpe | Gate | Score |")
-    print(f"|---|----------|------|--------|------|------|-----------|------|-------|")
+    print("| # | Strategy | Ret% | Sharpe | DD% | WR% | WF-Sharpe | Gate | Score |")
+    print("|---|----------|------|--------|------|------|-----------|------|-------|")
 
     # Passed first
     for i, r in enumerate(ranked, 1):

@@ -66,10 +66,12 @@ def build_execution_manager(allow_live: Optional[bool] = None) -> "object":
         if allow_live:
             try:
                 import re
+
                 import yaml
+
                 from quant_nanggroe.connectors.mt5_broker import MT5Broker
-                from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
                 from quant_nanggroe.engine.execution.account_discovery import discover_accounts
+                from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
 
                 # ── ACCOUNT AUTO-DETECT FIRST (user mandate 2026-08-04) ──────
                 # The terminal may be logged into a DIFFERENT account than the

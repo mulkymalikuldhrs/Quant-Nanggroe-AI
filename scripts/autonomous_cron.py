@@ -7,7 +7,10 @@ Usage:
 
 Output: JSON result to stdout. Empty if nothing to report.
 """
-import json, os, sys, time
+import json
+import os
+import sys
+import time
 from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

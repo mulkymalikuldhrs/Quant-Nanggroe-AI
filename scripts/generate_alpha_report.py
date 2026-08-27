@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate WS1 Alpha Report from walk-forward results."""
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 RESULTS_DIR = REPO / "quant_nanggroe" / "data" / "backtest" / "results"

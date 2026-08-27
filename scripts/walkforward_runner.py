@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -23,10 +23,12 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from quant_nanggroe.engine.strategies.registry import StrategyRegistry as LiveRegistry
 from quant_nanggroe.engine.strategies.base import StrategyParameters
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry as LiveRegistry
 from quant_nanggroe.engine.strategy.registry import (
     WalkForwardRegistry as WalkforwardRegistry,
+)
+from quant_nanggroe.engine.strategy.registry import (
     WalkForwardResult,
 )
 

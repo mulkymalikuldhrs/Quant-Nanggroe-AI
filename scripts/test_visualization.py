@@ -1,6 +1,8 @@
 """Test visualization dashboard"""
 import sys; sys.path.insert(0, '..')
-import numpy as np; import pandas as pd
+import numpy as np
+import pandas as pd
+
 from quant_nanggroe.engine.visualization.chart_factory import ChartFactory
 from quant_nanggroe.engine.visualization.dashboard import QNADashboard
 

@@ -2,9 +2,11 @@
 Dhaher System v1.0 — Full Backtest Pipeline
 Milestone 2: Walk-Forward 5-Fold + Gate Check
 """
-import sys, json, logging
-from pathlib import Path
+import json
+import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent.parent
 SRC = _HERE
@@ -17,12 +19,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger('bt')
 
 # ── Import pipeline components ──
-from backtest_pipeline import get_historical, backtest, walk_forward, gate_decision
+from backtest_pipeline import backtest, gate_decision, get_historical, walk_forward
 
 # ── Import DhaherSystem ──
 sys.path.insert(0, str(SRC / 'strategies'))
-import strategies.dhaher_system
 from quant_nanggroe.engine.strategy.strategies import get_strategy
+
 
 def run():
     log.info("═══════════════════════════════════════")

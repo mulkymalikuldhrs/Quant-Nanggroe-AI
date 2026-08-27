@@ -7,8 +7,6 @@ All use ONLY numpy/pandas — no external indicator libraries.
 
 Run: .venv/Scripts/python.exe scripts/generate_strategies.py
 """
-import os
-import re
 from pathlib import Path
 
 STRATEGIES_DIR = Path(r"D:\repositories\Quant-Nanggroe-AI-worktree\quant_nanggroe\engine\strategy\strategies")

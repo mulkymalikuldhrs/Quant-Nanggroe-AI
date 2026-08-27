@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-import sys, json, logging, itertools
-from pathlib import Path
+import itertools
+import json
+import logging
+import sys
 from datetime import datetime
-import numpy as np
+from pathlib import Path
+
 import pandas as pd
 import yfinance as yf
 
@@ -22,6 +25,7 @@ df = df.dropna()
 log.info(f"{len(df)} bars from {df.index[0].date()} to {df.index[-1].date()}")
 
 from quant_nanggroe.engine.strategies.dhaher_system import DhaherSystem
+
 
 def backtest_sltp(df, lookback, atr_mult, rr_min, min_conf, kelly_frac, use_adx=True):
     strat = DhaherSystem(

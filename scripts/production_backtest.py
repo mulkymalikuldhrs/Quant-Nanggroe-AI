@@ -2,14 +2,18 @@
 """Production backtest using the actual QNAI backtest engine.
 Tests top KEEP strategies with realistic slippage, commission, and market impact.
 """
-import sys, os, warnings
+import sys
+import warnings
+
 sys.path.insert(0, r"D:\repositories\Quant-Nanggroe-AI-worktree")
 warnings.filterwarnings("ignore")
 
 import numpy as np
 import pandas as pd
-from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
-from quant_nanggroe.engine.backtest.risk_models import ValueAtRisk, ConditionalVaR
+
+from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
+from quant_nanggroe.engine.backtest.risk_models import ConditionalVaR, ValueAtRisk
+
 
 def load_data(symbol, period="2y"):
     import yfinance as yf

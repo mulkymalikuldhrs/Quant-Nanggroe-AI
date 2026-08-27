@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
-from quant_nanggroe.core.config.pair_config import AssetClass, get_alignment, get_pair_config
+from quant_nanggroe.core.config.pair_config import AssetClass, get_pair_config
 from quant_nanggroe.core.scoring.base import BaseScorer, ScorerResult
 from quant_nanggroe.core.scoring.fusion_engine import FusionEngine
 

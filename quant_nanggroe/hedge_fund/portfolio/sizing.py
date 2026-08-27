@@ -1,7 +1,7 @@
 """Kelly-based position sizing with signal confidence scaling."""
 
 from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
-from quant_nanggroe.hedge_fund.utils.config import PAPER_TRADE, log, mt5
+from quant_nanggroe.hedge_fund.utils.config import PAPER_TRADE, mt5
 from quant_nanggroe.hedge_fund.utils.indicators import calc_atr
 
 MAX_RISK_PER_TRADE = 0.005  # 0.5% — matches engine/risk/constants.py constitutional limit

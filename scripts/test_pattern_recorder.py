@@ -2,9 +2,10 @@
 import sys; sys.path.insert(0, '..')
 import numpy as np
 import pandas as pd
-from quant_nanggroe.engine.pattern_recorder.matrix_profile import MatrixProfileDetector
 from quant_nanggroe.engine.pattern_recorder.dtw import DTWMatcher
 from quant_nanggroe.engine.pattern_recorder.embedding import EmbeddingSimilarity
+
+from quant_nanggroe.engine.pattern_recorder.matrix_profile import MatrixProfileDetector
 
 # Test MP with synthetic data
 np.random.seed(42)

@@ -2,10 +2,11 @@
 Autonomous Self-Loop API Routes
 Exposes self-loop control and monitoring endpoints
 """
-from fastapi import APIRouter, HTTPException
-from typing import Dict, Any, Optional
-from pydantic import BaseModel
 import logging
+from typing import Any, Dict
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 

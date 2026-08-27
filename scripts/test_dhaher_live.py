@@ -2,9 +2,11 @@
 Dhaher System v1.0 — Live Data Test via multi_pair_scanner
 Milestone 4: Test dengan data real dari MT5 pairs
 """
-import sys, json, logging
-from pathlib import Path
+import json
+import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent.parent
 SRC = _HERE
@@ -18,12 +20,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger('dhaher_test')
 
 # ── Imports ──
-import strategies.dhaher_system
-from quant_nanggroe.engine.strategy.strategies import get_strategy as gs
-from multi_pair_scanner import scan_all_pairs, set_mock_mode
 import MetaTrader5 as mt5
-import pandas as pd
 import numpy as np
+import pandas as pd
+from multi_pair_scanner import scan_all_pairs, set_mock_mode
+
+from quant_nanggroe.engine.strategy.strategies import get_strategy as gs
 
 TIMEFRAMES = {
     "M15": mt5.TIMEFRAME_M15,
@@ -179,11 +181,11 @@ def run():
     # Summary
     pairs_with_buy = sum(1 for pr in all_results.values() if any(r.get('last_entry') == 1 for r in pr.values() if r['status'] == 'ok'))
     pairs_with_sell = sum(1 for pr in all_results.values() if any(r.get('last_entry') == -1 for r in pr.values() if r['status'] == 'ok'))
-    log.info(f"\n📊 SUMMARY")
+    log.info("\n📊 SUMMARY")
     log.info(f"  Pairs with BUY signal:  {pairs_with_buy} of {len(test_pairs)}")
     log.info(f"  Pairs with SELL signal: {pairs_with_sell} of {len(test_pairs)}")
-    log.info(f"  DhaherSystem wired as BEST_STRATEGY[2] in hedge_fund_mtf.py ✅")
-    log.info(f"  MTF cycle now evaluates all 3 strategies × 5 styles ✅")
+    log.info("  DhaherSystem wired as BEST_STRATEGY[2] in hedge_fund_mtf.py ✅")
+    log.info("  MTF cycle now evaluates all 3 strategies × 5 styles ✅")
     
     return report
 

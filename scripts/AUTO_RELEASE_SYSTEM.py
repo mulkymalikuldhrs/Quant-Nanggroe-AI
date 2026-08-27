@@ -7,24 +7,20 @@ Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 Ultimate Edition - Revolutionary Release Automation
 """
 
-import os
-import sys
-import json
-import time
-import subprocess
 import asyncio
-import aiohttp
+import json
 import logging
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-import hashlib
-import yaml
-from dataclasses import dataclass
-from enum import Enum
 
 # Advanced logging setup
 import os as _os
+import subprocess
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List
+
 _os.makedirs('logs', exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -87,7 +83,7 @@ class UltimateReleaseSystem:
         # Load current version info
         self.version_info = self._load_version_info()
         
-        logger.info(f"🚀 Ultimate Release System v5.1.0 initialized")
+        logger.info("🚀 Ultimate Release System v5.1.0 initialized")
         logger.info(f"📦 Current version: {self.version_info.get('current_version', 'unknown')}")
         logger.info(f"🎯 Release mode: {config.mode.value}")
     

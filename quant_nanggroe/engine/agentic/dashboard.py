@@ -98,7 +98,7 @@ class EnsembleDashboard:
 
         # Vote
         vote = report["vote"]
-        lines.append(f"\n  VOTE RESULT:")
+        lines.append("\n  VOTE RESULT:")
         lines.append(f"    Decision:    {vote['final_bias'].upper()}")
         lines.append(f"    Confidence:  {vote['confidence']:.2%}")
         lines.append(f"    Consensus:   {vote['consensus']:.2%}")
@@ -107,7 +107,7 @@ class EnsembleDashboard:
         # Pair
         if report["pair"]:
             p = report["pair"]
-            lines.append(f"\n  PAIR INFO:")
+            lines.append("\n  PAIR INFO:")
             lines.append(f"    Spread:    {p['spread_pips']} pips")
             lines.append(f"    Mode:      {p['trade_mode']}")
             lines.append(f"    Ask/Bid:   {p['ask']} / {p['bid']}")

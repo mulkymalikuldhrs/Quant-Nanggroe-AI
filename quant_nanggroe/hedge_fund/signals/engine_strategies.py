@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Optional
 from quant_nanggroe.engine.strategies import StrategyRegistry
 from quant_nanggroe.engine.strategies.base import (
     SignalDirection,
-    StrategyParameters,
     StrategySignal,
 )
 
@@ -47,7 +46,6 @@ class EngineStrategyProvider:
             # MT5 connection. Deferring avoids crashes in test/CI environments
             # where mt5 is not connected.
             from quant_nanggroe.hedge_fund.signals.core import apply_causal_bias
-            from quant_nanggroe.hedge_fund.utils.config import log as hf_log
             from quant_nanggroe.hedge_fund.utils.data import get_historical_mt5
 
             df = get_historical_mt5(symbol, count=100)

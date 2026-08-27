@@ -403,8 +403,8 @@ if __name__ == '__main__':
     wr = wins / total * 100 if total > 0 else 0
     profit = capital - 1000.0
     
-    print(f"\nBacktest Result:")
+    print("\nBacktest Result:")
     print(f"  Wins: {wins} | Losses: {losses} | Total: {total}")
     print(f"  Win Rate: {wr:.1f}%")
     print(f"  P&L: ${profit:.2f}")
-    print(f"\n✅ Dhaher System v1.1 ready")
+    print("\n✅ Dhaher System v1.1 ready")

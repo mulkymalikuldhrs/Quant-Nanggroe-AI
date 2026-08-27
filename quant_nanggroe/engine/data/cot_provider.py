@@ -7,7 +7,7 @@ uses cot_reports + CFTC data with proper percentile-based analysis.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

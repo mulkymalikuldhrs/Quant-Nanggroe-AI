@@ -611,7 +611,7 @@ if __name__ == "__main__":
         cpcv.evaluate_strategy(simple_strategy, returns)
     )
 
-    print(f"\nStrategy Evaluation:")
+    print("\nStrategy Evaluation:")
     print(f"  Mean Sharpe: {result.mean_sharpe:.4f}")
     print(f"  Std Sharpe: {result.std_sharpe:.4f}")
     print(f"  95% CI: [{result.sharpe_ci_lower:.4f}, {result.sharpe_ci_upper:.4f}]")

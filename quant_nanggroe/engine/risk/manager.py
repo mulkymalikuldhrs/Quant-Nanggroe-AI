@@ -54,7 +54,7 @@ from quant_nanggroe.engine.risk.correlation_regime import (
 )
 from quant_nanggroe.engine.risk.drawdown import DrawdownMonitor
 from quant_nanggroe.engine.risk.kelly import KellyCriterion
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.var import VaRCalculator
 from quant_nanggroe.engine.risk.volatility_regime_har import (
     RegimeSwitchingHAR,

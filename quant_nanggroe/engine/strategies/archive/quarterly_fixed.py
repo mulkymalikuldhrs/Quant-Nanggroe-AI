@@ -1,9 +1,10 @@
 """Fixed Quarterly Theory Strategy — corrected inheritance and logic."""
 from __future__ import annotations
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
 from quant_nanggroe.engine.strategies.base import (
     SignalDirection,

@@ -253,7 +253,7 @@ def sentiment_analysis_prompt(
     Returns:
         (system_prompt, user_prompt) tuple.
     """
-    user = f"Analyze the sentiment of the following financial text.\n\n"
+    user = "Analyze the sentiment of the following financial text.\n\n"
     user += f"**Text**:\n{text}\n\n"
     if context:
         user += f"**Context**: {context}\n\n"

@@ -8,10 +8,9 @@ Scans all Python modules for:
 """
 import ast
 import os
-import sys
-from pathlib import Path
 from collections import defaultdict
 from datetime import date
+from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 QNA = REPO / "quant_nanggroe"
@@ -179,7 +178,7 @@ def generate_scan_html(modules, imports, dangling, orphans, true_orphans, reacha
     scan.append("th{background:#1a1a3e;color:#0f0;position:sticky;top:0}")
     scan.append("tr:hover{background:#1a1a3e}")
     scan.append("</style></head><body>")
-    scan.append(f"<h1>Quant-Nanggroe-AI — Module Connection Graph</h1>")
+    scan.append("<h1>Quant-Nanggroe-AI — Module Connection Graph</h1>")
     scan.append(f"<p>Generated: {date.today()} | Modules: {len(modules)} | Reachable: {len(reachable)} | Orphans-from-entry: {len(orphans)} | True-orphans: {len(true_orphans)} | Dangling-sources: {len(dangling)}</p>")
 
     # Dangling
@@ -247,7 +246,7 @@ def generate_index_html(modules, dangling, orphans, true_orphans, reachable, kno
     idx.append("h1{color:#00ff88}h2{color:#00aaff}.ok{color:#00ff88}.warn{color:#ffaa00}.err{color:#ff4444}")
     idx.append("table{border-collapse:collapse;width:100%}th,td{border:1px solid #333;padding:8px;text-align:left}")
     idx.append("th{background:#16213e}</style></head><body>")
-    idx.append(f"<h1>Quant-Nanggroe-AI — Graph Index</h1>")
+    idx.append("<h1>Quant-Nanggroe-AI — Graph Index</h1>")
     idx.append(f"<p>Generated: {date.today()} | Modules: {len(modules)} | Strategies: {len(strategy_modules)} | Routes: {len(route_modules)}</p>")
 
     idx.append("<h2>System Health</h2>")

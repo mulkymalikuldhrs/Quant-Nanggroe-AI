@@ -194,13 +194,13 @@ class MacroAnalyst(BaseAgent):
             if len(close) > 20:
                 sma20 = np.mean(close[-20:])
                 if close[-1] > sma20:
-                    evidence.append(f"Trending regime + price above SMA20 → bullish alignment")
+                    evidence.append("Trending regime + price above SMA20 → bullish alignment")
                     score += 0.2
                 else:
-                    evidence.append(f"Trending regime + price below SMA20 → bearish alignment")
+                    evidence.append("Trending regime + price below SMA20 → bearish alignment")
                     score += 0.2
         elif regime in ("ranging", "mean_reversion"):
-            evidence.append(f"Range-bound regime → mean reversion bias")
+            evidence.append("Range-bound regime → mean reversion bias")
             score += 0.1
 
         # Data pipeline sentiment
@@ -254,8 +254,7 @@ class RiskOfficer(BaseAgent):
 
         # Use real risk constants from engine.risk.constants
         try:
-            from quant_nanggroe.engine.risk.constants import (
-                MAX_RISK_PER_TRADE, MAX_DAILY_LOSS, MAX_WEEKLY_LOSS)
+            from quant_nanggroe.engine.risk.constants import MAX_DAILY_LOSS, MAX_RISK_PER_TRADE, MAX_WEEKLY_LOSS
             max_risk_pct = MAX_RISK_PER_TRADE  # 0.5%
             daily_limit = MAX_DAILY_LOSS      # 1%
             weekly_limit = MAX_WEEKLY_LOSS    # 3%
@@ -310,7 +309,7 @@ class ExecutionAgent(BaseAgent):
         side = kwargs.get("side", "buy")
         timeframe = kwargs.get("timeframe", "M15")
 
-        from quant_nanggroe.engine.risk.trading_profile import detect_profile, compute_sl_tp
+        from quant_nanggroe.engine.risk.trading_profile import compute_sl_tp, detect_profile
         profile = detect_profile(timeframe)
         sltp = compute_sl_tp(side=side, entry_price=entry, atr_value=atr, timeframe=timeframe)
 

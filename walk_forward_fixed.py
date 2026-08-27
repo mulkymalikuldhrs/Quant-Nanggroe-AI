@@ -39,7 +39,6 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.backtest.cpcv import CombinatorialPurgedCV
-from quant_nanggroe.types.signals import SignalType
 
 logger = logging.getLogger(__name__)
 

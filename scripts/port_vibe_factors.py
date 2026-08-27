@@ -245,7 +245,7 @@ from quant_nanggroe.engine.factors.base import (
     get_all_lines = [
         f"def get_all_{zoo_name}_factors() -> list:",
         f'    """Return list of (meta_dict, compute_fn) tuples for all {zoo_title} factors."""',
-        f"    return [",
+        "    return [",
     ]
     for stem in factor_stems:
         get_all_lines.append(f"        (__alpha_meta_{stem}, compute_{stem}),")

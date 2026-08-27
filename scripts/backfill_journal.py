@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 # Must import strategies first so allocation module works for attribution
 import quant_nanggroe.engine.strategies  # noqa: F401
-from quant_nanggroe.engine.journal_sync import sync_mt5_deals, get_journal_stats
+from quant_nanggroe.engine.journal_sync import get_journal_stats, sync_mt5_deals
 
 
 def main():
@@ -36,7 +36,7 @@ def main():
     # After
     stats_after = get_journal_stats()
     print(f"\nAfter: {stats_after}")
-    print(f"\nSync result:")
+    print("\nSync result:")
     print(f"  Positions found: {result['synced']}")
     print(f"  Inserted new: {result['inserted']}")
     print(f"  Updated existing: {result['updated']}")
@@ -51,7 +51,7 @@ def main():
     wr = stats_after.get("win_rate", 0)
 
     print(f"\n{'='*72}")
-    print(f"  JOURNAL STATUS AFTER BACKFILL")
+    print("  JOURNAL STATUS AFTER BACKFILL")
     print(f"{'='*72}")
     print(f"  Total trades:     {total}")
     print(f"  Net P&L:          ${net_pnl}")

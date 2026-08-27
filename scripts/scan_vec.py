@@ -1,8 +1,12 @@
 """Scan live strategies for vectorized entry columns."""
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, r"D:\repositories\Quant-Nanggroe-AI-worktree")
 os.environ["PYTHONPATH"] = r"D:\repositories\Quant-Nanggroe-AI-worktree"
-import numpy as np, pandas as pd, yfinance as yf
+import numpy as np
+import yfinance as yf
+
 from quant_nanggroe.engine.registry import list_strategies
 
 df = yf.download("EURUSD=X", period="20d", interval="15m", auto_adjust=False, progress=False)

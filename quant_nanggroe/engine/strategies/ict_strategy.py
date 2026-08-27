@@ -83,7 +83,7 @@ class ICTStrategy(Strategy):
                             direction=SignalDirection.SELL,
                             confidence=0.55,
                             entry_price=round(price, 6),
-                            reasoning=f"ICT order block SELL",
+                            reasoning="ICT order block SELL",
                             indicators={"pattern": "order_block", "strength": round(strength, 2)},
                         )
                 elif c.iloc[i] < c.iloc[i - 1] and l.iloc[i] < l.iloc[i - 1]:
@@ -94,7 +94,7 @@ class ICTStrategy(Strategy):
                             direction=SignalDirection.BUY,
                             confidence=0.55,
                             entry_price=round(price, 6),
-                            reasoning=f"ICT order block BUY",
+                            reasoning="ICT order block BUY",
                             indicators={"pattern": "order_block", "strength": round(strength, 2)},
                         )
         return None

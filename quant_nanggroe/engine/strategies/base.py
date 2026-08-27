@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-import pandas as pd
 import math
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
 from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)

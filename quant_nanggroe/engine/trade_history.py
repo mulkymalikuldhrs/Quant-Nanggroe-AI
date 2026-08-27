@@ -5,11 +5,9 @@ Every candle close event, signal, and trade is logged with full metadata.
 """
 from __future__ import annotations
 
-import json
 import logging
 import sqlite3
-import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional

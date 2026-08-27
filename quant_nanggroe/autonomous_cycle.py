@@ -14,14 +14,12 @@ Main loop that runs continuously:
 Run: python autonomous_cycle.py
 """
 
-import os
-import sys
-import time
 import logging
 import signal as sig
-from datetime import datetime, timedelta
+import sys
+import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Dict, List, Optional
 
 # ──────────────────────────────────────────────────────────────
 # PYTHONPATH — CRITICAL
@@ -32,9 +30,7 @@ sys.path.insert(0, str(REPO_ROOT / "quant_nanggroe"))
 # ──────────────────────────────────────────────────────────────
 # IMPORTS
 # ──────────────────────────────────────────────────────────────
-from engine_production_bridge_purified import (
-    PurifiedEngine, Signal, RiskGuard, MT5Adapter
-)
+from engine_production_bridge_purified import MT5Adapter, PurifiedEngine, RiskGuard, Signal
 
 # Try to import QNA strategy registry
 try:

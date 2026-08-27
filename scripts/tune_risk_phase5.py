@@ -10,9 +10,14 @@ Scans the LIVE (non-archive) strategy suite, keeps gate-passers (Sharpe>0.5,
 Ret>0, DD>-25%), grid-tunes risk on the top 3, applies majority-best to globals.
 """
 from __future__ import annotations
-import sys, os, json, time, traceback
-from pathlib import Path
+
+import json
+import os
+import sys
+import time
+import traceback
 from datetime import datetime
+from pathlib import Path
 
 ROOT = r"D:\repositories\Quant-Nanggroe-AI-worktree"
 sys.path.insert(0, ROOT)
@@ -21,6 +26,7 @@ os.environ["PYTHONPATH"] = ROOT
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
 from quant_nanggroe.engine.registry import list_strategies
 
 MIN_TRADES = 30

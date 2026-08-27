@@ -6,10 +6,14 @@ Inline class — keep it out of the package (ponytail: deletion > addition).
 Shadow only, no capital. Reuses BacktestEngine + WalkForwardAnalyzer verbatim.
 """
 from __future__ import annotations
-import json, warnings
+
+import json
+import warnings
 from pathlib import Path
+
 import pandas as pd
 import yfinance as yf
+
 warnings.filterwarnings("ignore")
 
 from quant_nanggroe.engine.backtest.engine import BacktestEngine

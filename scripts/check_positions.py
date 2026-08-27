@@ -1,5 +1,7 @@
-import MetaTrader5 as mt5
 import sys
+
+import MetaTrader5 as mt5
+
 try:
     if not mt5.initialize():
         print(f"INIT_FAIL: {mt5.last_error()}", flush=True)

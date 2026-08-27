@@ -17,10 +17,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Ensure project root is on sys.path
 _project_root = str(Path(__file__).resolve().parent.parent)
@@ -84,7 +83,7 @@ def cmd_kelly(args: argparse.Namespace) -> None:
     }
 
     try:
-        from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
+        from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
         from quant_nanggroe.engine.kelly.fractional import FractionalKelly
 
         # Use defaults for win_rate / avg_win / avg_loss; user can extend
@@ -141,7 +140,7 @@ def cmd_regime(args: argparse.Namespace) -> None:
     }
 
     try:
-        from quant_nanggroe.engine.regime.hmm_detector import RegimeDetector, Regime
+        from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeDetector
 
         detector = RegimeDetector()
         # Attempt detection; if data unavailable, return simulated
@@ -232,7 +231,7 @@ def cmd_backtest(args: argparse.Namespace) -> None:
     }
 
     try:
-        from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+        from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
 
         config = BacktestConfig(
             initial_capital=args.capital,

@@ -7,14 +7,22 @@ avg_oos_sharpe). Outputs JSON for orchestrator review. No live capital, no order
 Ponytail: top-15 by firing count only — sufficient to prove edge exists or not.
 """
 from __future__ import annotations
-import json, sys, traceback, warnings
+
+import json
+import sys
+import traceback
+import warnings
 from pathlib import Path
-import pandas as pd
+
 import yfinance as yf
+
 warnings.filterwarnings("ignore")  # ponytail: silence NaN std noise from pandas, not signal
+import glob
+import importlib
+import os
+
 from quant_nanggroe.engine.backtest.engine import BacktestEngine
 from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
-import importlib, glob, os
 
 TOP = [
     "VortexStrategy", "KalmanFilterStrategy", "MarketMakingStrategy", "HullMAStrategy",

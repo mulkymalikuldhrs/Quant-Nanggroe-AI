@@ -4,4 +4,6 @@ Exports ``PairsTradingStrategy`` as an alias for the canonical ``PairsTradeStrat
 implemented in ``quant_nanggroe.engine.strategies.pairs_trade_strategy``.
 """
 
-from quant_nanggroe.engine.strategies.pairs_trade_strategy import PairsTradeStrategy as PairsTradingStrategy  # noqa: F401
+from quant_nanggroe.engine.strategies.pairs_trade_strategy import (
+    PairsTradeStrategy as PairsTradingStrategy,  # noqa: F401
+)

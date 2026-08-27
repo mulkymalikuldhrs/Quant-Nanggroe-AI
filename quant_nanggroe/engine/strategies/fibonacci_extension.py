@@ -54,7 +54,7 @@ class FibonacciExtensionStrategy(Strategy):
                         direction=SignalDirection.SELL,
                         confidence=0.5,
                         entry_price=round(price, 6),
-                        reasoning=f"Price at fib ext 0.618 above prior high",
+                        reasoning="Price at fib ext 0.618 above prior high",
                         indicators={"extension": round(ext, 3)},
                     )
             else:
@@ -70,7 +70,7 @@ class FibonacciExtensionStrategy(Strategy):
                         direction=SignalDirection.BUY,
                         confidence=0.5,
                         entry_price=round(price, 6),
-                        reasoning=f"Price at fib ext 0.618 below prior low",
+                        reasoning="Price at fib ext 0.618 below prior low",
                         indicators={"extension": round(ext, 3)},
                     )
             return self._hold("No fib extension signal")

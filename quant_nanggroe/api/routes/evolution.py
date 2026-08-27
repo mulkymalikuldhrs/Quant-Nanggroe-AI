@@ -1,7 +1,8 @@
 """Evolution API endpoint — serve evolution loop data to dashboard."""
 from fastapi import APIRouter, Query
-from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
+
 from quant_nanggroe.engine.evolution.evolution_config import EvolutionConfig
+from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
 
 router = APIRouter(prefix="/api/evolution", tags=["evolution"])
 

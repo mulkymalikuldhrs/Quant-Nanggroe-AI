@@ -11,7 +11,6 @@ Fail-closed: raises RuntimeError when PAPER_TRADE without real MT5 price.
 
 import csv
 from datetime import datetime
-from pathlib import Path
 
 from quant_nanggroe.engine.kelly import FractionalKelly, KellyParameters
 from quant_nanggroe.hedge_fund.utils.config import (

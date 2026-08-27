@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # External project paths — auto-detect via env vars, fallback to known locations
 import pathlib as _pl
+
 _REPO = _pl.Path(__file__).resolve().parent.parent.parent.parent
 
 def _ext(name: str, fallback: str) -> str:

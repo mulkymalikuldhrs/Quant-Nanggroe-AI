@@ -9,12 +9,18 @@ the veto fires correctly. Four tests:
 """
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from quant_nanggroe.engine.risk.manager import RiskManager, RiskState
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchLevel, KillSwitchTrigger
-from quant_nanggroe.engine.risk.constants import MAX_DAILY_LOSS, MAX_WEEKLY_LOSS, KILL_SWITCH_DAILY_PNL, KILL_SWITCH_WEEKLY_PNL
 from quant_nanggroe.engine.risk.checks import MAX_DAILY_LOSS_PCT, MAX_WEEKLY_LOSS_PCT
+from quant_nanggroe.engine.risk.constants import (
+    KILL_SWITCH_DAILY_PNL,
+    KILL_SWITCH_WEEKLY_PNL,
+    MAX_DAILY_LOSS,
+    MAX_WEEKLY_LOSS,
+)
+from quant_nanggroe.engine.risk.kill_switch import KillSwitchLevel
+from quant_nanggroe.engine.risk.manager import RiskManager
 
 print(f"MAX_DAILY_LOSS (fraction): {MAX_DAILY_LOSS}")
 print(f"MAX_WEEKLY_LOSS (fraction): {MAX_WEEKLY_LOSS}")
@@ -88,7 +94,7 @@ print(f"  mt5_handle: {rm2._mt5_handle}")
 assert result2["verdict"] == "APPROVED", f"FAIL: expected APPROVED with 0 PnL and no MT5 handle, got {result2['verdict']}"
 # Verify the kill switch is NOT active due to phantom floating equity
 assert rm2.kill_switch.is_active == False, "FAIL: kill switch falsely active with no real losses"
-print(f"  ✓ PASS — guard does NOT halt on 0 real fills (no phantom veto)")
+print("  ✓ PASS — guard does NOT halt on 0 real fills (no phantom veto)")
 
 # Now test the PHANTOM case that the hedged fund_mtf buggy code exhibits:
 # A RiskManager that reads floating equity via account_info().profit instead of realized PnL
@@ -115,7 +121,7 @@ print(f"  daily_pnl=-10000 (-1% via daily_pnl_pct override) → verdict: {result
 # The old phantom-veto bug was that even 0% PnL (from floating equity) triggered veto.
 # With daily_pnl_pct=0.0 (Test 2a), no veto → correct.
 # With daily_pnl_pct=-0.01 (Test 2b), veto → correct (loss is real at 1%).
-print(f"  ✓ PASS — -1% real loss correctly vetoes; 0% (no MT5) correctly allows")
+print("  ✓ PASS — -1% real loss correctly vetoes; 0% (no MT5) correctly allows")
 
 # ─── Test 3: Weekly-loss veto gap check ───
 print()
@@ -146,7 +152,7 @@ print(f"  reason: {result3.get('reason', 'N/A')}")
 print(f"  failed_checkpoints: {result3.get('failed_checkpoints', [])}")
 
 assert result3["verdict"] == "VETOED", f"FAIL: expected VETOED at -4% weekly loss, got {result3['verdict']}"
-print(f"  ✓ PASS — weekly-loss veto fires at -4% (above 3% constitutional limit)")
+print("  ✓ PASS — weekly-loss veto fires at -4% (above 3% constitutional limit)")
 
 # Test the kill switch auto-trigger path for weekly
 print()
@@ -172,9 +178,9 @@ print(f"  Kill switch events: {len(rm3b.kill_switch._events)}")
 # = 30_000 / 970_000 ≈ 3.09% which >= abs(KILL_SWITCH_WEEKLY_PNL)=2.5% → fires
 
 if rm3b.kill_switch.is_active:
-    print(f"  ✓ PASS — kill switch auto-activates at -3% weekly (threshold -2.5%)")
+    print("  ✓ PASS — kill switch auto-activates at -3% weekly (threshold -2.5%)")
 else:
-    print(f"  ⚠ GAP — kill switch did NOT auto-activate at -3% weekly!")
+    print("  ⚠ GAP — kill switch did NOT auto-activate at -3% weekly!")
     print(f"     Events: {[e.reason for e in rm3b.kill_switch._events]}")
 
 # Test the kill switch auto-trigger via _auto_check_kill_switch with MTM path
@@ -187,9 +193,9 @@ ks_status_mtm = rm3c.kill_switch.status()
 print(f"  After -3% MTM loss (update_mtm): kill_switch active = {rm3c.kill_switch.is_active}")
 print(f"  Kill switch events: {len(rm3c.kill_switch._events)}")
 if rm3c.kill_switch.is_active:
-    print(f"  ✓ PASS — MTM update correctly feeds kill switch auto-activation")
+    print("  ✓ PASS — MTM update correctly feeds kill switch auto-activation")
 else:
-    print(f"  ⚠ GAP — MTM path does NOT trigger kill switch!")
+    print("  ⚠ GAP — MTM path does NOT trigger kill switch!")
 
 # ─── Test 4: Rubber-stamp check — veto must BLOCK, not just warn ───
 print()
@@ -220,14 +226,14 @@ print(f"  reason: {result4.get('reason', 'N/A')}")
 
 assert result4["verdict"] == "VETOED", f"FAIL: VETOED expected when kill switch active, got {result4['verdict']}"
 assert result4["reason"] == "KILL_SWITCH_ACTIVE", f"FAIL: wrong reason: {result4.get('reason')}"
-print(f"  ✓ PASS — kill switch ACTIVE blocks ALL orders (veto, not warn)")
+print("  ✓ PASS — kill switch ACTIVE blocks ALL orders (veto, not warn)")
 
 # ─── Summary ───
 print()
 print("=" * 60)
 print("RISK GUARD: ALL 4 TESTS PASSED")
 print("=" * 60)
-print(f"  Test 1 (daily loss > 5%): ✓ VETO fires")
-print(f"  Test 2 (phantom veto): ✓ No halt on 0 real fills")
-print(f"  Test 3 (weekly veto): ✓ Both weekly-limit paths work + KS auto-trigger")
-print(f"  Test 4 (rubber-stamp): ✓ KILL_SWITCH_ACTIVE blocks, not warns")
+print("  Test 1 (daily loss > 5%): ✓ VETO fires")
+print("  Test 2 (phantom veto): ✓ No halt on 0 real fills")
+print("  Test 3 (weekly veto): ✓ Both weekly-limit paths work + KS auto-trigger")
+print("  Test 4 (rubber-stamp): ✓ KILL_SWITCH_ACTIVE blocks, not warns")

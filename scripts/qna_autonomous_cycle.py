@@ -24,12 +24,11 @@ Env (set by cron wrapper or system):
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
 import sys
 import time
-import logging
-import asyncio
-import MetaTrader5 as mt5  # hard dependency for this live trading script
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("qna.cycle")
@@ -175,11 +174,10 @@ def run_cycle() -> int:
     # Demo account: ensure password available for mt5_accounts.yaml ${...}
     if not os.environ.get("MT5_PASSWORD"): logger.warning("MT5_PASSWORD not set!")
 
-    from quant_nanggroe.engine.execution.builder import build_execution_manager
     from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
+    from quant_nanggroe.engine.execution.builder import build_execution_manager
     from quant_nanggroe.engine.risk.trailing_stop import TrailingStopManager
     from quant_nanggroe.engine.strategies.registry import StrategyRegistry
-    import quant_nanggroe.engine.strategy.strategies  # trigger registration
 
     registry = StrategyRegistry
 
@@ -202,7 +200,6 @@ def run_cycle() -> int:
         log.warning("MT5 not live (paper fallback). Trading PAPER ONLY — no market impact.")
         return 1  # degraded, not crash
 
-    import MetaTrader5 as mt5
 
     trailing = TrailingStopManager()
     broker = em._brokers[primary]  # MT5ExecutionBroker adapter (owns live MT5 session)

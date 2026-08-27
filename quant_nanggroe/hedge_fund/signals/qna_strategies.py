@@ -4,8 +4,8 @@ Replaces 760-line hand-coded wrapper list with auto-discovery.
 All 992 evolved providers loaded on demand via MueXSignalProvider factory.
 """
 
-import sys as _sys
 import os
+import sys as _sys
 from pathlib import Path
 from typing import Optional
 

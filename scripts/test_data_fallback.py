@@ -1,16 +1,22 @@
 """Test data fallback chain and circuit breaker."""
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import directly to avoid numpy dependency in normalizer
+from quant_nanggroe.engine.data.fallback_chain import (
+    CircuitBreaker,
+    DataFallbackChain,
+    create_default_chain,
+)
 from quant_nanggroe.engine.data.provider_interface import (
-    QNAProviderBase, DataRequest, DataResponse, DataCategory,
+    DataCategory,
+    DataRequest,
+    DataResponse,
+    QNAProviderBase,
 )
 from quant_nanggroe.engine.data.provider_registry import ProviderRegistry
-from quant_nanggroe.engine.data.fallback_chain import (
-    DataFallbackChain, CircuitBreaker, create_default_chain,
-)
 
 
 # ─── Test CircuitBreaker ─────────────────────────────────────────────

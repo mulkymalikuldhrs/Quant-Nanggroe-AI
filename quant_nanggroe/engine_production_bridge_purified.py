@@ -7,13 +7,11 @@ Author: Hermès autonomous architect (INFJ-T)
 Version: 0.1 — scaffold (2026-07-29)
 """
 
-import os
-import sys
 import json
-import time
 import logging
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple
+import time
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 log = logging.getLogger("PurifiedBridge")

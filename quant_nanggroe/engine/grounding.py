@@ -671,14 +671,14 @@ if __name__ == "__main__":
             symbols=["AAPL", "MSFT", "GOOGL"],
         )
 
-        print(f"\nGrounding Result:")
+        print("\nGrounding Result:")
         print(f"  Grounded: {result.symbols_grounded}")
         print(f"  Failed: {result.symbols_failed}")
         print(f"  Cache hits: {result.cache_hits}")
         print(f"  Cache misses: {result.cache_misses}")
         print(f"  Latency: {result.total_latency_ms:.1f}ms")
 
-        print(f"\n--- Enhanced Prompt (last 1500 chars) ---")
+        print("\n--- Enhanced Prompt (last 1500 chars) ---")
         print(result.enhanced_prompt[-1500:])
 
         # Simulate LLM response validation
@@ -693,7 +693,7 @@ if __name__ == "__main__":
             ["AAPL", "MSFT", "GOOGL"],
         )
 
-        print(f"\n--- Validation Result ---")
+        print("\n--- Validation Result ---")
         print(f"  Valid: {validation.is_valid}")
         print(f"  Prices checked: {validation.n_prices_checked}")
         print(f"  Hallucinations: {validation.n_hallucinations}")

@@ -9,11 +9,11 @@ import json
 import logging
 import os
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 

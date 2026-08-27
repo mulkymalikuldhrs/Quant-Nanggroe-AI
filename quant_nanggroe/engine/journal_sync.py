@@ -446,7 +446,10 @@ async def async_sync_mt5_deals(backfill_days: int = 0) -> Dict[str, Any]:
     is already initialized on the scheduler thread.
     """
     try:
-        from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
+        from datetime import timezone as _tz
+
         import MetaTrader5 as _mt5
         now = _dt.now(_tz.utc)
         from_dt = (now - _td(days=backfill_days)) if backfill_days > 0 else (now - _td(days=365))

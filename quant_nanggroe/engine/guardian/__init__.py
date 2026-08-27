@@ -22,7 +22,7 @@ No mock. Every check degrades gracefully (paper mode, API down) and reports
 honestly instead of fabricating health.
 """
 
-from .core import Guardian, GuardianConfig
 from .checks import CheckResult, Severity
+from .core import Guardian, GuardianConfig
 
 __all__ = ["Guardian", "GuardianConfig", "CheckResult", "Severity"]

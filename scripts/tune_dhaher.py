@@ -13,11 +13,13 @@ Tests 5 entry logic variants:
 Proper SL/TP exits using strategy's ATR-based levels.
 """
 
-import sys, json, time, csv
-from pathlib import Path
+import json
+import time
 from datetime import datetime, timedelta
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 
 _HERE = Path(__file__).resolve().parent.parent
 SRC = _HERE
@@ -474,7 +476,7 @@ def run_tuning():
     else:
         best_overall = rf.loc[rf['score'].idxmax()]
     
-    print(f"\n  🏆 BEST OVERALL:")
+    print("\n  🏆 BEST OVERALL:")
     print(f"     Variant:   {best_overall['variant']} ({ENTRY_VARIANTS[best_overall['variant']]['desc']})")
     print(f"     Params:    lb={best_overall['lookback']} atr_mult={best_overall['atr_mult']} rr_min={best_overall['rr_min']}")
     print(f"     Return:    {best_overall['return_pct']:+.2f}%")

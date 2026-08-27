@@ -1,10 +1,15 @@
-import sys, json, math, time
+import json
+import math
+import sys
+import time
 from pathlib import Path
+
 _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO))
-import yfinance as yf
 import numpy as np
-from quant_nanggroe.backtest.strategy_factory import StrategyFactory, StrategyVariant
+import yfinance as yf
+
+from quant_nanggroe.backtest.strategy_factory import StrategyFactory
 
 # Load real M15 EURUSD (60d)
 print("Loading M15 EURUSD real...")
@@ -112,6 +117,7 @@ out = {
     "note": f"Tested {len(variants)} StrategyFactory variants (of {len(all_variants)} total). 5-fold WF. {elapsed:.0f}s.",
 }
 import os
+
 _results_dir = str(_REPO / "results")
 os.makedirs(_results_dir, exist_ok=True)
 with open(os.path.join(_results_dir, "gate_status.json"), "w") as f:

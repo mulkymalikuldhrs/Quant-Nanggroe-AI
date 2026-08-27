@@ -3,12 +3,12 @@ Autonomous Self-Loop Orchestrator
 Implements continuous trade → evaluate → evolve → validate → redeploy cycle
 """
 import asyncio
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
 import json
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class AutonomousSelfLoopOrchestrator:
         
         if self._walk_forward_analyzer is None:
             try:
-                from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+                from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
                 from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
                 engine = BacktestEngine(BacktestConfig(
                     initial_capital=10000.0,
@@ -117,7 +117,7 @@ class AutonomousSelfLoopOrchestrator:
         
         if self._self_aware is None:
             try:
-                from quant_nanggroe.engine.self_aware import SelfAware, SelfState
+                from quant_nanggroe.engine.self_aware import SelfAware
                 self._self_aware = SelfAware(state_provider=self._build_self_state)
             except Exception as e:
                 logger.warning(f"SelfAware unavailable: {e}")
@@ -438,7 +438,6 @@ class AutonomousSelfLoopOrchestrator:
         """Get performance metrics per strategy from PnLEvaluator stats"""
         perf: Dict[str, Dict] = {}
         # Read from strategy_stats directory
-        from pathlib import Path
         stats_dir = REPO_ROOT / "data" / "strategy_stats"
         if stats_dir.exists():
             for stat_file in stats_dir.glob("*.json"):
@@ -476,7 +475,6 @@ class AutonomousSelfLoopOrchestrator:
         """Get list of recently evolved strategies from evolver history"""
         evolved: List[str] = []
         # Read from evolution history file
-        from pathlib import Path
         history_path = REPO_ROOT / "data" / "evolution_history.json"
         if history_path.exists():
             try:
@@ -511,9 +509,9 @@ class AutonomousSelfLoopOrchestrator:
         """
         signals: List[Dict] = []
         try:
-            from quant_nanggroe.engine_production_bridge import ProductionStrategyRunner
             from quant_nanggroe.data.providers.coingecko_provider import CoinGeckoProvider
             from quant_nanggroe.data.providers.yahoo import YahooFinanceProvider
+            from quant_nanggroe.engine_production_bridge import ProductionStrategyRunner
 
             runner = ProductionStrategyRunner()
             if not runner.strategies:

@@ -13,19 +13,15 @@ Usage:
 """
 
 import csv
-import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Optional
 
-import numpy as np
-
 from quant_nanggroe.engine.causal.models import CausalContext
 from quant_nanggroe.engine.risk.constants import CONFIDENCE_THRESHOLD
 from quant_nanggroe.hedge_fund.signals.registry import (
     ALL_PROVIDERS,
-    CORE_PROVIDERS,
 )
 from quant_nanggroe.hedge_fund.signals.tracker import SignalTracker
 from quant_nanggroe.hedge_fund.utils.config import VOTE_LOG, log

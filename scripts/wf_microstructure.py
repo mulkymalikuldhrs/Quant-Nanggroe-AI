@@ -11,8 +11,9 @@ import sys
 # ponytail: repo root on sys.path (PYTHONPATH="" strips it for clean subprocess)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402  (used in __main__ + _real_ohlcv)
 from datetime import datetime, timedelta  # noqa: E402
+
+import pandas as pd  # noqa: E402  (used in __main__ + _real_ohlcv)
 
 from quant_nanggroe.engine.backtest.engine import BacktestEngine  # noqa: E402
 from quant_nanggroe.engine.backtest.loaders.yfinance_loader import YFinanceLoader  # noqa: E402

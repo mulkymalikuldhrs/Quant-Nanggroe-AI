@@ -8,19 +8,17 @@ Ultimate Edition - Complete Ecosystem Integration
 """
 
 import asyncio
-import aiohttp
-import json
-import hashlib
 import base64
-import uuid
-import time
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any, Union
-from dataclasses import dataclass, asdict
-from enum import Enum
+import hashlib
+import json
 import logging
-from pathlib import Path
 import sqlite3
+import uuid
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 # Heavy dependency - made optional for graceful degradation
 try:

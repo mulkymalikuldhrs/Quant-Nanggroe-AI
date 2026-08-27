@@ -13,14 +13,13 @@ Usage:
 
 import argparse
 import json
-import os
 import statistics
 import sys
-import time
 import threading
+import time
 from collections import defaultdict
-from dataclasses import dataclass, field, asdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -166,7 +165,7 @@ class LoadTester:
         self._start_time = time.time()
 
         print(f"\n{'='*60}")
-        print(f"  Quant-Nanggroe-AI Load Test")
+        print("  Quant-Nanggroe-AI Load Test")
         print(f"{'='*60}")
         print(f"  Target:      {self.base_url}")
         print(f"  Endpoints:   {', '.join(self.endpoints)}")
@@ -274,7 +273,7 @@ class LoadTester:
         print(f"  Errors:            {report.total_errors} ({report.error_rate:.2%})")
         print(f"  Throughput:        {report.requests_per_second} req/s ({report.throughput_mbps} MB/s)")
         print()
-        print(f"  Latency Distribution:")
+        print("  Latency Distribution:")
         print(f"    Min:             {report.latency_min}ms")
         print(f"    P50:             {report.latency_p50}ms")
         print(f"    P90:             {report.latency_p90}ms")
@@ -286,7 +285,7 @@ class LoadTester:
         print()
 
         if report.endpoints:
-            print(f"  Per-Endpoint Breakdown:")
+            print("  Per-Endpoint Breakdown:")
             for ep, stats in report.endpoints.items():
                 print(f"    {ep}")
                 print(f"      Requests: {stats['total']} | OK: {stats['successful']} | Fail: {stats['failed']}")
@@ -294,7 +293,7 @@ class LoadTester:
             print()
 
         if report.error_summary:
-            print(f"  Error Summary:")
+            print("  Error Summary:")
             for err, count in sorted(report.error_summary.items(), key=lambda x: -x[1]):
                 print(f"    {err}: {count}")
 

@@ -598,8 +598,9 @@ async def purified_close(ticket: int) -> dict:
 @router.get("/purified/trades")
 async def purified_trades() -> dict:
     try:
-        import MetaTrader5 as mt5
         from datetime import datetime, timedelta
+
+        import MetaTrader5 as mt5
         deals = mt5.history_deals_get(datetime.now() - timedelta(days=30), datetime.now()) or []
         return {"trades": [{"ticket": d.ticket, "symbol": d.symbol, "type": "BUY" if d.type == 0 else "SELL", "volume": d.volume, "price": d.price, "pnl": d.profit, "time": str(d.time)} for d in deals[-50:]]}
     except Exception as e:

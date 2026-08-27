@@ -878,12 +878,12 @@ if __name__ == "__main__":
             print(f"  First pred: signal={predictions[0].signal}, conf={predictions[0].confidence:.3f}")
 
         importance = model.explain()
-        print(f"  Feature importance:")
+        print("  Feature importance:")
         for feat, imp in sorted(importance.items(), key=lambda x: -x[1]):
             print(f"    {feat}: {imp:.4f}")
 
     # Test registry operations
-    print(f"\n--- Registry Operations ---")
+    print("\n--- Registry Operations ---")
     print(f"  Has 'linear': {has_model('linear')}")
     print(f"  Has 'unknown': {has_model('unknown')}")
     print(f"  Unregister 'linear': {unregister_model('linear')}")

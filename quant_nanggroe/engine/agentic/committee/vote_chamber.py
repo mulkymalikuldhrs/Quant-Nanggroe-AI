@@ -6,8 +6,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from quant_nanggroe.engine.agentic.committee.agents import (
-    BaseAgent, BullAnalyst, BearAnalyst, MacroAnalyst,
-    RiskOfficer, ExecutionAgent, AgentVote,
+    AgentVote,
+    BearAnalyst,
+    BullAnalyst,
+    ExecutionAgent,
+    MacroAnalyst,
+    RiskOfficer,
 )
 
 logger = logging.getLogger("QNA.Committee.VoteChamber")

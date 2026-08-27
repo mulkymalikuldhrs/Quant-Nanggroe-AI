@@ -6,10 +6,10 @@ Deploys to Netlify and sets up Supabase integration
 Made with ❤️ by Mulky Malikul Dhaher in Indonesia 🇮🇩
 """
 
-import os
-import sys
 import json
+import os
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -154,7 +154,7 @@ def deploy_to_netlify():
         
         if deploy_result:
             site_url = site.get('ssl_url') or site.get('url')
-            print(f"  ✅ Deployment successful!")
+            print("  ✅ Deployment successful!")
             print(f"     Site URL: {site_url}")
             print(f"     Deploy ID: {deploy_result['id']}")
             print(f"     Status: {deploy_result['state']}")
@@ -239,17 +239,17 @@ def print_deployment_summary(report):
     print("="*60)
     
     if report['netlify'] and report['netlify'].get('success'):
-        print(f"🌐 Netlify Deployment: ✅ SUCCESS")
+        print("🌐 Netlify Deployment: ✅ SUCCESS")
         print(f"   URL: {report['netlify']['site_url']}")
         print(f"   Site ID: {report['netlify']['site_id']}")
     else:
-        print(f"🌐 Netlify Deployment: ❌ FAILED")
+        print("🌐 Netlify Deployment: ❌ FAILED")
     
     if report['supabase'] and report['supabase'].get('success'):
-        print(f"🗄️ Supabase Setup: ✅ SUCCESS")
+        print("🗄️ Supabase Setup: ✅ SUCCESS")
         print(f"   URL: {report['supabase']['url']}")
     else:
-        print(f"🗄️ Supabase Setup: ❌ FAILED")
+        print("🗄️ Supabase Setup: ❌ FAILED")
     
     print(f"\n📊 System Version: {report['system_info']['version']}")
     print(f"🕒 Deployed: {report['deployment_timestamp']}")

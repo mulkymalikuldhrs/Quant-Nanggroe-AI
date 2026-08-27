@@ -1,5 +1,7 @@
-import sys, os, re
+import os
+import re
 from pathlib import Path
+
 root = str(Path(__file__).resolve().parent.parent / 'quant_nanggroe')
 py_files = []
 for r, dirs, files in os.walk(root):

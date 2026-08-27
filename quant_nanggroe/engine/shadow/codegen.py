@@ -311,7 +311,7 @@ class {class_name}(Strategy):
                     operator = condition.get("operator", "gt")
 
                     if indicator == "rsi":
-                        lines.append(f"        # RSI check")
+                        lines.append("        # RSI check")
                         lines.append("        delta = close.diff()")
                         lines.append("        gain = delta.where(delta > 0, 0.0)")
                         lines.append("        loss = (-delta).where(delta < 0, 0.0)")

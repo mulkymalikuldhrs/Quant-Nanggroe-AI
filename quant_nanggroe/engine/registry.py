@@ -363,7 +363,6 @@ class AutoRegistry:
     def ensure_init_files(self, base: Path) -> int:
         """Ensure all subdirectories have __init__.py files. Returns count created."""
         import os
-        from pathlib import Path
         count = 0
         for root, dirs, files in os.walk(base):
             # Skip hidden dirs, __pycache__, and .venv

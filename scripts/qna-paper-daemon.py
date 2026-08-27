@@ -30,6 +30,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from quant_nanggroe.agents.compliance.agent import ComplianceAgent
+
 from quant_nanggroe.agents.risk.agent import RiskAgent
 from quant_nanggroe.data.warehouse import DataWarehouse
 from quant_nanggroe.engine.audit import AuditLogger

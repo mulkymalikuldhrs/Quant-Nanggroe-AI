@@ -25,10 +25,10 @@ import yfinance as yf
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
-from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
-from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 import quant_nanggroe.engine.strategies  # noqa: F401
+from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
+from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 # Top distinct-logic strategies from tri-asset rolling WF (CANONICAL 4.5)
 DEFAULT_TARGETS = [
@@ -126,7 +126,7 @@ def main() -> None:
         out_path.write_text(json.dumps(registry, indent=2), encoding="utf-8")
 
     # final ranking by weakest-link (min sharpe across symbols)
-    print(f"\n=== CPCV ROBUSTNESS RANKING (survivor = min Sharpe > 0 across all symbols) ===")
+    print("\n=== CPCV ROBUSTNESS RANKING (survivor = min Sharpe > 0 across all symbols) ===")
     by_name: dict[str, list] = {}
     for r in results:
         by_name.setdefault(r["name"], []).append(r)

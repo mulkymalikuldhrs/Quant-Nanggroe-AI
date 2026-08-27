@@ -55,7 +55,7 @@ logger = logging.getLogger("QNA")
 
 # ── Banner ──────────────────────────────────────────────────────────
 
-BANNER = f"""
+BANNER = """
 """
 
 
@@ -128,7 +128,7 @@ def run_cli(args: argparse.Namespace) -> int:
             if cmd.lower() == "status":
                 print(f"  Version: {__version__}")
                 print(f"  Agents: {len(agents)} configured")
-                print(f"  Modes: unified | api | daemon | hedge | status | cli [deprecated] | web [deprecated]")
+                print("  Modes: unified | api | daemon | hedge | status | cli [deprecated] | web [deprecated]")
                 continue
             if cmd.lower() == "agents":
                 for name, cfg in agents.items():
@@ -178,6 +178,7 @@ def run_api(args: argparse.Namespace) -> int:
 
     try:
         import uvicorn
+
         from quant_nanggroe.api.app import create_app
 
         app = create_app()
@@ -415,8 +416,8 @@ def run_daemon(args: argparse.Namespace) -> int:
     # ── Start Auto-Retrain loop (parameter freshness, fail-closed) ──
     _retrainer = None
     try:
-        from quant_nanggroe.engine.auto_retrain import AutoRetrainer, get_auto_retrainer
         from quant_nanggroe.engine.agentic import get_autonomous_pipeline
+        from quant_nanggroe.engine.auto_retrain import get_auto_retrainer
 
         class _PipelineFetcher:
             """Lazy pipeline handle — resolves on first fetch, not at boot.
@@ -439,7 +440,6 @@ def run_daemon(args: argparse.Namespace) -> int:
                     loop = None
                 if loop is not None and loop.is_running():
                     # We're inside an async context — use run_coroutine_threadsafe
-                    import concurrent.futures
                     future = _aio.run_coroutine_threadsafe(coro, loop)
                     return future.result(timeout=30)
                 else:
@@ -681,7 +681,7 @@ def run_hedge(args: argparse.Namespace) -> int:
                 verdict = "EXECUTED" if result.get("executed") else "SKIPPED"
                 print(f"  → {verdict}: {json.dumps(result, default=str, indent=4)}")
             else:
-                print(f"  → FAILED: no result returned")
+                print("  → FAILED: no result returned")
             print()
         print(f"  DONE — {len(results)} symbols processed")
         for sym, res in results:
@@ -707,7 +707,7 @@ def run_hedge(args: argparse.Namespace) -> int:
                 verdict = "EXECUTED" if result.get("executed") else "SKIPPED"
                 print(f"  → {verdict}: {json.dumps(result, default=str, indent=4)}")
             else:
-                print(f"  → FAILED: no result returned")
+                print("  → FAILED: no result returned")
             print()
 
         print(f"  {'='*58}")
@@ -794,9 +794,10 @@ def run_unified(args: argparse.Namespace) -> int:
                 # (best-effort — if no data available, DCC phase is skipped).
                 _returns_data = None
                 try:
-                    from quant_nanggroe.engine_bridge import EnginePriceProvider as _EPP
-                    import pandas as pd
                     import numpy as np
+                    import pandas as pd
+
+                    from quant_nanggroe.engine_bridge import EnginePriceProvider as _EPP
                     _provider = _EPP()
                     _klines_data: dict[str, list[float]] = {}
                     for _sym in ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]:

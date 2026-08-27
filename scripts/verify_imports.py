@@ -37,7 +37,7 @@ for s in strategy_names:
         fail.append((s, str(e)))
         print(f"  FAIL {s}: {e}")
 
-print(f"\n=== RESULTS ===")
+print("\n=== RESULTS ===")
 print(f"Total: {len(strategy_names)}")
 print(f"Success: {len(ok)}")
 print(f"Failure: {len(fail)}")

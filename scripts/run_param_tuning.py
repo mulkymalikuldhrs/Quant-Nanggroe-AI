@@ -23,11 +23,11 @@ import yfinance as yf
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
-from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
-from quant_nanggroe.engine.strategies.registry import StrategyRegistry
-from quant_nanggroe.engine.strategies.base import StrategyParameters
 import quant_nanggroe.engine.strategies  # noqa: F401
+from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
+from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
+from quant_nanggroe.engine.strategies.base import StrategyParameters
+from quant_nanggroe.engine.strategies.registry import StrategyRegistry
 
 PARAM_GRIDS = {
     "archive_aroon": {
@@ -168,7 +168,7 @@ def main():
         print(f"  persisted -> {out_path}")
 
     # final summary
-    print(f"\n=== TUNING SUMMARY ===")
+    print("\n=== TUNING SUMMARY ===")
     for name, per_sym in all_results.items():
         if name not in targets:
             continue

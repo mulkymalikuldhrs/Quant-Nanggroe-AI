@@ -37,8 +37,8 @@ class MT5Broker(BrokerConnector):
         except ImportError:
             raise RuntimeError("MetaTrader5 lib missing — pip install MetaTrader5")
         self._mt5 = mt5
-        import os as _os
         import logging as _logging
+        import os as _os
         _logger = _logging.getLogger(__name__)
         term_path = _os.environ.get("MT5_TERMINAL_PATH") or r"C:\Program Files\MetaTrader 5\terminal64.exe"
         # ── USER MANDATE: trade whatever account is ALREADY logged into the

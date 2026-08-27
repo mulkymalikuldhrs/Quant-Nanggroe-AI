@@ -1,5 +1,6 @@
 """Quick test: Kelly → Backtest integration"""
 import sys
+
 sys.path.insert(0, '..')
 
 import numpy as np
@@ -7,7 +8,6 @@ import pandas as pd
 
 from quant_nanggroe.engine.kelly.backtest_integration import (
     KellyBacktestBridge,
-    KellySignal,
     StrategyKellyMixin,
 )
 

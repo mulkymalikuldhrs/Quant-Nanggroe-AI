@@ -22,7 +22,7 @@ import csv
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -32,8 +32,8 @@ try:
     import matplotlib as _mpl
 
     _mpl.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
 
     _HAS_MATPLOTLIB = True
 except ImportError:

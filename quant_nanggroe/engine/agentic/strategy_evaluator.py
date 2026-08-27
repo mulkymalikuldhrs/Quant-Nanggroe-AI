@@ -1,14 +1,12 @@
 """Strategy Evaluator — Rolling backtest + live signal tracking + auto-disable."""
 from __future__ import annotations
 
-import json
 import logging
 import sqlite3
 from contextlib import contextmanager
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 

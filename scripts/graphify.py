@@ -6,7 +6,6 @@ Usage: python3 scripts/graphify.py [--output docs/architecture.md]
 """
 
 import argparse
-import os
 from pathlib import Path
 
 QNA_DIR = Path(__file__).resolve().parent.parent

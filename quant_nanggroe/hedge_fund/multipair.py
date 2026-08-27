@@ -19,8 +19,9 @@ sys.path.insert(0, str(_TOOLS_DIR))
 import MetaTrader5 as mt5
 from mtf_framework import STYLES, load_mtf, mtf_signal, strategy_wrapper
 from risk_module import adaptive_risk
+
 from quant_nanggroe.engine.risk.constants import MAX_RISK_PER_TRADE
-from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
+from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod
 
 _HF_DIR = Path(__file__).resolve().parent
 _DATA_DIR = _HF_DIR.parent / "data"
@@ -209,7 +210,7 @@ def run_multipair_cycle():
     if success:
         log.info(f"🎯 Trade placed: {best['symbol']} {best['bias'].upper()} @ conf={best['confidence']:.2f}")
     else:
-        log.warning(f"⚠️  Trade failed for top candidate")
+        log.warning("⚠️  Trade failed for top candidate")
     log.info(f"\n── Full ranking ({len(candidates)} candidate(s)) ──")
     for i, c in enumerate(candidates, 1):
         log.info(f"  #{i} {c['symbol']:8s} {c['bias']:5s}  conf={c['confidence']:.2f}  {c['strategy']:12s}  {c['style']}")

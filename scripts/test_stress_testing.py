@@ -1,9 +1,11 @@
 """Test stress testing module"""
 import sys; sys.path.insert(0, '..')
-import numpy as np; import pandas as pd
-from quant_nanggroe.engine.stress_testing.monte_carlo import MonteCarloSimulator
+import numpy as np
+import pandas as pd
+
 from quant_nanggroe.engine.stress_testing.ewhs import EWHSVARCalculator
 from quant_nanggroe.engine.stress_testing.historical import HistoricalScenarioAnalyzer
+from quant_nanggroe.engine.stress_testing.monte_carlo import MonteCarloSimulator
 
 prices = pd.Series(100 * np.exp(np.cumsum(np.random.randn(252) * 0.02)))
 sim = MonteCarloSimulator()

@@ -9,8 +9,13 @@ Resumable: strategies already in results/gate_status.json are skipped.
 Writes results/gate_status.json cumulatively.
 """
 from __future__ import annotations
-import sys, time, json, argparse
+
+import argparse
+import json
+import sys
+import time
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -25,7 +30,6 @@ SYM = "EURUSD=X"
 ANN = 35040  # M15 bars/year (365*24*4)
 
 import quant_nanggroe.engine.registry as reg
-from quant_nanggroe.engine.strategies.base import Strategy
 
 
 def load_data(interval: str, period: str) -> pd.DataFrame:

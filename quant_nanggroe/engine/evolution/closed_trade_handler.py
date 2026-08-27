@@ -5,7 +5,6 @@ Thin wrapper over EvolutionJournal with strategy-level stats queries.
 
 from __future__ import annotations
 
-import math
 from typing import Any, Optional
 
 from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal

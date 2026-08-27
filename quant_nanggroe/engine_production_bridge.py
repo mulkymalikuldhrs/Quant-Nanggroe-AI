@@ -128,8 +128,9 @@ class ProductionStrategyRunner:
         if self._wf_registry is not None:
             return self._wf_registry
         try:
-            from quant_nanggroe.engine.strategy.registry import WalkForwardRegistry
             from pathlib import Path as _Path
+
+            from quant_nanggroe.engine.strategy.registry import WalkForwardRegistry
             # FIX: resolve repo root by walking up until we find data/walk_forward_registry.json
             _here = _Path(__file__).resolve()
             _reg_path = None

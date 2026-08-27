@@ -6,8 +6,7 @@ drawdown trigger, consecutive loss streak.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, timezone
 
 from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
 

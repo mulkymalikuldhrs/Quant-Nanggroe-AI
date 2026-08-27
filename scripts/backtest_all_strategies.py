@@ -3,12 +3,16 @@ QNA WAR PLAN — Phase 2: Backtest ALL registered strategies.
 Gate: Sharpe>0.5, Return>0%, MaxDD>-25% on EURUSD=X (6mo daily).
 Vectorized generate_signals when possible, bar-by-bar fallback otherwise.
 """
-import sys, json, logging, time, threading
-from pathlib import Path
+import json
+import logging
+import sys
+import time
 from datetime import datetime
-import yfinance as yf
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+import yfinance as yf
 
 _HERE = Path(__file__).resolve().parent.parent
 SRC = _HERE / 'results'
@@ -27,6 +31,7 @@ N = len(df)
 print(f"Data: {N} bars (6mo daily EURUSD)")
 
 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
+
 strategies = StrategyRegistry.list_strategies()
 print(f"Registered: {len(strategies)} strategies")
 

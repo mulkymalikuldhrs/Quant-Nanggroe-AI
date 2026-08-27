@@ -120,7 +120,7 @@ def _handle_allocation() -> Dict[str, Any]:
 
 def _handle_export(symbol: Optional[str] = None) -> Dict[str, Any]:
     """Export info."""
-    msg = f"📤 Export available at /api/export/trades?format=xlsx"
+    msg = "📤 Export available at /api/export/trades?format=xlsx"
     if symbol:
         msg += f"\nFiltering by symbol: {symbol}"
     msg += "\nFormats: csv, xlsx, md, json (pdf needs reportlab)"
@@ -225,4 +225,3 @@ async def chat(body: ChatMessage) -> Dict[str, Any]:
     return help_result
 
 
-from fastapi import HTTPException  # noqa: E402 — needed at module level for 400

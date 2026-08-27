@@ -4,13 +4,10 @@ Adapts existing strategies to produce (bias, confidence, style) for MTF framewor
 then executes trades with fail-closed guarantees through the risk guard.
 """
 
-import logging, time
+import logging
 from datetime import datetime, timedelta
-from decimal import Decimal
-from collections import defaultdict
 
 import MetaTrader5 as mt5
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.hedge_fund.risk_guard import risk_guard_approve
