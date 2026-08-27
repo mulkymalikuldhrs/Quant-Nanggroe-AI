@@ -63,3 +63,5 @@ from .archive_williams_r import *
 from .archive_woodie_pivot import *
 from .archive_wyckoff_strategy import *
 from .archive_yield_curve import *
+from .msnr_fixed import *
+from .smc_fixed import *
