@@ -25,7 +25,7 @@ def load():
         close = df[("Close",)] if ("Close",) in df.columns else df.xs("Close", axis=1, level=0)
     else:
         close = df["Close"]
-    df = close.to_frame("close")
+    df = close.squeeze().to_frame("close")
     df = df.dropna()
     df["ret"] = df["close"].pct_change()
     # ATR(14)
