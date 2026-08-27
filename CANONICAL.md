@@ -1,8 +1,8 @@
 # CANONICAL.md — Quant-Nanggroe-AI
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
-> Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 211098748 cent .vxc)
-> Version: v8.0.10 | Last verified: 2026-08-25
+> Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445)
+> Version: v8.0.18 | Last verified: 2026-08-27
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,9 +13,9 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.10 (pyproject: 8.0.10) |
+| **Version** | v8.0.18 (pyproject: 8.0.18) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
-| **Live broker** | ValetaxIntl-Live2, account 211098748 (Centku), suffix `.vxc`, balance ~$2110 USC |
+| **Live broker** | ValetaxIntl-Live2, account 372044706 (QNA), balance $1,445, live MT5 |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
 | **LiveModeGuard** | ACTIVE — `LiveModeGuard` enforced; no paper mode, MT5 live only |
 | **Session** | 82+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications + v8.0.3 fail-closed risk wiring + launcher quoting fix + v8.0.8 universal path auto-detect + full risk audit + v8.0.9 trading unblocked + v8.0.10 MT5 data pipeline + candle scheduler thread fix) |
@@ -23,7 +23,7 @@
 | **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |
 | **Tests passing** | See CHANGELOG (latest full-battery count) |
-| **Path auto-detect** | Universal — all scripts use `Path(__file__).resolve().parent.parent`; no hardcoded `/sdcard`, `D:/`, `E:/` paths. External integrations configurable via `QNA_EXT_*` env vars. |
+| **Path auto-detect** | Universal — all scripts use `Path(__file__).resolve().parent`; external deps in `quant_nanggroe/external/` (kronos, mue_x, hidden_regime, backtesting, smc, orderflow_map) via `Path(__file__).parent / 'external'`; no hardcoded `E:\` at runtime. |
 | **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 83 strategies |
 | **Dashboard** | 22 routes + Config Center (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes, premium dark-tech |
 

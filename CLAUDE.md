@@ -91,12 +91,13 @@ FusionEngine: weighted sum + override logic (confidence >= 60% overrides aggrega
 | github2 | mulkymalikuldhrs/Quant-Nanggroe-AI | **4141 files diverged** — contains full Next.js dashboard |
 | gitlab | mulkymalikuldhr/Quant-Nanggroe-AI | main |
 
-### E:\ Data Sources
+### External Data Sources (inside repo)
 
 | Path | Content | Used By |
 |------|---------|---------|
-| `E:\hidden-regime\` | COT analysis, regime evolution | PositioningScorer |
-| `E:\mue-x\genes\qna_strategies\` | 992 evolved strategy files | Dynamic MueXSignalProvider |
+| `quant_nanggroe/external/hidden_regime/` | COT analysis, regime evolution | PositioningScorer |
+| `quant_nanggroe/external/mue_x/genes/qna_strategies/` | 992 evolved strategy files | Dynamic MueXSignalProvider |
+| `quant_nanggroe/external/kronos/` | Financial foundation model (AAAI 2026) | KronosSignalProvider |
 | `C:\e\archived\AI-Trader\` | market_intel.py (1911 lines), TTL cache | DataProvider cache engine |
 
 ## Core Principles
