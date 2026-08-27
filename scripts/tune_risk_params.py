@@ -19,16 +19,20 @@ from quant_nanggroe.engine.strategies.mean_reversion import MeanReversionStrateg
 from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
 
 # ─── Data ───────────────────────────────────────────────────────────────────
-TICKER = "EURUSD=X"
-END = datetime(2025, 8, 1)
-START = END - timedelta(days=365)
+DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "eurusd_h1_730d_cache.csv"
 
 def fetch_data():
-    df = yf.download(TICKER, start=START, end=END, interval="1h", progress=False)
-    if df is None or df.empty:
-        raise RuntimeError("No EURUSD data from yfinance")
-    df = df.rename(columns={"Open":"open","High":"high","Low":"low","Close":"close","Volume":"volume"})
-    df = df.dropna()
+    df = pd.read_csv(DATA_FILE, parse_dates=["Datetime"], index_col="Datetime")
+    df = df.rename(columns={c: c.lower().replace("adj close","adj_close") for c in df.columns})
+    # Normalize to lowercase OHLCV
+    col_map = {c: c.lower().replace(" ","") for c in df.columns}
+    df = df.rename(columns=col_map)
+    keep = [c for c in ["open","high","low","close","volume"] if c in df.columns]
+    df = df[keep].dropna()
+    df = df[df["volume"] >= 0]  # forex has 0 volume, keep it
+    # Remove timezone for consistency
+    if hasattr(df.index, 'tz') and df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
     return df
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -255,6 +259,8 @@ def main():
     print(f"\nResults saved: {out_path}")
     print(f"Best Wyckoff  → Kelly={bw['kelly']}, SL={bw['sl_mult']}x, TP={bw['tp_mult']}x, {bw['sizing']}, Sharpe={bw['sharpe']:.3f}")
     print(f"Best MeanRev  → Kelly={bm['kelly']}, SL={bm['sl_mult']}x, TP={bm['tp_mult']}x, {bm['sizing']}, Sharpe={bm['sharpe']:.3f}")
+
+
 
 if __name__ == "__main__":
     main()
