@@ -151,8 +151,7 @@ graph TB
 def generate(output_path: str = None):
     if output_path:
         out = QNA_DIR / output_path
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(ARCHITECTURE_MERMAID, encoding="utf-8")
+        out.write_text(ARCHITECTURE_MERMAID)
         print(f"Graphify: written to {out}")
     else:
         print(ARCHITECTURE_MERMAID)
