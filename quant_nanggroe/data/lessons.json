@@ -2728,5 +2728,69 @@
     "occurred_at": "2026-08-27T23:41:33.773074+00:00",
     "resolved": false,
     "resolution": ""
-  }
-]
+  },
+  {
+    "id": "20c0a75a-0f3",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-27T23:56:33.995605+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "28ff2e85-4fc",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for GBPUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-27T23:56:34.001472+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "da745c46-a76",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDJPY",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-27T23:56:34.005092+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "a95aa25a-d24",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T00:11:34.036139+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "657861c6-bdb",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for GBPUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T00:11:53.788245+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
