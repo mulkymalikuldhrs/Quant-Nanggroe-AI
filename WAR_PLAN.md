@@ -1,12 +1,18 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-## Status (2026-08-28 09:20 coordinator run)
-- **Active Profiles:** 7/7 cron jobs HEALTHY (status=ok, failure_streak=0, last run <1h ago):
-  - `profile-autobot-orch` ✓ · `profile-devbot-qna` ✓ · `profile-clawbot-qna` ✓ · `profile-hackerbot-audit` ✓ · `profile-fangbot-opt` ✓ · `profile-traderbot-quant` ✓ · `profile-researchbot` ✓
-- **Version:** `quant_nanggroe/__init__.py` + `pyproject.toml` = `5.1.0` (verified this run — no drift)
-- **Sync:** codeberg + gitlab + github → `b5301c30` (2026-08-28 coordinator push; committed lessons.json + risk_param_grid.py + account_ledger.json)
-- **Worktree:** D:/repositories/Quant-Nanggroe-AI-worktree (branch master) — clean after push.
-- **Note:** Stale duplicate cron entries exist per name (older error rows from 2025-07/08) but all ACTIVE entries healthy. Per protocol: do NOT auto-fix model/provider.
+## Status (2026-08-28 09:45 coordinator run)
+- **Cron Reality (RTK 2026-08-28 09:45):** WAR_PLAN prior block was aspirational. Actual state:
+  - `autobot` `profile-autobot-orch` ✓ healthy (last 09:31, streak 2 from prior TERMINAL_CWD lock timeout)
+  - `devbot` ✗ NEVER RAN (next_run=created_at 2026-08-21, last_run=null, completed=0) — cron registered but never fired
+  - `clawbot` ✗ 47-streak error (HTTP 404 deepseek-v4-flash)
+  - `hackerbot` ✗ 16-streak error (HTTP 404 deepseek-v4-flash)
+  - `fangbot` ✗ 51-streak error (HTTP 502 fetch connect timeout)
+  - `traderbot` ✗ 23-streak error (HTTP 410 model gone)
+  - `researchbot` ✗ 10-streak error (Connection error)
+- **Version:** v5.1.0 confirmed (quant_nanggroe/__init__.py + pyproject.toml). No drift.
+- **Sync:** codeberg + gitlab + github + 3 personal mirrors → `cfb5a2b3` (2026-08-28 09:45 coordinator push; risk manager updates + dev deps + ledger delta).
+- **Worktree:** D:/repositories/Quant-Nanggroe-AI-worktree (branch master) — clean.
+- **Protocol:** 5 profiles erroring (model/provider 404/410/502). Per protocol report, do NOT auto-fix.
 
 ## Profile Cron Health (RTK 2026-08-28 06:45)
 | Profile | Schedule | Status | Runs | Failure Streak | Last Error |
@@ -27,4 +33,3 @@
 - All profiles write to same worktree; schedules staggered in plan but only autobot running.
 - Untracked junk `test_write.txt` present — left untracked.
 - 2026-08-28 04:12 mass-failure cluster historical, recovered.
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
