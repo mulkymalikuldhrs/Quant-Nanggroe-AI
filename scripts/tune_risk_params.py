@@ -309,7 +309,7 @@ def _backtest_from_signals(df, cached, kelly_frac):
             pip_value = close * 0.0001
             sl_pips = sl_distance / pip_value
             lot = risk_amount / (sl_pips * pip_value * 100_000) if sl_pips > 0 else 0.01
-            lot = max(0.01, round(lot * 100) / 100)
+            lot = max(0.01, min(MAX_LOT, round(lot * 100) / 100))
             position = lot * 100_000 if direction == "buy" else -lot * 100_000
             entry_price = close
             sl_price = raw_sl
