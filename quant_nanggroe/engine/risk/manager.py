@@ -307,9 +307,10 @@ class RiskManager:
             return
         try:
             from datetime import timedelta, timezone
-            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            WIB = timezone(timedelta(hours=7))
+            now = datetime.now(WIB).replace(tzinfo=None)
             day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            # week start = Monday 00:00 UTC
+            # week start = Monday 00:00 WIB
             week_start = day_start - timedelta(days=now.weekday())
             day_raw = self._mt5_handle.history_deals_get(day_start, now)
             week_raw = self._mt5_handle.history_deals_get(week_start, now)
@@ -329,7 +330,7 @@ class RiskManager:
                     return 0.0
             day_pnl = sum(_deal_net(d) for d in day_deals)
             week_pnl = sum(_deal_net(d) for d in week_deals)
-            # Owner override: weekly reset manual (weekly -13.72% -> 0 until Monday)
+            # Owner override: weekly reset manual WIB (weekly -13.72% -> 0 until Monday WIB)
             try:
                 import json, pathlib
                 _ov_path = pathlib.Path("data/weekly_override.json")
@@ -337,9 +338,14 @@ class RiskManager:
                     _ov = json.loads(_ov_path.read_text(encoding="utf-8"))
                     _until = _ov.get("until")
                     if _until:
-                        from datetime import datetime, timezone
-                        _until_dt = datetime.fromisoformat(str(_until).replace("Z", "+00:00"))
-                        if datetime.now(timezone.utc) < _until_dt:
+                        from datetime import datetime, timedelta, timezone
+                        WIB = timezone(timedelta(hours=7))
+                        _until_str = str(_until).replace("Z", "+00:00")
+                        _until_dt = datetime.fromisoformat(_until_str)
+                        # Ensure _until_dt is timezone-aware
+                        if _until_dt.tzinfo is None:
+                            _until_dt = _until_dt.replace(tzinfo=WIB)
+                        if datetime.now(WIB) < _until_dt:
                             _ov_weekly = float(_ov.get("weekly_pnl", week_pnl))
                             if _ov_weekly != week_pnl:
                                 logger.info("Weekly override active: %.2f -> %.2f until %s (owner)", week_pnl, _ov_weekly, _until)
@@ -782,9 +788,10 @@ class RiskManager:
         }
 
     def _reset_daily_if_needed(self) -> None:
-        """Reset daily counters if new day. Handles missed Monday (doubt #5b)."""
-        from datetime import timezone
-        today = datetime.now(timezone.utc).date()
+        """Reset daily counters if new day. Handles missed Monday (doubt #5b). WIB UTC+7."""
+        from datetime import timedelta, timezone
+        WIB = timezone(timedelta(hours=7))
+        today = datetime.now(WIB).date()
         if self.state.last_reset_date is None or today > self.state.last_reset_date:
             self.state.daily_pnl = 0.0
             self.state.trade_count_today = 0
