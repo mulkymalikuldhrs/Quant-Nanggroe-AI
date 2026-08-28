@@ -2591,7 +2591,7 @@
     "category": "scheduler",
     "severity": "error",
     "summary": "Pipeline cycle failed",
-    "detail": "REAL-ONLY mode: no MT5 account connected. PaperBroker removed \u2014 cannot trade on simulation.",
+    "detail": "REAL-ONLY mode: no MT5 account connected. PaperBroker removed — cannot trade on simulation.",
     "context": {
       "_sla_tracked": true
     },
@@ -2604,7 +2604,7 @@
     "category": "scheduler",
     "severity": "error",
     "summary": "Pipeline cycle failed",
-    "detail": "REAL-ONLY mode: no MT5 account connected. PaperBroker removed \u2014 cannot trade on simulation.",
+    "detail": "REAL-ONLY mode: no MT5 account connected. PaperBroker removed — cannot trade on simulation.",
     "context": {
       "_sla_tracked": true
     },
@@ -2778,8 +2778,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:11:34.036139+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "657861c6-bdb",
@@ -2791,8 +2791,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:11:53.788245+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "2c486b54-8dc",
@@ -2804,8 +2804,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:11:53.798523+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "382e47be-62b",
@@ -2817,8 +2817,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:26:53.842256+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "b1051409-131",
@@ -2830,8 +2830,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:26:53.852382+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "7bafde4c-c0f",
@@ -2843,8 +2843,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:26:53.855028+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "bd3f64cb-7ec",
@@ -2856,8 +2856,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:41:53.906654+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "f7d19412-41b",
@@ -2869,8 +2869,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:41:53.912586+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "92b5bfe4-724",
@@ -2882,8 +2882,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:41:53.918715+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "b27d6e43-49e",
@@ -2895,8 +2895,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:56:53.995262+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "cdbfa4c6-5de",
@@ -2908,8 +2908,8 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:56:54.007403+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   },
   {
     "id": "92bd8742-cd8",
@@ -2921,7 +2921,46 @@
       "_sla_tracked": true
     },
     "occurred_at": "2026-08-28T00:56:54.010415+00:00",
-    "resolved": false,
-    "resolution": ""
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
+  },
+  {
+    "id": "842d0e27-4fb",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T01:11:54.123689+00:00",
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
+  },
+  {
+    "id": "ac19b8ff-959",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for GBPUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T01:11:54.128232+00:00",
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
+  },
+  {
+    "id": "1e7dc9a3-380",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDJPY",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T01:11:54.132258+00:00",
+    "resolved": true,
+    "resolution": "Transient provider outage 2026-08-28. System recovered automatically. No root cause fix required."
   }
 ]
