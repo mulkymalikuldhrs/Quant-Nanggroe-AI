@@ -2884,5 +2884,44 @@
     "occurred_at": "2026-08-28T00:41:53.918715+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "b27d6e43-49e",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T00:56:53.995262+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "cdbfa4c6-5de",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for GBPUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T00:56:54.007403+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "92bd8742-cd8",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDJPY",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T00:56:54.010415+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
+import numpy as np
 from typing import Any, Dict, Optional
 
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.strategies.base import (
@@ -254,7 +254,3 @@ class MeanReversionStrategy(Strategy):
 
 
 __all__ = ["MeanReversionStrategy"]
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
-mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
