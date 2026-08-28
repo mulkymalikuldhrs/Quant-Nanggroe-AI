@@ -118,7 +118,7 @@ class MeanReversionStrategy(Strategy):
             atr_val = float(atr.iloc[last]) if not pd.isna(atr.iloc[last]) else close_price * 0.01
 
             if k < os_ and k > d:
-                sl = close_price - 1.5 * atr_val
+                sl = close_price - 1.0 * atr_val
                 tp = close_price + 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
@@ -133,7 +133,7 @@ class MeanReversionStrategy(Strategy):
                     indicators={"stoch_k": float(k), "stoch_d": float(d), "atr": atr_val},
                 )
             if k > ob_ and k < d:
-                sl = close_price + 1.5 * atr_val
+                sl = close_price + 1.0 * atr_val
                 tp = close_price - 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
@@ -210,7 +210,7 @@ class MeanReversionStrategy(Strategy):
             atr_val = float(atr.iloc[last]) if not pd.isna(atr.iloc[last]) else close * 0.01
 
             if k < os_ and k > d:
-                sl = close - 1.5 * atr_val
+                sl = close - 1.0 * atr_val
                 tp = close + 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
@@ -225,7 +225,7 @@ class MeanReversionStrategy(Strategy):
                     indicators={"stoch_k": float(k), "stoch_d": float(d), "atr": atr_val},
                 )
             if k > ob_ and k < d:
-                sl = close + 1.5 * atr_val
+                sl = close + 1.0 * atr_val
                 tp = close - 3.0 * atr_val
                 return StrategySignal(
                     strategy_name=self.name,
@@ -254,3 +254,7 @@ class MeanReversionStrategy(Strategy):
 
 
 __all__ = ["MeanReversionStrategy"]
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
