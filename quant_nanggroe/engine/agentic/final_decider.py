@@ -71,7 +71,7 @@ class FinalDecision:
 _REGIME_VETO_MAP = {"trending_up": 1.0, "trending_down": 0.4, "bull_trend": 1.0, "bear_trend": 0.4, "ranging": 0.6, "high_volatility": 0.3, "low_volatility": 1.0, "sideways": 0.5, "crisis": 0.05, "recovery": 0.7, "unknown": 0.3}
 
 class FinalDecider:
-    def __init__(self, min_confidence_threshold: float = 0.60, min_regime_compatibility: float = 0.35, risk_per_trade: float = 0.01, min_rr_ratio: float = 2.5):
+    def __init__(self, min_confidence_threshold: float = 0.60, min_regime_compatibility: float = 0.35, risk_per_trade: float = 0.015, min_rr_ratio: float = 3.5):  # Phase5 grid 2026-08-28: best kelly=0.15, rr=3.5 (SR=10.59)
         self.min_confidence = min_confidence_threshold
         self.min_regime_compat = min_regime_compatibility
         self.risk_per_trade = risk_per_trade

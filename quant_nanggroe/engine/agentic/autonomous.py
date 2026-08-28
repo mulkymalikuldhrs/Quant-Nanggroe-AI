@@ -639,7 +639,7 @@ class AutonomousPipeline:
 
         if _HAS_FINAL_DECIDER:
             try:
-                self._final_decider = FinalDecider(min_confidence_threshold=0.60, min_regime_compatibility=0.35, risk_per_trade=0.005, min_rr_ratio=2.5)
+                self._final_decider = FinalDecider(min_confidence_threshold=0.60, min_regime_compatibility=0.35, risk_per_trade=0.015, min_rr_ratio=3.5)  # Phase5 grid 2026-08-28
                 logger.info("FinalDecider initialized")
             except Exception as exc:
                 logger.warning("FinalDecider init failed: %s", exc)

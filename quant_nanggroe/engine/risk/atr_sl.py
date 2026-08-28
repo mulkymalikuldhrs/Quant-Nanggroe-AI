@@ -38,7 +38,7 @@ def calculate_atr_sl(
     entry_price: float,
     side: str = "long",
     atr_period: int = 14,
-    atr_multiplier: float = 1.5,
+    atr_multiplier: float = 2.5,  # Phase5 grid 2026-08-28: best=2.5, SR=10.59, DD=-4.7%
     min_sl_distance: Optional[float] = None,
 ) -> dict:
     """Calculate ATR-based stop loss.
