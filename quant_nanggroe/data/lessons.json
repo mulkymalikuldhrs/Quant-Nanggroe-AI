@@ -3040,5 +3040,83 @@
     "occurred_at": "2026-08-28T01:41:54.287792+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "6eabb37a-003",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T01:56:54.344327+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "ea9c4179-022",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for GBPUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T01:56:54.355009+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "b47d02b4-e6c",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDJPY",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T01:56:54.360604+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "1cd5d393-67f",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T02:11:54.472705+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "3a3b8bf3-0a7",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for GBPUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T02:11:54.479435+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2cc787fe-fc2",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDJPY",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-08-28T02:11:54.484235+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
