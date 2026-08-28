@@ -1,18 +1,19 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-## Status (2026-08-28 09:45 coordinator run)
-- **Cron Reality (RTK 2026-08-28 09:45):** WAR_PLAN prior block was aspirational. Actual state:
-  - `autobot` `profile-autobot-orch` ✓ healthy (last 09:31, streak 2 from prior TERMINAL_CWD lock timeout)
-  - `devbot` ✗ NEVER RAN (next_run=created_at 2026-08-21, last_run=null, completed=0) — cron registered but never fired
-  - `clawbot` ✗ 47-streak error (HTTP 404 deepseek-v4-flash)
-  - `hackerbot` ✗ 16-streak error (HTTP 404 deepseek-v4-flash)
-  - `fangbot` ✗ 51-streak error (HTTP 502 fetch connect timeout)
-  - `traderbot` ✗ 23-streak error (HTTP 410 model gone)
-  - `researchbot` ✗ 10-streak error (Connection error)
+## Status (2026-08-28 coordinator run — RTK corrected)
+- **Cron Reality (RTK this run):** 7 profile crons all REGISTERED + ENABLED in jobs.json. Not missing.
+  - `autobot` `profile-autobot-orch` ✓ healthy (streak 0)
+  - `devbot` `profile-devbot-qna` ✓ healthy (streak 0)
+  - `traderbot` `profile-traderbot-quant` ✓ healthy (streak 0)
+  - `researchbot` `profile-researchbot` ✓ healthy (streak 0)
+  - `hackerbot` `profile-hackerbot-audit` ✓ healthy (streak 0)
+  - `fangbot` `profile-fangbot-opt` ✗ error (streak 2) — below 3x, report only
+  - `clawbot` `profile-clawbot-qna` ✗ error (streak 2) — below 3x, report only
 - **Version:** v5.1.0 confirmed (quant_nanggroe/__init__.py + pyproject.toml). No drift.
-- **Sync:** codeberg + gitlab + github + 3 personal mirrors → `cfb5a2b3` (2026-08-28 09:45 coordinator push; risk manager updates + dev deps + ledger delta).
+- **Sync:** codeberg + gitlab + github all up-to-date (Everything up-to-date — clean tree).
 - **Worktree:** D:/repositories/Quant-Nanggroe-AI-worktree (branch master) — clean.
-- **Protocol:** 5 profiles erroring (model/provider 404/410/502). Per protocol report, do NOT auto-fix.
+- **Protocol:** 2 profiles erroring (streak 2 each, <3x threshold) → report, do NOT auto-fix model/provider.
+- **Hermes terminal cache:** `/c/Users/Hi/AppData/Local/hermes/cache/terminal` recreated (was missing → mktemp noise).
 
 ## Profile Cron Health (RTK 2026-08-28 06:45)
 | Profile | Schedule | Status | Runs | Failure Streak | Last Error |
