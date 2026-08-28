@@ -37,6 +37,9 @@ if /I "%~1"=="dashboard" goto :dashboard
 if /I "%~1"=="test" goto :test
 if /I "%~1"=="status" goto :status
 if /I "%~1"=="weekly-reset" goto :weekly_reset
+if /I "%~1"=="logs" goto :logs
+if /I "%~1"=="monitor" goto :monitor
+if /I "%~1"=="verbose" goto :verbose
 goto :usage
 
 :api
@@ -46,7 +49,14 @@ goto :eof
 
 :daemon
 echo [QNA] Daemon WIB ...
-"%PY%" qna.py daemon
+if /I "%~2"=="--verbose" set "QNA_LOG_LEVEL=DEBUG"
+if /I "%~2"=="verbose" set "QNA_LOG_LEVEL=DEBUG"
+if /I "%QNA_LOG_LEVEL%"=="DEBUG" (
+    echo  Verbose DEBUG mode — realtime color log
+    "%PY%" qna.py daemon --log-level DEBUG
+) else (
+    "%PY%" qna.py daemon
+)
 goto :eof
 
 :dashboard
@@ -89,6 +99,27 @@ echo [QNA] Weekly reset WIB manual (owner override) ...
 "%PY%" -c "import json,pathlib; p=pathlib.Path('data/weekly_override.json'); p.write_text(json.dumps({'weekly_pnl':0.0,'until':'2026-09-01T00:00:00+07:00','reason':'owner override weekly reset via launch.bat weekly-reset','created_at':'2026-08-28T10:30:00+07:00'},indent=2),encoding='utf-8'); print('  weekly_override.json -> 0 until 2026-09-01 WIB')" 2>nul
 powershell -Command "Set-Content 'data\persistence\risk_COLON_weekly_pnl.json' '{\"value\": 0.0, \"updated_at\": \"2026-08-28T10:30:00+07:00\"}' -NoNewline; Set-Content 'data\persistence\risk_COLON_daily_pnl.json' '{\"value\": 0.0, \"updated_at\": \"2026-08-28T10:30:00+07:00\"}' -NoNewline; Write-Host '  persistence weekly/daily -> 0 WIB'" 2>nul
 echo  Done. Restart daemon: launch.bat daemon
+goto :eof
+
+:logs
+echo [QNA] Logs WIB realtime ...
+echo  Daemon: logs\daemon*.log  Backend: logs\backend.log  Dashboard: logs\dashboard.log
+echo  Press Ctrl+C to stop.
+powershell -Command "Get-Content 'logs\daemon*.log','logs\backend.log' -Tail 50 -Wait 2>&1 | ForEach-Object { $c='Gray'; if($_ -match 'CRITICAL|BLOCKED|VETOED|KILL'){ $c='Red' } elseif($_ -match 'BUY|SELL'){ $c='Green' } elseif($_ -match 'heartbeat'){ $c='Cyan' } Write-Host $_ -ForegroundColor $c }"
+goto :eof
+
+:monitor
+echo [QNA] Monitor WIB verbose realtime ...
+echo  Daemon + Risk + Signals + MT5
+powershell -Command "$host.UI.RawUI.WindowTitle='QNA-Monitor WIB'; Get-Content 'logs\daemon*.log' -Tail 100 -Wait 2>&1 | ForEach-Object { $c='Gray'; if($_ -match 'CRITICAL|BLOCKED|VETOED|KILL|ERROR'){ $c='Red' } elseif($_ -match 'BUY|SELL|signal=buy|signal=sell'){ $c='Green' } elseif($_ -match 'heartbeat|CPCV|Regime'){ $c='Cyan' } elseif($_ -match 'MT5|BAL|weekly_override'){ $c='Yellow' } Write-Host (\"[\" + (Get-Date -Format 'HH:mm:ss WIB') + \"] \" + $_) -ForegroundColor $c }"
+goto :eof
+
+:verbose
+echo [QNA] Verbose daemon WIB DEBUG ...
+set "QNA_LOG_LEVEL=DEBUG"
+set "PYTHONPATH="
+echo  QNA_LOG_LEVEL=DEBUG  WIB UTC+7
+"%PY%" qna.py daemon --log-level DEBUG 2>&1 | powershell -Command "$input | ForEach-Object { $c='Gray'; if($_ -match 'CRITICAL|VETOED|KILL'){ $c='Red' } elseif($_ -match 'BUY|SELL'){ $c='Green' } elseif($_ -match 'heartbeat'){ $c='Cyan' } Write-Host $_ -ForegroundColor $c }"
 goto :eof
 
 :all
@@ -135,6 +166,9 @@ echo   ALL SERVICES RUNNING (WIB)
 echo   Backend:    http://localhost:8000/docs
 echo   Dashboard:  http://localhost:3000
 echo   Logs:       logs\backend.log / logs\dashboard.log / logs\daemon*.log
+echo   Monitor:    launch.bat logs      ^(tail color^)
+echo               launch.bat monitor   ^(verbose WIB^)
+echo               launch.bat verbose   ^(daemon DEBUG^)
 echo   Weekly:     launch.bat weekly-reset  ^(manual WIB^)
 echo   Status:     launch.bat status
 echo  ══════════════════════════════════════════════
@@ -150,10 +184,15 @@ echo   launch.bat              All-in-One
 echo   launch.bat all          All-in-One
 echo   launch.bat api          FastAPI :8000
 echo   launch.bat daemon       Daemon WIB
+echo   launch.bat daemon --verbose  Daemon DEBUG verbose
 echo   launch.bat dashboard    Next.js :3000
 echo   launch.bat test [args]  pytest
 echo   launch.bat status       Health check WIB
 echo   launch.bat weekly-reset Manual weekly PnL reset WIB
+echo   launch.bat logs         Tail logs realtime color
+echo   launch.bat monitor      Verbose monitor realtime WIB
+echo   launch.bat verbose      Daemon DEBUG verbose foreground
 echo.
 echo All commands use PYTHONPATH="" ^(no Hermes contamination^) WIB UTC+7
+echo Logs: logs\daemon*.log ^| Backend: logs\backend.log ^| Dashboard: logs\dashboard.log
 goto :eof
