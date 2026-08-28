@@ -137,3 +137,8 @@ warn_unused_ignores = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.20",
+]

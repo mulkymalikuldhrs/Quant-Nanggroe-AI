@@ -16,7 +16,8 @@ class TestProfiles:
     def test_day_for_h1(self):
         p = detect_profile("H1")
         assert p.name == "day"
-        assert p.sl_atr_mult == 1.5
+        assert p.sl_atr_mult == 2.0
+        assert p.rr_target == 2.5
 
     def test_swing_for_d1(self):
         p = detect_profile("D1")
@@ -30,11 +31,11 @@ class TestProfiles:
 class TestComputeSLTP:
     def test_buy_long_sl_tp(self):
         r = compute_sl_tp("buy", 2000.0, 10.0, "H1")
-        # day profile: sl_atr=1.5 -> sl_dist=15; rr=2.0 -> tp_dist=30
+        # day profile: sl_atr=1.5 -> sl_dist=20; rr=2.5 -> tp_dist=50
         assert r["sl"] < 2000.0
         assert r["tp"] > 2000.0
-        assert abs(r["sl"] - (2000.0 - 15.0)) < 0.01
-        assert abs(r["tp"] - (2000.0 + 30.0)) < 0.01
+        assert abs(r["sl"] - (2000.0 - 20.0)) < 0.01
+        assert abs(r["tp"] - (2000.0 + 50.0)) < 0.01
         assert r["profile"] == "day"
 
     def test_sell_short_sl_tp(self):

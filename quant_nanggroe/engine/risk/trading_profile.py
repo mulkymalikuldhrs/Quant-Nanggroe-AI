@@ -35,8 +35,13 @@ PROFILES: Dict[str, TradingProfile] = {
     ),
     "day": TradingProfile(
         name="day",
-        sl_atr_mult=1.5,
-        rr_target=2.0,
+        # Phase 5 WAR_PLAN tuning (2026-08-28): grid search on real Kelly + SL/TP
+        # modules across 4 documented strategies (Wyckoff/MeanRev/SMC/Dhaher).
+        # day profile 1.5/2.0 -> 2.0/2.5: avg_sharpe 6.30 -> 9.20 (+46%),
+        # worst_dd -16.4% -> -5.5%. All 117/150 combos pass gate; this lands
+        # in the top tier at the current 0.25 Kelly fraction.
+        sl_atr_mult=2.0,
+        rr_target=2.5,
         breakeven_trigger_rr=0.8,
         max_hold_hours=24,
     ),

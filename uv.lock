@@ -4728,7 +4728,7 @@ wheels = [
 
 [[package]]
 name = "quant-nanggroe-ai"
-version = "8.0.18"
+version = "5.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -4829,6 +4829,11 @@ rl = [
     { name = "torch" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
@@ -4889,6 +4894,9 @@ requires-dist = [
     { name = "yfinance", specifier = ">=0.2" },
 ]
 provides-extras = ["ml", "alpaca", "polygon", "data", "memory", "quant", "rl", "agentic", "all", "dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.15.20" }]
 
 [[package]]
 name = "redis"

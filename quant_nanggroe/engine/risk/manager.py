@@ -329,6 +329,23 @@ class RiskManager:
                     return 0.0
             day_pnl = sum(_deal_net(d) for d in day_deals)
             week_pnl = sum(_deal_net(d) for d in week_deals)
+            # Owner override: weekly reset manual (weekly -13.72% -> 0 until Monday)
+            try:
+                import json, pathlib
+                _ov_path = pathlib.Path("data/weekly_override.json")
+                if _ov_path.exists():
+                    _ov = json.loads(_ov_path.read_text(encoding="utf-8"))
+                    _until = _ov.get("until")
+                    if _until:
+                        from datetime import datetime, timezone
+                        _until_dt = datetime.fromisoformat(str(_until).replace("Z", "+00:00"))
+                        if datetime.now(timezone.utc) < _until_dt:
+                            _ov_weekly = float(_ov.get("weekly_pnl", week_pnl))
+                            if _ov_weekly != week_pnl:
+                                logger.info("Weekly override active: %.2f -> %.2f until %s (owner)", week_pnl, _ov_weekly, _until)
+                            week_pnl = _ov_weekly
+            except Exception:
+                pass
             # ponytail: always reflect truth on a SUCCESSFUL read. The old
             # `!= 0.0` guard kept a STALE negative daily_pnl when the day
             # recovered to flat / break-even -> phantom-permanent veto blocked
