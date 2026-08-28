@@ -1,7 +1,10 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
 ## Status (2026-08-28 coordinator run)
-- **Active Profiles:** 1/7 cron jobs present (`profile-autobot-orch` ✓ healthy). 6/7 MISSING: devbot, clawbot, hackerbot, researchbot, fangbot, traderbot — no cron entries registered.
+- **Active Profiles:** 7/7 cron jobs present & healthy (last runs ok):
+  - `profile-autobot-orch` ✓ · `profile-devbot-qna` ✓ · `profile-clawbot-qna` ✓ · `profile-hackerbot-audit` ✓ · `profile-fangbot-opt` ✓ · `profile-traderbot-quant` ✓ · `profile-researchbot` ✓
+- **Version:** `quant_nanggroe/__init__.py` + `pyproject.toml` = `5.1.0` (no drift)
+- **Sync:** codeberg + gitlab + github → `e15ea788` (2026-08-28 coordinator push)
 - **Version:** code = v8.0.18 (pyproject.toml + quant_nanggroe/__init__.py). WAR_PLAN lock = 8.0.18. **NO DRIFT**.
 - **Worktree:** D:/repositories/Quant-Nanggroe-AI-worktree (branch master). 4 modified files uncommitted.
 - **Git sync:** Codeberg/GitHub/GitLab/GH_DhaherLabs `master` = local `fe86f759` (clean remote sync).
@@ -25,3 +28,4 @@
 - All profiles write to same worktree; schedules staggered in plan but only autobot running.
 - Untracked junk `test_write.txt` present — left untracked.
 - 2026-08-28 04:12 mass-failure cluster historical, recovered.
+mktemp: failed to create file via template '/c/Users/Hi/AppData/Local/hermes/cache/terminal/hermes-snap-9b89c2c9e1e0.sh.tmp.XXXXXXXXXX': No such file or directory
