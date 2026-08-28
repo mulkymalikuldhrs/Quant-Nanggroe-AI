@@ -1,7 +1,6 @@
 """Bayesian Hyperopt Engine tests."""
 from __future__ import annotations
 
-import pytest
 from quant_nanggroe.engine.backtest.hyperopt import BayesianOptimizer
 
 

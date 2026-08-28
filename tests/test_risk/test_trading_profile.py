@@ -1,9 +1,9 @@
 """Trading profile SL/TP computation tests."""
 from __future__ import annotations
 
-import pytest
 from quant_nanggroe.engine.risk.trading_profile import (
-    compute_sl_tp, detect_profile, PROFILES,
+    compute_sl_tp,
+    detect_profile,
 )
 
 

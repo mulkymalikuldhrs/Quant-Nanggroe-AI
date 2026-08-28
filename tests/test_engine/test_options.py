@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import math
 
-import pytest
-
 from quant_nanggroe.engine.options.analyzer import (
     BlackScholes,
     ImpliedVolatilityResult,
     OptionGreeks,
-    OptionType,
     OptionsAnalyzer,
+    OptionType,
 )
 
 

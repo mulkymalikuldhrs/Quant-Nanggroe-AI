@@ -7,9 +7,9 @@ Run: python -m unittest tests/test_openbb_provider.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))

@@ -2,35 +2,32 @@
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.backtest.engines.base_engine import Position
 from quant_nanggroe.engine.backtest.engines.equity_engine import EquityEngine
 from quant_nanggroe.engine.backtest.engines.forex_engine import (
+    _SPREAD_PIPS,
     ForexEngine,
-    calc_forex_swap,
     _normalize_symbol,
     _pip_value,
-    _SPREAD_PIPS,
+    calc_forex_swap,
 )
 from quant_nanggroe.engine.backtest.engines.futures_engine import (
     FuturesEngine,
     _extract_product,
-    _CN_FUTURES_MULTIPLIERS,
-    _GLOBAL_FUTURES_MULTIPLIERS,
 )
 from quant_nanggroe.engine.backtest.engines.market_detection import (
     detect_market,
     detect_submarket,
     is_china_futures,
 )
-from quant_nanggroe.engine.backtest.engines.base_engine import Position
 
 
 class TestEquityEngine(unittest.TestCase):

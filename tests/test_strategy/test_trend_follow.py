@@ -2,11 +2,10 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
-from quant_nanggroe.engine.strategies.trend_follow_strategy import TrendFollowStrategy
 from quant_nanggroe.engine.strategies.registry import list_strategies
-from quant_nanggroe.types.signals import Signal, SignalType
+from quant_nanggroe.engine.strategies.trend_follow_strategy import TrendFollowStrategy
+from quant_nanggroe.types.signals import SignalType
 
 
 class TestTrendFollowStrategy:

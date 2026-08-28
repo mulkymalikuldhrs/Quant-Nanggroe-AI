@@ -3,16 +3,16 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from unittest.mock import MagicMock
 
 from quant_nanggroe.engine.regime.ensemble import RegimeEnsemble
-from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
 
 
 class _MockDetector:

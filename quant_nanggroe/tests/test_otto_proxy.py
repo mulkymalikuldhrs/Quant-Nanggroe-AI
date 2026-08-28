@@ -1,8 +1,11 @@
+from unittest.mock import AsyncMock, patch
+
+import httpx
 import pytest
 from fastapi.testclient import TestClient
+
 from quant_nanggroe.api.app import app
-from unittest.mock import AsyncMock, patch
-import httpx
+
 
 @pytest.fixture
 def client():

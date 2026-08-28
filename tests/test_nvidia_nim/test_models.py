@@ -22,13 +22,12 @@ from quant_nanggroe.engine.nvidia_nim.models import (
     NIMRerankResult,
     NIMRole,
     NIMRoutingDecision,
-    NIMStreamChunk,
     NIMStreamChoice,
+    NIMStreamChunk,
     NIMStreamDelta,
     NIMUsage,
     TaskType,
 )
-
 
 # ======================================================================
 # TaskType Enum

@@ -3,22 +3,22 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+
 import numpy as np
-from datetime import datetime, timezone
 
 from quant_nanggroe.engine.regime.hmm_detector import (
-    HMMRegimeDetector,
-    RegimeState,
-    Regime,
-    _REGIME_ORDER,
-    _REGIME_INDEX,
     _HMM_AVAILABLE,
+    _REGIME_INDEX,
+    _REGIME_ORDER,
+    HMMRegimeDetector,
+    Regime,
+    RegimeState,
 )
 
 

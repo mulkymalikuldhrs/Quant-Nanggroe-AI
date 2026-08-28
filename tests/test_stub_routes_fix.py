@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from quant_nanggroe.api.app import create_app
 
-
 API_KEY = "dev-local-key-123"
 
 

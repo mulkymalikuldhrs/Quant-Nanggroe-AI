@@ -17,12 +17,8 @@ Usage:
 
 from __future__ import annotations
 
-import json
-import math
 import tempfile
-import time
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -49,7 +45,8 @@ class TestFinalDecider:
     @pytest.fixture
     def buy_signal(self):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, StrategySignal,
+            Action,
+            StrategySignal,
         )
         return StrategySignal(
             strategy_name="momentum", symbol="BTC-USD",
@@ -81,7 +78,8 @@ class TestFinalDecider:
     # ── Veto Layer 1: Kill Switch ─────────────────────────────────────
     def test_veto_kill_switch(self, fd, buy_signal, regime_up, portfolio_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, RiskState,
+            Action,
+            RiskState,
         )
         risk = RiskState(kill_switch_active=True)
         d = fd.decide([buy_signal], regime_up, portfolio_ok, risk)
@@ -113,7 +111,7 @@ class TestFinalDecider:
 
     # ── Veto Layer 4: Regime Incompatibility ──────────────────────────
     def test_veto_regime(self, fd, buy_signal, portfolio_ok, risk_ok):
-        from quant_nanggroe.engine.agentic.final_decider import RegimeState, Action
+        from quant_nanggroe.engine.agentic.final_decider import Action, RegimeState
         bad_regime = RegimeState(regime="crisis", confidence=0.9)
         d = fd.decide([buy_signal], bad_regime, portfolio_ok, risk_ok)
         assert d.action == Action.HOLD
@@ -143,7 +141,8 @@ class TestFinalDecider:
     # ── Veto Layer 5: Low Confidence ───────────────────────────────────
     def test_veto_confidence(self, fd, regime_up, portfolio_ok, risk_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, StrategySignal,
+            Action,
+            StrategySignal,
         )
         low_sig = StrategySignal(
             strategy_name="momentum", symbol="BTC-USD",
@@ -162,7 +161,8 @@ class TestFinalDecider:
     # ── Veto: Max Exposure ────────────────────────────────────────────
     def test_veto_exposure(self, fd, buy_signal, regime_up, risk_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, PortfolioState,
+            Action,
+            PortfolioState,
         )
         full_port = PortfolioState(
             total_exposure=3.5, max_exposure=3.0,
@@ -174,7 +174,8 @@ class TestFinalDecider:
     # ── Veto: Max Positions ───────────────────────────────────────────
     def test_veto_positions(self, fd, buy_signal, regime_up, risk_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, PortfolioState,
+            Action,
+            PortfolioState,
         )
         full_port = PortfolioState(
             total_exposure=0.0, max_exposure=3.0,
@@ -188,7 +189,9 @@ class TestFinalDecider:
     def test_veto_rr_ratio(self, regime_up, portfolio_ok, risk_ok):
         """When min R:R is 2.5, the inherent RR=2.0 should be vetoed."""
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, StrategySignal, FinalDecider,
+            Action,
+            FinalDecider,
+            StrategySignal,
         )
         # Create a decider with min_rr=2.5 specifically for this test
         fd_rr = FinalDecider(min_rr_ratio=2.5)
@@ -218,7 +221,8 @@ class TestFinalDecider:
 
     def test_happy_path_sell(self, fd, regime_up, portfolio_ok, risk_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, StrategySignal,
+            Action,
+            StrategySignal,
         )
         sig = StrategySignal(
             strategy_name="momentum", symbol="BTC-USD",
@@ -231,7 +235,8 @@ class TestFinalDecider:
 
     def test_hold_signal_passes_through(self, fd, regime_up, portfolio_ok, risk_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, StrategySignal,
+            Action,
+            StrategySignal,
         )
         sig = StrategySignal(
             strategy_name="trend", symbol="BTC-USD",
@@ -250,7 +255,8 @@ class TestFinalDecider:
 
     def test_kelly_with_high_volatility(self, fd, buy_signal, portfolio_ok, risk_ok):
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, RegimeState,
+            Action,
+            RegimeState,
         )
         vol_reg = RegimeState(regime="high_volatility", volatility="high")
         d = fd.decide([buy_signal], vol_reg, portfolio_ok, risk_ok,
@@ -262,7 +268,8 @@ class TestFinalDecider:
     # ── FinalDecision dataclass ───────────────────────────────────────
     def test_final_decision_to_dict(self):
         from quant_nanggroe.engine.agentic.final_decider import (
-            FinalDecision, Action,
+            Action,
+            FinalDecision,
         )
         d = FinalDecision(
             action=Action.BUY, strategy_name="momentum", confidence=0.85,
@@ -359,8 +366,9 @@ class TestStrategyLogger:
 
     def test_persistence_save_and_load(self):
         """StrategyLogger should persist to disk and reload."""
-        from quant_nanggroe.engine.analytics.strategy_logger import StrategyLogger
         import tempfile
+
+        from quant_nanggroe.engine.analytics.strategy_logger import StrategyLogger
         log_dir = Path(tempfile.mkdtemp())
         logger = StrategyLogger(log_dir=str(log_dir))
         logger.log_trigger({
@@ -527,7 +535,8 @@ class TestTrailingStopManager:
     @pytest.fixture
     def ts(self):
         from quant_nanggroe.engine.risk.trailing_stop import (
-            TrailingStopManager, TrailingStopConfig,
+            TrailingStopConfig,
+            TrailingStopManager,
         )
         cfg = TrailingStopConfig(
             activation_pct=0.02,  # 2% profit to activate
@@ -813,7 +822,8 @@ class TestFinalDeciderIntegration:
     def test_multiple_signals_picks_best(self, fd, regime_up, portfolio_ok, risk_ok):
         """When given multiple signals, should pick the one with highest confidence."""
         from quant_nanggroe.engine.agentic.final_decider import (
-            Action, StrategySignal,
+            Action,
+            StrategySignal,
         )
         sigs = [
             StrategySignal(strategy_name="weak", symbol="X", action=Action.BUY, confidence=0.65),
@@ -916,7 +926,7 @@ class TestTrailingStopConfig:
 
     def test_default_manager_config(self):
         from quant_nanggroe.engine.risk.trailing_stop import (
-            TrailingStopManager, TrailingStopState,
+            TrailingStopManager,
         )
         ts = TrailingStopManager()
         assert ts.config.activation_pct == 0.02
@@ -974,8 +984,12 @@ class TestEdgeCases:
     def test_final_decider_all_vetoes_together(self):
         """All vetoes active -> first one (kill switch) should win."""
         from quant_nanggroe.engine.agentic.final_decider import (
-            FinalDecider, RegimeState, StrategySignal, PortfolioState,
-            RiskState, Action,
+            Action,
+            FinalDecider,
+            PortfolioState,
+            RegimeState,
+            RiskState,
+            StrategySignal,
         )
         fd = FinalDecider()
         sig = StrategySignal(strategy_name="test", symbol="X", action=Action.BUY, confidence=0.9)
@@ -1009,8 +1023,9 @@ class TestEdgeCases:
 
     def test_strategy_logger_unicode_symbols(self):
         """Unicode/non-ASCII symbols should not break logger."""
-        from quant_nanggroe.engine.analytics.strategy_logger import StrategyLogger
         import tempfile
+
+        from quant_nanggroe.engine.analytics.strategy_logger import StrategyLogger
         tmp = Path(tempfile.mkdtemp()) / "strategy_logs"
         logger = StrategyLogger(log_dir=str(tmp.parent))
         entry = logger.log_trigger({

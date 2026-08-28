@@ -1,13 +1,13 @@
 """Tests: AgentMarketplace — AI-Trader inspired agent registry."""
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from quant_nanggroe.agents.marketplace import AgentMarketplace, AgentListing
+from quant_nanggroe.agents.marketplace import AgentListing, AgentMarketplace
 
 
 class TestAgentListing(unittest.TestCase):

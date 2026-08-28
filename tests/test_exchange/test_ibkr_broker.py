@@ -20,30 +20,28 @@ Tests cover:
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
 
-from quant_nanggroe.exchange.ibkr_broker import (
-    IBKRBroker,
-    IBKRContract,
-    IBKRAccountSummary,
-    IBKRExecutionReport,
-)
 from quant_nanggroe.exchange.base import (
+    ConnectionError,
     ExchangeConfig,
     ExchangeState,
-    ConnectionError,
-    OrderError,
     MarketDataError,
+    OrderError,
 )
+from quant_nanggroe.exchange.ibkr_broker import (
+    IBKRAccountSummary,
+    IBKRBroker,
+    IBKRContract,
+    IBKRExecutionReport,
+)
+from quant_nanggroe.types.market import TimeFrame
 from quant_nanggroe.types.orders import OrderSide, OrderStatus, OrderType
 from quant_nanggroe.types.positions import PositionSide
-from quant_nanggroe.types.market import TimeFrame
-
 
 # ======================================================================
 # Fixtures

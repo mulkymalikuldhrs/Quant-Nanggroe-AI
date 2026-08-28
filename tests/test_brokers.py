@@ -2,10 +2,7 @@
 # TODO: Add broker connection, order routing, and execution tests
 from __future__ import annotations
 
-import pytest
-
 from quant_nanggroe.connectors.broker_base import (
-    BrokerConnector,
     BrokerType,
     Order,
     Position,

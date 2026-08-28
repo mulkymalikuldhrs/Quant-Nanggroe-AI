@@ -6,7 +6,6 @@ No FRED API key required to run these tests.
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -19,9 +18,8 @@ import pytest
 # Fixed: _request() added, _parse_symbol handles FRED: prefix. 
 pytest.skip("FRED tests target v4.3.4 BaseProvider interface, not D: v4.0.0 — skip until full interface sync", allow_module_level=True)
 
-from quant_nanggroe.data.providers.fred import FREDProvider, FREDError, FRED_SERIES_MAP, _parse_symbol
+from quant_nanggroe.data.providers.fred import FRED_SERIES_MAP, FREDError, FREDProvider, _parse_symbol
 from quant_nanggroe.types.market import TimeFrame
-
 
 # ─── Sample FRED API responses ────────────────────────────────────────
 

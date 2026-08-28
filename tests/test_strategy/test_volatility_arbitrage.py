@@ -4,9 +4,10 @@ import pytest
 
 pytestmark = pytest.mark.skip(reason="Strategy module not available")
 
+import unittest
+
 import numpy as np
 import pandas as pd
-import unittest
 
 
 class TestVolatilityArbitrageStrategy(unittest.TestCase):

@@ -4,13 +4,14 @@ cot_strategy.py calls (provider.fetch(), analyzer.generate_signal(symbol, price_
 
 If this breaks, AutonomousPipeline.run() crashes for any COT-auto-discovered strategy.
 """
-import sys
 import os
+import sys
+
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from quant_nanggroe.engine.data.cot_provider import COTProvider, COTAnalyzer
+from quant_nanggroe.engine.data.cot_provider import COTAnalyzer, COTProvider
 
 
 @pytest.mark.skipif(

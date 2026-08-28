@@ -1,24 +1,16 @@
 """Tests for Exchange REST Clients."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from quant_nanggroe.exchange.clients.base_rest_client import (
-    BaseRestClient,
     BalanceInfo,
     ExchangeCapability,
-    KlineBar,
-    OrderbookData,
-    OrderbookEntry,
     OrderRequest,
     OrderResult,
-    PositionInfo,
     RestClientConfig,
 )
 from quant_nanggroe.exchange.clients.binance_client import BinanceClient
 from quant_nanggroe.exchange.clients.bybit_client import BybitClient
 from quant_nanggroe.exchange.clients.okx_client import OKXClient
-
 
 # ======================================================================
 # Base Classes

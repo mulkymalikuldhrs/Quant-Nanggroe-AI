@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-
 # ── Graph tests ──────────────────────────────────────────────────────────────
 
 
@@ -126,7 +125,7 @@ class TestSkillRegistry:
 
     @pytest.fixture
     def registry(self):
-        from ai_multicolony.harness import SkillRegistry, SkillDefinition
+        from ai_multicolony.harness import SkillDefinition, SkillRegistry
         r = SkillRegistry()
         skill = SkillDefinition(
             name="test_skill",
@@ -209,7 +208,7 @@ class TestSandbox:
 
     @pytest.mark.asyncio
     async def test_mock_sandbox_execute(self):
-        from ai_multicolony.harness import SandboxManager, SandboxConfig, SandboxType
+        from ai_multicolony.harness import SandboxConfig, SandboxManager, SandboxType
         manager = SandboxManager()
         config = SandboxConfig(sandbox_type=SandboxType.MOCK)
         handle = await manager.create(config)
@@ -219,7 +218,7 @@ class TestSandbox:
 
     @pytest.mark.asyncio
     async def test_subprocess_sandbox_execute(self):
-        from ai_multicolony.harness import SandboxManager, SandboxConfig, SandboxType
+        from ai_multicolony.harness import SandboxConfig, SandboxManager, SandboxType
         manager = SandboxManager()
         config = SandboxConfig(sandbox_type=SandboxType.SUBPROCESS, timeout_s=10.0)
         handle = await manager.create(config)
@@ -235,7 +234,7 @@ class TestSandbox:
 
     @pytest.mark.asyncio
     async def test_sandbox_config(self):
-        from ai_multicolony.harness import SandboxConfig, SandboxType, NetworkPolicy
+        from ai_multicolony.harness import NetworkPolicy, SandboxConfig, SandboxType
         config = SandboxConfig(
             sandbox_type=SandboxType.SUBPROCESS,
             timeout_s=60.0,

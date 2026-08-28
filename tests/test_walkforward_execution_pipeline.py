@@ -26,8 +26,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock
 
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE.parent))
@@ -149,9 +148,10 @@ class TestMT5CircuitBreaker(unittest.TestCase):
     def test_cb_rejects_when_tripped(self):
         """Verify MT5ExecutionBroker rejects orders when CB tripped."""
         import uuid
-        from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
-        from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
+
         from quant_nanggroe.connectors.mt5_broker import MT5Broker
+        from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
+        from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
 
         mock_mt5 = MagicMock(spec=MT5Broker)
         broker = MT5ExecutionBroker(mock_mt5)
@@ -176,7 +176,7 @@ class TestMT5SymbolMap(unittest.TestCase):
     """Verify MT5_SYMBOL_MAP correctly translates internal → MT5 symbols."""
 
     def setUp(self):
-        from quant_nanggroe.engine.risk.constants import MT5_SYMBOL_MAP, MT5_SYMBOL_DEFAULT
+        from quant_nanggroe.engine.risk.constants import MT5_SYMBOL_DEFAULT, MT5_SYMBOL_MAP
         self.SYMBOL_MAP = MT5_SYMBOL_MAP
         self.DEFAULT = MT5_SYMBOL_DEFAULT
 
@@ -210,7 +210,6 @@ class TestMT5SymbolMap(unittest.TestCase):
 
     def test_mt5adapter_get_price_uses_map(self):
         """MT5ExecutionBroker.get_price uses SYMBOL_MAP for translation."""
-        from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
         from quant_nanggroe.engine.risk.constants import MT5_SYMBOL_MAP
         # The get_price code does MT5_SYMBOL_MAP.get(symbol) first,
         # then falls back to symbol.replace("-", "").upper()
@@ -244,6 +243,7 @@ class TestPaperBrokerDeterminism(unittest.TestCase):
         """submit_order with large qty produces same fill_ratio across instances."""
         import asyncio
         import uuid
+
         from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
 
         async def run_deterministic_test():
@@ -381,10 +381,10 @@ class TestPnLFractionConvention(unittest.TestCase):
 
     def test_risk_constants_are_fractions(self):
         from quant_nanggroe.engine.risk.constants import (
-            MAX_DAILY_LOSS,
-            MAX_WEEKLY_LOSS,
-            MAX_DRAWDOWN_PCT,
             KILL_SWITCH_DAILY_PNL,
+            MAX_DAILY_LOSS,
+            MAX_DRAWDOWN_PCT,
+            MAX_WEEKLY_LOSS,
         )
         # All should be in fraction (0-1), not percentage
         self.assertLess(abs(MAX_DAILY_LOSS), 1.0, "MAX_DAILY_LOSS should be fraction < 1.0")
@@ -395,9 +395,6 @@ class TestPnLFractionConvention(unittest.TestCase):
     def test_live_engine_constants_importable(self):
         from quant_nanggroe.engine.risk.constants import (
             HEARTBEAT_INTERVAL,
-            CLEANUP_INTERVAL,
-            REPORT_INTERVAL,
-            DCC_UPDATE_INTERVAL,
             STARTING_CAPITAL,
         )
         self.assertGreater(HEARTBEAT_INTERVAL, 0)
@@ -451,6 +448,7 @@ class TestWalkForwardExecutionCycle(unittest.TestCase):
     def test_6_paper_broker_submit_order(self):
         import asyncio
         import uuid
+
         from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType
 
         async def test():

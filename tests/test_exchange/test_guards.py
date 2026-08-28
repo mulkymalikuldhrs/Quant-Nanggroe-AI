@@ -12,30 +12,26 @@ Tests cover:
 from __future__ import annotations
 
 import time
-from typing import Dict, Any, Optional
 
 import pytest
 
 from quant_nanggroe.exchange.base import OrderError
 from quant_nanggroe.exchange.guards import (
     BaseGuard,
-    WhitelistGuard,
     CooldownGuard,
-    MaxPositionGuard,
     GuardPipeline,
-    GuardVerdict,
     GuardResult,
+    GuardVerdict,
+    MaxPositionGuard,
     PipelineResult,
+    WhitelistGuard,
 )
 from quant_nanggroe.types.orders import (
-    Order,
-    MarketOrder,
     LimitOrder,
+    MarketOrder,
+    Order,
     OrderSide,
-    OrderType,
-    OrderStatus,
 )
-
 
 # ======================================================================
 # Fixtures

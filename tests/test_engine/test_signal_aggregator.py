@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import pytest
+
 from quant_nanggroe.engine.execution.signal_aggregator import (
-    SignalAggregator, StrategyVote,
+    SignalAggregator,
+    StrategyVote,
 )
 
 

@@ -4,14 +4,12 @@ SKILL AUTO-GEN — MetaClaw-inspired pattern extraction
 Conversations → patterns → reusable skills. No GPU needed.
 """
 
-import os
-import re
-import json
 import logging
-from pathlib import Path
+import re
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("SkillAutogen")
@@ -348,7 +346,7 @@ def main():
     if args.generate:
         result = analyzer.analyze_recent_sessions(days=args.days)
         print(f"\n{'═' * 60}")
-        print(f"SKILL AUTO-GEN RESULTS")
+        print("SKILL AUTO-GEN RESULTS")
         print(f"{'═' * 60}")
         print(f"  Sessions analyzed:     {result['sessions_analyzed']}")
         print(f"  Patterns found:        {result['patterns_found']}")

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,10 @@ from quant_nanggroe.engine.agentic import context_gate
 
 def _order(symbol="EURUSD", side="buy", reduce_only=False):
     from quant_nanggroe.engine.execution.base import (
-        Order, OrderSide, OrderStatus, OrderType,
+        Order,
+        OrderSide,
+        OrderStatus,
+        OrderType,
     )
     side_enum = OrderSide.BUY if side == "buy" else OrderSide.SELL
     return Order(
@@ -117,7 +120,6 @@ class TestConnectorSideNormalization(unittest.TestCase):
 
     def test_engine_enum_buy_maps_to_buy(self):
         import quant_nanggroe.connectors.mt5_broker as mb
-        from quant_nanggroe.connectors.broker_base import Order as ConnOrder
         from quant_nanggroe.engine.execution.base import OrderSide
 
         calls = {}
@@ -254,7 +256,6 @@ class TestMt5RatesShape(unittest.TestCase):
         recs["low"] = 1.09; recs["close"] = 1.105
         recs["tick_volume"] = 100
 
-        import pandas as pd
         cols = {name: recs[name] for name in recs.dtype.names}
         df = pd.DataFrame(cols)
         if "volume" not in df.columns and "tick_volume" in df.columns:

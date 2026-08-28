@@ -12,12 +12,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from quant_nanggroe.data.providers.twelvedata import (
-    TwelveDataProvider,
-    TwelveDataError,
     _TIMEFRAME_MAP,
+    TwelveDataError,
+    TwelveDataProvider,
 )
 from quant_nanggroe.types.market import TimeFrame
-
 
 # ─── Sample TwelveData API responses ────────────────────────────────
 

@@ -6,13 +6,12 @@ Run: python3 -m unittest tests/test_correlation_monitor.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import json
 import shutil
 import tempfile
 from pathlib import Path

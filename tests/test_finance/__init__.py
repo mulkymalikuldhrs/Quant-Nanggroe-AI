@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import math
-import pytest
 
+import pytest
 
 # ── Risk Guard tests ─────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ class TestConstitutionalRiskGuard:
         assert stats["total_checks"] == 0
 
     def test_approve_small_trade(self, guard, healthy_portfolio):
-        from ai_multicolony.finance import TradeRequest, TradeAction
+        from ai_multicolony.finance import TradeAction, TradeRequest
         request = TradeRequest(
             symbol="AAPL",
             action=TradeAction.BUY,
@@ -39,7 +39,7 @@ class TestConstitutionalRiskGuard:
         assert result.approved
 
     def test_reject_excessive_risk(self, guard, healthy_portfolio):
-        from ai_multicolony.finance import TradeRequest, TradeAction
+        from ai_multicolony.finance import TradeAction, TradeRequest
         request = TradeRequest(
             symbol="AAPL",
             action=TradeAction.BUY,
@@ -51,7 +51,7 @@ class TestConstitutionalRiskGuard:
         assert not result.approved
 
     def test_reject_daily_loss_exceeded(self, guard):
-        from ai_multicolony.finance import TradeRequest, TradeAction, PortfolioSnapshot
+        from ai_multicolony.finance import PortfolioSnapshot, TradeAction, TradeRequest
         portfolio = PortfolioSnapshot(
             total_equity=100000.0,
             daily_pnl=-1500.0,  # -1.5% daily loss
@@ -67,7 +67,7 @@ class TestConstitutionalRiskGuard:
         assert not result.approved
 
     def test_reject_weekly_loss_exceeded(self, guard):
-        from ai_multicolony.finance import TradeRequest, TradeAction, PortfolioSnapshot
+        from ai_multicolony.finance import PortfolioSnapshot, TradeAction, TradeRequest
         portfolio = PortfolioSnapshot(
             total_equity=100000.0,
             weekly_pnl=-4000.0,  # -4% weekly loss
@@ -83,7 +83,7 @@ class TestConstitutionalRiskGuard:
         assert not result.approved
 
     def test_position_size_adjustment(self, guard, healthy_portfolio):
-        from ai_multicolony.finance import TradeRequest, TradeAction
+        from ai_multicolony.finance import TradeAction, TradeRequest
         # Request huge position
         request = TradeRequest(
             symbol="AAPL",
@@ -107,8 +107,8 @@ class TestConstitutionalRiskGuard:
 
     def test_constitutional_limits(self, guard):
         from ai_multicolony.finance import (
-            MAX_RISK_PER_TRADE_PCT,
             MAX_DAILY_LOSS_PCT,
+            MAX_RISK_PER_TRADE_PCT,
             MAX_WEEKLY_LOSS_PCT,
         )
         assert MAX_RISK_PER_TRADE_PCT == 0.5

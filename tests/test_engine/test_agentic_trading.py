@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from quant_nanggroe.engine.agentic_trading import (
     AgentRole,
     AgentSignal,

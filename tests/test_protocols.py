@@ -1,13 +1,13 @@
 """Tests: Protocol Adapters — AgenticTrading-inspired abstractions."""
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from quant_nanggroe.agents.protocols import ProtocolMessage, ProtocolAdapter, MCPAdapter
+from quant_nanggroe.agents.protocols import MCPAdapter, ProtocolAdapter, ProtocolMessage
 
 
 class TestProtocolMessage(unittest.TestCase):

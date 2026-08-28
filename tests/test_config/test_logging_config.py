@@ -9,13 +9,13 @@ import logging
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from quant_nanggroe.config.logging_config import (
-    setup_logging,
     get_logger,
+    setup_logging,
 )
 
 

@@ -14,8 +14,8 @@ Run: python3 -m unittest tests.test_coverage_execution -v
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -23,7 +23,7 @@ import asyncio
 import time
 import unittest
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -32,28 +32,38 @@ import pandas as pd
 from quant_nanggroe.engine.backtest.loaders.base_loader import (
     BaseLoader,
     NoAvailableSourceError,
-    validate_date_range,
     check_budget,
     retry_with_budget,
-)
-from quant_nanggroe.engine.backtest.loaders.yfinance_loader import (
-    YFinanceLoader,
-    _to_yfinance_symbol,
-    _to_yfinance_interval,
-    _flatten_columns,
-    _normalize_frame,
+    validate_date_range,
 )
 from quant_nanggroe.engine.backtest.loaders.ccxt_loader import CCXTLoader
+from quant_nanggroe.engine.backtest.loaders.yfinance_loader import (
+    _flatten_columns,
+    _normalize_frame,
+    _to_yfinance_interval,
+    _to_yfinance_symbol,
+)
 
 # ── Module B imports ───────────────────────────────────────────────────────
 from quant_nanggroe.engine.backtest.optimizers.base_optimizer import BaseOptimizer
 from quant_nanggroe.engine.backtest.optimizers.mean_variance_optimizer import (
     MeanVarianceOptimizer,
+)
+from quant_nanggroe.engine.backtest.optimizers.mean_variance_optimizer import (
     optimize as mv_optimize,
 )
 from quant_nanggroe.engine.backtest.optimizers.risk_parity_optimizer import (
     RiskParityOptimizer,
+)
+from quant_nanggroe.engine.backtest.optimizers.risk_parity_optimizer import (
     optimize as rp_optimize,
+)
+from quant_nanggroe.engine.execution.base import (
+    AccountInfo,
+    Broker,
+    Order,
+    OrderSide,
+    OrderType,
 )
 
 # ── Module C imports ───────────────────────────────────────────────────────
@@ -63,15 +73,6 @@ from quant_nanggroe.engine.execution.guards.whitelist import WhitelistGuard
 
 # ── Module D imports ───────────────────────────────────────────────────────
 from quant_nanggroe.engine.execution.manager import ExecutionManager, GuardResult
-from quant_nanggroe.engine.execution.base import (
-    Order,
-    OrderSide,
-    OrderType,
-    Broker,
-    AccountInfo,
-    Fill,
-)
-
 
 # ════════════════════════════════════════════════════════════════════════════
 # Helpers

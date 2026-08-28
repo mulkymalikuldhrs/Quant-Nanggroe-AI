@@ -5,22 +5,18 @@ All tests use mocked HTTP responses — no real API calls.
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from quant_nanggroe.exchange.solana.jupiter import (
-    JupiterV6Client,
+    SOL_MINT,
+    USDC_MINT,
     JupiterQuote,
     JupiterRoute,
     JupiterSwapResult,
-    JUPITER_V6_BASE_URL,
-    SOL_MINT,
-    USDC_MINT,
+    JupiterV6Client,
 )
-
 
 # ======================================================================
 # Fixtures

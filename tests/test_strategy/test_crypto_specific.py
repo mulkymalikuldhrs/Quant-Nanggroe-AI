@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from quant_nanggroe.engine.strategies.crypto_specific import CryptoSpecificStrategy
 from quant_nanggroe.types.signals import Signal, SignalType

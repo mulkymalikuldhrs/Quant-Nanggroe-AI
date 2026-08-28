@@ -8,7 +8,6 @@ import pytest
 from quant_nanggroe.engine.rl import create_agent
 from quant_nanggroe.engine.rl.agents import (
     BaseRLAgent,
-    DQNAgent,
     Experience,
     PPOAgent,
     ReplayBuffer,

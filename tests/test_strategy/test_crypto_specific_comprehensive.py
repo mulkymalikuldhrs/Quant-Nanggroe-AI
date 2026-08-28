@@ -1,6 +1,7 @@
 """Comprehensive tests for CryptoSpecificStrategy - matches actual implementation."""
 
 import unittest
+
 import numpy as np
 import pandas as pd
 

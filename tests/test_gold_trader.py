@@ -1,8 +1,6 @@
 """Tests for the AI-XAUUSD-Trading inspired gold trader agent."""
 from __future__ import annotations
 
-import pytest
-
 from quant_nanggroe.agents.gold_trader import GoldSignal, GoldTrader
 
 

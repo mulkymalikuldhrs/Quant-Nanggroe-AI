@@ -361,7 +361,7 @@ def _try_fetch_fx_returns() -> pd.DataFrame | None:
     NOTE: yfinance with multi-ticker download returns a MultiIndex on columns.
     Access via data["Close"] which returns the sub-DataFrame with ticker-level columns.
     """
-    if not os.environ.get(_REAL_DATA_ENV, "").lower() in ("1", "true", "yes"):
+    if os.environ.get(_REAL_DATA_ENV, "").lower() not in ("1", "true", "yes"):
         return None
     try:
         import yfinance as yf

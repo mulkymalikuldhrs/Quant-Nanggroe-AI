@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
-from quant_nanggroe.engine.regime.enhanced_regime import (
-    detect_enhanced_regime, RegimeResult,
-)
 from quant_nanggroe.engine.portfolio.risk_parity_native import (
-    hrp_weights, erc_weights,
+    erc_weights,
+    hrp_weights,
+)
+from quant_nanggroe.engine.regime.enhanced_regime import (
+    RegimeResult,
+    detect_enhanced_regime,
 )
 
 

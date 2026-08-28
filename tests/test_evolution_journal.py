@@ -9,7 +9,6 @@ import pytest
 
 from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────
 
 

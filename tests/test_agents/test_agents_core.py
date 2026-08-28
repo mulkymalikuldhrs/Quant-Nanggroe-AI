@@ -14,48 +14,46 @@ Mock all LLM calls with unittest.mock. No real API calls.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
-from datetime import datetime
 from pydantic import ValidationError
 
+from quant_nanggroe.agents.base import BaseAgent, create_llm
+from quant_nanggroe.agents.registry import AgentFactory, AgentRegistry
 from quant_nanggroe.agents.state import (
-    AgentState,
-    AgentRole,
-    AgentOutput,
-    TradeAction,
-    SignalDirection,
-    RiskVerdict,
-    MarketRegime,
-    MarketData,
-    Signal,
-    Decision,
-    RiskCheckpoint,
-    RiskAssessment as StateRiskAssessment,
-    PortfolioState,
-    PositionInfo,
-    VoteResult,
-    CouncilResult,
-    DebateState,
-    RiskDebateState,
-    create_initial_state,
-    MAX_RISK_PER_TRADE,
-    MAX_DAILY_LOSS,
-    MAX_WEEKLY_LOSS,
-    MIN_RISK_REWARD,
-    MAX_CORRELATED_POSITIONS,
-    MAX_POSITION_SIZE_PCT,
-    MAX_LEVERAGE,
-    MAX_DRAWDOWN_PCT,
-    MAX_TRADES_PER_DAY,
     CONFIDENCE_THRESHOLD,
     KILL_SWITCH_DAILY_PNL,
     KILL_SWITCH_WEEKLY_PNL,
+    MAX_CORRELATED_POSITIONS,
+    MAX_DAILY_LOSS,
+    MAX_DRAWDOWN_PCT,
+    MAX_LEVERAGE,
+    MAX_POSITION_SIZE_PCT,
+    MAX_RISK_PER_TRADE,
+    MAX_TRADES_PER_DAY,
+    MAX_WEEKLY_LOSS,
+    MIN_RISK_REWARD,
+    AgentOutput,
+    AgentRole,
+    CouncilResult,
+    Decision,
+    MarketData,
+    MarketRegime,
+    PortfolioState,
+    PositionInfo,
+    RiskCheckpoint,
+    RiskVerdict,
+    Signal,
+    SignalDirection,
+    TradeAction,
+    VoteResult,
+    create_initial_state,
 )
-from quant_nanggroe.agents.registry import AgentRegistry, AgentFactory
-from quant_nanggroe.agents.base import BaseAgent, create_llm
+from quant_nanggroe.agents.state import (
+    RiskAssessment as StateRiskAssessment,
+)
 from quant_nanggroe.config.settings import get_settings
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # 1. AgentRole Enum Tests

@@ -7,7 +7,7 @@ changes behavior.
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig, MarketType
+from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine, MarketType
 
 
 def _make_data(n=30, seed=1):

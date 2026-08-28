@@ -14,31 +14,25 @@ Covers:
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.kelly.base import KellyParameters, KellyResult, KellyMethod
-from quant_nanggroe.engine.kelly.optimal_f import OptimalF
-from quant_nanggroe.engine.kelly.fractional import FractionalKelly
-from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
+from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
 from quant_nanggroe.engine.kelly.backtest_integration import (
     KellyBacktestBridge,
     KellySignal,
     StrategyKellyMixin,
 )
-from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig, MarketType
-from quant_nanggroe.engine.backtest.portfolio import Portfolio, TradeRecord
+from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters, KellyResult
+from quant_nanggroe.engine.kelly.fractional import FractionalKelly
+from quant_nanggroe.engine.kelly.optimal_f import OptimalF
 from quant_nanggroe.engine.strategies.base import (
-    Strategy,
-    StrategySignal,
     SignalDirection,
     SignalStrength,
-    StrategyParameters,
+    Strategy,
+    StrategySignal,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────
 

@@ -7,26 +7,24 @@ Run: python3 -m unittest tests/test_data_manager.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import time
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 
-import numpy as np
 import pandas as pd
 
 from quant_nanggroe.data.data_manager import (
-    DataManager,
-    DataProvider,
-    ProviderType,
-    CacheEntry,
     CACHE_TTL,
     MAX_RETRIES,
     RETRY_BACKOFF,
+    DataManager,
+    DataProvider,
+    ProviderType,
 )
 from quant_nanggroe.types.market import TimeFrame
 

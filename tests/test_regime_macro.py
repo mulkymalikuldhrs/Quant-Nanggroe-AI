@@ -3,14 +3,14 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from quant_nanggroe.engine.regime.macro_regime import MacroRegimeDetector
 from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
+from quant_nanggroe.engine.regime.macro_regime import MacroRegimeDetector
 
 
 class TestMacroRegimeDetector(unittest.TestCase):

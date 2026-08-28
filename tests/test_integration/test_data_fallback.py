@@ -15,12 +15,7 @@ Covers:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
-from typing import Optional
-from unittest.mock import MagicMock, patch
 
-import numpy as np
-import pandas as pd
 import pytest
 
 from quant_nanggroe.engine.core.circuit_breaker import (
@@ -32,6 +27,8 @@ from quant_nanggroe.engine.core.circuit_breaker import (
 )
 from quant_nanggroe.engine.data.fallback_chain import (
     CircuitBreaker as DataCircuitBreaker,
+)
+from quant_nanggroe.engine.data.fallback_chain import (
     DataFallbackChain,
 )
 from quant_nanggroe.engine.data.provider_interface import (
@@ -40,7 +37,6 @@ from quant_nanggroe.engine.data.provider_interface import (
     DataResponse,
     QNAProviderBase,
 )
-
 
 # ── Mock Providers ────────────────────────────────────────────────────
 

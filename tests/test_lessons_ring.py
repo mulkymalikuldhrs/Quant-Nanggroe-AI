@@ -3,8 +3,8 @@
 VERIFIES P2 (#39): qna_lessons.json EXISTS + wired to _record_lesson -> ring/rotation
 is ENFORCED and READABLE (no silent data loss / no corrupted-file drop).
 """
-import json
 import importlib.util
+import json
 import os
 import sys
 import tempfile
@@ -20,7 +20,6 @@ if str(_REPO) not in sys.path:
 def _load_module():
     """Load the bridge module under a real module name so dataclass
     string-annotation resolution (sys.modules lookup) works."""
-    import types
     spec = importlib.util.spec_from_file_location(
         "quant_nanggroe._qna_bridge_test_shim",
         _REPO / "quant_nanggroe" / "engine_production_bridge.py",

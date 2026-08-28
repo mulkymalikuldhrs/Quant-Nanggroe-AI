@@ -1,9 +1,10 @@
 """Comprehensive tests for MomentumStrategy - matches actual implementation."""
 
-import pytest
 import unittest
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from quant_nanggroe.types.signals import Signal, SignalType
 

@@ -1,12 +1,14 @@
 # Tests for walk-forward backtest runner
 
-import sys, json, os, tempfile
+import json
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from scripts.run_walkforward import load_candles, run_strategy_backtest
+
 
 def test_load_candles_missing_file():
     # Provide a symbol that doesn't have data
@@ -19,7 +21,6 @@ def test_load_candles_valid(tmp_path: Path):
     file_path = tmp_path / "BTCUSDT_daily.json"
     file_path.write_text(json.dumps(data))
     # Override DATA_DIR in the module
-    import importlib
     import scripts.run_walkforward as rw
     original_dir = rw.DATA_DIR
     rw.DATA_DIR = tmp_path

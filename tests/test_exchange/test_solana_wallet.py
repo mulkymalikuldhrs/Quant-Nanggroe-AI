@@ -5,11 +5,11 @@ All tests use mocked Solana RPC responses — no real network calls.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from quant_nanggroe.exchange.solana.wallet import SolanaWallet, TokenAccountInfo
+import pytest
 
+from quant_nanggroe.exchange.solana.wallet import SolanaWallet, TokenAccountInfo
 
 # ======================================================================
 # Fixtures
@@ -328,14 +328,14 @@ class TestSolanaBrokerGuards:
     """
 
     def _make_broker(self):
-        from quant_nanggroe.exchange.solana.broker import SolanaBroker
         from quant_nanggroe.exchange.base import ExchangeConfig, ExchangeState
         from quant_nanggroe.exchange.guards import (
-            GuardPipeline,
-            WhitelistGuard,
             CooldownGuard,
+            GuardPipeline,
             MaxPositionGuard,
+            WhitelistGuard,
         )
+        from quant_nanggroe.exchange.solana.broker import SolanaBroker
 
         cfg = ExchangeConfig(exchange_id="solana", api_key="dummy_bs58_key")
         broker = SolanaBroker.__new__(SolanaBroker)
@@ -352,8 +352,9 @@ class TestSolanaBrokerGuards:
     def test_blocked_symbol_rejected_before_swap(self):
         """A non-whitelisted symbol must be rejected WITHOUT touching Jupiter."""
         broker = self._make_broker()
-        from quant_nanggroe.types.orders import OrderSide, OrderType
         import asyncio
+
+        from quant_nanggroe.types.orders import OrderSide, OrderType
 
         with patch.object(broker, "_parse_symbol", return_value=("USDC_MINT", "SOL_MINT")):
             with pytest.raises(Exception) as exc:
@@ -375,9 +376,10 @@ class TestSolanaBrokerGuards:
         the guard pipeline did NOT reject (we got past it to the swap step).
         """
         broker = self._make_broker()
-        from quant_nanggroe.types.orders import OrderSide, OrderType
-        from quant_nanggroe.exchange.base import OrderError
         import asyncio
+
+        from quant_nanggroe.exchange.base import OrderError
+        from quant_nanggroe.types.orders import OrderSide, OrderType
 
         async def boom(*a, **k):
             raise RuntimeError("REACHED_SWAP")

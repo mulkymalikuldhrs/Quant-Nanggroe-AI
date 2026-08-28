@@ -131,13 +131,13 @@ class TestE2EPaperTrading:
         # FinalDecider
         fd_decision = result.decision.get("final_decider", {})
         last_fd = getattr(p._final_decider, "_last_decision", None) if p._final_decider else None
-        self._log(f"\n  --- FinalDecider ---")
+        self._log("\n  --- FinalDecider ---")
         if last_fd:
             self._log(f"    Called via step 4.5: {last_fd.action.value} @ {last_fd.confidence:.2f}")
         elif fd_decision:
             self._log(f"    In result.decision: {fd_decision.get('action')}")
         else:
-            self._log(f"    NOT called (risk_check blocked before step 4.5)")
+            self._log("    NOT called (risk_check blocked before step 4.5)")
 
         # Execution
         exec_dec = result.decision.get("execution", {})
@@ -169,7 +169,7 @@ class TestE2EPaperTrading:
 
         # SLA
         sla = result.sla
-        self._log(f"\n  --- SLA Metrics ---")
+        self._log("\n  --- SLA Metrics ---")
         self._log(f"    Total: {sla.total_duration_ms:.0f}ms  "
                   f"Data->Sig: {sla.data_to_signal_ms:.0f}ms  "
                   f"Sig->Risk: {sla.signal_to_risk_ms:.0f}ms  "
@@ -244,7 +244,7 @@ class TestE2EPaperTrading:
         # ---- 3. FinalDecider MUST have been called (step 4.5) ---------------
         last_fd = getattr(p._final_decider, "_last_decision", None) if p._final_decider else None
         fd_decision = result.decision.get("final_decider", {})
-        self._log(f"\n  --- FinalDecider ---")
+        self._log("\n  --- FinalDecider ---")
         if last_fd is not None:
             is_veto = last_fd.action == Action.HOLD
             self._log(f"    Called: YES -- {last_fd.action.value} @ {last_fd.confidence:.2f}")
@@ -256,12 +256,12 @@ class TestE2EPaperTrading:
             self._log(f"    In result.decision: {fd_decision.get('action')}")
             self._log(f"    {fd_decision.get('reason', '')[:80]}")
         else:
-            self._log(f"    NOT called (pipeline stopped before step 4.5)")
+            self._log("    NOT called (pipeline stopped before step 4.5)")
 
         # ---- 4. Execution ---------------------------------------------------
         exec_dec = result.decision.get("execution", {})
         action = exec_dec.get("action", "hold")
-        self._log(f"\n  --- Execution ---")
+        self._log("\n  --- Execution ---")
         self._log(f"    Action: {action}")
         if action in ("buy", "sell"):
             filled = exec_dec.get("execution") == "filled"
@@ -280,15 +280,15 @@ class TestE2EPaperTrading:
 
         # ---- 5. TrailingStop registration -----------------------------------
         trailing_active = exec_dec.get("trailing_stop_active", False)
-        self._log(f"\n  --- TrailingStop ---")
+        self._log("\n  --- TrailingStop ---")
         if trailing_active:
             stop = p._trailing_stop.get_stop_price("BTC-USD")
-            self._log(f"    Status: ACTIVE")
+            self._log("    Status: ACTIVE")
             if stop:
                 self._log(f"    Stop price: {stop:.2f}")
             assert p._trailing_stop is not None
         else:
-            self._log(f"    Status: not activated (no fill from pipeline)")
+            self._log("    Status: not activated (no fill from pipeline)")
 
         # Always verify trailing stop IS wired and functional
         p._trailing_stop.add_position("BTC-USD", 50000.0)
@@ -297,11 +297,11 @@ class TestE2EPaperTrading:
         assert manual_stop is not None, "TrailingStop.add_position() failed"
         assert manual_stop < 50000.0, "Stop should be below entry price"
         p._trailing_stop.remove_position("BTC-USD")
-        self._log(f"    TrailingStop: fully wired and functional")
+        self._log("    TrailingStop: fully wired and functional")
 
         # ---- 6. TradeLifecycleManager ----------------------------------------
         trade_lc = result.decision.get("trade_lifecycle")
-        self._log(f"\n  --- TradeLifecycleManager ---")
+        self._log("\n  --- TradeLifecycleManager ---")
         if trade_lc:
             self._log(f"    Eval: {trade_lc.get('eval_duration_ms', 0):.1f}ms")
             self._log(f"    Evolve: {trade_lc.get('evolve_duration_ms', 0):.1f}ms")
@@ -310,11 +310,11 @@ class TestE2EPaperTrading:
                 evo = trade_lc.get("evolution_result", {})
                 self._log(f"    Auto-evolve: {evo.get('evolutions_triggered', 0)} triggered")
         else:
-            self._log(f"    Not triggered (no filled trade)")
+            self._log("    Not triggered (no filled trade)")
 
         # ---- 7. SLA metrics MUST be populated --------------------------------
         sla = result.sla
-        self._log(f"\n  --- SLA Metrics ---")
+        self._log("\n  --- SLA Metrics ---")
         self._log(f"    Total duration:  {sla.total_duration_ms:.1f}ms")
         self._log(f"    Data -> Signal:  {sla.data_to_signal_ms:.1f}ms")
         self._log(f"    Signal -> Risk:  {sla.signal_to_risk_ms:.1f}ms")
@@ -374,6 +374,7 @@ class TestE2EPaperTrading:
         - Checks MT5 demo config readiness (no env dep required)
         """
         import os
+
         from quant_nanggroe.engine.agentic import AutonomousPipeline
 
         p = AutonomousPipeline()
@@ -390,7 +391,7 @@ class TestE2EPaperTrading:
         # ---- 1. multi_timeframe IS in registry -----------------------------
         assert "multi_timeframe" in strategies, \
             f"multi_timeframe NOT in {sorted(strategies)}"
-        self._log(f"  multi_timeframe: CONFIRMED")
+        self._log("  multi_timeframe: CONFIRMED")
 
         # Count strategy types -- verify ALL 5 new strategies
         new_set = set(strategies) & EXPECTED_NEW_STRATEGIES
@@ -402,13 +403,13 @@ class TestE2EPaperTrading:
         assert count == len(strategies), "load_strategies count mismatch"
 
         # ---- 2. MT5 demo config check --------------------------------------
-        self._log(f"\n  --- MT5 Demo Check ---")
+        self._log("\n  --- MT5 Demo Check ---")
         mt5_ready = self._check_mt5_config()
         if mt5_ready:
             if not os.environ.get("VALETAX_PASSWORD", ""):
-                self._log(f"  WARNING: VALETAX_PASSWORD not set -- MT5 won't connect")
+                self._log("  WARNING: VALETAX_PASSWORD not set -- MT5 won't connect")
         else:
-            self._log(f"  MT5 broker will use paper fallback (expected in CI)")
+            self._log("  MT5 broker will use paper fallback (expected in CI)")
 
         # ---- 3. Run pipeline with strong uptrend data ----------------------
         df = _make_strong_trend_df(length=120)
@@ -440,12 +441,12 @@ class TestE2EPaperTrading:
             assert s.duration_ms >= 0
 
         # ---- 5. Ensemble vote metadata -------------------------------------
-        self._log(f"\n  --- Pipeline Signal ---")
+        self._log("\n  --- Pipeline Signal ---")
         self._log(f"    Signal: {result.signal} @ {result.confidence:.2%}")
         self._log(f"    Reason: {result.reason[:120]}")
 
         ensemble_meta = result.decision.get("ensemble", {})
-        self._log(f"\n  --- Ensemble Vote ---")
+        self._log("\n  --- Ensemble Vote ---")
         vote_count = 0
         if ensemble_meta:
             self._log(f"    Final bias: {ensemble_meta.get('final_bias', 'N/A')}")
@@ -465,14 +466,14 @@ class TestE2EPaperTrading:
                 mtf_in_vote = "multi_timeframe" in sources
                 self._log(f"    MultiTimeframe in vote: {'YES' if mtf_in_vote else 'NOT (returned HOLD/neutral)'}")
         else:
-            self._log(f"    No ensemble metadata (step skipped?)")
+            self._log("    No ensemble metadata (step skipped?)")
 
         # At least one strategy should fire with strong trend data
         assert vote_count > 0, \
             "Expected at least 1 strategy to fire with strong uptrend data"
 
         # ---- 6. MultiTimeframeStrategy direct test -------------------------
-        self._log(f"\n  --- MultiTimeframeStrategy Direct Test ---")
+        self._log("\n  --- MultiTimeframeStrategy Direct Test ---")
         try:
             from quant_nanggroe.engine.strategies.multi_timeframe_strategy import (
                 MultiTimeframeStrategy,
@@ -501,7 +502,7 @@ class TestE2EPaperTrading:
             self._log(f"    Direct test SKIPPED: {exc}")
 
         # ---- 7. Legacy strategy tests --------------------------------------
-        self._log(f"\n  --- Legacy Strategy Tests ---")
+        self._log("\n  --- Legacy Strategy Tests ---")
         for sname in sorted(EXPECTED_NEW_STRATEGIES - {"multi_timeframe"}):
             try:
                 from quant_nanggroe.engine.strategies.registry import StrategyRegistry
@@ -518,14 +519,14 @@ class TestE2EPaperTrading:
         # ---- 8. FinalDecider -----------------------------------------------
         last_fd = getattr(p._final_decider, "_last_decision", None) if p._final_decider else None
         fd_decision = result.decision.get("final_decider", {})
-        self._log(f"\n  --- FinalDecider ---")
+        self._log("\n  --- FinalDecider ---")
         if last_fd:
             self._log(f"    Called: {last_fd.action.value} @ {last_fd.confidence:.2f}")
             self._log(f"    Reason: {last_fd.reason[:100]}")
         elif fd_decision:
             self._log(f"    In result: {fd_decision.get('action')}")
         else:
-            self._log(f"    NOT called")
+            self._log("    NOT called")
 
         # ---- 9. Execution ---------------------------------------------------
         exec_dec = result.decision.get("execution", {})
@@ -540,7 +541,7 @@ class TestE2EPaperTrading:
 
         # ---- 10. SLA metrics -------------------------------------------------
         sla = result.sla
-        self._log(f"\n  --- SLA Metrics ---")
+        self._log("\n  --- SLA Metrics ---")
         self._log(f"    Total: {sla.total_duration_ms:.0f}ms")
         self._log(f"    Data->Signal: {sla.data_to_signal_ms:.0f}ms")
         self._log(f"    Signal->Risk: {sla.signal_to_risk_ms:.0f}ms")

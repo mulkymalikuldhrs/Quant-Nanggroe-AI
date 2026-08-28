@@ -2,31 +2,26 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
-from quant_nanggroe.engine.nvidia_nim.client import NIMAPIError, NIMClient, NIMRateLimitError
+from quant_nanggroe.engine.nvidia_nim.client import NIMAPIError, NIMClient
 from quant_nanggroe.engine.nvidia_nim.config import NIMConfig
 from quant_nanggroe.engine.nvidia_nim.models import (
+    NIMChatMessage,
     NIMChatResponse,
     NIMChoice,
-    NIMChatMessage,
-    NIMModelMetrics,
-    NIMModelStatus,
-    NIMRerankResponse,
-    NIMRoutingDecision,
-    NIMRole,
     NIMFinishReason,
+    NIMModelStatus,
+    NIMRole,
     NIMUsage,
     TaskType,
 )
 from quant_nanggroe.engine.nvidia_nim.router import (
-    NIMModelRouter,
     _TASK_MODEL_MAP,
-    _COST_OPTIMISATION_THRESHOLD,
+    NIMModelRouter,
 )
-
 
 # ======================================================================
 # Fixtures

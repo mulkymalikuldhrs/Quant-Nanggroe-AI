@@ -6,17 +6,17 @@ All tests are deterministic — no network calls or external dependencies.
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from quant_nanggroe.security.credential_inference import (
-    CredentialInference,
-    CredentialCheck,
-    ExchangeType,
     _EXCHANGE_KEY_PATTERNS,
+    CredentialCheck,
+    CredentialInference,
+    ExchangeType,
 )
 
 

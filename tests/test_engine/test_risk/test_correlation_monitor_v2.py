@@ -19,9 +19,9 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.risk.correlation import (
+    CorrelationAlert,
     CorrelationMonitor,
     StrategyCorrelationMonitor,
-    CorrelationAlert,
 )
 from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 

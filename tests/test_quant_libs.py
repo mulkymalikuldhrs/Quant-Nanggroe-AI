@@ -8,9 +8,9 @@ PortfolioMetrics when libraries are installed (e.g. mark with
 @pytest.mark.integration and test actual pricing/calculations).
 """
 
-from quant_nanggroe.data.models.options import OptionsPricer, OptionPrice
 from quant_nanggroe.data.models.fixed_income import FixedIncomeCalculator
 from quant_nanggroe.data.models.metrics import PortfolioMetrics
+from quant_nanggroe.data.models.options import OptionPrice, OptionsPricer
 
 
 class TestOptionsPricer:

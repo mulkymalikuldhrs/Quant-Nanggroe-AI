@@ -11,7 +11,6 @@ import pytest
 
 from quant_nanggroe.engine import strategy_allocation as sa
 
-
 SAMPLE = {
     "archive_aroon": {
         "BTC-USD": {"n_combinations": 14, "combo_profit_share": 0.86,
@@ -36,7 +35,6 @@ SAMPLE = {
 
 @pytest.fixture()
 def sample_registry():
-    import tempfile
     base = pathlib.Path(r"C:\Users\Hi\AppData\Local\Temp\opencode")
     base.mkdir(parents=True, exist_ok=True)
     d = pathlib.Path(tempfile.mkdtemp(dir=str(base)))
@@ -72,7 +70,6 @@ class TestAllocation:
         assert sa.admitted_for_symbol("TOTALLYUNKNOWN") == []
 
     def test_no_registry_returns_none(self):
-        import tempfile
         base = pathlib.Path(r"C:\Users\Hi\AppData\Local\Temp\opencode")
         base.mkdir(parents=True, exist_ok=True)
         d = pathlib.Path(tempfile.mkdtemp(dir=str(base)))

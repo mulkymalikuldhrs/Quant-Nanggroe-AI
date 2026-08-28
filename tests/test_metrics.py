@@ -7,9 +7,9 @@ Run: python3 -m unittest tests/test_metrics.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 

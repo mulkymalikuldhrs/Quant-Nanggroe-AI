@@ -6,29 +6,25 @@ All tests use mocked Alpaca API responses — no real API calls.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from quant_nanggroe.exchange.alpaca_broker import (
+    _ALPACA_STATUS_MAP,
+    _ALPACA_TYPE_MAP,
+    _SIDE_TO_ALPACA,
     AlpacaBroker,
     CircuitBreaker,
-    _ALPACA_TYPE_MAP,
-    _ALPACA_STATUS_MAP,
-    _SIDE_TO_ALPACA,
 )
 from quant_nanggroe.exchange.base import (
+    ConnectionError,
     ExchangeConfig,
     ExchangeState,
-    ConnectionError,
-    OrderError,
-    InsufficientFundsError,
-    RateLimitError,
     MarketDataError,
 )
-from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
-from quant_nanggroe.types.positions import Position, PositionSide
-
+from quant_nanggroe.types.orders import OrderSide, OrderStatus, OrderType
+from quant_nanggroe.types.positions import PositionSide
 
 # ======================================================================
 # Fixtures

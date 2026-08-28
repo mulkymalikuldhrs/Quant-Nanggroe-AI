@@ -1,6 +1,7 @@
 """Tests for ConstitutionalRiskGuard (RiskCheckGate)."""
 import unittest
-from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, TradeRequest, TradeAction, PortfolioSnapshot
+
+from quant_nanggroe.engine.risk.checks import ConstitutionalRiskGuard, PortfolioSnapshot, TradeAction, TradeRequest
 
 
 class TestConstitutionalRiskGuard(unittest.TestCase):

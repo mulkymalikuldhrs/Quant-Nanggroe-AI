@@ -6,9 +6,9 @@ Run: python3 -m unittest tests/test_auto_disable.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -19,11 +19,11 @@ import tempfile
 import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.strategy_auto_disable import (
     AutoDisableManager,
     StrategyPerformance,
 )
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 
 
 class TestAutoDisableManager(unittest.TestCase):

@@ -11,9 +11,9 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from quant_nanggroe.config.settings import Settings, get_settings
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from quant_nanggroe.config.settings import Settings, get_settings
 
 
 class _TestSettings(Settings):

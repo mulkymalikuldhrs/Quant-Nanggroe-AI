@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from quant_nanggroe.engine.analytics import (
+    PerformanceMetrics,
     compute_metrics,
     rolling_sharpe,
-    PerformanceMetrics,
 )
 from quant_nanggroe.engine.analytics.metrics import (  # ponytail: not all funcs re-exported by package __init__
     benchmark_returns,

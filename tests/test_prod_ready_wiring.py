@@ -11,15 +11,15 @@ correctly and that the factory wires it as a selectable exchange.
 from __future__ import annotations
 
 import asyncio
-import sys
 import os
+import sys
 
 import pytest
 
 # Ensure repo root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderType, OrderStatus
+from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
 from quant_nanggroe.engine.execution.manager import ExecutionManager
 from quant_nanggroe.engine.risk.kill_switch import (
     KillSwitch,

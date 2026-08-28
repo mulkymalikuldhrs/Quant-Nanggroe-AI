@@ -6,7 +6,6 @@ import pytest
 
 from quant_nanggroe.agents.chinese_wall import ChineseWall, ChineseWallError
 
-
 # ============================================================================
 # Compartment Lookup
 # ============================================================================
@@ -290,6 +289,7 @@ class TestGraphIntegration:
     def _make_graph(self):
         """Construct a TradingGraph instance with all heavy deps mocked away."""
         from unittest.mock import MagicMock
+
         import quant_nanggroe.agents.graph as g_mod
 
         g_mod.StateGraph = MagicMock()

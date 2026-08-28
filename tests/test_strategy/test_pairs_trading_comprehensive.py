@@ -1,11 +1,12 @@
 """Comprehensive tests for PairsTradingStrategy - matches actual implementation."""
 
 import unittest
+
 import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.strategy.strategies.pairs_trading import PairsTradingStrategy
-from quant_nanggroe.types.signals import Signal, SignalType
+from quant_nanggroe.types.signals import SignalType
 
 
 class TestPairsTradingStrategyInit(unittest.TestCase):

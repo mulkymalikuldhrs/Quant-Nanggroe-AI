@@ -2,9 +2,11 @@
 """Phase 5 fangbot param optimization — grid search Kelly/SL/TP for Wyckoff + MeanReversion.
 Uses yfinance EURUSD 1h data. Hermes venv required.
 """
-import sys, json, math
+import json
+import math
+import sys
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
 
 # Add QNA to path
 QNA = Path(__file__).resolve().parent.parent / "quant_nanggroe"
@@ -12,14 +14,12 @@ sys.path.insert(0, str(QNA.parent))
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
 
 MIN_SL_PIPS = 10.0   # minimum SL distance for EURUSD
 MAX_LOT = 0.5         # max position size to prevent blowup
 
-from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
 from quant_nanggroe.engine.strategies.mean_reversion import MeanReversionStrategy
-from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters
+from quant_nanggroe.engine.strategies.wyckoff import WyckoffStrategy
 
 # ─── Data ───────────────────────────────────────────────────────────────────
 DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "eurusd_h1_730d_cache.csv"

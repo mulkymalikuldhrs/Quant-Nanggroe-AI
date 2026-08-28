@@ -21,31 +21,27 @@ Tests cover:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
 
-from quant_nanggroe.exchange.mt5_broker import (
-    MT5Broker,
-    MT5AccountInfo,
-    MT5SymbolInfo,
-    MT5PositionInfo,
-    _TIMEFRAME_TO_MT5,
-)
 from quant_nanggroe.exchange.base import (
+    ConnectionError,
     ExchangeConfig,
     ExchangeState,
-    ConnectionError,
-    OrderError,
-    AuthenticationError,
     MarketDataError,
+    OrderError,
 )
+from quant_nanggroe.exchange.mt5_broker import (
+    _TIMEFRAME_TO_MT5,
+    MT5AccountInfo,
+    MT5Broker,
+    MT5PositionInfo,
+    MT5SymbolInfo,
+)
+from quant_nanggroe.types.market import TimeFrame
 from quant_nanggroe.types.orders import OrderSide, OrderStatus, OrderType
 from quant_nanggroe.types.positions import PositionSide
-from quant_nanggroe.types.market import TimeFrame
-
 
 # ======================================================================
 # Fixtures

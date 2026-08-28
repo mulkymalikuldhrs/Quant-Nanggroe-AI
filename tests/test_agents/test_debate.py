@@ -1,10 +1,9 @@
 """Tests for Agent Debate System."""
 
-import asyncio
-from typing import Any, Dict
 
 import pytest
 
+from quant_nanggroe.agents.debate.graph import DebateResult, TradingDebateGraph
 from quant_nanggroe.agents.debate.research_debate import (
     BearResearcherNode,
     BullResearcherNode,
@@ -16,10 +15,7 @@ from quant_nanggroe.agents.debate.risk_debate import (
     ConservativeDebatorNode,
     NeutralDebatorNode,
     RiskDebateState,
-    RiskPosition,
 )
-from quant_nanggroe.agents.debate.graph import TradingDebateGraph, DebateResult
-
 
 # ======================================================================
 # Research Debate

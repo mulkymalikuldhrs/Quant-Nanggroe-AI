@@ -15,19 +15,18 @@ from __future__ import annotations
 import pytest
 
 from quant_nanggroe.exchange.order_types import (
-    ExtendedOrderStatus,
-    TrailingStopOrder,
-    BracketOrder,
+    _VALID_TRANSITIONS,
+    TERMINAL_STATES,
     BracketLegStatus,
-    OCOOrder,
+    BracketOrder,
+    ExtendedOrderStatus,
     IcebergOrder,
+    OCOOrder,
     StateTransitionError,
+    TrailingStopOrder,
     TransitionRecord,
     transition_status,
-    TERMINAL_STATES,
-    _VALID_TRANSITIONS,
 )
-
 
 # ======================================================================
 # 1. State machine transitions

@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from quant_nanggroe.engine.smc.native_smc import (
-    SMCEngine, swing_highs_lows, fair_value_gaps,
-    bos_choch, order_blocks, liquidity_sweep,
+    SMCEngine,
+    bos_choch,
+    fair_value_gaps,
+    liquidity_sweep,
+    order_blocks,
+    swing_highs_lows,
 )
 
 

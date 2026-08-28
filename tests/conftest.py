@@ -8,8 +8,8 @@ from __future__ import annotations
 import os
 import tempfile
 
-import pytest
 import numpy as np
+import pytest
 
 # Set test environment BEFORE importing app modules — must match config.py
 os.environ.setdefault("APP_ENV", "test")

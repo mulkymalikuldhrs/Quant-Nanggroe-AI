@@ -22,14 +22,14 @@ from __future__ import annotations
 import pytest
 
 from quant_nanggroe.agents.personas.base_investor import BaseInvestorAgent
-from quant_nanggroe.agents.personas.warren_buffett import WarrenBuffettAgent
-from quant_nanggroe.agents.personas.peter_lynch import PeterLynchAgent
-from quant_nanggroe.agents.personas.michael_burry import MichaelBurryAgent
 from quant_nanggroe.agents.personas.cathie_wood import CathieWoodAgent
+from quant_nanggroe.agents.personas.michael_burry import MichaelBurryAgent
+from quant_nanggroe.agents.personas.peter_lynch import PeterLynchAgent
+from quant_nanggroe.agents.personas.ray_dalio import RayDalioAgent
 from quant_nanggroe.agents.personas.stanley_druckenmiller import (
     StanleyDruckenmillerAgent,
 )
-from quant_nanggroe.agents.personas.ray_dalio import RayDalioAgent
+from quant_nanggroe.agents.personas.warren_buffett import WarrenBuffettAgent
 
 KWARGS_PERSONAS = [
     PeterLynchAgent,

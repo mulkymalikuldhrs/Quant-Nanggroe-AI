@@ -14,28 +14,25 @@ Use temp directories for disk-based tests (pytest tmp_path fixture).
 
 from __future__ import annotations
 
-import json
 import time
-import pytest
-from pathlib import Path
-from datetime import datetime
 
+import pytest
+
+from quant_nanggroe.memory.journal import TradeJournal
+from quant_nanggroe.memory.knowledge import KnowledgeBase
 from quant_nanggroe.memory.paging import (
-    CoreMemory,
     ArchivalMemory,
-    RecallMemory,
-    MemoryPagingController,
-    MemoryBlock,
-    MemoryTier,
     BlockType,
+    CoreMemory,
     EvictionPolicy,
+    MemoryBlock,
+    MemoryPagingController,
+    MemoryTier,
+    RecallMemory,
     TfidfVectorizer,
     cosine_similarity,
 )
-from quant_nanggroe.memory.journal import TradeJournal
-from quant_nanggroe.memory.knowledge import KnowledgeBase
 from quant_nanggroe.memory.session import SessionMemory
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # 1. Core Memory Tests

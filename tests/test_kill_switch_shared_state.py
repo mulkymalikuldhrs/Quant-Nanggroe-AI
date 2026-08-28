@@ -4,7 +4,6 @@ Verifies the split-brain fix — one process activating the switch halts every
 other instance, even across separate interpreter memory. Fail-closed: an
 unreadable/corrupt state file makes the switch ACTIVE.
 """
-import json
 import os
 import tempfile
 from pathlib import Path

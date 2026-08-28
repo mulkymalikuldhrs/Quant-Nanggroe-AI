@@ -10,7 +10,7 @@ from pathlib import Path
 _HF_TOOLS = Path(__file__).resolve().parents[1] / "quant_nanggroe" / "hedge_fund" / "tools"
 sys.path.insert(0, str(_HF_TOOLS))
 
-from risk_guard import calculate_risk_score, approve
+from risk_guard import approve, calculate_risk_score
 
 
 class TestWeeklyLossVeto:

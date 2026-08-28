@@ -5,21 +5,18 @@ All tests use mocked RPC responses — no real network calls.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from quant_nanggroe.exchange.solana.rugcheck import (
-    RugChecker,
-    TokenSafetyReport,
-    SafetyVerdict,
-    WEIGHT_MINT_AUTHORITY,
-    WEIGHT_FREEZE_AUTHORITY,
-    WEIGHT_LP_BURN,
     WEIGHT_HOLDER_CONCENTRATION,
+    WEIGHT_LP_BURN,
+    WEIGHT_MINT_AUTHORITY,
+    RugChecker,
+    SafetyVerdict,
+    TokenSafetyReport,
 )
-
 
 # ======================================================================
 # Fixtures

@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import json
+import shutil
 import sqlite3
 import tempfile
-import shutil
 from pathlib import Path
 from unittest.mock import patch as mpatch
 
@@ -25,8 +25,7 @@ def tmp_file_dir():
 def client(tmp_file_dir):
     """TestClient with admin JWT + temp journal DB seeded with sample trades."""
     from contextlib import asynccontextmanager
-    from datetime import datetime, timezone
-    from unittest.mock import MagicMock, AsyncMock, patch as mpatch
+    from unittest.mock import AsyncMock, MagicMock
 
     from quant_nanggroe.security.auth import JWTAuth, UserRole
 

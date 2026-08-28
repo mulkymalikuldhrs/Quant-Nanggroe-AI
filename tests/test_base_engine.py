@@ -9,9 +9,9 @@ Run: python3 -m unittest tests/test_base_engine.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -21,8 +21,8 @@ import pandas as pd
 from quant_nanggroe.engine.backtest.engines.base_engine import (
     BaseEngine,
     EngineConfig,
-    Position,
     EquitySnapshot,
+    Position,
 )
 
 

@@ -6,9 +6,9 @@ Run: python3 -m unittest tests/test_engine_backtest.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -16,12 +16,10 @@ import numpy as np
 import pandas as pd
 
 from quant_nanggroe.engine.backtest import (
-    BacktestEngine,
     BacktestConfig,
+    BacktestEngine,
     MarketType,
     StrategyType,
-    PerformanceMetrics,
-    TradeRecord,
 )
 
 

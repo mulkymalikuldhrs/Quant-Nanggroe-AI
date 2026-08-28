@@ -1,12 +1,11 @@
 """COT Position Guard tests — conflict detection logic."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from quant_nanggroe.engine.risk.cot_position_guard import (
-    check_position_conflict, get_cot_positioning,
+    check_position_conflict,
 )
-
 
 _COT_BULL = {"bias": "bullish", "net_noncommercial": 50000, "strength": 0.3}
 _COT_BEAR = {"bias": "bearish", "net_noncommercial": -30000, "strength": 0.25}

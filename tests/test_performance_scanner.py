@@ -11,7 +11,6 @@ import pytest
 from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
 from quant_nanggroe.engine.evolution.performance_scanner import PerformanceScanner
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────
 
 

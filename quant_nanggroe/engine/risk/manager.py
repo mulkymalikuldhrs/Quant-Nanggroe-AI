@@ -332,7 +332,8 @@ class RiskManager:
             week_pnl = sum(_deal_net(d) for d in week_deals)
             # Owner override: weekly reset manual WIB (weekly -13.72% -> 0 until Monday WIB)
             try:
-                import json, pathlib
+                import json
+                import pathlib
                 _ov_path = pathlib.Path("data/weekly_override.json")
                 if _ov_path.exists():
                     _ov = json.loads(_ov_path.read_text(encoding="utf-8"))

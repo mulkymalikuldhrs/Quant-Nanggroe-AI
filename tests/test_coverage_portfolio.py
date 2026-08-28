@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -11,9 +11,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.backtest.portfolio import Portfolio, Position, TradeRecord
 from quant_nanggroe.engine.backtest.metrics import PerformanceMetrics
-from quant_nanggroe.engine.backtest.monte_carlo import MonteCarloSimulator, MonteCarloResult, MultiMetricMonteCarloResult
+from quant_nanggroe.engine.backtest.monte_carlo import (
+    MonteCarloResult,
+    MonteCarloSimulator,
+    MultiMetricMonteCarloResult,
+)
+from quant_nanggroe.engine.backtest.portfolio import Portfolio, TradeRecord
 
 
 class TestPortfolioInit(unittest.TestCase):

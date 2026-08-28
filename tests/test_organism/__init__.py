@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-
 # ── Sense tests ──────────────────────────────────────────────────────────────
 
 
@@ -22,7 +21,7 @@ class TestSenseEngine:
         assert engine.scanner_count == 1
 
     def test_add_remove_scanner(self):
-        from ai_multicolony.organism import SenseEngine, RSSScanner
+        from ai_multicolony.organism import RSSScanner, SenseEngine
         e = SenseEngine()
         e.add_scanner(RSSScanner())
         assert e.scanner_count == 1
@@ -36,7 +35,7 @@ class TestSenseEngine:
         assert isinstance(result.signals, list)
 
     def test_signal_creation(self):
-        from ai_multicolony.organism import Signal, SignalType, SignalSeverity
+        from ai_multicolony.organism import Signal, SignalSeverity, SignalType
         signal = Signal(
             signal_type=SignalType.THREAT,
             severity=SignalSeverity.HIGH,
@@ -45,7 +44,7 @@ class TestSenseEngine:
         assert signal.is_urgent is True
 
     def test_signal_not_urgent(self):
-        from ai_multicolony.organism import Signal, SignalType, SignalSeverity
+        from ai_multicolony.organism import Signal, SignalSeverity, SignalType
         signal = Signal(
             signal_type=SignalType.INFO,
             severity=SignalSeverity.LOW,
@@ -174,7 +173,7 @@ class TestSolutionFactory:
 
     @pytest.mark.asyncio
     async def test_build_service(self, factory):
-        from ai_multicolony.organism import BuildRequest, ArtifactType
+        from ai_multicolony.organism import ArtifactType, BuildRequest
         request = BuildRequest(
             signal_title="Create monitoring service",
             artifact_type=ArtifactType.SERVICE,
@@ -186,7 +185,7 @@ class TestSolutionFactory:
 
     @pytest.mark.asyncio
     async def test_build_code(self, factory):
-        from ai_multicolony.organism import BuildRequest, ArtifactType
+        from ai_multicolony.organism import ArtifactType, BuildRequest
         request = BuildRequest(
             signal_title="Data processor",
             artifact_type=ArtifactType.CODE,
@@ -196,7 +195,7 @@ class TestSolutionFactory:
 
     @pytest.mark.asyncio
     async def test_build_config(self, factory):
-        from ai_multicolony.organism import BuildRequest, ArtifactType
+        from ai_multicolony.organism import ArtifactType, BuildRequest
         request = BuildRequest(
             signal_title="App config",
             artifact_type=ArtifactType.CONFIG,
@@ -218,7 +217,7 @@ class TestImmuneSystem:
 
     @pytest.fixture
     def immune(self):
-        from ai_multicolony.organism import ImmuneSystem, ImmuneConfig
+        from ai_multicolony.organism import ImmuneConfig, ImmuneSystem
         config = ImmuneConfig(max_iterations=100, max_duplicate_actions=5)
         return ImmuneSystem(config)
 

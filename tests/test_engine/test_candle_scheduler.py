@@ -2,19 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import time
-from unittest.mock import MagicMock, patch, AsyncMock
-
-import pytest
 
 from quant_nanggroe.engine.candle_scheduler import (
+    ANALYSIS_TIMEFRAMES,
+    MT5_TF_MAP,
+    TIMEFRAME_SECONDS,
     CandleScheduler,
     CandleState,
     CycleResult,
-    TIMEFRAME_SECONDS,
-    MT5_TF_MAP,
-    ANALYSIS_TIMEFRAMES,
     start_candle_scheduler,
     stop_candle_scheduler,
 )
@@ -111,8 +107,8 @@ class TestCandleScheduler:
 
     def test_check_mtf_alignment_bullish(self):
         sched = CandleScheduler()
-        import pandas as pd
         import numpy as np
+        import pandas as pd
 
         # Create bullish data: price > SMA20 > SMA50
         np.random.seed(42)
@@ -141,8 +137,8 @@ class TestCandleScheduler:
 
     def test_check_mtf_alignment_mixed(self):
         sched = CandleScheduler()
-        import pandas as pd
         import numpy as np
+        import pandas as pd
 
         n = 100
         # H1 bullish (rising)

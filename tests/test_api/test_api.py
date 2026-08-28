@@ -8,8 +8,6 @@ and error handling. Uses FastAPI TestClient with mocked dependencies.
 
 from __future__ import annotations
 
-import json
-import time
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -394,6 +392,7 @@ class TestRateLimit:
 class TestAppCreation:
     def test_create_app_returns_fastapi(self, client: TestClient) -> None:
         from fastapi import FastAPI
+
         from quant_nanggroe.api.app import create_app
         assert isinstance(create_app(), FastAPI)
 

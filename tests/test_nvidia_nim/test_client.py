@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
-import json
-from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from quant_nanggroe.engine.nvidia_nim.client import (
+    _NIM_COST_TABLE,
     NIMAPIError,
     NIMClient,
     NIMRateLimitError,
-    _NIM_COST_TABLE,
 )
 from quant_nanggroe.engine.nvidia_nim.config import NIMConfig
 from quant_nanggroe.engine.nvidia_nim.models import (
@@ -24,9 +21,7 @@ from quant_nanggroe.engine.nvidia_nim.models import (
     NIMModelList,
     NIMRerankResponse,
     NIMRole,
-    NIMUsage,
 )
-
 
 # ======================================================================
 # Fixtures

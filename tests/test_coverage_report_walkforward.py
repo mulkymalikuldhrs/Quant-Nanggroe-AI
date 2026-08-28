@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import sys
-import os
 import json
+import os
+import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -12,12 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.backtest.report import BacktestReport
-from quant_nanggroe.engine.backtest.walk_forward import (
-    WalkForwardAnalyzer,
-    WalkForwardResult,
-    WalkForwardStability,
-)
+from quant_nanggroe.engine.backtest.engines.base_engine import Position
 from quant_nanggroe.engine.backtest.engines.composite_engine import CompositeEngine
 from quant_nanggroe.engine.backtest.engines.crypto_engine import (
     CryptoEngine,
@@ -25,7 +20,12 @@ from quant_nanggroe.engine.backtest.engines.crypto_engine import (
     check_crypto_liquidation,
 )
 from quant_nanggroe.engine.backtest.portfolio import TradeRecord
-from quant_nanggroe.engine.backtest.engines.base_engine import Position
+from quant_nanggroe.engine.backtest.report import BacktestReport
+from quant_nanggroe.engine.backtest.walk_forward import (
+    WalkForwardAnalyzer,
+    WalkForwardResult,
+    WalkForwardStability,
+)
 
 
 def _make_trade(

@@ -11,8 +11,8 @@ Tests cover:
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 import numpy as np
 import pandas as pd
@@ -21,11 +21,10 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from quant_nanggroe.engine.causal.cot_tracker import (
-    COTTracker,
-    COTAnalyzer,
     DEFAULT_COT_CONTRACTS,
+    COTAnalyzer,
+    COTTracker,
 )
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────
 

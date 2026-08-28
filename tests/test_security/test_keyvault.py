@@ -7,12 +7,10 @@ with fail-fast behavior for missing required secrets.
 from __future__ import annotations
 
 import os
-from unittest.mock import patch
 
 import pytest
 
 from quant_nanggroe.security.keyvault import KeyVault, SecretNotFoundError
-
 
 # ======================================================================
 # Fixtures

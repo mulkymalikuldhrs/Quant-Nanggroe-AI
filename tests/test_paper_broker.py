@@ -1,10 +1,11 @@
 """Tests for PaperExchangeBroker."""
 import asyncio
 import unittest
-from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-from quant_nanggroe.types.orders import OrderSide, OrderType
-from quant_nanggroe.types.market import OHLCV
 from datetime import datetime, timezone
+
+from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
+from quant_nanggroe.types.market import OHLCV
+from quant_nanggroe.types.orders import OrderSide, OrderType
 
 
 class TestPaperExchangeBroker(unittest.TestCase):

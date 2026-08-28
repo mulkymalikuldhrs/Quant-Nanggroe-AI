@@ -21,25 +21,23 @@ All tests use in-memory state — no real WhatsApp bridge calls.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from quant_nanggroe.api.routes.whatsapp import (
-    WhatsAppGateway,
-    WhatsAppMessage,
-    ParsedCommand,
-    OutboundMessage,
+    CommandName,
+    MessageDirection,
+    MessageType,
     NotificationConfig,
     NotificationMessage,
-    MessageType,
-    MessageDirection,
-    CommandName,
+    OutboundMessage,
+    ParsedCommand,
+    WhatsAppGateway,
+    WhatsAppMessage,
     parse_command,
     router,
 )
-
 
 # ======================================================================
 # Fixtures

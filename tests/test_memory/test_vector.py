@@ -20,20 +20,19 @@ All tests use in-memory fallback — no real ChromaDB required.
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from quant_nanggroe.memory.vector import (
-    VectorStore,
     CollectionName,
     EmbeddingProvider,
-    VectorDocument,
     SearchResult,
+    VectorDocument,
+    VectorStore,
     VectorStoreStats,
     get_vector_store,
 )
-
 
 # ======================================================================
 # Fixtures

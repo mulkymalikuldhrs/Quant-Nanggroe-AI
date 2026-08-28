@@ -5,10 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from quant_nanggroe.engine.options.vol_surface import SABRModel, VolSurface
-from quant_nanggroe.engine.options.strategies import OptionStrategy
-from quant_nanggroe.engine.options.vol_surface import forward_price, black_implied_vol
-from quant_nanggroe.engine.options.strategies import analyze_strategy
+from quant_nanggroe.engine.options.strategies import OptionStrategy, analyze_strategy
+from quant_nanggroe.engine.options.vol_surface import SABRModel, VolSurface, black_implied_vol, forward_price
 
 
 class TestSABRModel:

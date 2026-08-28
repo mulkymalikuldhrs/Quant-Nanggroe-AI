@@ -1,10 +1,11 @@
 """Comprehensive tests for MarketMakingStrategy - matches actual implementation."""
 
-import pytest
+import math
 import unittest
+
 import numpy as np
 import pandas as pd
-import math
+import pytest
 
 from quant_nanggroe.types.signals import Signal, SignalType
 

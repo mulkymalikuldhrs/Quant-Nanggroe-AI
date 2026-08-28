@@ -9,14 +9,18 @@ Run:
 """
 from __future__ import annotations
 
+import unittest
+
 import numpy as np
 import pandas as pd
-import unittest
 
 from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
-from quant_nanggroe.types.signals import Signal, SignalType
-from quant_nanggroe.types.signals import SignalStrength  # noqa: F401  (kept for clarity)
+from quant_nanggroe.types.signals import (
+    Signal,
+    SignalStrength,  # noqa: F401  (kept for clarity)
+    SignalType,
+)
 
 
 class _MaCrossStrategy(BaseStrategy):
@@ -64,7 +68,7 @@ class TestWalkForwardSmoke(unittest.TestCase):
         )
 
     def test_analyze_strategy_produces_oos(self) -> None:
-        from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
+        from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
 
         prices = self._make_prices()
         engine = BacktestEngine(BacktestConfig(initial_capital=100_000))

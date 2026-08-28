@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
 
 import pytest
 
 from quant_nanggroe.engine.evolution.evolution_journal import EvolutionJournal
 from quant_nanggroe.engine.evolution.evolution_scheduler import EvolutionScheduler
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
 

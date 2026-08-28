@@ -8,9 +8,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_nanggroe.engine.strategies.pairs_trade_strategy import (
-    PairsTradeStrategy,
-)
 from quant_nanggroe.types.signals import Signal, SignalType
 
 

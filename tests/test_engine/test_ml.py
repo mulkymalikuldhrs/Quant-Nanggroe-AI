@@ -8,20 +8,18 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
-from quant_nanggroe.engine.models.signal_generator import (
-    TradingSignal,
-    SignalGenerator,
-)
 from quant_nanggroe.engine.ml.feature_engineer import (
     FeatureConfig,
     FeatureEngineer,
 )
 from quant_nanggroe.engine.ml.model_manager import (
-    ModelInfo,
     ModelManager,
     ModelStatus,
+)
+from quant_nanggroe.engine.models.signal_generator import (
+    SignalGenerator,
+    TradingSignal,
 )
 
 

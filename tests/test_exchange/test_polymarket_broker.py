@@ -19,12 +19,17 @@ Tests cover:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
 
+from quant_nanggroe.exchange.base import (
+    ConnectionError,
+    ExchangeConfig,
+    ExchangeState,
+    OrderError,
+)
 from quant_nanggroe.exchange.polymarket_broker import (
     PolymarketBroker,
     PolymarketCLOBClient,
@@ -32,16 +37,8 @@ from quant_nanggroe.exchange.polymarket_broker import (
     PolymarketOrderResult,
     PolymarketWalletConfig,
 )
-from quant_nanggroe.exchange.base import (
-    ExchangeConfig,
-    ExchangeState,
-    ConnectionError,
-    OrderError,
-    MarketDataError,
-)
 from quant_nanggroe.types.orders import OrderSide, OrderStatus, OrderType
 from quant_nanggroe.types.positions import PositionSide
-
 
 # ======================================================================
 # Fixtures

@@ -3,16 +3,16 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
 
-from quant_nanggroe.engine.regime.volatility_clustering import VolatilityRegimeDetector
 from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
+from quant_nanggroe.engine.regime.volatility_clustering import VolatilityRegimeDetector
 
 
 class TestVolatilityRegimeDetector(unittest.TestCase):

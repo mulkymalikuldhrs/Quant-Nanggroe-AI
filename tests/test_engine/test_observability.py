@@ -12,10 +12,11 @@ Tests cover:
 
 from __future__ import annotations
 
-import os
-import pytest
-import logging
 import json
+import logging
+import os
+
+import pytest
 
 # Ensure observability is disabled for most tests
 os.environ.pop("OBSERVABILITY_ENABLED", None)
@@ -48,13 +49,13 @@ class TestObservabilityManager:
 
     def test_noop_tracer_when_disabled(self):
         """When disabled, tracer should be NoOpTracer."""
-        from quant_nanggroe.engine.observability import ObservabilityManager, NoOpTracer
+        from quant_nanggroe.engine.observability import NoOpTracer, ObservabilityManager
         obs = ObservabilityManager(enabled=False)
         assert isinstance(obs.tracer, NoOpTracer)
 
     def test_noop_metrics_when_disabled(self):
         """When disabled, metrics should be NoOpMetrics."""
-        from quant_nanggroe.engine.observability import ObservabilityManager, NoOpMetrics
+        from quant_nanggroe.engine.observability import NoOpMetrics, ObservabilityManager
         obs = ObservabilityManager(enabled=False)
         assert isinstance(obs.metrics, NoOpMetrics)
 
@@ -290,7 +291,6 @@ class TestEnvironmentConfiguration:
         reset_observability()
 
     def teardown_method(self):
-        from quant_nanggroe.engine.observability import reset_observability
         # Clean env vars
         os.environ.pop("OBSERVABILITY_ENABLED", None)
         os.environ.pop("OTEL_SERVICE_NAME", None)
@@ -300,6 +300,7 @@ class TestEnvironmentConfiguration:
         os.environ.pop("OBSERVABILITY_ENABLED", None)
         # Re-import to get fresh module-level var
         import importlib
+
         from quant_nanggroe.engine import observability
         importlib.reload(observability)
         assert observability.OBSERVABILITY_ENABLED is False
@@ -307,6 +308,7 @@ class TestEnvironmentConfiguration:
     def test_observability_enabled_true(self):
         """OBSERVABILITY_ENABLED=true should enable."""
         import importlib
+
         from quant_nanggroe.engine import observability
         os.environ["OBSERVABILITY_ENABLED"] = "true"
         importlib.reload(observability)
@@ -317,6 +319,7 @@ class TestEnvironmentConfiguration:
     def test_observability_enabled_yes(self):
         """OBSERVABILITY_ENABLED=yes should enable."""
         import importlib
+
         from quant_nanggroe.engine import observability
         os.environ["OBSERVABILITY_ENABLED"] = "yes"
         importlib.reload(observability)
@@ -327,6 +330,7 @@ class TestEnvironmentConfiguration:
     def test_service_name_default(self):
         """Default service name should be quant-nanggroe-ai."""
         import importlib
+
         from quant_nanggroe.engine import observability
         os.environ.pop("OTEL_SERVICE_NAME", None)
         importlib.reload(observability)

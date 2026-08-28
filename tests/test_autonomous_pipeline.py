@@ -8,18 +8,14 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from quant_nanggroe.engine.agentic import (
-    SelfCorrection,
     LessonSeverity,
+    SelfCorrection,
     discover_strategies,
 )
-
 
 # ── Self-Correction Tests ─────────────────────────────────────────────
 
@@ -113,7 +109,7 @@ class TestStrategyDiscovery:
 
 class TestAutonomousPipeline:
     def test_create_pipeline(self):
-        from quant_nanggroe.engine.agentic import AutonomousPipeline, get_autonomous_pipeline
+        from quant_nanggroe.engine.agentic import get_autonomous_pipeline
         p = get_autonomous_pipeline()
         assert p is not None
         # Free provider registration is optional and env-var dependent
@@ -122,8 +118,9 @@ class TestAutonomousPipeline:
 
     def test_pipeline_load_strategies_and_run(self):
         """Pipeline loads strategies and can produce a result."""
-        from quant_nanggroe.engine.agentic import AutonomousPipeline
         import asyncio
+
+        from quant_nanggroe.engine.agentic import AutonomousPipeline
 
         p = AutonomousPipeline()
         p.load_strategies()
@@ -147,8 +144,9 @@ class TestAutonomousPipeline:
 
     def test_pipeline_invalid_symbol_handles_gracefully(self):
         """Pipeline gracefully handles invalid symbols."""
-        from quant_nanggroe.engine.agentic import AutonomousPipeline
         import asyncio
+
+        from quant_nanggroe.engine.agentic import AutonomousPipeline
 
         p = AutonomousPipeline()
         p.load_strategies()
@@ -158,8 +156,9 @@ class TestAutonomousPipeline:
         assert any(word in result.reason.lower() for word in ["error", "fail", "no data", "not found"])
 
     def test_pipeline_batch_run(self):
-        from quant_nanggroe.engine.agentic import AutonomousPipeline
         import asyncio
+
+        from quant_nanggroe.engine.agentic import AutonomousPipeline
 
         p = AutonomousPipeline()
         p.load_strategies()
@@ -184,8 +183,9 @@ if __name__ == "__main__":
     if strategies:
         print(f"  First 5: {list(strategies.keys())[:5]}")
 
-    from quant_nanggroe.engine.agentic import AutonomousPipeline
     import asyncio
+
+    from quant_nanggroe.engine.agentic import AutonomousPipeline
 
     p = AutonomousPipeline()
     p.load_strategies()

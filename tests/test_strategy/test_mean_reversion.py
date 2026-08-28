@@ -2,10 +2,9 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from quant_nanggroe.engine.strategies.mean_reversion import MeanReversionStrategy
-from quant_nanggroe.types.signals import Signal, SignalType
+from quant_nanggroe.types.signals import SignalType
 
 
 class TestMeanReversionStrategy:

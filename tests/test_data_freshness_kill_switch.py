@@ -8,20 +8,21 @@ from __future__ import annotations
 
 import sys
 import unittest
-from datetime import datetime, timezone, timedelta
 
 # ── Mock pandas before any quant_nanggroe import ──────────────────────
 # data_manager.py eagerly imports pandas; we bypass it by direct import.
 import unittest.mock as mock
+from datetime import datetime, timedelta, timezone
+
 sys.modules["pandas"] = mock.MagicMock()
 sys.modules["pandas"].DataFrame = mock.MagicMock
 sys.modules["pandas"].Series = mock.MagicMock
 
 from quant_nanggroe.data.monitor import (
-    DataFreshnessMonitor,
     STALE_LEVEL_1_MINUTES,
     STALE_LEVEL_2_MINUTES,
     STALE_LEVEL_3_MINUTES,
+    DataFreshnessMonitor,
 )
 from quant_nanggroe.engine.risk.kill_switch import (
     KillSwitch,
@@ -111,7 +112,6 @@ class TestDataFreshnessKillSwitch(unittest.TestCase):
         self.assertEqual(result, KillSwitchLevel.LEVEL_3.value)
 
     def test_logger_warning_on_trigger(self):
-        import logging
         ks = KillSwitch()
         mon = DataFreshnessMonitor(kill_switch=ks)
         _seed_old_data(mon, 10)

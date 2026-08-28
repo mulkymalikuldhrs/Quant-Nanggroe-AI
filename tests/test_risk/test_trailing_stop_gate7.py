@@ -1,8 +1,6 @@
 """GATE-7 regression: breakeven ratchet + ATR trailing + monotonic stops."""
 from __future__ import annotations
 
-import pytest
-
 from quant_nanggroe.engine.risk.trailing_stop import (
     TrailingStopConfig,
     TrailingStopManager,

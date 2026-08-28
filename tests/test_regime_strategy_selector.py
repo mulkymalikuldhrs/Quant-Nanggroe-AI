@@ -3,20 +3,20 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from quant_nanggroe.engine.regime.strategy_selector import (
+    _REGIME_LABEL_MAP,
+    _RISK_MULTIPLIERS,
+    REAL_QNA_STRATEGIES,
+    REGIME_STRATEGY_MAP,
+    RegimeStrategyMap,
     RegimeStrategySelector,
     StrategyConfig,
-    RegimeStrategyMap,
-    REGIME_STRATEGY_MAP,
-    REAL_QNA_STRATEGIES,
-    _RISK_MULTIPLIERS,
-    _REGIME_LABEL_MAP,
 )
 
 

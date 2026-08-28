@@ -8,8 +8,8 @@ Run: python3 -m unittest tests.test_coverage_loaders -v
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -20,30 +20,29 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pandas as pd
 
-from quant_nanggroe.engine.backtest.loaders.base_loader import (
-    BaseLoader,
-    validate_date_range,
-    check_budget,
-    retry_with_budget,
-)
-from quant_nanggroe.engine.backtest.loaders.yfinance_loader import (
-    YFinanceLoader,
-    _to_yfinance_symbol,
-    _to_yfinance_interval,
-    _flatten_columns,
-    _normalize_frame,
-    _extract_symbol_frame,
-)
-from quant_nanggroe.engine.backtest.loaders.ccxt_loader import (
-    CCXTLoader,
-    _INTERVAL_MAP,
-)
-from quant_nanggroe.engine.backtest.optimizers.base_optimizer import BaseOptimizer
 from quant_nanggroe.engine.backtest.execution import (
     ExecutionConfig,
     ExecutionSimulator,
 )
-
+from quant_nanggroe.engine.backtest.loaders.base_loader import (
+    BaseLoader,
+    check_budget,
+    retry_with_budget,
+    validate_date_range,
+)
+from quant_nanggroe.engine.backtest.loaders.ccxt_loader import (
+    _INTERVAL_MAP,
+    CCXTLoader,
+)
+from quant_nanggroe.engine.backtest.loaders.yfinance_loader import (
+    YFinanceLoader,
+    _extract_symbol_frame,
+    _flatten_columns,
+    _normalize_frame,
+    _to_yfinance_interval,
+    _to_yfinance_symbol,
+)
+from quant_nanggroe.engine.backtest.optimizers.base_optimizer import BaseOptimizer
 
 # ════════════════════════════════════════════════════════════════════════════
 # A — base_loader.py  (46.7% → deeper)

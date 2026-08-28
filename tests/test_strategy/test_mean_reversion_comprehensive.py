@@ -1,9 +1,9 @@
 """Comprehensive tests for MeanReversionStrategy - matches actual implementation."""
 
 import unittest
+
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
 
 from quant_nanggroe.engine.strategy.strategies.mean_reversion import MeanReversionStrategy
 from quant_nanggroe.types.signals import Signal, SignalType

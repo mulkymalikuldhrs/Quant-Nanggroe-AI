@@ -5,20 +5,20 @@ Run: python3 -m unittest tests/test_risk/test_asset_budget.py -v
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from quant_nanggroe.engine.risk.manager import RiskManager
 from quant_nanggroe.engine.risk.constants import (
-    MAX_POSITION_SIZE_PCT,
-    MAX_ASSET_DAILY_LOSS_PCT,
     HARD_STOP_ATR_MULTIPLIER,
+    MAX_ASSET_DAILY_LOSS_PCT,
+    MAX_POSITION_SIZE_PCT,
     MAX_TOTAL_CONCENTRATION,
     TRADING_BUDGET_PCT,
 )
+from quant_nanggroe.engine.risk.manager import RiskManager
 
 
 class TestAssetBudgetSetAndCheck(unittest.TestCase):

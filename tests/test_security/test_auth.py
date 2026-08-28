@@ -6,20 +6,18 @@ All tests are deterministic — no network calls or external dependencies.
 from __future__ import annotations
 
 import time
-from unittest.mock import patch
 
 import pytest
 
 from quant_nanggroe.security.auth import (
-    APIKeyAuth,
-    JWTAuth,
-    UserRole,
-    TokenPayload,
-    AuthResult,
     _ROLE_HIERARCHY,
     _ROLE_PERMISSIONS,
+    APIKeyAuth,
+    AuthResult,
+    JWTAuth,
+    TokenPayload,
+    UserRole,
 )
-
 
 # ======================================================================
 # UserRole
@@ -287,7 +285,6 @@ class TestJWTAuthRevocation:
     @pytest.fixture(autouse=True)
     def _clean_revocation_file(self):
         """Clear the file-backed revocation store so each test starts fresh."""
-        import os
         from quant_nanggroe.security.auth import _REVOCATION_FILE
         _REVOCATION_FILE.unlink(missing_ok=True)
         yield

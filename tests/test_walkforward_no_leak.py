@@ -20,10 +20,10 @@ import pandas as pd
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
+from quant_nanggroe.engine.backtest.engine import BacktestConfig, BacktestEngine
+from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
 from quant_nanggroe.engine.strategy.strategies.base_strategy import BaseStrategy
 from quant_nanggroe.types.signals import Signal, SignalType
-from quant_nanggroe.engine.backtest.engine import BacktestEngine, BacktestConfig
-from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer
 from scripts.run_walkforward import run_strategy_backtest
 
 

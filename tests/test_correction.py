@@ -1,8 +1,8 @@
 """Smoke tests for engine/correction.py — SelfCorrect, RetryStrategy, FallbackResolver."""
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -12,17 +12,14 @@ from pathlib import Path
 import pytest
 
 from quant_nanggroe.engine.correction import (
-    SelfCorrect,
-    RetryStrategy,
-    RetryPolicy,
-    RetryMode,
-    RetryExhausted,
     FallbackResolver,
     Lesson,
-    LessonCategory,
-    LessonSeverity,
+    RetryExhausted,
+    RetryMode,
+    RetryPolicy,
+    RetryStrategy,
+    SelfCorrect,
 )
-
 
 # ── SelfCorrect ──────────────────────────────────────────────────────────────
 

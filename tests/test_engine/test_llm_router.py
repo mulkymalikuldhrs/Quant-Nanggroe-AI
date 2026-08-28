@@ -5,26 +5,25 @@ All tests use mocked LLM providers — no real API calls.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import pytest
 
 from quant_nanggroe.engine.llm_router import (
-    LLMRouter,
+    _COST_PER_1K,
+    _DEFAULT_MAX_TOKENS,
+    _DEFAULT_MODELS,
+    CostRecord,
     LLMProvider,
+    LLMResponse,
+    LLMRouter,
     ModelTier,
-    ProviderHealthStatus,
     ProviderConfig,
     ProviderHealth,
-    CostRecord,
-    LLMResponse,
+    ProviderHealthStatus,
     get_llm_router,
-    _DEFAULT_MODELS,
-    _DEFAULT_MAX_TOKENS,
-    _COST_PER_1K,
 )
-
 
 # ======================================================================
 # Fixtures

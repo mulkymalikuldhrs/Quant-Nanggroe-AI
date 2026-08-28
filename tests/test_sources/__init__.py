@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-
 # ── Base tests ───────────────────────────────────────────────────────────────
 
 
@@ -35,14 +34,14 @@ class TestSourceProvider:
         assert item.relevance_score == 0.0
 
     def test_source_item_to_dict(self):
-        from ai_multicolony.sources import SourceItem, SourceCategory
+        from ai_multicolony.sources import SourceCategory, SourceItem
         item = SourceItem(title="Test", category=SourceCategory.ECONOMIC)
         d = item.to_dict()
         assert d["title"] == "Test"
         assert d["category"] == "economic"
 
     def test_source_result_success(self):
-        from ai_multicolony.sources import SourceResult, SourceItem
+        from ai_multicolony.sources import SourceItem, SourceResult
         result = SourceResult(items=[SourceItem(title="Test")])
         assert result.success is True
 
@@ -219,7 +218,7 @@ class TestSourceManager:
 
     @pytest.fixture
     def manager(self):
-        from ai_multicolony.sources import SourceManager, OSINTSource, EconomicSource
+        from ai_multicolony.sources import EconomicSource, OSINTSource, SourceManager
         m = SourceManager()
         m.register(OSINTSource())
         m.register(EconomicSource())
@@ -229,7 +228,7 @@ class TestSourceManager:
         assert manager.source_count == 2
 
     def test_register_unregister(self):
-        from ai_multicolony.sources import SourceManager, MarketSource
+        from ai_multicolony.sources import MarketSource, SourceManager
         m = SourceManager()
         m.register(MarketSource())
         assert m.source_count == 1

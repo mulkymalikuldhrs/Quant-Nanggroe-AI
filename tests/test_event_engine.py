@@ -1,14 +1,14 @@
 """Tests: EventEngine — LEAN-inspired event-driven pipeline."""
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from quant_nanggroe.engine.event_engine import EventEngine, Event, EventType
+from quant_nanggroe.engine.event_engine import Event, EventEngine, EventType
 
 
 class TestEventType(unittest.TestCase):

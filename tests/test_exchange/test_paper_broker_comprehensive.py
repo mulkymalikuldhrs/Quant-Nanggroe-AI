@@ -1,14 +1,14 @@
 """Comprehensive tests for PaperExchangeBroker - matches actual implementation."""
 
-import unittest
 import asyncio
-import numpy as np
+import unittest
+
 import pandas as pd
 
 from quant_nanggroe.exchange.paper_broker import PaperExchangeBroker
-from quant_nanggroe.types.orders import Order, OrderSide, OrderType, OrderStatus
-from quant_nanggroe.types.positions import Position, PositionSide
-from quant_nanggroe.types.market import OHLCV, Ticker, TimeFrame
+from quant_nanggroe.types.market import OHLCV
+from quant_nanggroe.types.orders import Order, OrderSide, OrderStatus, OrderType
+from quant_nanggroe.types.positions import PositionSide
 
 
 class TestPaperExchangeBrokerInit(unittest.TestCase):

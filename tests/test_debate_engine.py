@@ -1,13 +1,14 @@
 """Tests for TradingAgents-inspired Debate Engine."""
 
 import pytest
+
 from quant_nanggroe.agents.debate import (
-    Signal,
     AgentOpinion,
-    RiskMetrics,
-    RiskManager,
-    DebateResult,
     DebateEngine,
+    DebateResult,
+    RiskManager,
+    RiskMetrics,
+    Signal,
 )
 
 

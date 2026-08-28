@@ -4,9 +4,12 @@ Tests kelly, regime, strategy, stress_testing, pattern_recorder, execution, and 
 
 Run: python3 -m pytest tests/test_qna_units.py -v
 """
-import sys; import os
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import unittest
+
 import numpy as np
 import pandas as pd
 
@@ -35,7 +38,7 @@ class TestKellyBase(unittest.TestCase):
 
     def test_kelly_result_fields(self):
         try:
-            from quant_nanggroe.engine.kelly.base import KellyResult, KellyMethod, KellyParameters
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters, KellyResult
             params = KellyParameters()
             result = KellyResult(f_star=0.25, method=KellyMethod.FRACTIONAL, growth_rate=0.1, parameters=params)
             self.assertEqual(result.f_star, 0.25)
@@ -82,8 +85,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_compute_default_fraction(self):
         try:
-            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             kelly = FractionalKelly(fraction=0.5)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -94,8 +97,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_compute_zero_win_rate(self):
         try:
-            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             kelly = FractionalKelly(fraction=0.5)
             params = KellyParameters(win_rate=0.0, avg_win=1.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -105,8 +108,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_compute_full_kelly(self):
         try:
-            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             kelly = FractionalKelly(fraction=1.0)
             params = KellyParameters(win_rate=0.6, avg_win=1.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -116,8 +119,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_compute_with_regime_multiplier(self):
         try:
-            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             kelly = FractionalKelly(fraction=0.5)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0, regime_multiplier=0.5)
             result = kelly.compute(params)
@@ -139,8 +142,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_compute_method_value(self):
         try:
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
             from quant_nanggroe.engine.kelly.fractional import FractionalKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
             kelly = FractionalKelly()
             params = KellyParameters(win_rate=0.55, avg_win=1.5, avg_loss=1.0)
             result = kelly.compute(params)
@@ -150,8 +153,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_compute_leverage_cap(self):
         try:
-            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             kelly = FractionalKelly(fraction=1.0)
             params = KellyParameters(win_rate=0.8, avg_win=5.0, avg_loss=1.0, leverage_max=0.5)
             result = kelly.compute(params)
@@ -161,8 +164,8 @@ class TestFractionalKelly(unittest.TestCase):
 
     def test_growth_rate_in_result(self):
         try:
-            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.fractional import FractionalKelly
             kelly = FractionalKelly()
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -183,8 +186,8 @@ class TestBayesianKelly(unittest.TestCase):
 
     def test_compute_bayesian(self):
         try:
-            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             kelly = BayesianKelly(alpha_prior=1.0, beta_prior=1.0, confidence=0.05)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -194,8 +197,8 @@ class TestBayesianKelly(unittest.TestCase):
 
     def test_bayesian_method_value(self):
         try:
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
             from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
             kelly = BayesianKelly()
             params = KellyParameters(win_rate=0.55, avg_win=1.5, avg_loss=1.0)
             result = kelly.compute(params)
@@ -205,8 +208,8 @@ class TestBayesianKelly(unittest.TestCase):
 
     def test_bayesian_low_win_rate(self):
         try:
-            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             kelly = BayesianKelly()
             params = KellyParameters(win_rate=0.3, avg_win=3.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -216,8 +219,8 @@ class TestBayesianKelly(unittest.TestCase):
 
     def test_bayesian_effective_n(self):
         try:
-            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             kelly = BayesianKelly()
             params = KellyParameters(win_rate=0.5)
             n = kelly._effective_n(params)
@@ -227,8 +230,8 @@ class TestBayesianKelly(unittest.TestCase):
 
     def test_bayesian_different_priors(self):
         try:
-            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.bayesian import BayesianKelly
             k1 = BayesianKelly(alpha_prior=1.0, beta_prior=1.0)
             k2 = BayesianKelly(alpha_prior=10.0, beta_prior=10.0)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0)
@@ -252,8 +255,8 @@ class TestDrawdownControlledKelly(unittest.TestCase):
 
     def test_compute_no_drawdown(self):
         try:
-            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             kelly = DrawdownControlledKelly(base_fraction=0.5, max_drawdown_threshold=0.25)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0, current_drawdown=0.0)
             result = kelly.compute(params)
@@ -263,8 +266,8 @@ class TestDrawdownControlledKelly(unittest.TestCase):
 
     def test_compute_high_drawdown(self):
         try:
-            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             kelly = DrawdownControlledKelly(base_fraction=0.5, max_drawdown_threshold=0.25)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0, current_drawdown=0.25)
             result = kelly.compute(params)
@@ -276,8 +279,8 @@ class TestDrawdownControlledKelly(unittest.TestCase):
 
     def test_drawdown_method_value(self):
         try:
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
             from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
             kelly = DrawdownControlledKelly()
             params = KellyParameters(win_rate=0.55, avg_win=1.5, avg_loss=1.0)
             result = kelly.compute(params)
@@ -287,8 +290,8 @@ class TestDrawdownControlledKelly(unittest.TestCase):
 
     def test_max_drawdown_cap(self):
         try:
-            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             kelly = DrawdownControlledKelly(base_fraction=0.5, max_drawdown_threshold=0.25)
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0, current_drawdown=0.5)
             result = kelly.compute(params)
@@ -298,8 +301,8 @@ class TestDrawdownControlledKelly(unittest.TestCase):
 
     def test_drawdown_leverage_cap(self):
         try:
-            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.drawdown import DrawdownControlledKelly
             kelly = DrawdownControlledKelly(base_fraction=1.0, max_drawdown_threshold=0.25)
             params = KellyParameters(win_rate=0.9, avg_win=5.0, avg_loss=1.0, current_drawdown=0.0, leverage_max=0.3)
             result = kelly.compute(params)
@@ -320,8 +323,8 @@ class TestMultiAssetKelly(unittest.TestCase):
 
     def test_compute_with_cov_matrix(self):
         try:
-            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             kelly = MultiAssetKelly(shrinkage=0.1)
             cov = np.array([[0.04, 0.01], [0.01, 0.03]])
             params = KellyParameters(
@@ -335,8 +338,8 @@ class TestMultiAssetKelly(unittest.TestCase):
 
     def test_fallback_no_cov(self):
         try:
-            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             kelly = MultiAssetKelly()
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -346,8 +349,8 @@ class TestMultiAssetKelly(unittest.TestCase):
 
     def test_multi_asset_method(self):
         try:
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
             from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
             kelly = MultiAssetKelly()
             cov = np.eye(2) * 0.04
             params = KellyParameters(
@@ -361,8 +364,8 @@ class TestMultiAssetKelly(unittest.TestCase):
 
     def test_multi_asset_leverage(self):
         try:
-            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             kelly = MultiAssetKelly()
             cov = np.eye(3) * 0.04
             params = KellyParameters(
@@ -377,8 +380,8 @@ class TestMultiAssetKelly(unittest.TestCase):
 
     def test_shrinkage_effect(self):
         try:
-            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.multi_asset import MultiAssetKelly
             cov = np.array([[0.04, 0.03], [0.03, 0.04]])
             params = KellyParameters(
                 win_rate=0.6, avg_win=2.0, avg_loss=1.0,
@@ -406,9 +409,10 @@ class TestCorrelationAwareKelly(unittest.TestCase):
 
     def test_compute_with_correlation(self):
         try:
-            from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters
             import numpy as np
+
+            from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
             kelly = CorrelationAwareKelly(base_fraction=0.5)
             corr = np.array([[1.0, 0.3], [0.3, 1.0]])
             params = KellyParameters(
@@ -422,8 +426,8 @@ class TestCorrelationAwareKelly(unittest.TestCase):
 
     def test_fallback_no_correlation(self):
         try:
-            from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
             from quant_nanggroe.engine.kelly.base import KellyParameters
+            from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
             kelly = CorrelationAwareKelly()
             params = KellyParameters(win_rate=0.6, avg_win=2.0, avg_loss=1.0)
             result = kelly.compute(params)
@@ -433,9 +437,10 @@ class TestCorrelationAwareKelly(unittest.TestCase):
 
     def test_correlation_method(self):
         try:
-            from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
             import numpy as np
+
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
+            from quant_nanggroe.engine.kelly.correlation import CorrelationAwareKelly
             kelly = CorrelationAwareKelly()
             corr = np.eye(2)
             params = KellyParameters(
@@ -485,7 +490,7 @@ class TestAdaptiveKelly(unittest.TestCase):
     def test_adaptive_method(self):
         try:
             from quant_nanggroe.engine.kelly.adaptive import AdaptiveKelly
-            from quant_nanggroe.engine.kelly.base import KellyParameters, KellyMethod
+            from quant_nanggroe.engine.kelly.base import KellyMethod, KellyParameters
             kelly = AdaptiveKelly()
             params = KellyParameters(win_rate=0.55, avg_win=1.5, avg_loss=1.0)
             result = kelly.compute(params)
@@ -499,9 +504,7 @@ class TestKellyBacktestBridge(unittest.TestCase):
 
     def test_import(self):
         try:
-            from quant_nanggroe.engine.kelly.backtest_integration import (
-                KellyBacktestBridge, KellySignal
-            )
+            from quant_nanggroe.engine.kelly.backtest_integration import KellyBacktestBridge, KellySignal
             self.assertTrue(True)
         except ImportError as e:
             self.skipTest(str(e))
@@ -654,9 +657,7 @@ class TestHMMRegimeDetector(unittest.TestCase):
 
     def test_import(self):
         try:
-            from quant_nanggroe.engine.regime.hmm_detector import (
-                HMMRegimeDetector, RegimeState, Regime
-            )
+            from quant_nanggroe.engine.regime.hmm_detector import HMMRegimeDetector, Regime, RegimeState
             self.assertTrue(True)
         except ImportError as e:
             self.skipTest(str(e))
@@ -672,7 +673,7 @@ class TestHMMRegimeDetector(unittest.TestCase):
 
     def test_regime_state_defaults(self):
         try:
-            from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+            from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
             state = RegimeState()
             self.assertEqual(state.regime, Regime.SIDEWAYS)
             self.assertEqual(state.confidence, 0.0)
@@ -682,7 +683,7 @@ class TestHMMRegimeDetector(unittest.TestCase):
 
     def test_regime_state_stressed(self):
         try:
-            from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+            from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
             bear = RegimeState(regime=Regime.BEAR, confidence=0.8)
             crisis = RegimeState(regime=Regime.CRISIS, confidence=0.9)
             self.assertTrue(bear.is_stressed)
@@ -692,7 +693,7 @@ class TestHMMRegimeDetector(unittest.TestCase):
 
     def test_regime_state_to_api_dict(self):
         try:
-            from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+            from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
             state = RegimeState(regime=Regime.BULL, confidence=0.85, method="hmm")
             d = state.to_api_dict()
             self.assertEqual(d["regime"], "BULL")
@@ -818,8 +819,9 @@ class TestCorrelationRegimeDetector(unittest.TestCase):
 
     def test_predict_high_corr(self):
         try:
-            from quant_nanggroe.engine.regime.correlation_regime import CorrelationRegimeDetector
             import numpy as np
+
+            from quant_nanggroe.engine.regime.correlation_regime import CorrelationRegimeDetector
             detector = CorrelationRegimeDetector(window=10)
             rng = np.random.default_rng(42)
             returns = rng.normal(0.001, 0.02, (100, 3))
@@ -912,11 +914,10 @@ class TestRegimeEnsemble(unittest.TestCase):
     def test_predict_with_detectors(self):
         try:
             from quant_nanggroe.engine.regime.ensemble import RegimeEnsemble
-            from quant_nanggroe.engine.regime.volatility_clustering import VolatilityRegimeDetector
 
             class MockDetector:
                 def predict(self, returns=None, **kwargs):
-                    from quant_nanggroe.engine.regime.hmm_detector import RegimeState, Regime
+                    from quant_nanggroe.engine.regime.hmm_detector import Regime, RegimeState
                     return RegimeState(regime=Regime.BULL, confidence=0.8, method="mock")
 
             ensemble = RegimeEnsemble([MockDetector()])
@@ -945,7 +946,9 @@ class TestRegimeStrategySelector(unittest.TestCase):
     def test_import(self):
         try:
             from quant_nanggroe.engine.regime.strategy_selector import (
-                RegimeStrategySelector, StrategyConfig, RegimeStrategyMap
+                RegimeStrategyMap,
+                RegimeStrategySelector,
+                StrategyConfig,
             )
             self.assertTrue(True)
         except ImportError as e:
@@ -962,9 +965,7 @@ class TestRegimeStrategySelector(unittest.TestCase):
 
     def test_regime_strategy_map(self):
         try:
-            from quant_nanggroe.engine.regime.strategy_selector import (
-                RegimeStrategyMap, StrategyConfig
-            )
+            from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategyMap, StrategyConfig
             primary = StrategyConfig(name="momentum")
             rmap = RegimeStrategyMap(regime="BULL", primary_strategy=primary)
             self.assertEqual(rmap.regime, "BULL")
@@ -974,7 +975,7 @@ class TestRegimeStrategySelector(unittest.TestCase):
 
     def test_selector_init(self):
         try:
-            from quant_nanggroe.engine.regime.strategy_selector import RegimeStrategySelector, _REGIME_LABEL_MAP
+            from quant_nanggroe.engine.regime.strategy_selector import _REGIME_LABEL_MAP, RegimeStrategySelector
             selector = RegimeStrategySelector()
             self.assertIsNotNone(_REGIME_LABEL_MAP)
             self.assertIn("BULL", _REGIME_LABEL_MAP)
@@ -1051,8 +1052,9 @@ class TestRegimeAdaptiveStrategy(unittest.TestCase):
 
     def test_analyze(self):
         try:
-            from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             import asyncio
+
+            from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             strategy = RegimeAdaptiveStrategy()
             prices = pd.DataFrame({
                 "close": 100 + np.cumsum(np.random.randn(100)),
@@ -1065,8 +1067,9 @@ class TestRegimeAdaptiveStrategy(unittest.TestCase):
 
     def test_analyze_no_detector(self):
         try:
-            from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             import asyncio
+
+            from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             strategy = RegimeAdaptiveStrategy()
             strategy.detector = None
             prices = pd.DataFrame({"close": 100 + np.cumsum(np.random.randn(50))})
@@ -1077,8 +1080,9 @@ class TestRegimeAdaptiveStrategy(unittest.TestCase):
 
     def test_analyze_empty_prices(self):
         try:
-            from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             import asyncio
+
+            from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             strategy = RegimeAdaptiveStrategy()
             result = asyncio.run(strategy.analyze(pd.DataFrame()))
             self.assertIn("regime", result)
@@ -1091,9 +1095,7 @@ class TestMonteCarloSimulator(unittest.TestCase):
 
     def test_import(self):
         try:
-            from quant_nanggroe.engine.stress_testing.monte_carlo import (
-                MonteCarloSimulator, MonteCarloResult
-            )
+            from quant_nanggroe.engine.stress_testing.monte_carlo import MonteCarloResult, MonteCarloSimulator
             self.assertTrue(True)
         except ImportError as e:
             self.skipTest(str(e))
@@ -1169,7 +1171,9 @@ class TestHistoricalScenarioRunner(unittest.TestCase):
     def test_import(self):
         try:
             from quant_nanggroe.engine.stress_testing.historical_scenarios import (
-                HistoricalScenarioRunner, ScenarioDefinition, SCENARIO_LIBRARY
+                SCENARIO_LIBRARY,
+                HistoricalScenarioRunner,
+                ScenarioDefinition,
             )
             self.assertTrue(True)
         except ImportError as e:
@@ -1227,7 +1231,7 @@ class TestEWHSVARCalculator(unittest.TestCase):
 
     def test_import(self):
         try:
-            from quant_nanggroe.engine.stress_testing.ewhs import EWHSVARCalculator, EWHSResult
+            from quant_nanggroe.engine.stress_testing.ewhs import EWHSResult, EWHSVARCalculator
             self.assertTrue(True)
         except ImportError as e:
             self.skipTest(str(e))
@@ -1358,7 +1362,10 @@ class TestMatrixProfileDetector(unittest.TestCase):
     def test_import(self):
         try:
             from quant_nanggroe.engine.pattern_recorder.matrix_profile import (
-                MatrixProfileDetector, MatrixProfileResult, Motif, Discord
+                Discord,
+                MatrixProfileDetector,
+                MatrixProfileResult,
+                Motif,
             )
             self.assertTrue(True)
         except ImportError as e:
@@ -1406,9 +1413,6 @@ class TestMatrixProfileDetector(unittest.TestCase):
 
     def test_profile_result(self):
         try:
-            from quant_nanggroe.engine.pattern_recorder.matrix_profile import (
-                MatrixProfileDetector, Motif, Discord
-            )
             import numpy as np
             result = type("MatrixProfileResult", (), {
                 "matrix_profile": np.array([0.1, 0.2, 0.3]),
@@ -1498,7 +1502,11 @@ class TestEmbeddingSimilarity(unittest.TestCase):
 
     def test_import(self):
         try:
-            from quant_nanggroe.engine.pattern_recorder.embedding import EmbeddingSimilarity, EmbeddingResult, SimilarityMatch
+            from quant_nanggroe.engine.pattern_recorder.embedding import (
+                EmbeddingResult,
+                EmbeddingSimilarity,
+                SimilarityMatch,
+            )
             self.assertTrue(True)
         except ImportError as e:
             self.skipTest(str(e))
@@ -1535,8 +1543,8 @@ class TestEmbeddingSimilarity(unittest.TestCase):
 
     def test_embedding_result_dataclass(self):
         try:
-            from quant_nanggroe.engine.pattern_recorder.embedding import EmbeddingResult
             import numpy as np
+            from quant_nanggroe.engine.pattern_recorder.embedding import EmbeddingResult
             er = EmbeddingResult(embedding=np.array([0.1, 0.2]), window_start=0, window_end=10)
             self.assertEqual(len(er.embedding), 2)
         except Exception as e:
@@ -1568,7 +1576,8 @@ class TestRecurrencePlotAnalyzer(unittest.TestCase):
     def test_import(self):
         try:
             from quant_nanggroe.engine.pattern_recorder.recurrence_plot import (
-                RecurrencePlotAnalyzer, RecurrenceQuantification
+                RecurrencePlotAnalyzer,
+                RecurrenceQuantification,
             )
             self.assertTrue(True)
         except ImportError as e:
@@ -1624,7 +1633,11 @@ class TestAlmgrenChriss(unittest.TestCase):
     def test_import(self):
         try:
             from quant_nanggroe.engine.execution.almgren_chriss import (
-                AlmgrenChriss, ExecutionParams, TradeSchedule, ExecutionResult, ExecutionSimulator
+                AlmgrenChriss,
+                ExecutionParams,
+                ExecutionResult,
+                ExecutionSimulator,
+                TradeSchedule,
             )
             self.assertTrue(True)
         except ImportError as e:
@@ -1709,8 +1722,9 @@ class TestAlmgrenChriss(unittest.TestCase):
 
     def test_trade_schedule_properties(self):
         try:
-            from quant_nanggroe.engine.execution.almgren_chriss import TradeSchedule
             import numpy as np
+
+            from quant_nanggroe.engine.execution.almgren_chriss import TradeSchedule
             schedule = TradeSchedule(
                 periods=[0, 1, 2],
                 holdings=np.array([100, 50, 0]),
@@ -1726,8 +1740,9 @@ class TestAlmgrenChriss(unittest.TestCase):
 
     def test_execution_result(self):
         try:
-            from quant_nanggroe.engine.execution.almgren_chriss import ExecutionResult, TradeSchedule, ExecutionParams
             import numpy as np
+
+            from quant_nanggroe.engine.execution.almgren_chriss import ExecutionParams, ExecutionResult, TradeSchedule
             params = ExecutionParams(
                 total_shares=1000, shares_per_period=2000,
                 volatility=0.01, spread=0.001, alpha=0.0,
@@ -1758,10 +1773,13 @@ class TestExecutionSimulator(unittest.TestCase):
 
     def test_simulate(self):
         try:
-            from quant_nanggroe.engine.execution.almgren_chriss import (
-                ExecutionSimulator, TradeSchedule, ExecutionParams
-            )
             import numpy as np
+
+            from quant_nanggroe.engine.execution.almgren_chriss import (
+                ExecutionParams,
+                ExecutionSimulator,
+                TradeSchedule,
+            )
             sim = ExecutionSimulator({"seed": 42})
             schedule = TradeSchedule(
                 periods=list(range(10)),
@@ -1786,10 +1804,13 @@ class TestExecutionSimulator(unittest.TestCase):
 
     def test_simulate_var_ordering(self):
         try:
-            from quant_nanggroe.engine.execution.almgren_chriss import (
-                ExecutionSimulator, TradeSchedule, ExecutionParams
-            )
             import numpy as np
+
+            from quant_nanggroe.engine.execution.almgren_chriss import (
+                ExecutionParams,
+                ExecutionSimulator,
+                TradeSchedule,
+            )
             sim = ExecutionSimulator({"seed": 42})
             schedule = TradeSchedule(
                 periods=list(range(10)),
@@ -1904,7 +1925,9 @@ class TestDataFallbackChain(unittest.TestCase):
     def test_import(self):
         try:
             from quant_nanggroe.engine.data.fallback_chain import (
-                DataFallbackChain, CircuitBreaker, create_default_chain
+                CircuitBreaker,
+                DataFallbackChain,
+                create_default_chain,
             )
             self.assertTrue(True)
         except ImportError as e:
@@ -1970,7 +1993,7 @@ class TestDataFallbackChain(unittest.TestCase):
 
     def test_fallback_chain_stats(self):
         try:
-            from quant_nanggroe.engine.data.fallback_chain import DataFallbackChain, CircuitBreaker
+            from quant_nanggroe.engine.data.fallback_chain import DataFallbackChain
 
             class MockProvider:
                 def __init__(self, name):
@@ -2028,7 +2051,8 @@ class TestDataManager(unittest.TestCase):
     def test_cache_key(self):
         try:
             from quant_nanggroe.engine.data.data_manager import DataManager
-            from quant_nanggroe.engine.data.provider_interface import DataRequest, DataCategory
+
+            from quant_nanggroe.engine.data.provider_interface import DataCategory, DataRequest
             dm = DataManager({})
             request = DataRequest(category=DataCategory.EQUITY_OHLCV, symbol="AAPL", interval="1d")
             key = dm._cache_key(request)
@@ -2051,7 +2075,7 @@ class TestProviderInterface(unittest.TestCase):
 
     def test_data_request(self):
         try:
-            from quant_nanggroe.engine.data.provider_interface import DataRequest, DataCategory
+            from quant_nanggroe.engine.data.provider_interface import DataCategory, DataRequest
             req = DataRequest(category=DataCategory.EQUITY_OHLCV, symbol="AAPL")
             self.assertEqual(req.symbol, "AAPL")
             self.assertEqual(req.interval, "1d")
@@ -2069,8 +2093,9 @@ class TestProviderInterface(unittest.TestCase):
 
     def test_data_response_to_dataframe(self):
         try:
-            from quant_nanggroe.engine.data.provider_interface import DataResponse
             import pandas as pd
+
+            from quant_nanggroe.engine.data.provider_interface import DataResponse
             resp = DataResponse(results=[{"close": 150, "date": "2024-01-01"}], provider="yfinance")
             df = resp.to_dataframe()
             self.assertIsInstance(df, pd.DataFrame)
@@ -2091,7 +2116,7 @@ class TestBaseProvider(unittest.TestCase):
 
     def test_import(self):
         try:
-            from quant_nanggroe.engine.data.providers.base_provider import BaseProvider, DataType, DataRequest
+            from quant_nanggroe.engine.data.providers.base_provider import BaseProvider, DataRequest, DataType
             self.assertTrue(True)
         except ImportError as e:
             self.skipTest(str(e))

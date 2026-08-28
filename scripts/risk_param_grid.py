@@ -4,10 +4,14 @@ Grids kelly_fraction × sl_atr_mult × rr_target using real QNA engine modules.
 Simulates equity with Monte Carlo from documented strategy metrics.
 Output: best param combo maximizing Sharpe while keeping max_DD > -25%.
 """
-import sys, json, numpy as np
+import json
+import sys
+
+import numpy as np
+
 sys.path.insert(0, r"D:/repositories/Quant-Nanggroe-AI-worktree")
 
-from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyMethod, KellyParameters, KellyResult
+from quant_nanggroe.engine.risk.kelly import KellyCriterion, KellyParameters
 
 # ── Documented strategy metrics (real backtest evidence) ──
 STRATEGIES = {
@@ -148,7 +152,7 @@ if __name__ == "__main__":
         print(f"\nBEST: kelly={best['kelly_frac']}, sl_atr={best['sl_atr_mult']}, rr={best['rr_target']}")
         print(f"  avg_sharpe={best['avg_sharpe']}, worst_dd={best['worst_dd']}")
 
-        print(f"\nCURRENT: kelly=0.25, sl_atr=1.5, rr=2.0")
+        print("\nCURRENT: kelly=0.25, sl_atr=1.5, rr=2.0")
         current = [r for r in all_results if r["kelly_frac"]==0.25 and r["sl_atr_mult"]==1.5 and r["rr_target"]==2.0]
         if current:
             c = current[0]

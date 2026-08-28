@@ -17,11 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import numpy as np
 import pandas as pd
 
+from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 from quant_nanggroe.engine.risk.strategy_auto_disable import (
     AutoDisableManager,
     StrategyPerformance,
 )
-from quant_nanggroe.engine.risk.kill_switch import KillSwitch
 
 
 class TestAutoDisableManagerPaperMode(unittest.TestCase):

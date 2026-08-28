@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from quant_nanggroe.skills.registry import SkillCategory, SkillDef, SkillRegistry
+from quant_nanggroe.skills.swarm_presets import SWARM_PRESETS, SwarmPreset, get_preset, list_presets
 from quant_nanggroe.skills.technical_skills import register_technical_skills
-from quant_nanggroe.skills.swarm_presets import SwarmPreset, get_preset, list_presets, SWARM_PRESETS
 
 
 class TestSkillCategory(unittest.TestCase):

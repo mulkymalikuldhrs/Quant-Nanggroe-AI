@@ -7,24 +7,24 @@ Run: python3 -m unittest tests/test_kill_switch.py -v
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
-import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from quant_nanggroe.engine.risk.kill_switch import (
+    EARLY_WARNING_THRESHOLD,
+    RESET_CONFIRMATION,
     KillSwitch,
-    KillSwitchLevel,
-    KillSwitchTrigger,
-    KillSwitchStatus,
     KillSwitchConfig,
     KillSwitchEvent,
-    RESET_CONFIRMATION,
-    EARLY_WARNING_THRESHOLD,
+    KillSwitchLevel,
+    KillSwitchStatus,
+    KillSwitchTrigger,
 )
 
 
