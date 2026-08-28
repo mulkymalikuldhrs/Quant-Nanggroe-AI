@@ -1,13 +1,12 @@
 # QNA WAR PLAN — Phase 5: Parallel Profile Orchestration
 
-## Status (2026-08-28 coordinator run)
-- **Active Profiles:** 7/7 cron jobs present & healthy (last runs ok):
+## Status (2026-08-28 09:20 coordinator run)
+- **Active Profiles:** 7/7 cron jobs HEALTHY (status=ok, failure_streak=0, last run <1h ago):
   - `profile-autobot-orch` ✓ · `profile-devbot-qna` ✓ · `profile-clawbot-qna` ✓ · `profile-hackerbot-audit` ✓ · `profile-fangbot-opt` ✓ · `profile-traderbot-quant` ✓ · `profile-researchbot` ✓
-- **Version:** `quant_nanggroe/__init__.py` + `pyproject.toml` = `5.1.0` (no drift)
-- **Sync:** codeberg + gitlab + github → `e15ea788` (2026-08-28 coordinator push)
-- **Version:** code = v8.0.18 (pyproject.toml + quant_nanggroe/__init__.py). WAR_PLAN lock = 8.0.18. **NO DRIFT**.
-- **Worktree:** D:/repositories/Quant-Nanggroe-AI-worktree (branch master). 4 modified files uncommitted.
-- **Git sync:** Codeberg/GitHub/GitLab/GH_DhaherLabs `master` = local `fe86f759` (clean remote sync).
+- **Version:** `quant_nanggroe/__init__.py` + `pyproject.toml` = `5.1.0` (verified this run — no drift)
+- **Sync:** codeberg + gitlab + github → `b5301c30` (2026-08-28 coordinator push; committed lessons.json + risk_param_grid.py + account_ledger.json)
+- **Worktree:** D:/repositories/Quant-Nanggroe-AI-worktree (branch master) — clean after push.
+- **Note:** Stale duplicate cron entries exist per name (older error rows from 2025-07/08) but all ACTIVE entries healthy. Per protocol: do NOT auto-fix model/provider.
 
 ## Profile Cron Health (RTK 2026-08-28 06:45)
 | Profile | Schedule | Status | Runs | Failure Streak | Last Error |
