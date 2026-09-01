@@ -848,3 +848,7 @@ After all tasks complete:
 2. **Dashboard**: All pages load without mock data, API calls go to correct endpoints
 3. **Security**: No live keys in any committed file
 4. **Import chain**: `python3 -c "from quant_nanggroe.live_engine import LiveEngine"` succeeds
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

@@ -111,3 +111,7 @@
 | World Bank | Free | Global macro indicators | Good for emerging markets |
 | OECD | Free | Economic outlook, indicators | Good for developed markets |
 | SEC EDGAR | Free | Company filings (10-K, 10-Q) | Already has provider in QNA |
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

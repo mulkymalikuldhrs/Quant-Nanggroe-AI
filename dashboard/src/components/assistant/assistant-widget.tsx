@@ -101,11 +101,24 @@ export function AssistantWidget() {
     setInput("");
     setMessages(prev => [...prev, { role: "user", text, ts: Date.now() }]);
     setLoading(true);
+    const history = messages
+      .filter(m => m.role === "user" || m.role === "assistant")
+      .map(m => ({ role: m.role, content: m.text }));
+    const post = (path: string, body: unknown) =>
+      apiRequest<{ reply: string }>(path, { method: "POST", body: JSON.stringify(body) });
     try {
-      const res = await apiRequest<{ reply: string }>("/api/assistant/chat", {
-        method: "POST",
-        body: JSON.stringify({ message: text }),
-      });
+      // Upgrade to LLM when a model backend is configured; fall back to rules.
+      let res: { reply: string };
+      try {
+        res = await post("/api/assistant/chat_llm", { message: text, history });
+      } catch (llmErr) {
+        const status = (llmErr as { status?: number })?.status;
+        if (status === 501) {
+          res = await post("/api/assistant/chat", { message: text });
+        } else {
+          throw llmErr;
+        }
+      }
       setMessages(prev => [...prev, { role: "assistant", text: res.reply ?? "No response", ts: Date.now() }]);
     } catch (e) {
       setMessages(prev => [...prev, {
@@ -116,7 +129,7 @@ export function AssistantWidget() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading]);
+  }, [input, loading, messages]);
 
   // ── Auto-scroll chat ──
   const chatEndRef = useRef<HTMLDivElement>(null);

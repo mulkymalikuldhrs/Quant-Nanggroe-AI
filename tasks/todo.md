@@ -616,3 +616,7 @@ These modules have no active consumers but are structurally wired for future use
 
 
 ### Need full audit to find more shit, gaps, anomaly, wiring, wire anything from /archive to pipeline, wire ui, loads all skills, orchestrating 7 profiles.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

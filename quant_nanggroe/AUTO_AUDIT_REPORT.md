@@ -15,3 +15,7 @@
 3. Enforce file:line verification in council findings — grep first.
 4. Harden cron-doctor prompt to "DO NOT modify any cron job settings".
 5. Activate fail-closed guardrails — ensure all risk limits VETO execution.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

@@ -26,6 +26,11 @@ class ChatMessage(BaseModel):
     message: str
 
 
+class ChatLLMMessage(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
+
+
 class ChatResponse(BaseModel):
     reply: str
     data: Optional[Any] = None
@@ -223,5 +228,72 @@ async def chat(body: ChatMessage) -> Dict[str, Any]:
         f"I didn't understand \"{body.message}\".\n\n{help_result['reply']}"
     )
     return help_result
+
+
+# ── LLM-backed chat (upgrades the rule bot when a model is available) ──
+# REAL-ONLY: uses NIMProvider, which raises (no mock) when no backend is
+# configured. The frontend falls back to /chat (rule-based) on 501.
+
+_SYSTEM_PROMPT = (
+    "You are QNA, the trading copilot for an autonomous quantitative hedge "
+    "fund (Quant-Nanggroe-AI) trading FX/commodities on MT5. Answer concisely "
+    "and professionally. Use ONLY the live context provided. If the context "
+    "lacks an answer, say so — do not invent numbers. Format with short lines."
+)
+
+
+def _gather_context() -> str:
+    """Snapshot of real system state to ground the LLM (no fabrication)."""
+    parts: List[str] = []
+    try:
+        parts.append(_handle_status().get("reply", ""))
+    except Exception:
+        pass
+    try:
+        parts.append(_handle_positions().get("reply", ""))
+    except Exception:
+        pass
+    try:
+        sc = _handle_scorecard().get("reply", "")
+        parts.append(sc[:1200])
+    except Exception:
+        pass
+    return "\n\n".join(p for p in parts if p)
+
+
+@router.post("/chat_llm")
+async def chat_llm(body: ChatLLMMessage) -> Dict[str, Any]:
+    """LLM-powered assistant. Returns 501 when no model backend is configured.
+
+    Falls back to the rule-based /chat handler on the frontend.
+    """
+    from quant_nanggroe.engine.nim_provider import NIMProvider
+
+    try:
+        provider = NIMProvider()
+        context = _gather_context()
+        history_block = ""
+        for h in body.history[-8:]:
+            role = h.get("role", "user")
+            text = h.get("content", "")
+            if text:
+                history_block += f"{role}: {text}\n"
+        user_prompt = (
+            f"LIVE CONTEXT:\n{context}\n\n"
+            f"CONVERSATION:\n{history_block}user: {body.message}\n\n"
+            "Reply as QNA using the live context above."
+        )
+        response = await provider.chat(user_prompt, system=_SYSTEM_PROMPT, task="analysis")
+        return {
+            "reply": response.content or "(empty response)",
+            "intent": "llm",
+            "source": response.source,
+        }
+    except Exception as exc:
+        # No model backend (REAL-ONLY) — signal the client to use rule fallback.
+        raise HTTPException(
+            status_code=501,
+            detail=f"LLM backend unavailable: {exc}. Use rule-based /chat.",
+        )
 
 

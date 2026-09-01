@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
-import { marketApi } from "@/lib/api-client";
+import { marketApi, brokersApi } from "@/lib/api-client";
 import { useAppStore } from "@/lib/store";
 import { useRealtimeData } from "@/lib/websocket";
-import type { MarketSentiment, CandleStick } from "@/lib/api-client";
+import type { MarketSentiment, CandleStick, BrokerPosition } from "@/lib/api-client";
 import { formatCurrency, cn } from "@/lib/utils";
 import {
   BarChart3,
@@ -44,6 +44,12 @@ function MarketContent() {
   const [candlesError, setCandlesError] = useState<string | null>(null);
   const [scannerError, setScannerError] = useState<string | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ReturnType<typeof import("lightweight-charts").createChart> | null>(null);
+  const seriesRef = useRef<ReturnType<ReturnType<typeof import("lightweight-charts").createChart>["addSeries"]> | null>(null);
+  const [activePos, setActivePos] = useState<(BrokerPosition & { brokerName: string }) | null>(null);
+  const [dragSL, setDragSL] = useState<number | null>(null);
+  const [dragTP, setDragTP] = useState<number | null>(null);
+  const [modifyMsg, setModifyMsg] = useState<string | null>(null);
 
   useEffect(() => {
     marketApi.getSentiment()
@@ -66,6 +72,32 @@ function MarketContent() {
         setScannerError(null);
       })
       .catch(() => { setScanner([]); setScannerError("Failed to load scanner signals — live data unavailable."); });
+  }, [selectedSymbol]);
+
+  // Fetch open position for selectedSymbol (for drag SL/TP on chart)
+  useEffect(() => {
+    let cancelled = false;
+    const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const target = norm(selectedSymbol);
+    (async () => {
+      try {
+        const list = await brokersApi.list();
+        for (const b of list.accounts || []) {
+          try {
+            const res = await brokersApi.positions(b.name);
+            const found = (res.positions || []).find((p) => norm(p.symbol).includes(target) || target.includes(norm(p.symbol)));
+            if (found && !cancelled) {
+              setActivePos({ ...found, brokerName: b.name } as BrokerPosition & { brokerName: string });
+              setDragSL(found.stop_loss ?? null);
+              setDragTP(found.take_profit ?? null);
+              return;
+            }
+          } catch { /* per-broker offline -> skip */ }
+        }
+        if (!cancelled) { setActivePos(null); setDragSL(null); setDragTP(null); }
+      } catch { if (!cancelled) setActivePos(null); }
+    })();
+    return () => { cancelled = true; };
   }, [selectedSymbol]);
 
   const symbols = [
@@ -113,16 +145,33 @@ function MarketContent() {
         timeScale: { borderColor: "rgba(255,255,255,0.08)" },
         rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
       });
+      chartRef.current = chart;
       const series = chart.addSeries(CandlestickSeries, {
         upColor: "#10b981", downColor: "#ef4444",
         borderUpColor: "#10b981", borderDownColor: "#ef4444",
         wickUpColor: "#10b981", wickDownColor: "#ef4444",
       });
+      seriesRef.current = series as unknown as ReturnType<ReturnType<typeof import("lightweight-charts").createChart>["addSeries"]>;
       series.setData(candles.map((c) => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close })));
       chart.timeScale().fitContent();
     });
-    return () => { chart?.remove(); };
+    return () => { chart?.remove(); chartRef.current = null; seriesRef.current = null; };
   }, [chartType, candles]);
+
+  const handleDragEnd = async (kind: "sl" | "tp", price: number) => {
+    if (!activePos || activePos.ticket == null) return;
+    try {
+      const sl = kind === "sl" ? price : (dragSL ?? activePos.stop_loss ?? null);
+      const tp = kind === "tp" ? price : (dragTP ?? activePos.take_profit ?? null);
+      await brokersApi.modifyPosition(activePos.brokerName, activePos.ticket, sl, tp);
+      setModifyMsg(`✓ ${kind.toUpperCase()} → ${price.toFixed(5)}`);
+      setActivePos((p) => p ? ({ ...p, stop_loss: sl, take_profit: tp } as typeof p) : p);
+      if (kind === "sl") setDragSL(price); else setDragTP(price);
+    } catch (e) {
+      setModifyMsg(`✗ ${e instanceof Error ? e.message : "modify failed"}`);
+    }
+    setTimeout(() => setModifyMsg(null), 3000);
+  };
 
   const fearGreed = sentiment?.fear_greed ?? null;
 
@@ -230,7 +279,7 @@ function MarketContent() {
             {!candlesError && chartData.length === 0 && (
               <p className="text-sm text-white/30 py-8 text-center">No candle data — waiting for live feed.</p>
             )}
-            <div ref={chartContainerRef} className="h-80">
+            <div ref={chartContainerRef} className="h-80 relative select-none">
               {chartType === "area" && chartData.length > 0 && (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData}>
@@ -252,6 +301,71 @@ function MarketContent() {
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
+              {chartType === "candle" && activePos && seriesRef.current && (() => {
+                const series: unknown = seriesRef.current as unknown;
+                const toY = (p: number | null | undefined) => {
+                  if (p == null || !series) return null;
+                  try { const y = (series as { priceToCoordinate?: (v: number) => number | null }).priceToCoordinate?.(p) ?? null; return typeof y === "number" ? y : null; } catch { return null; }
+                };
+                const toPrice = (y: number) => {
+                  try { const pr = (series as { coordinateToPrice?: (v: number) => number | null }).coordinateToPrice?.(y) ?? null; return typeof pr === "number" ? pr : null; } catch { return null; }
+                };
+                const startDrag = (e: React.MouseEvent, kind: "sl" | "tp") => {
+                  e.preventDefault();
+                  const startY = e.clientY;
+                  const startPrice = kind === "sl" ? (dragSL ?? activePos.stop_loss ?? 0) : (dragTP ?? activePos.take_profit ?? 0);
+                  const startCoord = toY(startPrice);
+                  if (startCoord == null) return;
+                  const onMove = (ev: MouseEvent) => {
+                    const newY = startCoord + (ev.clientY - startY);
+                    const pr = toPrice(newY);
+                    if (pr != null) { if (kind === "sl") setDragSL(pr); else setDragTP(pr); }
+                  };
+                  const onUp = (ev: MouseEvent) => {
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                    const newY = startCoord + (ev.clientY - startY);
+                    const pr = toPrice(newY);
+                    if (pr != null) handleDragEnd(kind, pr);
+                  };
+                  window.addEventListener("mousemove", onMove);
+                  window.addEventListener("mouseup", onUp);
+                };
+                const entryY = toY(activePos.entry_price);
+                const slVal = dragSL ?? activePos.stop_loss;
+                const tpVal = dragTP ?? activePos.take_profit;
+                const slY = toY(slVal ?? null);
+                const tpY = toY(tpVal ?? null);
+                return (
+                  <>
+                    {entryY != null && (
+                      <div className="absolute left-0 right-0 h-px bg-blue-400/60 pointer-events-none" style={{ top: entryY }}>
+                        <span className="absolute -top-3 right-1 text-[9px] font-mono bg-blue-500 text-white px-1.5 py-0.5 rounded">ENTRY {activePos.entry_price.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {slY != null && slVal != null && (
+                      <div className="absolute left-0 right-0 h-px bg-red-500 cursor-ns-resize group" style={{ top: slY }}
+                        onMouseDown={(e) => startDrag(e, "sl")}>
+                        <div className="absolute inset-0 -top-2 -bottom-2" />
+                        <span className="absolute -top-3 right-1 text-[9px] font-mono bg-red-500 text-white px-1.5 py-0.5 rounded flex items-center gap-1">SL {slVal.toFixed(2)} <span className="hidden group-hover:inline">↕ drag</span></span>
+                      </div>
+                    )}
+                    {tpY != null && tpVal != null && (
+                      <div className="absolute left-0 right-0 h-px bg-emerald-500 cursor-ns-resize group" style={{ top: tpY }}
+                        onMouseDown={(e) => startDrag(e, "tp")}>
+                        <div className="absolute inset-0 -top-2 -bottom-2" />
+                        <span className="absolute -top-3 right-1 text-[9px] font-mono bg-emerald-500 text-white px-1.5 py-0.5 rounded flex items-center gap-1">TP {tpVal.toFixed(2)} <span className="hidden group-hover:inline">↕ drag</span></span>
+                      </div>
+                    )}
+                    {modifyMsg && (
+                      <div className="absolute top-2 left-2 text-[11px] font-mono bg-black/70 border border-white/10 rounded px-2 py-1 text-white/80">{modifyMsg}</div>
+                    )}
+                    {activePos.ticket != null && (
+                      <div className="absolute bottom-1 left-1 text-[9px] font-mono text-white/30 bg-black/50 px-1.5 py-0.5 rounded">#{activePos.ticket} {activePos.symbol} {activePos.side.toUpperCase()} — drag SL/TP to modify</div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </ChartCard>
         </TabsContent>

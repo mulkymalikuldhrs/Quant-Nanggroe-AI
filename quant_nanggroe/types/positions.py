@@ -45,6 +45,7 @@ class Position(BaseModel):
     max_price: float = 0.0
     min_price: float = Field(default=float("inf"))
     broker_id: Optional[str] = None
+    ticket: Optional[int] = None
     strategy_name: Optional[str] = None
     agent_name: Optional[str] = None
     metadata: Dict = Field(default_factory=dict)

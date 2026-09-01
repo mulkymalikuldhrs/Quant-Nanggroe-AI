@@ -162,6 +162,58 @@ async def place_order(name: str, payload: Dict[str, Any], request: Request):
         raise HTTPException(status_code=502, detail=f"MT5 order failed: {exc}")
 
 
+@router.post("/{name}/modify")
+async def modify_position(name: str, payload: Dict[str, Any], request: Request):
+    """Modify a live position's SL/TP (drag-to-adjust from the UI).
+
+    Body: {"ticket": int, "stop_loss": float|null, "take_profit": float|null}
+    """
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(request.state, "user_role") and request.state.user_role not in (UserRole.ADMIN, UserRole.TRADER):
+        raise HTTPException(status_code=403, detail="Trader+ role required to modify positions")
+    em = _get_em(request)
+    if name not in em._registrations:
+        raise HTTPException(status_code=404, detail=f"Account '{name}' not registered")
+    try:
+        ticket = int(payload["ticket"])
+        sl = payload.get("stop_loss")
+        tp = payload.get("take_profit")
+        result = await em._registrations[name].exchange.modify_position(
+            ticket,
+            stop_loss=float(sl) if sl is not None else None,
+            take_profit=float(tp) if tp is not None else None,
+        )
+        if not result.get("success", False):
+            raise HTTPException(status_code=502, detail=result.get("error", "modify failed"))
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=f"Missing field: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"MT5 modify failed: {exc}")
+
+
+@router.post("/{name}/close/{ticket}")
+async def close_position(name: str, ticket: int, payload: Optional[Dict[str, Any]] = None,
+                         request: Request = None):
+    """Close a live position by ticket (full close, or partial via body.volume)."""
+    from quant_nanggroe.security.auth import UserRole
+    if hasattr(request.state, "user_role") and request.state.user_role not in (UserRole.ADMIN, UserRole.TRADER):
+        raise HTTPException(status_code=403, detail="Trader+ role required to close positions")
+    em = _get_em(request)
+    if name not in em._registrations:
+        raise HTTPException(status_code=404, detail=f"Account '{name}' not registered")
+    try:
+        volume = (payload or {}).get("volume")
+        result = await em._registrations[name].exchange.close_position(
+            ticket, volume=float(volume) if volume is not None else None,
+        )
+        if not result.get("success", False):
+            raise HTTPException(status_code=502, detail=result.get("error", "close failed"))
+        return result
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"MT5 close failed: {exc}")
+
+
 # ---------------------------------------------------------------------------
 # Register MT5 account (Exness / Valutrades / etc)
 # ---------------------------------------------------------------------------

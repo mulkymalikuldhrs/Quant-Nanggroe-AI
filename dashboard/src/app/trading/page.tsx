@@ -22,7 +22,7 @@ import {
   ArrowLeftRight, Send, RefreshCw, Wallet, TrendingUp, Activity,
   Plug, Unplug, Settings, BarChart3, Globe, X, Trash2, GripVertical,
   BookOpen, ListOrdered, Star, Clock, ChevronDown, ChevronRight,
-  Keyboard, Percent, DollarSign,
+  Keyboard, Percent, DollarSign, SlidersHorizontal,
 } from "lucide-react";
 
 const WATCHLIST_DEFAULT = ["BTC/USDT", "ETH/USDT", "XAU/USD", "NVDA", "AAPL"];
@@ -48,7 +48,7 @@ interface PositionUI {
   quantity: number; entryPrice: number; currentPrice: number;
   pnl: number; pnlPercent: number; stopLoss: number; takeProfit: number;
   broker: string; account: string; timestamp: string;
-  trailingStop: boolean;
+  trailingStop: boolean; ticket?: number | null;
 }
 
 interface OrderBookLevel {
@@ -92,6 +92,9 @@ function TradingDashboardContent() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [closePosId, setClosePosId] = useState<string | null>(null);
   const [closePercent, setClosePercent] = useState("100");
+  const [modifyPosId, setModifyPosId] = useState<string | null>(null);
+  const [newSL, setNewSL] = useState("");
+  const [newTP, setNewTP] = useState("");
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [orderBookOpen, setOrderBookOpen] = useState(true);
   const [watchlist, setWatchlist] = useState<string[]>(() => {
@@ -142,8 +145,11 @@ function TradingDashboardContent() {
                 pnlPercent: p.entry_price > 0
                   ? ((p.current_price - p.entry_price) / p.entry_price) * 100 * (p.side === "short" ? -1 : 1)
                   : 0,
-                stopLoss: 0, takeProfit: 0, broker: brokerName, account: brokerName,
+                stopLoss: (p as { stop_loss?: number | null }).stop_loss ?? 0,
+                takeProfit: (p as { take_profit?: number | null }).take_profit ?? 0,
+                broker: brokerName, account: brokerName,
                 timestamp: new Date().toISOString(), trailingStop: false,
+                ticket: (p as { ticket?: number | null }).ticket ?? null,
               });
             }
           }
@@ -239,14 +245,40 @@ function TradingDashboardContent() {
   const closePosition = async (pos: PositionUI, pct: number) => {
     if (!activeAcct) return;
     try {
-      await brokersApi.placeOrder(activeAcct.name, {
-        symbol: pos.symbol, side: pos.side === "long" ? "sell" : "buy",
-        type: "market", quantity: pos.quantity * (pct / 100),
-      });
+      if (pos.ticket == null) {
+        throw new Error("No ticket for position — cannot close via broker");
+      }
+      const volume = pct < 100 ? pos.quantity * (pct / 100) : undefined;
+      await brokersApi.closePosition(activeAcct.name, pos.ticket, volume);
       setOrderMsg(`✓ Closed ${pct}% of ${pos.symbol}`);
       setClosePosId(null);
     } catch (e) {
       setOrderMsg(`✗ Close failed: ${e instanceof Error ? e.message : "error"}`);
+    }
+    setTimeout(() => setOrderMsg(""), 5000);
+  };
+
+  const openModify = (pos: PositionUI) => {
+    setModifyPosId(pos.id);
+    setNewSL(pos.stopLoss ? String(pos.stopLoss) : "");
+    setNewTP(pos.takeProfit ? String(pos.takeProfit) : "");
+  };
+
+  const modifySLTP = async (pos: PositionUI) => {
+    if (!activeAcct) return;
+    try {
+      if (pos.ticket == null) {
+        throw new Error("No ticket for position — cannot modify via broker");
+      }
+      const sl = newSL.trim() === "" ? null : parseFloat(newSL);
+      const tp = newTP.trim() === "" ? null : parseFloat(newTP);
+      if (sl !== null && (isNaN(sl) || sl <= 0)) throw new Error("Invalid SL");
+      if (tp !== null && (isNaN(tp) || tp <= 0)) throw new Error("Invalid TP");
+      await brokersApi.modifyPosition(activeAcct.name, pos.ticket, sl, tp);
+      setOrderMsg(`✓ SL/TP updated for ${pos.symbol}`);
+      setModifyPosId(null);
+    } catch (e) {
+      setOrderMsg(`✗ Modify failed: ${e instanceof Error ? e.message : "error"}`);
     }
     setTimeout(() => setOrderMsg(""), 5000);
   };
@@ -300,6 +332,12 @@ function TradingDashboardContent() {
     ), width: "55px" },
     { key: "actions", label: "", render: (r: PositionUI) => (
       <div className="flex items-center gap-1">
+        <Tooltip content="Modify SL/TP">
+          <button onClick={() => openModify(r)}
+            className="p-1 rounded hover:bg-cyan-500/10 text-white/30 hover:text-cyan-400 transition-colors">
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+          </button>
+        </Tooltip>
         <Tooltip content="Close position">
           <button onClick={() => { setClosePosId(r.id); setClosePercent("100"); }}
             className="p-1 rounded hover:bg-loss/10 text-white/30 hover:text-loss transition-colors">
@@ -642,6 +680,32 @@ function TradingDashboardContent() {
                     <Button variant="ghost" className="flex-1" onClick={() => setClosePosId(null)}>Cancel</Button>
                     <Button variant="danger" className="flex-1" onClick={() => closePosition(pos, parseFloat(closePercent) || 100)}>
                       Close {closePercent}%
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </Dialog>
+
+          {/* Modify SL/TP Dialog — real broker modify via brokersApi.modifyPosition */}
+          <Dialog open={!!modifyPosId} onClose={() => setModifyPosId(null)} title="Modify SL / TP">
+            {(() => {
+              const pos = positions.find(p => p.id === modifyPosId);
+              if (!pos) return null;
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-white/60">
+                    <span>{pos.symbol} ({pos.side.toUpperCase()})</span>
+                    <span className="font-mono">{formatCurrency(pos.entryPrice)} entry</span>
+                  </div>
+                  <Input label="Stop Loss (price)" type="number" step="0.00001" value={newSL}
+                    onChange={e => setNewSL(e.target.value)} placeholder="leave empty to keep" />
+                  <Input label="Take Profit (price)" type="number" step="0.00001" value={newTP}
+                    onChange={e => setNewTP(e.target.value)} placeholder="leave empty to keep" />
+                  <div className="flex gap-2 pt-2">
+                    <Button variant="ghost" className="flex-1" onClick={() => setModifyPosId(null)}>Cancel</Button>
+                    <Button variant="primary" className="flex-1" onClick={() => modifySLTP(pos)}>
+                      Save SL/TP
                     </Button>
                   </div>
                 </div>

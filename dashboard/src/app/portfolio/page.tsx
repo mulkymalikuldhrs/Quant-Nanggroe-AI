@@ -270,11 +270,11 @@ function PortfolioDashboardContent() {
               <div className="space-y-3">
                 <Select label="Symbol" value="BTC/USDT" onChange={() => {}}
                   options={positions.map(p => ({ value: p.symbol, label: p.symbol }))} />
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">Account Risk</p><p className="text-sm font-mono text-white">1.0%</p></div>
-                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">ATR (14)</p><p className="text-sm font-mono text-white">$2,450</p></div>
-                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">Stop Distance</p><p className="text-sm font-mono text-white">2x ATR</p></div>
-                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">Position Size</p><p className="text-sm font-mono text-profit font-bold">0.42 BTC</p></div>
+                  <div className="grid grid-cols-2 gap-2">
+                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">Account Risk</p><p className="text-sm font-mono text-white">0.5%</p></div>
+                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">ATR (14)</p><p className="text-sm font-mono text-white/40">--</p></div>
+                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">Stop Distance</p><p className="text-sm font-mono text-white/40">--</p></div>
+                  <div className="bbg-cell"><p className="text-[9px] text-white/30 mb-0.5">Position Size</p><p className="text-sm font-mono text-white/40">--</p></div>
                 </div>
                 <Button variant="primary" className="w-full" size="sm">
                   <Calculator className="w-3.5 h-3.5 mr-1.5" />

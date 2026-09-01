@@ -10,6 +10,9 @@ Endpoints (mounted under /api/export):
 Honest capability matrix:
     csv/json/md/xlsx always available (stdlib/openpyxl/pandas)
     pdf requires `reportlab` -> 501 with install hint when missing
+    docx requires `python-docx` -> 501 with install hint when missing
+    date_from/date_to accept date ("2026-08-01") OR full datetime
+    ("2026-08-01T14:30:00") — compared on the raw ISO close_time string.
 """
 from __future__ import annotations
 
@@ -48,17 +51,21 @@ def _db_path() -> Path:
 
 
 def _query_trades(date_from: Optional[str], date_to: Optional[str],
-                  strategy: Optional[str], symbol: Optional[str]) -> List[dict]:
+                  strategy: Optional[str], symbol: Optional[str],
+                  limit: Optional[int] = None) -> List[dict]:
     con = sqlite3.connect(str(_db_path()))
     con.row_factory = sqlite3.Row
     try:
+        # Compare the raw (ISO-8601) close_time text so both date-only
+        # ("2026-08-01") and full datetime ("2026-08-01T14:30:00") filters work
+        # lexicographically — `date(close_time)` would strip the time component.
         sql = "SELECT * FROM trades WHERE 1=1"
         params: list = []
         if date_from:
-            sql += " AND date(close_time) >= date(?)"
+            sql += " AND close_time >= ?"
             params.append(date_from)
         if date_to:
-            sql += " AND date(close_time) <= date(?)"
+            sql += " AND close_time <= ?"
             params.append(date_to)
         if strategy:
             sql += " AND strategy = ?"
@@ -67,6 +74,9 @@ def _query_trades(date_from: Optional[str], date_to: Optional[str],
             sql += " AND symbol LIKE ?"
             params.append(f"%{symbol}%")
         sql += " ORDER BY close_time DESC"
+        if limit:
+            sql += " LIMIT ?"
+            params.append(int(limit))
         return [dict(r) for r in con.execute(sql, params)]
     finally:
         con.close()
@@ -81,14 +91,43 @@ def _to_csv(rows: List[dict]) -> bytes:
 
 
 def _to_md(rows: List[dict]) -> bytes:
-    cols = ["ticket", "strategy", "symbol", "side", "entry", "exit_price",
-            "pnl", "outcome", "close_reason", "close_time"]
+    cols = TRADE_COLUMNS
     lines = ["# QNA Trade History", "",
              "| " + " | ".join(cols) + " |",
              "|" + "---|" * len(cols)]
     for r in rows:
         lines.append("| " + " | ".join(str(r.get(c, "")) for c in cols) + " |")
     return "\n".join(lines).encode("utf-8")
+
+
+def _to_docx(rows: List[dict]) -> bytes:
+    try:
+        from docx import Document
+        from docx.shared import Pt
+    except ImportError as e:
+        raise HTTPException(
+            501, "docx needs python-docx: pip install python-docx") from e
+    doc = Document()
+    doc.add_heading("QNA Trade History", level=1)
+    table = doc.add_table(rows=1, cols=len(TRADE_COLUMNS))
+    table.style = "Light Grid Accent 1"
+    hdr = table.rows[0].cells
+    for i, c in enumerate(TRADE_COLUMNS):
+        hdr[i].text = str(c)
+        for p in hdr[i].paragraphs:
+            for run in p.runs:
+                run.font.size = Pt(7)
+                run.bold = True
+    for r in rows:
+        cells = table.add_row().cells
+        for i, c in enumerate(TRADE_COLUMNS):
+            cells[i].text = str(r.get(c, ""))[:60]
+            for p in cells[i].paragraphs:
+                for run in p.runs:
+                    run.font.size = Pt(7)
+    bio = io.BytesIO()
+    doc.save(bio)
+    return bio.getvalue()
 
 
 def _to_xlsx(rows: List[dict]) -> bytes:
@@ -151,8 +190,9 @@ async def export_trades(
     date_to: Optional[str] = None,
     strategy: Optional[str] = None,
     symbol: Optional[str] = None,
+    limit: Optional[int] = None,
 ) -> Response:
-    rows = _query_trades(date_from, date_to, strategy, symbol)
+    rows = _query_trades(date_from, date_to, strategy, symbol, limit)
     fmt = format.lower()
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     if fmt == "json":
@@ -177,8 +217,15 @@ async def export_trades(
         return Response(content=content, media_type="application/pdf",
                         headers={"Content-Disposition":
                                  f'attachment; filename="qna_trades_{stamp}.pdf"'})
+    if fmt == "docx":
+        content = _to_docx(rows)  # raises 501 when python-docx missing
+        return Response(content=content,
+                        media_type=("application/vnd.openxmlformats-officedocument"
+                                    ".wordprocessingml.document"),
+                        headers={"Content-Disposition":
+                                 f'attachment; filename="qna_trades_{stamp}.docx"'})
     raise HTTPException(400, f"unknown format '{format}' "
-                             "(csv|xlsx|md|json|pdf)")
+                             "(csv|xlsx|md|json|pdf|docx)")
 
 
 class SummaryRow(BaseModel):

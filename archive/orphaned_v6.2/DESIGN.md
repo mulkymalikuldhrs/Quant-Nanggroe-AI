@@ -127,3 +127,7 @@ The palette is **Deep Charcoal + Tactical Gold** — warm luxury meets cold data
 - No circular spinners — skeletal loaders matching layout dimensions
 - No broken image links — use inline SVG for any icons
 - No linear easing — spring physics (stiffness: 100, damping: 20) for all interactive animations
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

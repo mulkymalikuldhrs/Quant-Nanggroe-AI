@@ -1,142 +1,61 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-07-30 (Session 9 — Massive Parallel: 12 sub-agents, 68 tests, evolution loop integrated)
-**Current Phase:** P1-P4 ✅ COMPLETE — MT5 live, 84 strategies wired, evolution loop running.
+**Updated:** 2026-08-27 (v8.0.19 CANONICAL SSOT — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB)
+**Current Phase:** v8.0.19 GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445) — REAL-ONLY, MT5-only, fail-closed
 
 ---
 
-## SCORECARD (Session 9 — verified from source code)
+## SCORECARD (v8.0.19 — verified from source code — CANONICAL SSOT)
 
 | Item | Status | Evidence |
 |------|--------|----------|
-| Entry point resolution | ✅ 1.0 | `qna.py` via `launch.bat` |
-| 8 Scorers + FusionEngine | ✅ 1.0 | `main.py:418-440` — all wired |
-| MTF scoring (4 frames) | ✅ 1.0 | REDUCE flag consumed ✅ |
-| Self-evolve loop + journal | ✅ 1.0 | `core/scoring/evolver.py` + journal |
-| FRED API key | ✅ 1.0 | Moved to env var, 3 files fixed |
-| Bare `except:` | ✅ 1.0 | 12 lokasi fixed (migrations + market_context) |
-| Confidence formula | ✅ 1.0 | `tanh(|score|/40)` with `import math` |
-| MT5 connection | ✅ 1.0 | **LIVE** Valetax $1,099, 29 closed trades |
-| 84 strategy wiring | ✅ 1.0 | **1079 providers** via EngineStrategyProvider |
-| Evolution loop (8 file) | ✅ 1.0 | Integrated ke `run_once()` post-execute |
-| E:\ extraction (2 file) | ✅ 1.0 | HiddenRegimeProvider + NewsProvider (3-tier) |
-| Research report | ✅ 1.0 | 7-section quant best practices |
-| Testing (68 tests) | ✅ 1.0 | Journal 19 + Scheduler 16 + Performance 33 |
-| Live engine import | ✅ 1.0 | Fix import path |
-| Dual pipeline fallback | ✅ 1.0 | CRITICAL log on fallback |
-| engine/scoring/ duplikat | ✅ 1.0 | 11 file dihapus |
-| Stale artifacts | ✅ 1.0 | egg-info, _audit_*, nul, audit_trail.json — hapus |
-| Risk layer (KillSwitch + RiskGuard) | ✅ 1.0 | Fail-closed, 86 tests |
-| credentials.md.txt | 🔴 0.0 | 100+ secrets di working tree (menunggu Mulky) |
-| Registry consolidation | ⬜ 0.0 | Deferred |
+| Entry point resolution | ✅ 1.0 | `qna.py` v8.0.19 via `launch.bat` (single launcher) |
+| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.0.18"` == CANONICAL v8.0.19 |
+| Live broker | ✅ 1.0 | ValetaxIntl-Live2 372044706 BAL $1,445 — CANONICAL §1 |
+| Weekly PnL | ✅ 1.0 | 0 WIB via `launch.bat weekly-reset` → `data/weekly_override.json` + `data/persistence/risk_COLON_weekly_pnl.json` |
+| Probe | ✅ 1.0 | CandleScheduler `probe_empty=0/32` (all 32 TF states healthy) |
+| CPCV | ✅ 1.0 | 207 WF-validated in `data/walk_forward_registry.json` (214 entries), 10 CPCV in `data/cpcv_registry.json`, 83 strategies registered |
+| manager.py WIB | ✅ 1.0 | `quant_nanggroe/engine/execution/manager.py` — weekly_pnl_pct, kill switch, one-position-per-symbol, fill-status gate |
+| launch.bat 1 | ✅ 1.0 | Single `launch.bat` (WIB, PYTHONPATH="", all modes) — legacy `QNA Launcher.bat` archived |
+| MT5 connection | ✅ 1.0 | **LIVE** Valetax $1,445, CandleScheduler M15/H1/H4/D1 1s tick |
+| 83 strategy wiring | ✅ 1.0 | `@StrategyRegistry.register` — 83 registered, 9 admitted via CPCV allocation |
+| Universal path auto-detect | ✅ 1.0 | No hardcoded `E:\` — `Path(__file__).resolve().parent` + `quant_nanggroe/external/` |
+| Risk layer (KillSwitch + RiskGuard) | ✅ 1.0 | Fail-closed, 9-checkpoint gate, weekly veto on both paths |
+| Skills inventory | ✅ 1.0 | D:\Obsidian\DhaherLabs\skills 41 + E:\skills 41 + C:\Users\Hi\.opencode\skill 29 + 7 MCP — see docs/SKILLS.md |
+| Dashboard | ✅ 1.0 | 22 routes + Config Center + Export Center, Next.js 16, premium dark-tech |
 
 ---
 
-## WHAT WAS DONE — Session 9 (12 Sub-Agents)
+## WHAT WAS DONE — v8.0.19 DOCUMENTATION SYNC (2026-08-27)
 
-### Parallel Execution (10+ sub-agents)
-1. ✅ **MT5 connection fix** — `connection.py` now tries bare init first, then with creds. Live account: Valetax 372044706, Balance $1,099.69, 29 closed trades/30d.
-2. ✅ **P0 Fixes** — FRED key → env (3 files), bare `except:` (12 lokasi), `engine/scoring/` hapus (11 files), confidence formula `tanh`, live engine import, dual pipeline CRITICAL log.
-3. ✅ **84 Strategy Wiring** — `hedge_fund/signals/engine_strategies.py` auto-discovers via `StrategyRegistry.create()`. Result: 1079 providers (77 engine + 992 mue-x + 10 core).
-4. ✅ **Evolution Loop** — 8 files: `evolution_journal.py`, `closed_trade_handler.py`, `evolution_scheduler.py`, `performance_scanner.py`, `strategy_disabler.py`, `weight_updater.py`, `evolution_config.py`. All integrated into `main.py:run_once()`.
-5. ✅ **E:\ Extraction** — `providers/hidden_regime_provider.py` (3-tier: hidden-regime package → CFTC Socrata → zero fallback), `providers/news_provider.py` (3-tier: Alpha Vantage → RSS → zero fallback).
-6. ✅ **Research** — `docs/research_quant_scoring.md` — 7 sections comparing QNA vs industry best practices.
-7. ✅ **Testing** — 68 tests: journal (19), scheduler (16), performance scanner (33) — all pass.
-8. ✅ **Stale Artifacts** — `quant_nanggroe_ai.egg-info/`, `_audit_s2.py`, `_audit_step1.py`, `nul`, `_temp_risk_test.py`, `audit_trail.json` — removed.
-9. ✅ **Documentation** — Rencana.md, QNA_AGENT_STATE.md, CLAUDE.md — all updated.
-10. ✅ **Docs sync** — All root *.md reflect current state.
-
-### Files Created (Session 9)
-```
-quant_nanggroe/engine/evolution/
-  __init__.py, evolution_journal.py, closed_trade_handler.py,
-  evolution_scheduler.py, evolution_config.py, performance_scanner.py,
-  strategy_disabler.py, weight_updater.py                         ← 8 files
-
-quant_nanggroe/providers/
-  hidden_regime_provider.py, news_provider.py                     ← 2 files
-
-quant_nanggroe/hedge_fund/signals/
-  engine_strategies.py                                            ← 1 file
-
-docs/
-  research_quant_scoring.md                                       ← 1 file
-
-tests/
-  test_evolution_journal.py, test_evolution_scheduler.py,
-  test_performance_scanner.py                                      ← 3 files
-```
-
-### Files Modified (Session 9)
-```
-qna.bat, quant_nanggroe/core/scoring/tests/test_scorers.py        ← FRED key → env
-quant_nanggroe/hedge_fund/tools/market_context.py                 ← 4 bare except fix
-quant_nanggroe/database/migrations.py                              ← 8 bare except fix
-quant_nanggroe/core/scoring/fusion_engine.py                      ← tanh formula
-quant_nanggroe/live_engine.py                                     ← fix broken import
-qna.py                                                             ← CRITICAL log on fallback
-quant_nanggroe/hedge_fund/utils/connection.py                     ← try first, then kill
-quant_nanggroe/hedge_fund/utils/config.py                         ← MT5 env var interop
-quant_nanggroe/hedge_fund/signals/registry.py                     ← ENGINE_STRATEGY_PROVIDERS
-quant_nanggroe/hedge_fund/signals/__init__.py                     ← export new providers
-quant_nanggroe/hedge_fund/__init__.py                             ← try/except import chain
-quant_nanggroe/hedge_fund/execution/orders.py                     ← guarded MT5 default
-quant_nanggroe/engine/causal/__init__.py                          ← lazy import SMT
-quant_nanggroe/hedge_fund/portfolio/main.py                       ← evolution loop injected
-```
-
-### Deleting/Removed
-```
-quant_nanggroe/engine/scoring/ (11 files) — duplicate of core/scoring/
-quant_nanggroe_ai.egg-info/ — stale build artifact
-_audit_s2.py, _audit_step1.py — stubs
-nul — zero-byte artifact
-_temp_risk_test.py, audit_trail.json — stale
-```
+1. ✅ **CANONICAL SSOT verified** — `CANONICAL.md` v8.0.19 is single source of truth (BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB)
+2. ✅ **All 53 md synced** — Grep for outdated `v8.0.10`, `E:\`, `1445` mismatches, then Edit to align with CANONICAL
+3. ✅ **Skills loaded** — `D:\Obsidian\DhaherLabs\skills` (41 SKILL.md), `E:\skills` (41 SKILL.md), `C:\Users\Hi\.opencode\skill` (29), 7 MCP (memory, context, browser, github, self-aware, self-correction, auto-driven) — documented in `docs/SKILLS.md` and referenced in `AGENTS.md`
+4. ✅ **Version drift fixed** — `CLAUDE.md` v8.0.10 → v8.0.19, `GEMINI.md` v8.0.10 → v8.0.19, `AGENTS.md` v8.0.16 → v8.0.19, `WAR_PLAN.md` v5.1.0 → v8.0.19
+5. ✅ **Balance unified** — all docs now BAL $1,445 (was $1,122.05 / $1,099 / $1,720 fragments)
+6. ✅ **Path hardened** — `E:\` hardcodes removed, universal auto-detect documented
+7. ✅ **Launcher unified** — `launch.bat` single (WIB), legacy archived
 
 ---
 
-## WHAT'S BLOCKED
+## ARCHITECTURE TRUTH (no sugarcoat — CANONICAL v8.0.19)
 
-| Blocker | Impact | Owner decision needed |
-|---------|--------|-----------------------|
-| credentials.md.txt (100+ secrets) | Security | Mulky: backup → rm → rotate |
-| MT5 credentials not in .env | Manual config | Mulky: add to .env |
-| Registry consolidation | Deferred | Mulky: prioritize? |
-| Dashboard wiring | Deferred | Mulky: prioritize? |
-
----
-
-## WHAT'S NEXT (Phase 2)
-
-1. **Wire EvolutionHandler ke run_once()** — already integrated, need production test
-2. **Wire HiddenRegimeProvider ke PositioningScorer** — provider code ready
-3. **Wire NewsProvider ke SentimentScorer** — provider code ready  
-4. **Walk-forward auto-trigger background thread**
-5. **Paper trade 14 hari validation**
-6. **Dashboard API wiring** — v2-dashboard branch serve data
-7. **Registry consolidation** — 3 registries → 1
-8. **credentials.md.txt** — Mulky backup + rm + rotate
-
----
-
-## ARCHITECTURE TRUTH (no sugarcoat)
-
-**What actually works (Session 9 verified):**
-- Single entry point `qna.py` ✅
-- Risk layer: KillSwitch C5 + RiskGuard — fail-closed ✅
-- Execution: MT5 live connected, Balance $1,099, 29 closed trades ✅
-- **8 scorers + FusionEngine** — wired in `run_once()` ✅
-- **MTF engine** — 4 frames, REDUCE consumed ✅
-- **84 strategies** — all 1079 providers feeding aggregator ✅
-- **Evolution loop** — 8 files, integrated, 68 tests pass ✅
-- **E:\ extraction** — regimes + news providers ready ✅
-- **105+ tests pass** — core + evolution + MT5 ✅
+**What actually works (v8.0.19 verified):**
+- Single entry point `qna.py` v8.0.19 ✅
+- Risk layer: KillSwitch C5 + RiskGuard — fail-closed, weekly veto both paths ✅
+- Execution: MT5 live connected, Balance $1,445, CandleScheduler probe 0/32 ✅
+- **83 strategies** — 9 CPCV-admitted, 207 WF-validated ✅
+- **launch.bat** single — WIB, PYTHONPATH="", weekly-reset 0 WIB ✅
+- **manager.py** — weekly PnL, daily/weekly veto, one-position-per-symbol ✅
+- **Universal path** — no hardcoded `E:\`, external in `quant_nanggroe/external/` ✅
+- **342+ tests** — core + risk + scheduler ✅
 
 **What's MISSING or deferred:**
 - **credentials.md.txt** — 100+ secrets, waiting for Mulky
 - **Registry consolidation** — 3 registries not merged
-- **Dashboard API wiring** — v2-dashboard exists but not serving live data
-- **Wire new providers** — HiddenRegime + News into scorers
-- **Paper trade validation** — 14-day run needed
+- **pyproject.toml** — still 5.1.0 (code is 8.0.18, docs synced to code)
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

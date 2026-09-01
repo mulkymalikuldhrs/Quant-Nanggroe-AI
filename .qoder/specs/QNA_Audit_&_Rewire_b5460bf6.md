@@ -69,3 +69,7 @@ Buat satu dokumen audit `docs/QNA_AUDIT_INVENTORY_v6.2.md` berisi:
 - **Rewrite async penuh pipeline (usulan perspektif performa):** ditolak untuk rilis ini — risiko regresi tinggi, melanggar prinsip perubahan minimal; cukup guard reentrancy. Streaming WebSocket & health scorer provider dicatat sebagai backlog fase berikutnya.
 - **Hapus jalur agentic:** ditolak — masih dipakai sebagai fallback sah di `signal.py:209`; mengarsipkannya mengubah perilaku pipeline.
 - **Hapus file orphan permanen:** ditolak — arsip reversible lebih aman.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

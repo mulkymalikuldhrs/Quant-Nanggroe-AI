@@ -115,11 +115,11 @@ function ExportCenterContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
           <div>
             <label className="text-[10px] text-white/30 mb-1 block">From</label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input type="datetime-local" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           </div>
           <div>
             <label className="text-[10px] text-white/30 mb-1 block">To</label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input type="datetime-local" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
           <div>
             <label className="text-[10px] text-white/30 mb-1 block">Strategy</label>
@@ -142,6 +142,7 @@ function ExportCenterContent() {
             { f: "md", label: "Markdown", icon: FileText },
             { f: "json", label: "JSON", icon: FileType },
             { f: "pdf", label: "PDF", icon: FileType },
+            { f: "docx", label: "Word", icon: FileText },
           ].map(({ f, label, icon: Icon }) => (
             <Button key={f} variant="glow" size="sm"
               onClick={() => doExport(f)}
@@ -198,7 +199,7 @@ function ExportCenterContent() {
         )}
         <p className="mt-3 text-[10px] text-white/20 flex items-center gap-1.5">
           <Calendar className="w-3 h-3" />
-          PDF requires reportlab on the backend — other formats always available.
+          PDF requires reportlab and Word(.docx) requires python-docx on the backend — other formats always available.
         </p>
       </ChartCard>
 

@@ -127,6 +127,9 @@ class PositionInfo:
     current_price: float
     unrealized_pnl: float
     market_value: float
+    ticket: Optional[int] = None
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
 
 
 @dataclass

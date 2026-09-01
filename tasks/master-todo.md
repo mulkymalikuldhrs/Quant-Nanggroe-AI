@@ -266,3 +266,7 @@
 - [x] Phase 4: CI enforces coverage, stub detection active, dep scanning active
 - [x] Phase 5: Weekly veto, correlation gate, alpha decay monitored
 - [~] Phase 6: 50-agent council complete, ADRs published — **⏳ review done, implementation pending**
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

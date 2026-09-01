@@ -12,8 +12,12 @@ See **AGENTS.md** for canonical instructions.
 - Use `uv` for package management (not pip, not poetry).
 - `archive/` = read-only orphan artifacts from v6.2.
 - Keep docs synchronized with code changes.
-- Scoring engine wiring disputed between audits — verify core/scoring imports before relying (FusionEngine + 8 scorers + MTFEngine + WeightEvolver in run_once()). Test counts: see CHANGELOG.
+- Scoring engine wiring disputed between audits — verify core/scoring imports before relying (FusionEngine + 8 scorers + MTFEngine + WeightEvolver in run_once()). Test counts: see CHANGELOG. SSOT: `CANONICAL.md` v8.0.19 BAL $1,445 weekly 0 WIB probe 0/32 CPCV 207 launch.bat 1 manager.py WIB.
 
 **Index:**
 - Include: `quant_nanggroe/`, `dashboard/src/`, `docs/`, `qna.py`
 - Exclude: `data/`, `paper_state/`, `node_modules/`, `__pycache__/`, `archive/`
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB

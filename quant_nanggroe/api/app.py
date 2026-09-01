@@ -418,6 +418,12 @@ def create_app() -> FastAPI:
         app.include_router(assistant_router, prefix="/api", tags=["Assistant"])
     except Exception as e:
         logger.warning("assistant_router_load_failed: %s", e)
+    # Vector — currency manifold 3D
+    try:
+        from quant_nanggroe.api.routes.vector import router as vector_router
+        app.include_router(vector_router, prefix="/api", tags=["Vector"])
+    except Exception as e:
+        logger.warning("vector_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:

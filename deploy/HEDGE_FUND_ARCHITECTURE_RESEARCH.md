@@ -232,3 +232,7 @@ UUID + idempotency key so fills can't be double-counted after failover.
   research & batch, Go for gateway services
 - **Monitoring:** Prometheus + Grafana for metrics, OpenTelemetry for
   distributed tracing across the order lifecycle
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

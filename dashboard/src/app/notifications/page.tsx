@@ -65,9 +65,10 @@ function NotificationsContent() {
     }
   };
 
+  // WS + polling fallback: keep polling but back off to 15s; WS pushes via useRealtimeData will also trigger reload when connected.
   useEffect(() => {
     load();
-    const iv = setInterval(load, 5000);
+    const iv = setInterval(load, 15000);
     return () => clearInterval(iv);
   }, []);
 

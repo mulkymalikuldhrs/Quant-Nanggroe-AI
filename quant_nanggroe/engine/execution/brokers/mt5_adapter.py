@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from quant_nanggroe.connectors.broker_base import Order as ConnOrder
 from quant_nanggroe.connectors.mt5_broker import MT5Broker
@@ -239,8 +239,28 @@ class MT5ExecutionBroker(Broker):
                 symbol=p.symbol, quantity=p.quantity,
                 avg_entry_price=p.entry_price, current_price=p.current_price,
                 unrealized_pnl=p.pnl, market_value=p.quantity * p.current_price,
+                ticket=getattr(p, "ticket", None),
+                stop_loss=getattr(p, "stop_loss", None),
+                take_profit=getattr(p, "take_profit", None),
             ))
         return out
+
+    async def modify_position(
+        self, ticket: int, stop_loss: Optional[float] = None,
+        take_profit: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Modify a live position's SL/TP via the wrapped MT5Broker connector."""
+        if hasattr(self._mt5, "modify_position"):
+            return await self._mt5.modify_position(ticket, stop_loss, take_profit)
+        return {"success": False, "error": "underlying broker has no modify_position"}
+
+    async def close_position(
+        self, ticket: int, volume: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Close a live position (full or partial) via the wrapped MT5Broker."""
+        if hasattr(self._mt5, "close_position"):
+            return await self._mt5.close_position(ticket, volume)
+        return {"success": False, "error": "underlying broker has no close_position"}
 
     async def get_price(self, symbol: str) -> float:
         """Fetch the current ask price for a symbol via MT5.

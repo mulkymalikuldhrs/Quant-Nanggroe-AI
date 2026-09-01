@@ -109,6 +109,22 @@ def compute_scorecard(strategy: str, trades: List[Dict]) -> Dict[str, Any]:
     t_stat = _t_statistic(pnls)
     kelly = round(win_rate - (1 - win_rate) / max(profit_factor, 0.01), 4) if profit_factor > 0 else 0.0
 
+    # R-multiple (reward:risk) — derived from each trade's real sl/entry/exit.
+    # Direction is inferred from the sign of (exit - entry); risk is |entry - sl|.
+    rrs = []
+    for t in trades:
+        try:
+            sl = float(t.get("sl") or 0)
+            entry = float(t.get("entry") or 0)
+            exit_px = float(t.get("exit_price") or 0)
+        except (TypeError, ValueError):
+            continue
+        if sl > 0 and entry > 0:
+            risk = abs(entry - sl)
+            if risk > 0:
+                rrs.append(abs(exit_px - entry) / risk)
+    avg_rr = round(sum(rrs) / len(rrs), 3) if rrs else 0.0
+
     # Verdict — institutional criteria
     if n < 10:
         verdict = "INSUFFICIENT_DATA"
@@ -129,6 +145,7 @@ def compute_scorecard(strategy: str, trades: List[Dict]) -> Dict[str, Any]:
         "win_rate": win_rate,
         "avg_win": avg_win,
         "avg_loss": avg_loss,
+        "avg_rr": avg_rr,
         "expectancy": expectancy,
         "profit_factor": profit_factor,
         "sharpe": sharpe,

@@ -34,6 +34,7 @@ class StrategyStats:
     avg_win: float = 0.0
     avg_loss: float = 0.0
     expectancy: float = 0.0
+    avg_rr: float = 0.0
     enabled: bool = True
     disable_reason: str = ""
     last_updated: str = ""
@@ -45,7 +46,8 @@ class StrategyStats:
             "losses": self.losses, "win_rate": self.win_rate,
             "sharpe": self.sharpe, "profit_factor": self.profit_factor,
             "avg_win": self.avg_win, "avg_loss": self.avg_loss,
-            "expectancy": self.expectancy, "enabled": self.enabled,
+            "expectancy": self.expectancy, "avg_rr": self.avg_rr,
+            "enabled": self.enabled,
             "disable_reason": self.disable_reason,
             "last_updated": self.last_updated,
         }
@@ -86,6 +88,7 @@ class StrategyEvaluator:
                     avg_win REAL DEFAULT 0,
                     avg_loss REAL DEFAULT 0,
                     expectancy REAL DEFAULT 0,
+                    avg_rr REAL DEFAULT 0,
                     enabled INTEGER DEFAULT 1,
                     disable_reason TEXT DEFAULT '',
                     last_updated TEXT,
@@ -107,6 +110,11 @@ class StrategyEvaluator:
                     auto_disabled INTEGER DEFAULT 0
                 )
             """)
+            # Migration: add avg_rr column if an older strategy_stats exists.
+            try:
+                con.execute("ALTER TABLE strategy_stats ADD COLUMN avg_rr REAL DEFAULT 0")
+            except Exception:
+                pass
 
     def record_signal(self, strategy: str, symbol: str, ticket: int,
                       entry_price: float, opened_at: str | None = None) -> None:
@@ -188,18 +196,19 @@ class StrategyEvaluator:
                         stats.disable_reason = f"Win rate {stats.win_rate:.1%} < {MIN_WIN_RATE:.0%}"
 
                 stats.last_updated = datetime.now(timezone.utc).isoformat()
+                stats.avg_rr = self._journal_avg_rr(strategy, symbol)
 
                 con.execute(
                     """INSERT OR REPLACE INTO strategy_stats
                        (strategy, symbol, total_trades, wins, losses, win_rate,
                         sharpe, profit_factor, avg_win, avg_loss, expectancy,
-                        enabled, disable_reason, last_updated)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        avg_rr, enabled, disable_reason, last_updated)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (stats.strategy, stats.symbol, stats.total_trades,
                      stats.wins, stats.losses, stats.win_rate, stats.sharpe,
                      stats.profit_factor, stats.avg_win, stats.avg_loss,
-                     stats.expectancy, int(stats.enabled), stats.disable_reason,
-                     stats.last_updated))
+                     stats.expectancy, stats.avg_rr, int(stats.enabled),
+                     stats.disable_reason, stats.last_updated))
 
         except Exception as exc:
             logger.warning("compute_stats failed for %s: %s", strategy, exc)
@@ -217,6 +226,50 @@ class StrategyEvaluator:
         except Exception:
             pass
         return True
+
+    def _journal_avg_rr(self, strategy: str, symbol: str = "") -> float:
+        """R-multiple (reward:risk) per trade, derived from the real journal.
+
+        Direction is inferred from sign of (exit - entry); risk is |entry - sl|.
+        Returns 0.0 when no qualifying closed trades exist.
+        """
+        if not self._journal.exists():
+            return 0.0
+        try:
+            con = sqlite3.connect(str(self._journal), timeout=5)
+            con.row_factory = sqlite3.Row
+            try:
+                if symbol:
+                    rows = con.execute(
+                        """SELECT sl, entry, exit_price FROM trades
+                           WHERE strategy=? AND symbol=? AND close_time IS NOT NULL
+                             AND pnl IS NOT NULL AND pnl != 0.0""",
+                        (strategy, symbol)).fetchall()
+                else:
+                    rows = con.execute(
+                        """SELECT sl, entry, exit_price FROM trades
+                           WHERE strategy=? AND close_time IS NOT NULL
+                             AND pnl IS NOT NULL AND pnl != 0.0""",
+                        (strategy,)).fetchall()
+            finally:
+                con.close()
+        except Exception as exc:
+            logger.debug("journal_avg_rr read failed for %s: %s", strategy, exc)
+            return 0.0
+
+        rrs = []
+        for r in rows:
+            try:
+                sl = float(r["sl"] or 0)
+                entry = float(r["entry"] or 0)
+                exit_px = float(r["exit_price"] or 0)
+            except (TypeError, ValueError):
+                continue
+            if sl > 0 and entry > 0:
+                risk = abs(entry - sl)
+                if risk > 0:
+                    rrs.append(abs(exit_px - entry) / risk)
+        return round(sum(rrs) / len(rrs), 3) if rrs else 0.0
 
     def get_all_stats(self, window_days: int = REVIEW_WINDOW_DAYS) -> list[dict]:
         try:

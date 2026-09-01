@@ -1,6 +1,6 @@
 [project]
 name = "quant-nanggroe-ai"
-version = "5.1.0"
+version = "8.0.19"
 description = "Agentic Trading Intelligence OS — Multi-agent trading framework with LangGraph orchestration, constitutional risk management, and production-grade execution"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -54,6 +54,10 @@ dependencies = [
     # ML (optional core)
     "scikit-learn>=1.3",
     "hmmlearn>=0.3",
+    # Export center (xlsx / pdf / docx)
+    "openpyxl>=3.1",
+    "reportlab>=4.0",
+    "python-docx>=1.1",
 ]
 
 [project.optional-dependencies]

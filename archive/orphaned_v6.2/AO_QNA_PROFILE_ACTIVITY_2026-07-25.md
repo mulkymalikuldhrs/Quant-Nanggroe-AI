@@ -36,3 +36,7 @@ between 01:00-08:00 on 2026-07-25, causing version drift + file spam:
 Profile crons with write access to QNA cause drift. Keep them PAUSED unless
 user explicitly asks for autonomous QNA work. When user says "QNA hanya"
 or "fokus QNA", do NOT let profile crons interfere.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

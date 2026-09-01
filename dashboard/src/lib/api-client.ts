@@ -391,6 +391,16 @@ export const brokersApi = {
       method: "POST",
       body: acc,
     }),
+  modifyPosition: (name: string, ticket: number, sl: number | null, tp: number | null) =>
+    apiRequest<Record<string, unknown>>(`/api/brokers/${name}/modify`, {
+      method: "POST",
+      body: { ticket, stop_loss: sl, take_profit: tp },
+    }),
+  closePosition: (name: string, ticket: number, volume?: number) =>
+    apiRequest<Record<string, unknown>>(`/api/brokers/${name}/close/${ticket}`, {
+      method: "POST",
+      body: volume != null ? { volume } : {},
+    }),
   // GATE-6: multi-account (all logged-in MT5 terminals + all-ever-connected)
   accounts: () =>
     apiRequest<{ accounts: Array<{ login: number; server: string; name: string; equity: number; balance: number; currency: string; terminal_path: string }>; count: number }>("/api/trading/accounts"),
@@ -523,7 +533,7 @@ export interface Tool { id: string; name: string; description: string; status: s
 // ── Brokers (multi-account MT5: Exness / Valutrades / etc) ────────
 export interface BrokerAccount { name: string; role: string; connected: boolean; healthy: boolean; state: string; }
 export interface BrokerListResponse { accounts: BrokerAccount[]; count: number; }
-export interface BrokerPosition { symbol: string; side: string; quantity: number; entry_price: number; current_price: number; unrealized_pnl: number; }
+export interface BrokerPosition { symbol: string; side: string; quantity: number; entry_price: number; current_price: number; unrealized_pnl: number; ticket?: number | null; stop_loss?: number | null; take_profit?: number | null; }
 export interface BrokerPositionsResponse { account: string; positions: BrokerPosition[]; }
 export interface MT5AccountInfo { login: number; balance: number; equity: number; margin: number; margin_free: number; margin_level: number; server: string; currency: string; leverage: number; }
 

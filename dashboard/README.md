@@ -204,3 +204,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000/api/ws/stream
 ---
 
 © Dhaher Labs / Quant Nanggroe Hedge Fund
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

@@ -280,3 +280,7 @@ No circular import was detected at runtime in the current codebase, but this cre
 ---
 
 *End of Phase 1 — Architecture & Structure Audit. Proceeding to Phase 2 (Data Flow & Dependency Audit) on request.*
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

@@ -233,3 +233,7 @@ Output:
 | F45 | 🟢 LOW | Tests | test_browser/, test_channels/, test_colony/ etc empty | 4 | ✅ |
 | F46 | 🟢 LOW | Docs | Chart version claims "v15.2.0" in engine/audit.py | 3 | ✅ |
 | F47 | 🟢 LOW | Docs | new_proposals.py claims "v4.5.3" | 3 | ✅ |
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

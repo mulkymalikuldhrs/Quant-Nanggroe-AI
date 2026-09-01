@@ -154,6 +154,16 @@ def execute_best(candidate, balance):
         "comment": f"MP {candidate['strategy']} {candidate['style']} {bias}",
         "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC,
     }
+    # Fail-closed guard: block execution when the cross-process kill switch is active.
+    try:
+        from quant_nanggroe.engine.risk.kill_switch import KillSwitch
+        if not KillSwitch().can_trade():
+            log.warning(f"  ❌ KillSwitch ACTIVE — order blocked for {symbol}")
+            log_trade(f"fail_{bias}", symbol, 0, 0, 0, 0, 0, "kill_switch_active")
+            return False
+    except Exception as ks_exc:
+        log.warning(f"  ⚠ KillSwitch check failed ({ks_exc}) — failing closed, order blocked")
+        return False
     res = mt5.order_send(req)
     if res and res.retcode == 10009:
         log.info(f"  ✅ {bias.upper()} {lot} {symbol} @ {price:.5f} SL={sl} TP={tp}")
@@ -188,13 +198,20 @@ def run_multipair_cycle():
         mt5.shutdown()
         return
     log.info(f"  Valid: {len(valid_pairs)} pair(s)  Skipped: {len(skipped_pairs)}")
-    positions = mt5.positions_get()
-    if positions:
+    # One-position-per-symbol mandate (non-negotiable rule #5): only skip the
+    # candidate's own symbol, not every other pair. Opposite-side reduces are
+    # allowed (handled by the broker/manager on the daemon path).
+    positions = mt5.positions_get() or []
+    open_symbols = {str(p.symbol).upper().split(".")[0] for p in positions}
+    if open_symbols:
         for p in positions:
             log.info(f"📌 OPEN: {p.symbol} {p.type_name} Vol={p.volume} PnL=${p.profit:.2f}")
-        log.info("  Positions exist — skipping new entries")
-        mt5.shutdown()
-        return
+        valid_pairs = [s for s in valid_pairs if s.upper().split(".")[0] not in open_symbols]
+        if not valid_pairs:
+            log.info("  All valid pairs already have an open position — skipping new entries")
+            mt5.shutdown()
+            return
+        log.info(f"  {len(valid_pairs)} pair(s) still eligible after open-position filter")
     log.info(f"\n── Evaluating {len(BEST_STRATEGIES)} strategies × {len(valid_pairs)} pairs ──")
     candidates = evaluate_all_pairs(valid_pairs)
     if not candidates:

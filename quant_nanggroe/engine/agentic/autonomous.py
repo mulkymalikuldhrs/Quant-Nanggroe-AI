@@ -2031,7 +2031,7 @@ class AutonomousPipeline:
             # Wire trailing stop for filled positions
             if executed and fill and self._trailing_stop is not None:
                 try:
-                    self._trailing_stop.add_position(symbol, fill.price or current_price)
+                    self._trailing_stop.add_position(symbol, fill.price or current_price, side=side)
                     logger.info("TrailingStop: position added for %s @ %.2f", symbol, fill.price or current_price)
                 except Exception as exc:
                     logger.warning("TrailingStop add_position failed: %s", exc)

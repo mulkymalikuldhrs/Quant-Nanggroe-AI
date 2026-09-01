@@ -1149,3 +1149,7 @@ Expected: `All imports OK`
 4. Task 4 (atr_sl.py) — independent
 5. Task 5 (sizing.py) — independent
 6. Task 6 (qna_prod.py) — depends on atr_sl, sizing, RiskCheckGate
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

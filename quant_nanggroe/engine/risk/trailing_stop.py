@@ -39,6 +39,7 @@ class TrailingStopState:
     is_active: bool = False
     breakeven_moved: bool = False
     symbol: str = ""
+    side: str = "BUY"  # BUY (long) or SELL (short) — drives direction-aware math
 
 
 class TrailingStopManager:
@@ -46,20 +47,31 @@ class TrailingStopManager:
         self.config = config or TrailingStopConfig()
         self._positions: Dict[str, TrailingStopState] = {}
 
-    def add_position(self, symbol: str, entry_price: float):
+    def add_position(self, symbol: str, entry_price: float, side: str = "BUY"):
+        is_long = str(side).upper() in ("BUY", "LONG")
+        # Initial hard stop sits on the loss side of entry.
+        init_stop = (
+            entry_price * (1 - self.config.min_stop_pct) if is_long
+            else entry_price * (1 + self.config.min_stop_pct)
+        )
         self._positions[symbol] = TrailingStopState(
             entry_price=entry_price,
             peak_price=entry_price,
-            current_stop=entry_price * (1 - self.config.min_stop_pct),
+            current_stop=init_stop,
             symbol=symbol,
+            side=side,
         )
 
     def remove_position(self, symbol: str):
         self._positions.pop(symbol, None)
 
     def update(self, symbol: str, current_price: float,
-               atr: Optional[float] = None) -> Optional[str]:
+                atr: Optional[float] = None) -> Optional[str]:
         """Advance the trailing logic one tick.
+
+        Direction-aware: handles both long (BUY) and short (SELL) positions.
+        For a short, profit accrues as price falls, so the extreme is the LOW,
+        breakeven sits BELOW entry, and the trail candidate is ABOVE price.
 
         Args:
             symbol: tracked position key.
@@ -74,22 +86,36 @@ class TrailingStopManager:
         if not state:
             return None
 
-        if current_price > state.peak_price:
-            state.peak_price = current_price
+        is_long = str(state.side).upper() in ("BUY", "LONG")
 
-        profit_pct = (current_price - state.entry_price) / state.entry_price
+        if is_long:
+            if current_price > state.peak_price:
+                state.peak_price = current_price
+            profit_pct = (current_price - state.entry_price) / state.entry_price
+        else:
+            # Short: track the lowest price (most profit) as the extreme.
+            if current_price < state.peak_price:
+                state.peak_price = current_price
+            profit_pct = (state.entry_price - current_price) / state.entry_price
 
         # 1) Breakeven ratchet — fires before the wider % trail arms.
         cfg = self.config
         if (cfg.breakeven_enabled and not state.breakeven_moved
                 and profit_pct >= cfg.breakeven_trigger_pct):
-            be_stop = state.entry_price * (1 + cfg.breakeven_buffer_pct)
-            if be_stop > state.current_stop:
+            be_stop = (
+                state.entry_price * (1 + cfg.breakeven_buffer_pct) if is_long
+                else state.entry_price * (1 - cfg.breakeven_buffer_pct)
+            )
+            # Long: stop moves UP toward entry. Short: stop moves DOWN toward entry.
+            if (is_long and be_stop > state.current_stop) or (
+                not is_long and be_stop < state.current_stop
+            ):
                 state.current_stop = be_stop
                 state.breakeven_moved = True
                 log.info(
-                    "Breakeven moved for %s: stop=%.2f (entry=%.2f, peak=%.2f)",
-                    symbol, state.current_stop, state.entry_price, state.peak_price,
+                    "Breakeven moved for %s (%s): stop=%.2f (entry=%.2f, extreme=%.2f)",
+                    symbol, state.side, state.current_stop,
+                    state.entry_price, state.peak_price,
                 )
 
         # 2) Arm percent/ATR trailing after activation threshold.
@@ -98,21 +124,32 @@ class TrailingStopManager:
 
         if state.is_active:
             if cfg.use_atr_multiple and atr is not None and atr > 0:
-                candidate = current_price - cfg.atr_multiple * float(atr)
+                atr_dist = cfg.atr_multiple * float(atr)
+                candidate = (current_price - atr_dist) if is_long else (current_price + atr_dist)
             else:
-                candidate = current_price * (1 - cfg.trail_pct)
+                candidate = (
+                    current_price * (1 - cfg.trail_pct) if is_long
+                    else current_price * (1 + cfg.trail_pct)
+                )
             # Monotonic ratchet: never loosen the stop.
-            if candidate > state.current_stop:
+            # Long: stop only rises. Short: stop only falls.
+            if (is_long and candidate > state.current_stop) or (
+                not is_long and candidate < state.current_stop
+            ):
                 state.current_stop = candidate
 
         # 3) Fire when price touches the stop.
         if state.is_active or state.breakeven_moved:
-            if current_price <= state.current_stop:
+            triggered = (
+                current_price <= state.current_stop if is_long
+                else current_price >= state.current_stop
+            )
+            if triggered:
                 reason = ("breakeven" if state.breakeven_moved and not state.is_active
                           else "trailing")
                 log.info(
-                    "%s stop triggered for %s: entry=%.2f peak=%.2f stop=%.2f exit=%.2f",
-                    reason.capitalize(), symbol, state.entry_price,
+                    "%s stop triggered for %s (%s): entry=%.2f extreme=%.2f stop=%.2f exit=%.2f",
+                    reason.capitalize(), symbol, state.side, state.entry_price,
                     state.peak_price, state.current_stop, current_price,
                 )
                 self.remove_position(symbol)

@@ -147,6 +147,7 @@ export default function PipelinePage() {
   const [error, setError] = useState<string | null>(null);
   const [componentConfigs, setComponentConfigs] = useState<Record<string, Record<string, boolean>>>({});
   const [liveData, setLiveData] = useState<PipelineComponent[] | null>(null);
+  const [runMsg, setRunMsg] = useState<{ id: string; text: string } | null>(null);
 
   const toggleConfig = useCallback((componentId: string, key: string) => {
     setComponentConfigs((prev) => ({
@@ -165,6 +166,17 @@ export default function PipelinePage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const runComponent = useCallback(async (componentId: string) => {
+    setRunMsg({ id: componentId, text: "Running..." });
+    try {
+      await apiRequest("/api/autonomous/evaluate", { method: "POST" });
+      setRunMsg({ id: componentId, text: "✓ Triggered" });
+    } catch (e) {
+      setRunMsg({ id: componentId, text: `✗ ${e instanceof Error ? e.message : "failed"}` });
+    }
+    setTimeout(() => setRunMsg(null), 4000);
   }, []);
 
   useEffect(() => { fetchPipelineStatus(); }, [fetchPipelineStatus]);
@@ -254,6 +266,7 @@ export default function PipelinePage() {
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button
+                    onClick={() => runComponent(component.id)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] uppercase tracking-wider font-medium transition-colors duration-200 border border-emerald-500/20 active:scale-95"
                     title={`Run ${component.id}`}
                   >
@@ -272,6 +285,9 @@ export default function PipelinePage() {
                     <FileText className="w-3 h-3" /> Logs
                   </button>
                 </div>
+                {runMsg?.id === component.id && (
+                  <p className="mt-2 text-[11px] font-mono text-white/50">{runMsg.text}</p>
+                )}
               </div>
             </div>
           </div>

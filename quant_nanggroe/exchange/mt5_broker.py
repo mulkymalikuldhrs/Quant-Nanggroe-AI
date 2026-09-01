@@ -387,6 +387,9 @@ class MT5Broker(ExchangeInterface):
                     cost_basis=float(p.price_open) * float(p.volume),
                     market_value=float(p.price_current) * float(p.volume),
                     broker_id="mt5",
+                    ticket=int(p.ticket),
+                    stop_loss=float(p.sl) if p.sl else None,
+                    take_profit=float(p.tp) if p.tp else None,
                     last_updated=datetime.now(tz=timezone.utc),
                 )
                 positions.append(pos)

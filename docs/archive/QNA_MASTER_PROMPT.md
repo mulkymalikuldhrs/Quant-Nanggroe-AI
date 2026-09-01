@@ -267,3 +267,7 @@ End with either DONE (evidence) or FAILED (reason), never ambiguous.
 **END OF MASTER SYSTEM PROMPT**
 
 *"Wakafa billahi syahidan" — Gas dengan penuh amarah dan presisi.*
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

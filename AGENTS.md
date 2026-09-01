@@ -49,7 +49,7 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 - **numpy in .venv** — Python 3.14 removed `np.clip` usage here; use `max(min(x,100),-100)`.
 - **pytest `langsmith` plugin** — crashes collection; `pip uninstall langsmith` if you see it.
 
-## Key Modules (v8.0.16)
+## Key Modules (v8.0.19 — CANONICAL SSOT)
 | Module | Purpose |
 |--------|---------|
 | `qna_tray.py` | Windows tray daemon control |
@@ -67,6 +67,37 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 | `engine/strategy_evaluator.py` | Rolling Sharpe/win rate, auto-disable |
 | `engine/data_pipeline.py` | Finnhub news, CFTC COT, sentiment cache |
 
+## Skills Inventory (v8.0.19 — verified 2026-08-28)
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> Full inventory: `docs/SKILLS.md`
+
+| Source | Expected | Actual Verified | Path | Count Method |
+|--------|----------|-----------------|------|--------------|
+| D:\Obsidian\DhaherLabs | 40 | **41 SKILL.md** | `D:\Obsidian\DhaherLabs\skills` (not `_full_skills/skills`) | `Get-ChildItem -Recurse -Filter SKILL.md` |
+| E:\skills | 312 | **41 SKILL.md** (mirror of D:\) | `E:\skills\skills` | `Get-ChildItem -Recurse -Filter SKILL.md` |
+| C:\Users\Hi\.opencode\skill | 22 | **29** | `C:\Users\Hi\.opencode\skill` | `Get-ChildItem -Directory` |
+| 7 MCP | 7 | **7** | memory, context, browser, github, self-aware, self-correction, auto-driven | `opencode.json` MCP config |
+
+**Verification 2026-08-28 (bash timeout 15000):**
+```bash
+powershell -NoProfile -Command "Get-ChildItem -Path 'D:\Obsidian\DhaherLabs\skills' -Recurse -Filter 'SKILL.md' | Measure-Object | Select -Expand Count"
+# → 41
+powershell -NoProfile -Command "Get-ChildItem -Path 'E:\skills' -Recurse -Filter 'SKILL.md' | Measure-Object | Select -Expand Count"
+# → 41
+powershell -NoProfile -Command "Get-ChildItem -Path 'C:\Users\Hi\.opencode\skill' -Directory | Measure-Object | Select -Expand Count"
+# → 29
+```
+All skills referenced via `docs/SKILLS.md` and AGENTS.md (this file). No install required — verification only, documented.
+
+**CANONICAL Sync (v8.0.19):**
+- **BAL 1445:** ValetaxIntl-Live2 372044706 $1,445 — `CANONICAL.md:4,18`
+- **weekly 0 WIB:** `launch.bat weekly-reset` → `data/weekly_override.json` 0 until 2026-09-01 WIB + `data/persistence/risk_COLON_weekly_pnl.json`
+- **probe 0/32:** CandleScheduler `probe_empty=0/32` — `session.md:623`
+- **CPCV 207:** `data/walk_forward_registry.json` 214 entries (207 WF-validated), `data/cpcv_registry.json` 10 CPCV
+- **launch.bat 1:** Single WIB launcher `launch.bat` (198 lines, PYTHONPATH="", TZ=Asia/Jakarta) — legacy archived in `archive/bat_legacy/`
+- **manager.py WIB:** `quant_nanggroe/engine/execution/manager.py:176` weekly_pnl_pct WIB handling, kill switch, risk veto
+
 ## Non-Negotiable Rules
 1. Code is source of truth. Verify against `file:line`.
 2. Fail-closed defaults. Phantom/unverifiable = STOP.
@@ -75,3 +106,8 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 5. One position per symbol — enforced at broker truth.
 6. Committee RiskAgent VETO is absolute — no override, no bypass.
 7. Data pipeline returns None on failure (not empty), so committee treats it as unavailable, not neutral.
+8. **CANONICAL.md is SSOT — never edit CANONICAL to match docs; edit docs to match CANONICAL v8.0.19**
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB

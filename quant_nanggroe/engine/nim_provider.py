@@ -6,7 +6,7 @@ models via the OpenAI-compatible API.  Features include:
 * Model selection by task type (reasoning, analysis, quick, vision)
 * Circuit breaker: 3 failures → 5 min cooldown
 * Cost tracking per model
-* Fallback chain: NIM → local Ollama → mock with [MOCK] prefix
+* Fallback chain: NIM → local Ollama → raise (REAL-ONLY, no mock)
 * Async throughout using aiohttp
 * Token usage tracking
 
@@ -751,7 +751,7 @@ if __name__ == "__main__":
     import asyncio
 
     async def demo():
-        # Create provider (will use mock without API key)
+        # Create provider (no API key -> chat() raises REAL-ONLY; no mock)
         provider = NIMProvider()
 
         print(f"Available models: {provider.available_models}")

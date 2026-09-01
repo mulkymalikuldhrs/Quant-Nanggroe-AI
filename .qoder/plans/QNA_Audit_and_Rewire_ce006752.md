@@ -125,3 +125,7 @@ These are documentation/fallback defaults, not runtime issues. The real keys com
 10. **Category 10** -- Clean credential manager stub references
 11. **Category 11** -- Fix indicators.py
 12. **Category 12** -- Clean exchange placeholder docs
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, Bot, FlaskConical, Briefcase, ArrowLeftRight, Shield,
   BarChart3, Sigma, Radio, Settings, Building2, Activity, GitBranch,
-  Search, X, ArrowRight, Shrink, MemoryStick, Network,
+  Search, X, ArrowRight, Shrink, MemoryStick, Network, Box,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ const commands: CommandItem[] = [
   { id: "brokers", label: "Brokers", description: "MT5 broker accounts", icon: Building2, href: "/brokers", category: "Navigation", keywords: ["broker", "mt5", "account"] },
   { id: "risk", label: "Risk Management", description: "VaR, CVaR, Kelly, kill switch", icon: Shield, href: "/risk", category: "Navigation", keywords: ["risk", "var", "kelly", "kill"] },
   { id: "market", label: "Market Data", description: "Real-time market sentiment", icon: BarChart3, href: "/market", category: "Navigation", keywords: ["market", "sentiment", "price"] },
+  { id: "vector", label: "Vector Manifold", description: "Currency 3D, mispricing, grid", icon: Box, href: "/vector", category: "Navigation", keywords: ["vector", "manifold", "3d", "grid", "euclid"] },
   { id: "pipeline", label: "Pipeline", description: "15-stage autonomous pipeline", icon: GitBranch, href: "/pipeline", category: "Navigation", keywords: ["pipeline", "stages", "autonomous"] },
   { id: "agents", label: "Agents", description: "Council & decision agents", icon: Bot, href: "/agents", category: "Navigation", keywords: ["agents", "council", "decision"] },
   { id: "backtest", label: "Backtest", description: "Strategy backtesting engine", icon: FlaskConical, href: "/backtest", category: "Navigation", keywords: ["backtest", "test", "simulate"] },

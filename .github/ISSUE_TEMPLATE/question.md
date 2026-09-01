@@ -14,3 +14,7 @@ What steps have you already taken to find the answer?
 
 ## Additional Context
 Any links, screenshots, or context that helps explain your question.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

@@ -1,4 +1,6 @@
-# Committee Architecture — Per-Pair Trading Intelligence
+# Committee Architecture — Per-Pair Trading Intelligence — v8.0.19 CANONICAL SSOT
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ## Overview
 
@@ -141,3 +143,7 @@ quant_nanggroe/engine/agentic/
 ├── autonomous.py          # (existing, modified to use committee)
 └── ...
 ```
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB | Live: ValetaxIntl-Live2 372044706 | 83 strategies, probe 0/32, CPCV 207

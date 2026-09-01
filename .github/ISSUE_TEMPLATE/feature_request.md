@@ -20,3 +20,7 @@ Any screenshots, examples from other projects, or links that help explain your i
 
 ## Would you be willing to implement this?
 [ ] Yes, I'd like to submit a PR for this feature
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

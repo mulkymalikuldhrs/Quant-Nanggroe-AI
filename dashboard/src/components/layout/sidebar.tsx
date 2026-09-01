@@ -6,7 +6,7 @@ import {
   BarChart3, Sigma, Radio, Settings, ChevronLeft, ChevronRight,
   MemoryStick as Memory, Network, Cog, Shrink, Building2, Activity, GitBranch,
   Menu, X, ChevronRight as ArrowRight, Brain, Download, FileCode,
-  Flame, Bell, History, Vote, Database,
+  Flame, Bell, History, Vote, Database, Box,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { href: "/brokers", label: "Brokers", icon: Building2, category: "trading" },
   { href: "/risk", label: "Risk", icon: Shield, category: "trading" },
   { href: "/market", label: "Market", icon: BarChart3, category: "trading" },
+  { href: "/vector", label: "Vector", icon: Box, category: "analysis", badge: "NEW" },
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, category: "analysis", badge: "15" },
   { href: "/agents", label: "Agents", icon: Bot, category: "analysis", badge: "11" },
   { href: "/backtest", label: "Backtest", icon: FlaskConical, category: "analysis" },

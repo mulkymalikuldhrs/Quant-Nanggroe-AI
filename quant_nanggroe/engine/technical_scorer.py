@@ -1,0 +1,3 @@
+"""Legacy shim — re-exports from canonical core.scoring path."""
+from quant_nanggroe.core.scoring.technical_scorer import *  # noqa: F401,F403
+from quant_nanggroe.core.scoring.technical_scorer import TechnicalScorer  # noqa: F401

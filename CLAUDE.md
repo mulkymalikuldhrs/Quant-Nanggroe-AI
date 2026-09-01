@@ -1,4 +1,6 @@
-# CLAUDE.md � Quant Nanggroe AI v8.0.10
+# CLAUDE.md — Quant Nanggroe AI v8.0.19 — CANONICAL SSOT
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 # CLAUDE.md — Quant Nanggroe AI (Quant Nation)
 
@@ -31,8 +33,8 @@ quant_nanggroe/
   core/scoring/                   ← 8 scorers + FusionEngine + MTFEngine + WeightEvolver + TTLCache
   hedge_fund/portfolio/main.py    ← 7-stage pipeline: run_once()
   engine/
-    strategies/                   ← 84 @StrategyRegistry.register strategies
-    risk/                         ← KillSwitch C5, DCC-GARCH, VaR, Kelly, constants (25 files)
+    strategies/                   ← 83 @StrategyRegistry.register strategies (v8.0.19 — 9 CPCV-admitted, 207 WF-validated)
+    risk/                         ← KillSwitch C5, DCC-GARCH, VaR, Kelly, constants (25 files) — weekly 0 WIB, probe 0/32
     causal/                       ← Causal Macro Engine suite (14 files)
     execution/                    ← Order routing + broker adapters
     portfolio/                    ← Kelly sizing, risk parity, ConfluenceScorer
@@ -98,7 +100,7 @@ FusionEngine: weighted sum + override logic (confidence >= 60% overrides aggrega
 | `quant_nanggroe/external/hidden_regime/` | COT analysis, regime evolution | PositioningScorer |
 | `quant_nanggroe/external/mue_x/genes/qna_strategies/` | 992 evolved strategy files | Dynamic MueXSignalProvider |
 | `quant_nanggroe/external/kronos/` | Financial foundation model (AAAI 2026) | KronosSignalProvider |
-| `C:\e\archived\AI-Trader\` | market_intel.py (1911 lines), TTL cache | DataProvider cache engine |
+| `C:\e\archived\AI-Trader\` (legacy) | market_intel.py (1911 lines), TTL cache | DataProvider cache engine — now universal `quant_nanggroe/external/` auto-detect, no hardcoded `E:\` at runtime |
 
 ## Core Principles
 - **Source code is truth** — docs are hearsay. Verify every claim against imports/calls.
@@ -122,3 +124,7 @@ FusionEngine: weighted sum + override logic (confidence >= 60% overrides aggrega
 | DB | SQLAlchemy + Alembic |
 
 Built by Dhaher Labs.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB

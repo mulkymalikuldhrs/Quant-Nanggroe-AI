@@ -159,3 +159,7 @@ BlackHornet = colony orchestrator (PSO swarm, ABC role-switching).
 8. **fangbot:** OpenFang param optimization (Kelly, lot sizing)
 
 **War starts now. No simulation. Real market. Autonomous.**
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

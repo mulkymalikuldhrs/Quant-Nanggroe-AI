@@ -262,3 +262,7 @@
 ---
 
 *Plan generated: 2026-07-25 00:45 WIB | Orchestrator: @dhaherautobot | QNA v5.1.0*
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

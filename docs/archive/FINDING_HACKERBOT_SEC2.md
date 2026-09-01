@@ -107,3 +107,7 @@ HTTP route mutates `os.environ` on running process — TOCTOU window where authe
 - `.secrets-local/` credential leak — FALSE POSITIVE (dir doesn't exist, not tracked, `.gitignore:52` covers it). ✓ re-confirmed
 - `.env` tracked with live secrets — FALSE (retraction was wrong; `.env` is gitignored + untracked). ✓ re-confirmed
 - `config/mt5_accounts.yaml` held live creds — FALSE (env-var placeholders only). ✓ re-confirmed
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

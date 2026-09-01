@@ -66,3 +66,7 @@ for each bar in historical_data:
 - Deflated Sharpe Ratio (account for multiple testing)
 - p-value for strategy returns > 0
 - Minimum backtest length: 3 years daily, 1 year hourly
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul
