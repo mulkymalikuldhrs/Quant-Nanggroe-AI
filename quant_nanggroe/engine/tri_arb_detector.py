@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -77,22 +77,14 @@ async def execute_tri_arb(signal: TriArbSignal, lot: float = 0.01) -> bool:
             return False
     except Exception:
         return False
-    # Use ExecutionManager for guarded execution
+    # Use ExecutionManager for guarded execution (dry-run until atomic 3-leg wiring)
     try:
-        from quant_nanggroe.engine.execution.builder import build_execution_manager
-        from quant_nanggroe.connectors.broker_base import Order
-        em = build_execution_manager()
-        # 3 legs — simplified as 3 market orders, IOC, same lot
-        legs = []
         if signal.direction == "buy_ac_cb_sell_ab":
             # buy A/C, buy C/B, sell A/B
             legs = [(signal.symbols[0], "buy"), (signal.symbols[1], "buy"), (signal.symbols[2], "sell")]
         else:
             legs = [(signal.symbols[2], "buy"), (signal.symbols[0], "sell"), (signal.symbols[1], "sell")]
         for sym, side in legs:
-            order = Order(symbol=sym, side=side, quantity=lot, order_type="market", broker="mt5")
-            # em.execute_order is async, but Order type mismatch (BrokerConnector vs ExecutionManager)
-            # For now return False to avoid wrong wiring — real wiring via hedge_fund executor
             logger.info("TriArb leg %s %s lot=%.2f Δ=%.5f", side, sym, lot, signal.delta)
         return False  # dry-run until full EM wiring for 3-leg atomic
     except Exception as e:

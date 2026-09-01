@@ -8,7 +8,7 @@ Real-trade-ready: build dari CurrencyGraph, fail-closed, z-normalize JPY.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 
