@@ -168,6 +168,36 @@ class TestMT5CircuitBreaker(unittest.TestCase):
             self.assertIn("Circuit breaker", str(result.metadata.get("reason", "")))
         asyncio.run(test())
 
+    def test_ambiguous_submission_is_never_retried(self):
+        """A missing post-submit quote must not resend a live market order."""
+        import asyncio
+        import uuid
+
+        from quant_nanggroe.connectors.mt5_broker import MT5Broker
+        from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
+        from quant_nanggroe.engine.execution.brokers.mt5_adapter import MT5ExecutionBroker
+
+        mock_mt5 = MagicMock(spec=MT5Broker)
+        mock_mt5.place_order.return_value = "broker-ticket-1"
+        broker = MT5ExecutionBroker(mock_mt5)
+
+        async def no_quote(_symbol):
+            return 0.0
+
+        broker.get_price = no_quote
+
+        async def test():
+            order = Order(
+                id=str(uuid.uuid4()), symbol="EURUSD", side=OrderSide.BUY,
+                order_type=OrderType.MARKET, quantity=0.01,
+            )
+            result = await broker.submit_order(order)
+            self.assertEqual(result.status, OrderStatus.REJECTED)
+            self.assertEqual(result.metadata["error_code"], "AMBIGUOUS_SUBMISSION")
+            self.assertEqual(mock_mt5.place_order.call_count, 1)
+
+        asyncio.run(test())
+
 
 # =========================================================================
 # Test D: MT5 SYMBOL_MAP translation
