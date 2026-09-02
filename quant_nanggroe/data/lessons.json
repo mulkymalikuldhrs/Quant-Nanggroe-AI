@@ -3374,5 +3374,22 @@
     "occurred_at": "2026-09-02T17:22:39.291405+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "eba0e97a-4b2",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.10",
+    "detail": "Trade a2df0dec-fe5e-47d5-b0a6-a51d09ebe894 on EURUSD using ensemble. eval_duration_ms=0.09",
+    "context": {
+      "trade_id": "a2df0dec-fe5e-47d5-b0a6-a51d09ebe894",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.09,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:23:00.944024+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
