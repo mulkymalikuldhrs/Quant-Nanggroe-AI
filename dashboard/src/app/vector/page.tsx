@@ -9,7 +9,7 @@ import { Activity, Box, Grid3x3 } from "lucide-react";
 export default function VectorPage() {
   const [data, setData] = useState<{ manifold: Record<string, number[]>; mispricing: Record<string, { d: number; threshold: number; is_trigger: boolean }> } | null>(null);
   useEffect(() => {
-    apiRequest("/api/vector/status").then(setData).catch(() => {});
+    apiRequest<{ manifold: Record<string, number[]>; mispricing: Record<string, { d: number; threshold: number; is_trigger: boolean }> }>("/api/vector/status").then(setData).catch(() => {});
   }, []);
   return (
     <div className="space-y-4 animate-slide-up">
