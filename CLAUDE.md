@@ -127,6 +127,22 @@ Built by Dhaher Labs.
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+GitHub primary (3× remotes), with GitLab (glab), Codeberg (REST), and local markdown (`.scratch/`) as fallbacks. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+5 canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. `CONTEXT.md` and `docs/adr/` are not yet created — until then, treat `CANONICAL.md` and `AGENTS.md` as the canonical sources, and the §15.1–§15.10 sections of `CANONICAL.md` as informal ADRs. See `docs/agents/domain.md`.
+
+---
+
 > **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
