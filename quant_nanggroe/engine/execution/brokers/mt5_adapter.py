@@ -127,86 +127,70 @@ class MT5ExecutionBroker(Broker):
             logger.critical("Order %s rejected: circuit breaker tripped", order.id)
             return order
 
-        max_attempts = 3
-        last_err = None
-        for attempt in range(max_attempts):
-            try:
-                conn_order = ConnOrder(
-                    symbol=order.symbol,
-                    side=_SIDE_MAP.get(order.side.value, "buy"),
-                    quantity=order.quantity,
-                    order_type=order.order_type.value.lower(),
-                    price=order.price,
-                    stop_loss=order.stop_loss,
-                    take_profit=order.take_profit,
-                )
-                result = self._mt5.place_order(conn_order)
-                if not result:
-                    self._circuit_breaker.record_failure()
-                    order.status = OrderStatus.REJECTED
-                    order.metadata["reason"] = "MT5 order rejected"
-                    order.metadata["error_code"] = "REJECTED"
-                    return order
+        # A market-order submission is not idempotent.  Once ``place_order``
+        # returns, the broker may already have filled it even when a following
+        # quote lookup fails or the client sees a transient error.  Retrying
+        # here used to submit the same live order up to three times.  Treat all
+        # ambiguous outcomes as rejected locally and let broker reconciliation
+        # establish the actual position before any later order is considered.
+        try:
+            conn_order = ConnOrder(
+                symbol=order.symbol,
+                side=_SIDE_MAP.get(order.side.value, "buy"),
+                quantity=order.quantity,
+                order_type=order.order_type.value.lower(),
+                price=order.price,
+                stop_loss=order.stop_loss,
+                take_profit=order.take_profit,
+            )
+            result = self._mt5.place_order(conn_order)
+            if not result:
+                self._circuit_breaker.record_failure()
+                order.status = OrderStatus.REJECTED
+                order.metadata["reason"] = "MT5 order rejected"
+                order.metadata["error_code"] = "REJECTED"
+                return order
 
-                price = await self.get_price(order.symbol)
-                if price <= 0:
-                    if attempt < max_attempts - 1:
-                        logger.warning(
-                            "MT5 fill price=0 on attempt %d for %s, retrying",
-                            attempt + 1, order.symbol,
-                        )
-                        self._circuit_breaker.record_failure()
-                        time.sleep(0.5 * (2 ** attempt))  # exponential backoff
-                        continue
-                    self._circuit_breaker.record_failure()
-                    order.status = OrderStatus.REJECTED
-                    order.metadata["reason"] = f"MT5 returned zero fill price after {max_attempts} attempts"
-                    order.metadata["error_code"] = "ZERO_PRICE"
-                    logger.error(
-                        "Order %s rejected: fill price=0 after %d attempts for %s",
-                        order.id, max_attempts, order.symbol,
-                    )
-                    return order
-
-                # Success — reset circuit breaker
-                self._circuit_breaker.record_success()
-                order.status = OrderStatus.FILLED
-                order.metadata["fill_price"] = price
+            price = await self.get_price(order.symbol)
+            if price <= 0:
+                self._circuit_breaker.record_failure()
+                order.status = OrderStatus.REJECTED
+                order.metadata["reason"] = "MT5 submission outcome requires broker reconciliation: quote unavailable"
+                order.metadata["error_code"] = "AMBIGUOUS_SUBMISSION"
                 order.metadata["broker_order_id"] = result
-                order.metadata["error_code"] = "OK"
+                logger.critical(
+                    "Order %s submitted but fill cannot be verified for %s; "
+                    "blocking retries until broker reconciliation",
+                    order.id, order.symbol,
+                )
                 return order
 
-            except RuntimeError as exc:
-                last_err = exc
-                err_str = str(exc)
-                is_transient = any(code in err_str for code in ("10004", "10013", "REQUOTE", "TIMEOUT"))
-                if is_transient and attempt < max_attempts - 1:
-                    logger.warning(
-                        "MT5 transient error on attempt %d for %s: %s",
-                        attempt + 1, order.symbol, err_str,
-                    )
-                    time.sleep(0.5 * (2 ** attempt))
-                    continue
-                self._circuit_breaker.record_failure()
-                order.status = OrderStatus.REJECTED
-                order.metadata["reason"] = err_str
-                order.metadata["error_code"] = "MT5_ERROR"
-                logger.error("MT5 submit_order failed: %s", err_str)
-                return order
+            # Success — reset circuit breaker
+            self._circuit_breaker.record_success()
+            order.status = OrderStatus.FILLED
+            order.metadata["fill_price"] = price
+            order.metadata["broker_order_id"] = result
+            order.metadata["error_code"] = "OK"
+            return order
 
-            except Exception as e:
-                self._circuit_breaker.record_failure()
-                order.status = OrderStatus.REJECTED
-                order.metadata["reason"] = str(e)
-                order.metadata["error_code"] = "EXCEPTION"
-                logger.error("MT5 submit_order exception: %s", e, exc_info=True)
-                return order
+        except RuntimeError as exc:
+            # A timeout/requote after submission is ambiguous from the client
+            # perspective. Never resend a live market order without a broker-
+            # supplied idempotency guarantee.
+            self._circuit_breaker.record_failure()
+            order.status = OrderStatus.REJECTED
+            order.metadata["reason"] = str(exc)
+            order.metadata["error_code"] = "AMBIGUOUS_MT5_ERROR"
+            logger.error("MT5 submit_order failed or is ambiguous: %s", exc)
+            return order
 
-        self._circuit_breaker.record_failure()
-        order.status = OrderStatus.REJECTED
-        order.metadata["reason"] = f"MT5 order failed after {max_attempts} attempts: {last_err}"
-        order.metadata["error_code"] = "MAX_RETRIES"
-        return order
+        except Exception as e:
+            self._circuit_breaker.record_failure()
+            order.status = OrderStatus.REJECTED
+            order.metadata["reason"] = str(e)
+            order.metadata["error_code"] = "EXCEPTION"
+            logger.error("MT5 submit_order exception: %s", e, exc_info=True)
+            return order
 
     async def cancel_order(self, order_id: str) -> bool:
         # ponytail: MT5Broker has no cancel API surface; market orders fill instantly.
