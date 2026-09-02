@@ -1,11 +1,11 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
-## v8.0.19 — Documentation Sync + Skills Inventory + SSOT Alignment (2026-08-28)
+## v8.0.20 — Documentation Sync + Skills Inventory + SSOT Alignment (2026-08-28)
 
-### 📄 Documentation Sync (CANONICAL v8.0.19)
-- Synced all 53 md to SSOT: `AGENTS.md` v8.0.16→v8.0.19, `CLAUDE.md` v8.0.10→v8.0.19, `GEMINI.md` v8.0.10→v8.0.19, `WAR_PLAN.md` v5.1.0→v8.0.19, `QNA_AGENT_STATE.md` session9→v8.0.19 BAL 1445, `docs/architecture.md` 15→83 strategies, `README.md` BAL unified
+### 📄 Documentation Sync (CANONICAL v8.0.20)
+- Synced all 53 md to SSOT: `AGENTS.md` v8.0.16→v8.0.20, `CLAUDE.md` v8.0.10→v8.0.20, `GEMINI.md` v8.0.10→v8.0.20, `WAR_PLAN.md` v5.1.0→v8.0.20, `QNA_AGENT_STATE.md` session9→v8.0.20 BAL 1445, `docs/architecture.md` 15→83 strategies, `README.md` BAL unified
 - **Skills:** verified `D:\Obsidian\DhaherLabs\skills` 41 + `E:\skills` 41 + `C:\Users\Hi\.opencode\skill` 29 + 7 MCP — documented in `docs/SKILLS.md`, referenced in `AGENTS.md`
 - **CANONICAL sync:** BAL 1445 (ValetaxIntl-Live2 372044706), weekly 0 WIB (`launch.bat weekly-reset`), probe 0/32 (CandleScheduler), CPCV 207 (walk_forward 214), launch.bat 1 (single WIB), manager.py WIB (weekly_pnl_pct)
 - Verified via bash timeout 15000 (`Get-ChildItem -Recurse -Filter SKILL.md`, `dir`)

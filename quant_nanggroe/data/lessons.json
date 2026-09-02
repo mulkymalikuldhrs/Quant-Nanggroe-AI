@@ -3118,5 +3118,91 @@
     "occurred_at": "2026-08-28T02:11:54.484235+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "5f3aa7c5-71c",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.10",
+    "detail": "Trade dfa9d476-7a77-45d6-8d38-73d68336908e on USDJPY using ensemble. eval_duration_ms=0.03",
+    "context": {
+      "trade_id": "dfa9d476-7a77-45d6-8d38-73d68336908e",
+      "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.03,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:03:56.104973+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "ec358052-522",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURGBP",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:08:49.967410+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "0caad393-5e3",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for AUDUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:08:50.572558+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "7ba5ee1c-9b2",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.15",
+    "detail": "Trade ac6fce37-1ffc-47ea-a24e-32757a7e9a90 on EURUSD using ensemble. eval_duration_ms=0.03",
+    "context": {
+      "trade_id": "ac6fce37-1ffc-47ea-a24e-32757a7e9a90",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.03,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:08:56.397067+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "9e4cf884-5d8",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDCHF",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:09:01.791972+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2b29ba0d-344",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for NZDUSD",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:09:26.300264+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

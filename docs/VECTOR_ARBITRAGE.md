@@ -1,6 +1,6 @@
-# VECTOR ARBITRAGE — QNA v8.0.19 Real Trade Ready
+# VECTOR ARBITRAGE — QNA v8.0.20 Real Trade Ready
 
-**SSOT:** CANONICAL.md v8.0.19 — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207
+**SSOT:** CANONICAL.md v8.0.20 — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207
 
 ## 1. Currency Graph `engine/currency_graph.py:1` V 7→28
 Node EUR USD GBP JPY AUD CAD CHF, Edge R_A/B, check `R_A/B*R_B/C*R_C/A=1`, `find_triangular_cycles` C(28,3)=3276 threshold 0.0002.

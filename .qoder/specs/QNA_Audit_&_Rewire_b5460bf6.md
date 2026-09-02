@@ -72,4 +72,4 @@ Buat satu dokumen audit `docs/QNA_AUDIT_INVENTORY_v6.2.md` berisi:
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul
+> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul

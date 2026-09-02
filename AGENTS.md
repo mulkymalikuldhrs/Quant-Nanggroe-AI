@@ -49,7 +49,7 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 - **numpy in .venv** — Python 3.14 removed `np.clip` usage here; use `max(min(x,100),-100)`.
 - **pytest `langsmith` plugin** — crashes collection; `pip uninstall langsmith` if you see it.
 
-## Key Modules (v8.0.19 — CANONICAL SSOT)
+## Key Modules (v8.0.20 — CANONICAL SSOT)
 | Module | Purpose |
 |--------|---------|
 | `qna_tray.py` | Windows tray daemon control |
@@ -67,9 +67,9 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 | `engine/strategy_evaluator.py` | Rolling Sharpe/win rate, auto-disable |
 | `engine/data_pipeline.py` | Finnhub news, CFTC COT, sentiment cache |
 
-## Skills Inventory (v8.0.19 — verified 2026-08-28)
+## Skills Inventory (v8.0.20 — verified 2026-08-28)
 
-> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 > Full inventory: `docs/SKILLS.md`
 
 | Source | Expected | Actual Verified | Path | Count Method |
@@ -90,7 +90,7 @@ powershell -NoProfile -Command "Get-ChildItem -Path 'C:\Users\Hi\.opencode\skill
 ```
 All skills referenced via `docs/SKILLS.md` and AGENTS.md (this file). No install required — verification only, documented.
 
-**CANONICAL Sync (v8.0.19):**
+**CANONICAL Sync (v8.0.20):**
 - **BAL 1445:** ValetaxIntl-Live2 372044706 $1,445 — `CANONICAL.md:4,18`
 - **weekly 0 WIB:** `launch.bat weekly-reset` → `data/weekly_override.json` 0 until 2026-09-01 WIB + `data/persistence/risk_COLON_weekly_pnl.json`
 - **probe 0/32:** CandleScheduler `probe_empty=0/32` — `session.md:623`
@@ -106,8 +106,8 @@ All skills referenced via `docs/SKILLS.md` and AGENTS.md (this file). No install
 5. One position per symbol — enforced at broker truth.
 6. Committee RiskAgent VETO is absolute — no override, no bypass.
 7. Data pipeline returns None on failure (not empty), so committee treats it as unavailable, not neutral.
-8. **CANONICAL.md is SSOT — never edit CANONICAL to match docs; edit docs to match CANONICAL v8.0.19**
+8. **CANONICAL.md is SSOT — never edit CANONICAL to match docs; edit docs to match CANONICAL v8.0.20**
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.19 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
