@@ -1,6 +1,6 @@
 [project]
 name = "quant-nanggroe-ai"
-version = "8.0.21"
+version = "8.0.22"
 description = "Agentic Trading Intelligence OS — Multi-agent trading framework with LangGraph orchestration, constitutional risk management, and production-grade execution"
 requires-python = ">=3.11"
 license = {text = "MIT"}

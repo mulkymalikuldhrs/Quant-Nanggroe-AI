@@ -1,11 +1,30 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
-## v8.0.21 — Documentation Sync + Skills Inventory + SSOT Alignment (2026-08-28)
+## v8.0.22 — Risk Per-Symbol Live Config + Vector Live (2026-09-03)
 
-### 📄 Documentation Sync (CANONICAL v8.0.21)
-- Synced all 53 md to SSOT: `AGENTS.md` v8.0.16→v8.0.21, `CLAUDE.md` v8.0.10→v8.0.21, `GEMINI.md` v8.0.10→v8.0.21, `WAR_PLAN.md` v5.1.0→v8.0.21, `QNA_AGENT_STATE.md` session9→v8.0.21 BAL 1445, `docs/architecture.md` 15→83 strategies, `README.md` BAL unified
+### 🔓 Risk Fully Configurable via UI — Entire QNA Follows
+
+- **NEW: `config/risk_config.json` + `api/routes/risk_config.py` `GET /risk-config` `PUT` `GET /effective?symbol=EURUSD`** — 9 global fields `maxRiskPerTrade 0.5%` `maxDailyLoss 1%` `maxWeeklyLoss 3%` `maxDrawdown 10%` `maxLeverage 3` `maxPositionSize 10%` `maxDailyTrades 5` `minRiskReward 2` `maxCorrelated 3` + `perSymbol/perStrategy/perRegime` overrides e.g. `EURUSD 0.3%` `XAU 0.7%` `all 28` `C(28,3)=3276`
+- **Engine hot-reload:** `engine/risk/constants.py: _reload_from_risk_config()` + `engine/risk/manager.py: check_trade hot-reload per-symbol` `MAX_RISK_PER_TRADE_EFF = eff["maxRiskPerTrade"]` `kill_switch: reload_kill_thresholds()` — **no restart**, next `check_trade` uses new limits
+- **UI:** `dashboard/src/app/settings/page.tsx:385` `9 field global` `%`/`x`/`:1` + `Per-Symbol Risk` `Card` `EURUSD/XAU/all 28` `+ Add Override` `Trash2` `PUT /api/risk-config perSymbol` `whole QNA follows` `Constitutional • Live`
+
+### 🎯 Vector 6 Modul Live (Step 4.6)
+
+- `engine/currency_graph.py` `engine/cross_matrix.py` `engine/tri_arb_detector.py` `engine/vector_manifold.py` `engine/euclidean_mispricing.py` `engine/grid_executor.py` `api/routes/vector.py` `GET /vector/status` `dashboard/vector 31p` `sidebar vector NEW` `command-palette vector`
+
+### 📄 Documentation Sync (CANONICAL v8.0.22)
+
+- Bumped `55` md `v8.0.21→v8.0.22` + `pyproject 8.0.22` + `risk per-symbol` `vector live` `MCP 23689` `graphify 28208` `launch 5 remote OK`
+- `docs/UI_PLAN_v8.0.21.md:1` `31p` `vector live` `drag 0.05 mesh` `assistant LLM fallback` `auto launch daemon+qna entry`
+
+---
+
+## v8.0.22 — Documentation Sync + Skills Inventory + SSOT Alignment (2026-08-28)
+
+### 📄 Documentation Sync (CANONICAL v8.0.22)
+- Synced all 53 md to SSOT: `AGENTS.md` v8.0.16→v8.0.22, `CLAUDE.md` v8.0.10→v8.0.22, `GEMINI.md` v8.0.10→v8.0.22, `WAR_PLAN.md` v5.1.0→v8.0.22, `QNA_AGENT_STATE.md` session9→v8.0.22 BAL 1445, `docs/architecture.md` 15→83 strategies, `README.md` BAL unified
 - **Skills:** verified `D:\Obsidian\DhaherLabs\skills` 41 + `E:\skills` 41 + `C:\Users\Hi\.opencode\skill` 29 + 7 MCP — documented in `docs/SKILLS.md`, referenced in `AGENTS.md`
 - **CANONICAL sync:** BAL 1445 (ValetaxIntl-Live2 372044706), weekly 0 WIB (`launch.bat weekly-reset`), probe 0/32 (CandleScheduler), CPCV 207 (walk_forward 214), launch.bat 1 (single WIB), manager.py WIB (weekly_pnl_pct)
 - Verified via bash timeout 15000 (`Get-ChildItem -Recurse -Filter SKILL.md`, `dir`)
@@ -414,4 +433,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

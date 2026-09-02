@@ -115,14 +115,14 @@ qna.py daemon
 
 ## Dashboard
 
-Next.js 16.2.9 + React 19 + Tailwind 4 + Zustand 5 + Recharts 3 + lightweight-charts 5. **39 pages**, 10 API routes, proxied to FastAPI :8000.
+Next.js 16.2.9 + React 19 + Tailwind 4 + Zustand 5 + Recharts 3 + lightweight-charts 5. **31 pages**, 11 API routes, proxied to FastAPI :8000. **High-end design** (Ethereal Glass + Asymmetrical Bento, Geist, OLED #050505, mesh purple/emerald orbs, `backdrop-blur-2xl`, `rounded-[2rem]` double-bezel, fluid island, magnetic physics, `cubic-bezier(0.32,0.72,0,1)`).
 
 | Page | Purpose |
 |------|---------|
 | `/` | Main dashboard |
 | `/trading` | Live trading view |
-| `/trading/history` | Unlimited trade history |
-| `/candle-monitor` | Real-time candle close events |
+| `/trading/history` | Unlimited trade history (xlsx/pdf/docx export) |
+| `/candle-monitor` | Real-time candle close events (WS LIVE) |
 | `/committee` | Per-pair agent voting + risk veto + debate |
 | `/evaluator` | Strategy evaluator + pipeline health + auto-disable |
 | `/data-pipeline` | Causal engine, COT, SMT, macro weather |
@@ -135,6 +135,8 @@ Next.js 16.2.9 + React 19 + Tailwind 4 + Zustand 5 + Recharts 3 + lightweight-ch
 | `/memory` | Agent memory + knowledge graph |
 | `/portfolio` | Portfolio overview |
 | `/evolution` | Strategy evolution status |
+| `/vector` | **Vector arbitrage 6 modul live** (currency graph, R_ij matrix, tri-arb, manifold, euclidean mispricing σ 0.05√2, grid executor) |
+| `/settings` | **Risk fully configurable** — 9 global fields + per-symbol + per-strategy + per-regime overrides |
 
 ---
 
@@ -205,12 +207,12 @@ Quant-Nanggroe-AI/
 
 ---
 
-**Status:** LIVE on MT5 — CANONICAL v8.0.21 | **Broker:** ValetaxIntl-Live2 (login 372044706 QNA, BAL $1,445) | **Account:** QNA | **Weekly:** 0 WIB | **Probe:** 0/32 | **CPCV:** 207 | **Launcher:** `launch.bat` (single, WIB) | **Risk:** `engine/execution/manager.py` WIB weekly/PNL guard — see `CANONICAL.md` SSOT
+**Status:** LIVE on MT5 — CANONICAL v8.0.22 | **Broker:** ValetaxIntl-Live2 (login 372044706 QNA, BAL $1,445) | **Account:** QNA | **Weekly:** 0 WIB | **Probe:** 0/32 | **CPCV:** 207 | **Launcher:** `launch.bat` (single, WIB) | **Risk:** `config/risk_config.json` (fully configurable via UI, per-symbol/per-strategy/per-regime) | **Vector:** 6 modul live | **Whole QNA follows per-symbol config** — see `CANONICAL.md` SSOT
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

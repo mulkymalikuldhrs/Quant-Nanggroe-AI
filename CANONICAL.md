@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445)
-> Version: v8.0.21 | Last verified: 2026-09-03
+> Version: v8.0.22 | Last verified: 2026-09-03
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,7 +13,7 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.21 (pyproject: 8.0.21) |
+| **Version** | v8.0.22 (pyproject: 8.0.21) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
 | **Live broker** | ValetaxIntl-Live2, account 372044706 (QNA), balance $1,445, live MT5 |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
@@ -25,7 +25,7 @@
 | **Tests passing** | See CHANGELOG (latest full-battery count) |
 | **Path auto-detect** | Universal — all scripts use `Path(__file__).resolve().parent`; external deps in `quant_nanggroe/external/` (kronos, mue_x, hidden_regime, backtesting, smc, orderflow_map) via `Path(__file__).parent / 'external'`; no hardcoded `E:\` at runtime. |
 | **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 83 strategies |
-| **Dashboard** | 22 routes + Config Center (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes + Vector manifold, premium dark-tech |
+| **Dashboard** | 31 routes + Config Center (`/vector`) + Risk per-symbol `perSymbol` (EURUSD 0.3%, XAU 0.7%, all 28) | (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes + Vector manifold, premium dark-tech |
 
 ---
 
@@ -743,9 +743,9 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6 observability, d=||P-P0||, grid 0.05σ)
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6 observability, d=||P-P0||, grid 0.05σ)
 
-### 15.9 v8.0.21 — Vector Live + Committee/Risk Remediation + Datetime Shadow Fix (2026-09-03)
+### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Datetime Shadow Fix (2026-09-03)
 
 **Vector 6 modul LIVE (Step 4.6):**
 | # | Module | File | Role |

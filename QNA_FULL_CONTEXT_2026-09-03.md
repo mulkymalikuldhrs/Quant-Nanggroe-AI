@@ -14,7 +14,7 @@ Project: Quant-Nanggroe-AI (QNA) — Institutional autonomous quant hedge fund w
 Repository: https://codeberg.org/Dhaher-Labs/Quant-Nanggroe-AI (mirrors: github.com/mulkymalikuldhrs, github.com/mulkymalikuldhaher, gitlab.com/mulkymalikuldhr/Quant-Nanggroe-AI, github.com/Dhaher-Labs)
 Branch: master
 Commit: c452f5d4 (2026-09-03) — chore: update session.md with latest task output — plus 3108f654 vector live + c346c8bc committee fix (see git log 3108f654, c346c8bc, b17eadf4)
-Version: 8.0.21 (pyproject.toml:3) — CANONICAL v8.0.21 Last verified 2026-09-03 — dashboard Next 16.2.9 React 19.2.4
+Version: 8.0.21 (pyproject.toml:3) — CANONICAL v8.0.22 Last verified 2026-09-03 — dashboard Next 16.2.9 React 19.2.4
 Audit date: 2026-09-03
 Runtime environment: qna.py daemon (CandleScheduler 1s) + FastAPI :8000 + Next.js :3000 — Windows 11 Pro 10.0.26200 — launch.bat 198 + launch.sh 121 + qna_tray.py 43
 Python version: 3.13.14 (venv .venv/Scripts/python.exe) — ruff target py311 — Node 26.4.0
@@ -249,7 +249,7 @@ QNA → decision (buy/sell/hold, confidence) → _make_decision: qty via _risk_a
 
 | CLAIM | SOURCE | CODE REALITY | TEST | RUNTIME | STATUS |
 |-------|--------|--------------|------|---------|--------|
-| `v8.0.21 8.0.21` | `CANONICAL.md:5` | `pyproject.toml:3 8.0.21` `vector 6 modul` `committee 0.10` | `git grep 55` | `1bcb6dcb` | **PASS** |
+| `v8.0.22 8.0.21` | `CANONICAL.md:5` | `pyproject.toml:3 8.0.21` `vector 6 modul` `committee 0.10` | `git grep 55` | `1bcb6dcb` | **PASS** |
 | `83 strategies` | `CANONICAL §4` | `84 files` `212 registered` `2 strict admitted` | CPCV 207 | `212` | **STALE** (83 vs 212 vs 84) |
 | `50+ API routes` | `AGENTS.md:86` | `46 files 207 @router` | — | `45 include_router` | **STALE** (46<50) |
 | `no Math.random` | `AGENTS.md:86` | `Math.random 0` in dashboard | `websocket.ts:59` jitter intentional | `Math.random 0` | **PASS** (jitter documented) |
@@ -406,7 +406,7 @@ A Windows-first, MT5-live, **partially autonomous** quantitative hedge fund oper
 
 **K Strategy:** `TOTAL 84 (212 w/ archive) IMPLEMENTED 84 WIRED 77 (via AutoRegistry 212) VALIDATED 10 (CPCV) ADMITTED 2-4 strict (kaufman_ama+multi_timeframe+aroon+amdx) LIVE 2 strict (kaufman_ama+multi_timeframe) via _viable_engine_strategy_names, 10 via allocation_map` `RESEARCH 73` `ARCHIVED 59`.
 
-**L Documentation:** `CANONICAL.md v8.0.21` `README` `AGENTS.md` `docs/SKILLS.md` `docs/VECTOR_ARBITRAGE.md` `docs/architecture.md` `graph.html` `54 md` `vault 19` `MCP 23689`.
+**L Documentation:** `CANONICAL.md v8.0.22` `README` `AGENTS.md` `docs/SKILLS.md` `docs/VECTOR_ARBITRAGE.md` `docs/architecture.md` `graph.html` `54 md` `vault 19` `MCP 23689`.
 
 **M Remaining Problems:** See blockers.
 
@@ -420,7 +420,7 @@ A Windows-first, MT5-live, **partially autonomous** quantitative hedge fund oper
 
 ```text
 Did I inspect the real runtime path? YES — qna.py→candle_scheduler→autonomous→Risk→Execution→MT5 FILLED
-Did I verify every critical claim? YES — 15 target docs v8.0.21, 9 scorer, 84 strategies, 46 api 207 route, MCP 23689
+Did I verify every critical claim? YES — 15 target docs v8.0.22, 9 scorer, 84 strategies, 46 api 207 route, MCP 23689
 Did I find competing sources of truth? YES — 12 risk objects → single path now, docs/ ignored vs vault
 Did I search for dead/orphan code? YES — archive/old-scripts/test_singleton, EngineRiskManager dead
 Did I search for incomplete implementations? YES — tri_arb dry-run, vector observability
@@ -433,7 +433,7 @@ Did I audit tests? YES — 16 vector + 29 sampled, 1 collection error
 Did I audit data integrity? YES — stale veto 4×interval, yfinance fail-closed
 Did I audit strategy admission? YES — fail-closed fb0aa19c
 Did I distinguish hypothesis from evidence? YES — SMC/ICT no edge, vector no WF
-Did I consolidate documentation? YES — 54 md v8.0.21, docs/ARCHITECTURE_COMMITTEE
+Did I consolidate documentation? YES — 54 md v8.0.22, docs/ARCHITECTURE_COMMITTEE
 Did I update README? YES — AGENTS, CANONICAL, pyproject 8.0.21
 Did I archive obsolete material? YES — archive/strategy_legacy, =1.20.0, nul
 Did I verify the changes after making them? YES — py_compile 7 OK, tsc clean, MCP re-index, USDJPY FILLED

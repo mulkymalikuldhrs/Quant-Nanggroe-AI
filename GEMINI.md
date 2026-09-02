@@ -1,6 +1,6 @@
-# GEMINI.md — Quant Nanggroe AI v8.0.21 — CANONICAL SSOT
+# GEMINI.md — Quant Nanggroe AI v8.0.22 — CANONICAL SSOT
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 Canonical instructions in **AGENTS.md**. This is a quick reference.
 
@@ -16,7 +16,7 @@ Canonical instructions in **AGENTS.md**. This is a quick reference.
 - ✅ **Auto-Retrain** — hourly Bayesian re-tune + decay guard
 - ✅ **Context Gate** — high-impact news blackout veto (±30 min, circuit breaker)
 - **Weekly loss veto** hard-gated on Path-B
-- Test counts: see CHANGELOG (pytest green as of v8.0.21 — CANONICAL SSOT)
+- Test counts: see CHANGELOG (pytest green as of v8.0.22 — CANONICAL SSOT)
 
 **Commands:**
 ```bash
@@ -33,8 +33,8 @@ cd dashboard && npm run dev  # dashboard :3000
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

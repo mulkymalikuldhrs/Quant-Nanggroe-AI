@@ -90,4 +90,4 @@ All Phase 1-3 tasks are independent and can be parallelized. Phase 4 is a read-o
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

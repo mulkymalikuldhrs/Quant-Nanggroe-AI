@@ -49,7 +49,7 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 - **numpy in .venv** — Python 3.14 removed `np.clip` usage here; use `max(min(x,100),-100)`.
 - **pytest `langsmith` plugin** — crashes collection; `pip uninstall langsmith` if you see it.
 
-## Key Modules (v8.0.21 — CANONICAL SSOT)
+## Key Modules (v8.0.22 — CANONICAL SSOT)
 | Module | Purpose |
 |--------|---------|
 | `qna_tray.py` | Windows tray daemon control |
@@ -67,9 +67,9 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 | `engine/strategy_evaluator.py` | Rolling Sharpe/win rate, auto-disable |
 | `engine/data_pipeline.py` | Finnhub news, CFTC COT, sentiment cache |
 
-## Skills Inventory (v8.0.21 — Hermes→Opencode Bridge 2026-09-02)
+## Skills Inventory (v8.0.22 — Hermes→Opencode Bridge 2026-09-02)
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 > Full inventory: `docs/SKILLS.md:1` | Bridge: 63 `hermes-*` copies at `C:\Users\Hi\.opencode\skill\hermes-*:1`
 
 | Source | Expected (task) | Actual Verified | Path:line | Count Method |
@@ -97,7 +97,7 @@ powershell -NoProfile -Command "(Get-Content 'C:\Users\Hi\.config\opencode\openc
 ```
 Bridge: `mklink /D` requires elevation (`You do not have sufficient privilege` at `C:\Users\Hi\.opencode\skill:1`) → fallback `Copy-Item -Recurse -Force` (4 batches, timeout 15000 each). Idempotent: re-run skips `EXISTS hermes-*`. All Hermes skills now usable by Opencode via `hermes-<name>` prefix. See `docs/SKILLS.md:1` for full file:line table.
 
-**CANONICAL Sync (v8.0.21):**
+**CANONICAL Sync (v8.0.22):**
 - **BAL 1445:** ValetaxIntl-Live2 372044706 $1,445 — `CANONICAL.md:4,18`
 - **weekly 0 WIB:** `launch.bat weekly-reset` → `data/weekly_override.json` 0 until 2026-09-01 WIB + `data/persistence/risk_COLON_weekly_pnl.json`
 - **probe 0/32:** CandleScheduler `probe_empty=0/32` — `session.md:623`
@@ -113,12 +113,12 @@ Bridge: `mklink /D` requires elevation (`You do not have sufficient privilege` a
 5. One position per symbol — enforced at broker truth.
 6. Committee RiskAgent VETO is absolute — no override, no bypass.
 7. Data pipeline returns None on failure (not empty), so committee treats it as unavailable, not neutral.
-8. **CANONICAL.md is SSOT — never edit CANONICAL to match docs; edit docs to match CANONICAL v8.0.21**
+8. **CANONICAL.md is SSOT — never edit CANONICAL to match docs; edit docs to match CANONICAL v8.0.22**
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

@@ -1,6 +1,6 @@
-# TIDY PLAN ALL — QNA v8.0.21 (2026-09-02) — 994 dirs, 1451 files, 55 md, 20 ext
+# TIDY PLAN ALL — QNA v8.0.22 (2026-09-02) — 994 dirs, 1451 files, 55 md, 20 ext
 
-**SSOT:** `CANONICAL.md v8.0.21` — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, dashboard 31p
+**SSOT:** `CANONICAL.md v8.0.22` — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, dashboard 31p
 
 ## 1. Syntax/Extension (files with .)
 - **Tracked:** `py 1181` `tsx 62` `md 55` `json 30` `yml 29` `ts 23` `png 12` `yaml 11` `jsonl 8` `csv 5` `html 4` `toml 3` `bat 3` `bak 2` `mjs 2` `(no ext) 5`
@@ -19,9 +19,9 @@
 - **VERIFY:** `git status --short` `py_compile 7 OK` `tsc clean` `MCP re-index 23689`
 
 ## 4. Plan Tidy All *md (55 tracked, 427 total)
-- **Tracked 55:** `CANONICAL 1` `AGENTS 1` `README 1` `15 target` `v8.0.21` `BAR 1445` `docs/ARCHITECTURE_COMMITTEE 1` `docs/VECTOR_ARBITRAGE 1` (force-add)
+- **Tracked 55:** `CANONICAL 1` `AGENTS 1` `README 1` `15 target` `v8.0.22` `BAR 1445` `docs/ARCHITECTURE_COMMITTEE 1` `docs/VECTOR_ARBITRAGE 1` (force-add)
 - **Total 427:** `docs/vault 19` `docs/archive 5` `tasks 4` `archive/orphaned 3` `.agents/skills 4` etc — many ignored via `.gitignore:98 docs/`
-- **Plan:** Bump all `55` to `v8.0.21` `BAL 1445` `vector 6 modul live` `SSOT footer` (done `45317e05`). Keep `docs/vault` filesystem sync (robocopy 13), not git. Remove `archive/orphaned_v6.2/FILE_LISTING.md` `utf-8` error (re-encode). Add `docs/TIDY_PLAN` itself.
+- **Plan:** Bump all `55` to `v8.0.22` `BAL 1445` `vector 6 modul live` `SSOT footer` (done `45317e05`). Keep `docs/vault` filesystem sync (robocopy 13), not git. Remove `archive/orphaned_v6.2/FILE_LISTING.md` `utf-8` error (re-encode). Add `docs/TIDY_PLAN` itself.
 
 ## 5. Plan Tidy All Files (any)
 - **Junk:** `=1.20.0` (uv version artifact), `nul` (Windows), `temp_file`, `append_p2.py`, `gate4_probe.py`, `walk_forward_fixed.py` (one-off scripts), `agentic-ai-cover.*` in root (duplicate of `dashboard/public/`), `.commandcode/` (opencode artifact, add to .gitignore if needed)
@@ -30,7 +30,7 @@
 - **ACTION:** `git rm --cached` junk, `rm` filesystem, `echo ".commandcode/" >> .gitignore` if needed, `git add -f docs/VECTOR_ARBITRAGE.md` (force, docs ignored)
 
 ## 6. Documentation
-- **SSOT:** `CANONICAL.md v8.0.21` `15 target` `v8.0.21` `BAL 1445` `vector Step 4.6`
+- **SSOT:** `CANONICAL.md v8.0.22` `15 target` `v8.0.22` `BAL 1445` `vector Step 4.6`
 - **Docs:** `docs/ARCHITECTURE_COMMITTEE.md` `docs/VECTOR_ARBITRAGE.md` `docs/TIDY_PLAN_ALL` `docs/SKILLS.md 92 skills` `docs/auto/graphs 5 mmd` `GRAPH_REPORT.md 341k` `graph.html 1M` `graph.json 33M`
 - **Plan:** Keep `README.md` human quick-start, `AGENTS.md` hard shortcuts, `CANONICAL` SSOT, `docs/` for deep, `tasks/` for plan, `references/` for audit.
 
@@ -46,7 +46,7 @@
 
 ## 9. Next Steps
 1. **Clean junk:** `rm =1.20.0 nul temp_file append_p2.py gate4_probe.py walk_forward_fixed.py` `+ .commandcode` `.gitignore`
-2. **Bump docs:** `v8.0.20→v8.0.21` done `45317e05` `b79f5214` `fb0aa19c` `c346c8bc` `3108f654` `1bcb6dcb` `3dd1d5f1` `b17eadf4`
+2. **Bump docs:** `v8.0.20→v8.0.22` done `45317e05` `b79f5214` `fb0aa19c` `c346c8bc` `3108f654` `1bcb6dcb` `3dd1d5f1` `b17eadf4`
 3. **Wire vector live:** `Step 4.6 observability → grid mesh execution` `TRADE_ACTION_PENDING` `KillSwitch` `one-position`
 4. **Fix P0:** `strategy_allocation fail-closed` `grid Kelly` `weekly 72h cap` `committee 0.25` `RR persist` `PnL 3-retry`
 5. **Verify:** `py_compile 7 OK` `tsc clean` `MCP 23689` `test_vector 16/16` `test 29/29` `git status 0` `push 5 remote`
