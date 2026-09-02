@@ -3323,5 +3323,39 @@
     "occurred_at": "2026-09-02T16:59:19.678548+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "5e405b23-90a",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.16",
+    "detail": "Trade f3035222-8887-46ac-941f-45e22f2061ad on USDJPY using ensemble. eval_duration_ms=0.1",
+    "context": {
+      "trade_id": "f3035222-8887-46ac-941f-45e22f2061ad",
+      "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.1,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:13:58.858001+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "5baa31ad-491",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCHF: confidence=0.10",
+    "detail": "Trade 1114e253-efab-4bb9-94c7-a318fbe54611 on USDCHF using ensemble. eval_duration_ms=0.1",
+    "context": {
+      "trade_id": "1114e253-efab-4bb9-94c7-a318fbe54611",
+      "symbol": "USDCHF",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.1,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:14:24.087455+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
