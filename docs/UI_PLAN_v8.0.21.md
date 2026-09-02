@@ -63,3 +63,7 @@
 - **Minus:** `tri_arb dry-run` `grid lot fixed` `committee 0.10 noise` `CPCV 10/102` `weekly 0 mask` `yfinance` `tuning stale`
 - **Pro:** `fail-closed` `REAL-ONLY` `single position` `trailing short-aware` `BE+ATR` `auto-detect 372044706`
 - **Cons:** `vector origin USD-base` `√2 myth` `sigma 0.05 540 pips` `grid 0.05 across vols 10-100x`
+
+---
+
+> **SSOT:** `CANONICAL.md v8.0.21` — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live
