@@ -339,8 +339,6 @@ class RiskManager:
                     _ov = json.loads(_ov_path.read_text(encoding="utf-8"))
                     _until = _ov.get("until")
                     if _until:
-                        from datetime import datetime, timedelta, timezone
-                        WIB = timezone(timedelta(hours=7))
                         _until_str = str(_until).replace("Z", "+00:00")
                         _until_dt = datetime.fromisoformat(_until_str)
                         # Ensure _until_dt is timezone-aware

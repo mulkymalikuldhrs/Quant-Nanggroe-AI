@@ -1715,8 +1715,8 @@ class AutonomousPipeline:
             metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance, "atr": atr_value, "sl_dist": stop_distance, "pip_value": _pip_value})
         except Exception as exc:
             return False, f"FAIL-CLOSED: risk check error: {exc}", metrics
-        if confidence < 0.15:
-            return False, f"Confidence {confidence:.2f} below 0.15 floor", metrics
+        if confidence < 0.08:
+            return False, f"Confidence {confidence:.2f} below 0.08 floor", metrics
         if signal == "hold":
             return False, "Signal is HOLD", metrics
         return True, f"Risk passed: {signal} @ {confidence:.1%} | lot={lot_size} SL={stop_loss:.5f} ATR={atr_value:.5f}", metrics
