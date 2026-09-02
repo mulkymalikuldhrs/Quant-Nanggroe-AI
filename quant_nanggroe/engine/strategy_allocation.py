@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -133,10 +134,19 @@ def admitted_for_symbol(symbol: str, all_strategies: Optional[List[str]] = None)
         "CPCV allocation for %s (%s): %d proven-good, %d proven-bad",
         symbol, asset, len(proven_good), len(proven_bad))
 
-    # If caller provides full strategy list, filter out proven-bad only
+    # If caller provides full strategy list — FAIL-CLOSED when CPCV data exists for this asset
     if all_strategies is not None:
-        admitted = [s for s in all_strategies if s not in proven_bad]
-        return admitted
+        has_data = any(asset in per_symbol for per_symbol in reg.values())
+        if has_data:
+            if proven_good:
+                # only proven-good may trade; allow override for research
+                if os.environ.get("QNA_ALLOW_UNVALIDATED") == "1":
+                    return [s for s in all_strategies if s not in proven_bad]
+                return [s for s in all_strategies if s in proven_good]
+            # data exists but no proven-good for this asset → block all (no edge)
+            return []
+        # no CPCV data at all for this asset → fallback to old permissive
+        return [s for s in all_strategies if s not in proven_bad]
 
     # Legacy path: return only proven-good (for callers that don't pass all_strategies)
     return sorted(proven_good)

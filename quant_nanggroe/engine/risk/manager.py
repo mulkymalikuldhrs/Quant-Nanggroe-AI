@@ -344,6 +344,14 @@ class RiskManager:
                         # Ensure _until_dt is timezone-aware
                         if _until_dt.tzinfo is None:
                             _until_dt = _until_dt.replace(tzinfo=WIB)
+                        # Cap override at 72h max per professor debate P1
+                        try:
+                            if (_until_dt - datetime.now(WIB)).total_seconds() > 72 * 3600:
+                                capped = datetime.now(WIB) + timedelta(hours=72)
+                                logger.warning("Weekly override capped at 72h: %s -> %s", _until_dt, capped)
+                                _until_dt = capped
+                        except Exception:
+                            pass
                         if datetime.now(WIB) < _until_dt:
                             _ov_weekly = float(_ov.get("weekly_pnl", week_pnl))
                             if _ov_weekly != week_pnl:
