@@ -1,6 +1,6 @@
-# CLAUDE.md — Quant Nanggroe AI v8.0.20 — CANONICAL SSOT
+# CLAUDE.md — Quant Nanggroe AI v8.0.21 — CANONICAL SSOT
 
-> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 # CLAUDE.md — Quant Nanggroe AI (Quant Nation)
 
@@ -33,7 +33,7 @@ quant_nanggroe/
   core/scoring/                   ← 8 scorers + FusionEngine + MTFEngine + WeightEvolver + TTLCache
   hedge_fund/portfolio/main.py    ← 7-stage pipeline: run_once()
   engine/
-    strategies/                   ← 83 @StrategyRegistry.register strategies (v8.0.20 — 9 CPCV-admitted, 207 WF-validated)
+    strategies/                   ← 83 @StrategyRegistry.register strategies (v8.0.21 — 9 CPCV-admitted, 207 WF-validated)
     risk/                         ← KillSwitch C5, DCC-GARCH, VaR, Kelly, constants (25 files) — weekly 0 WIB, probe 0/32
     causal/                       ← Causal Macro Engine suite (14 files)
     execution/                    ← Order routing + broker adapters
@@ -127,4 +127,8 @@ Built by Dhaher Labs.
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

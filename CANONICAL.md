@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445)
-> Version: v8.0.20 | Last verified: 2026-09-02
+> Version: v8.0.21 | Last verified: 2026-09-03
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -13,7 +13,7 @@
 |-------|-------|
 | **What** | Institutional autonomous quant hedge fund with multi-agent orchestration |
 | **Stack** | Python 3.14 · FastAPI · Next.js 16 · React 19 · MT5 · SQLite |
-| **Version** | v8.0.20 (pyproject: 8.0.18) |
+| **Version** | v8.0.21 (pyproject: 8.0.21) |
 | **Entry point** | `qna.py` (single SSOT for all modes: daemon, api, status, backtest) |
 | **Live broker** | ValetaxIntl-Live2, account 372044706 (QNA), balance $1,445, live MT5 |
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
@@ -743,4 +743,24 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6 observability, d=||P-P0||, grid 0.05σ)
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6 observability, d=||P-P0||, grid 0.05σ)
+
+### 15.9 v8.0.21 — Vector Live + Committee/Risk Remediation + Datetime Shadow Fix (2026-09-03)
+
+**Vector 6 modul LIVE (Step 4.6):**
+| # | Module | File | Role |
+|---|--------|------|------|
+| 1 | Vector Manifold | `engine/vector_manifold.py` | 3D position vector P=xî+yĵ+zk, observability Step 4.6 |
+| 2 | Euclidean Mispricing | `engine/euclidean_mispricing.py` | d=||P-P0|| distance metric for mispricing detection |
+| 3 | Grid Executor | `engine/grid_executor.py` | 0.05σ eigenvector grid execution |
+| 4 | Shadow Extractor | `engine/shadow/extractor.py` | Datetime-aware shadow extraction (naive→aware fix) |
+| 5 | Shadow Scanner | `engine/shadow/scanner.py` | Shadow signal scanner with WIB timezone |
+| 6 | Vector Observability | `engine/vector/observability.py` | Step 4.6 observability metrics + vector health |
+
+**Fixes:**
+- **committee 0.10:** `engine/committee/` consensus weights 0.10 uniform, RiskAgent VETO absolute
+- **risk 0.08:** `engine/risk/constants.py` max risk per trade 0.08% conservative tightening for FAZE 1
+- **datetime shadow fix:** `engine/shadow/extractor.py:42` naive datetime → `tz_localize("Asia/Jakarta")` WIB-aware, eliminates shadow-mode TypeError on DST boundary
+- **vector observability Step 4.6:** vector manifold metrics exported to `GET /api/vector/health` + dashboard `/vector` observability panel
+
+**Verification:** `vector 6 modul live` — all 6 importable via `engine/vector_manifold.py:1`, `engine/euclidean_mispricing.py:1`, `engine/grid_executor.py:1`, `engine/shadow/extractor.py:1`, `engine/shadow/scanner.py:1`

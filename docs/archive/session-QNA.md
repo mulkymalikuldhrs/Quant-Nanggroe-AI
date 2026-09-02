@@ -128,3 +128,7 @@ Promote to Active → Strategy now runs with optimized params
 ---
 
 *v5.1.0 — Built with fury from Aceh, Indonesia 🇮🇩*
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

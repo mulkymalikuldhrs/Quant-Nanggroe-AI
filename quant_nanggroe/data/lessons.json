@@ -3204,5 +3204,124 @@
     "occurred_at": "2026-09-02T15:09:26.300264+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "663b8359-8c1",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for GBPUSD: confidence=0.10",
+    "detail": "Trade 9cb95b5a-08f6-4912-9594-2935fa38b4d3 on GBPUSD using ensemble. eval_duration_ms=0.08",
+    "context": {
+      "trade_id": "9cb95b5a-08f6-4912-9594-2935fa38b4d3",
+      "symbol": "GBPUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.08,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T15:43:53.195156+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "f659f380-574",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for AUDUSD: confidence=0.10",
+    "detail": "Trade 570b812f-83dd-4601-87d3-8f61d9352b0b on AUDUSD using ensemble. eval_duration_ms=0.12",
+    "context": {
+      "trade_id": "570b812f-83dd-4601-87d3-8f61d9352b0b",
+      "symbol": "AUDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.12,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:01:07.680248+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "3a21a17a-cd3",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.14",
+    "detail": "Trade e23b48e2-d764-43fd-8fcc-161cc3febe5a on EURUSD using ensemble. eval_duration_ms=0.04",
+    "context": {
+      "trade_id": "e23b48e2-d764-43fd-8fcc-161cc3febe5a",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.04,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:01:45.724288+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "dd3bd96c-9cf",
+    "category": "trade_evaluation",
+    "severity": "warning",
+    "summary": "Strategy ensemble needs evolution: PnL=-0.00, quality=0.00",
+    "detail": "Trade 8ef44227-fc12-4ed5-a242-1e65e49739ed on AUDUSD using ensemble. eval_duration_ms=0.37",
+    "context": {
+      "trade_id": "8ef44227-fc12-4ed5-a242-1e65e49739ed",
+      "symbol": "AUDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.37,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:13:47.824743+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "0f1ad3e8-75b",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.14",
+    "detail": "Trade a4e33129-21cf-47ab-8c4f-527ceb3925b9 on EURUSD using ensemble. eval_duration_ms=0.02",
+    "context": {
+      "trade_id": "a4e33129-21cf-47ab-8c4f-527ceb3925b9",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.02,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:14:26.267323+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "93693484-f87",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for GBPUSD: confidence=0.14",
+    "detail": "Trade 3aeb3758-5368-4fa5-a933-880d4ee1ac0e on GBPUSD using ensemble. eval_duration_ms=0.03",
+    "context": {
+      "trade_id": "3aeb3758-5368-4fa5-a933-880d4ee1ac0e",
+      "symbol": "GBPUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.03,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:44:01.844415+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "af31ca49-771",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for GBPUSD: confidence=0.10",
+    "detail": "Trade f272b85e-699f-4167-8575-a8e6ff97fd31 on GBPUSD using ensemble. eval_duration_ms=0.12",
+    "context": {
+      "trade_id": "f272b85e-699f-4167-8575-a8e6ff97fd31",
+      "symbol": "GBPUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.12,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:59:19.678548+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

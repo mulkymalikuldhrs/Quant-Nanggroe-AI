@@ -80,7 +80,9 @@ def calculate_position_size(signal, balance, atr=None, config=None):
     risk_amount = balance * position_fraction
     raw_lot = (risk_amount / (sl_pips * dollar_per_pip_per_lot)) if (sl_pips * dollar_per_pip_per_lot) > 0 else 0.01
     lot = max(0.01, round(raw_lot, 2))
-    notional_cap_lot = max(0.01, round(balance * position_fraction * 2 / 1000, 2))
+    # ponytail: *2 was too restrictive for small balance 1445 (0.014 cap -> 0.14% risk vs 0.5% target).
+    # Use *10 to allow 0.5% risk to be achieved (0.07 cap for 1445) while still capping at 10% buying power via MaxPositionGuard.
+    notional_cap_lot = max(0.01, round(balance * position_fraction * 10 / 1000, 2))
     lot = min(lot, notional_cap_lot)
     lot = max(0.01, lot)
 

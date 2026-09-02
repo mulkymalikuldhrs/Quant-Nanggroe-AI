@@ -78,3 +78,7 @@ WF 0 viable needs tuning, naive regime risky cap exposure, micro-order real loss
 
 ## Execution Handoff
 Phase 1 Tasks 1-6 reversible safe autonomously. Phase 2 Task 8 and Phase 3 Tasks 10-11 need explicit GO.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live

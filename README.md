@@ -205,8 +205,12 @@ Quant-Nanggroe-AI/
 
 ---
 
-**Status:** LIVE on MT5 — CANONICAL v8.0.20 | **Broker:** ValetaxIntl-Live2 (login 372044706 QNA, BAL $1,445) | **Account:** QNA | **Weekly:** 0 WIB | **Probe:** 0/32 | **CPCV:** 207 | **Launcher:** `launch.bat` (single, WIB) | **Risk:** `engine/execution/manager.py` WIB weekly/PNL guard — see `CANONICAL.md` SSOT
+**Status:** LIVE on MT5 — CANONICAL v8.0.21 | **Broker:** ValetaxIntl-Live2 (login 372044706 QNA, BAL $1,445) | **Account:** QNA | **Weekly:** 0 WIB | **Probe:** 0/32 | **CPCV:** 207 | **Launcher:** `launch.bat` (single, WIB) | **Risk:** `engine/execution/manager.py` WIB weekly/PNL guard — see `CANONICAL.md` SSOT
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.20 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.21 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live
