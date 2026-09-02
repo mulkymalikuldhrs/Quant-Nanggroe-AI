@@ -3357,5 +3357,22 @@
     "occurred_at": "2026-09-02T17:14:24.087455+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "724c866e-5d4",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCHF: confidence=0.10",
+    "detail": "Trade 0f3b6dd7-a728-4d68-90a9-7c97e8e19197 on USDCHF using ensemble. eval_duration_ms=0.06",
+    "context": {
+      "trade_id": "0f3b6dd7-a728-4d68-90a9-7c97e8e19197",
+      "symbol": "USDCHF",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.06,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:22:39.291405+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
