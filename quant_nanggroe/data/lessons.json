@@ -3206,223 +3206,223 @@
     "resolution": ""
   },
   {
-    "id": "e81772eb-63d",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for USDCAD: confidence=0.10",
-    "detail": "Trade 78fa6c6d-4b6c-4655-8f44-cc3385b2d7c7 on USDCAD using ensemble. eval_duration_ms=0.03",
-    "context": {
-      "trade_id": "78fa6c6d-4b6c-4655-8f44-cc3385b2d7c7",
-      "symbol": "USDCAD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.03,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T15:43:52.424891+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "fbc59b1e-7ad",
+    "id": "663b8359-8c1",
     "category": "trade_evaluation",
     "severity": "info",
     "summary": "Low confidence trade for GBPUSD: confidence=0.10",
-    "detail": "Trade 4870fd4f-59d6-4492-a4e4-d3e6f85902c8 on GBPUSD using ensemble. eval_duration_ms=0.04",
+    "detail": "Trade 9cb95b5a-08f6-4912-9594-2935fa38b4d3 on GBPUSD using ensemble. eval_duration_ms=0.08",
     "context": {
-      "trade_id": "4870fd4f-59d6-4492-a4e4-d3e6f85902c8",
+      "trade_id": "9cb95b5a-08f6-4912-9594-2935fa38b4d3",
       "symbol": "GBPUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.04,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T15:44:14.037480+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "b39d074e-5be",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for AUDUSD: confidence=0.10",
-    "detail": "Trade 969dacb5-c97b-4b48-8414-584db046ec3a on AUDUSD using ensemble. eval_duration_ms=0.06",
-    "context": {
-      "trade_id": "969dacb5-c97b-4b48-8414-584db046ec3a",
-      "symbol": "AUDUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.06,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T16:01:22.609444+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "fea15460-769",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for EURUSD: confidence=0.14",
-    "detail": "Trade 6703a983-17ac-423b-9061-623ce70c253a on EURUSD using ensemble. eval_duration_ms=0.22",
-    "context": {
-      "trade_id": "6703a983-17ac-423b-9061-623ce70c253a",
-      "symbol": "EURUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.22,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T16:01:39.453413+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "1a5693a8-ff8",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for AUDUSD: confidence=0.10",
-    "detail": "Trade 3f8c00f9-c728-478c-99d4-7f67740d9953 on AUDUSD using ensemble. eval_duration_ms=0.04",
-    "context": {
-      "trade_id": "3f8c00f9-c728-478c-99d4-7f67740d9953",
-      "symbol": "AUDUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.04,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T16:13:48.125674+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "82b31be6-3ab",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for EURUSD: confidence=0.14",
-    "detail": "Trade d13fbd61-53f6-4c2f-baa1-173303a369d7 on EURUSD using ensemble. eval_duration_ms=0.04",
-    "context": {
-      "trade_id": "d13fbd61-53f6-4c2f-baa1-173303a369d7",
-      "symbol": "EURUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.04,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T16:14:27.166498+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "7891f9e4-fdd",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for GBPUSD: confidence=0.14",
-    "detail": "Trade b4fc0b2f-710c-49fc-afd3-714bb2393aec on GBPUSD using ensemble. eval_duration_ms=0.02",
-    "context": {
-      "trade_id": "b4fc0b2f-710c-49fc-afd3-714bb2393aec",
-      "symbol": "GBPUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.02,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T16:44:07.965032+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "1ce63840-151",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for GBPUSD: confidence=0.10",
-    "detail": "Trade d98f8493-81bb-415f-9cdc-130045e62058 on GBPUSD using ensemble. eval_duration_ms=0.1",
-    "context": {
-      "trade_id": "d98f8493-81bb-415f-9cdc-130045e62058",
-      "symbol": "GBPUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.1,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T16:59:18.942795+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "5a951fca-3c8",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for USDJPY: confidence=0.16",
-    "detail": "Trade d9f5bc24-a054-4642-9646-106da7f9fa89 on USDJPY using ensemble. eval_duration_ms=0.06",
-    "context": {
-      "trade_id": "d9f5bc24-a054-4642-9646-106da7f9fa89",
-      "symbol": "USDJPY",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.06,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T17:13:57.946212+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "687cee65-4cf",
-    "category": "trade_evaluation",
-    "severity": "warning",
-    "summary": "Strategy ensemble needs evolution: PnL=-0.00, quality=0.00",
-    "detail": "Trade 1f0f768b-7e61-4ca0-a294-97847c8e3089 on USDCHF using ensemble. eval_duration_ms=0.28",
-    "context": {
-      "trade_id": "1f0f768b-7e61-4ca0-a294-97847c8e3089",
-      "symbol": "USDCHF",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.28,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T17:14:21.724154+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "de15d70c-8ea",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for USDJPY: confidence=0.10",
-    "detail": "Trade f9acb0fb-d6c0-4174-a7b0-7dfc823056ae on USDJPY using ensemble. eval_duration_ms=0.08",
-    "context": {
-      "trade_id": "f9acb0fb-d6c0-4174-a7b0-7dfc823056ae",
-      "symbol": "USDJPY",
       "strategy": "ensemble",
       "eval_duration_ms": 0.08,
       "_sla_tracked": true
     },
-    "occurred_at": "2026-09-02T17:44:22.326521+00:00",
+    "occurred_at": "2026-09-02T15:43:53.195156+00:00",
     "resolved": false,
     "resolution": ""
   },
   {
-    "id": "9d494a6e-75f",
+    "id": "f659f380-574",
     "category": "trade_evaluation",
     "severity": "info",
-    "summary": "Low confidence trade for GBPUSD: confidence=0.10",
-    "detail": "Trade 25190228-6812-4ccb-9574-ebb68db0fefe on GBPUSD using ensemble. eval_duration_ms=0.03",
+    "summary": "Low confidence trade for AUDUSD: confidence=0.10",
+    "detail": "Trade 570b812f-83dd-4601-87d3-8f61d9352b0b on AUDUSD using ensemble. eval_duration_ms=0.12",
     "context": {
-      "trade_id": "25190228-6812-4ccb-9574-ebb68db0fefe",
+      "trade_id": "570b812f-83dd-4601-87d3-8f61d9352b0b",
+      "symbol": "AUDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.12,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:01:07.680248+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "3a21a17a-cd3",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.14",
+    "detail": "Trade e23b48e2-d764-43fd-8fcc-161cc3febe5a on EURUSD using ensemble. eval_duration_ms=0.04",
+    "context": {
+      "trade_id": "e23b48e2-d764-43fd-8fcc-161cc3febe5a",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.04,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:01:45.724288+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "dd3bd96c-9cf",
+    "category": "trade_evaluation",
+    "severity": "warning",
+    "summary": "Strategy ensemble needs evolution: PnL=-0.00, quality=0.00",
+    "detail": "Trade 8ef44227-fc12-4ed5-a242-1e65e49739ed on AUDUSD using ensemble. eval_duration_ms=0.37",
+    "context": {
+      "trade_id": "8ef44227-fc12-4ed5-a242-1e65e49739ed",
+      "symbol": "AUDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.37,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:13:47.824743+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "0f1ad3e8-75b",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.14",
+    "detail": "Trade a4e33129-21cf-47ab-8c4f-527ceb3925b9 on EURUSD using ensemble. eval_duration_ms=0.02",
+    "context": {
+      "trade_id": "a4e33129-21cf-47ab-8c4f-527ceb3925b9",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.02,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:14:26.267323+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "93693484-f87",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for GBPUSD: confidence=0.14",
+    "detail": "Trade 3aeb3758-5368-4fa5-a933-880d4ee1ac0e on GBPUSD using ensemble. eval_duration_ms=0.03",
+    "context": {
+      "trade_id": "3aeb3758-5368-4fa5-a933-880d4ee1ac0e",
       "symbol": "GBPUSD",
       "strategy": "ensemble",
       "eval_duration_ms": 0.03,
       "_sla_tracked": true
     },
-    "occurred_at": "2026-09-02T17:59:27.519265+00:00",
+    "occurred_at": "2026-09-02T16:44:01.844415+00:00",
     "resolved": false,
     "resolution": ""
   },
   {
-    "id": "bb08fa0d-033",
+    "id": "af31ca49-771",
     "category": "trade_evaluation",
     "severity": "info",
-    "summary": "Low confidence trade for USDJPY: confidence=0.10",
-    "detail": "Trade 2b21d10b-5138-4380-af5b-6876b28b94df on USDJPY using ensemble. eval_duration_ms=0.04",
+    "summary": "Low confidence trade for GBPUSD: confidence=0.10",
+    "detail": "Trade f272b85e-699f-4167-8575-a8e6ff97fd31 on GBPUSD using ensemble. eval_duration_ms=0.12",
     "context": {
-      "trade_id": "2b21d10b-5138-4380-af5b-6876b28b94df",
+      "trade_id": "f272b85e-699f-4167-8575-a8e6ff97fd31",
+      "symbol": "GBPUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.12,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T16:59:19.678548+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "5e405b23-90a",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.16",
+    "detail": "Trade f3035222-8887-46ac-941f-45e22f2061ad on USDJPY using ensemble. eval_duration_ms=0.1",
+    "context": {
+      "trade_id": "f3035222-8887-46ac-941f-45e22f2061ad",
       "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.1,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:13:58.858001+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "5baa31ad-491",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCHF: confidence=0.10",
+    "detail": "Trade 1114e253-efab-4bb9-94c7-a318fbe54611 on USDCHF using ensemble. eval_duration_ms=0.1",
+    "context": {
+      "trade_id": "1114e253-efab-4bb9-94c7-a318fbe54611",
+      "symbol": "USDCHF",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.1,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:14:24.087455+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "724c866e-5d4",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCHF: confidence=0.10",
+    "detail": "Trade 0f3b6dd7-a728-4d68-90a9-7c97e8e19197 on USDCHF using ensemble. eval_duration_ms=0.06",
+    "context": {
+      "trade_id": "0f3b6dd7-a728-4d68-90a9-7c97e8e19197",
+      "symbol": "USDCHF",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.06,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:22:39.291405+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "eba0e97a-4b2",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURUSD: confidence=0.10",
+    "detail": "Trade a2df0dec-fe5e-47d5-b0a6-a51d09ebe894 on EURUSD using ensemble. eval_duration_ms=0.09",
+    "context": {
+      "trade_id": "a2df0dec-fe5e-47d5-b0a6-a51d09ebe894",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.09,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T17:23:00.944024+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "605522ce-588",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for GBPUSD: confidence=0.10",
+    "detail": "Trade 5521a455-f66a-43f7-be8a-7782eba5ba25 on GBPUSD using ensemble. eval_duration_ms=0.04",
+    "context": {
+      "trade_id": "5521a455-f66a-43f7-be8a-7782eba5ba25",
+      "symbol": "GBPUSD",
       "strategy": "ensemble",
       "eval_duration_ms": 0.04,
       "_sla_tracked": true
     },
-    "occurred_at": "2026-09-02T18:14:07.071133+00:00",
+    "occurred_at": "2026-09-02T17:59:04.888688+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "3ad2d6ba-54f",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade e962500d-3177-4c22-92c1-183f84dadccd on USDCAD using ensemble. eval_duration_ms=0.04",
+    "context": {
+      "trade_id": "e962500d-3177-4c22-92c1-183f84dadccd",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.04,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T18:28:46.990481+00:00",
     "resolved": false,
     "resolution": ""
   }
