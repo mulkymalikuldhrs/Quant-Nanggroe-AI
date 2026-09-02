@@ -3359,87 +3359,70 @@
     "resolution": ""
   },
   {
-    "id": "724c866e-5d4",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for USDCHF: confidence=0.10",
-    "detail": "Trade 0f3b6dd7-a728-4d68-90a9-7c97e8e19197 on USDCHF using ensemble. eval_duration_ms=0.06",
-    "context": {
-      "trade_id": "0f3b6dd7-a728-4d68-90a9-7c97e8e19197",
-      "symbol": "USDCHF",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.06,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T17:22:39.291405+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "eba0e97a-4b2",
-    "category": "trade_evaluation",
-    "severity": "info",
-    "summary": "Low confidence trade for EURUSD: confidence=0.10",
-    "detail": "Trade a2df0dec-fe5e-47d5-b0a6-a51d09ebe894 on EURUSD using ensemble. eval_duration_ms=0.09",
-    "context": {
-      "trade_id": "a2df0dec-fe5e-47d5-b0a6-a51d09ebe894",
-      "symbol": "EURUSD",
-      "strategy": "ensemble",
-      "eval_duration_ms": 0.09,
-      "_sla_tracked": true
-    },
-    "occurred_at": "2026-09-02T17:23:00.944024+00:00",
-    "resolved": false,
-    "resolution": ""
-  },
-  {
-    "id": "605522ce-588",
+    "id": "321085ea-2a9",
     "category": "trade_evaluation",
     "severity": "info",
     "summary": "Low confidence trade for GBPUSD: confidence=0.10",
-    "detail": "Trade 5521a455-f66a-43f7-be8a-7782eba5ba25 on GBPUSD using ensemble. eval_duration_ms=0.04",
+    "detail": "Trade 23326964-0b25-402d-af1c-b7f6320e2dbd on GBPUSD using ensemble. eval_duration_ms=0.05",
     "context": {
-      "trade_id": "5521a455-f66a-43f7-be8a-7782eba5ba25",
+      "trade_id": "23326964-0b25-402d-af1c-b7f6320e2dbd",
       "symbol": "GBPUSD",
       "strategy": "ensemble",
-      "eval_duration_ms": 0.04,
+      "eval_duration_ms": 0.05,
       "_sla_tracked": true
     },
-    "occurred_at": "2026-09-02T17:59:04.888688+00:00",
+    "occurred_at": "2026-09-02T17:59:06.375918+00:00",
     "resolved": false,
     "resolution": ""
   },
   {
-    "id": "3ad2d6ba-54f",
+    "id": "7e3c3eac-023",
     "category": "trade_evaluation",
     "severity": "info",
     "summary": "Low confidence trade for USDCAD: confidence=0.10",
-    "detail": "Trade e962500d-3177-4c22-92c1-183f84dadccd on USDCAD using ensemble. eval_duration_ms=0.04",
+    "detail": "Trade 448c7c6f-1712-4652-9a79-16bd1322c9ed on USDCAD using ensemble. eval_duration_ms=0.03",
     "context": {
-      "trade_id": "e962500d-3177-4c22-92c1-183f84dadccd",
+      "trade_id": "448c7c6f-1712-4652-9a79-16bd1322c9ed",
       "symbol": "USDCAD",
       "strategy": "ensemble",
-      "eval_duration_ms": 0.04,
+      "eval_duration_ms": 0.03,
       "_sla_tracked": true
     },
-    "occurred_at": "2026-09-02T18:28:46.990481+00:00",
+    "occurred_at": "2026-09-02T18:28:44.725551+00:00",
     "resolved": false,
     "resolution": ""
   },
   {
-    "id": "8c3f71f9-b31",
+    "id": "c2c2baf5-6f1",
     "category": "trade_evaluation",
     "severity": "info",
     "summary": "Low confidence trade for GBPUSD: confidence=0.10",
-    "detail": "Trade e79e0982-4190-4792-8acf-878134f22f12 on GBPUSD using ensemble. eval_duration_ms=0.03",
+    "detail": "Trade 922d77ba-78ae-43b4-b81e-9e1fb899e257 on GBPUSD using ensemble. eval_duration_ms=0.03",
     "context": {
-      "trade_id": "e79e0982-4190-4792-8acf-878134f22f12",
+      "trade_id": "922d77ba-78ae-43b4-b81e-9e1fb899e257",
       "symbol": "GBPUSD",
       "strategy": "ensemble",
       "eval_duration_ms": 0.03,
       "_sla_tracked": true
     },
-    "occurred_at": "2026-09-02T18:58:57.055039+00:00",
+    "occurred_at": "2026-09-02T18:58:56.308993+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "641a1ab9-a09",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCHF: confidence=0.10",
+    "detail": "Trade 5f88b5da-51c4-4432-b7a5-608c311a0992 on USDCHF using ensemble. eval_duration_ms=0.04",
+    "context": {
+      "trade_id": "5f88b5da-51c4-4432-b7a5-608c311a0992",
+      "symbol": "USDCHF",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.04,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T19:14:13.719129+00:00",
     "resolved": false,
     "resolution": ""
   }

@@ -63,6 +63,8 @@ function SettingsContent() {
   const [exchanges, setExchanges] = useState<ExchangeEntry[]>([]);
   const [llmKeys, setLlmKeys] = useState<LlmKeyEntry[]>([]);
   const [riskLimits, setRiskLimits] = useState<Record<string, number>>({});
+  const [perSymbol, setPerSymbol] = useState<Record<string, Record<string, number>>>({});
+  const [newPerSymbol, setNewPerSymbol] = useState<{ symbol: string; key: string; value: string }>({ symbol: "", key: "maxRiskPerTrade", value: "" });
   const [systemToggles, setSystemToggles] = useState<Record<string, boolean>>({});
 
   const [agentModels, setAgentModels] = useState<Record<string, string>>({
@@ -85,8 +87,7 @@ function SettingsContent() {
       // riskLimits from credentials (legacy) + live risk-config (entire QNA follows)
       let mergedRisk = { ...(d.riskLimits ?? {}) };
       try {
-        const rc = await apiRequest<Record<string, number>>("/api/risk-config");
-        // map backend keys to UI keys (backend is fractional 0.005, UI is % 0.5 etc, but we store as % for UI)
+        const rc = await apiRequest<Record<string, any>>("/api/risk-config");
         if (rc.maxRiskPerTrade != null) mergedRisk.maxRiskPerTrade = Math.round(rc.maxRiskPerTrade * 100 * 100) / 100;
         if (rc.maxDailyLoss != null) mergedRisk.maxDailyLoss = Math.round(rc.maxDailyLoss * 100 * 100) / 100;
         if (rc.maxWeeklyLoss != null) mergedRisk.maxWeeklyLoss = Math.round(rc.maxWeeklyLoss * 100 * 100) / 100;
@@ -95,6 +96,8 @@ function SettingsContent() {
         if (rc.maxLeverage != null) mergedRisk.maxLeverage = rc.maxLeverage;
         if (rc.maxDailyTrades != null) mergedRisk.maxDailyTrades = rc.maxDailyTrades;
         if (rc.minRiskReward != null) mergedRisk.minRiskReward = rc.minRiskReward;
+        if (rc.maxCorrelatedPositions != null) mergedRisk.maxCorrelatedPositions = rc.maxCorrelatedPositions;
+        if (rc.perSymbol) setPerSymbol(rc.perSymbol as Record<string, Record<string, number>>);
       } catch { /* risk-config optional */ }
       setRiskLimits(mergedRisk);
       setSystemToggles(d.systemToggles ?? {});
@@ -410,6 +413,55 @@ function SettingsContent() {
           {saving === "riskLimits" ? <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1.5" />}
           Save Risk Limits
         </Button>
+      </ChartCard>
+
+      {/* Per-Symbol Risk Overrides — more configurable */}
+      <ChartCard title="Per-Symbol Risk" subtitle="More configurable — overrides global (e.g., EURUSD 0.3%, XAU 0.7%, all 28) — entire QNA follows" action={
+        <Badge variant="info"><Shield className="w-3 h-3 mr-1" />Per-Symbol</Badge>
+      }>
+        <div className="space-y-2">
+          {Object.entries(perSymbol).map(([sym, ov]) => (
+            <div key={sym} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+              <span className="text-xs font-mono text-white/70 w-20">{sym}</span>
+              <span className="text-xs text-white/30 flex-1 truncate">{Object.entries(ov).map(([k, v]) => `${k}=${v}`).join(", ")}</span>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400/70" onClick={async () => {
+                const next = { ...perSymbol }; delete next[sym];
+                setPerSymbol(next);
+                await apiRequest("/api/risk-config", { method: "PUT", body: { perSymbol: next } });
+              }}><Trash2 className="w-3 h-3" /></Button>
+            </div>
+          ))}
+          <div className="flex flex-wrap items-end gap-2 p-3 rounded-lg bg-white/[0.04] border border-dashed border-white/[0.08]">
+            <div className="flex-1 min-w-[100px]">
+              <label className="text-[10px] text-white/30 mb-1 block">Symbol (e.g., EURUSD, XAUUSD, all 28)</label>
+              <Input placeholder="EURUSD" value={newPerSymbol.symbol} onChange={(e) => setNewPerSymbol({ ...newPerSymbol, symbol: e.target.value.toUpperCase() })} />
+            </div>
+            <div className="w-40">
+              <label className="text-[10px] text-white/30 mb-1 block">Key</label>
+              <Select value={newPerSymbol.key} onChange={(e) => setNewPerSymbol({ ...newPerSymbol, key: e.target.value })} options={[
+                { value: "maxRiskPerTrade", label: "Risk/Trade %" },
+                { value: "maxPositionSize", label: "Pos Size %" },
+                { value: "maxDailyLoss", label: "Daily Loss %" },
+                { value: "maxWeeklyLoss", label: "Weekly Loss %" },
+              ]} />
+            </div>
+            <div className="w-28">
+              <label className="text-[10px] text-white/30 mb-1 block">Value</label>
+              <Input type="number" placeholder="0.003" value={newPerSymbol.value} onChange={(e) => setNewPerSymbol({ ...newPerSymbol, value: e.target.value })} />
+            </div>
+            <Button variant="glow" size="sm" onClick={async () => {
+              if (!newPerSymbol.symbol || !newPerSymbol.value) return;
+              const v = parseFloat(newPerSymbol.value);
+              const k = newPerSymbol.key;
+              // UI value is human: % or fraction? For Risk/Trade, UI is % 0.3 → backend 0.003
+              const backendVal = k.includes("Risk") || k.includes("Loss") || k.includes("Drawdown") || k.includes("PositionSize") ? v / 100 : v;
+              const next = { ...perSymbol, [newPerSymbol.symbol]: { ...(perSymbol[newPerSymbol.symbol] || {}), [k]: backendVal } };
+              setPerSymbol(next);
+              await apiRequest("/api/risk-config", { method: "PUT", body: { perSymbol: next } });
+              setNewPerSymbol({ symbol: "", key: "maxRiskPerTrade", value: "" });
+            }}><Plus className="w-3.5 h-3.5 mr-1" />Add Override</Button>
+          </div>
+        </div>
       </ChartCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

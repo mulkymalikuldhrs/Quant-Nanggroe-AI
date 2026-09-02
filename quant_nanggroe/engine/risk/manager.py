@@ -418,7 +418,7 @@ class RiskManager:
         Returns:
             Dict with verdict, checkpoints, and risk metrics.
         """
-        # Hot-reload live UI risk config (entire QNA follows)
+        # Hot-reload live UI risk config (entire QNA follows) — per-symbol/per-strategy/per-regime
         try:
             from quant_nanggroe.engine.risk.constants import reload_risk_constants
 
@@ -429,6 +429,22 @@ class RiskManager:
             from quant_nanggroe.engine.risk.kill_switch import reload_kill_thresholds
 
             reload_kill_thresholds()
+        except Exception:
+            pass
+        # Per-symbol effective risk (more configurable) — shadow constants locally
+        try:
+            from quant_nanggroe.api.routes.risk_config import get_effective_config
+
+            _eff = get_effective_config(symbol)
+            # shadow imported constants with per-symbol effective values
+            MAX_RISK_PER_TRADE = _eff.get("maxRiskPerTrade", MAX_RISK_PER_TRADE)  # type: ignore
+            MAX_DAILY_LOSS = _eff.get("maxDailyLoss", MAX_DAILY_LOSS)  # type: ignore
+            MAX_WEEKLY_LOSS = _eff.get("maxWeeklyLoss", MAX_WEEKLY_LOSS)  # type: ignore
+            MAX_DRAWDOWN_PCT = _eff.get("maxDrawdown", MAX_DRAWDOWN_PCT)  # type: ignore
+            MAX_DAILY_TRADES = int(_eff.get("maxDailyTrades", MAX_DAILY_TRADES))  # type: ignore
+            MAX_POSITION_SIZE_PCT = _eff.get("maxPositionSize", MAX_POSITION_SIZE_PCT)  # type: ignore
+            MAX_LEVERAGE = _eff.get("maxLeverage", MAX_LEVERAGE)  # type: ignore
+            MAX_CORRELATED_POSITIONS = int(_eff.get("maxCorrelatedPositions", MAX_CORRELATED_POSITIONS))  # type: ignore
         except Exception:
             pass
 
