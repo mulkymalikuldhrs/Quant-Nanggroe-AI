@@ -256,7 +256,7 @@ class ExecutionTool:
         # (a) Kill switch — fail-closed. Refuse if engaged or unverifiable.
         try:
             from quant_nanggroe.engine.risk.kill_switch import KillSwitch
-            if KillSwitch().is_active:
+            if self._kill_switch.is_active:
                 raise KillSwitchActiveError("Kill switch engaged — order refused")
         except KillSwitchActiveError:
             raise
