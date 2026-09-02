@@ -42,13 +42,28 @@ def _make_order(symbol="BTC/USDT", qty=0.01):
 
 
 def _make_paper_em():
-    """ExecutionManager with a paper broker + an ACTIVE kill switch (production default)."""
-    from quant_nanggroe.engine.execution.brokers.paper import PaperBroker
+    """ExecutionManager with a mock broker + an ACTIVE kill switch (production default).
+    
+    REAL-ONLY mode: PaperBroker requires QNA_ALLOW_PAPER=1. Use a mock that implements
+    the Broker interface for unit testing kill-switch enforcement.
+    """
+    from unittest.mock import MagicMock
+    from quant_nanggroe.engine.execution.base import Broker, Order, OrderSide, OrderStatus, OrderType
     from quant_nanggroe.engine.risk.kill_switch import KillSwitch, KillSwitchConfig
 
     em = ExecutionManager()
     em.set_kill_switch(KillSwitch(KillSwitchConfig(auto_daily_loss_pct=0.015)))
-    em.add_broker(PaperBroker(), primary=True)
+    
+    # Mock broker that satisfies the interface
+    mock_broker = MagicMock(spec=Broker)
+    mock_broker.name = "mock"
+    mock_broker.submit_order.return_value = None
+    mock_broker.get_positions.return_value = []
+    mock_broker.get_account.return_value = MagicMock(balance=10000.0)
+    mock_broker.connect.return_value = True
+    mock_broker.cancel_order.return_value = False
+    
+    em.add_broker(mock_broker, primary=True)
     return em
 
 
