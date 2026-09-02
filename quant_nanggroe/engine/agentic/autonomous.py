@@ -1152,6 +1152,30 @@ class AutonomousPipeline:
                     self.correction.record("llm_reasoning", f"LLM reasoning failed for {symbol}", str(exc), LessonSeverity.WARNING)
                 steps.append(s4)
 
+            # ── Step 4.6: Vector Manifold (Klip 00:09-00:23) — observability + boost ──
+            try:
+                from quant_nanggroe.engine.currency_graph import build_graph_from_mt5
+                from quant_nanggroe.engine.vector_manifold import build_manifold
+                from quant_nanggroe.engine.euclidean_mispricing import scan_all
+                g = build_graph_from_mt5(all_pairs=False)
+                rates = g.rates
+                if rates:
+                    manifold = build_manifold(rates)
+                    # P0 as rolling mean approximation: use manifold itself as P0 for now (distance 0 until history)
+                    p0 = {k: v.to_array() for k, v in manifold.items()}
+                    mis = scan_all(manifold, p0, sigma=0.05)
+                    result.decision["vector"] = {
+                        "manifold": {k: v.to_array().tolist() for k, v in manifold.items()},
+                        "mispricing": {k: {"d": m.d, "threshold": m.threshold, "is_trigger": m.is_trigger} for k, m in mis.items()},
+                    }
+                    # Optional boost: if any YEN/CHF/CAD trigger and symbol is in its pair, boost confidence 0.1
+                    triggers = [k for k, m in mis.items() if m.is_trigger]
+                    if triggers and symbol in ("USDJPY", "EURJPY", "USDJPY.vx", "EURJPY.vx", "USDCHF", "EURCHF.vx", "USDCAD", "EURCAD.vx", "EURUSD", "EURUSD.vx"):
+                        # do not override, just annotate — live trading still ensemble-driven
+                        result.decision["vector"]["boost"] = triggers
+            except Exception as vec_exc:
+                logger.debug("Vector manifold skipped: %s", vec_exc)
+
             # ── Step 4.5: Final Decider ─────────────────────────────────
             if self._final_decider is not None and current_price > 0:
                 try:
