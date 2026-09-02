@@ -1,8 +1,8 @@
 # QNA Agent State — Quant Nanggroe AI (Quant Nation)
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
-**Updated:** 2026-08-27 (v8.0.19 CANONICAL SSOT — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB)
-**Current Phase:** v8.0.19 GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445) — REAL-ONLY, MT5-only, fail-closed
+**Updated:** 2026-09-02 (Dhaher Autobot audit — BAL REBUILT to $1,648.48 from qna_trade_journal.db; 328 trades, WR 25.4%; MT5 NOT connected; strategy count 135 not 83)
+**Current Phase:** v8.0.19 RED — NOT autonomous. 328 simulated trades, 12 MT5 order attempts (39 rejected), MT5 terminal unreachable, kill-switch L1 triggered 2026-08-28 and deactivated by user. REAL trading NOT occurring.
 
 ---
 
