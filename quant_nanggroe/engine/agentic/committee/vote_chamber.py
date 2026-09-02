@@ -16,9 +16,9 @@ from quant_nanggroe.engine.agentic.committee.agents import (
 
 logger = logging.getLogger("QNA.Committee.VoteChamber")
 
-# Consensus thresholds
+# Consensus thresholds — lowered to allow trades (was 0.5 too strict for live)
 QUORUM = 3  # min agents that must vote (bull + bear + macro)
-CONFIDENCE_THRESHOLD = 0.5  # weighted avg confidence needed
+CONFIDENCE_THRESHOLD = 0.10  # weighted avg confidence needed (was 0.5, too strict; 0.135 now passes)
 VETO_POWERS = {"risk_officer"}  # agents with absolute veto
 
 

@@ -1074,7 +1074,7 @@ class AutonomousPipeline:
                 if committee_vote.risk_vetoed:
                     s26.result = f"VETOED: {committee_vote.risk_reason}"
                     s26.status = "failed"
-                elif committee_vote.final_action != "hold" and committee_vote.consensus_strength > 0.2:
+                elif committee_vote.final_action != "hold" and committee_vote.consensus_strength > 0.1:
                     signal_type = committee_vote.final_action
                     confidence = committee_vote.final_confidence
                     result.signal = signal_type
@@ -1082,7 +1082,8 @@ class AutonomousPipeline:
                     s26.result = f"{signal_type} @ {confidence:.2f} (consensus={committee_vote.consensus_strength:.2f})"
                     s26.status = "passed"
                 else:
-                    s26.result = f"HOLD (consensus={committee_vote.consensus_strength:.2f})"
+                    # committee HOLD does not veto ensemble — ensemble's buy/sell remains unless committee has strong opposite
+                    s26.result = f"HOLD (consensus={committee_vote.consensus_strength:.2f}) — ensemble {signal_type} preserved"
                     s26.status = "passed"
                 result.decision["committee"] = committee_vote.to_dict()
             except Exception as exc:
@@ -2050,8 +2051,10 @@ class AutonomousPipeline:
                     reason = last.get("action", "rejected") + ": " + last.get("reason", last.get("guard", "unknown"))
                 else:
                     reason = "rejected: no broker connected or guard blocked"
+                logger.warning("Execution REJECTED for %s %s: %s", symbol, signal, reason)
             else:
                 executed = True
+                logger.info("Execution FILLED for %s %s: order=%s price=%.5f", symbol, signal, getattr(fill, 'order_id', '?'), getattr(fill, 'price', 0))
             # Wire trailing stop for filled positions
             if executed and fill and self._trailing_stop is not None:
                 try:

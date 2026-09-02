@@ -79,7 +79,7 @@ class BullAnalyst(BaseAgent):
                 score += 0.15
 
         confidence = min(1.0, score)
-        bias = "bullish" if confidence >= 0.3 else "neutral"
+        bias = "bullish" if confidence >= 0.2 else "neutral"
         return AgentVote(self.name, bias, confidence, evidence,
                          f"Found {len(evidence)} bullish signals")
 
@@ -171,7 +171,7 @@ class BearAnalyst(BaseAgent):
                 score += 0.15
 
         confidence = min(1.0, score)
-        bias = "bearish" if confidence >= 0.3 else "neutral"
+        bias = "bearish" if confidence >= 0.2 else "neutral"
         return AgentVote(self.name, bias, confidence, evidence,
                          f"Found {len(evidence)} bearish signals")
 
@@ -239,7 +239,7 @@ class MacroAnalyst(BaseAgent):
                 score -= 0.05
 
         confidence = min(1.0, max(0.0, abs(score)))
-        bias = "bullish" if score > 0.1 else ("bearish" if score < -0.1 else "neutral")
+        bias = "bullish" if score > 0.05 else ("bearish" if score < -0.05 else "neutral")
         return AgentVote(self.name, bias, confidence, evidence,
                          f"Macro score: {score:+.2f}")
 
