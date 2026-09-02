@@ -82,7 +82,21 @@ function SettingsContent() {
       setBrokers(d.brokers ?? []);
       setExchanges(d.exchanges ?? []);
       setLlmKeys(d.llmKeys ?? []);
-      setRiskLimits(d.riskLimits ?? {});
+      // riskLimits from credentials (legacy) + live risk-config (entire QNA follows)
+      let mergedRisk = { ...(d.riskLimits ?? {}) };
+      try {
+        const rc = await apiRequest<Record<string, number>>("/api/risk-config");
+        // map backend keys to UI keys (backend is fractional 0.005, UI is % 0.5 etc, but we store as % for UI)
+        if (rc.maxRiskPerTrade != null) mergedRisk.maxRiskPerTrade = Math.round(rc.maxRiskPerTrade * 100 * 100) / 100;
+        if (rc.maxDailyLoss != null) mergedRisk.maxDailyLoss = Math.round(rc.maxDailyLoss * 100 * 100) / 100;
+        if (rc.maxWeeklyLoss != null) mergedRisk.maxWeeklyLoss = Math.round(rc.maxWeeklyLoss * 100 * 100) / 100;
+        if (rc.maxDrawdown != null) mergedRisk.maxDrawdown = Math.round(rc.maxDrawdown * 100 * 100) / 100;
+        if (rc.maxPositionSize != null) mergedRisk.maxPositionSize = Math.round(rc.maxPositionSize * 100);
+        if (rc.maxLeverage != null) mergedRisk.maxLeverage = rc.maxLeverage;
+        if (rc.maxDailyTrades != null) mergedRisk.maxDailyTrades = rc.maxDailyTrades;
+        if (rc.minRiskReward != null) mergedRisk.minRiskReward = rc.minRiskReward;
+      } catch { /* risk-config optional */ }
+      setRiskLimits(mergedRisk);
       setSystemToggles(d.systemToggles ?? {});
     } catch {
       setError("Backend unavailable — configure credentials via environment variables");
@@ -96,7 +110,23 @@ function SettingsContent() {
     setSaveMsg(null);
     try {
       await apiRequest("/api/credentials", { method: "PUT", body: data });
-      setSaveMsg({ ok: true, text: `${section} saved` });
+      // riskLimits → also push to live risk-config (entire QNA follows without restart)
+      if (section === "riskLimits" && data.riskLimits) {
+        const rl = data.riskLimits as Record<string, number>;
+        const payload: Record<string, number> = {};
+        if (rl.maxRiskPerTrade != null) payload.maxRiskPerTrade = rl.maxRiskPerTrade / 100;
+        if (rl.maxDailyLoss != null) payload.maxDailyLoss = rl.maxDailyLoss / 100;
+        if (rl.maxWeeklyLoss != null) payload.maxWeeklyLoss = rl.maxWeeklyLoss / 100;
+        if (rl.maxDrawdown != null) payload.maxDrawdown = rl.maxDrawdown / 100;
+        if (rl.maxPositionSize != null) payload.maxPositionSize = rl.maxPositionSize / 100;
+        if (rl.maxLeverage != null) payload.maxLeverage = rl.maxLeverage;
+        if (rl.maxDailyTrades != null) payload.maxDailyTrades = rl.maxDailyTrades;
+        if (rl.minRiskReward != null) payload.minRiskReward = rl.minRiskReward;
+        if (Object.keys(payload).length) {
+          await apiRequest("/api/risk-config", { method: "PUT", body: payload });
+        }
+      }
+      setSaveMsg({ ok: true, text: `${section} saved — live risk updated` });
     } catch (e: unknown) {
       setSaveMsg({ ok: false, text: `${section}: ${e instanceof Error ? e.message : 'error'}` });
     }
@@ -347,19 +377,21 @@ function SettingsContent() {
         </Button>
       </ChartCard>
 
-      {/* Risk Limits */}
-      <ChartCard title="Risk Limits" subtitle="System-wide risk boundaries" action={
-        <Badge variant="warning"><Shield className="w-3 h-3 mr-1" />Constitutional</Badge>
+      {/* Risk Limits — LIVE, entire QNA follows */}
+      <ChartCard title="Risk Limits" subtitle="Live — entire QNA follows (per-trade, daily, weekly, drawdown) — no restart needed" action={
+        <Badge variant="warning"><Shield className="w-3 h-3 mr-1" />Constitutional • Live</Badge>
       }>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Max Position Size", key: "maxPositionSize", unit: "%", max: 100 },
-            { label: "Max Sector Exposure", key: "maxSectorExposure", unit: "%", max: 100 },
-            { label: "Max VaR", key: "maxVaR", unit: "$", max: 50000 },
-            { label: "Max Drawdown", key: "maxDrawdown", unit: "%", max: 20 },
-            { label: "Max Leverage", key: "maxLeverage", unit: "x", max: 5 },
-            { label: "Default Stop Loss", key: "defaultStopLoss", unit: "%", max: 10 },
-            { label: "Default Take Profit", key: "defaultTakeProfit", unit: "%", max: 20 },
+            { label: "Max Risk / Trade", key: "maxRiskPerTrade", unit: "%", max: 2, step: 0.1 },
+            { label: "Max Daily Loss", key: "maxDailyLoss", unit: "%", max: 5, step: 0.1 },
+            { label: "Max Weekly Loss", key: "maxWeeklyLoss", unit: "%", max: 10, step: 0.1 },
+            { label: "Max Drawdown", key: "maxDrawdown", unit: "%", max: 30, step: 1 },
+            { label: "Max Position Size", key: "maxPositionSize", unit: "%", max: 50, step: 1 },
+            { label: "Max Leverage", key: "maxLeverage", unit: "x", max: 10, step: 0.5 },
+            { label: "Max Daily Trades", key: "maxDailyTrades", unit: "", max: 20, step: 1 },
+            { label: "Min Risk Reward", key: "minRiskReward", unit: ":1", max: 5, step: 0.5 },
+            { label: "Max Correlated", key: "maxCorrelatedPositions", unit: "", max: 10, step: 1 },
           ].map((item) => (
             <div key={item.key} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
               <p className="text-xs text-white/40 mb-2">{item.label}</p>

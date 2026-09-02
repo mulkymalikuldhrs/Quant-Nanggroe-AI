@@ -26,18 +26,48 @@ _settings = get_settings()
 
 # Per-Trade Limits
 MAX_RISK_PER_TRADE: float = _settings.risk_max_per_trade / 100
-MAX_POSITION_SIZE_PCT: Final[float] = 0.10      # Max 10% of portfolio in single position
-MAX_LEVERAGE: Final[float] = 3.0                # Max 3x leverage
+MAX_POSITION_SIZE_PCT: float = 0.10      # Max 10% of portfolio in single position (live-editable via /api/risk-config)
+MAX_LEVERAGE: float = 3.0                # Max 3x leverage (live-editable)
 
 # Daily Limits
-MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss / 100       # 1% default
-MAX_DAILY_TRADES: Final[int] = 5                # Max 5 trades per day to prevent overtrading
+MAX_DAILY_LOSS: float = _settings.risk_max_daily_loss / 100       # 1% default (live-editable)
+MAX_DAILY_TRADES: int = 5                # Max 5 trades per day (live-editable)
 
 # Weekly Limit
-MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss / 100     # 3% default
+MAX_WEEKLY_LOSS: float = _settings.risk_max_weekly_loss / 100     # 3% default (live-editable)
 
 # Drawdown
-MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown / 100       # 10% default
+MAX_DRAWDOWN_PCT: float = _settings.risk_max_drawdown / 100       # 10% default (live-editable)
+
+# ── Live reload from config/risk_config.json (UI editable, entire QNA follows) ──
+def _reload_from_risk_config() -> None:
+    try:
+        import json
+        from pathlib import Path
+        p = Path(__file__).resolve().parents[2].parent / "config" / "risk_config.json"
+        # also try worktree config
+        alt = Path(__file__).resolve().parents[3] / "config" / "risk_config.json"
+        for cand in (p, alt, Path("config/risk_config.json")):
+            if cand.exists():
+                data = json.loads(cand.read_text(encoding="utf-8"))
+                globals()["MAX_RISK_PER_TRADE"] = float(data.get("maxRiskPerTrade", MAX_RISK_PER_TRADE))
+                globals()["MAX_POSITION_SIZE_PCT"] = float(data.get("maxPositionSize", MAX_POSITION_SIZE_PCT))
+                globals()["MAX_LEVERAGE"] = float(data.get("maxLeverage", MAX_LEVERAGE))
+                globals()["MAX_DAILY_LOSS"] = float(data.get("maxDailyLoss", MAX_DAILY_LOSS))
+                globals()["MAX_DAILY_TRADES"] = int(data.get("maxDailyTrades", MAX_DAILY_TRADES))
+                globals()["MAX_WEEKLY_LOSS"] = float(data.get("maxWeeklyLoss", MAX_WEEKLY_LOSS))
+                globals()["MAX_DRAWDOWN_PCT"] = float(data.get("maxDrawdown", MAX_DRAWDOWN_PCT))
+                # also handle legacy keys from UI
+                if "maxDrawdown" in data:
+                    globals()["MAX_DRAWDOWN_PCT"] = float(data["maxDrawdown"])
+                break
+    except Exception:
+        pass
+
+_reload_from_risk_config()
+# expose reload for RiskManager hot-reload
+def reload_risk_constants() -> None:
+    _reload_from_risk_config()
 
 # Quality Gates
 MIN_RISK_REWARD: Final[float] = 2.0             # Minimum 1:2 R:R ratio

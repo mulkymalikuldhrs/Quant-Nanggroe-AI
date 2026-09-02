@@ -398,7 +398,7 @@ class RiskManager:
         daily_pnl_pct: float = 0.0,
         weekly_pnl_pct: float = 0.0,
     ) -> Dict[str, Any]:
-        """9-checkpoint risk validation.
+        """9-checkpoint risk validation — hot-reloads live UI config (entire QNA follows).
 
         Returns APPROVED or VETOED with detailed checkpoint results.
         No agent can override a VETO.
@@ -418,6 +418,20 @@ class RiskManager:
         Returns:
             Dict with verdict, checkpoints, and risk metrics.
         """
+        # Hot-reload live UI risk config (entire QNA follows)
+        try:
+            from quant_nanggroe.engine.risk.constants import reload_risk_constants
+
+            reload_risk_constants()
+        except Exception:
+            pass
+        try:
+            from quant_nanggroe.engine.risk.kill_switch import reload_kill_thresholds
+
+            reload_kill_thresholds()
+        except Exception:
+            pass
+
         import time as _time
         obs = get_observability()
         start = _time.monotonic()

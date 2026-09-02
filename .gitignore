@@ -53,6 +53,7 @@ paper_state/
 config/credentials.json
 config/mt5_accounts.yaml
 config/credentials.json.bak
+config/risk_config.json
 config/freqtrade.json
 *_key.pem
 *.p12

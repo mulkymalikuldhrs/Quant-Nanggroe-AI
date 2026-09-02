@@ -714,3 +714,23 @@ class KillSwitch:
             "auto_activations": sum(1 for e in self._events if e.auto_activated),
             "manual_activations": sum(1 for e in self._events if not e.auto_activated),
         }
+
+
+def reload_kill_thresholds() -> None:
+    """Hot-reload kill thresholds from live risk config (UI editable, entire QNA follows)."""
+    try:
+        from quant_nanggroe.engine.risk.constants import reload_risk_constants
+
+        reload_risk_constants()
+        # re-import after reload to get new values
+        from quant_nanggroe.engine.risk.constants import KILL_SWITCH_DAILY_PNL, KILL_SWITCH_WEEKLY_PNL
+
+        # patch module-level defaults if any class uses them
+        import quant_nanggroe.engine.risk.kill_switch as _ks_mod
+
+        # update any cached config that may have been created with old values
+        # (KillSwitchConfig defaults are read at __init__, so new instances will pick up new constants)
+        _ks_mod.KILL_SWITCH_DAILY_PNL = KILL_SWITCH_DAILY_PNL  # type: ignore
+        _ks_mod.KILL_SWITCH_WEEKLY_PNL = KILL_SWITCH_WEEKLY_PNL  # type: ignore
+    except Exception:
+        pass

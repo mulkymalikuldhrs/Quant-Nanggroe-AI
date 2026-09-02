@@ -401,6 +401,12 @@ export const brokersApi = {
       method: "POST",
       body: volume != null ? { volume } : {},
     }),
+  riskConfig: () => apiRequest<Record<string, number>>("/api/risk-config"),
+  updateRiskConfig: (cfg: Record<string, number>) =>
+    apiRequest<Record<string, unknown>>("/api/risk-config", {
+      method: "PUT",
+      body: cfg,
+    }),
   // GATE-6: multi-account (all logged-in MT5 terminals + all-ever-connected)
   accounts: () =>
     apiRequest<{ accounts: Array<{ login: number; server: string; name: string; equity: number; balance: number; currency: string; terminal_path: string }>; count: number }>("/api/trading/accounts"),

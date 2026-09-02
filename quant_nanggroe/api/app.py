@@ -424,6 +424,12 @@ def create_app() -> FastAPI:
         app.include_router(vector_router, prefix="/api", tags=["Vector"])
     except Exception as e:
         logger.warning("vector_router_load_failed: %s", e)
+    # Risk Config — editable risk limits via UI (per-trade, daily, weekly, drawdown)
+    try:
+        from quant_nanggroe.api.routes.risk_config import router as risk_config_router
+        app.include_router(risk_config_router, prefix="/api", tags=["Risk Config"])
+    except Exception as e:
+        logger.warning("risk_config_router_load_failed: %s", e)
 
     # ── Causal Engine (v6.1.0) ────────────────────────────────────
     try:
