@@ -76,9 +76,21 @@ class PaperStateWriter:
                 # No price data — ranging is safer than unknown for breaker (breaker was blind)
                 regime = "ranging"
                 logger.info("regime stub: unknown -> ranging (no closes, breaker unblocked)")
+        # Guard: never write total_value below journal sum (daemon bug protection)
+        journal_sum = 0.0
+        try:
+            journal = Path(__file__).resolve().parents[2] / "data" / "qna_trade_journal.db"
+            if journal.exists():
+                journal_sum = float(sqlite3.connect(str(journal)).execute("SELECT SUM(pnl) FROM trades").fetchone()[0] or 0)
+        except Exception:
+            pass
+        raw_total = state.get("total_value", 0)
+        if raw_total < journal_sum:
+            logger.warning("total_value %.6f below journal %.2f — flooring to journal sum", raw_total, journal_sum)
+            raw_total = journal_sum
         payload = {
             "timestamp": self._now(),
-            "total_value": state.get("total_value", 0),
+            "total_value": raw_total,
             "cash_balance": state.get("cash_balance", 0),
             "positions_count": state.get("positions_count", 0),
             "daily_pnl": state.get("daily_pnl", 0),
