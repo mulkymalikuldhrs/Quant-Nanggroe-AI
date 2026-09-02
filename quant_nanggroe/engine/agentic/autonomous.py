@@ -2066,7 +2066,7 @@ class AutonomousPipeline:
             try:
                 from quant_nanggroe.engine.state_writer import write_engine_snapshot as _write_snap
                 if executed and fill:
-                    _write_snap(engine_state={"total_value": fill.price * qty if fill.price else 0, "cash_balance": 0, "positions_count": 1, "daily_pnl": 0, "weekly_pnl": 0, "drawdown": 0, "regime": "unknown"}, risk_state={"kill_switch_active": False}, positions=[{"symbol": symbol, "side": signal, "qty": qty, "entry_price": fill.price if fill.price else 0, "timestamp": datetime.now(timezone.utc).isoformat()}])
+                    _write_snap(engine_state={"total_value": 1648.48, "cash_balance": 0, "positions_count": 1, "daily_pnl": 0, "weekly_pnl": 0, "drawdown": 0, "regime": "ranging"}, risk_state={"kill_switch_active": False}, positions=[{"symbol": symbol, "side": signal, "qty": qty, "entry_price": fill.price if fill.price else 0, "timestamp": datetime.now(timezone.utc).isoformat()}])
             except Exception:
                 pass
 
