@@ -149,6 +149,25 @@ class PaperStateWriter:
         if positions is not None:
             self.write_positions(positions)
 
+    def assert_reconciled(self, journal_path=None) -> None:
+        """Verify state.json total_value matches journal sum(pnl) within $1."""
+        import sqlite3
+        journal = Path(journal_path) if journal_path else (_PROJECT_ROOT / "quant_nanggroe" / "data" / "qna_trade_journal.db")
+        if not journal.exists():
+            logger.warning("journal not found at %s", journal)
+            return
+        try:
+            total = float(json.loads((self._dir / "state.json").read_text(encoding="utf-8")).get("total_value", 0))
+            j_pnl = float(sqlite3.connect(str(journal)).execute("SELECT SUM(pnl) FROM trades").fetchone()[0] or 0)
+            diff = abs(total - j_pnl)
+            if diff >= 1.0:
+                msg = f"DRIFT: state {total} vs journal {j_pnl} diff {diff:.2f}"
+                logger.error(msg)
+                raise AssertionError(msg)
+            logger.info("reconciled: state %.2f vs journal %.2f diff %.4f", total, j_pnl, diff)
+        except FileNotFoundError:
+            logger.warning("state.json not found — skip")
+
 
 def get_state_writer(state_dir: Optional[os.PathLike[str]] = None) -> PaperStateWriter:
     """Return the module-level PaperStateWriter singleton.
@@ -169,6 +188,7 @@ def write_engine_snapshot(
 ) -> None:
     """One-call convenience using the default singleton writer."""
     get_state_writer().write_all(engine_state, risk_state, positions)
+
 
 
 class PaperStateReader:
