@@ -1107,7 +1107,7 @@ class AutonomousPipeline:
             try:
                 s3.status = "running"
                 t0 = time.perf_counter()
-                risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price, atr_value=_atr_for_risk, timeframe=timeframe)
+                risk_ok, risk_reason, risk_metrics = self._check_risk(symbol, signal_type, confidence, current_price=current_price, atr_value=_atr_for_risk, timeframe=timeframe, strategy=strategy_name, regime=regime)
                 s3.duration_ms = (time.perf_counter() - t0) * 1000
                 s3.status = "passed" if risk_ok else "failed"
                 s3.result = risk_reason
@@ -1656,7 +1656,7 @@ class AutonomousPipeline:
         except Exception:
             pass
 
-    def _check_risk(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, atr_value: float = 0.0, timeframe: str = "H1") -> tuple[bool, str, dict]:
+    def _check_risk(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, atr_value: float = 0.0, timeframe: str = "H1", strategy: str | None = None, regime: str | None = None) -> tuple[bool, str, dict]:
         metrics = {"max_drawdown": 0.0, "daily_pnl": 0.0, "price": current_price}
         em = self._em
         # FAIL-CLOSED: no execution manager / risk gates wired => BLOCK.
@@ -1709,7 +1709,7 @@ class AutonomousPipeline:
             max_lots = max_notional / (_contract_size * current_price) if current_price > 0 and _contract_size > 0 else lot_size
             lot_size = min(lot_size, max(0.01, round(max_lots, 2)))
 
-            verdict = em._risk_manager.check_trade(symbol=symbol, direction=signal.upper() if signal != "hold" else "HOLD", lot_size=lot_size, entry=current_price, stop_loss=stop_loss, account_balance=balance)
+            verdict = em._risk_manager.check_trade(symbol=symbol, direction=signal.upper() if signal != "hold" else "HOLD", lot_size=lot_size, entry=current_price, stop_loss=stop_loss, account_balance=balance, strategy=strategy, regime=regime)
             if verdict.get("verdict") == "VETOED":
                 return False, f"RiskManager vetoed: {verdict.get('reason','?')}", {**metrics, "risk_verdict": "VETOED", "checkpoints": verdict.get("checkpoints", {})}
             metrics.update({"risk_verdict": "APPROVED", "lot_size": lot_size, "stop_loss": stop_loss, "balance": balance, "atr": atr_value, "sl_dist": stop_distance, "pip_value": _pip_value})

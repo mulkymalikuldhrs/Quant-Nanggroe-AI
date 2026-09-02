@@ -1,6 +1,41 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+## v8.0.23 — Hardening: 4-Axis Risk + Schema + Hot-Reload (2026-09-03)
+
+### 🔒 Risk Fully Hot-Reloadable (Track A)
+
+- **A1 — perRegime wiring:** `manager.py:check_trade(strategy, regime)` → `get_effective_config(symbol, strategy, regime)`; UI `Per-Regime Risk` card added (`dashboard/src/app/settings/page.tsx`); 6 regimes (trending/ranging/crisis/bullish/bearish/neutral)
+- **A2 — schema validation:** `_load()` rejects unknown top-level keys, validates every numeric, stamps `version: 1`; `PUT /risk-config` returns 400 on bad input
+- **A3 — weekly kill hot-reload:** `KILL_SWITCH_WEEKLY_PNL = -0.8 * MAX_WEEKLY_LOSS` (was hardcoded `Final[-0.025]`); removed `Final`, re-derived on every `check_trade`
+- **A4 — drawdown kill (new):** `KILL_SWITCH_DRAWDOWN_PCT = 0.8 * MAX_DRAWDOWN_PCT`; no drawdown kill trigger existed before
+- **A5 — tests:** `tests/test_risk/test_per_symbol_overrides.py` — 21/21 passed (16.49s)
+
+### 🐛 Symbol Normalization Fix
+
+- `EURUSD.vxc` was leaving `EURUSDC` (no match for EURUSD override). Now `_normalize_symbol()` regex matches `.vx`/`.vxc`/`.VX`/`.VXC` + `split("/", 1)[0]`. `EURUSD.vxc`/`EURUSD.vx`/`EURUSD.VX`/`EURUSD.VXC`/`EURUSD/C` all → `EURUSD`.
+
+### 80% Constitutional Buffer
+
+- `KILL_SWITCH_DAILY_PNL = -0.8 * MAX_DAILY_LOSS` (was -0.008)
+- `KILL_SWITCH_WEEKLY_PNL = -0.8 * MAX_WEEKLY_LOSS` (was -0.025)
+- `KILL_SWITCH_DRAWDOWN_PCT = 0.8 * MAX_DRAWDOWN_PCT` (NEW)
+- Bump `maxWeeklyLoss` UI 3%→5% now bumps kill trigger -2.5%→-4.0% (was stuck at -2.5%)
+
+### 4-Axis Risk Layering (last wins)
+
+```
+global 0.005 → perSymbol[EURUSD] 0.003 → perStrategy[kaufman_ama] 0.004 → perRegime[trending] 0.006
+```
+
+### Verification
+
+- `py_compile` clean on 4 risk files
+- `tsc --noEmit` clean (settings/page.tsx +85 lines)
+- `pytest tests/test_risk/test_per_symbol_overrides.py` → **21/21 passed**
+
+---
 
 ## v8.0.22 — Risk Per-Symbol Live Config + Vector Live (2026-09-03)
 
@@ -433,4 +468,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

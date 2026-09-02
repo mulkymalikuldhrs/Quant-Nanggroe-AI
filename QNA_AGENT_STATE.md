@@ -11,7 +11,7 @@
 | Item | Status | Evidence |
 |------|--------|----------|
 | Entry point resolution | ✅ 1.0 | `qna.py` v8.0.22 via `launch.bat` (single launcher) |
-| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.0.18"` == CANONICAL v8.0.22 |
+| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.0.18"` == CANONICAL v8.0.23 |
 | Live broker | ✅ 1.0 | ValetaxIntl-Live2 372044706 BAL $1,445 — CANONICAL §1 |
 | Weekly PnL | ✅ 1.0 | 0 WIB via `launch.bat weekly-reset` → `data/weekly_override.json` + `data/persistence/risk_COLON_weekly_pnl.json` |
 | Probe | ✅ 1.0 | CandleScheduler `probe_empty=0/32` (all 32 TF states healthy) |
@@ -29,7 +29,7 @@
 
 ## WHAT WAS DONE — v8.0.22 DOCUMENTATION SYNC (2026-08-27)
 
-1. ✅ **CANONICAL SSOT verified** — `CANONICAL.md` v8.0.22 is single source of truth (BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB)
+1. ✅ **CANONICAL SSOT verified** — `CANONICAL.md` v8.0.23 is single source of truth (BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB)
 2. ✅ **All 53 md synced** — Grep for outdated `v8.0.10`, `E:\`, `1445` mismatches, then Edit to align with CANONICAL
 3. ✅ **Skills loaded** — `D:\Obsidian\DhaherLabs\skills` (41 SKILL.md), `E:\skills` (41 SKILL.md), `C:\Users\Hi\.opencode\skill` (29), 7 MCP (memory, context, browser, github, self-aware, self-correction, auto-driven) — documented in `docs/SKILLS.md` and referenced in `AGENTS.md`
 4. ✅ **Version drift fixed** — `CLAUDE.md` v8.0.10 → v8.0.22, `GEMINI.md` v8.0.10 → v8.0.22, `AGENTS.md` v8.0.16 → v8.0.22, `WAR_PLAN.md` v5.1.0 → v8.0.22
@@ -61,4 +61,4 @@
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

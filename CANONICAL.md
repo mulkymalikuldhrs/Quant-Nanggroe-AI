@@ -743,7 +743,7 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
 ### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Datetime Shadow Fix (2026-09-03)
 
@@ -820,3 +820,82 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 - "Whole QNA follows per-symbol config" — every `check_trade` reads the latest config.
 - Fail-closed: if `config/risk_config.json` is missing/corrupt, defaults are loaded (safe).
 - Hot-reload tested: change a value in UI, next `check_trade` uses new value within 1 second.
+
+---
+
+### 15.11 v8.0.23 — Hardening: 4-Axis Risk + Schema + Hot-Reload (2026-09-03)
+
+**Track A — closes 4 gaps from §15.10 verification:**
+
+| # | Gap | Fix |
+|---|-----|-----|
+| A1 | `perRegime` not consumed (UI shipped in §15.10 but engine ignored) | `manager.py:check_trade(symbol, strategy, regime)` → `get_effective_config(symbol=symbol, strategy=strategy, regime=regime)` |
+| A2 | No schema validation — corrupt / unknown keys silently default | `_load()` rejects unknown top-level keys, validates every numeric, stamps `version: 1`; `update_risk_config()` returns 400 on bad input |
+| A3 | `KILL_SWITCH_WEEKLY_PNL` was hardcoded `Final[-0.025]` (independent of UI maxWeeklyLoss) | Derived live: `KILL_SWITCH_WEEKLY_PNL = -0.8 * MAX_WEEKLY_LOSS`; removed `Final`; hot-reloaded every `check_trade` |
+| A4 | `KILL_SWITCH_DRAWDOWN_PCT` didn't exist — drawdown veto was at MAX_DRAWDOWN, no early warning | New constant `KILL_SWITCH_DRAWDOWN_PCT = 0.8 * MAX_DRAWDOWN_PCT`; re-derived on every reload |
+| A5 | No tests for 4-axis layering or hot-reload derivation | `tests/test_risk/test_per_symbol_overrides.py` — 21 tests, 100% pass |
+
+**4-axis risk layering (last-applied wins):**
+```
+global maxRiskPerTrade
+  → perSymbol[EURUSD] = 0.003    (narrows)
+    → perStrategy[kaufman_ama] = 0.004
+      → perRegime[trending] = 0.006    (widens)
+```
+Final EURUSD + kaufman_ama + trending → 0.006 (perRegime last).
+
+**Symbol normalization fix (v8.0.23):**
+- Before: `.upper().replace(".VX","").replace(".VXC","").replace("/","")` → `EURUSD.vxc` → `EURUSDC` (BUG: no match for EURUSD override)
+- After: `_normalize_symbol()` uses regex `r"\.(VX|VXC)$"` + `split("/", 1)[0]` → `EURUSD.vxc`/`EURUSD.vx`/`EURUSD.VX`/`EURUSD.VXC`/`EURUSD/C` all → `EURUSD` (FIX)
+
+**A3 constitutional guarantee — 80% early-warning buffer is fixed:**
+- `KILL_SWITCH_DAILY_PNL = -0.8 * MAX_DAILY_LOSS` (was hardcoded -0.008; now scales)
+- `KILL_SWITCH_WEEKLY_PNL = -0.8 * MAX_WEEKLY_LOSS` (was hardcoded -0.025; now scales)
+- `KILL_SWITCH_DRAWDOWN_PCT = 0.8 * MAX_DRAWDOWN_PCT` (NEW)
+
+If `MAX_WEEKLY_LOSS = 0.10` (10%), kill triggers at -8% (not -2.5%). If `MAX_DAILY_LOSS = 0.02` (2%), kill triggers at -1.6%. The 20% buffer (kill = 80% of max) is a constitutional floor.
+
+**API changes (backward compatible):**
+- `PUT /api/risk-config` now returns 400 on: unknown top-level key, unknown override key, out-of-range value, non-numeric value, explicit `version` write
+- `GET /api/risk-config` always returns `version: 1` (auto-stamped, never from disk)
+- `config/risk_config.json` on disk auto-stamped with `version: 1` on every write (sort_keys=True for stable diffs)
+
+**UI: `dashboard/src/app/settings/page.tsx` — new `Per-Regime Risk` ChartCard:**
+- 6 regime options: trending, ranging, crisis, bullish, bearish, neutral
+- Same 4 key options: Risk/Trade %, Pos Size %, Daily Loss %, Weekly Loss %
+- Trash2 to remove override; `+ Add Override` to add
+- `Activity` icon for visual distinction from perSymbol's `Shield` icon
+
+**Test coverage (`tests/test_risk/test_per_symbol_overrides.py`):**
+```
+TestDefaults           (3 tests): missing/corrupt file → defaults, version always stamped
+TestSchemaValidation   (6 tests): unknown top-level key, unknown override key, out-of-range,
+                                    non-numeric, version rejection, valid write persists
+TestEffectiveConfig    (6 tests): perSymbol/perStrategy/perRegime overrides,
+                                    4-axis layering, symbol normalization, None inputs
+TestHotReloadKillThresholds (4 tests): daily/weekly/drawdown derived from live config,
+                                         80% constitutional buffer preserved
+TestEndToEnd           (2 tests): effective config shape, default→perSymbol→perStrategy layering
+
+21/21 passed in 16.49s
+```
+
+**Verification:**
+- `py_compile quant_nanggroe/api/routes/risk_config.py quant_nanggroe/engine/risk/manager.py quant_nanggroe/engine/risk/constants.py quant_nanggroe/engine/risk/kill_switch.py` → OK
+- `dashboard npx tsc --noEmit --skipLibCheck` → clean (settings/page.tsx +85 lines for perRegime card)
+- `pytest tests/test_risk/test_per_symbol_overrides.py -q` → **21/21 passed**
+
+**Live behavior change (A3+A4):**
+- Bumping `maxWeeklyLoss` in UI from 3% to 5% now also bumps the kill trigger from -2.5% to -4.0% (previously kill trigger stayed at -2.5% regardless)
+- Bumping `maxDrawdown` from 10% to 20% now bumps drawdown kill trigger from 8% to 16% (previously no drawdown kill trigger existed)
+- A3 hot-reload verified: change value in UI → next `check_trade` reads new value within 1 second
+
+**Constitutional impact:**
+- Risk is now a fully-policy-driven 4-axis matrix: global → perSymbol → perStrategy → perRegime
+- Schema validation is fail-closed (rejects unknown keys instead of silently dropping)
+- Kill switch is no longer a fixed `Final` — it's a 80%-of-max derivation
+- Test suite proves the wiring; no silent regressions
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28) + perRegime + schema-validated + 80% kill buffer

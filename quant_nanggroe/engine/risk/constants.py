@@ -57,6 +57,11 @@ def _reload_from_risk_config() -> None:
                 globals()["MAX_DAILY_TRADES"] = int(data.get("maxDailyTrades", MAX_DAILY_TRADES))
                 globals()["MAX_WEEKLY_LOSS"] = float(data.get("maxWeeklyLoss", MAX_WEEKLY_LOSS))
                 globals()["MAX_DRAWDOWN_PCT"] = float(data.get("maxDrawdown", MAX_DRAWDOWN_PCT))
+                # A3+A4: re-derive kill-switch thresholds from live max-daily/weekly/drawdown
+                # with a fixed 80% early-warning buffer (Final was removed; see below).
+                globals()["KILL_SWITCH_DAILY_PNL"] = -0.8 * float(globals()["MAX_DAILY_LOSS"])
+                globals()["KILL_SWITCH_WEEKLY_PNL"] = -0.8 * float(globals()["MAX_WEEKLY_LOSS"])
+                globals()["KILL_SWITCH_DRAWDOWN_PCT"] = 0.8 * float(globals()["MAX_DRAWDOWN_PCT"])
                 # also handle legacy keys from UI
                 if "maxDrawdown" in data:
                     globals()["MAX_DRAWDOWN_PCT"] = float(data["maxDrawdown"])
@@ -121,9 +126,15 @@ MT5_SYMBOL_DEFAULT: str = ""
 #
 # Logic: If MAX_DAILY_LOSS = 1%, then KILL_SWITCH triggers at 0.8% loss,
 # giving the system a 0.2% buffer before hitting the absolute constitutional limit.
+#
+# A3+A4 (v8.0.23): these are NO LONGER `Final` — they are derived from the
+# live-editable MAX_DAILY_LOSS / MAX_WEEKLY_LOSS / MAX_DRAWDOWN_PCT via
+# `reload_risk_constants()` and updated every `check_trade`. The fixed 80%
+# buffer remains a constitutional floor — only the underlying max changes.
 
-KILL_SWITCH_DAILY_PNL: Final[float] = -0.008    # Kill switch at -0.8% daily PnL (before 1% hard limit)
-KILL_SWITCH_WEEKLY_PNL: Final[float] = -0.025   # Kill switch at -2.5% weekly PnL (before 3% hard limit)
+KILL_SWITCH_DAILY_PNL: float = -0.008    # Kill switch at -0.8% daily PnL (before 1% hard limit)
+KILL_SWITCH_WEEKLY_PNL: float = -0.025   # Kill switch at -2.5% weekly PnL (before 3% hard limit)
+KILL_SWITCH_DRAWDOWN_PCT: float = 0.08   # Kill switch at 8% drawdown (before 10% hard limit)
 
 # ─── Live Engine Constants ──────────────────────────────────
 # These are the single source of truth for live_engine.py.

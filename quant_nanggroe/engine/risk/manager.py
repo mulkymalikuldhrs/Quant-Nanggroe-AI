@@ -397,6 +397,8 @@ class RiskManager:
         take_profit: Optional[float] = None,
         daily_pnl_pct: float = 0.0,
         weekly_pnl_pct: float = 0.0,
+        strategy: str | None = None,
+        regime: str | None = None,
     ) -> Dict[str, Any]:
         """9-checkpoint risk validation — hot-reloads live UI config (entire QNA follows).
 
@@ -414,6 +416,8 @@ class RiskManager:
             daily_pnl_pct: Real-time daily P&L as a fraction of account equity
                 (range [0, 1], e.g. -0.06 for a 6% loss). Feeds the constitutional daily-loss veto.
             weekly_pnl_pct: Real-time weekly P&L as a fraction of account equity (range [0, 1]).
+            strategy: Strategy name producing the signal (e.g. "kaufman_ama", "ensemble"). Optional — feeds perStrategy risk overrides.
+            regime: Market regime (e.g. "trending", "ranging", "crisis", "bullish", "bearish", "neutral"). Optional — feeds perRegime risk overrides.
 
         Returns:
             Dict with verdict, checkpoints, and risk metrics.
@@ -431,12 +435,12 @@ class RiskManager:
             reload_kill_thresholds()
         except Exception:
             pass
-        # Per-symbol effective risk (more configurable) — shadow constants locally
+        # Per-symbol + per-strategy + per-regime effective risk (more configurable) — shadow constants locally
         try:
             from quant_nanggroe.api.routes.risk_config import get_effective_config
 
-            _eff = get_effective_config(symbol)
-            # shadow imported constants with per-symbol effective values
+            _eff = get_effective_config(symbol=symbol, strategy=strategy, regime=regime)
+            # shadow imported constants with per-symbol/strategy/regime effective values
             MAX_RISK_PER_TRADE = _eff.get("maxRiskPerTrade", MAX_RISK_PER_TRADE)  # type: ignore
             MAX_DAILY_LOSS = _eff.get("maxDailyLoss", MAX_DAILY_LOSS)  # type: ignore
             MAX_WEEKLY_LOSS = _eff.get("maxWeeklyLoss", MAX_WEEKLY_LOSS)  # type: ignore

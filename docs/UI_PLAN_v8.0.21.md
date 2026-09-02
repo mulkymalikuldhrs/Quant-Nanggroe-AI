@@ -1,6 +1,6 @@
 # UI PLAN — QNA v8.0.22 (2026-09-03) — All Complete UI + Auto Launch
 
-**SSOT:** `CANONICAL.md v8.0.22` — dashboard 31p, brutalism Tactical Telemetry Dark, launch.bat 1, vector 6 live
+**SSOT:** `CANONICAL.md v8.0.23` — dashboard 31p, brutalism Tactical Telemetry Dark, launch.bat 1, vector 6 live
 
 ## 1. Inventory — 31p + 46 API 207 route
 
@@ -66,4 +66,4 @@
 
 ---
 
-> **SSOT:** `CANONICAL.md v8.0.22` — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md v8.0.23` — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live, risk per-symbol

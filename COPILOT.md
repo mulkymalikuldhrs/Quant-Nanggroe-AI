@@ -15,7 +15,7 @@ See **AGENTS.md** (canonical). Below is a quick reference.
 - Universal path auto-detect (no hardcoded `E:\` at runtime) — external deps in `quant_nanggroe/external/` (kronos, mue_x, hidden_regime) via `Path(__file__).parent / 'external'`; live broker ValetaxIntl-Live2 acct 372044706 BAL $1,445
 - 10 exchange clients, 16 agents, 9-stage pipeline + `engine/execution/manager.py` (WIB weekly/PNL guard, one-position-per-symbol, fill-status gate)
 - `archive/` = read-only orphan artifacts
-- **SSOT:** `CANONICAL.md` v8.0.22 — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+- **SSOT:** `CANONICAL.md` v8.0.23 — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 **Ignore:** `paper_state/*.json`, `data/*`, `node_modules/`, `__pycache__/`, `archive/`
 **Package:** `uv` (not pip, not poetry)
@@ -23,8 +23,8 @@ See **AGENTS.md** (canonical). Below is a quick reference.
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

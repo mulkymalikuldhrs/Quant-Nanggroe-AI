@@ -30,6 +30,7 @@ import {
   Check,
   X,
   RefreshCw,
+  Activity,
 } from "lucide-react";
 
 interface ApiKeyEntry {
@@ -65,6 +66,8 @@ function SettingsContent() {
   const [riskLimits, setRiskLimits] = useState<Record<string, number>>({});
   const [perSymbol, setPerSymbol] = useState<Record<string, Record<string, number>>>({});
   const [newPerSymbol, setNewPerSymbol] = useState<{ symbol: string; key: string; value: string }>({ symbol: "", key: "maxRiskPerTrade", value: "" });
+  const [perRegime, setPerRegime] = useState<Record<string, Record<string, number>>>({});
+  const [newPerRegime, setNewPerRegime] = useState<{ regime: string; key: string; value: string }>({ regime: "trending", key: "maxRiskPerTrade", value: "" });
   const [systemToggles, setSystemToggles] = useState<Record<string, boolean>>({});
 
   const [agentModels, setAgentModels] = useState<Record<string, string>>({
@@ -98,6 +101,7 @@ function SettingsContent() {
         if (rc.minRiskReward != null) mergedRisk.minRiskReward = rc.minRiskReward;
         if (rc.maxCorrelatedPositions != null) mergedRisk.maxCorrelatedPositions = rc.maxCorrelatedPositions;
         if (rc.perSymbol) setPerSymbol(rc.perSymbol as Record<string, Record<string, number>>);
+        if (rc.perRegime) setPerRegime(rc.perRegime as Record<string, Record<string, number>>);
       } catch { /* risk-config optional */ }
       setRiskLimits(mergedRisk);
       setSystemToggles(d.systemToggles ?? {});
@@ -459,6 +463,61 @@ function SettingsContent() {
               setPerSymbol(next);
               await apiRequest("/api/risk-config", { method: "PUT", body: { perSymbol: next } });
               setNewPerSymbol({ symbol: "", key: "maxRiskPerTrade", value: "" });
+            }}><Plus className="w-3.5 h-3.5 mr-1" />Add Override</Button>
+          </div>
+        </div>
+      </ChartCard>
+
+      {/* Per-Regime Risk Overrides — v8.0.23 (A1) */}
+      <ChartCard title="Per-Regime Risk" subtitle="More configurable — overrides global by HMM regime (trending, ranging, crisis, bullish, bearish, neutral) — entire QNA follows" action={
+        <Badge variant="info"><Activity className="w-3 h-3 mr-1" />Per-Regime</Badge>
+      }>
+        <div className="space-y-2">
+          {Object.entries(perRegime).map(([regime, ov]) => (
+            <div key={regime} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+              <span className="text-xs font-mono text-white/70 w-24">{regime}</span>
+              <span className="text-xs text-white/30 flex-1 truncate">{Object.entries(ov).map(([k, v]) => `${k}=${v}`).join(", ")}</span>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400/70" onClick={async () => {
+                const next = { ...perRegime }; delete next[regime];
+                setPerRegime(next);
+                await apiRequest("/api/risk-config", { method: "PUT", body: { perRegime: next } });
+              }}><Trash2 className="w-3 h-3" /></Button>
+            </div>
+          ))}
+          <div className="flex flex-wrap items-end gap-2 p-3 rounded-lg bg-white/[0.04] border border-dashed border-white/[0.08]">
+            <div className="w-40">
+              <label className="text-[10px] text-white/30 mb-1 block">Regime</label>
+              <Select value={newPerRegime.regime} onChange={(e) => setNewPerRegime({ ...newPerRegime, regime: e.target.value })} options={[
+                { value: "trending", label: "trending" },
+                { value: "ranging", label: "ranging" },
+                { value: "crisis", label: "crisis" },
+                { value: "bullish", label: "bullish" },
+                { value: "bearish", label: "bearish" },
+                { value: "neutral", label: "neutral" },
+              ]} />
+            </div>
+            <div className="w-40">
+              <label className="text-[10px] text-white/30 mb-1 block">Key</label>
+              <Select value={newPerRegime.key} onChange={(e) => setNewPerRegime({ ...newPerRegime, key: e.target.value })} options={[
+                { value: "maxRiskPerTrade", label: "Risk/Trade %" },
+                { value: "maxPositionSize", label: "Pos Size %" },
+                { value: "maxDailyLoss", label: "Daily Loss %" },
+                { value: "maxWeeklyLoss", label: "Weekly Loss %" },
+              ]} />
+            </div>
+            <div className="w-28">
+              <label className="text-[10px] text-white/30 mb-1 block">Value</label>
+              <Input type="number" placeholder="0.003" value={newPerRegime.value} onChange={(e) => setNewPerRegime({ ...newPerRegime, value: e.target.value })} />
+            </div>
+            <Button variant="glow" size="sm" onClick={async () => {
+              if (!newPerRegime.regime || !newPerRegime.value) return;
+              const v = parseFloat(newPerRegime.value);
+              const k = newPerRegime.key;
+              const backendVal = k.includes("Risk") || k.includes("Loss") || k.includes("Drawdown") || k.includes("PositionSize") ? v / 100 : v;
+              const next = { ...perRegime, [newPerRegime.regime]: { ...(perRegime[newPerRegime.regime] || {}), [k]: backendVal } };
+              setPerRegime(next);
+              await apiRequest("/api/risk-config", { method: "PUT", body: { perRegime: next } });
+              setNewPerRegime({ regime: "trending", key: "maxRiskPerTrade", value: "" });
             }}><Plus className="w-3.5 h-3.5 mr-1" />Add Override</Button>
           </div>
         </div>

@@ -358,6 +358,9 @@ class ExecutionManager:
                 # check_trade now expects fraction (range [0, 1]).
                 daily_pnl_pct=ks_daily,
                 weekly_pnl_pct=ks_weekly,
+                # perStrategy + perRegime overrides from order metadata (more configurable — A1)
+                strategy=order.metadata.get("strategy") if order.metadata else None,
+                regime=order.metadata.get("regime") if order.metadata else None,
             )
             if verdict.get("verdict") == "VETOED":
                 logger.critical(

@@ -406,7 +406,7 @@ A Windows-first, MT5-live, **partially autonomous** quantitative hedge fund oper
 
 **K Strategy:** `TOTAL 84 (212 w/ archive) IMPLEMENTED 84 WIRED 77 (via AutoRegistry 212) VALIDATED 10 (CPCV) ADMITTED 2-4 strict (kaufman_ama+multi_timeframe+aroon+amdx) LIVE 2 strict (kaufman_ama+multi_timeframe) via _viable_engine_strategy_names, 10 via allocation_map` `RESEARCH 73` `ARCHIVED 59`.
 
-**L Documentation:** `CANONICAL.md v8.0.22` `README` `AGENTS.md` `docs/SKILLS.md` `docs/VECTOR_ARBITRAGE.md` `docs/architecture.md` `graph.html` `54 md` `vault 19` `MCP 23689`.
+**L Documentation:** `CANONICAL.md v8.0.23` `README` `AGENTS.md` `docs/SKILLS.md` `docs/VECTOR_ARBITRAGE.md` `docs/architecture.md` `graph.html` `54 md` `vault 19` `MCP 23689`.
 
 **M Remaining Problems:** See blockers.
 

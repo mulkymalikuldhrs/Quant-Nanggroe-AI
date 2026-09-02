@@ -1,6 +1,6 @@
 # TIDY PLAN ALL — QNA v8.0.22 (2026-09-02) — 994 dirs, 1451 files, 55 md, 20 ext
 
-**SSOT:** `CANONICAL.md v8.0.22` — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol, dashboard 31p
+**SSOT:** `CANONICAL.md v8.0.23` — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol, dashboard 31p
 
 ## 1. Syntax/Extension (files with .)
 - **Tracked:** `py 1181` `tsx 62` `md 55` `json 30` `yml 29` `ts 23` `png 12` `yaml 11` `jsonl 8` `csv 5` `html 4` `toml 3` `bat 3` `bak 2` `mjs 2` `(no ext) 5`
@@ -30,7 +30,7 @@
 - **ACTION:** `git rm --cached` junk, `rm` filesystem, `echo ".commandcode/" >> .gitignore` if needed, `git add -f docs/VECTOR_ARBITRAGE.md` (force, docs ignored)
 
 ## 6. Documentation
-- **SSOT:** `CANONICAL.md v8.0.22` `15 target` `v8.0.22` `BAL 1445` `vector Step 4.6`
+- **SSOT:** `CANONICAL.md v8.0.23` `15 target` `v8.0.22` `BAL 1445` `vector Step 4.6`
 - **Docs:** `docs/ARCHITECTURE_COMMITTEE.md` `docs/VECTOR_ARBITRAGE.md` `docs/TIDY_PLAN_ALL` `docs/SKILLS.md 92 skills` `docs/auto/graphs 5 mmd` `GRAPH_REPORT.md 341k` `graph.html 1M` `graph.json 33M`
 - **Plan:** Keep `README.md` human quick-start, `AGENTS.md` hard shortcuts, `CANONICAL` SSOT, `docs/` for deep, `tasks/` for plan, `references/` for audit.
 
