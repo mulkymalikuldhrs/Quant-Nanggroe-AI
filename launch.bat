@@ -74,12 +74,13 @@ echo Dashboard http://localhost:3000
 goto :eof
 
 :test
-shift
 echo [QNA] Tests ...
-if "%~1"=="" (
+if "%~2"=="" (
     "%PY%" -m pytest tests/ -v
 ) else (
-    "%PY%" -m pytest %* -v
+    REM %%* is not updated by SHIFT in cmd.exe, so it previously forwarded the
+    REM literal subcommand "test" to pytest. Forward only arguments after it.
+    "%PY%" -m pytest %2 %3 %4 %5 %6 %7 %8 %9 -v
 )
 goto :eof
 
