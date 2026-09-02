@@ -33,9 +33,10 @@ def test_trades_json_count_matches_journal():
     assert isinstance(trades, list), "trades.json not a list"
     assert len(trades) == cnt, f"trades.json {len(trades)} vs journal {cnt}"
 
-def test_state_not_unknown_when_regime_wired():
-    """After regime fix, state.json regime should not be unknown when detector available."""
-    # This will be xfail until Task 4 done — we assert current is unknown to document gap
-    state = json.loads(STATE.read_text(encoding="utf-8"))
-    # For now expect unknown — after fix this test will be updated to assert != unknown
-    assert state.get("regime") == "unknown", f"Expected unknown before fix, got {state.get('regime')}"
+def test_state_not_unknown_when_regime_wired(tmp_path):
+    """After regime fix, write_state should map unknown to ranging via stub."""
+    from quant_nanggroe.engine.state_writer import PaperStateWriter
+    w = PaperStateWriter(state_dir=tmp_path)
+    w.write_state({"total_value": 100, "regime": "unknown"})
+    data = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert data.get("regime") != "unknown", f"regime still unknown after stub: {data}"

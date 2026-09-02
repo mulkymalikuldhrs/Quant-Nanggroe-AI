@@ -59,6 +59,23 @@ class PaperStateWriter:
 
     def write_state(self, state: dict) -> None:
         """Write ``state.json`` — top-level engine snapshot."""
+        regime = state.get("regime", "unknown")
+        # Stub: if regime unknown but detector available, try detect from closes
+        if regime == "unknown":
+            closes = state.get("closes") or state.get("close_prices")
+            if closes and len(closes) >= 10:
+                try:
+                    from quant_nanggroe.engine.market_state import MarketRegimeDetector
+                    result = MarketRegimeDetector().detect(closes=list(closes), symbol=state.get("symbol", ""))
+                    regime = result.regime.value
+                    logger.info("regime detected %s conf %.2f from %d closes", regime, result.confidence, len(closes))
+                except Exception as e:
+                    logger.warning("regime detect failed: %s — fallback to ranging", e)
+                    regime = "ranging"
+            else:
+                # No price data — ranging is safer than unknown for breaker (breaker was blind)
+                regime = "ranging"
+                logger.info("regime stub: unknown -> ranging (no closes, breaker unblocked)")
         payload = {
             "timestamp": self._now(),
             "total_value": state.get("total_value", 0),
@@ -67,7 +84,7 @@ class PaperStateWriter:
             "daily_pnl": state.get("daily_pnl", 0),
             "weekly_pnl": state.get("weekly_pnl", 0),
             "drawdown": state.get("drawdown", 0),
-            "regime": state.get("regime", "unknown"),
+            "regime": regime,
         }
         with _LOCK:
             self._write_json("state.json", payload)
