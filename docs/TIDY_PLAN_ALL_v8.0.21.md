@@ -1,6 +1,6 @@
 # TIDY PLAN ALL — QNA v8.0.22 (2026-09-02) — 994 dirs, 1451 files, 55 md, 20 ext
 
-**SSOT:** `CANONICAL.md v8.0.22` — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, dashboard 31p
+**SSOT:** `CANONICAL.md v8.0.22` — BAL 1445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol, dashboard 31p
 
 ## 1. Syntax/Extension (files with .)
 - **Tracked:** `py 1181` `tsx 62` `md 55` `json 30` `yml 29` `ts 23` `png 12` `yaml 11` `jsonl 8` `csv 5` `html 4` `toml 3` `bat 3` `bak 2` `mjs 2` `(no ext) 5`
@@ -21,7 +21,7 @@
 ## 4. Plan Tidy All *md (55 tracked, 427 total)
 - **Tracked 55:** `CANONICAL 1` `AGENTS 1` `README 1` `15 target` `v8.0.22` `BAR 1445` `docs/ARCHITECTURE_COMMITTEE 1` `docs/VECTOR_ARBITRAGE 1` (force-add)
 - **Total 427:** `docs/vault 19` `docs/archive 5` `tasks 4` `archive/orphaned 3` `.agents/skills 4` etc — many ignored via `.gitignore:98 docs/`
-- **Plan:** Bump all `55` to `v8.0.22` `BAL 1445` `vector 6 modul live` `SSOT footer` (done `45317e05`). Keep `docs/vault` filesystem sync (robocopy 13), not git. Remove `archive/orphaned_v6.2/FILE_LISTING.md` `utf-8` error (re-encode). Add `docs/TIDY_PLAN` itself.
+- **Plan:** Bump all `55` to `v8.0.22` `BAL 1445` `vector 6 modul live, risk per-symbol` `SSOT footer` (done `45317e05`). Keep `docs/vault` filesystem sync (robocopy 13), not git. Remove `archive/orphaned_v6.2/FILE_LISTING.md` `utf-8` error (re-encode). Add `docs/TIDY_PLAN` itself.
 
 ## 5. Plan Tidy All Files (any)
 - **Junk:** `=1.20.0` (uv version artifact), `nul` (Windows), `temp_file`, `append_p2.py`, `gate4_probe.py`, `walk_forward_fixed.py` (one-off scripts), `agentic-ai-cover.*` in root (duplicate of `dashboard/public/`), `.commandcode/` (opencode artifact, add to .gitignore if needed)

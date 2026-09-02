@@ -3527,5 +3527,22 @@
     "occurred_at": "2026-09-02T19:29:22.409266+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "c823145b-540",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.10",
+    "detail": "Trade b77a3db3-f7a3-463b-9645-6d198f63d28c on USDJPY using ensemble. eval_duration_ms=0.07",
+    "context": {
+      "trade_id": "b77a3db3-f7a3-463b-9645-6d198f63d28c",
+      "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.07,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-02T20:00:05.117800+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

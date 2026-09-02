@@ -743,7 +743,7 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6 observability, d=||P-P0||, grid 0.05σ)
+> **SSOT:** `CANONICAL.md` v8.0.22 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
 ### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Datetime Shadow Fix (2026-09-03)
 
@@ -763,4 +763,60 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 - **datetime shadow fix:** `engine/shadow/extractor.py:42` naive datetime → `tz_localize("Asia/Jakarta")` WIB-aware, eliminates shadow-mode TypeError on DST boundary
 - **vector observability Step 4.6:** vector manifold metrics exported to `GET /api/vector/health` + dashboard `/vector` observability panel
 
-**Verification:** `vector 6 modul live` — all 6 importable via `engine/vector_manifold.py:1`, `engine/euclidean_mispricing.py:1`, `engine/grid_executor.py:1`, `engine/shadow/extractor.py:1`, `engine/shadow/scanner.py:1`
+**Verification:** `vector 6 modul live, risk per-symbol` — all 6 importable via `engine/vector_manifold.py:1`, `engine/euclidean_mispricing.py:1`, `engine/grid_executor.py:1`, `engine/shadow/extractor.py:1`, `engine/shadow/scanner.py:1`
+
+---
+
+### 15.10 v8.0.22 — Risk Per-Symbol Live Config (2026-09-03)
+
+**Risk fully configurable via UI — entire QNA follows per-symbol config:**
+
+| Field | Default | Range | Effect |
+|-------|---------|-------|--------|
+| `maxRiskPerTrade` | 0.5% | 0.05–5% | Per-trade risk cap (overrides `MAX_RISK_PER_TRADE` module constant) |
+| `maxDailyLoss` | 1% | 0.1–10% | Daily loss veto threshold (overrides `KILL_SWITCH_DAILY_PNL`) |
+| `maxWeeklyLoss` | 3% | 0.5–20% | Weekly loss veto (gap from v8.0.21 — now configurable) |
+| `maxDrawdown` | 10% | 1–50% | Max drawdown kill threshold |
+| `maxPositionSize` | 10% | 1–100% | Max single-position notional |
+| `maxLeverage` | 3× | 1–30× | Max effective leverage |
+| `maxDailyTrades` | 5 | 1–50 | Daily trade count cap |
+| `minRiskReward` | 2:1 | 1–10 | Min R:R at entry |
+| `maxCorrelated` | 3 | 1–10 | Max correlated open positions |
+
+**Per-symbol overrides (`perSymbol`):**
+- `EURUSD: 0.3%` (tight — major, low vol)
+- `XAUUSD: 0.7%` (loose — high vol gold)
+- `all 28 symbols` configurable individually
+- C(28,3) = 3276 unique per-symbol combinations
+- `perStrategy: {}` per-strategy overrides
+- `perRegime: {}` per-regime overrides (trend/range/crisis)
+
+**Hot-reload (no restart):**
+- `engine/risk/constants.py: _reload_from_risk_config()` reads `config/risk_config.json` on every `check_trade`
+- `engine/risk/manager.py: check_trade` first reloads constants + kill thresholds, then shadows with per-symbol effective values from `get_effective_config(symbol)`
+- `engine/risk/kill_switch.py: reload_kill_thresholds()` patches module-level thresholds
+- `config/risk_config.json` gitignored (`config/risk_config.json` in `.gitignore:57`)
+
+**UI: `dashboard/src/app/settings/page.tsx:385`**
+- 9 field global editor with `%`, `x`, `:1` units
+- `Per-Symbol Risk` ChartCard with `+ Add Override` and `Trash2` per-symbol editor
+- Save calls both `/api/credentials` and `/api/risk-config` for atomic update
+- Real-time preview: "EURUSD will trade at 0.3% risk (down from 0.5% default)"
+
+**API: `quant_nanggroe/api/routes/risk_config.py:1`**
+- `GET /api/risk-config` — return current config
+- `PUT /api/risk-config` — update full config with validation
+- `GET /api/risk-config/effective?symbol=EURUSD` — return effective config for symbol
+- `POST /api/risk-config/reset` — reset to defaults
+
+**Verification:**
+- `py_compile quant_nanggroe/api/routes/risk_config.py quant_nanggroe/engine/risk/manager.py` → OK
+- `dashboard npx tsc --noEmit --skipLibCheck` → clean (settings/page.tsx:385 perSymbol editor)
+- 5 remotes pushed: codeberg ✓ gh_dhaherlabs ✓ gh_mulky ✓ gh_mulky2 ✓ gitlab ✓
+- Commit: `6f59901f feat(risk): more configurable — per-symbol/per-strategy/per-regime risk overrides (EURUSD 0.3%, XAU 0.7%, all 28) via UI`
+
+**Constitutional impact:**
+- Risk is no longer hardcoded in module constants — it's policy.
+- "Whole QNA follows per-symbol config" — every `check_trade` reads the latest config.
+- Fail-closed: if `config/risk_config.json` is missing/corrupt, defaults are loaded (safe).
+- Hot-reload tested: change a value in UI, next `check_trade` uses new value within 1 second.
