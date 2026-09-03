@@ -29,11 +29,10 @@ from quant_nanggroe.engine.persistence import (
     PersistenceBackend,
     get_persistence_backend,
 )
+from quant_nanggroe.engine.risk import constants as _risk_constants
 from quant_nanggroe.engine.risk.checks import RiskCheckGate
 from quant_nanggroe.engine.risk.constants import (
     HARD_STOP_ATR_MULTIPLIER,
-    KILL_SWITCH_DAILY_PNL,
-    KILL_SWITCH_WEEKLY_PNL,
     MAX_ASSET_DAILY_LOSS_PCT,
     MAX_CORRELATED_POSITIONS,
     MAX_DAILY_LOSS,
@@ -248,8 +247,10 @@ class RiskManager:
         """
         regime = self._current_vol_regime
         mult = self._current_vol_regime_mult
-        eff_daily_limit = MAX_DAILY_LOSS * mult["daily_loss"]
-        eff_weekly_limit = MAX_WEEKLY_LOSS * mult["weekly_loss"]
+        # A-G3: live reads — import-time MAX_DAILY_LOSS/MAX_WEEKLY_LOSS go stale
+        # after reload_risk_constants().
+        eff_daily_limit = _risk_constants.MAX_DAILY_LOSS * mult["daily_loss"]
+        eff_weekly_limit = _risk_constants.MAX_WEEKLY_LOSS * mult["weekly_loss"]
 
         # Fail-closed: balance unavailable -> veto (doubt #1, #8a)
         if account_balance is None or account_balance != account_balance or account_balance <= 0:  # NaN or <=0
@@ -436,19 +437,22 @@ class RiskManager:
         except Exception:
             pass
         # Per-symbol + per-strategy + per-regime effective risk (more configurable) — shadow constants locally
+        # A-G3 NOTE: the from-imported KILL_SWITCH_*/MAX_* names above are kept
+        # only for backward-compat re-export (__all__). All live reads MUST go
+        # through _risk_constants.<NAME> (reload_risk_constants() mutates the
+        # constants module globals; import-time bindings would stay stale).
+        _eff: Dict[str, Any] = {}
+        # Manager-level live copies (A-G1 fix): the old block assigned to the
+        # bare constant names (MAX_RISK_PER_TRADE = ...) which made them
+        # function-locals — the right-hand-side read then raised
+        # UnboundLocalError, swallowed by `except: pass`, so overrides NEVER
+        # applied. Underscore-prefixed locals + live-constant defaults fix it.
+        _eff_max_daily_trades: int = _risk_constants.MAX_DAILY_TRADES
         try:
             from quant_nanggroe.api.routes.risk_config import get_effective_config
 
             _eff = get_effective_config(symbol=symbol, strategy=strategy, regime=regime)
-            # shadow imported constants with per-symbol/strategy/regime effective values
-            MAX_RISK_PER_TRADE = _eff.get("maxRiskPerTrade", MAX_RISK_PER_TRADE)  # type: ignore
-            MAX_DAILY_LOSS = _eff.get("maxDailyLoss", MAX_DAILY_LOSS)  # type: ignore
-            MAX_WEEKLY_LOSS = _eff.get("maxWeeklyLoss", MAX_WEEKLY_LOSS)  # type: ignore
-            MAX_DRAWDOWN_PCT = _eff.get("maxDrawdown", MAX_DRAWDOWN_PCT)  # type: ignore
-            MAX_DAILY_TRADES = int(_eff.get("maxDailyTrades", MAX_DAILY_TRADES))  # type: ignore
-            MAX_POSITION_SIZE_PCT = _eff.get("maxPositionSize", MAX_POSITION_SIZE_PCT)  # type: ignore
-            MAX_LEVERAGE = _eff.get("maxLeverage", MAX_LEVERAGE)  # type: ignore
-            MAX_CORRELATED_POSITIONS = int(_eff.get("maxCorrelatedPositions", MAX_CORRELATED_POSITIONS))  # type: ignore
+            _eff_max_daily_trades = int(_eff.get("maxDailyTrades", _eff_max_daily_trades))
         except Exception:
             pass
 
@@ -488,13 +492,13 @@ class RiskManager:
                 "message": "All trading halted. Manual reset required after review.",
             }
 
-        # Daily trade count limit
-        if self.state.trade_count_today >= MAX_DAILY_TRADES:
+        # Daily trade count limit (effective per-symbol/strategy/regime value)
+        if self.state.trade_count_today >= _eff_max_daily_trades:
             return {
                 "symbol": symbol,
                 "direction": direction.upper(),
                 "verdict": "VETOED",
-                "reason": f"Daily trade limit reached ({self.state.trade_count_today}/{MAX_DAILY_TRADES})",
+                "reason": f"Daily trade limit reached ({self.state.trade_count_today}/{_eff_max_daily_trades})",
                 "failed_checkpoints": ["daily_trades"],
             }
 
@@ -559,6 +563,14 @@ class RiskManager:
             weekly_pnl=_weekly_abs,
             trade_count_today=self.state.trade_count_today,
             active_positions=self.state.active_positions,
+            # A-G1: forward the effective per-symbol/strategy/regime limits.
+            # _eff holds fractions (0.005); the gate takes percent (0.5).
+            # Empty _eff (config load failed) → live constants = legacy path.
+            max_risk_per_trade_pct=float(_eff.get("maxRiskPerTrade", _risk_constants.MAX_RISK_PER_TRADE)) * 100,
+            max_daily_loss_pct=float(_eff.get("maxDailyLoss", _risk_constants.MAX_DAILY_LOSS)) * 100,
+            max_weekly_loss_pct=float(_eff.get("maxWeeklyLoss", _risk_constants.MAX_WEEKLY_LOSS)) * 100,
+            max_position_size_pct=float(_eff.get("maxPositionSize", _risk_constants.MAX_POSITION_SIZE_PCT)) * 100,
+            max_leverage=float(_eff.get("maxLeverage", _risk_constants.MAX_LEVERAGE)),
         )
 
         verdict = result["verdict"]
@@ -1173,17 +1185,19 @@ class RiskManager:
         # kill switch fires BEFORE the 1%/3% constitutional hard limits. The
         # old code used MAX_DAILY_LOSS/MAX_WEEKLY_LOSS (1%/3%) which made these
         # constants dead and the early-warning buffer non-existent.
-        if daily_loss_pct >= abs(KILL_SWITCH_DAILY_PNL):
+        # A-G3: read via _risk_constants at point of use — reload_risk_constants()
+        # re-derives these from the live UI config; import-time bindings stay stale.
+        if daily_loss_pct >= abs(_risk_constants.KILL_SWITCH_DAILY_PNL):
             self.kill_switch.activate("AUTO_DAILY_LIMIT")
-            logger.critical("KILL SWITCH: Daily loss limit breached (%.2f%% >= %.2f%%)", daily_loss_pct * 100, abs(KILL_SWITCH_DAILY_PNL) * 100)
+            logger.critical("KILL SWITCH: Daily loss limit breached (%.2f%% >= %.2f%%)", daily_loss_pct * 100, abs(_risk_constants.KILL_SWITCH_DAILY_PNL) * 100)
 
-        if weekly_loss_pct >= abs(KILL_SWITCH_WEEKLY_PNL):
+        if weekly_loss_pct >= abs(_risk_constants.KILL_SWITCH_WEEKLY_PNL):
             self.kill_switch.activate("AUTO_WEEKLY_LIMIT")
-            logger.critical("KILL SWITCH: Weekly loss limit breached (%.2f%% >= %.2f%%)", weekly_loss_pct * 100, abs(KILL_SWITCH_WEEKLY_PNL) * 100)
+            logger.critical("KILL SWITCH: Weekly loss limit breached (%.2f%% >= %.2f%%)", weekly_loss_pct * 100, abs(_risk_constants.KILL_SWITCH_WEEKLY_PNL) * 100)
 
         if self.drawdown_monitor.is_breached:
             self.kill_switch.activate("AUTO_MAX_DRAWDOWN")
-            logger.critical("KILL SWITCH: Maximum drawdown breached (%.2f%% >= %.2f%%)", self.drawdown_monitor.current_drawdown * 100, MAX_DRAWDOWN * 100)
+            logger.critical("KILL SWITCH: Maximum drawdown breached (%.2f%% >= %.2f%%)", self.drawdown_monitor.current_drawdown * 100, _risk_constants.MAX_DRAWDOWN_PCT * 100)
 
 
     # Per-Asset Risk Budgets (P1-26)

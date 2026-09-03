@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request, Response
 
 router = APIRouter()
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
 async def proxy(request: Request, full_path: str):
     """Proxy any request to the local Otto MCP service.

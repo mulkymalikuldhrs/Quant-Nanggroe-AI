@@ -40,6 +40,7 @@ class ConsensusRequest(BaseModel):
     signals: list[dict]
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/berkshire")
 async def value_investing_analysis(req: BerkshireRequest) -> dict[str, Any]:
     """Run Berkshire Hathaway-style value investing analysis."""
@@ -83,6 +84,7 @@ async def value_investing_analysis(req: BerkshireRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/consensus")
 async def agent_consensus(req: ConsensusRequest) -> dict[str, Any]:
     """Run multi-agent consensus engine for trading decisions."""
@@ -120,6 +122,7 @@ async def agent_consensus(req: ConsensusRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/agents")
 async def list_agent_roles() -> dict[str, Any]:
     """List available agent roles for trading decisions."""

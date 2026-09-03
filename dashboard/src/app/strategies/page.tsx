@@ -72,9 +72,10 @@ function StrategiesContent() {
 
   const handleToggle = async (id: string) => {
     setTogglingId(id);
+    const next = !strategies.find((s) => s.id === id)?.enabled;
     try {
-      await strategiesApi.toggle(id);
-      setStrategies(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+      await strategiesApi.toggle(id, next);
+      setStrategies(prev => prev.map(s => s.id === id ? { ...s, enabled: next } : s));
     } catch { /* ignore */ }
     setTogglingId(null);
   };

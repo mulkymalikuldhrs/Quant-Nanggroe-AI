@@ -26,6 +26,7 @@ class InferenceRequest(BaseModel):
     agent_type: str = "ppo"
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/train")
 async def train_agent(req: TrainRequest) -> dict[str, Any]:
     """Train a DRL agent on synthetic episodes. Returns real loss metrics.
@@ -87,6 +88,7 @@ async def train_agent(req: TrainRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/inference")
 async def get_inference(req: InferenceRequest) -> dict[str, Any]:
     """Get RL agent inference for current market state."""
@@ -119,6 +121,7 @@ async def get_inference(req: InferenceRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/agents")
 async def list_agent_types() -> dict[str, Any]:
     """List available DRL agent types."""

@@ -1,6 +1,6 @@
 # QNA WAR PLAN — v8.0.22 CANONICAL SSOT — Phase 5: Parallel Profile Orchestration
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ## Status (2026-08-28 coordinator run — RTK verified)
 - **Cron Reality:** 7/7 profiles have jobs.json at `profiles/<name>/cron/jobs.json`. All crons registered + enabled.
@@ -40,8 +40,8 @@
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

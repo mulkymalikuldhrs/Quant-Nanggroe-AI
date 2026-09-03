@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,12 @@ import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useRealtimeData } from "@/lib/websocket";
 import { useAppStore } from "@/lib/store";
-import { cn, formatCurrency, formatPercent, formatPrice, formatTimestamp, pnlColor } from "@/lib/utils";
-import { brokersApi, tradingApi, marketApi } from "@/lib/api-client";
+import { cn, formatCurrency, formatPercent, formatPrice, pnlColor } from "@/lib/utils";
+import { brokersApi, marketApi } from "@/lib/api-client";
 import type { MT5AccountInfo, BrokerPositionsResponse, OrderType } from "@/lib/api-client";
 import {
   ArrowLeftRight, Send, RefreshCw, Wallet, TrendingUp, Activity,
-  Plug, Unplug, Settings, BarChart3, Globe, X, Trash2, GripVertical,
+  Plug, Unplug, Settings, BarChart3, Globe, X,
   BookOpen, ListOrdered, Star, Clock, ChevronDown, ChevronRight,
   Keyboard, Percent, DollarSign, SlidersHorizontal,
 } from "lucide-react";

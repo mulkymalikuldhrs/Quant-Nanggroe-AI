@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -207,6 +209,135 @@ async def toggle_strategy(name: str, toggle: StrategyToggle):
         raise HTTPException(status_code=404, detail=f"Strategy '{name}' not found")
     _strategy_config[name] = toggle
     return {"name": name, "enabled": toggle.enabled, "params": toggle.params or {}}
+
+
+class CompareRequest(BaseModel):
+    ids: List[str]
+
+
+def _resolve_strategy(sid: str) -> str | None:
+    """Resolve a dashboard id (underscores stripped) to the canonical registry name."""
+    valid = list_strategies()
+    if sid in valid:
+        return sid
+    nospace = {n.replace("_", ""): n for n in valid}
+    return nospace.get(sid.replace("_", ""))
+
+
+_WF_REGISTRY_PATH = Path(__file__).resolve().parents[3] / "data" / "walk_forward_registry.json"
+
+
+def _load_wf_registry() -> Dict[str, Any]:
+    """Read the real walk-forward registry file (empty dict when absent)."""
+    try:
+        if _WF_REGISTRY_PATH.exists():
+            return json.loads(_WF_REGISTRY_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _wf_summary(name: str, entry: Dict[str, Any]) -> Dict[str, Any]:
+    """Aggregate real walk-forward windows into summary metrics (fail-closed: zeros)."""
+    results = entry.get("walk_forward_results", []) or []
+    test_sharpes = [float(r.get("test_sharpe", 0.0) or 0.0) for r in results]
+    test_returns = [float(r.get("test_return", 0.0) or 0.0) for r in results]
+    n = len(results)
+    avg_sharpe = sum(test_sharpes) / n if n else 0.0
+    avg_return = sum(test_returns) / n if n else 0.0
+    win_rate = sum(1 for s in test_sharpes if s > 0) / n * 100 if n else 0.0
+    return {
+        "name": name,
+        "n_windows": n,
+        "avg_oos_sharpe": round(avg_sharpe, 4),
+        "avg_oos_return": round(avg_return, 4),
+        "total_oos_return": round(sum(test_returns), 4),
+        "win_rate_pct": round(win_rate, 2),
+        "status": entry.get("status", "unknown"),
+    }
+
+
+@router.put("/{name}/params")
+async def update_strategy_params(name: str, params: Dict[str, Any]):
+    """Update stored params for a strategy; returns merged params + real param schema."""
+    canonical = _resolve_strategy(name)
+    if canonical is None:
+        raise HTTPException(status_code=404, detail=f"Strategy '{name}' not found")
+    name = canonical
+    cfg = _strategy_config.get(name, StrategyToggle(name=name, enabled=True))
+    merged = dict(cfg.params or {})
+    merged.update(params or {})
+    cfg.params = merged
+    _strategy_config[name] = cfg
+    schema: Dict[str, Any] = {}
+    try:
+        schema = dict(create_strategy(name).params or {})
+    except Exception:
+        schema = {}
+    return {"name": name, "enabled": cfg.enabled, "params": merged, "schema": schema}
+
+
+@router.get("/{name}/performance")
+async def get_strategy_performance(name: str):
+    """Walk-forward performance for a strategy (404 JSON when no WF entry exists)."""
+    canonical = _resolve_strategy(name)
+    if canonical is None:
+        raise HTTPException(status_code=404, detail=f"Strategy '{name}' not found")
+    name = canonical
+    entry = _load_wf_registry().get(name)
+    if not entry:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No walk-forward entry for strategy '{name}'",
+        )
+    summary = _wf_summary(name, entry)
+    return {
+        "winRate": summary["win_rate_pct"],
+        "sharpe": summary["avg_oos_sharpe"],
+        "totalPnl": summary["total_oos_return"],
+        "trades": summary["n_windows"],
+        "period": "walk-forward",
+        "name": name,
+        "summary": summary,
+    }
+
+
+@router.post("/compare")
+async def compare_strategies(body: CompareRequest):
+    """Side-by-side walk-forward entries for two or more strategies (real registry data)."""
+    if not body.ids or len(body.ids) < 2:
+        raise HTTPException(status_code=400, detail="Provide at least two strategy ids: {\"ids\": [...]}")
+    registry = _load_wf_registry()
+    strategies: List[Dict[str, Any]] = []
+    metrics: Dict[str, Dict[str, float]] = {
+        "sharpe": {},
+        "return_pct": {},
+        "win_rate": {},
+        "n_windows": {},
+    }
+    for sid in body.ids[:5]:
+        canonical = _resolve_strategy(sid)
+        if canonical is None:
+            continue
+        meta = get_strategy_metadata(canonical)
+        cfg = _strategy_config.get(canonical, StrategyToggle(name=canonical, enabled=True))
+        summary = _wf_summary(canonical, registry.get(canonical, {}))
+        strategies.append({
+            "id": sid,
+            "name": canonical.replace("_", " ").title(),
+            "description": meta.get("description", ""),
+            "category": meta.get("category", ""),
+            "asset_classes": meta.get("asset_classes", []),
+            "timeframes": meta.get("timeframes", []),
+            "enabled": cfg.enabled,
+        })
+        metrics["sharpe"][sid] = summary["avg_oos_sharpe"]
+        metrics["return_pct"][sid] = summary["total_oos_return"]
+        metrics["win_rate"][sid] = summary["win_rate_pct"]
+        metrics["n_windows"][sid] = float(summary["n_windows"])
+    if len(strategies) < 2:
+        raise HTTPException(status_code=404, detail="Fewer than two known strategies in request")
+    return {"strategies": strategies, "metrics": metrics}
 
 
 @router.get("/backtest-results")

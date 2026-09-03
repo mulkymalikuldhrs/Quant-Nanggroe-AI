@@ -192,6 +192,12 @@ class ConstitutionalRiskGuard:
         self,
         request: TradeRequest,
         portfolio: PortfolioSnapshot,
+        *,
+        max_risk_per_trade_pct: Optional[float] = None,
+        max_daily_loss_pct: Optional[float] = None,
+        max_weekly_loss_pct: Optional[float] = None,
+        max_position_size_pct: Optional[float] = None,
+        max_leverage: Optional[float] = None,
     ) -> RiskCheckResult:
         """Check a proposed trade against constitutional risk limits.
 
@@ -201,14 +207,32 @@ class ConstitutionalRiskGuard:
             The proposed trade.
         portfolio:
             Current portfolio snapshot.
+        max_risk_per_trade_pct / max_daily_loss_pct / max_weekly_loss_pct /
+        max_position_size_pct / max_leverage:
+            Optional per-symbol/strategy/regime limit overrides (A-G1).
+            ``None`` (default) falls back to the module constants, so
+            existing callers see zero behavior change. Values are in
+            percent units matching the module constants, except
+            ``max_leverage`` which is a raw multiplier.
 
         Returns
         -------
         RiskCheckResult
             Risk assessment with approval status.
         """
+        # A-G1: resolve effective limits — explicit override or module default.
+        _lim_risk = MAX_RISK_PER_TRADE_PCT if max_risk_per_trade_pct is None else max_risk_per_trade_pct
+        _lim_daily = MAX_DAILY_LOSS_PCT if max_daily_loss_pct is None else max_daily_loss_pct
+        _lim_weekly = MAX_WEEKLY_LOSS_PCT if max_weekly_loss_pct is None else max_weekly_loss_pct
+        _lim_pos = MAX_POSITION_SIZE_PCT if max_position_size_pct is None else max_position_size_pct
+        _lim_lev = _MAX_LEVERAGE if max_leverage is None else max_leverage
+        _lim_sector_pct = _MAX_SECTOR_EXPOSURE_FRAC * 100  # constitutional, not overridable
         self._check_count += 1
-        result = RiskCheckResult()
+        result = RiskCheckResult(
+            max_allowed_risk_pct=_lim_risk,
+            remaining_daily_budget_pct=_lim_daily,
+            remaining_weekly_budget_pct=_lim_weekly,
+        )
 
         # Hard guard: zero balance → no trade (0-balance bypassed all 9 checks previously)
         if portfolio.total_equity <= 0:
@@ -228,19 +252,19 @@ class ConstitutionalRiskGuard:
         result.proposed_risk_pct = proposed_risk_pct
 
         # Check 1: Per-trade position size limit
-        if proposed_risk_pct > MAX_POSITION_SIZE_PCT * 10:  # > 100% — hard reject
+        if proposed_risk_pct > _lim_pos * 10:  # > 100% — hard reject
             result.reasons.append(
-                f"Position size {proposed_risk_pct:.2f}% is dangerously excessive (>{MAX_POSITION_SIZE_PCT * 10}%)"
+                f"Position size {proposed_risk_pct:.2f}% is dangerously excessive (>{_lim_pos * 10}%)"
             )
             result.risk_level = RiskLevel.BREACH
             result.approved = False
             self._rejected_count += 1
             return result
-        elif proposed_risk_pct > MAX_POSITION_SIZE_PCT:  # > 10% — adjust
+        elif proposed_risk_pct > _lim_pos:  # over max — adjust
             result.warnings.append(
-                f"Position size {proposed_risk_pct:.2f}% exceeds max {MAX_POSITION_SIZE_PCT}%"
+                f"Position size {proposed_risk_pct:.2f}% exceeds max {_lim_pos}%"
             )
-            adjusted_value = portfolio.total_equity * (MAX_POSITION_SIZE_PCT / 100)
+            adjusted_value = portfolio.total_equity * (_lim_pos / 100)
             if request.price > 0:
                 adjusted_qty = adjusted_value / request.price
                 request.quantity = adjusted_qty
@@ -249,16 +273,16 @@ class ConstitutionalRiskGuard:
                 result.warnings.append(
                     f"Position size adjusted to {adjusted_qty:.2f} shares"
                 )
-            proposed_risk_pct = MAX_POSITION_SIZE_PCT
+            proposed_risk_pct = _lim_pos
 
         # Check 2: Per-trade risk limit — compute from stop-loss distance, not request.risk_pct
         if request.stop_loss_pct > 0 and request.notional_value > 0:
             computed_risk_pct = (request.stop_loss_pct / 100.0) * (request.notional_value / portfolio.total_equity * 100) if portfolio.total_equity > 0 else 0
         else:
             computed_risk_pct = proposed_risk_pct  # fallback to position size as risk proxy
-        if computed_risk_pct > MAX_RISK_PER_TRADE_PCT:
+        if computed_risk_pct > _lim_risk:
             result.reasons.append(
-                f"Per-trade risk {computed_risk_pct:.2f}% exceeds max {MAX_RISK_PER_TRADE_PCT}%"
+                f"Per-trade risk {computed_risk_pct:.2f}% exceeds max {_lim_risk}%"
             )
             result.risk_level = RiskLevel.BREACH
             result.approved = False
@@ -267,12 +291,12 @@ class ConstitutionalRiskGuard:
 
         # Check 3: Daily loss budget
         daily_used = abs(min(0, portfolio.daily_pnl_pct))
-        remaining_daily = MAX_DAILY_LOSS_PCT - daily_used
+        remaining_daily = _lim_daily - daily_used
         result.remaining_daily_budget_pct = max(0, remaining_daily)
 
         if remaining_daily <= 0:
             result.reasons.append(
-                f"Daily loss budget exhausted ({daily_used:.2f}% used of {MAX_DAILY_LOSS_PCT}%)"
+                f"Daily loss budget exhausted ({daily_used:.2f}% used of {_lim_daily}%)"
             )
             result.risk_level = RiskLevel.BREACH
             result.approved = False
@@ -281,12 +305,12 @@ class ConstitutionalRiskGuard:
 
         # Check 4: Weekly loss budget
         weekly_used = abs(min(0, portfolio.weekly_pnl_pct))
-        remaining_weekly = MAX_WEEKLY_LOSS_PCT - weekly_used
+        remaining_weekly = _lim_weekly - weekly_used
         result.remaining_weekly_budget_pct = max(0, remaining_weekly)
 
         if remaining_weekly <= 0:
             result.reasons.append(
-                f"Weekly loss budget exhausted ({weekly_used:.2f}% used of {MAX_WEEKLY_LOSS_PCT}%)"
+                f"Weekly loss budget exhausted ({weekly_used:.2f}% used of {_lim_weekly}%)"
             )
             result.risk_level = RiskLevel.BREACH
             result.approved = False
@@ -304,10 +328,10 @@ class ConstitutionalRiskGuard:
 
         # Check 6: Leverage — total exposure (existing + new) must not exceed equity * max leverage
         total_exposure = portfolio.total_position_value + request.notional_value
-        max_leverage_notional = portfolio.total_equity * _MAX_LEVERAGE
+        max_leverage_notional = portfolio.total_equity * _lim_lev
         if total_exposure > max_leverage_notional:
             result.reasons.append(
-                f"Total exposure {total_exposure:.0f} exceeds {_MAX_LEVERAGE}x leverage "
+                f"Total exposure {total_exposure:.0f} exceeds {_lim_lev}x leverage "
                 f"limit ({max_leverage_notional:.0f})"
             )
             result.risk_level = RiskLevel.BREACH
@@ -322,7 +346,7 @@ class ConstitutionalRiskGuard:
             if SECTOR_MAP.get(sym, SECTOR_DEFAULT) == sector:
                 sector_value += pos.get("quantity", 0) * pos.get("current_price", 0)
         sector_pct = (sector_value / portfolio.total_equity * 100) if portfolio.total_equity > 0 else 0
-        max_sector_pct = _MAX_SECTOR_EXPOSURE_FRAC * 100  # convert fraction to %
+        max_sector_pct = _lim_sector_pct  # convert fraction to %
         if sector_pct > max_sector_pct:
             result.reasons.append(
                 f"Sector {sector} exposure {sector_pct:.1f}% exceeds max {max_sector_pct:.0f}%"
@@ -333,13 +357,13 @@ class ConstitutionalRiskGuard:
             return result
 
         # Determine overall risk level
-        if proposed_risk_pct <= MAX_RISK_PER_TRADE_PCT * 0.5:
+        if proposed_risk_pct <= _lim_risk * 0.5:
             result.risk_level = RiskLevel.SAFE
-        elif proposed_risk_pct <= MAX_RISK_PER_TRADE_PCT:
+        elif proposed_risk_pct <= _lim_risk:
             result.risk_level = RiskLevel.MODERATE
-        elif proposed_risk_pct <= MAX_POSITION_SIZE_PCT * 0.5:
+        elif proposed_risk_pct <= _lim_pos * 0.5:
             result.risk_level = RiskLevel.ELEVATED
-        elif proposed_risk_pct <= MAX_POSITION_SIZE_PCT:
+        elif proposed_risk_pct <= _lim_pos:
             result.risk_level = RiskLevel.HIGH
         else:
             result.risk_level = RiskLevel.EXTREME
@@ -362,8 +386,19 @@ class ConstitutionalRiskGuard:
         weekly_pnl: float = 0.0,
         trade_count_today: int = 0,
         active_positions: Optional[List[str]] = None,
+        max_risk_per_trade_pct: Optional[float] = None,
+        max_daily_loss_pct: Optional[float] = None,
+        max_weekly_loss_pct: Optional[float] = None,
+        max_position_size_pct: Optional[float] = None,
+        max_leverage: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """Flat-parameter evaluate (backward compat for RiskManager)."""
+        """Flat-parameter evaluate (backward compat for RiskManager).
+
+        The ``max_*`` overrides (A-G1) accept per-symbol/strategy/regime
+        effective limits in the same units as the module constants
+        (percent, except ``max_leverage``). ``None`` (default) keeps the
+        legacy module-constant behavior.
+        """
         active_positions = active_positions or []
         # Convert absolute stop_loss price to percentage if needed
         # Heuristic: values < 30 are likely percentages, >= 30 are absolute prices
@@ -383,7 +418,15 @@ class ConstitutionalRiskGuard:
             daily_pnl=daily_pnl,
             weekly_pnl=weekly_pnl,
         )
-        result = self.check_trade(req, pf)
+        result = self.check_trade(
+            req,
+            pf,
+            max_risk_per_trade_pct=max_risk_per_trade_pct,
+            max_daily_loss_pct=max_daily_loss_pct,
+            max_weekly_loss_pct=max_weekly_loss_pct,
+            max_position_size_pct=max_position_size_pct,
+            max_leverage=max_leverage,
+        )
         failed = [w for w in result.warnings + result.reasons if w] if not result.approved else []
         return {
             "verdict": "APPROVED" if result.approved else "VETOED",
@@ -403,7 +446,7 @@ class ConstitutionalRiskGuard:
         equity: float,
         entry_price: float,
         stop_loss_price: float,
-        risk_pct: float = MAX_RISK_PER_TRADE_PCT,
+        risk_pct: Optional[float] = None,
     ) -> float:
         """Calculate position size based on risk budget.
 
@@ -426,7 +469,10 @@ class ConstitutionalRiskGuard:
         if entry_price <= 0 or equity <= 0:
             return 0.0
 
-        risk_amount = equity * (risk_pct / 100)
+        # A-G3: resolve at call time (the old import-time default binding
+        # went stale after reload_risk_constants()).
+        _risk_pct = MAX_RISK_PER_TRADE_PCT if risk_pct is None else risk_pct
+        risk_amount = equity * (_risk_pct / 100)
         risk_per_unit = abs(entry_price - stop_loss_price)
 
         if risk_per_unit <= 0:

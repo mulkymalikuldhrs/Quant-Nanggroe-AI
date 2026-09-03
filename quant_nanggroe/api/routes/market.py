@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from quant_nanggroe.api.schemas import (
     MarketRegimeRequest,
@@ -254,6 +254,76 @@ async def get_signals() -> dict[str, Any]:
         return {"signals": signals, "status": "ok"}
     except Exception as e:
         return {"signals": [], "status": "ok", "error": str(e)}
+
+
+@router.get("/candles/{symbol}")
+async def get_candles(
+    symbol: str,
+    http_request: Request,
+    timeframe: str = Query("1d", description="Candle timeframe: 1m,5m,15m,30m,1h,4h,1d,1w,1M"),
+    limit: int = Query(100, ge=1, le=1000),
+) -> list[dict[str, Any]]:
+    """Candlestick data for charting — real OHLCV via ExchangeManager, MT5 fallback.
+
+    Fail-closed: raises 503 when no live source returns data (never mock data).
+    """
+    from quant_nanggroe.types.market import TimeFrame as TF
+
+    tf_map = {
+        "1m": TF.M1, "5m": TF.M5, "15m": TF.M15, "30m": TF.M30,
+        "1h": TF.H1, "4h": TF.H4, "1d": TF.D1, "1w": TF.W1, "1M": TF.MO1,
+    }
+    tf = tf_map.get(timeframe, TF.D1)
+
+    def _serialize(candles: Any) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for c in candles or []:
+            ts = c.timestamp.isoformat() if hasattr(c.timestamp, "isoformat") else str(c.timestamp)
+            out.append({
+                "time": ts,
+                "open": float(c.open),
+                "high": float(c.high),
+                "low": float(c.low),
+                "close": float(c.close),
+                "volume": float(getattr(c, "volume", 0.0) or 0.0),
+            })
+        return out
+
+    try:
+        em = _get_exchange_manager(http_request)
+        candles = await em.get_ohlcv(symbol=symbol, timeframe=tf, limit=limit)
+        data = _serialize(candles)
+        if data:
+            return data
+        logger.warning("candles_empty symbol=%s timeframe=%s via ExchangeManager", symbol, timeframe)
+    except Exception as exc:
+        logger.warning("candles_exchange_failed symbol=%s error=%s", symbol, exc)
+
+    try:
+        from quant_nanggroe.exchange.base import ExchangeConfig
+        from quant_nanggroe.exchange.mt5_broker import MT5Broker
+
+        config = ExchangeConfig(exchange_id="mt5")
+        broker = MT5Broker(config)
+        await broker.connect()
+        try:
+            ohlcv = await broker.get_ohlcv(symbol, limit=limit)
+        finally:
+            await broker.disconnect()
+        data = _serialize(ohlcv)
+        if data:
+            return data
+    except ImportError:
+        raise HTTPException(status_code=503, detail=f"Candles unavailable for {symbol}: MetaTrader5 not installed")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("candles_mt5_failed symbol=%s error=%s", symbol, exc)
+
+    raise HTTPException(
+        status_code=503,
+        detail=f"Candles unavailable for {symbol}: all live sources failed",
+    )
 
 
 @router.get("/mt5/{symbol}")

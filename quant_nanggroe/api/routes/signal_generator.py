@@ -79,6 +79,7 @@ def _generate_real_signals(symbol: str = "BTC-USD", max_signals: int = 20) -> li
     return signals
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/list")
 async def list_signals(
     symbol: str = Query("BTC-USD", description="Symbol to scan"),
@@ -95,6 +96,7 @@ async def list_signals(
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/active")
 async def active_signals(
     symbol: str = Query("BTC-USD", description="Symbol to scan"),
@@ -105,6 +107,7 @@ async def active_signals(
     return {"items": active, "count": len(active)}
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/generate")
 async def generate_signal(body: GenerateSignalRequest) -> dict[str, Any]:
     """Generate a real signal from a specific strategy using live market data."""
@@ -168,6 +171,7 @@ async def generate_signal(body: GenerateSignalRequest) -> dict[str, Any]:
         }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/batch-generate")
 async def batch_generate_signals(
     symbols: Optional[list[str]] = None,

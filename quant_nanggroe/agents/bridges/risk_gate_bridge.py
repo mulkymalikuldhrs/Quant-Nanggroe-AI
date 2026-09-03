@@ -175,6 +175,8 @@ class RiskGateBridge:
         weekly_pnl: float = 0.0,
         trade_count_today: int = 0,
         active_positions: Optional[List[str]] = None,
+        strategy: Optional[str] = None,
+        regime: Optional[str] = None,
     ) -> GateResult:
         """Run the deterministic 9-checkpoint risk gate on a trade proposal.
 
@@ -194,6 +196,10 @@ class RiskGateBridge:
             weekly_pnl: This week's accumulated P&L
             trade_count_today: Number of trades executed today
             active_positions: List of currently held symbols
+            strategy: Strategy name producing the signal (feeds perStrategy
+                overrides; None = global limits). Backward compatible.
+            regime: Market regime (feeds perRegime overrides; None = global
+                limits). Backward compatible.
 
         Returns:
             GateResult with the deterministic gate's final verdict
@@ -235,6 +241,8 @@ class RiskGateBridge:
             stop_loss=stop_loss,
             account_balance=account_balance,
             take_profit=take_profit,
+            strategy=strategy,
+            regime=regime,
         )
 
         # Step 3: Extract checkpoint details

@@ -19,12 +19,12 @@
 | **Status** | GREEN — LIVE on MT5. REAL-ONLY, no paper/sim/mock. MT5-only execution. |
 | **LiveModeGuard** | ACTIVE — `LiveModeGuard` enforced; no paper mode, MT5 live only |
 | **Session** | 82+ commits (8-phase overhaul + strategy consolidation + MT5 auto-detect + Config Center + .vxc suffix fix + AI assistant + icon set + launcher upgrade + v8.0.2 candle scheduler + notifications + v8.0.3 fail-closed risk wiring + launcher quoting fix + v8.0.8 universal path auto-detect + full risk audit + v8.0.9 trading unblocked + v8.0.10 MT5 data pipeline + candle scheduler thread fix) |
-| **Strategies registered** | 83 registered (93 strategy files incl. 4 compute engines merged; WF-gated admission, 9 admitted via CPCV allocation) |
-| **Engine strategies** | 81 via `@StrategyRegistry.register` — all auto-wired to live; 58 archive wired but WF-blocked (n=0) |
+| **Strategies registered** | 80 files w/ `@StrategyRegistry.register` top-level (+58 archive files w/ decorator; 84 top-level .py incl `__init__.py`, 59 archive .py incl `__init__.py`); WF-gated admission, 9 admitted via CPCV allocation |
+| **Engine strategies** | 80 top-level files via `@StrategyRegistry.register` — all auto-wired to live; 58 archive files w/ decorator, WF-gated (admitted only via CPCV allocation) |
 | **Agents** | 9 agent personas (researcher, analyst, risk, execution, portfolio, etc.) |
 | **Tests passing** | See CHANGELOG (latest full-battery count) |
 | **Path auto-detect** | Universal — all scripts use `Path(__file__).resolve().parent`; external deps in `quant_nanggroe/external/` (kronos, mue_x, hidden_regime, backtesting, smc, orderflow_map) via `Path(__file__).parent / 'external'`; no hardcoded `E:\` at runtime. |
-| **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 83 strategies |
+| **Repo stats** | 80+ commits, 806 Python files, 228 test files, 50+ API routes, 80 registered strategies (+58 archive) |
 | **Dashboard** | 31 routes + Config Center (`/vector`) + Risk per-symbol `perSymbol` (EURUSD 0.3%, XAU 0.7%, all 28) | (`/config`) + Export Center (`/export`) + AI Assistant Widget, Next.js 16, 50+ API backend routes + Vector manifold, premium dark-tech |
 
 ---
@@ -42,7 +42,7 @@ qna.py daemon / qna_tray.py (system tray)
               → _validate_ohlcv() + _reject_stale() — STALE-DATA VETO
             → regime detection (enhanced_regime.py)
             → context_gate.py — high-impact news blackout veto (±30 min)
-            → signal generation (signal_aggregator netting, 83 strategies)
+            → signal generation (signal_aggregator netting, 80 registered strategies)
             → multi-TF alignment check
             → _check_risk() — FAIL-CLOSED 9-gate
             → execute_order(): guards → kill switch → risk veto
@@ -111,13 +111,13 @@ qna.py daemon / qna_tray.py (system tray)
 | **portfolio/** | `engine/portfolio/` | Portfolio management |
 | **projection/** | `engine/projection/` | CompoundProjector — deterministic/Monte Carlo/empirical equity projection |
 | **regime/** | `engine/regime/` | HMM regime detection (15 modules) |
-| **risk/** | `engine/risk/` | Risk management (31 modules) — see Section 5 |
+| **risk/** | `engine/risk/` | Risk management (27 files incl `__init__.py`, 26 modules) — see Section 5 |
 | **rl/** | `engine/rl/` | Reinforcement learning |
 | **scanner/** | `engine/scanner/` | Market scanner |
 | **screener/** | `engine/screener/` | Stock screener |
 | **shadow/** | `engine/shadow/` | Shadow mode — extractor, scanner |
 | **smc/** | `engine/smc/` | Smart Money Concepts (ICT) |
-| **strategies/** | `engine/strategies/` | 83 strategy implementations — see Section 4 |
+| **strategies/** | `engine/strategies/` | 80 registered strategies (+58 archive) — see Section 4 |
 | **strategy_lifecycle.py** | `engine/strategy_lifecycle.py` | Strategy lifecycle management, WF gate |
 | **trade_history.py** | `engine/trade_history.py` | SQLite-backed unlimited trade/signal history (replaces JSON buffer) |
 | **stress_testing/** | `engine/stress_testing/` | Stress testing |
@@ -146,7 +146,7 @@ All 5 engines are LIVE: SMCProEngine votes through the `smc` strategy in the ens
 
 ### 4.1 Strategy Registration
 
-All 81 engine strategies are registered via `@StrategyRegistry.register` in `quant_nanggroe/engine/strategies/*.py`. The package `__init__.py` import-loop loads every `*.py` in that dir, so registration is automatic on import. There is no curated allow-list — "registered" ⟹ "wired live."
+All 80 engine strategies are registered via `@StrategyRegistry.register` in `quant_nanggroe/engine/strategies/*.py`. The package `__init__.py` import-loop loads every `*.py` in that dir, so registration is automatic on import. There is no curated allow-list — "registered" ⟹ "wired live."
 
 ### 4.2 WF-Validated (Admitted to Live Trading)
 
@@ -254,7 +254,7 @@ Trade Proposal → QuickVeto (5 fast checks) → RiskManager.check_trade (9 chec
   → GovernanceVetoGuard (execution pipeline filter) → Execute Order
 ```
 
-### 5.3 Risk Components (31 files)
+### 5.3 Risk Components (27 files incl `__init__.py`)
 
 | File | Class | Purpose |
 |------|-------|---------|
@@ -477,7 +477,7 @@ All `config/*.yaml` editable from dashboard at `/config` without manual file edi
 | Broker | ValetaxIntl-Live2, login 372044706 (auto-detected, `config/mt5_accounts.yaml` editable via `/config`) |
 | Balance | $1,122.05 (real MT5) |
 | Positions | 3 live (SELL 0.01 ticket 20188224176, BUY 0.01 ticket 20188224713) |
-| Strategies | 83 registered → 2 strict-admitted (`kaufman_ama` + `multi_timeframe`) / 7 WF-validated |
+| Strategies | 80 registered → 2 strict-admitted (`kaufman_ama` + `multi_timeframe`) / 7 WF-validated |
 | Journal | 156+ trades, `data/qna_trade_journal.db` |
 | Kill switch | Cross-process file-based, fail-closed (`engine/risk/kill_switch.py`, `SingletonLock` cross-platform) |
 | Account discovery | `MT5Broker.detect_active_account()` + `account_discovery.py` (Valetax terminal `C:\Program Files\MetaTrader 5 Valetax`) — **discovered authoritative, config skipped when live** |
@@ -597,10 +597,10 @@ python -m ruff check .
 
 ## 15. File Inventory
 
-- **Root .py files:** 806 | **Tests:** 228 | **API routes:** 47 | **Strategies:** 83
-- **Risk modules:** 31 | **Engine subdirectories:** 30+
-- **Total commits:** 59 | **Dashboard routes:** 17
-- **Strategies registered:** 83 | **Core tests passing:** 342
+- **Root .py files:** 806 | **Tests:** 228 | **API routes:** 47 | **Strategies:** 80 registered (+58 archive w/ decorator)
+- **Risk modules:** 27 files incl `__init__.py` | **Engine subdirectories:** 30+
+- **Total commits:** 59 | **Dashboard routes:** 31 (`dashboard/src/app/**/page.tsx` count)
+- **Strategies registered:** 80 | **Core tests passing:** 342
 - **Agents:** 9 | **Cron jobs:** 26 active
 
 ---
@@ -743,27 +743,27 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
-### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Datetime Shadow Fix (2026-09-03)
+### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Shadow Timestamps (2026-09-03) — CORRECTED 2026-09-03 (D-workstream: docs follow code)
 
-**Vector 6 modul LIVE (Step 4.6):**
-| # | Module | File | Role |
-|---|--------|------|------|
-| 1 | Vector Manifold | `engine/vector_manifold.py` | 3D position vector P=xî+yĵ+zk, observability Step 4.6 |
-| 2 | Euclidean Mispricing | `engine/euclidean_mispricing.py` | d=||P-P0|| distance metric for mispricing detection |
-| 3 | Grid Executor | `engine/grid_executor.py` | 0.05σ eigenvector grid execution |
-| 4 | Shadow Extractor | `engine/shadow/extractor.py` | Datetime-aware shadow extraction (naive→aware fix) |
-| 5 | Shadow Scanner | `engine/shadow/scanner.py` | Shadow signal scanner with WIB timezone |
-| 6 | Vector Observability | `engine/vector/observability.py` | Step 4.6 observability metrics + vector health |
+**Vector 5 modul LIVE + 1 planned (Step 4.6):**
+| # | Module | File | Role | Status |
+|---|--------|------|------|--------|
+| 1 | Vector Manifold | `engine/vector_manifold.py` | 3D position vector P=xî+yĵ+zk, observability Step 4.6 | LIVE |
+| 2 | Euclidean Mispricing | `engine/euclidean_mispricing.py` | d=\|\|P-P0\|\| distance metric for mispricing detection | LIVE |
+| 3 | Grid Executor | `engine/grid_executor.py` | 0.05σ eigenvector grid execution | LIVE |
+| 4 | Shadow Extractor | `engine/shadow/extractor.py` | NLP strategy-rule parser (ExtractedRule/ExtractedStrategy dataclasses) — NO tz/datetime fix in code | LIVE (no tz fix) |
+| 5 | Shadow Scanner | `engine/shadow/scanner.py` | Shadow signal scanner — NO Asia/Jakarta tz handling in code (grep `tz_localize\|Asia/Jakarta` across `engine/shadow/*.py` = 0 hits) | LIVE (no tz fix) |
+| 6 | Vector Observability | `engine/vector/observability.py` | **PLANNED — file does NOT exist.** Existing generic module is `quant_nanggroe/engine/observability.py:1` (OpenTelemetry tracing/metrics, OFF by default) | PLANNED |
 
-**Fixes:**
-- **committee 0.10:** `engine/committee/` consensus weights 0.10 uniform, RiskAgent VETO absolute
-- **risk 0.08:** `engine/risk/constants.py` max risk per trade 0.08% conservative tightening for FAZE 1
-- **datetime shadow fix:** `engine/shadow/extractor.py:42` naive datetime → `tz_localize("Asia/Jakarta")` WIB-aware, eliminates shadow-mode TypeError on DST boundary
-- **vector observability Step 4.6:** vector manifold metrics exported to `GET /api/vector/health` + dashboard `/vector` observability panel
+**Fixes (corrected to match code):**
+- **committee 0.10:** `CONFIDENCE_THRESHOLD = 0.10` at `quant_nanggroe/engine/agentic/committee/vote_chamber.py:21` — a pass-threshold on weighted-avg confidence (lowered from 0.5 per inline comment), NOT uniform weights. Actual per-agent weights are non-uniform at `vote_chamber.py:114` (`bull 0.35 / bear 0.35 / macro 0.30`). RiskAgent VETO absolute (`VETO_POWERS = {"risk_officer"}` at `vote_chamber.py:22`).
+- **risk 0.5% default:** constitutional default is 0.5% per trade — `quant_nanggroe/config/settings.py:115-116` (`risk_max_per_trade: float = 0.5`, percent), consumed at `quant_nanggroe/engine/risk/constants.py:28`, UI default `"maxRiskPerTrade": 0.005` at `quant_nanggroe/api/routes/risk_config.py:36`. No `0.08`/`0.0008` value exists anywhere in `engine/risk/` or its git history — the "0.08% tightening" claim is withdrawn. (Related verified tightening: sizing multiplier `confidence * 0.05` (was `* 0.1`), §15.7.)
+- **datetime shadow fix — UNVERIFIED, location TBD:** `engine/shadow/extractor.py:42` is `rules: List[ExtractedRule] = field(default_factory=list)` — an NLP parser with no tz handling. Grep for `tz_localize|Asia/Jakarta|tzinfo|timezone` across `quant_nanggroe/engine/shadow/*.py` returns 0 hits: no WIB-aware fix exists in code. Prior claim withdrawn.
+- **vector status endpoint:** vector manifold metrics served at `GET /api/vector/status` (`quant_nanggroe/api/routes/vector.py:9`, handler `vector_status`) + dashboard `/vector` page (`dashboard/src/app/vector/page.tsx`). No `/api/vector/health` route exists — corrected.
 
-**Verification:** `vector 6 modul live, risk per-symbol` — all 6 importable via `engine/vector_manifold.py:1`, `engine/euclidean_mispricing.py:1`, `engine/grid_executor.py:1`, `engine/shadow/extractor.py:1`, `engine/shadow/scanner.py:1`
+**Verification:** 5 modules exist — `engine/vector_manifold.py`, `engine/euclidean_mispricing.py`, `engine/grid_executor.py`, `engine/shadow/extractor.py`, `engine/shadow/scanner.py` (all `EXISTS` on disk); `engine/vector/observability.py` `MISSING` (planned).
 
 ---
 
@@ -898,4 +898,46 @@ TestEndToEnd           (2 tests): effective config shape, default→perSymbol→
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 6 modul live (Step 4.6), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28) + perRegime + schema-validated + 80% kill buffer
+### 15.12 v8.1.0 — Full-Spectrum Pass: risk truth + API wiring + docs truth + self-evolve READY (2026-09-04)
+
+Six parallel workstreams, one commit. Every claim verified against `file:line`.
+
+**WS-A — Risk truth (P0 functional, all CLOSED):**
+- G1 CLOSED: effective per-symbol/strategy/regime limits now reach the gate — `check_gate.evaluate()` takes `max_risk_per_trade_pct / max_daily_loss_pct / max_weekly_loss_pct / max_position_size_pct / max_leverage` params (`checks.py`), forwarded from `check_trade` (`manager.py:554-574`, fraction→percent ×100). Empty `_eff` → live constants = legacy path.
+- G3 CLOSED: `manager.py` reads thresholds via `_risk_constants.<NAME>` module attribute (reload mutates the same module); import-time float bindings removed from the live path.
+- Latent UnboundLocalError FIXED: old override block assigned bare constant names (function-locals) → RHS read raised, swallowed by `except: pass`, overrides never applied. Replaced with underscore locals + live-constant defaults (`manager.py:444-457`). Pinned by `test_veto_parity.py::test_parity_s8_risk_manager_no_crash_when_kill_inactive`.
+- G10 CLOSED: perStrategy/perRegime now case-insensitive + warn on never-matched override keys.
+- Callsites 7/7 pass strategy/regime: `execution/manager.py:350`, `autonomous.py:1712`, `trading.py:349` (POST /risk-check accepts optional fields), `risk_gate_bridge.py:230` (signature extended), `pipeline/execution.py:179`, `qna_autonomous_cycle.py:272`.
+- Tests: `test_per_symbol_overrides.py` 35/35 (11 new) + 75/75 regression, ruff clean.
+
+**WS-B — API wiring (P0):**
+- Added: `GET /api/market/candles/{symbol}` (real MT5 OHLCV, fail-closed error when offline), `PUT /strategies/{name}/params` + `GET /{name}/performance` + `POST /compare` (WF-registry backed), `GET /backtest/engines` + `/factors` (introspected).
+- Fixed clients: strategies toggle PUT→POST, OrderFlowMap URL → `/api/market/orderbook`, removed unused `getDecisions`/`getRiskParity`.
+- `docs/DEAD_API.md` created; 12 dead routers marked DEPRECATED (no deletion).
+- Smoke-tested live: PERF/COMPARE/PARAMS/ENGINES/FACTORS return real data; `tsc` clean.
+
+**WS-C — Dashboard bloat + root junk:**
+- Deleted `shared/cards.tsx` (0 importers); unused imports cleaned (page/trading/vector/settings); risk page fetches live `/api/risk-config` + equity (static sections labeled); 10 unused Radix deps removed from `package.json` (lockfile refresh on next `npm install`); 4 root junk files → `archive/root_junk_2026-09-04/`; 3 empty engine dirs removed. `tsc` clean, `next build` 40/40 routes.
+
+**WS-D — Docs truth (§15.9 overclaims corrected):**
+- `engine/vector/observability.py` → PLANNED (missing on disk); `/api/vector/health` → `/api/vector/status` (`vector.py:9`); `extractor.py:42` tz-fix withdrawn (0 hits for `tz_localize|Asia/Jakarta` in `engine/shadow/`); "risk 0.08" withdrawn → 0.5% default; "0.10 uniform weights" → `CONFIDENCE_THRESHOLD=0.10` pass-threshold (`vote_chamber.py:21`), actual weights non-uniform (`vote_chamber.py:114`, 0.35/0.35/0.30).
+- Counts synced: 80 strategy files w/ decorator + 58 archive; 31 dashboard pages; 27 risk files.
+- `docs/ALPHA_EVIDENCE.md` created: 5 exact WF rows from `data/walk_forward_registry.json` (214 keys); WinRate TBD (FASE 4).
+
+**WS-E — Test gaps + self-evolve:**
+- New: `test_candle_scheduler_unit.py` (8), `test_context_gate_unit.py` (6), `test_committee_weights.py` (7, incl. real-RiskOfficer veto), `test_vector_p0.py` (4), `test_fill_ticket.py` (2, B1 pin).
+- Deleted 7 skipped dead strategy tests (referenced classes with zero definitions).
+- Vector P0: rolling-mean (deque 20) via existing `build_p0`; buffer<2 → warming_up, triggers False. Observability-only, no trade-path wiring.
+- `docs/SELF_EVOLVE_READINESS.md`: loop structurally closed; verdict **READY** (v8.1.0) after B1 fix — see below.
+
+**WS-F — Consolidation prep (parity, no deletion):**
+- `test_veto_parity.py` (8: veto unanimous only on daily-loss; splits documented), `test_kelly_parity.py` (5: percent-vs-decimal 100× split, cap/floor splits), `docs/VOTER_STACKS.md` (keep-VoteChamber recommendation), 2 DEPRECATED markers.
+- COT verdict: live-wired is `engine/risk/cot_position_guard.py` via `autonomous.py:2292-2295`; `fundamental/cot.py` + `data/cot_provider.py` safe to archive in F5-full.
+
+**B1 fix (self-eval leg, coordinator):** `exec_decision` never carried `ticket` (only `record_signal` reader at `autonomous.py:1280`) → eval leg data-starved since inception. `_make_decision` now resolves the MT5 position ticket from broker truth (`PositionInfo.ticket`, `base.py:130`) after every fill, fail-soft to 0 (`autonomous.py`, B1-fix block). `record_signal` fires with a real ticket; `record_outcome` (`journal_sync.py:364`) matches it on close. Pinned by `test_fill_ticket.py` (2/2). B2 contained by design (opens scored as breakeven noise, lessons skipped — `trade_lifecycle.py:247-265`).
+
+**Verification (coordinator battery):** 278 passed + 8 xfailed (test_risk + new unit + vector + kill-switch); `tsc` clean; `py_compile` clean. Full-suite note: `test_crypto_specific`/`test_pairs_trading` carry 48 pre-existing failures (missing imports/API drift, untouched).
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join)

@@ -535,6 +535,7 @@ def _get_gateway() -> WhatsAppGateway:
     return _gateway
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/webhook")
 async def whatsapp_webhook(message: WhatsAppMessage) -> Dict[str, Any]:
     """Receive an inbound WhatsApp message via webhook.
@@ -557,6 +558,7 @@ async def whatsapp_webhook(message: WhatsAppMessage) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/notify")
 async def send_notification(notification: NotificationMessage) -> Dict[str, Any]:
     """Send a notification to subscribed WhatsApp chats.
@@ -580,6 +582,7 @@ async def send_notification(notification: NotificationMessage) -> Dict[str, Any]
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/trade-alert")
 async def send_trade_alert(
     symbol: str,
@@ -610,6 +613,7 @@ async def send_trade_alert(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/risk-warning")
 async def send_risk_warning(
     warning_type: str,
@@ -634,6 +638,7 @@ async def send_risk_warning(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/status")
 async def whatsapp_status() -> Dict[str, Any]:
     """Get WhatsApp gateway status.

@@ -24,7 +24,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from quant_nanggroe.engine.risk.constants import KILL_SWITCH_DAILY_PNL, KILL_SWITCH_WEEKLY_PNL
+from quant_nanggroe.engine.risk import constants as _kill_constants
 
 logger = logging.getLogger(__name__)
 
@@ -170,9 +170,12 @@ class KillSwitchConfig(BaseModel):
     model_config = ConfigDict(frozen=False)
 
     # Auto-activation thresholds (as fractions, e.g. 0.015 = 1.5%)
-    # Defaults sourced from constants.py (single source of truth)
-    auto_daily_loss_pct: float = abs(KILL_SWITCH_DAILY_PNL)
-    auto_weekly_loss_pct: float = abs(KILL_SWITCH_WEEKLY_PNL)
+    # Defaults sourced from constants.py (single source of truth).
+    # A-G3: default_factory reads the LIVE module attribute at instantiation —
+    # the old import-time defaults went stale after reload_risk_constants().
+    # Same values under default config (backward compatible).
+    auto_daily_loss_pct: float = Field(default_factory=lambda: abs(_kill_constants.KILL_SWITCH_DAILY_PNL))
+    auto_weekly_loss_pct: float = Field(default_factory=lambda: abs(_kill_constants.KILL_SWITCH_WEEKLY_PNL))
     auto_max_drawdown_pct: float = 0.05
     auto_volatility_spike_pct: float = 0.10
 

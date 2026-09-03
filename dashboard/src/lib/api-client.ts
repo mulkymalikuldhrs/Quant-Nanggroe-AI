@@ -209,8 +209,6 @@ export const agentsApi = {
     apiRequest<AgentRunResponse>("/api/agents/run", { method: "POST", body: req }),
   getStatus: () =>
     apiRequest<AgentStatusResponse>("/api/agents/status"),
-  getDecisions: () =>
-    apiRequest<Decision[]>("/api/agents/decisions"),
   activateKillSwitch: (reason: string) =>
     apiRequest<KillSwitchStatusResponse>("/api/agents/kill-switch/activate", {
       method: "POST",
@@ -303,8 +301,6 @@ export const portfolioApi = {
     apiRequest<EquityCurveResponse>("/api/portfolio/equity-curve"),
   getRisk: () =>
     apiRequest<RiskData>("/api/portfolio/risk"),
-  getRiskParity: (targetVol: number = 0.15) =>
-    apiRequest<Record<string, number>>(`/api/portfolio/risk-parity?target_vol=${targetVol}`),
 };
 
 export const memoryApi = {
@@ -713,8 +709,8 @@ export interface StrategyComparison {
 }
 
 export const strategiesApi = {
-  toggle: (id: string) =>
-    apiRequest<{ success: boolean }>(`/api/strategies/${id}/toggle`, { method: "PUT" }),
+  toggle: (id: string, enabled: boolean) =>
+    apiRequest<{ success: boolean }>(`/api/strategies/${id}/toggle`, { method: "POST", body: { name: id, enabled } }),
   updateParams: (id: string, params: Record<string, unknown>) =>
     apiRequest<{ success: boolean }>(`/api/strategies/${id}/params`, { method: "PUT", body: params }),
   performance: (id: string) =>

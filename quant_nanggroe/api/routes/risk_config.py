@@ -65,6 +65,39 @@ _OVERRIDE_KEYS: frozenset[str] = frozenset(_LIMITS.keys())
 # A2: known top-level keys (so we can reject unknown ones instead of silently dropping)
 _KNOWN_TOP_KEYS: frozenset[str] = frozenset(_DEFAULTS.keys())
 
+# A-G10: known regime vocabulary — market regimes (check_trade docstring) +
+# vol regimes (VolRegime enum). A perRegime key outside this set warns as
+# "unknown" so typos (e.g. "trendin") cannot silently disable an override.
+_KNOWN_REGIMES: frozenset[str] = frozenset({
+    "trending", "ranging", "crisis", "bullish", "bearish", "neutral",
+    "low", "normal", "elevated", "high", "extreme",
+})
+
+# A-G10: normalized keys observed by get_effective_config, per axis.
+# A configured override key that never matches any evaluation warns once.
+_SEEN_KEYS: dict[str, set[str]] = {"perSymbol": set(), "perStrategy": set(), "perRegime": set()}
+_WARNED_UNUSED_KEYS: set[tuple[str, str]] = set()
+
+
+def _warn_unused_override_keys(base: dict[str, Any]) -> None:
+    """Warn once per configured override key that never matched any evaluation."""
+    for axis in ("perSymbol", "perStrategy", "perRegime"):
+        section = base.get(axis)
+        if not isinstance(section, dict):
+            continue
+        for key in section:
+            norm = _normalize_symbol(str(key)) if axis == "perSymbol" else str(key).lower()
+            if norm not in _SEEN_KEYS[axis] and (axis, norm) not in _WARNED_UNUSED_KEYS:
+                _WARNED_UNUSED_KEYS.add((axis, norm))
+                logger.warning(
+                    "risk_config[%s][%s] never matched any evaluated symbol/strategy/regime — "
+                    "check for typos or stale keys", axis, key,
+                )
+            if axis == "perRegime" and str(key).lower() not in _KNOWN_REGIMES \
+                    and ("perRegime:unknown", str(key).lower()) not in _WARNED_UNUSED_KEYS:
+                _WARNED_UNUSED_KEYS.add(("perRegime:unknown", str(key).lower()))
+                logger.warning("risk_config[perRegime][%s] is not a known regime name — override may never apply", key)
+
 
 def _coerce_override_value(rk: str, rv: Any) -> float:
     """Validate a per-* override's numeric value. Fail-closed: raises ValueError on any error."""
@@ -160,9 +193,25 @@ def _normalize_symbol(s: str) -> str:
 
 
 def get_effective_config(symbol: str | None = None, strategy: str | None = None, regime: str | None = None) -> dict[str, Any]:
-    """Effective config for a specific symbol/strategy/regime (global + overrides)."""
+    """Effective config for a specific symbol/strategy/regime (global + overrides).
+
+    Matching is case-insensitive for perStrategy/perRegime keys (A-G10);
+    perSymbol matching goes through _normalize_symbol (already case-insensitive).
+    Layering (last wins): global → perSymbol → perStrategy → perRegime.
+    """
     base = _load()
     out = {k: v for k, v in base.items() if k not in ("perSymbol", "perStrategy", "perRegime", "version")}
+    # A-G10: track which override keys actually match an evaluation, so
+    # typos / stale keys (e.g. perRegime "trendin") surface as warnings
+    # instead of silently never applying.
+    if symbol:
+        _SEEN_KEYS["perSymbol"].add(_normalize_symbol(symbol))
+    if strategy:
+        _SEEN_KEYS["perStrategy"].add(strategy.lower())
+    if regime:
+        _SEEN_KEYS["perRegime"].add(regime.lower())
+        if regime.lower() not in _KNOWN_REGIMES:
+            logger.warning("risk_config: unknown regime name %r — no perRegime override can match it", regime)
     # perSymbol
     if symbol and isinstance(base.get("perSymbol"), dict):
         norm = _normalize_symbol(symbol)
@@ -171,16 +220,23 @@ def get_effective_config(symbol: str | None = None, strategy: str | None = None,
                 for rk, rv in overrides.items():
                     if rk in _LIMITS:
                         out[rk] = float(rv)
-    # perStrategy
-    if strategy and isinstance(base.get("perStrategy"), dict) and strategy in base["perStrategy"]:
-        for rk, rv in base["perStrategy"][strategy].items():
-            if rk in _LIMITS:
-                out[rk] = float(rv)
-    # perRegime
-    if regime and isinstance(base.get("perRegime"), dict) and regime in base["perRegime"]:
-        for rk, rv in base["perRegime"][regime].items():
-            if rk in _LIMITS:
-                out[rk] = float(rv)
+    # perStrategy (A-G10: case-insensitive)
+    if strategy and isinstance(base.get("perStrategy"), dict):
+        lowered = {str(k).lower(): v for k, v in base["perStrategy"].items()}
+        hit = lowered.get(strategy.lower())
+        if isinstance(hit, dict):
+            for rk, rv in hit.items():
+                if rk in _LIMITS:
+                    out[rk] = float(rv)
+    # perRegime (A-G10: case-insensitive)
+    if regime and isinstance(base.get("perRegime"), dict):
+        lowered = {str(k).lower(): v for k, v in base["perRegime"].items()}
+        hit = lowered.get(regime.lower())
+        if isinstance(hit, dict):
+            for rk, rv in hit.items():
+                if rk in _LIMITS:
+                    out[rk] = float(rv)
+    _warn_unused_override_keys(base)
     return out
 
 

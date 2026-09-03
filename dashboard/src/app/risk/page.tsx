@@ -49,9 +49,20 @@ interface RiskData {
   profitFactor: number;
 }
 
+interface LiveRiskConfig {
+  maxRiskPerTrade?: number;
+  maxDailyLoss?: number;
+  maxWeeklyLoss?: number;
+  maxDrawdown?: number;
+  maxLeverage?: number;
+  maxPositionSize?: number;
+}
+
 function RiskContent() {
   const { killSwitch, toggleKillSwitch, killSwitchStatus, loadingStates } = useAppStore();
   const [riskData, setRiskData] = useState<RiskData | null>(null);
+  const [riskConfig, setRiskConfig] = useState<LiveRiskConfig | null>(null);
+  const [liveEquity, setLiveEquity] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +74,24 @@ function RiskContent() {
       setRiskData(data);
     } catch {
       setError("Risk data unavailable — backend /api/portfolio/risk unreachable");
+    }
+    // Live constitutional limits — independent of risk payload so one failure doesn't block the other
+    try {
+      const cfg = await apiRequest<LiveRiskConfig>("/api/risk-config");
+      setRiskConfig(cfg);
+    } catch {
+      setRiskConfig(null);
+    }
+    // Live equity for Kelly sizing — independent fetch
+    try {
+      const summary = await apiRequest<{ total_value: number }>("/api/portfolio/summary");
+      if (typeof summary?.total_value === "number" && summary.total_value > 0) {
+        setLiveEquity(summary.total_value);
+      } else {
+        setLiveEquity(null);
+      }
+    } catch {
+      setLiveEquity(null);
     } finally {
       setLoading(false);
     }
@@ -113,6 +142,21 @@ function RiskContent() {
   const var95 = Math.abs(data.var95);
   const cvar95 = Math.abs(data.cvar95);
   const drawdown = data.maxDrawdown;
+
+  // Live constitutional limits from /api/risk-config (fractions, e.g. 0.005 = 0.5%).
+  // Usage currents/bars have no backend source → static placeholders, disclosed in subtitle.
+  const pct = (v: number | undefined, digits = 1) =>
+    v != null && isFinite(v) ? `${(v * 100).toFixed(digits)}%` : "—";
+  const limitRows = [
+    { name: "Max Risk Per Trade", current: "0.5%", limit: pct(riskConfig?.maxRiskPerTrade), used: 50 },
+    { name: "Max Daily Loss", current: "0.8%", limit: pct(riskConfig?.maxDailyLoss), used: 80 },
+    { name: "Max Weekly Loss", current: "2.5%", limit: pct(riskConfig?.maxWeeklyLoss), used: 83 },
+    { name: "Max Drawdown", current: `${(data.maxDrawdown || 0).toFixed(1)}%`, limit: pct(riskConfig?.maxDrawdown, 0), used: Math.min(100, Math.round(((data.maxDrawdown || 0) / ((riskConfig?.maxDrawdown ?? 0.10) * 100)) * 100)) },
+    { name: "Max Leverage", current: "3.0x", limit: riskConfig?.maxLeverage != null ? `${riskConfig.maxLeverage.toFixed(1)}x` : "—", used: 33 },
+  ];
+
+  // Kelly sizing base: live equity from /api/portfolio/summary, static $25k fallback labeled as such.
+  const equityBase = liveEquity ?? 25000;
 
   return (
     <div className="space-y-4 animate-slide-up">
@@ -275,15 +319,9 @@ function RiskContent() {
             </ChartCard>
 
             <div className="space-y-4">
-              <ChartCard title="Constitutional Limits" subtitle="System-wide risk boundaries (from engine constants)">
+              <ChartCard title="Constitutional Limits" subtitle={riskConfig ? "Live limits from /api/risk-config • usage bars static reference — not live" : "static reference — not live (backend /api/risk-config unreachable)"}>
                 <div className="space-y-3">
-                  {[
-                    { name: "Max Risk Per Trade", current: "0.5%", limit: "0.5%", used: 50 },
-                    { name: "Max Daily Loss", current: "0.8%", limit: "1.0%", used: 80 },
-                    { name: "Max Weekly Loss", current: "2.5%", limit: "3.0%", used: 83 },
-                    { name: "Max Drawdown", current: `${(data.maxDrawdown || 0).toFixed(1)}%`, limit: "10%", used: Math.min(100, Math.round(((data.maxDrawdown || 0) / 10) * 100)) },
-                    { name: "Max Leverage", current: "3.0x", limit: "3.0x", used: 33 },
-                  ].map((item, i) => (
+                  {limitRows.map((item, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-white/50">{item.name}</span>
@@ -402,15 +440,20 @@ function RiskContent() {
                     <div className="flex justify-between">
                       <span className="text-xs text-white/40">Recommended Size</span>
                       <span className="text-xs font-mono text-emerald-400">
-                        ${Math.round(data.kellyFraction * 25000).toLocaleString()}
+                        ${Math.round(data.kellyFraction * equityBase).toLocaleString()}
                       </span>
                     </div>
+                    <p className="text-[10px] text-white/25">
+                      {liveEquity != null
+                        ? `of live equity $${liveEquity.toLocaleString()} (via /api/portfolio/summary)`
+                        : "of static $25k fallback — summary unavailable"}
+                    </p>
                   </div>
                 </div>
               </div>
             </ChartCard>
 
-            <ChartCard title="Position Sizing" subtitle="Risk-adjusted sizing (FX/Commodity focus)">
+            <ChartCard title="Position Sizing" subtitle="Risk-adjusted sizing (FX/Commodity focus) • static reference — not live">
               <div className="space-y-3">
                 {[
                   { symbol: "XAUUSD", kelly: 15, halfKelly: 7.5, note: "Gold — archive_aroon specialist" },
@@ -440,7 +483,7 @@ function RiskContent() {
         </TabsContent>
 
         <TabsContent value="parity">
-          <ChartCard title="Risk Parity Allocation" subtitle="Equal risk contribution (FX/Commodity)" className="mt-3">
+          <ChartCard title="Risk Parity Allocation" subtitle="Equal risk contribution (FX/Commodity) • static reference — not live" className="mt-3">
             <div className="space-y-3">
               {[
                 { name: "XAUUSD", riskContrib: 30, weight: 30, vol: 15 },

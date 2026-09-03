@@ -354,6 +354,8 @@ async def risk_check(request: RiskCheckRequest, http_request: Request) -> RiskCh
             stop_loss=stop_loss,
             account_balance=request.account_balance,
             take_profit=request.take_profit,
+            strategy=request.strategy,
+            regime=request.regime,
         )
         return RiskCheckResponse(
             symbol=result.get("symbol", request.symbol),

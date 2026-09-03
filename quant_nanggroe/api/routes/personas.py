@@ -36,6 +36,7 @@ def _load_persona(key: str) -> Any:
         return None
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/list")
 async def list_personas() -> dict[str, Any]:
     """List all available investor personas with their styles."""
@@ -55,6 +56,7 @@ async def list_personas() -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/types")
 async def get_persona_types() -> dict[str, Any]:
     """Return unique persona investment styles."""
@@ -67,6 +69,7 @@ async def get_persona_types() -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/{persona_id}")
 async def get_persona(persona_id: str) -> dict[str, Any]:
     """Get persona details and optionally run analysis on a symbol."""
@@ -85,6 +88,7 @@ async def get_persona(persona_id: str) -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/{persona_id}/analyze")
 async def analyze_with_persona(persona_id: str, symbol: str = "BTC-USD") -> dict[str, Any]:
     """Run a real analysis using the persona agent."""

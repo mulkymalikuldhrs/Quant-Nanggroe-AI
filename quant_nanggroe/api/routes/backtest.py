@@ -352,6 +352,82 @@ async def list_strategies() -> list[dict[str, Any]]:
     return result
 
 
+@router.get("/engines")
+async def list_engines() -> list[str]:
+    """Available backtest engines via real codebase introspection.
+
+    Mirrors dashboard/src/app/api/backtest/engines/route.ts: each engine
+    name is listed only when its class actually imports.
+    """
+    engines: list[str] = []
+    try:
+        from quant_nanggroe.engine.strategies.strategy_evolver import StrategyEvolver  # noqa: F401
+        engines.append("StrategyEvolver (real backtest)")
+    except Exception:
+        pass
+    try:
+        from quant_nanggroe.engine.strategies.self_finetune import SelfFineTuner  # noqa: F401
+        engines.append("SelfFineTuner (param grid-search)")
+    except Exception:
+        pass
+    try:
+        from quant_nanggroe.engine.live.adaptive_integration import AdaptiveSignalPipeline  # noqa: F401
+        engines.append("AdaptiveSignalPipeline (regime-based)")
+    except Exception:
+        pass
+    try:
+        from quant_nanggroe.engine.backtest.walk_forward import WalkForwardAnalyzer  # noqa: F401
+        engines.append("WalkForward (5-fold)")
+    except Exception:
+        pass
+    return engines
+
+
+@router.get("/factors")
+async def list_factors() -> list[dict[str, Any]]:
+    """Factor libraries present in quant_nanggroe/engine/factors/ with real file stats.
+
+    Each entry carries the module name, top-level definition count (AST),
+    first docstring line, file path, and line count. Fail-closed: 503 when
+    the directory is absent.
+    """
+    import ast
+    from pathlib import Path
+
+    from fastapi import HTTPException
+
+    factors_dir = Path(__file__).resolve().parents[2] / "engine" / "factors"
+    if not factors_dir.is_dir():
+        raise HTTPException(status_code=503, detail="Factor library directory not found")
+
+    out: list[dict[str, Any]] = []
+    for py in sorted(factors_dir.glob("*.py")):
+        try:
+            text = py.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        lines = len(text.splitlines())
+        try:
+            tree = ast.parse(text)
+            count = sum(
+                isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                for n in ast.walk(tree)
+            )
+            doc = ast.get_docstring(tree) or ""
+            description = doc.strip().splitlines()[0] if doc.strip() else ""
+        except Exception:
+            count = 0
+            description = ""
+        out.append({
+            "name": py.stem,
+            "count": count,
+            "description": description,
+            "file": str(py),
+            "lines": lines,
+        })
+    return out
+
+
 # ── Walk-Forward Analysis Endpoint ────────────────────────────────────────
 
 

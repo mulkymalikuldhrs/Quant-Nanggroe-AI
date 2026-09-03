@@ -55,6 +55,7 @@ class StrategyRequest(BaseModel):
     sigma: float = 0.3
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/chain/{symbol}")
 async def get_options_chain(symbol: str) -> dict[str, Any]:
     # ponytail: no real options feed wired — return honest empty state, never synthetic.
@@ -69,6 +70,7 @@ async def get_options_chain(symbol: str) -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/positions")
 async def get_options_positions() -> dict[str, Any]:
     # ponytail: no real options feed wired — return honest empty state, never synthetic.
@@ -82,6 +84,7 @@ async def get_options_positions() -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/analyze")
 async def analyze_option_strategy(req: AnalyzeRequest, request: Request) -> dict[str, Any]:
     # ponytail: real pricing via Black-Scholes (engine.options.analyzer).
@@ -153,6 +156,7 @@ async def analyze_option_strategy(req: AnalyzeRequest, request: Request) -> dict
 # ── Vol Surface ──────────────────────────────────────────────────────────
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/vol-surface")
 async def sabr_vol_surface(req: VolSurfaceRequest) -> dict[str, Any]:
     """Construct volatility smile using SABR model."""
@@ -185,6 +189,7 @@ async def sabr_vol_surface(req: VolSurfaceRequest) -> dict[str, Any]:
 # ── Multi-leg Strategy ───────────────────────────────────────────────────
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/strategy")
 async def analyze_multi_leg_strategy(req: StrategyRequest) -> dict[str, Any]:
     """Analyze a multi-leg option strategy (straddle, strangle, butterfly, etc.)."""
@@ -244,6 +249,7 @@ class NamedStrategyRequest(BaseModel):
     expiry_years: float = 1.0
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/strategy/named")
 async def named_strategy(req: NamedStrategyRequest) -> dict[str, Any]:
     """Quick named strategy analysis."""

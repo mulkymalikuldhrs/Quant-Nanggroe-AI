@@ -2,9 +2,8 @@
 export const dynamic = "force-dynamic";
 import React, { useEffect, useState } from "react";
 import { ChartCard } from "@/components/shared/chart-card";
-import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/api-client";
-import { Activity, Box, Grid3x3 } from "lucide-react";
+import { Box, Grid3x3 } from "lucide-react";
 
 export default function VectorPage() {
   const [data, setData] = useState<{ manifold: Record<string, number[]>; mispricing: Record<string, { d: number; threshold: number; is_trigger: boolean }> } | null>(null);

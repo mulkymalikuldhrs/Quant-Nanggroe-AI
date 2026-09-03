@@ -3,6 +3,8 @@
 Provides positioning scores and extreme readings from CFTC data.
 """
 
+# DEPRECATED (v8.1.0 triage F5): thin redirect only — use canonical
+# quant_nanggroe/engine/cot/cot_analyzer.py:COTAnalyzer instead.
 from __future__ import annotations
 
 import logging

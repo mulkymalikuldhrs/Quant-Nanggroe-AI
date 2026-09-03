@@ -27,6 +27,7 @@ class ComparisonRequest(BaseModel):
     name_b: str = "Strategy B"
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/metrics")
 async def compute_metrics(req: MetricsRequest) -> dict[str, Any]:
     """Compute performance metrics from return series."""
@@ -52,6 +53,7 @@ async def compute_metrics(req: MetricsRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/compare")
 async def compare_strategies(req: ComparisonRequest) -> dict[str, Any]:
     """Compare two strategy return series."""
@@ -79,6 +81,7 @@ async def compare_strategies(req: ComparisonRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/metrics-list")
 async def list_available_metrics() -> dict[str, Any]:
     """List all available metrics calculators."""

@@ -2072,12 +2072,44 @@ class AutonomousPipeline:
 
             # PnL is 0 at entry time - real PnL computed at position close via TradeLifecycleManager
             # Use fill price for entry tracking; exit_price/pnl populated on close
+            # B1 fix (v8.1.0): resolve the MT5 position ticket from broker truth
+            # so StrategyEvaluator.record_signal() actually fires (previously
+            # exec_decision never carried "ticket" → eval leg data-starved).
+            # Fail-soft: ticket 0 = evaluator skips, live trading unaffected.
+            _fill_ticket: int = 0
+            if executed and fill:
+                try:
+                    import re as _re
+
+                    def _norm_sym(_s: str) -> str:
+                        _u = str(_s or "").upper()
+                        _u = _re.sub(r"\.(VX|VXC)$", "", _u)
+                        return _u.split("/", 1)[0]
+
+                    _want = _norm_sym(symbol)
+                    _brokers = getattr(em, "_brokers", {}) or {}
+                    for _b in _brokers.values():
+                        try:
+                            _positions = await _b.get_positions()
+                        except Exception:
+                            continue
+                        for _p in _positions or []:
+                            if _norm_sym(getattr(_p, "symbol", "")) == _want:
+                                _t = getattr(_p, "ticket", None)
+                                if _t:
+                                    _fill_ticket = int(_t)
+                                    break
+                        if _fill_ticket:
+                            break
+                except Exception:
+                    _fill_ticket = 0
             return {
                 "symbol": symbol, "action": signal, "confidence": round(confidence, 4),
                 "position_size_pct": round(confidence * 0.05, 4),
                 "execution": "filled" if executed else "rejected",
                 "reason": reason, "order_id": fill.order_id if fill else None,
                 "fill_price": fill.price if fill else None,
+                "ticket": _fill_ticket,
                 "pnl": 0.0, "exit_price": 0.0, "exit_time": "",
                 "trailing_stop_active": executed and self._trailing_stop is not None,
                 "timestamp": datetime.now(timezone.utc).isoformat(),

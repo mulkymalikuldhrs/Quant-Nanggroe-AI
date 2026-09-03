@@ -22,6 +22,7 @@ def _get_sec_provider() -> Any:
         return None
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/filings")
 async def list_filings(
     ticker: str = Query("AAPL", description="Ticker symbol to look up"),
@@ -61,6 +62,7 @@ async def list_filings(
         }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/company/{cik}")
 async def company_filings(
     cik: str,
@@ -79,6 +81,7 @@ async def company_filings(
         return {"items": [], "count": 0, "cik": cik, "status": "error", "error": str(exc)}
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/search")
 async def search_filings(
     q: str = Query(..., description="Ticker symbol to search"),
@@ -96,6 +99,7 @@ async def search_filings(
         return {"items": [], "count": 0, "query": q, "status": "error", "error": str(exc)}
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/fundamentals/{cik}")
 async def get_fundamentals(cik: str) -> dict[str, Any]:
     """Fetch real XBRL fundamentals for a company."""
@@ -110,6 +114,7 @@ async def get_fundamentals(cik: str) -> dict[str, Any]:
         return {"fundamentals": {}, "cik": cik, "status": "error", "error": str(exc)}
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/financials/{cik}")
 async def get_financials(
     cik: str,
@@ -128,6 +133,7 @@ async def get_financials(
         return {"statement": {}, "cik": cik, "status": "error", "error": str(exc)}
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/health")
 async def sec_health() -> dict[str, Any]:
     """Check SEC EDGAR API health."""

@@ -367,6 +367,7 @@ def create_app() -> FastAPI:
     app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
     app.include_router(ws.router, prefix="/api/ws", tags=["WebSocket"])
     app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(ecosystem.router, prefix="/api", tags=["Ecosystem"])
     app.include_router(colony.router, prefix="/api", tags=["Colony"])
     app.include_router(channels.router, prefix="/api/channels", tags=["Channels"])
@@ -374,26 +375,37 @@ def create_app() -> FastAPI:
     app.include_router(credentials.router)
     app.include_router(council.router)
     app.include_router(debate.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(fred.router, prefix="/api/fred", tags=["FRED"])
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(personas.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(sec_edgar.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(signal_generator.router)
     app.include_router(strategy.router, prefix="/api/strategy", tags=["Strategy"])
     app.include_router(strategies.router, prefix="/api/strategies", tags=["Strategies"])
     app.include_router(monitor.router, prefix="/api/monitor", tags=["Monitor"])
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(options.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(rl.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(analytics.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(agentic.router)
     app.include_router(autonomous.router)
     app.include_router(scheduler.router)
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp"])
     app.include_router(security.router, prefix="/api", tags=["Security"])
     app.include_router(tools.router, prefix="/api", tags=["Tools"])
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(otto_proxy.router, prefix="/api/otto", tags=["Otto"])
 
     app.include_router(evolution.router)
 
+    # DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
     app.include_router(ensemble.router)
     from quant_nanggroe.api.routes import _data  # ponytail: kept separate; only _data.router is used
     app.include_router(_data.router)  # ponytail: /api/data datasets (synthetic_reference)

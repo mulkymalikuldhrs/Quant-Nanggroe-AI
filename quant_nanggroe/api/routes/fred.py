@@ -38,6 +38,7 @@ def _get_fred_client() -> Any:
     return None
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/series")
 async def list_series() -> dict[str, Any]:
     """List tracked FRED series with latest values from real API."""
@@ -72,6 +73,7 @@ async def list_series() -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/series/{series_id}")
 async def get_series(series_id: str) -> dict[str, Any]:
     """Get a specific FRED series with real data."""
@@ -106,6 +108,7 @@ async def get_series(series_id: str) -> dict[str, Any]:
     return {"error": "not_found", "id": series_id, "fred_connected": fred is not None}
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/search")
 async def search_series(q: str = Query("", description="Search keyword")) -> dict[str, Any]:
     """Search tracked FRED series."""

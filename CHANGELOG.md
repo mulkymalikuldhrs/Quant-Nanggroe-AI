@@ -1,6 +1,41 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+## v8.1.0 — Full-Spectrum Pass: risk truth + API wiring + docs truth + self-evolve READY (2026-09-04)
+
+Six parallel workstreams, one commit. CANONICAL §15.12 is the SSOT detail.
+
+### 🔴 Risk truth (P0 — WS-A, all CLOSED)
+- **G1 CLOSED:** effective 4-axis limits forwarded into `check_gate.evaluate()` (fraction→percent); empty config → legacy path.
+- **G3 CLOSED:** thresholds read via `_risk_constants.<NAME>` module attribute; stale import-time bindings removed from live path.
+- **Latent UnboundLocalError FIXED** (`manager.py` override block) + pinned test.
+- **G10 CLOSED:** case-insensitive strategy/regime match + warn on never-matched keys.
+- Callsites 7/7 pass strategy/regime. Tests 35/35 + 75/75 regression, ruff clean.
+
+### 🔌 API wiring (P0 — WS-B)
+- New: `GET /api/market/candles/{s}` (real MT5 OHLCV), strategies `/params`/`/performance`/`/compare` (WF-backed), backtest `/engines`/`/factors` (introspected).
+- Fixed: toggle PUT→POST, OrderFlowMap URL, removed dead client methods. `docs/DEAD_API.md` + 12 DEPRECATED markers. Live smoke 200s, `tsc` clean.
+
+### 🧹 Dashboard + root (WS-C)
+- Deleted `shared/cards.tsx`; cleaned unused imports; risk page live-fed (static labeled); 10 Radix deps removed; 4 root junk → `archive/root_junk_2026-09-04/`; 3 empty engine dirs removed. Build 40/40.
+
+### 📝 Docs truth (WS-D)
+- §15.9 5 overclaims corrected (observability PLANNED, `/status` not `/health`, extractor:42 withdrawn, 0.5% not 0.08%, threshold not weights). Counts synced (80/31/27). `docs/ALPHA_EVIDENCE.md` (5 WF rows).
+
+### 🧪 Tests + self-evolve (WS-E)
+- New: candle-scheduler (8), context-gate (6), committee-weights (7), vector-P0 (4), fill-ticket (2). Deleted 7 dead skipped files. Vector P0 rolling-mean (observability-only). **Verdict READY** (`docs/SELF_EVOLVE_READINESS.md`).
+
+### ⚖️ Consolidation prep (WS-F)
+- Veto/Kelly parity tests document splits (percent-vs-decimal, caps, floors). `docs/VOTER_STACKS.md`. COT verdict: `cot_position_guard` live; 2 files safe to archive.
+
+### 🎫 B1 fix (coordinator)
+- `_make_decision` resolves MT5 ticket from broker truth → `record_signal` fires → eval leg alive. Fail-soft 0. Pinned 2/2.
+
+### ✅ Verification
+- 278 passed + 8 xfailed (risk + new unit + vector + kill-switch); `tsc` clean; `py_compile` clean. Pre-existing: 48 failures in `test_crypto_specific`/`test_pairs_trading` (untouched).
+
+---
 
 ## v8.0.23 — Hardening: 4-Axis Risk + Schema + Hot-Reload (2026-09-03)
 
@@ -468,4 +503,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.0.23 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

@@ -126,6 +126,7 @@ def _colony_summary(colony_id: str, colony: Dict[str, Any]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/colony/status")
 async def colony_status() -> Dict[str, Any]:
     """Get colony system status and available agent types."""

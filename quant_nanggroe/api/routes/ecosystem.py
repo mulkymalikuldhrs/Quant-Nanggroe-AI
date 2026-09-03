@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/status")
 async def ecosystem_status(request: Request) -> dict[str, Any]:
     """Overall ecosystem status — wired to real services."""
@@ -53,6 +54,7 @@ async def ecosystem_status(request: Request) -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/overview")
 async def ecosystem_overview(request: Request) -> dict[str, Any]:
     """Combined ecosystem overview — real service data."""
@@ -94,6 +96,7 @@ async def ecosystem_overview(request: Request) -> dict[str, Any]:
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/exchange/list")
 async def exchange_list(request: Request) -> list[dict[str, Any]]:
     """List exchanges — wired to real ExchangeManager."""
@@ -116,6 +119,7 @@ async def exchange_list(request: Request) -> list[dict[str, Any]]:
     return []
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/security/events")
 async def security_events() -> list[dict[str, Any]]:
     """Security events — reads from real audit trail."""

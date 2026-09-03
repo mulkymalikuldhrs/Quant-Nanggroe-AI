@@ -33,6 +33,7 @@ class VoteResponse(BaseModel):
     timestamp: str
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.post("/vote", response_model=VoteResponse)
 async def ensemble_vote(req: VoteRequest):
     """Run ensemble voting on a symbol with multiple signal providers.
@@ -102,6 +103,7 @@ async def ensemble_vote(req: VoteRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/adapters")
 async def list_adapters():
     """List all registered signal adapters."""
@@ -115,6 +117,7 @@ async def list_adapters():
     }
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/risk/kelly")
 async def kelly_analysis(
     win_rate: float = 60,
@@ -129,6 +132,7 @@ async def kelly_analysis(
     return result.to_dict()
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/risk/monte-carlo")
 async def monte_carlo_analysis(
     trades: str = "50,-30,80,-20,60,-40,70,-10,90,-50",
@@ -142,6 +146,7 @@ async def monte_carlo_analysis(
     return result.to_dict()
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/scanner/summary")
 async def scanner_summary():
     """Get multi-pair scanner summary."""
@@ -150,6 +155,7 @@ async def scanner_summary():
     return sc.get_summary()
 
 
+# DEPRECATED (v8.1.0 triage): no dashboard callers — see docs/DEAD_API.md
 @router.get("/scanner/pairs")
 async def scanner_pairs(category: str = None):
     """Get pairs, optionally filtered by category."""

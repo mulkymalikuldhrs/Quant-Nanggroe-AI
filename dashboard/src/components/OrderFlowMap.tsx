@@ -56,7 +56,7 @@ export default function OrderFlowMap({ symbol = "BTC-USD", tick = 0.01, initialM
         .replace("GBPUSD", "GBP/USD")
         .replace("USDJPY", "USD/JPY");
 
-      const res = await fetch(`/api/orderbook/orderbook/${encodeURIComponent(apiSymbol)}?limit=25`);
+      const res = await fetch(`/api/market/orderbook/${encodeURIComponent(apiSymbol)}?limit=25`);
       if (!res.ok) throw new Error(`${res.status}`);
       const json = await res.json();
       setData(json);

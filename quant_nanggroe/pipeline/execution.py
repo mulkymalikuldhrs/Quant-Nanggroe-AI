@@ -153,6 +153,8 @@ class UnifiedExecutionRouter:
         qty: Optional[float] = None,
         sl: Optional[float] = None,
         tp: Optional[float] = None,
+        strategy: Optional[str] = None,
+        regime: Optional[str] = None,
     ) -> Optional[dict]:
         if side not in ("buy", "sell"):
             return None
@@ -183,6 +185,8 @@ class UnifiedExecutionRouter:
             entry=price,
             stop_loss=sl or price * 0.95,
             account_balance=balance,
+            strategy=strategy,
+            regime=regime,
         )
         if risk_check.get("verdict") != "APPROVED":
             reason = risk_check.get("reason", "Risk check vetoed")

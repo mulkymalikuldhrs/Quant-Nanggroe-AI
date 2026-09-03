@@ -155,6 +155,8 @@ class RiskCheckRequest(BaseModel):
     take_profit: float | None = None
     lot_size: float = Field(default=0.01, gt=0)
     account_balance: float = Field(default=10000.0, gt=0)
+    strategy: str | None = None  # A-CALLSITES: feeds perStrategy overrides
+    regime: str | None = None  # A-CALLSITES: feeds perRegime overrides
 
 
 class RiskCheckpointResult(BaseModel):

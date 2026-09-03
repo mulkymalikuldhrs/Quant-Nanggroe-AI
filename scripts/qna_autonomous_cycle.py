@@ -127,7 +127,9 @@ def manage_trailing(mt5, trailing) -> int:
 def ensemble_signal(registry, df, symbol: str):
     """Run all active strategies, majority-vote direction, take best SL/TP.
 
-    Returns (direction, confidence, sl, tp, reasoning) or (None,...) if HOLD.
+    Returns (direction, confidence, sl, tp, strategy, reasoning) or
+    (None,...) if HOLD. ``strategy`` is the winning strategy name so the
+    risk gate can apply perStrategy overrides (A-CALLSITES).
     """
     from quant_nanggroe.engine.strategies.base import SignalDirection
     votes = {"BUY": [], "SELL": []}
@@ -147,7 +149,7 @@ def ensemble_signal(registry, df, symbol: str):
         elif sig.direction == SignalDirection.SELL:
             votes["SELL"].append((sig.confidence, sig.stop_loss, sig.take_profit, name))
     if not votes["BUY"] and not votes["SELL"]:
-        return None, 0.0, None, None, "All strategies HOLD"
+        return None, 0.0, None, None, None, "All strategies HOLD"
     # Confidence-WEIGHTED voting (not count-based) — conviction > headcount.
     # A single strong signal (conf 0.8) beats three weak ones (0.4 each = 1.2 but
     # each below conviction threshold). This prevents trend+reversion ties from
@@ -156,7 +158,7 @@ def ensemble_signal(registry, df, symbol: str):
     sell_w = sum(c for c, _, _, _ in votes["SELL"])
     buy_n, sell_n = len(votes["BUY"]), len(votes["SELL"])
     if buy_w == sell_w:
-        return None, 0.0, None, None, "Tied conviction — no edge"
+        return None, 0.0, None, None, None, "Tied conviction — no edge"
     side = "BUY" if buy_w > sell_w else "SELL"
     pool = votes[side]
     pool.sort(key=lambda x: x[0], reverse=True)
@@ -164,7 +166,7 @@ def ensemble_signal(registry, df, symbol: str):
     best_conf = pool[0][0]
     conf = max(best_conf, sum(c for c, _, _, _ in pool) / len(pool))
     sl, tp, src = pool[0][1], pool[0][2], pool[0][3]
-    return side, conf, sl, tp, f"{side} conv={buy_w:.2f}/{sell_w:.2f} (best={src} conf={conf:.2f})"
+    return side, conf, sl, tp, src, f"{side} conv={buy_w:.2f}/{sell_w:.2f} (best={src} conf={conf:.2f})"
 
 
 def run_cycle() -> int:
@@ -232,7 +234,7 @@ def run_cycle() -> int:
                 log.warning("%s no rates — skip", symbol)
                 continue
 
-            side, conf, strat_sl, strat_tp, reason = ensemble_signal(registry, df, symbol)
+            side, conf, strat_sl, strat_tp, strat_name, reason = ensemble_signal(registry, df, symbol)
             if side is None:
                 log.info("%s %s", symbol, reason)
                 continue
@@ -268,11 +270,13 @@ def run_cycle() -> int:
             lot = max(0.01, round(lot, 2))
             lot = min(lot, 1.0)
 
-            # Risk gate — constitutional veto (realized PnL fed from broker)
+            # Risk gate — constitutional veto (realized PnL fed from broker).
+            # A-CALLSITES: winning strategy name feeds perStrategy overrides.
             verdict = em._risk_manager.check_trade(
                 symbol=symbol, direction=side,
                 lot_size=lot, entry=entry, stop_loss=sl,
                 account_balance=bal, take_profit=tp,
+                strategy=strat_name,
             )
             if verdict.get("verdict") != "APPROVED":
                 log.warning("RISK VETO %s %s: %s", symbol, side, verdict.get("failed_checkpoints"))

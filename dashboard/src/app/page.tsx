@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAppStore } from "@/lib/store";
-import { apiRequest, agentsApi, portfolioApi, marketApi, brokersApi, schedulerApi } from "@/lib/api-client";
-import type { MarketSentiment, BrokerAccount, MT5AccountInfo, SchedulerStatus } from "@/lib/api-client";
+import { marketApi, brokersApi, schedulerApi } from "@/lib/api-client";
+import type { MarketSentiment, BrokerAccount, SchedulerStatus } from "@/lib/api-client";
 import { useRealtimeData } from "@/lib/websocket";
 import { ErrorBoundary, ErrorDisplay } from "@/components/shared/error-boundary";
 import {
@@ -19,7 +19,7 @@ import { cn, formatCurrency, formatPercent } from "@/lib/utils";
 function DashboardContent() {
   const {
     killSwitch, agents, portfolio, realtimePrices, realtimeRegime,
-    realtimePortfolio, wsConnected, loadingStates, sidebarOpen,
+    realtimePortfolio, wsConnected, loadingStates,
     fetchAgents, fetchPortfolio, refreshAll,
   } = useAppStore();
 
