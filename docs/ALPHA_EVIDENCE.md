@@ -17,11 +17,34 @@
 | kalman_filter | −5.9705 (n=7, min −20.0, max +4.3172) | −0.1731 | TBD (FASE 4) | 2025-04-30→2026-07-14, BTC-USD daily | WF rolling train/test | NO EDGE on BTC WF (deeply negative avg) |
 | dxy_momentum | −2.2552 (n=6, min −9.3603, max +7.9502) | −0.1626 | TBD (FASE 4) | 2025-07-02→2026-07-14, BTC-USD daily | WF rolling train/test | NO EDGE on BTC WF (negative avg) |
 
+## FASE 4 cross-asset verdict (2026-09-04, from `data/cpcv_registry.json`, 10 strategies)
+
+> Bar: worst-combo `avg_oos_sharpe` > 0 across all three assets (BTC-USD / EURUSD=X / GC=F).
+> Computed by script from exact registry values — no hand estimates.
+
+| Strategy | BTC-USD (avg, min) | EURUSD=X (avg, min) | GC=F (avg, min) | Verdict |
+|----------|--------------------|--------------------|-----------------|---------|
+| archive_aroon | +0.356, −0.199 | +0.329, −1.152 | +0.649, +0.165 | FAIL strict bar (EURUSD min −1.15); GC=F leg alone passes |
+| archive_amdx | +0.627, −0.020 | 0.0, 0.0 (no data) | +0.446, −0.631 | FAIL (incomplete EURUSD leg) |
+| archive_algebra | +0.201, −1.070 | +0.006, −0.744 | −0.018, −1.294 | FAIL (negative GC=F avg, all mins negative) |
+| archive_gold_inflation | +0.268, −0.380 | −0.228, −1.459 | +0.465, −0.744 | FAIL (negative EURUSD avg) |
+| kaufman_ama | +0.160, −0.684 | +0.672, −0.199 | +1.083, −0.391 | FAIL strict bar — but BEST of lot (all three avgs positive) |
+| multi_timeframe | +0.172, −0.618 | −0.074, −1.412 | +0.892, −1.885 | FAIL (negative EURUSD avg) |
+| archive_wyckoff | +0.061, −1.451 | 0.0, 0.0 (no data) | −0.340, −1.529 | FAIL (negative GC=F, incomplete EURUSD) |
+| archive_mean_rev | +0.272, −0.402 | −0.449, −1.629 | +0.194, −0.155 | FAIL (negative EURUSD avg) |
+| archive_ict_ote | +0.544, −0.334 | −0.574, −1.685 | +0.990, +0.411 | FAIL strict bar (EURUSD leg negative); BTC+GC legs strong |
+| native_smc | −0.444, −1.058 | (no leg) | +0.200, −0.701 | FAIL (negative BTC avg, no EURUSD leg) |
+
+**Result: 0/10 pass the strict cross-asset bar. NOTHING is promoted to live-sizing on this evidence.**
+Least-bad candidate for further research: `kaufman_ama` (only strategy with all-positive
+avg_oos_sharpe: +0.16 / +0.67 / +1.08). Next step is NOT live size — it is a fresh
+tri-asset WF run with trade logging (to fill WinRate) + embargo, then re-grade.
+
 ## Remaining strategies
 
 | Strategy | WF Sharpe | MaxDD | WinRate | Period | Method | Verdict |
 |----------|-----------|-------|---------|--------|--------|---------|
-| all other 209 registry keys | TBD (FASE 4) | TBD (FASE 4) | TBD (FASE 4) | TBD (FASE 4) | TBD (FASE 4) | TBD (FASE 4) |
+| all other 209 registry keys | TBD | TBD | TBD (no win-rate field in registry — needs re-run with trade logging) | TBD | TBD | TBD |
 
 ## How to generate / refresh (verified script names — all exist in `scripts/`)
 

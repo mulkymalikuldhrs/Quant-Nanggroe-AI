@@ -4,8 +4,7 @@
 
 __all__ = [
     'calendar',
-    'cot',
     'sentiment',
 ]
 
-from . import calendar, cot, sentiment
+from . import calendar, sentiment

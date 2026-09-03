@@ -35,3 +35,16 @@
 
 - `agentsApi.getDecisions` (`api-client.ts`) — no page called `/api/agents/decisions`; backend never had it.
 - `portfolioApi.getRiskParity` (`api-client.ts`) — `app/portfolio/page.tsx` uses summary/performance/equity-curve/risk only.
+
+## Correction (2026-09-04, coordinator verification)
+
+- `engine/data/cot_provider.py` is **LIVE — do NOT archive.** It has 4 real importers:
+  `engine/strategies/cot_strategy.py:39`, `engine/live/adaptive_integration.py:439,471`,
+  `engine/fundamental/cot.py:24` (now archived, import moved with it),
+  `tests/test_cot_provider_contract.py:14`. The WS-F "safe to archive" verdict
+  was wrong for this file (it correctly identified `engine/fundamental/cot.py` only).
+- `engine/fundamental/cot.py` (COTParser, zero external importers) → archived to
+  `archive/cot_parser_2026-09-04.py`; removed from `engine/fundamental/__init__.py`
+  imports/`__all__`. Canonical COT path: `engine/cot/cot_analyzer.py` (analysis) +
+  `engine/risk/cot_position_guard.py` (live pipeline via `autonomous.py:2292-2295`) +
+  `engine/data/cot_provider.py` (compat shim).
