@@ -181,7 +181,7 @@ function TradingDashboardContent() {
     return () => { cancelled = true; clearInterval(id); };
   }, [realtimePrices, watchlist]);
 
-  // Simulate order book data (real data would come from WS)
+  // REAL-ONLY no-data guard: order book and time&sales render only from WS/REST feed.
   // REAL-ONLY: order book and time&sales show NO DATA when backend doesn't provide them.
   // Previously these were Math.random() fabricated — hedge-fund integrity violation.
   // Data comes from WebSocket or REST when available.

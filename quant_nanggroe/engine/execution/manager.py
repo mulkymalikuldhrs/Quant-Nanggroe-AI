@@ -34,6 +34,22 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def metadata_overrides(metadata: Any) -> dict[str, Any]:
+    """Extract perStrategy/perRegime risk-override keys from order metadata.
+
+    Contract with the live-fill writer (agentic/autonomous.py _make_decision):
+    writer sets "strategy" + "regime" (and legacy "strategy_name" for
+    backward compat). Reader accepts both keys — fail-closed: missing keys
+    yield None (global defaults apply), never a fabricated strategy/regime.
+    """
+    if not isinstance(metadata, dict):
+        return {"strategy": None, "regime": None}
+    return {
+        "strategy": metadata.get("strategy") or metadata.get("strategy_name") or None,
+        "regime": metadata.get("regime") or None,
+    }
+
+
 @dataclass
 class GuardResult:
     """Result from guard pipeline evaluation."""
@@ -347,6 +363,14 @@ class ExecutionManager:
                 account_balance = float(getattr(account, "balance", 0.0) or 0.0)
             except Exception:
                 account_balance = 0.0
+            # perStrategy + perRegime overrides from order metadata (more configurable — A1)
+            # Contract: writer sets "strategy"+"regime" (+ legacy "strategy_name");
+            # metadata_overrides() falls back to "strategy_name" for old orders.
+            _overrides = metadata_overrides(order.metadata)
+            # perStrategy + perRegime overrides from order metadata (more configurable — A1)
+            # Contract: writer sets "strategy"+"regime" (+ legacy "strategy_name");
+            # metadata_overrides() falls back to "strategy_name" for old orders.
+            _overrides = metadata_overrides(order.metadata)
             verdict = self._risk_manager.check_trade(
                 symbol=order.symbol,
                 direction=order.side.value,
@@ -358,9 +382,8 @@ class ExecutionManager:
                 # check_trade now expects fraction (range [0, 1]).
                 daily_pnl_pct=ks_daily,
                 weekly_pnl_pct=ks_weekly,
-                # perStrategy + perRegime overrides from order metadata (more configurable — A1)
-                strategy=order.metadata.get("strategy") if order.metadata else None,
-                regime=order.metadata.get("regime") if order.metadata else None,
+                strategy=_overrides["strategy"],
+                regime=_overrides["regime"],
             )
             if verdict.get("verdict") == "VETOED":
                 logger.critical(

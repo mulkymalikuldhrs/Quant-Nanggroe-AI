@@ -176,7 +176,13 @@ class KillSwitchConfig(BaseModel):
     # Same values under default config (backward compatible).
     auto_daily_loss_pct: float = Field(default_factory=lambda: abs(_kill_constants.KILL_SWITCH_DAILY_PNL))
     auto_weekly_loss_pct: float = Field(default_factory=lambda: abs(_kill_constants.KILL_SWITCH_WEEKLY_PNL))
-    auto_max_drawdown_pct: float = 0.05
+    # N5: derived from constitutional MAX_DRAWDOWN_PCT with the same 80%
+    # early-warning buffer as the daily/weekly thresholds (0.8 * 10% = 0.08
+    # under defaults, vs the old 0.05 literal). default_factory reads the LIVE
+    # module attribute at instantiation, so UI hot-reloads propagate to NEW
+    # instances. Already-constructed instances keep their stored value (0.05
+    # for pre-existing configs) — the 0.05 semantic is NOT rewritten mid-run.
+    auto_max_drawdown_pct: float = Field(default_factory=lambda: 0.8 * float(_kill_constants.MAX_DRAWDOWN_PCT))
     auto_volatility_spike_pct: float = 0.10
 
     # Cooldown settings

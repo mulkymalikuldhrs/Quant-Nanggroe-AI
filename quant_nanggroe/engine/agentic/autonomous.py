@@ -859,6 +859,7 @@ class AutonomousPipeline:
                                 decision={"strategy_name": "trailing_stop",
                                           "reason": "trailing_stop_exit"},
                                 reduce_only=True,
+                                strategy="trailing_stop",
                             )
                             s_ts.status = "passed"
                             s_ts.result = f"exit executed @ {current_price:.2f}"
@@ -1225,7 +1226,7 @@ class AutonomousPipeline:
                 s5.status = "running"
                 t0 = time.perf_counter()
                 _atr_for_exec = self._compute_atr(df) if df is not None else 0.0
-                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision, df=df, atr_value=_atr_for_exec, timeframe=timeframe, risk_lot_size=risk_metrics.get("lot_size", 0.0))
+                exec_decision = await self._make_decision(symbol, signal_type, confidence, current_price=current_price, regime=regime, decision=result.decision, df=df, atr_value=_atr_for_exec, timeframe=timeframe, risk_lot_size=risk_metrics.get("lot_size", 0.0), strategy=strategy_name)
                 s5.duration_ms = (time.perf_counter() - t0) * 1000
                 if exec_decision.get("error"):
                     s5.status = "failed"
@@ -1958,7 +1959,7 @@ class AutonomousPipeline:
         except Exception as exc:
             logger.debug("Paper price feed skipped: %s", exc)
 
-    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1", risk_lot_size: float = 0.0, reduce_only: bool = False) -> dict[str, Any]:
+    async def _make_decision(self, symbol: str, signal: str, confidence: float, current_price: float = 0.0, regime: str = "unknown", decision: dict | None = None, df: Any = None, atr_value: float = 0.0, timeframe: str = "H1", risk_lot_size: float = 0.0, reduce_only: bool = False, strategy: str | None = None) -> dict[str, Any]:
         try:
             from quant_nanggroe.engine.execution.base import Order, OrderSide, OrderStatus, OrderType
             em = self._em
@@ -2031,13 +2032,22 @@ class AutonomousPipeline:
                         logger.warning("Profile SL/TP failed, using fixed 2%%: %s", sltp_exc)
                         order_sl = current_price * (0.98 if signal == "buy" else 1.02)
                         order_tp = current_price * (1.04 if signal == "buy" else 0.96)
+            # Live-fill metadata contract (reader: execution/manager.py):
+            # "strategy" + "regime" drive perStrategy/perRegime risk overrides.
+            # "strategy_name" kept for backward compat (mt5_broker comment, tests).
+            _decision = decision or {}
+            _fd = _decision.get("final_decider")
+            _fd_strategy = _fd.get("strategy") if isinstance(_fd, dict) else None
+            _strategy = strategy or _decision.get("strategy_name") or _fd_strategy or "ensemble"
             order = Order(
                 id=str(uuid.uuid4()), symbol=symbol, side=side,
                 order_type=OrderType.MARKET, quantity=qty,
                 status=OrderStatus.PENDING,
                 stop_loss=order_sl, take_profit=order_tp,
                 metadata={"confidence": confidence,
-                          "strategy_name": (decision or {}).get("strategy_name", "ensemble"),
+                          "strategy": _strategy,
+                          "strategy_name": _strategy,
+                          "regime": regime,
                           "symbol": symbol,
                           "reduce_only": reduce_only},
             )

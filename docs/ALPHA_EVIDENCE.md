@@ -3,7 +3,9 @@
 > **Rule:** every number below is read directly from `data/walk_forward_registry.json`
 > (214 keys, verified 2026-09-03). Aggregates (`avg_*`) are the arithmetic mean of that
 > strategy's per-window `test_sharpe` / `test_max_dd` values in the file — computed by
-> script, not hand-estimated. WinRate is NOT stored in the registry → `TBD (FASE 4)` for all rows.
+> script, not hand-estimated. CPCV re-run 2026-09-04 (`scripts/run_cpcv_validation.py::build_cpcv_entry`)
+> added a `win_rate` key to `data/cpcv_registry.json`, but it is `null` on all 29 legs —
+> `WalkForwardResult` carries no per-window win_rate — so WinRate stays `TBD (FASE 4)` for all rows.
 > No live-trading edge is claimed: all samples below are single-market BTC-USD daily WF
 > (per each entry's `description`), not tri-asset CPCV.
 
@@ -19,7 +21,7 @@
 
 ## FASE 4 cross-asset verdict (2026-09-04, from `data/cpcv_registry.json`, 10 strategies)
 
-> Bar: worst-combo `avg_oos_sharpe` > 0 across all three assets (BTC-USD / EURUSD=X / GC=F).
+> Bar: `min_sharpe` > 0 on every leg (all 14 combos profitable per asset) across all three assets (BTC-USD / EURUSD=X / GC=F).
 > Computed by script from exact registry values — no hand estimates.
 
 | Strategy | BTC-USD (avg, min) | EURUSD=X (avg, min) | GC=F (avg, min) | Verdict |
@@ -35,6 +37,8 @@
 | archive_ict_ote | +0.544, −0.334 | −0.574, −1.685 | +0.990, +0.411 | FAIL strict bar (EURUSD leg negative); BTC+GC legs strong |
 | native_smc | −0.444, −1.058 | (no leg) | +0.200, −0.701 | FAIL (negative BTC avg, no EURUSD leg) |
 
+> Note: the two all-zero legs (`archive_amdx` + `archive_wyckoff` EURUSD 0.0/0.0, `profitable_combos`=0) are no-data sentinels, not zero-edge; `native_smc` has no EURUSD leg at all — all per `data/cpcv_registry.json` (`archive_amdx`, `archive_wyckoff`, `native_smc` keys).
+
 **Result: 0/10 pass the strict cross-asset bar. NOTHING is promoted to live-sizing on this evidence.**
 Least-bad candidate for further research: `kaufman_ama` (only strategy with all-positive
 avg_oos_sharpe: +0.16 / +0.67 / +1.08). Next step is NOT live size — it is a fresh
@@ -44,7 +48,7 @@ tri-asset WF run with trade logging (to fill WinRate) + embargo, then re-grade.
 
 | Strategy | WF Sharpe | MaxDD | WinRate | Period | Method | Verdict |
 |----------|-----------|-------|---------|--------|--------|---------|
-| all other 209 registry keys | TBD | TBD | TBD (no win-rate field in registry — needs re-run with trade logging) | TBD | TBD | TBD |
+| all other 209 registry keys | TBD | TBD | TBD (`win_rate` key exists in cpcv_registry post-2026-09-04 re-run but is null on all legs — analyzer needs win-rate propagation first) | TBD | TBD | TBD |
 
 ## How to generate / refresh (verified script names — all exist in `scripts/`)
 
@@ -58,4 +62,4 @@ tri-asset WF run with trade logging (to fill WinRate) + embargo, then re-grade.
 
 Per-symbol CPCV evidence lives in `data/cpcv_registry.json` (10 strategies × BTC-USD / EURUSD=X / GC=F,
 14 combos each, fields `combo_profit_share` / `avg_oos_sharpe` / `min_sharpe` / `max_sharpe`).
-FASE 4 must promote only strategies with worst-combo Sharpe > 0 before any live-sizing claim.
+FASE 4 must promote only strategies with `min_sharpe` > 0 on every leg before any live-sizing claim.

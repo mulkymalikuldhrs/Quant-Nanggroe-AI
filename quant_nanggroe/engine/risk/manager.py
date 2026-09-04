@@ -1424,6 +1424,13 @@ class RiskManager:
     def check_cost_affordable(self, estimated_cost: float) -> bool:
         """Check if the estimated trade cost is within remaining budget.
 
+        N8 — ACCOUNTING-ONLY (deliberately NOT wired into any veto path):
+        no trustworthy pre-submit cost estimate exists (commission/slippage
+        are known only post-fill from broker metadata), so gating
+        ExecutionManager.execute_order on this would invent an enforcement
+        point with a fabricated input. Callers may use it for observability
+        (log/track), never to block. Pure: no state mutation, no halt coupling.
+
         Args:
             estimated_cost: Estimated cost for the proposed trade.
 

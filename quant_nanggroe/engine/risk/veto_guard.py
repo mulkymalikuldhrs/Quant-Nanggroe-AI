@@ -19,6 +19,7 @@ import logging
 from dataclasses import dataclass
 
 from quant_nanggroe.engine.execution.base import Order
+from quant_nanggroe.engine.risk import constants as _risk_constants
 from quant_nanggroe.engine.risk.constants import (
     MAX_DAILY_LOSS,
     MAX_DRAWDOWN_PCT,
@@ -78,7 +79,29 @@ class GovernanceVetoGuard:
     def set_kill_switch_active(self, active: bool) -> None:
         self._kill_switch_active = active
 
+    def _refresh_limits(self) -> None:
+        """Re-read live limits from _risk_constants (module-attribute pattern).
+
+        reload_risk_constants() mutates the constants module globals after a
+        UI hot-reload; the construction-time from-imports above would stay
+        stale. Reading the LIVE module attributes on every check keeps a
+        long-lived guard (execution/manager.py:68) in sync. Fail-closed: any
+        error keeps the construction-time values (never loosens to infinity
+        or tightens to zero on a broken config).
+        """
+        try:
+            self._max_daily_loss = float(_risk_constants.MAX_DAILY_LOSS)
+            self._max_weekly_loss = float(_risk_constants.MAX_WEEKLY_LOSS)
+            self._max_drawdown = float(_risk_constants.MAX_DRAWDOWN_PCT)
+            self._max_risk_per_trade = float(_risk_constants.MAX_RISK_PER_TRADE)
+        except Exception:
+            logger.warning(
+                "GovernanceVetoGuard: live limit refresh failed — "
+                "keeping construction-time values"
+            )
+
     def check(self, order: Order) -> GovernanceVetoResult:
+        self._refresh_limits()
         if self._kill_switch_active:
             return GovernanceVetoResult(
                 allowed=False,

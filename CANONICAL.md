@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445)
-> Version: v8.0.22 | Last verified: 2026-09-03
+> Version: v8.1.1 | Last verified: 2026-09-03
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---

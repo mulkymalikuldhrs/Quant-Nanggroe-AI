@@ -21,6 +21,41 @@ QUORUM = 3  # min agents that must vote (bull + bear + macro)
 CONFIDENCE_THRESHOLD = 0.10  # weighted avg confidence needed (was 0.5, too strict; 0.135 now passes)
 VETO_POWERS = {"risk_officer"}  # agents with absolute veto
 
+# UI-tunable committee floor override (risk_config key: minCommitteeConfidence,
+# range 0.05-0.65, default 0.10 = legacy behavior). Constitution cites 0.65 but
+# raising blindly would halt trading — tune via UI with data instead.
+COMMITTEE_FLOOR_DEFAULT = 0.10
+COMMITTEE_FLOOR_MIN = 0.05
+COMMITTEE_FLOOR_MAX = 0.65
+
+
+def resolve_committee_threshold(
+    symbol: str | None = None,
+    regime: str | None = None,
+    strategy: str | None = None,
+) -> float:
+    """Resolve the effective committee confidence floor. Fail-closed → 0.10.
+
+    Reads risk_config effective config (global → perSymbol → perStrategy →
+    perRegime); any error / missing / out-of-range value falls back to
+    CONFIDENCE_THRESHOLD so default behavior is unchanged.
+    """
+    try:
+        from quant_nanggroe.api.routes.risk_config import get_effective_config
+
+        cfg = get_effective_config(symbol=symbol, strategy=strategy, regime=regime)
+        raw = cfg.get("minCommitteeConfidence", CONFIDENCE_THRESHOLD)
+        val = float(raw)
+    except Exception:
+        return CONFIDENCE_THRESHOLD
+    if not (COMMITTEE_FLOOR_MIN <= val <= COMMITTEE_FLOOR_MAX):
+        logger.warning(
+            "minCommitteeConfidence %r out of range %.2f..%.2f — falling back to %.2f",
+            raw, COMMITTEE_FLOOR_MIN, COMMITTEE_FLOOR_MAX, CONFIDENCE_THRESHOLD,
+        )
+        return CONFIDENCE_THRESHOLD
+    return val
+
 
 @dataclass
 class CommitteeVote:
@@ -129,12 +164,17 @@ class VoteChamber:
             bullish_score /= total_weight
             bearish_score /= total_weight
 
-        # 4. Determine direction
-        if bullish_score > bearish_score and bullish_score >= CONFIDENCE_THRESHOLD:
+        # 4. Determine direction (threshold = UI-tunable floor, default 0.10)
+        threshold = resolve_committee_threshold(
+            symbol=symbol,
+            regime=kwargs.get("regime"),
+            strategy=kwargs.get("strategy"),
+        )
+        if bullish_score > bearish_score and bullish_score >= threshold:
             vote.final_action = "buy"
             vote.final_confidence = bullish_score
             vote.consensus_strength = bullish_score - bearish_score
-        elif bearish_score > bullish_score and bearish_score >= CONFIDENCE_THRESHOLD:
+        elif bearish_score > bullish_score and bearish_score >= threshold:
             vote.final_action = "sell"
             vote.final_confidence = bearish_score
             vote.consensus_strength = bearish_score - bullish_score

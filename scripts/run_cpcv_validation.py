@@ -56,6 +56,78 @@ def fetch(sym: str) -> pd.DataFrame | None:
     return df if len(df) >= 325 else None
 
 
+def _mean_or_none(vals: list) -> float | None:
+    """Mean of vals, or None when no usable values (fail-soft, never fabricate)."""
+    clean = [float(v) for v in vals if v is not None]
+    if not clean:
+        return None
+    try:
+        return round(sum(clean) / len(clean), 4)
+    except Exception:
+        return None
+
+
+def build_cpcv_entry(sym: str, windows: list) -> dict:
+    """Build one registry entry from analyzer windows (fail-soft).
+
+    Existing keys are byte-identical to the pre-extension writer.
+    New keys (win_rate/total_trades/avg_oos_return/max_oos_dd) are populated
+    ONLY from fields actually present on the window objects; otherwise None.
+    WalkForwardResult currently exposes oos_trades / out_of_sample_return /
+    out_of_sample_max_dd but NO per-window win_rate, so win_rate is None
+    until the analyzer pipeline propagates trade-level win rates.
+    """
+    sharpes = [float(w.out_of_sample_sharpe) for w in windows]
+    n_combos = len(sharpes)
+    pos = sum(1 for s in sharpes if s > 0)
+    avg = sum(sharpes) / n_combos if n_combos else 0.0
+    # de Prado robustness metric: share of profitable combos
+    combo_share = pos / n_combos if n_combos else 0.0
+    entry = {
+        "symbol": sym, "n_combinations": n_combos,
+        "profitable_combos": pos,
+        "combo_profit_share": round(combo_share, 4),
+        "avg_oos_sharpe": round(avg, 4),
+        "min_sharpe": round(min(sharpes), 4) if sharpes else None,
+        "max_sharpe": round(max(sharpes), 4) if sharpes else None,
+    }
+    # --- extended trade stats (fail-soft; None > invented) ---
+    try:
+        trade_counts = [getattr(w, "oos_trades", None) for w in windows]
+        if trade_counts and all(isinstance(c, (int, float)) for c in trade_counts):
+            entry["total_trades"] = int(sum(trade_counts))
+        else:
+            entry["total_trades"] = None
+    except Exception:
+        entry["total_trades"] = None
+    try:
+        rets = [getattr(w, "out_of_sample_return", None) for w in windows]
+        if any(v is None or not isinstance(v, (int, float)) for v in rets) or not rets:
+            entry["avg_oos_return"] = _mean_or_none(
+                [v for v in rets if isinstance(v, (int, float))]) if rets else None
+            if not rets:
+                entry["avg_oos_return"] = None
+        else:
+            entry["avg_oos_return"] = _mean_or_none(rets)
+    except Exception:
+        entry["avg_oos_return"] = None
+    try:
+        dds = [getattr(w, "out_of_sample_max_dd", None) for w in windows]
+        clean_dd = [float(v) for v in dds if isinstance(v, (int, float))]
+        # max_dd <= 0 convention (drawdown.min): worst = most negative = min()
+        entry["max_oos_dd"] = round(min(clean_dd), 4) if clean_dd else None
+    except Exception:
+        entry["max_oos_dd"] = None
+    try:
+        wrs = [getattr(w, o, None)
+               for w in windows for o in ("win_rate", "oos_win_rate")]
+        clean_wr = [float(v) for v in wrs if isinstance(v, (int, float))]
+        entry["win_rate"] = round(sum(clean_wr) / len(clean_wr), 4) if clean_wr else None
+    except Exception:
+        entry["win_rate"] = None
+    return entry
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbols", type=str, default="BTC-USD,EURUSD=X,GC=F")
@@ -100,22 +172,13 @@ def main() -> None:
             t0 = time.time()
             try:
                 res = analyzer.analyze_strategy(prices=df, strategy_class=cls,
-                                                strategy_params={})
+                                                 strategy_params={})
                 windows = res.get("windows", [])
-                sharpes = [float(w.out_of_sample_sharpe) for w in windows]
-                n_combos = len(sharpes)
-                pos = sum(1 for s in sharpes if s > 0)
-                avg = sum(sharpes) / n_combos if n_combos else 0.0
-                # de Prado robustness metric: share of profitable combos
-                combo_share = pos / n_combos if n_combos else 0.0
-                entry = {
-                    "symbol": sym, "n_combinations": n_combos,
-                    "profitable_combos": pos,
-                    "combo_profit_share": round(combo_share, 4),
-                    "avg_oos_sharpe": round(avg, 4),
-                    "min_sharpe": round(min(sharpes), 4) if sharpes else None,
-                    "max_sharpe": round(max(sharpes), 4) if sharpes else None,
-                }
+                entry = build_cpcv_entry(sym, windows)
+                n_combos = entry["n_combinations"]
+                pos = entry["profitable_combos"]
+                combo_share = entry["combo_profit_share"]
+                avg = entry["avg_oos_sharpe"]
                 registry.setdefault(name, {})[sym] = entry
                 results.append({"name": name, **entry})
                 print(f"  {name}: {pos}/{n_combos} combos profitable "

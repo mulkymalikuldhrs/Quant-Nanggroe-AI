@@ -18,6 +18,7 @@ from quant_nanggroe.engine.agentic.committee.vote_chamber import (
     QUORUM,
     VETO_POWERS,
     VoteChamber,
+    resolve_committee_threshold,
 )
 
 
@@ -115,3 +116,54 @@ def test_quorum_not_met_blocks_trade(chamber):
 def test_module_constants_are_single_source():
     assert vote_chamber.QUORUM == QUORUM
     assert vote_chamber.CONFIDENCE_THRESHOLD == CONFIDENCE_THRESHOLD
+
+
+def test_committee_floor_default_unchanged(chamber, monkeypatch):
+    """Default effective config → floor 0.10; weak single-factor vote still passes."""
+    monkeypatch.setattr(
+        "quant_nanggroe.api.routes.risk_config._load",
+        lambda: dict(vote_chamber_default_config()),
+    )
+    assert resolve_committee_threshold(symbol="EURUSD") == pytest.approx(0.10)
+    # 0.35 weight * 0.30 conf = 0.105 >= 0.10 → buy (legacy behavior preserved)
+    _stub(chamber,
+          bull=_vote("bull_analyst", "bullish", 0.30),
+          bear=_vote("bear_analyst", "neutral", 0.0),
+          macro=_vote("macro_analyst", "neutral", 0.0))
+    out = chamber.convene("EURUSD", None)
+    assert out.final_action == "buy"
+
+
+def test_committee_floor_custom_blocks_weak_vote(chamber, monkeypatch):
+    """minCommitteeConfidence=0.30 blocks the weak single-factor vote 0.10 passes."""
+    monkeypatch.setattr(
+        "quant_nanggroe.api.routes.risk_config._load",
+        lambda: {**vote_chamber_default_config(), "minCommitteeConfidence": 0.30},
+    )
+    assert resolve_committee_threshold(symbol="EURUSD") == pytest.approx(0.30)
+    _stub(chamber,
+          bull=_vote("bull_analyst", "bullish", 0.30),
+          bear=_vote("bear_analyst", "neutral", 0.0),
+          macro=_vote("macro_analyst", "neutral", 0.0))
+    out = chamber.convene("EURUSD", None)
+    assert out.final_action == "hold"
+
+
+def test_committee_floor_invalid_falls_back(chamber, monkeypatch):
+    """Out-of-range / non-numeric floor → fail-closed 0.10."""
+    monkeypatch.setattr(
+        "quant_nanggroe.api.routes.risk_config._load",
+        lambda: {**vote_chamber_default_config(), "minCommitteeConfidence": 0.99},
+    )
+    assert resolve_committee_threshold(symbol="EURUSD") == pytest.approx(0.10)
+    monkeypatch.setattr(
+        "quant_nanggroe.api.routes.risk_config._load",
+        lambda: {**vote_chamber_default_config(), "minCommitteeConfidence": "junk"},
+    )
+    assert resolve_committee_threshold(symbol="EURUSD") == pytest.approx(0.10)
+
+
+def vote_chamber_default_config() -> dict:
+    from quant_nanggroe.api.routes.risk_config import _DEFAULTS
+
+    return dict(_DEFAULTS)

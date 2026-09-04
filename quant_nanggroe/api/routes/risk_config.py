@@ -14,6 +14,7 @@ Schema (v8.0.23 — A2 fail-closed):
 - maxDailyTrades (1-20)
 - minRiskReward (1.0-5.0)
 - maxCorrelatedPositions (1-10)
+- minCommitteeConfidence (0.05-0.65, default 0.10) — committee vote floor, UI-tunable
 - perSymbol, perStrategy, perRegime — same fields nested per key (fail-closed: unknown keys rejected)
 """
 from __future__ import annotations
@@ -42,6 +43,7 @@ _DEFAULTS: dict[str, Any] = {
     "maxDrawdown": 0.10,  # 10%
     "minRiskReward": 2.0,
     "maxCorrelatedPositions": 3,
+    "minCommitteeConfidence": 0.10,  # committee vote floor (UI-tunable, default = legacy 0.10)
     "perSymbol": {},  # e.g. {"EURUSD": {"maxRiskPerTrade": 0.003}}
     "perStrategy": {},  # e.g. {"kaufman_ama": {"maxRiskPerTrade": 0.004}}
     "perRegime": {},  # e.g. {"trending": {"maxRiskPerTrade": 0.006}, "ranging": {"maxRiskPerTrade": 0.003}}
@@ -55,8 +57,22 @@ _LIMITS: dict[str, tuple[float, float]] = {
     "maxDailyTrades": (1, 20),
     "maxWeeklyLoss": (0.01, 0.10),
     "maxDrawdown": (0.05, 0.30),
-    "minRiskReward": (1.0, 5.0),
-    "maxCorrelatedPositions": (1, 10),
+    "minCommitteeConfidence": (0.05, 0.65),  # committee vote floor (UI-tunable, default 0.10)
+    # N6: minRiskReward / maxCorrelatedPositions are DELIBERATELY NOT editable.
+    # They remain in _DEFAULTS (read-shape compat) but have NO live enforcement
+    # point: consumers (quant_nanggroe/agents/risk/agent.py:259-260,329,
+    # quant_nanggroe/agents/state.py:69-70, manager.py:818 display-only) read
+    # module constants, and the live gate (checks.py evaluate) enforces only
+    # the 5 size/loss keys forwarded by manager.py:569-573. Wiring UI values
+    # here would require inventing new enforcement — forbidden. Writes are
+    # rejected 400 (see update_risk_config); file values fall back to defaults.
+}
+
+# Keys rejected on write with a pointer to the real consumer (not silently
+# dropped): UI edits to these fields must never look like they applied.
+_NON_EDITABLE_KEYS: dict[str, str] = {
+    "minRiskReward": "quant_nanggroe/agents/risk/agent.py (module constant, agent-level advisory)",
+    "maxCorrelatedPositions": "quant_nanggroe/agents/risk/agent.py (module constant, agent-level advisory)",
 }
 
 # Per-override key allowlist — same numeric fields as global
@@ -253,6 +269,12 @@ def update_risk_config(body: dict[str, Any]) -> dict[str, Any]:
         if k == "version":
             # version is auto-stamped on save; reject explicit version writes
             raise HTTPException(status_code=400, detail="version is auto-managed; do not write it")
+        if k in _NON_EDITABLE_KEYS:
+            # N6: not a live enforcement point — reject loudly, never silently inert.
+            raise HTTPException(
+                status_code=400,
+                detail=f"{k} is not live-editable (enforced at {_NON_EDITABLE_KEYS[k]}); value ignored by the execution path",
+            )
         if k in ("perSymbol", "perStrategy", "perRegime"):
             if not isinstance(v, dict):
                 raise HTTPException(status_code=400, detail=f"{k} must be dict")
