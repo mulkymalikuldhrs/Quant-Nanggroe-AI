@@ -137,11 +137,15 @@ class StrategyEvaluator:
         try:
             with self._conn() as con:
                 outcome = "win" if pnl > 0 else ("loss" if pnl < 0 else "breakeven")
-                con.execute(
+                cur = con.execute(
                     """UPDATE signal_outcomes SET exit_price=?, pnl=?, outcome=?,
                        closed_at=? WHERE ticket=?""",
                     (exit_price, pnl, outcome,
                      datetime.now(timezone.utc).isoformat(), ticket))
+                if cur.rowcount == 0:
+                    logger.warning(
+                        "record_outcome unmatched ticket=%s (no open signal; no crash)",
+                        ticket)
         except Exception as exc:
             logger.warning("record_outcome failed: %s", exc)
 

@@ -3821,5 +3821,56 @@
     "occurred_at": "2026-09-04T13:28:39.362879+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "9a44cf1a-b62",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.10",
+    "detail": "Trade 2cd2108e-b3a0-4a53-8a1d-c7838aaf887a on USDJPY using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "2cd2108e-b3a0-4a53-8a1d-c7838aaf887a",
+      "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:44:03.339231+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "974da29c-627",
+    "category": "trade_evaluation",
+    "severity": "warning",
+    "summary": "Strategy ensemble needs evolution: PnL=-0.00, quality=0.00",
+    "detail": "Trade 96b88d06-e73a-4b7f-848b-f86d2295e10d on EURUSD using ensemble. eval_duration_ms=0.44",
+    "context": {
+      "trade_id": "96b88d06-e73a-4b7f-848b-f86d2295e10d",
+      "symbol": "EURUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.44,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:58:37.810885+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "e89bffd2-cf9",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade eed8fd0a-d6bd-4223-9ff2-02dac418ecbb on USDCAD using ensemble. eval_duration_ms=0.09",
+    "context": {
+      "trade_id": "eed8fd0a-d6bd-4223-9ff2-02dac418ecbb",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.09,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:58:49.936659+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
