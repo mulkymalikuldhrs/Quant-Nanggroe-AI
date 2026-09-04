@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 REM ═══════════════════════════════════════════════════════════════════════
-REM  QNA v8.0.18 — Single Complete Launcher (WIB UTC+7)
+REM  QNA v8.1.1 — Single Complete Launcher (WIB UTC+7)
 REM  ONE BAT TO RULE THEM ALL — api/daemon/dashboard/test/status/all
 REM ═══════════════════════════════════════════════════════════════════════
 REM  Usage:
@@ -124,11 +124,11 @@ echo  QNA_LOG_LEVEL=DEBUG  WIB UTC+7
 goto :eof
 
 :all
-title QNA v8.0.18 — Autonomous Hedge Fund (WIB)
+title QNA v8.1.1 — Autonomous Hedge Fund (WIB)
 color 0A
 echo.
 echo  ╔════════════════════════════════════════════╗
-echo  ║   Quant-Nanggroe-AI v8.0.18 WIB            ║
+echo  ║   Quant-Nanggroe-AI v8.1.1 WIB            ║
 echo  ║   Autonomous Quant Hedge Fund              ║
 echo  ║   FX / Commodity MT5  |  WIB UTC+7         ║
 echo  ╚════════════════════════════════════════════╝
@@ -178,7 +178,7 @@ pause
 goto :eof
 
 :usage
-echo QNA v8.0.18 — Single Launcher WIB
+echo QNA v8.1.1 — Single Launcher WIB
 echo.
 echo Usage:
 echo   launch.bat              All-in-One

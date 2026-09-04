@@ -69,7 +69,7 @@ CI order (` .github/workflows/ci.yml`): `ruff check .` → `mypy` → `gitleaks`
 
 ## Skills Inventory (v8.0.22 — Hermes→Opencode Bridge 2026-09-02)
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 > Full inventory: `docs/SKILLS.md:1` | Bridge: 63 `hermes-*` copies at `C:\Users\Hi\.opencode\skill\hermes-*:1`
 
 | Source | Expected (task) | Actual Verified | Path:line | Count Method |
@@ -117,8 +117,8 @@ Bridge: `mklink /D` requires elevation (`You do not have sufficient privilege` a
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

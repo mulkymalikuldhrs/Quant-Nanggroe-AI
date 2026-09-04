@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════
-#  QNA v8.0.18 — Single Complete Launcher (Linux/macOS)
+#  QNA v8.1.1 — Single Complete Launcher (Linux/macOS)
 #  Mirror of launch.bat — WIB UTC+7, PYTHONPATH cleared (no Hermes leak)
 #  Usage:
 #    ./launch.sh              → All-in-One (backend+daemon+dashboard)
@@ -90,7 +90,7 @@ PYEOF
     ;;
   all)
     echo "╔════════════════════════════════════════════╗"
-    echo "║   Quant-Nanggroe-AI v8.0.18 WIB            ║"
+    echo "║   Quant-Nanggroe-AI v8.1.1 WIB            ║"
     echo "║   Autonomous Quant Hedge Fund              ║"
     echo "╚════════════════════════════════════════════╝"
     echo "[1/4] Backend :8000 ..."
@@ -107,7 +107,7 @@ PYEOF
     echo "  Status: ./launch.sh status   Weekly: ./launch.sh weekly-reset"
     ;;
   *)
-    echo "QNA v8.0.18 — Single Launcher WIB"
+    echo "QNA v8.1.1 — Single Launcher WIB"
     echo "Usage:"
     echo "  ./launch.sh              All-in-One"
     echo "  ./launch.sh api          FastAPI :8000"

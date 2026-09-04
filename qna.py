@@ -37,7 +37,7 @@ if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
     os.environ["PYTHONPATH"] = ";".join(clean)
     sys.path = [p for p in sys.path if "hermes" not in p.lower()]
-__version__ = "8.1.0"
+__version__ = "8.1.1"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────

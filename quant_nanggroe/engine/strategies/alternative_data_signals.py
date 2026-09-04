@@ -93,7 +93,7 @@ class AlternativeDataStrategy(Strategy):
                 entry_price=price,
                 stop_loss=sl,
                 take_profit=tp,
-                risk_reward=self.calculate_risk_reward(price, sl, tp, direction),
+                risk_reward_ratio=self.calculate_risk_reward(price, sl, tp, direction),
                 reasoning=f"alt={total:.4f} " + " ".join(details),
                 indicators={"alt_score": total},
             )

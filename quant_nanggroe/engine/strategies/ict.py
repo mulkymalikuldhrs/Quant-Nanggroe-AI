@@ -94,7 +94,7 @@ class ICTStrategy(Strategy):
                     entry_price=current_price,
                     stop_loss=swing_low * 0.995,
                     take_profit=swing_high,
-                    risk_reward=self.calculate_risk_reward(
+                    risk_reward_ratio=self.calculate_risk_reward(
                         current_price, swing_low * 0.995, swing_high, SignalDirection.BUY
                     ),
                     reasoning="ICT OTE Buy: price in optimal trade entry zone (62-79% retracement)",
@@ -111,7 +111,7 @@ class ICTStrategy(Strategy):
                     entry_price=current_price,
                     stop_loss=swing_high * 1.005,
                     take_profit=swing_low,
-                    risk_reward=self.calculate_risk_reward(
+                    risk_reward_ratio=self.calculate_risk_reward(
                         current_price, swing_high * 1.005, swing_low, SignalDirection.SELL
                     ),
                     reasoning="ICT OTE Sell: price in optimal trade entry zone (62-79% retracement)",

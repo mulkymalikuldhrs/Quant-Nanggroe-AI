@@ -120,7 +120,7 @@ class StatisticalArbitrageStrategy(Strategy):
                 entry_price=price,
                 stop_loss=sl,
                 take_profit=tp,
-                risk_reward=self.calculate_risk_reward(price, sl, tp, direction),
+                risk_reward_ratio=self.calculate_risk_reward(price, sl, tp, direction),
                 reasoning=reasoning,
                 indicators={"z_score": z, "hedge_ratio": hr, "spread_mean": mean, "spread_std": std},
             )

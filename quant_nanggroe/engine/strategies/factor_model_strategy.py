@@ -71,7 +71,7 @@ class FactorModelStrategy(Strategy):
                 entry_price=price,
                 stop_loss=sl,
                 take_profit=tp,
-                risk_reward=self.calculate_risk_reward(price, sl, tp, direction),
+                risk_reward_ratio=self.calculate_risk_reward(price, sl, tp, direction),
                 reasoning=f"SDF={sdf:.4f} mom={loadings[0]:.4f} carry={loadings[1]:.4f} val={loadings[2]:.4f} qual={loadings[3]:.4f} vol={loadings[4]:.4f}",
                 indicators={"sdf_score": sdf, "momentum": loadings[0], "carry": loadings[1], "value": loadings[2], "quality": loadings[3], "volatility": loadings[4]},
             )

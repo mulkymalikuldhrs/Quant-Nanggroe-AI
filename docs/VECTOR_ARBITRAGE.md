@@ -24,4 +24,4 @@ Node EUR USD GBP JPY AUD CAD CHF, Edge R_A/B, check `R_A/B*R_B/C*R_C/A=1`, `find
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

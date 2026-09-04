@@ -142,7 +142,7 @@ class MicrostructureAlphaStrategy(Strategy):
                 entry_price=price,
                 stop_loss=sl,
                 take_profit=tp,
-                risk_reward=self.calculate_risk_reward(price, sl, tp, direction),
+                risk_reward_ratio=self.calculate_risk_reward(price, sl, tp, direction),
                 reasoning=f"oi={oi:.2f} vpin={vpin_:.2f} delta={cd:.0f} absorb={ab:.2f}",
                 indicators={"oi": oi, "vpin": vpin_, "cumulative_delta": cd, "absorption_ratio": ab},
             )

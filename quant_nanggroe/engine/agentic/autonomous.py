@@ -1441,7 +1441,7 @@ class AutonomousPipeline:
         regime_priority = {
             "trending_up": ["momentum", "trend_following_cta", "parabolic_sar", "aroon_strategy", "hull_ma", "dual_ma_crossover"],
             "trending_down": ["momentum", "trend_following_cta", "hull_ma", "parabolic_sar"],
-            "ranging": ["mean_reversion", "bollinger_squeeze", "rsi_momentum", "fibonacci_arc", "pairs_trading"],
+            "ranging": ["mean_reversion", "bollinger_squeeze", "rsi_momentum", "fibonacci_arc", "pairs_trade"],
             "volatile": ["bollinger_squeeze", "entropy_strategy", "kalman_filter", "garch_vol"],
             "crisis": ["mean_reversion", "momentum_crash_filter"],
             "recovery": ["momentum", "aroon_strategy"],

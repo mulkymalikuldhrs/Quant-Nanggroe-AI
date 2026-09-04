@@ -129,7 +129,7 @@ class FibonacciStrategy(Strategy):
                             entry_price=current_price,
                             stop_loss=swing_low * 0.995,
                             take_profit=tp_1618,
-                            risk_reward=self.calculate_risk_reward(
+                            risk_reward_ratio=self.calculate_risk_reward(
                                 current_price, swing_low * 0.995, tp_1618, SignalDirection.BUY
                             ),
                             reasoning=f"Fibonacci Buy: price at {name} retracement level ({fib_price:.2f})",
@@ -155,7 +155,7 @@ class FibonacciStrategy(Strategy):
                             entry_price=current_price,
                             stop_loss=swing_high * 1.005,
                             take_profit=tp_1618,
-                            risk_reward=self.calculate_risk_reward(
+                            risk_reward_ratio=self.calculate_risk_reward(
                                 current_price, swing_high * 1.005, tp_1618, SignalDirection.SELL
                             ),
                             reasoning=f"Fibonacci Sell: price at {name} retracement level ({fib_price:.2f})",

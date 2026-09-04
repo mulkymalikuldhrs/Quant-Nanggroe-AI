@@ -11,7 +11,7 @@
 | Item | Status | Evidence |
 |------|--------|----------|
 | Entry point resolution | ✅ 1.0 | `qna.py` v8.0.22 via `launch.bat` (single launcher) |
-| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.0.18"` == CANONICAL v8.0.23 |
+| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.1.1"` == CANONICAL v8.1.1 |
 | Live broker | ✅ 1.0 | ValetaxIntl-Live2 372044706 BAL $1,445 — CANONICAL §1 |
 | Weekly PnL | ✅ 1.0 | 0 WIB via `launch.bat weekly-reset` → `data/weekly_override.json` + `data/persistence/risk_COLON_weekly_pnl.json` |
 | Probe | ✅ 1.0 | CandleScheduler `probe_empty=0/32` (all 32 TF states healthy) |
@@ -54,11 +54,11 @@
 **What's MISSING or deferred:**
 - **credentials.md.txt** — 100+ secrets, waiting for Mulky
 - **Registry consolidation** — 3 registries not merged
-- **pyproject.toml** — still 5.1.0 (code is 8.0.18, docs synced to code)
+- **pyproject.toml** — 8.1.1, in sync with `qna.py` + `quant_nanggroe/__init__.py` + `CANONICAL.md`
 
 ---
 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

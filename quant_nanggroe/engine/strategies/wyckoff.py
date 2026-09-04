@@ -113,7 +113,7 @@ class WyckoffStrategy(Strategy):
                         entry_price=current_price,
                         stop_loss=recent_low * 0.98,
                         take_profit=recent_high,
-                        risk_reward=self.calculate_risk_reward(
+                        risk_reward_ratio=self.calculate_risk_reward(
                             current_price, recent_low * 0.98, recent_high, SignalDirection.BUY
                         ),
                         reasoning="Wyckoff Spring detected: price dipped below support and reversed on high volume",
@@ -135,7 +135,7 @@ class WyckoffStrategy(Strategy):
                         entry_price=current_price,
                         stop_loss=recent_high * 1.02,
                         take_profit=recent_low,
-                        risk_reward=self.calculate_risk_reward(
+                        risk_reward_ratio=self.calculate_risk_reward(
                             current_price, recent_high * 1.02, recent_low, SignalDirection.SELL
                         ),
                         reasoning="Wyckoff Upthrust detected: price spiked above resistance and reversed",
@@ -155,7 +155,7 @@ class WyckoffStrategy(Strategy):
                     entry_price=current_price,
                     stop_loss=recent_low * 0.97,
                     take_profit=current_price + (recent_high - recent_low),
-                    risk_reward=self.calculate_risk_reward(
+                    risk_reward_ratio=self.calculate_risk_reward(
                         current_price, recent_low * 0.97,
                         current_price + (recent_high - recent_low),
                         SignalDirection.BUY,

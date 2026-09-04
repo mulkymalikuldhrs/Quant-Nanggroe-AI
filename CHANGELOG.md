@@ -1,6 +1,27 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+## v8.1.1 — Docs sync + strategy test/API rewrite + risk_reward fix (2026-09-04)
+
+CANONICAL §15.13 is the SSOT detail.
+
+### 🧪 Strategy tests green (was: 48 pre-existing failures)
+- `test_crypto_specific.py` rewritten to shipped API → **12/12 pass**.
+- `test_pairs_trading.py` (old, fictional API) deleted; `PairsTradingStrategy` exists via shim → canonical `PairsTradeStrategy` (`name = "pairs_trade"`); `test_pairs_trading_comprehensive.py` rewritten → **12/12 pass**.
+
+### 🔧 `risk_reward=` silent-drop fixed (17 sites, 14 files)
+- `StrategySignal` has no `risk_reward` field — pydantic silently dropped it → all directional signals carried `risk_reward_ratio = 0.0`. Fixed to `risk_reward_ratio=` across pairs_trade + 13 strategy files. Pinned by RR assertion. Compile OK 14 files; strategy tests 24/24.
+
+### 📝 Docs synced
+- §15.12 COT verdict corrected (cot.py archived; cot_provider LIVE, do not archive).
+- ALPHA_EVIDENCE FASE-4 table: 0/10 pass strict bar; nothing promoted.
+- Lockfiles synced; `tsc` clean.
+
+### ✅ Verification
+- Strategy 24/24, test_risk 169+8xf, fill-ticket 2/2, cot_guard 7/7, correlations 58/58, `tsc` + `py_compile` clean.
+
+---
 
 ## v8.1.0 — Full-Spectrum Pass: risk truth + API wiring + docs truth + self-evolve READY (2026-09-04)
 
@@ -33,7 +54,7 @@ Six parallel workstreams, one commit. CANONICAL §15.12 is the SSOT detail.
 - `_make_decision` resolves MT5 ticket from broker truth → `record_signal` fires → eval leg alive. Fail-soft 0. Pinned 2/2.
 
 ### ✅ Verification
-- 278 passed + 8 xfailed (risk + new unit + vector + kill-switch); `tsc` clean; `py_compile` clean. Pre-existing: 48 failures in `test_crypto_specific`/`test_pairs_trading` (untouched).
+- 278 passed + 8 xfailed (risk + new unit + vector + kill-switch); `tsc` clean; `py_compile` clean. Former 48 failures in `test_crypto_specific`/`test_pairs_trading` FIXED in v8.1.1 (rewritten to shipped API).
 
 ---
 
@@ -503,4 +524,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

@@ -217,7 +217,7 @@ class MultiTimeframeStrategy(Strategy):
                 entry_price=current_price,
                 stop_loss=round(sl, 2),
                 take_profit=round(tp, 2),
-                risk_reward=self.calculate_risk_reward(current_price, sl, tp, direction),
+                risk_reward_ratio=self.calculate_risk_reward(current_price, sl, tp, direction),
                 reasoning=f"MTF aligned: {reason} (conf={confidence:.2f}, vol={vol})",
                 indicators=indicators,
             )

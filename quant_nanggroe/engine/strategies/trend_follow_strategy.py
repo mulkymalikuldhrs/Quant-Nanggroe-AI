@@ -91,7 +91,7 @@ class TrendFollowStrategy(Strategy):
                 entry_price=current_price,
                 stop_loss=sl,
                 take_profit=tp,
-                risk_reward=self.calculate_risk_reward(current_price, sl, tp, direction),
+                risk_reward_ratio=self.calculate_risk_reward(current_price, sl, tp, direction),
                 reasoning=reasoning,
                 indicators=indicators,
             )

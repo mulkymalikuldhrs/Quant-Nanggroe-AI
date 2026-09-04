@@ -743,7 +743,7 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
 ### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Shadow Timestamps (2026-09-03) — CORRECTED 2026-09-03 (D-workstream: docs follow code)
 
@@ -932,12 +932,32 @@ Six parallel workstreams, one commit. Every claim verified against `file:line`.
 
 **WS-F — Consolidation prep (parity, no deletion):**
 - `test_veto_parity.py` (8: veto unanimous only on daily-loss; splits documented), `test_kelly_parity.py` (5: percent-vs-decimal 100× split, cap/floor splits), `docs/VOTER_STACKS.md` (keep-VoteChamber recommendation), 2 DEPRECATED markers.
-- COT verdict: live-wired is `engine/risk/cot_position_guard.py` via `autonomous.py:2292-2295`; `fundamental/cot.py` + `data/cot_provider.py` safe to archive in F5-full.
+- COT verdict: live-wired is `engine/risk/cot_position_guard.py` via `autonomous.py:2292-2295`; `fundamental/cot.py` archived in v8.1.1 (`archive/cot_parser_2026-09-04.py`, zero external importers); `data/cot_provider.py` is LIVE (4 importers) and must NOT be archived — WS-F verdict corrected, see `docs/DEAD_API.md` correction note.
 
 **B1 fix (self-eval leg, coordinator):** `exec_decision` never carried `ticket` (only `record_signal` reader at `autonomous.py:1280`) → eval leg data-starved since inception. `_make_decision` now resolves the MT5 position ticket from broker truth (`PositionInfo.ticket`, `base.py:130`) after every fill, fail-soft to 0 (`autonomous.py`, B1-fix block). `record_signal` fires with a real ticket; `record_outcome` (`journal_sync.py:364`) matches it on close. Pinned by `test_fill_ticket.py` (2/2). B2 contained by design (opens scored as breakeven noise, lessons skipped — `trade_lifecycle.py:247-265`).
 
-**Verification (coordinator battery):** 278 passed + 8 xfailed (test_risk + new unit + vector + kill-switch); `tsc` clean; `py_compile` clean. Full-suite note: `test_crypto_specific`/`test_pairs_trading` carry 48 pre-existing failures (missing imports/API drift, untouched).
+**Verification (coordinator battery):** 278 passed + 8 xfailed (test_risk + new unit + vector + kill-switch); `tsc` clean; `py_compile` clean. Former 48 pre-existing failures in `test_crypto_specific`/`test_pairs_trading` FIXED in v8.1.1 (rewritten to shipped API — see §15.13).
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.0 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join)
+### 15.13 v8.1.1 — Docs sync + strategy test/API rewrite + risk_reward fix (2026-09-04)
+
+**Strategy tests rewritten to shipped API (was: 48 pre-existing failures):**
+- `test_crypto_specific.py` rewritten: `StrategyParameters(params={...})` ctor, `name == "crypto_specific"`, `StrategySignal` (direction/confidence/reasoning/indicators) instead of fictional `Signal`/`params=`/`required_columns()` API → **12/12 pass**.
+- `test_pairs_trading.py` (old, no import, fictional `_ols_hedge_ratio`/`symbol_pair` API) deleted. Correction: `PairsTradingStrategy` DOES exist via shim (`engine/strategy/strategies/pairs_trading.py:1-9`) aliasing canonical `PairsTradeStrategy` (`engine/strategies/pairs_trade_strategy.py:21`, `name = "pairs_trade"`, two-series input, Gatev/Goetzmann/Rouwenhorst z-score via archived legacy engine).
+- `test_pairs_trading_comprehensive.py` rewritten to the real API (defaults lookback=60/entry_z=2.0/exit_z=0.5, HOLD-on-missing-pair semantics, z_score indicators) → **12/12 pass**.
+
+**`risk_reward=` silent-drop fixed (17 sites, 14 files):**
+- `StrategySignal` has NO `risk_reward` field (only `risk_reward_ratio`, `base.py:80`); pydantic v2 silently drops the unknown kwarg → every directional signal carried `risk_reward_ratio = 0.0`. Fixed `risk_reward=self.calculate_risk_reward(` → `risk_reward_ratio=...` in `pairs_trade_strategy.py` + 13 files (alternative_data_signals, factor_model_strategy, fibonacci ×2, ict ×2, microstructure_alpha, multi_timeframe_strategy, smc_strategy, statistical_arbitrage, trend_follow_strategy, ts mom, unified_retail, wyckoff ×3, xgboost_alpha_strategy). Verified zero remaining (only legitimate `ExecutionPlan.risk_reward`, `screener_tool.py:113`, kept). Pinned by pairs RR assertion (`risk_reward_ratio > 0` on directional signal).
+- Compile OK 14 files; strategy tests 24/24.
+
+**Docs synced to code:**
+- §15.12 COT verdict corrected (above); `docs/DEAD_API.md` correction note added.
+- `docs/ALPHA_EVIDENCE.md`: FASE-4 cross-asset table (`cpcv_registry.json`, 10 strategies) — **0/10 pass strict bar** (worst-combo avg_oos_sharpe > 0); `kaufman_ama` least-bad (all avgs positive); WinRate stays TBD (no win-rate field in registry); NOTHING promoted to live-sizing.
+- Lockfiles synced (`package-lock.json` + `pnpm-lock.yaml` after 10-Radix removal; `pnpm-workspace.yaml` approves sharp+unrs-resolver builds); `tsc` clean. Note: full `npm install` hangs on tarball fetch in this env — pnpm is the working installer.
+
+**Verification:** strategy 24/24, test_risk 169+8xf, fill-ticket 2/2, cot_guard 7/7, correlations 58/58, `tsc` clean, `py_compile` clean (14 strategy files).
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites)
