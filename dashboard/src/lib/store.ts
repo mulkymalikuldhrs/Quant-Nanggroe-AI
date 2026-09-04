@@ -62,7 +62,7 @@ interface EndpointState {
 
 type EndpointName =
   | "agents" | "portfolio" | "risk" | "positions"
-  | "health" | "killSwitch" | "market" | "strategies";
+  | "health" | "killSwitch";
 
 // ── Real-time data from WebSocket ──────────────────────────────────
 
@@ -166,8 +166,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   killSwitch: false,
   autoTrade: false,
   activeAgents: [],
-  selectedSymbol: "BTC",
-  selectedExchange: "binance",
+  selectedSymbol: "EURUSD",
+  selectedExchange: "mt5",
   notifications: [],
 
   // ── Initial data state ────────────────────────────────────────
@@ -193,8 +193,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     positions: defaultEndpointState(),
     health: defaultEndpointState(),
     killSwitch: defaultEndpointState(),
-    market: defaultEndpointState(),
-    strategies: defaultEndpointState(),
   },
 
   globalLoading: false,

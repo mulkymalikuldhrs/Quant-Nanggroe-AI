@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.16",
-    "@radix-ui/react-progress": "^1.1.9",
     "@radix-ui/react-scroll-area": "^1.2.11",
     "@radix-ui/react-select": "^2.3.0",
     "@radix-ui/react-slot": "^1.2.5",

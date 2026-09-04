@@ -26,8 +26,8 @@ describe("Initial state", () => {
     expect(state.killSwitch).toBe(false);
     expect(state.autoTrade).toBe(false);
     expect(state.activeAgents).toEqual([]);
-    expect(state.selectedSymbol).toBe("BTC");
-    expect(state.selectedExchange).toBe("binance");
+    expect(state.selectedSymbol).toBe("EURUSD");
+    expect(state.selectedExchange).toBe("mt5");
     expect(state.notifications).toEqual([]);
   });
 
@@ -52,7 +52,7 @@ describe("Initial state", () => {
 
   it("has all loading states as default", () => {
     const state = useAppStore.getState();
-    const endpoints = ["agents", "portfolio", "risk", "positions", "health", "killSwitch", "market", "strategies"];
+    const endpoints = ["agents", "portfolio", "risk", "positions", "health", "killSwitch"];
     for (const ep of endpoints) {
       const ls = state.loadingStates[ep as keyof typeof state.loadingStates];
       expect(ls.loading).toBe(false);
@@ -73,8 +73,8 @@ describe("UI actions", () => {
       killSwitch: false,
       autoTrade: false,
       activeAgents: [],
-      selectedSymbol: "BTC",
-      selectedExchange: "binance",
+      selectedSymbol: "EURUSD",
+      selectedExchange: "mt5",
       notifications: [],
       loadingStates: {
         agents: { loading: false, error: null, lastUpdated: null },
@@ -83,8 +83,6 @@ describe("UI actions", () => {
         positions: { loading: false, error: null, lastUpdated: null },
         health: { loading: false, error: null, lastUpdated: null },
         killSwitch: { loading: false, error: null, lastUpdated: null },
-        market: { loading: false, error: null, lastUpdated: null },
-        strategies: { loading: false, error: null, lastUpdated: null },
       },
     });
     vi.clearAllMocks();
@@ -295,8 +293,6 @@ describe("fetch actions", () => {
         positions: { loading: false, error: null, lastUpdated: null },
         health: { loading: false, error: null, lastUpdated: null },
         killSwitch: { loading: false, error: null, lastUpdated: null },
-        market: { loading: false, error: null, lastUpdated: null },
-        strategies: { loading: false, error: null, lastUpdated: null },
       },
       globalLoading: false,
     });

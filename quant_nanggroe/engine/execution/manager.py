@@ -367,10 +367,6 @@ class ExecutionManager:
             # Contract: writer sets "strategy"+"regime" (+ legacy "strategy_name");
             # metadata_overrides() falls back to "strategy_name" for old orders.
             _overrides = metadata_overrides(order.metadata)
-            # perStrategy + perRegime overrides from order metadata (more configurable — A1)
-            # Contract: writer sets "strategy"+"regime" (+ legacy "strategy_name");
-            # metadata_overrides() falls back to "strategy_name" for old orders.
-            _overrides = metadata_overrides(order.metadata)
             verdict = self._risk_manager.check_trade(
                 symbol=order.symbol,
                 direction=order.side.value,

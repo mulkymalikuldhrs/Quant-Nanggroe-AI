@@ -37,7 +37,7 @@ if _hermes_paths:
     clean = [p for p in os.environ.get("PYTHONPATH", "").split(";") if "hermes" not in p.lower()]
     os.environ["PYTHONPATH"] = ";".join(clean)
     sys.path = [p for p in sys.path if "hermes" not in p.lower()]
-__version__ = "8.1.1"
+__version__ = "8.1.2"
 QNA_VERSION = __version__
 
 # ── PID management for daemon mode ─────────────────────────────────
@@ -161,7 +161,7 @@ def _print_cli_help() -> None:
     python qna.py hedge     Hedge Fund aggregator
     python qna.py status    System health check
     python qna.py cli       [DEPRECATED] Interactive CLI
-    python qna.py web       [DEPRECATED] Legacy web UI
+    python qna.py web       [DEPRECATED] [BROKEN — web_interface/ missing] Legacy web UI
 """)
 
 
@@ -936,7 +936,7 @@ def build_parser() -> argparse.ArgumentParser:
   python qna.py status                     System health check
   python qna.py live                        LiveEngine trading loop (60s cycle)
   python qna.py cli             [DEPRECATED] Interactive CLI shell
-  python qna.py web             [DEPRECATED] Legacy web UI on port 5000
+  python qna.py web             [DEPRECATED] [BROKEN — web_interface/ missing] Legacy web UI on port 5000
         """,
     )
 

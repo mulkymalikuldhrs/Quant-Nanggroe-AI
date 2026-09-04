@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445)
-> Version: v8.1.1 | Last verified: 2026-09-03
+> Version: v8.1.2 | Last verified: 2026-09-04
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -743,7 +743,7 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
+> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
 ### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Shadow Timestamps (2026-09-03) — CORRECTED 2026-09-03 (D-workstream: docs follow code)
 
@@ -960,4 +960,32 @@ Six parallel workstreams, one commit. Every claim verified against `file:line`.
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites)
+### 15.14 v8.1.2 — Residual gaps closed (N1–N8) + committee floor + CPCV trade stats (2026-09-04)
+
+Commit `03f4ccfb` (17 files, 5 workstreams). Every claim verified against `file:line`.
+
+**N1 metadata contract (HIGH — perStrategy/perRegime live-fill was dead):**
+- Writer: `_make_decision` gains `strategy` param (`autonomous.py:1962`); live-fill `Order.metadata` sets `strategy` + `strategy_name` (compat) + `regime`, resolved as `strategy or decision.strategy_name or final_decider.strategy or "ensemble"`. Trailing-stop + main exec callsites pass it through.
+- Reader: `metadata_overrides()` (`execution/manager.py:37`) — `strategy` with `strategy_name` legacy fallback, `regime` direct; non-dict/missing → `None` (fail-closed). `execute_order` forwards overrides into `check_trade` (`execution/manager.py:369-383`).
+- Pin: `tests/test_execution/test_metadata_forwarding.py` (6 tests). `SyntaxError` in the override block repaired — `py_compile` clean.
+
+**Committee floor (UI-tunable, fail-closed):**
+- `minCommitteeConfidence` in `risk_config.py` (`risk_config.py:46`, range 0.05–0.65, default 0.10 = legacy `CONFIDENCE_THRESHOLD`); global + per-axis. `resolve_committee_threshold()` (`vote_chamber.py:32`) falls back to 0.10 on any error/missing/out-of-range; wired into the buy/sell gate. Constitution cites 0.65 — NOT raised blindly (would halt trading).
+- Pin: 3 new tests in `tests/test_agentic/test_committee_weights.py`. UI: `/vector` page renders `warming_up`/`p0_source`/`history_len`/`reason`; dead `ui/progress.tsx` deleted (0 importers); trading-page REAL-ONLY comment fix.
+
+**CPCV writer extension + re-run (win_rate stays TBD):**
+- `build_cpcv_entry()` (`run_cpcv_validation.py:70`) extended fail-soft (`total_trades`/`avg_oos_return`/`max_oos_dd`/`win_rate`, `None` when unavailable; old keys byte-identical). Pin: `tests/test_cpcv_registry_writer.py` (5 tests).
+- Re-run: 10 strategies / 29 legs rewritten, zero data loss; `win_rate` null on all 29 legs (script-verified vs `data/cpcv_registry.json`) — analyzer lacks trade stats, so ALPHA WinRate stays `TBD (FASE 4)`.
+- ALPHA reword: FASE-4 bar is `min_sharpe > 0` on every leg; all-zero legs are no-data sentinels (`archive_amdx`/`archive_wyckoff` EURUSD); `native_smc` has no EURUSD leg.
+
+**N4/N5/N6/N8 pins (`tests/test_risk/test_governance_refresh.py`, 9 tests):**
+- N4: `_refresh_limits()` (`veto_guard.py:82`) re-reads live constants on every `check()` (`veto_guard.py:104`), fail-closed.
+- N5: `auto_max_drawdown_pct` = `0.8 * MAX_DRAWDOWN_PCT` via `default_factory` (`kill_switch.py:185`) — new instances only.
+- N6: `minRiskReward`/`maxCorrelatedPositions` NOT live-editable (no enforcement point) — PUT 400, file values fall back to defaults (`risk_config.py` `_NON_EDITABLE_KEYS`).
+- N8: `check_cost_affordable` accounting-only (`manager.py:1424`), pure, no execution-path callers.
+
+**Verification:** `py_compile` clean on all touched modules (verified); coordinator battery per commit message: 78 passed + 5 xfailed — see commit `03f4ccfb`.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD)

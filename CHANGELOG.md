@@ -1,6 +1,40 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+## v8.1.2 — Residual gaps closed (N1–N8) + committee floor + CPCV trade stats (2026-09-04)
+
+CANONICAL §15.14 is the SSOT detail. Commit `03f4ccfb` (17 files, 5 workstreams).
+
+### 🔌 N1 metadata contract — perStrategy/perRegime live-fill was dead (HIGH)
+- Writer: `_make_decision` gains `strategy` param (`autonomous.py:1962`); live-fill `Order.metadata` now sets `strategy` + `strategy_name` (compat) + `regime`, resolved as `strategy or decision.strategy_name or final_decider.strategy or "ensemble"`. Trailing-stop + main exec callsites pass it through.
+- Reader: new `metadata_overrides()` (`execution/manager.py:37`) — `strategy` with `strategy_name` legacy fallback, `regime` direct; non-dict/missing → `None` (global defaults apply, fail-closed, never fabricated). `execute_order` forwards the overrides into `check_trade` (`execution/manager.py:369-383`).
+- Pin: `tests/test_execution/test_metadata_forwarding.py` — 6 tests (new-key, legacy fallback, new-wins, missing fail-closed, 2 async forwarding).
+- Repair: `SyntaxError` in the `execution/manager.py` override block fixed — module compiles, collection unblocked (`py_compile` clean, verified).
+
+### 🗳️ Committee floor — UI-tunable, fail-closed
+- `minCommitteeConfidence` in `risk_config.py` (defaults, `risk_config.py:46`; range 0.05–0.65, `_LIMITS`; default 0.10 = legacy `CONFIDENCE_THRESHOLD`); global + per-axis via `get_effective_config`.
+- `resolve_committee_threshold()` (`vote_chamber.py:32`) — any error/missing/out-of-range value falls back to 0.10; wired into the buy/sell direction gate. Constitution cites 0.65 — deliberately NOT raised blindly (would halt trading); tune via UI with data instead.
+- Pin: 3 new tests in `tests/test_agentic/test_committee_weights.py` (default unchanged, custom blocks weak vote, invalid falls back).
+- UI note: `/vector` page renders `warming_up`/`p0_source`/`history_len`/`reason` (`vector/page.tsx`); dead `ui/progress.tsx` deleted (0 importers, verified); trading-page comment corrected to REAL-ONLY no-data guard.
+
+### 📊 CPCV writer extension + full re-run (win_rate stays TBD)
+- `build_cpcv_entry()` (`run_cpcv_validation.py:70`) extended fail-soft with `total_trades` (from `oos_trades`), `avg_oos_return`, `max_oos_dd` (worst = min, ≤0 convention), `win_rate` (from `win_rate`/`oos_win_rate` when present, else `None` — never invented). Pre-existing keys byte-identical.
+- Pin: `tests/test_cpcv_registry_writer.py` — 5 tests.
+- Re-run outcome: 10 strategies / 29 legs rewritten, zero data loss; `win_rate` is `null` on all 29 legs (verified by script against `data/cpcv_registry.json`) — `WalkForwardResult` carries no per-window win_rate, so ALPHA WinRate stays `TBD (FASE 4)` with dated citation (`docs/ALPHA_EVIDENCE.md`).
+- ALPHA reword: FASE-4 bar is now `min_sharpe > 0` on every leg (was worst-combo-avg wording); all-zero legs (`archive_amdx`/`archive_wyckoff` EURUSD) noted as no-data sentinels; `native_smc` has no EURUSD leg.
+
+### 🔒 N4/N5/N6/N8 pins (`tests/test_risk/test_governance_refresh.py` — 9 tests)
+- N4: `GovernanceVetoGuard._refresh_limits()` (`veto_guard.py:82`) re-reads live `_risk_constants` module attributes on every `check()` (`veto_guard.py:104`); broken config keeps construction-time values (fail-closed).
+- N5: `KillSwitchConfig.auto_max_drawdown_pct` derived `0.8 * MAX_DRAWDOWN_PCT` via `default_factory` (`kill_switch.py:185`) — live value at instantiation, so UI hot-reloads propagate to NEW instances only; pre-existing instances keep their stored value.
+- N6: `minRiskReward`/`maxCorrelatedPositions` deliberately NOT live-editable — no live enforcement point (consumers read module constants; `checks.py evaluate` enforces only the forwarded size/loss keys). PUT writes rejected 400 (`_NON_EDITABLE_KEYS`, `risk_config.py`); file values fall back to defaults; per-symbol overrides inert.
+- N8: `check_cost_affordable` documented accounting-only (`manager.py:1424` docstring) — pure, no state mutation, no halt coupling, no callers in the execution path (pinned by test).
+
+### ✅ Verification
+- `py_compile` clean on all touched risk/execution/committee/config/CPCV modules (verified). Coordinator battery per commit message: 78 passed + 5 xfailed — see commit `03f4ccfb`.
+- No `TBD` claimed done: the only remaining `TBD` is ALPHA WinRate, explicitly still pending analyzer win-rate propagation.
+
+---
 
 ## v8.1.1 — Docs sync + strategy test/API rewrite + risk_reward fix (2026-09-04)
 
@@ -524,4 +558,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.1 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

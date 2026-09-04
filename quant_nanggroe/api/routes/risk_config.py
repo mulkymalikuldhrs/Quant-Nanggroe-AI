@@ -12,8 +12,8 @@ Schema (v8.0.23 — A2 fail-closed):
 - maxLeverage (1-10)
 - maxPositionSize (0.05-0.5 = 5%-50%)
 - maxDailyTrades (1-20)
-- minRiskReward (1.0-5.0)
-- maxCorrelatedPositions (1-10)
+- minRiskReward — NOT editable (N6 decision): module constant, see _NON_EDITABLE_KEYS
+- maxCorrelatedPositions — NOT editable (N6 decision): module constant, see _NON_EDITABLE_KEYS
 - minCommitteeConfidence (0.05-0.65, default 0.10) — committee vote floor, UI-tunable
 - perSymbol, perStrategy, perRegime — same fields nested per key (fail-closed: unknown keys rejected)
 """

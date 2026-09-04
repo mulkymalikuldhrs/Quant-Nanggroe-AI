@@ -11,6 +11,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # NOTE: repo standard is `uv sync`, but CI runners use pip here (pip-vs-uv drift, intentional).
       - run: pip install -e ".[dev,ml,data]"
       - run: ruff check .
       - run: mypy quant_nanggroe/ --ignore-missing-imports
@@ -18,4 +19,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: pytest tests/ --cov=quant_nanggroe --cov-report=term-missing --cov-fail-under=60 -x
+      - run: pytest tests/ quant_nanggroe/tests/ --cov=quant_nanggroe --cov-report=term-missing --cov-fail-under=60 -x
+      # Future (not in CI: slow): dashboard vitest + build. Dashboard typecheck:
+      - run: npx tsc --noEmit --skipLibCheck
+        working-directory: dashboard

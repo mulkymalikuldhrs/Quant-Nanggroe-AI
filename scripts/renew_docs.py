@@ -298,15 +298,18 @@ qnai database init
 
 ## Python SDK
 ```python
-from quant_nanggroe import create_app
-from quant_nanggroe.engine import TradingEngine, RiskEngine
+from quant_nanggroe.api.app import create_app
+from quant_nanggroe.api.routes.risk_config import load_risk_config
+from quant_nanggroe.engine.risk.manager import RiskManager
 
 # Create API app
 app = create_app()
 
-# Initialize engines
-engine = TradingEngine(config_path="config.yaml")
-risk = RiskEngine(config_path="risk_config.yaml")
+# Risk config: config/risk_config.json via the risk_config API
+# (live-reloaded by quant_nanggroe/engine/risk/constants.py) —
+# no RiskEngine class exists; use RiskManager + load_risk_config:
+risk_cfg = load_risk_config()
+risk = RiskManager()
 ```
 
 ## Extras

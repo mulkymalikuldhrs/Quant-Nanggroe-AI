@@ -97,6 +97,7 @@ function SettingsContent() {
         if (rc.maxDailyTrades != null) mergedRisk.maxDailyTrades = rc.maxDailyTrades;
         if (rc.minRiskReward != null) mergedRisk.minRiskReward = rc.minRiskReward;
         if (rc.maxCorrelatedPositions != null) mergedRisk.maxCorrelatedPositions = rc.maxCorrelatedPositions;
+        if (rc.minCommitteeConfidence != null) mergedRisk.minCommitteeConfidence = rc.minCommitteeConfidence;
         if (rc.perSymbol) setPerSymbol(rc.perSymbol as Record<string, Record<string, number>>);
         if (rc.perRegime) setPerRegime(rc.perRegime as Record<string, Record<string, number>>);
       } catch { /* risk-config optional */ }
@@ -126,6 +127,10 @@ function SettingsContent() {
         if (rl.maxLeverage != null) payload.maxLeverage = rl.maxLeverage;
         if (rl.maxDailyTrades != null) payload.maxDailyTrades = rl.maxDailyTrades;
         if (rl.minRiskReward != null) payload.minRiskReward = rl.minRiskReward;
+        if (rl.minCommitteeConfidence != null) {
+          const v = Number(rl.minCommitteeConfidence);
+          payload.minCommitteeConfidence = Number.isFinite(v) ? Math.min(0.65, Math.max(0.05, v)) : 0.10;
+        }
         if (Object.keys(payload).length) {
           await apiRequest("/api/risk-config", { method: "PUT", body: payload });
         }
@@ -396,6 +401,7 @@ function SettingsContent() {
             { label: "Max Daily Trades", key: "maxDailyTrades", unit: "", max: 20, step: 1 },
             { label: "Min Risk Reward", key: "minRiskReward", unit: ":1", max: 5, step: 0.5 },
             { label: "Max Correlated", key: "maxCorrelatedPositions", unit: "", max: 10, step: 1 },
+            { label: "Committee Floor", key: "minCommitteeConfidence", unit: "0.05-0.65", max: 0.65, step: 0.05 },
           ].map((item) => (
             <div key={item.key} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
               <p className="text-xs text-white/40 mb-2">{item.label}</p>
@@ -500,6 +506,7 @@ function SettingsContent() {
                 { value: "maxPositionSize", label: "Pos Size %" },
                 { value: "maxDailyLoss", label: "Daily Loss %" },
                 { value: "maxWeeklyLoss", label: "Weekly Loss %" },
+                { value: "minCommitteeConfidence", label: "Committee Floor" },
               ]} />
             </div>
             <div className="w-28">
