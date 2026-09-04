@@ -3727,5 +3727,99 @@
     "occurred_at": "2026-09-02T23:29:23.408923+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "a58c7d48-280",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for NZDUSD: confidence=0.16",
+    "detail": "Trade 55f809e0-07d7-49ed-ad66-81d4f15f6330 on NZDUSD using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "55f809e0-07d7-49ed-ad66-81d4f15f6330",
+      "symbol": "NZDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:19:55.623681+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2b7b2889-087",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.14",
+    "detail": "Trade 3ac936f8-5d6d-4db9-8e4b-eb9719f64b71 on USDJPY using ensemble. eval_duration_ms=0.09",
+    "context": {
+      "trade_id": "3ac936f8-5d6d-4db9-8e4b-eb9719f64b71",
+      "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.09,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:20:10.741538+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "b1cadc39-2fc",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade e2c3d78d-e30a-4116-ad0e-e0e4e668e1bf on USDCAD using ensemble. eval_duration_ms=0.19",
+    "context": {
+      "trade_id": "e2c3d78d-e30a-4116-ad0e-e0e4e668e1bf",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.19,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:20:39.208859+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "943885e3-bc2",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for USDCHF",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:20:40.215978+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "605ec88c-e99",
+    "category": "data_fetch",
+    "severity": "error",
+    "summary": "Data fetch failed for EURGBP",
+    "detail": "No data returned",
+    "context": {
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:21:24.104414+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "2471bc93-908",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDJPY: confidence=0.10",
+    "detail": "Trade ea82b729-de64-461f-95e8-1665837b9822 on USDJPY using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "ea82b729-de64-461f-95e8-1665837b9822",
+      "symbol": "USDJPY",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T13:28:39.362879+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]

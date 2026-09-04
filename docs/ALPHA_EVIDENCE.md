@@ -44,6 +44,20 @@ Least-bad candidate for further research: `kaufman_ama` (only strategy with all-
 avg_oos_sharpe: +0.16 / +0.67 / +1.08). Next step is NOT live size — it is a fresh
 tri-asset WF run with trade logging (to fill WinRate) + embargo, then re-grade.
 
+## Gold-leg decisive experiment (2026-09-04, GC=F only, pre-registered rule)
+
+> Command: `python scripts/run_cpcv_validation.py --only archive_ict_ote,archive_aroon,kaufman_ama --symbols GC=F --n-groups 6 --n-test-groups 2`
+> Rule (binding): promote IFF `min_sharpe > 0 AND win_rate > 0.50 AND total_oos_trades ≥ 100`; else reject.
+> This run ALSO proves the win_rate passthrough end-to-end (engine → WalkForwardResult.oos_win_rate → build_cpcv_entry → registry).
+
+| Strategy (GC=F) | avg | min | win_rate | trades | avg_ret | max_dd | Grade |
+|---|---|---|---|---|---|---|---|
+| archive_ict_ote | +0.942 | +0.409 | 0.296 | 1190 | +0.301 | −0.465 | **FAIL** (win_rate 0.30 < 0.50) |
+| archive_aroon | +0.518 | +0.153 | 0.285 | 310 | +0.584 | −0.849 | **FAIL** (win_rate 0.29 < 0.50) |
+| kaufman_ama | +0.813 | −0.424 | 0.236 | 630 | +0.170 | −0.834 | **FAIL** (min −0.42 < 0; win_rate 0.24 < 0.50) |
+
+**Interpretation (honest, not a consolation):** high Sharpe + ~25–30% win-rate + real trade counts = fat-tail payoff profile (few big winners, many small losers), typical of trend/carry-style systems — NOT broken measurement. But it fails the sizing rule twice over (win-rate bar + drawdowns −0.47/−0.85/−0.83 that no kill-switch survives at 0.5% risk). Gold hypothesis stays **REJECTED for sizing**. The passthrough itself is the win: WinRate is now measurable everywhere, ending the "Sharpe without trades" era.
+
 ## Remaining strategies
 
 | Strategy | WF Sharpe | MaxDD | WinRate | Period | Method | Verdict |
