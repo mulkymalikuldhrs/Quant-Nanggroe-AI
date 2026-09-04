@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Every claim must be verified against `file:line`.
 > Status: GREEN — LIVE on MT5 (ValetaxIntl-Live2, acct 372044706 QNA, bal $1,445)
-> Version: v8.1.2 | Last verified: 2026-09-04
+> Version: v8.1.3 | Last verified: 2026-09-04
 > Mode: FAZE 1 — proof-phase (conservative sizing, specialists only, journal synced)
 
 ---
@@ -743,7 +743,7 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
+> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
 ### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Shadow Timestamps (2026-09-03) — CORRECTED 2026-09-03 (D-workstream: docs follow code)
 
@@ -988,4 +988,28 @@ Commit `03f4ccfb` (17 files, 5 workstreams). Every claim verified against `file:
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD)
+### 15.15 v8.1.3 — P0+P1 hygiene + committee UI + quarantine + CI (2026-09-04)
+
+Commit `b6485317` (60 files, 5 workstreams). File list per `git show --stat HEAD`; semantics per HEAD commit message + HEAD diff. Every claim verified against `file:line`.
+
+**WS1 hygiene:** duplicated `_overrides` block removed (`execution/manager.py`); `risk_config.py` docstring corrected (`minRiskReward`/`maxCorrelatedPositions` NOT editable); CANONICAL header date bumped; `@radix-ui/react-progress` purged (`dashboard/package.json` + `package-lock.json` + `pnpm-lock.yaml`).
+
+**WS2 committee floor UI:** `minCommitteeConfidence` wired in settings load/save, clamped 0.05–0.65, fallback 0.10 (`settings/page.tsx`); perRegime option; pin `tests/test_agentic/test_committee_floor_ui.py` (3/3); default behavior unchanged.
+
+**WS3 quarantine:** 6 verified-dead scripts → `archive/scripts_rot_2026-09-05/` + README ledger; 16 candidates kept as needs-manual-review; `renew_docs.py` SDK snippet fixed (real `create_app` / `load_risk_config` / `RiskManager` imports).
+
+**WS4 CI+store:** `ci.yml` covers `quant_nanggroe/tests` + dashboard `tsc --noEmit` step, pip-vs-uv drift noted; `store.ts` dead `market`/`strategies` slots removed, defaults EURUSD/mt5, fixtures synced (`store.test.ts`, vitest 28/28); `qna web` help marked `[BROKEN — web_interface/ missing]`.
+
+**WS5 docs:** CHANGELOG v8.1.2 entry + CANONICAL §15.14 (both document parent `03f4ccfb`, 17 files) + versions 8.1.2 (pyproject+qna+pkg) + 80-file SSOT footer bump, all code-verified.
+
+**Verification:** per HEAD commit message — 256 passed + 8 xfailed; tsc clean; py_compile clean.
+
+**Residual known issues (deferred, NOT closed by this delta):**
+- veto/Kelly/voter deletion deferred.
+- WinRate analyzer passthrough open (ALPHA WinRate stays TBD FASE 4).
+- NO-GO sizing standing.
+- Live fills broker-side only.
+
+---
+
+> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD) + settings floor UI + script quarantine + CI/store hygiene

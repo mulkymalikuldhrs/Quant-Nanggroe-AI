@@ -67,3 +67,23 @@ def test_settings_page_wires_committee_floor():
     assert "payload.minCommitteeConfidence" in src  # save PUT section
     assert "Committee Floor" in src  # Risk Limits row label
     assert "0.05-0.65" in src  # range hint
+
+
+def test_settings_save_payload_excludes_advisory_keys():
+    """Save PUT must not forward minRiskReward/maxCorrelatedPositions.
+
+    Backend PUT rejects both 400 (_NON_EDITABLE_KEYS) — forwarding them makes
+    saving Risk Limits fail closed. Advisory keys stay visible in the UI but
+    labelled non-live; only minCommitteeConfidence (+ enforceable keys) go out.
+    """
+    src = (
+        Path(__file__).resolve().parents[2]
+        / "dashboard" / "src" / "app" / "settings" / "page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "payload.minRiskReward" not in src  # never in save PUT payload
+    assert "payload.maxCorrelatedPositions" not in src  # never in save PUT payload
+    assert "payload.minCommitteeConfidence" in src  # floor wiring intact
+    # rows kept visible but explicitly marked non-live
+    assert "agent-level advisory" in src
+    # delete-forward path strips legacy advisory keys client-side (no 400 surprise)
+    assert "stripAdvisoryKeys" in src

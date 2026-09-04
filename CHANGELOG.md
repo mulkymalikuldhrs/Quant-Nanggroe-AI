@@ -1,6 +1,19 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+## v8.1.3 — P0+P1 hygiene + committee UI + quarantine + CI (2026-09-04)
+
+CANONICAL §15.15 is the SSOT detail. Commit `b6485317` (60 files, 5 workstreams).
+
+- WS1 hygiene: duplicated `_overrides` block removed (`execution/manager.py`); `risk_config.py` docstring corrected (minRR/correlated non-editable); CANONICAL header date bumped; `@radix-ui/react-progress` purged from `package.json` + both lockfiles.
+- WS2 committee floor UI: `minCommitteeConfidence` in settings (load/save/clamp 0.05–0.65, fallback 0.10) + perRegime option; `tests/test_agentic/test_committee_floor_ui.py` 3/3; default behavior unchanged.
+- WS3 quarantine: 6 verified-dead scripts → `archive/scripts_rot_2026-09-05/` + README ledger; 16 candidates kept as needs-manual-review; `renew_docs.py` SDK snippet fixed.
+- WS4 CI+store: `ci.yml` covers `quant_nanggroe/tests` + tsc step, pip-vs-uv noted; `store.ts` dead slots removed, defaults EURUSD/mt5 (fixtures synced, vitest 28/28); `qna web` help marked [BROKEN — web_interface/ missing].
+- WS5 docs: CHANGELOG v8.1.2 entry + CANONICAL §15.14 (both document parent `03f4ccfb`, 17 files) + versions 8.1.2 (pyproject+qna+pkg) + 80-file footer bump, all code-verified.
+- Verification: 256 passed + 8 xfailed; tsc clean; py_compile clean.
+
+---
 
 ## v8.1.2 — Residual gaps closed (N1–N8) + committee floor + CPCV trade stats (2026-09-04)
 
@@ -558,4 +571,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

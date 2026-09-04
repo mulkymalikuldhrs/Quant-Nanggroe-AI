@@ -50,6 +50,27 @@ interface LlmKeyEntry {
   id: string; provider: string; key: string; status: string;
 }
 
+// Advisory-only risk keys: visible in the UI but NOT live-editable — the backend
+// PUT /api/risk-config rejects them 400 (_NON_EDITABLE_KEYS) because the
+// execution gate never reads them (agent-level advisory constants only).
+const ADVISORY_KEYS_NOTE: Record<string, string> = {
+  minRiskReward: "agent-level advisory — not enforced by execution gate",
+  maxCorrelatedPositions: "agent-level advisory — not enforced by execution gate",
+};
+
+// Strip advisory keys before PUT so a delete never 400-surprises when stored
+// overrides contain legacy advisory keys (backend rejects them anywhere in
+// the payload — top-level _NON_EDITABLE_KEYS + per-override allowlist).
+const stripAdvisoryKeys = (
+  m: Record<string, Record<string, number>>,
+): Record<string, Record<string, number>> =>
+  Object.fromEntries(
+    Object.entries(m).map(([k, ov]) => [
+      k,
+      Object.fromEntries(Object.entries(ov).filter(([rk]) => !(rk in ADVISORY_KEYS_NOTE))),
+    ]),
+  );
+
 function SettingsContent() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState<string | null>(null);
@@ -126,7 +147,8 @@ function SettingsContent() {
         if (rl.maxPositionSize != null) payload.maxPositionSize = rl.maxPositionSize / 100;
         if (rl.maxLeverage != null) payload.maxLeverage = rl.maxLeverage;
         if (rl.maxDailyTrades != null) payload.maxDailyTrades = rl.maxDailyTrades;
-        if (rl.minRiskReward != null) payload.minRiskReward = rl.minRiskReward;
+        // NOTE: minRiskReward / maxCorrelatedPositions are advisory-only — the
+        // backend PUT rejects them 400, so they are never forwarded here.
         if (rl.minCommitteeConfidence != null) {
           const v = Number(rl.minCommitteeConfidence);
           payload.minCommitteeConfidence = Number.isFinite(v) ? Math.min(0.65, Math.max(0.05, v)) : 0.10;
@@ -412,7 +434,10 @@ function SettingsContent() {
                   className="w-20 text-center"
                 />
                 <span className="text-xs text-white/30">{item.unit}</span>
-              </div>
+                </div>
+                {ADVISORY_KEYS_NOTE[item.key] && (
+                  <p className="text-[10px] text-amber-400/70 mt-1.5">({ADVISORY_KEYS_NOTE[item.key]})</p>
+                )}
             </div>
           ))}
         </div>
@@ -434,7 +459,7 @@ function SettingsContent() {
               <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400/70" onClick={async () => {
                 const next = { ...perSymbol }; delete next[sym];
                 setPerSymbol(next);
-                await apiRequest("/api/risk-config", { method: "PUT", body: { perSymbol: next } });
+                await apiRequest("/api/risk-config", { method: "PUT", body: { perSymbol: stripAdvisoryKeys(next) } });
               }}><Trash2 className="w-3 h-3" /></Button>
             </div>
           ))}
@@ -483,7 +508,7 @@ function SettingsContent() {
               <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400/70" onClick={async () => {
                 const next = { ...perRegime }; delete next[regime];
                 setPerRegime(next);
-                await apiRequest("/api/risk-config", { method: "PUT", body: { perRegime: next } });
+                await apiRequest("/api/risk-config", { method: "PUT", body: { perRegime: stripAdvisoryKeys(next) } });
               }}><Trash2 className="w-3 h-3" /></Button>
             </div>
           ))}

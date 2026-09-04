@@ -1,0 +1,23 @@
+{
+  "_note": "Schema example for config/risk_config.json (gitignored — copy this file to risk_config.json to start). Values mirror _DEFAULTS in quant_nanggroe/api/routes/risk_config.py. The backend auto-stamps \"version\": 1 (SCHEMA_VERSION) on every read/write — never PUT \"version\" (400). Editable ranges (_LIMITS): maxRiskPerTrade 0.001-0.02, maxPositionSize 0.05-0.50, maxLeverage 1-10, maxDailyLoss 0.005-0.05, maxDailyTrades 1-20, maxWeeklyLoss 0.01-0.10, maxDrawdown 0.05-0.30, minCommitteeConfidence 0.05-0.65. minRiskReward / maxCorrelatedPositions are READ-ONLY (PUT rejects 400; file values fall back to defaults). Keys starting with _ (_note, _EXAMPLE_*) are ignored on file-load with a warning — delete them for a clean file.",
+  "version": 1,
+  "maxRiskPerTrade": 0.005,
+  "maxPositionSize": 0.1,
+  "maxLeverage": 3.0,
+  "maxDailyLoss": 0.01,
+  "maxDailyTrades": 5,
+  "maxWeeklyLoss": 0.03,
+  "maxDrawdown": 0.1,
+  "minRiskReward": 2.0,
+  "maxCorrelatedPositions": 3,
+  "minCommitteeConfidence": 0.1,
+  "perSymbol": {
+    "_EXAMPLE_EURUSD": { "maxRiskPerTrade": 0.003 }
+  },
+  "perStrategy": {
+    "_EXAMPLE_kaufman_ama": { "maxRiskPerTrade": 0.004 }
+  },
+  "perRegime": {
+    "_EXAMPLE_trending": { "maxRiskPerTrade": 0.006 }
+  }
+}

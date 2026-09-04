@@ -2,7 +2,7 @@
 
 **Owner:** Mulky Malikul Dhaher | INFJ-T | Dhaher Labs
 **Updated:** 2026-09-02 (Dhaher Autobot audit — BAL REBUILT to $1,648.48 from qna_trade_journal.db; 328 trades, WR 25.4%; MT5 NOT connected; strategy count 135 not 83)
-**Current Phase:** v8.0.22 RED — NOT autonomous. 328 simulated trades, 12 MT5 order attempts (39 rejected), MT5 terminal unreachable, kill-switch L1 triggered 2026-08-28 and deactivated by user. REAL trading NOT occurring.
+**Current Phase (as of 2026-09-02 audit):** v8.0.22 RED — NOT autonomous at that time. 328 simulated trades, 12 MT5 order attempts (39 rejected), MT5 terminal unreachable, kill-switch L1 triggered 2026-08-28 and deactivated by user. REAL trading NOT occurring as of that audit; superseded by later runtime claims — see QNA_FULL_CONTEXT_2026-09-03 and CANONICAL §15.
 
 ---
 
@@ -11,7 +11,7 @@
 | Item | Status | Evidence |
 |------|--------|----------|
 | Entry point resolution | ✅ 1.0 | `qna.py` v8.0.22 via `launch.bat` (single launcher) |
-| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.1.1"` == CANONICAL v8.1.1 |
+| Version SSOT | ✅ 1.0 | `qna.py:40` `__version__ = "8.1.2"` == CANONICAL v8.1.2 |
 | Live broker | ✅ 1.0 | ValetaxIntl-Live2 372044706 BAL $1,445 — CANONICAL §1 |
 | Weekly PnL | ✅ 1.0 | 0 WIB via `launch.bat weekly-reset` → `data/weekly_override.json` + `data/persistence/risk_COLON_weekly_pnl.json` |
 | Probe | ✅ 1.0 | CandleScheduler `probe_empty=0/32` (all 32 TF states healthy) |
@@ -22,7 +22,7 @@
 | 83 strategy wiring | ✅ 1.0 | `@StrategyRegistry.register` — 83 registered, 9 admitted via CPCV allocation |
 | Universal path auto-detect | ✅ 1.0 | No hardcoded `E:\` — `Path(__file__).resolve().parent` + `quant_nanggroe/external/` |
 | Risk layer (KillSwitch + RiskGuard) | ✅ 1.0 | Fail-closed, 9-checkpoint gate, weekly veto on both paths |
-| Skills inventory | ✅ 1.0 | D:\Obsidian\DhaherLabs\skills 41 + E:\skills 41 + C:\Users\Hi\.opencode\skill 29 + 7 MCP — see docs/SKILLS.md |
+| Skills inventory | ✅ 1.0 | D:\Obsidian\DhaherLabs\skills 41 + E:\skills mirror 41 + C:\Users\Hi\.opencode\skill 92 (29 native + 63 hermes-*) + 15 MCP (7 mandatory + 8 ext) — see docs/SKILLS.md |
 | Dashboard | ✅ 1.0 | 22 routes + Config Center + Export Center, Next.js 16, premium dark-tech |
 
 ---
@@ -54,11 +54,11 @@
 **What's MISSING or deferred:**
 - **credentials.md.txt** — 100+ secrets, waiting for Mulky
 - **Registry consolidation** — 3 registries not merged
-- **pyproject.toml** — 8.1.1, in sync with `qna.py` + `quant_nanggroe/__init__.py` + `CANONICAL.md`
+- **pyproject.toml** — 8.1.2, in sync with `qna.py` + `quant_nanggroe/__init__.py` + `CANONICAL.md`
 
 ---
 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.2 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
