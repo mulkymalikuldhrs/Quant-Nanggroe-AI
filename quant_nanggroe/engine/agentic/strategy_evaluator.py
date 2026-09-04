@@ -118,6 +118,10 @@ class StrategyEvaluator:
 
     def record_signal(self, strategy: str, symbol: str, ticket: int,
                       entry_price: float, opened_at: str | None = None) -> None:
+        # Non-empty strategy guarantee: "ensemble" is the existing fallback
+        # convention (autonomous.py trigger_strategy default). Covers ""/None/
+        # whitespace slipping past callers' .get("strategy", "ensemble").
+        strategy = (strategy.strip() if isinstance(strategy, str) else "") or "ensemble"
         try:
             with self._conn() as con:
                 con.execute(

@@ -96,6 +96,9 @@ def record_signal_context(symbol: str, strategy: str, entry_price: float,
                           sl: float, tp: float, confidence: float,
                           atr: float = 0.0, lot_size: float = 0.01) -> None:
     """Record signal context (sl/tp/confidence) for later linking to MT5 deals."""
+    # Non-empty strategy guarantee — same "ensemble" fallback convention as
+    # autonomous.py trigger_strategy default.
+    strategy = (strategy.strip() if isinstance(strategy, str) else "") or "ensemble"
     try:
         con = sqlite3.connect(str(_get_db()))
         con.execute(

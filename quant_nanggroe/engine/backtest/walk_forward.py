@@ -60,6 +60,7 @@ class WalkForwardResult:
     degradation_ratio: float  # OOS/IS performance ratio
     is_trades: int = 0  # trades fired in-sample fold (significance context)
     oos_trades: int = 0  # trades fired out-of-sample fold (significance context)
+    oos_win_rate: float = 0.0  # trade win-rate of OOS fold (engine metrics win_rate)
 
 
 @dataclass
@@ -280,6 +281,7 @@ class WalkForwardAnalyzer:
             oos_result = self.engine.run(test_prices, test_signals, **kwargs)
             oos_metrics = oos_result.get("metrics", {})
             oos_trades = oos_metrics.get("total_trades", 0)
+            oos_win_rate = float(oos_metrics.get("win_rate", 0.0) or 0.0)
 
             # Calculate degradation ratio
             is_sharpe = is_metrics.get("sharpe_ratio", 0.0)
@@ -300,6 +302,7 @@ class WalkForwardAnalyzer:
                 degradation_ratio=degradation,
                 is_trades=is_trades,
                 oos_trades=oos_trades,
+                oos_win_rate=oos_win_rate,
             )
 
             windows.append(wf_result)
@@ -441,11 +444,13 @@ class WalkForwardAnalyzer:
                 oos_metrics = oos_result.get("metrics", {})
                 oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
                 oos_trades = oos_metrics.get("total_trades", 0)
+                oos_win_rate = float(oos_metrics.get("win_rate", 0.0) or 0.0)
                 if len(oos_eq) > 0:
                     oos_equity_parts.append(oos_eq)
             else:
                 oos_metrics = {"sharpe_ratio": 0.0, "total_return": 0.0, "max_drawdown": 0.0}
                 oos_trades = 0
+                oos_win_rate = 0.0
 
             is_sharpe = is_metrics.get("sharpe_ratio", 0.0)
             oos_sharpe = oos_metrics.get("sharpe_ratio", 0.0)
@@ -465,6 +470,7 @@ class WalkForwardAnalyzer:
                 degradation_ratio=degradation,
                 is_trades=is_trades,
                 oos_trades=oos_trades,
+                oos_win_rate=oos_win_rate,
             )
 
             windows.append(wf_result)
@@ -638,6 +644,7 @@ class WalkForwardAnalyzer:
             oos_eq = oos_result.get("equity_curve", pd.Series(dtype=float))
             oos_sharpe = oos_metrics.get("sharpe_ratio", 0.0)
             oos_trades = oos_metrics.get("total_trades", 0)
+            oos_win_rate = float(oos_metrics.get("win_rate", 0.0) or 0.0)
             if len(oos_eq) > 0:
                 oos_equity_parts.append(oos_eq)
 
@@ -655,6 +662,7 @@ class WalkForwardAnalyzer:
                 degradation_ratio=0.0,
                 is_trades=0,
                 oos_trades=oos_trades,
+                oos_win_rate=oos_win_rate,
             ))
             oos_returns.append(oos_metrics.get("total_return", 0.0))
             oos_sharpes.append(oos_sharpe)
@@ -773,6 +781,7 @@ class WalkForwardAnalyzer:
                 oos_result = self.engine.run(test_prices, test_signals, **kwargs)
                 oos_metrics = oos_result.get("metrics", {})
                 oos_trades = oos_metrics.get("total_trades", 0)
+                oos_win_rate = float(oos_metrics.get("win_rate", 0.0) or 0.0)
             except Exception as e:
                 logger.warning("CPCV window failed: %s", e)
                 continue
@@ -795,6 +804,7 @@ class WalkForwardAnalyzer:
                 degradation_ratio=degradation,
                 is_trades=is_trades,
                 oos_trades=oos_trades,
+                oos_win_rate=oos_win_rate,
             )
 
             windows.append(wf_result)
@@ -838,6 +848,15 @@ class WalkForwardAnalyzer:
 
         median_fold_trades = float(np.median([w.oos_trades for w in windows]))
         per_trade = [r / tc for r, tc in zip(oos_returns, oos_trade_counts)] if oos_returns else []
+        fold_profit_share = (sum(1 for r in oos_returns if r > 0) / len(oos_returns)
+                             if oos_returns else 0.0)
+        # Trade-weighted mean of per-window OOS trade win-rates. Windows expose
+        # oos_win_rate (fail-soft 0.0 for legacy objects via getattr).
+        _wr_pairs = [(float(getattr(w, "oos_win_rate", 0.0) or 0.0),
+                      int(getattr(w, "oos_trades", 0) or 0)) for w in windows]
+        _wr_trades = sum(t for _, t in _wr_pairs)
+        oos_win_rate_mean = (sum(wr * t for wr, t in _wr_pairs) / _wr_trades
+                             if _wr_trades > 0 else 0.0)
         return {
             "num_windows": len(windows),
             "avg_oos_return": float(np.mean(oos_returns)) if oos_returns else 0.0,  # per-fold mean (readable, vol-inflated)
@@ -847,7 +866,9 @@ class WalkForwardAnalyzer:
             "avg_oos_sharpe": float(np.mean(oos_sharpes)) if oos_sharpes else 0.0,
             "median_oos_sharpe": float(np.median(oos_sharpes)) if oos_sharpes else 0.0,
             "oos_sharpe_std": float(np.std(oos_sharpes)) if len(oos_sharpes) > 1 else 0.0,
-            "win_rate": sum(1 for r in oos_returns if r > 0) / len(oos_returns) if oos_returns else 0.0,
+            "win_rate": fold_profit_share,
+            "fold_profit_share": fold_profit_share,  # honest alias: share of folds with OOS return > 0
+            "oos_win_rate_mean": oos_win_rate_mean,  # trade-weighted mean of per-window OOS trade win-rates
             "worst_oos_return": min(oos_returns) if oos_returns else 0.0,
             "best_oos_return": max(oos_returns) if oos_returns else 0.0,
             "avg_is_return": float(np.mean([w.in_sample_return for w in windows])),
