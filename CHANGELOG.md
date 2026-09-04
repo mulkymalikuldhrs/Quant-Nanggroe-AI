@@ -2,6 +2,13 @@
 
 > **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
 
+## v8.1.3 addendum — docs + evidence follow-ups (2026-09-04, commits `471e251e`, `5e3c4842`)
+
+- `docs/JOURNAL_EXPECTANCY.md` (new, force-added): 324 closed trades +1635.47 net from the real journal; 30.1% `unknown` attribution; triple-ledger reconcile table; ensemble-fallback pins (7 tests).
+- `docs/ALPHA_EVIDENCE.md` gold-table: GC=F decisive re-run grades (ict_ote/aroon/kaufman_ama ALL FAIL pre-registered rule — win_rate 0.30/0.29/0.24, DD −0.47/−0.85/−0.83); win_rate passthrough proven end-to-end.
+- `docs/FINAL_PHASE_PROMPTS.md` (new, force-added): 8 copy-paste subagent prompts + dev-close definition (9 items) + 15-point punchlist (8 done / 7 open).
+- Daemon resuscitated: was DOWN (stale PID), restarted, events flowing, PID file fixed; single tree (child = scheduler worker, not a duplicate).
+
 ## v8.1.3 — P0+P1 hygiene + committee UI + quarantine + CI (2026-09-04)
 
 CANONICAL §15.15 is the SSOT detail. Commit `b6485317` (60 files, 5 workstreams).

@@ -15,8 +15,9 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-STRAT_DIR = Path(r"D:\repositories\Quant-Nanggroe-AI-worktree\quant_nanggroe\engine\strategy\strategies")
-sys.path.insert(0, r"D:\repositories\Quant-Nanggroe-AI-worktree")
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+STRAT_DIR = _REPO_ROOT / "quant_nanggroe" / "engine" / "strategy" / "strategies"
+sys.path.insert(0, str(_REPO_ROOT))
 
 def load_data(symbol, period="2y"):
     import yfinance as yf
@@ -225,7 +226,7 @@ def main():
     untested = sum(1 for r in results if r["verdict"] == "UNTESTED")
     lines.extend(["", "## Summary", f"- KEEP: {keep}", f"- MARGINAL: {marginal}", f"- ELIMINATE: {eliminate}", f"- SKIP: {skip}", f"- UNTESTED: {untested}"])
     
-    out = Path(r"D:\repositories\Quant-Nanggroe-AI-worktree\backtest_all_results.md")
+    out = _REPO_ROOT / "backtest_all_results.md"
     out.write_text("\n".join(lines), encoding="utf-8")
     print(f"Results saved to {out}")
     print(f"\nKEEP: {keep} | MARGINAL: {marginal} | ELIMINATE: {eliminate} | SKIP: {skip}")

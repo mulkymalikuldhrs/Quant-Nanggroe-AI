@@ -732,14 +732,13 @@ def reload_kill_thresholds() -> None:
 
         reload_risk_constants()
         # re-import after reload to get new values
-        from quant_nanggroe.engine.risk.constants import (
-            KILL_SWITCH_DAILY_PNL,
-            KILL_SWITCH_WEEKLY_PNL,
-            KILL_SWITCH_DRAWDOWN_PCT,
-        )
-
         # patch module-level defaults if any class uses them
         import quant_nanggroe.engine.risk.kill_switch as _ks_mod
+        from quant_nanggroe.engine.risk.constants import (
+            KILL_SWITCH_DAILY_PNL,
+            KILL_SWITCH_DRAWDOWN_PCT,
+            KILL_SWITCH_WEEKLY_PNL,
+        )
 
         # update any cached config that may have been created with old values
         # (KillSwitchConfig defaults are read at __init__, so new instances will pick up new constants)

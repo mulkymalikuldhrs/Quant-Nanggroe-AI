@@ -1038,6 +1038,7 @@ class TestRegimeAdaptiveStrategy(unittest.TestCase):
         try:
             from quant_nanggroe.engine.strategy.regime_strategy import RegimeAdaptiveStrategy
             self.assertTrue(True)
+        # DRIFT: module quant_nanggroe.engine.strategy.regime_strategy was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 
@@ -1435,6 +1436,7 @@ class TestDTWPatternMatcher(unittest.TestCase):
         try:
             from quant_nanggroe.engine.pattern_recorder.dtw_matcher import DTWPatternMatcher
             self.assertTrue(True)
+        # DRIFT: module quant_nanggroe.engine.pattern_recorder.dtw_matcher was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 
@@ -1508,6 +1510,7 @@ class TestEmbeddingSimilarity(unittest.TestCase):
                 SimilarityMatch,
             )
             self.assertTrue(True)
+        # DRIFT: module quant_nanggroe.engine.pattern_recorder.embedding was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 
@@ -1580,6 +1583,7 @@ class TestRecurrencePlotAnalyzer(unittest.TestCase):
                 RecurrenceQuantification,
             )
             self.assertTrue(True)
+        # DRIFT: module quant_nanggroe.engine.pattern_recorder.recurrence_plot was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 
@@ -2035,6 +2039,7 @@ class TestDataManager(unittest.TestCase):
         try:
             from quant_nanggroe.engine.data.data_manager import DataManager
             self.assertTrue(True)
+        # DRIFT: module quant_nanggroe.engine.data.data_manager was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 
@@ -2118,6 +2123,7 @@ class TestBaseProvider(unittest.TestCase):
         try:
             from quant_nanggroe.engine.data.providers.base_provider import BaseProvider, DataRequest, DataType
             self.assertTrue(True)
+        # DRIFT: package quant_nanggroe.engine.data.providers was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 
@@ -2126,6 +2132,7 @@ class TestBaseProvider(unittest.TestCase):
             from quant_nanggroe.engine.data.providers.base_provider import DataType
             self.assertIn("OHLCV", DataType.__members__)
             self.assertIn("FUNDAMENTALS", DataType.__members__)
+        # DRIFT: package quant_nanggroe.engine.data.providers was deleted; guard hides missing internal API
         except ImportError as e:
             self.skipTest(str(e))
 

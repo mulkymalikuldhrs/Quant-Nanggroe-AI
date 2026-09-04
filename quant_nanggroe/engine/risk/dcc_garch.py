@@ -98,8 +98,6 @@ def compute_dcc_corr(
     Returns:
         (n_assets x n_assets) dynamic correlation matrix R_t at the last time step.
     """
-    n_assets = residuals.shape[1]
-
     # Unconditional correlation matrix Qbar
     Qbar = np.cov(residuals, rowvar=False)
     Qbar = _nearest_pd(Qbar)

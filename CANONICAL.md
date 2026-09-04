@@ -1010,6 +1010,13 @@ Commit `b6485317` (60 files, 5 workstreams). File list per `git show --stat HEAD
 - NO-GO sizing standing.
 - Live fills broker-side only.
 
+### 15.16 v8.1.3 addendum — docs + evidence follow-ups (2026-09-04)
+
+- `docs/JOURNAL_EXPECTANCY.md` (new): 324 closed +1635.47 net, unknown 30.1%, triple-ledger reconcile, ensemble-fallback pins (7 tests, temp DBs, live journal byte-identical).
+- `docs/ALPHA_EVIDENCE.md` gold-table: GC=F decisive grades ALL FAIL (win_rate 0.30/0.29/0.24, DD −0.47/−0.85/−0.83); passthrough proven end-to-end (engine → WalkForwardResult.oos_win_rate → build_cpcv_entry → registry).
+- `docs/FINAL_PHASE_PROMPTS.md` (new): 8 subagent prompts + dev-close definition + punchlist.
+- Daemon resuscitated 2026-09-04: was DOWN (stale PID 14688), restarted (parent 10612 + scheduler child 12472, single tree), events flowing (31 fresh), PID file fixed; kill inactive, MT5 terminal live.
+
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD) + settings floor UI + script quarantine + CI/store hygiene
+> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD) + settings floor UI + script quarantine + CI/store hygiene + journal expectancy + gold grades + daemon alive

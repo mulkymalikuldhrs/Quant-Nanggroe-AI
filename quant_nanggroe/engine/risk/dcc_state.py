@@ -144,8 +144,6 @@ class DCCState:
             logger.debug("DCCState.update: empty returns")
             return False
 
-        n_rows = len(returns)
-
         # Ring buffer: keep last MAX_RETURN_ROWS
         if self._returns_buffer is not None:
             combined = pd.concat(
