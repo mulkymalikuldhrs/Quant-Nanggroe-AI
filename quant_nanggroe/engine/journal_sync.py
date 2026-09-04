@@ -330,19 +330,20 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
             sig_ctx = None
             try:
                 sig_row = con.execute(
-                    """SELECT sl, tp, confidence, atr, lot_size FROM signal_context
+                    """SELECT rowid, sl, tp, confidence, atr, lot_size FROM signal_context
                        WHERE symbol=? AND ticket IS NULL
                          AND ABS(entry_price - ?) < 0.002
                        ORDER BY timestamp DESC LIMIT 1""",
                     (symbol, entry_price)).fetchone()
                 if sig_row:
-                    sig_ctx = {"sl": sig_row[0], "tp": sig_row[1],
-                               "confidence": sig_row[2], "atr": sig_row[3],
-                               "lot_size": sig_row[4]}
-                    # Link ticket back to signal context
+                    sig_ctx = {"sl": sig_row[1], "tp": sig_row[2],
+                               "confidence": sig_row[3], "atr": sig_row[4],
+                               "lot_size": sig_row[5]}
+                    # Link ticket back to signal context (rowid selected
+                    # explicitly — sqlite3.Row has no .rowid attribute).
                     con.execute(
                         "UPDATE signal_context SET ticket=?, filled=1, pnl=?, outcome=?, hit_type=? WHERE rowid=?",
-                        (ticket, pnl, outcome, hit_type, sig_row.rowid if hasattr(sig_row, 'rowid') else None))
+                        (ticket, pnl, outcome, hit_type, sig_row[0]))
             except Exception:
                 pass
 
@@ -365,6 +366,11 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
                         try:
                             from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
                             StrategyEvaluator().record_outcome(ticket, exit_price, pnl)
+                            # B1 fallback: entry side records the MT5 *position*
+                            # ticket (not the close-deal ticket); also close by
+                            # position_id so the evaluator join can match.
+                            if pid and pid != ticket:
+                                StrategyEvaluator().record_outcome(pid, exit_price, pnl)
                         except Exception:
                             pass
             else:
@@ -384,6 +390,9 @@ def sync_mt5_deals(backfill_days: int = 0, deals=None) -> Dict[str, Any]:
                     try:
                         from quant_nanggroe.engine.agentic.strategy_evaluator import StrategyEvaluator
                         StrategyEvaluator().record_outcome(ticket, exit_price, pnl)
+                        # B1 fallback (see above): also close by position_id.
+                        if pid and pid != ticket:
+                            StrategyEvaluator().record_outcome(pid, exit_price, pnl)
                     except Exception:
                         pass
 

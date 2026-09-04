@@ -743,7 +743,7 @@ journal_sync → scorecard → lifecycle keep/tune/kill → evolve ↩
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
+> **SSOT:** `CANONICAL.md` v8.1.4 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector 5 modul live + observability planned (Step 4.6, d=||P-P0||, grid 0.05σ), risk per-symbol (EURUSD 0.3%, XAU 0.7%, all 28)
 
 ### 15.9 v8.0.22 — Vector Live + Committee/Risk Remediation + Shadow Timestamps (2026-09-03) — CORRECTED 2026-09-03 (D-workstream: docs follow code)
 
@@ -1017,6 +1017,15 @@ Commit `b6485317` (60 files, 5 workstreams). File list per `git show --stat HEAD
 - `docs/FINAL_PHASE_PROMPTS.md` (new): 8 subagent prompts + dev-close definition + punchlist.
 - Daemon resuscitated 2026-09-04: was DOWN (stale PID 14688), restarted (parent 10612 + scheduler child 12472, single tree), events flowing (31 fresh), PID file fixed; kill inactive, MT5 terminal live.
 
+### 15.17 v8.1.4 — B1 chain repaired: rowid + retry + pid-fallback (2026-09-04)
+
+- Production audit proved the B1 evaluator chain DEAD: `signal_outcomes` 0 rows, `signal_context.ticket` 569/569 NULL despite live fills.
+- BREAK-A: single-poll ticket resolution → retry 3×1s + warning (`autonomous.py`).
+- BREAK-B: `sig_row.rowid` on a 5-column SELECT (attribute never exists) → `SELECT rowid, ...` + `sig_row[0]` (`journal_sync.py`).
+- BREAK-C: close matched deal-ticket only → also close by `position_id` (fail-soft, both call sites).
+- Bucket finding (n=373 closed): lo +7.14 avg (+1670.93) vs hi −0.10 avg (−13.73), costs included — opposite of confidence-gate theory; floor action deferred to 100+ ticket-matched closes.
+- Pins: `test_fill_ticket.py` 4/4 (retry + rowid contract); overrides 35/35; veto parity 3+5xf.
+
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD) + settings floor UI + script quarantine + CI/store hygiene + journal expectancy + gold grades + daemon alive
+> **SSOT:** `CANONICAL.md` v8.1.4 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, vector P0 rolling (Step 4.6), risk 4-axis live (G1/G3 closed) + self-evolve READY (B1 ticket join) + strategy tests green (24/24) + RR fix (17 sites) + N1 metadata contract + committee floor (UI-tunable) + CPCV trade-stats re-run (win_rate null → TBD) + settings floor UI + script quarantine + CI/store hygiene + journal expectancy + gold grades + daemon alive + B1 chain repaired (rowid/retry/pid)

@@ -125,3 +125,20 @@ Outcome column: breakeven 104, loss 244, open 1, win 80. `pnl`: NULL 1, zero 244
 | `quant_nanggroe/data/account_ledger.json` | 0 trades (logins 211098748, 372044706) | Login registry only (`first_seen`/`last_seen`); the `trades` counter is never incremented by any writer. |
 
 Divergences are wiring gaps (telemetry vs fills vs unused store vs un-incremented counter), not conflicting truths: the journal is the only store holding broker-confirmed fills.
+
+## Addendum 2026-09-04 — B1 chain repaired + bucket finding (v8.1.4)
+
+**Chain autopsy (why `signal_outcomes` had 0 rows despite live fills):**
+1. BREAK-A (entry): `_make_decision` resolved ticket from broker positions on ONE poll — position often not yet visible post-fill → ticket 0 → `if _ticket:` gate skipped `record_signal`. Fixed: retry 3×1s + loud warning (`autonomous.py` B1 block).
+2. BREAK-B (linkage): back-link `UPDATE ... WHERE rowid=?` passed `sig_row.rowid`, but the SELECT listed only 5 columns and `sqlite3.Row` exposes no `.rowid` → `hasattr` False → `None` → matched nothing (569/569 NULL). Fixed: `SELECT rowid, ...` + `sig_row[0]` (`journal_sync.py`).
+3. BREAK-C (close join): `record_outcome` matched only the close-deal ticket, while entries carry the *position* ticket. Fixed: also close by `position_id` (`journal_sync.py`, both call sites, fail-soft).
+
+**Bucket expectancy, closed journal trades only (`outcome IN ('win','loss')`, n=373):**
+
+| Bucket | COUNT | AVG(pnl) | SUM(pnl) |
+|---|---|---|---|
+| lo (conf < 0.30) | 234 | +7.14 | +1670.93 |
+| mid (0.30–0.50) | 0 | n/a | n/a |
+| hi (conf ≥ 0.50) | 139 | −0.10 | −13.73 |
+
+Reading (honest, not a signal): low-confidence flow is net-positive (+1671 over 234 closes) while high-confidence flow is flat — the OPPOSITE of what a confidence gate assumes. Caveats: period/cohort effects unmeasured; costs ARE included (profit+commission+swap); mid bucket empty (n=0). Implication: do NOT raise the committee floor on theory — the data says the edge, if any, lives in the lo bucket. Re-query after 100+ new ticket-matched closes before any threshold action.

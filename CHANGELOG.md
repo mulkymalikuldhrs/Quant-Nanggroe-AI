@@ -1,6 +1,24 @@
 # Quant Nanggroe AI — Changelog
 
-> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+> **SSOT:** `CANONICAL.md` v8.1.4 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, launch.bat 1, manager.py WIB
+
+## v8.1.4 — B1 chain repaired: rowid linkage + ticket retry + pid-fallback (2026-09-04)
+
+CANONICAL §15.17 is the SSOT detail.
+
+### 🔗 B1 evaluator chain was dead in production (0 rows) — now repaired
+- **BREAK-A (entry):** ticket resolved on a single post-fill poll; position often not yet visible → 0 → `record_signal` skipped. Fixed: retry 3×1s + loud warning (`autonomous.py`).
+- **BREAK-B (linkage):** back-link passed `sig_row.rowid`, but SELECT listed 5 columns and `sqlite3.Row` has no `.rowid` → `None` → 569/569 NULL. Fixed: `SELECT rowid, ...` + `sig_row[0]` (`journal_sync.py`).
+- **BREAK-C (close join):** `record_outcome` matched close-deal ticket only; entries carry position ticket. Fixed: also close by `position_id` (both call sites, fail-soft).
+- Pins: retry-resolution + rowid-linkage contract tests (`test_fill_ticket.py` 4/4).
+
+### 📊 Bucket finding (closed journal trades, n=373)
+- lo (<0.30): 234 × +7.14 = **+1670.93**; mid: n=0; hi (≥0.50): 139 × −0.10 = −13.73. Costs included. Opposite of confidence-gate theory — do NOT raise the floor on theory; re-query after 100+ ticket-matched closes.
+
+### ✅ Verification
+- `test_fill_ticket.py` 4/4, overrides 35/35, veto parity 3+5xf; `py_compile` clean.
+
+---
 
 ## v8.1.3 addendum — docs + evidence follow-ups (2026-09-04, commits `471e251e`, `5e3c4842`)
 
@@ -578,4 +596,4 @@ This release transforms QNA from a trading bot into a **living autonomous hedge 
 
 ---
 
-> **SSOT:** `CANONICAL.md` v8.1.3 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol
+> **SSOT:** `CANONICAL.md` v8.1.4 — BAL $1,445, weekly 0 WIB, probe 0/32, CPCV 207, vector 6 modul live, risk per-symbol

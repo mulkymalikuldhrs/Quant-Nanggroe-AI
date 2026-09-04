@@ -2085,7 +2085,9 @@ class AutonomousPipeline:
             # B1 fix (v8.1.0): resolve the MT5 position ticket from broker truth
             # so StrategyEvaluator.record_signal() actually fires (previously
             # exec_decision never carried "ticket" → eval leg data-starved).
-            # Fail-soft: ticket 0 = evaluator skips, live trading unaffected.
+            # v8.1.4 hardening: retry 3x1s — the position is often not yet
+            # visible on the first post-fill poll. Fail-soft: ticket 0 =
+            # evaluator skips, live trading unaffected (logged loudly).
             _fill_ticket: int = 0
             if executed and fill:
                 try:
@@ -2096,21 +2098,36 @@ class AutonomousPipeline:
                         _u = _re.sub(r"\.(VX|VXC)$", "", _u)
                         return _u.split("/", 1)[0]
 
-                    _want = _norm_sym(symbol)
-                    _brokers = getattr(em, "_brokers", {}) or {}
-                    for _b in _brokers.values():
-                        try:
-                            _positions = await _b.get_positions()
-                        except Exception:
-                            continue
+                    def _scan_positions(_positions: Any, _want: str) -> int:
                         for _p in _positions or []:
                             if _norm_sym(getattr(_p, "symbol", "")) == _want:
                                 _t = getattr(_p, "ticket", None)
                                 if _t:
-                                    _fill_ticket = int(_t)
-                                    break
+                                    return int(_t)
+                        return 0
+
+                    _want = _norm_sym(symbol)
+                    _brokers = getattr(em, "_brokers", {}) or {}
+                    for _attempt in range(3):
+                        for _b in _brokers.values():
+                            try:
+                                _fill_ticket = _scan_positions(await _b.get_positions(), _want)
+                            except Exception:
+                                continue
+                            if _fill_ticket:
+                                break
                         if _fill_ticket:
                             break
+                        if _attempt < 2:
+                            try:
+                                await asyncio.sleep(1.0)
+                            except Exception:
+                                break
+                    if not _fill_ticket:
+                        logger.warning(
+                            "B1 ticket unresolved for %s order %s after 3 polls — "
+                            "record_signal will skip (eval blind spot, trading unaffected)",
+                            symbol, getattr(fill, "order_id", "?"))
                 except Exception:
                     _fill_ticket = 0
             return {
