@@ -3872,5 +3872,141 @@
     "occurred_at": "2026-09-04T13:58:49.936659+00:00",
     "resolved": false,
     "resolution": ""
+  },
+  {
+    "id": "4d1b54b8-4a5",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for EURGBP: confidence=0.15",
+    "detail": "Trade 6b5d1760-3a95-442d-b5e6-ad6c8802b2e4 on EURGBP using ensemble. eval_duration_ms=0.04",
+    "context": {
+      "trade_id": "6b5d1760-3a95-442d-b5e6-ad6c8802b2e4",
+      "symbol": "EURGBP",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.04,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T14:59:44.763891+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "1ce7bb06-686",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade 3ad74700-9850-4b66-94c7-2148ea33ec1d on USDCAD using ensemble. eval_duration_ms=0.07",
+    "context": {
+      "trade_id": "3ad74700-9850-4b66-94c7-2148ea33ec1d",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.07,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T15:00:44.776732+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "5cebc09c-80f",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade 692ab1de-359c-4191-bcd2-6a693ad56c16 on USDCAD using ensemble. eval_duration_ms=0.09",
+    "context": {
+      "trade_id": "692ab1de-359c-4191-bcd2-6a693ad56c16",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.09,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T15:14:17.025119+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "94579e93-716",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.16",
+    "detail": "Trade 97722542-5de4-4bc3-814c-51fbc24864c7 on USDCAD using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "97722542-5de4-4bc3-814c-51fbc24864c7",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T15:29:07.372562+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "a77a705f-219",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade c56366e8-ebd6-4a83-97bb-70448443be44 on USDCAD using ensemble. eval_duration_ms=0.03",
+    "context": {
+      "trade_id": "c56366e8-ebd6-4a83-97bb-70448443be44",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.03,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T15:44:02.977494+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "943446f1-199",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for USDCAD: confidence=0.10",
+    "detail": "Trade 21a82226-ce6a-49da-a9ef-3d6a8126a677 on USDCAD using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "21a82226-ce6a-49da-a9ef-3d6a8126a677",
+      "symbol": "USDCAD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T15:59:05.721683+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "1cee3945-064",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for NZDUSD: confidence=0.10",
+    "detail": "Trade 4b8d48b6-bc98-49c9-949c-7bf1377028c6 on NZDUSD using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "4b8d48b6-bc98-49c9-949c-7bf1377028c6",
+      "symbol": "NZDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T16:01:48.676661+00:00",
+    "resolved": false,
+    "resolution": ""
+  },
+  {
+    "id": "a118b0bc-5bf",
+    "category": "trade_evaluation",
+    "severity": "info",
+    "summary": "Low confidence trade for NZDUSD: confidence=0.10",
+    "detail": "Trade eccb7004-b202-4a78-a97e-0bcd28974e35 on NZDUSD using ensemble. eval_duration_ms=0.05",
+    "context": {
+      "trade_id": "eccb7004-b202-4a78-a97e-0bcd28974e35",
+      "symbol": "NZDUSD",
+      "strategy": "ensemble",
+      "eval_duration_ms": 0.05,
+      "_sla_tracked": true
+    },
+    "occurred_at": "2026-09-04T16:14:01.574572+00:00",
+    "resolved": false,
+    "resolution": ""
   }
 ]
